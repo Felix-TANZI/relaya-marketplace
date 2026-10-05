@@ -1,0 +1,19 @@
+{
+ "routes": [
+  "recherche",
+  "recherche-saisie",
+  "recherche-resultats",
+  "recherche-zero",
+  "recherche-filtres",
+  "relais-selecteur"
+ ],
+ "exclus": {},
+ "repris": {
+  "recherche": "DP-54 : catalogue et recherche en données (tri, filtres, favori, panier, relais).",
+  "recherche-saisie": "DP-54 : catalogue et recherche en données (tri, filtres, favori, panier, relais).",
+  "recherche-resultats": "DP-54 : catalogue et recherche en données (tri, filtres, favori, panier, relais).",
+  "recherche-filtres": "DP-54 : catalogue et recherche en données (tri, filtres, favori, panier, relais).",
+  "recherche-zero": "DP-54 : catalogue et recherche en données (tri, filtres, favori, panier, relais).",
+  "relais-selecteur": "DP-54 : catalogue et recherche en données (tri, filtres, favori, panier, relais)."
+ }
+}

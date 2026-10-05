@@ -1,0 +1,77 @@
+{
+ "description": "Extrait de CL-02 : Droits d’accès et sécurité côté client.",
+ "source": "Extrait de CL-02 et CL-16 (04_Pages_HTML) par logique-metier/outils/",
+ "sections": [
+  {
+   "section": "Droits d’accès et sécurité côté client",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Action",
+      "Visiteur",
+      "Client connecté",
+      "Condition"
+     ],
+     "lignes": [
+      {
+       "action": "Parcourir, chercher, ouvrir une fiche, remplir un panier",
+       "visiteur": "oui (panier lié à l’appareil)",
+       "client_connecte": "oui",
+       "condition": "—"
+      },
+      {
+       "action": "Payer, passer au comptoir, voir un code",
+       "visiteur": "non : connexion demandée au moment de payer",
+       "client_connecte": "oui, numéro vérifié",
+       "condition": "peut_commander ⇔ numéro_vérifié"
+      },
+      {
+       "action": "Afficher le code de retrait",
+       "visiteur": "—",
+       "client_connecte": "oui ; biométrie au-delà de CODE-BIO",
+       "condition": "propriétaire de la commande seulement"
+      },
+      {
+       "action": "Partager le code avec un proche",
+       "visiteur": "—",
+       "client_connecte": "oui, par le partage natif",
+       "condition": "le porteur du code retire ; nom saisi au comptoir"
+      },
+      {
+       "action": "Annuler, changer de relais, contester, noter",
+       "visiteur": "—",
+       "client_connecte": "oui, selon l’état",
+       "condition": "contrôle d’état côté serveur au clic"
+      },
+      {
+       "action": "Payer pour quelqu’un (étranger)",
+       "visiteur": "payeur sans compte, par lien signé",
+       "client_connecte": "—",
+       "condition": "voit prénom, relais, quartier du bénéficiaire"
+      },
+      {
+       "action": "Supprimer son compte",
+       "visiteur": "—",
+       "client_connecte": "oui, après OTP, sans commande ni litige en cours",
+       "condition": "pseudonymisation de ce que la loi impose de garder"
+      }
+     ]
+    }
+   ],
+   "regles": [
+    "CAP-14",
+    "CAP-15",
+    "CAP-16",
+    "CAP-17",
+    "CAP-18",
+    "CAP-19",
+    "CAP-20",
+    "CAP-21",
+    "CAP-22",
+    "CAP-23",
+    "CAP-24"
+   ]
+  }
+ ]
+}

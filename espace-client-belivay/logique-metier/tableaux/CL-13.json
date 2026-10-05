@@ -1,0 +1,3701 @@
+{
+ "document": "CL-13",
+ "source": "04_Pages_HTML/CL-13_Compte_Avis_Aide_Legal_Mode_degrade.html",
+ "sections": [
+  {
+   "section": "Écran « Mon compte »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 1",
+        "Mon compte · point d’entrée (tuiles, avantages, relais, rubriques)",
+        "Onglet Compte de la barre du bas, sous l’en-tête racine (bandeau de réassurance, menu, logo, cloche, panier, avatar). Ligne de profil : portrait de 56 px cerclé d’orange, « Carine Mballa » en 19 px, « 6 77 ·· ·· 41 · ✓ Vérifié », « c•••••@gmail.com · Google », bouton carré au crayon à droite (#numero-changer). Quatre tuiles de l’application d’origine, avec leur compteur réel : Commandes 4, Litiges 1, Messages 1 (non lu), Sauvegardés 2. Carte verte « Tes avantages actifs » en 14 px : « Remboursement immédiat jusqu’à 3 000 F · Un petit problème : remboursé tout de suite. » et « Paiement au comptoir jusqu’à 50 000 F · 100 000 F après 5 commandes sans incident. » Carte « Mon relais habituel » : portrait de Mme Ngo Bassong, Relais Mvog-Ada, « Mme Ngo Bassong · 8 h – 19 h », bouton « Changer », « Présélectionné à chaque commande · 350 m, 6 min à pied. » Trois groupes de rubriques à icône, sous-titre et chevron : MES ACHATS (Factures 3 « Une par commande retirée » ; Avis à donner 1 « Écouteurs · jusqu’au sam. 26 sept. ») ; MES INFORMATIONS (Adresses de livraison « Maison · Mvog-Ada, carrefour Emana » ; Moyens de paiement « MTN 6 77 ·· ·· 41 par défaut · Orange » ; Notifications « Repli par SMS au 6 77 ·· ·· 41 ») ; AIDE ET RÉGLAGES (Aide et support ; Réglages « Langue, thème, texte, connexion » ; Pages légales). Bouton secondaire « Se déconnecter » ; lien rouge « Supprimer mon compte » et « Impossible tant qu’une commande ou un litige est en cours. » Aucun encart Prime (CCO-08). Hauteur ≈ 1 700 px (contre 1 780 px), sans carte détaillée d’adresse ni de paiement."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 2",
+        "Mon compte · compte neuf, numéro à vérifier",
+        "État « nouveau compte, avant la première commande » (compte?st=nouveau) : sous le nom, « Numéro à vérifier avant ta première commande » (ambre) et un seul bouton plein « Vérifier mon numéro » ; ni cloche ni panier comptés. Tuiles sans compteur, qui ouvrent les états vides (Mes commandes, Mes litiges, Messagerie, Sauvegardés). Avantages d’un compte neuf : « Remboursement immédiat jusqu’à 3 000 F » et « Paiement au comptoir jusqu’à 15 000 F · Puis 50 000 F, et 100 000 F après 5 commandes sans incident. » « Mon relais habituel · Choisi à ta première commande · Le plus proche de toi. » Rubriques qui disent quoi faire : Factures « Aucune facture pour l’instant », Adresses « Seulement pour la livraison à domicile », Moyens de paiement « Ton numéro vérifié sera proposé », Notifications « Proposées après ta première commande » ; pas de ligne « Avis à donner »."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Style",
+        "Style : maquette S’inspirer IMG_1972 (ordre : profil, avantages, relais habituel, rubriques, « Supprimer mon compte ») et tuiles de l’application d’origine IMG_2383 ; refonte du 26 sept. : disposition compacte, adresses et moyens de paiement résumés en lignes de rubrique (leurs écrans gardent le détail)",
+        "Écarts tranchés pour la spec : pas d’encart « Prime · actif » (CCO-08) ; deux avantages avec leur plafond (CCO-02) ; rubrique « Mes commandes » ajoutée en tête ; Réglages, Pages légales et « Se déconnecter » gardés ; le crayon ouvre « Changer de numéro » (aucun formulaire de profil, CCO-01). Palette et graphisme Mandarine & Nuit (variables CSS du socle seulement) ; règles, chiffres, routes et états inchangés."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Pastille « Bronze », barre « → Argent · 0 pts », « Programme fidélité 0 / 500 pts », « Fidélité 1 000 pts » (menu)",
+        "Carte « Tes avantages actifs » en mots : « Remboursement immédiat jusqu’à 3 000 F », « Paiement au comptoir jusqu’à 50 000 F »",
+        "Aucun programme de points dans la spec ; Bronze à Platine sont les paliers des vendeurs ; l’IFA n’est jamais montré (9.5, 11.5). Afficher les advantages[] renvoyés par GET /me : libellés et plafonds calculés côté serveur, jamais le nom du palier."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Carte « Commande #21 · En cours » avec frise Confirmée / Préparée / En route / Livrée, « Commandes récentes » (#21, #14, #11), tuiles « 10 Commandes / 5 En cours »",
+        "Aucune carte de commande dans le compte : la tuile « Commandes » (4) ouvre la liste (CL-09), aussi ouverte depuis l’accueil et le Menu",
+        "Le suivi (9.3) et l’ordre de lecture des cartes (9.1) sont traités par l’écran Mes commandes. Un numéro de commande s’écrit toujours BLV-xxxxx. Les trois compteurs contradictoires (10, 5, 3) disparaissent."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "« Wallet » / « Mon Compte BelivaY · 0 FCFA »",
+        "—",
+        "Pas de porte-monnaie : l’argent du client n’existe qu’en escrow lié à une commande, rendu au moyen d’origine (glossaire, 2.3). Voir « Écrans retirés »."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Quatre tuiles + puces défilantes coupées (« Paieme… ») + dock + menu de l’avatar : quatre navigations pour les mêmes rubriques",
+        "Quatre tuiles gardées (Commandes 4, Litiges 1, Messages 1, Sauvegardés 2) puis trois groupes de rubriques ; plus de puces ni de menu déroulant de l’avatar",
+        "Un seul chemin par rubrique dans le compte ; compteurs réels du jeu d’essai. Les tuiles ouvrent #commandes, #litiges, #messagerie, #sauvegardes."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Refonte du 25 sept. : nom en 23 px, avantages en 15,5 px avec deux lignes d’explication, cartes Adresses et Moyens de paiement détaillées",
+        "Nom en 19 px, avantages en 14 px avec une phrase courte, adresses et paiement en lignes de rubrique résumées",
+        "Consigne « la bonne taille » (26 sept.). Les explications du paiement au comptoir sont dans l’aide (FAQ Paiement) et au paiement (CL-08)."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Aide, pages légales et réglages ouverts depuis le Menu et revenant au Menu",
+        "Rubriques du groupe « Aide et réglages » ; leur bouton retour ramène au Compte",
+        "Refonte du 26 sept. : le Menu n’est plus une liste d’écrans (CL-01)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Bloc identité + barre de points + tuiles + puces répété en tête de chaque onglet (≈ 400 px avant le contenu)",
+        "Une ligne de profil compacte (portrait, nom, numéro vérifié, e-mail, bouton carré), en tête de Mon compte seulement",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« À ajouter : téléphone », jauge « Complétez votre profil 83 % », téléphone vide et modifiable (IMG_2386, 2391)",
+        "Numéro vérifié masqué avec « Vérifié » ; « Changer de numéro » ; compte neuf : « À vérifier avant ta première commande »",
+        "Le numéro est vérifié par code avant toute commande et se change par un code sur l’ancien puis sur le nouveau, avec régénération des codes de retrait (3.3). Aucune jauge de profil : rien n’est exigé avant de naviguer (3)."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Pseudo « @Penga12 », « Type de compte : Vendeur », « Biographie », photo modifiable, boutons « Sauvegarder / Annuler » avec icône bouclier",
+        "—",
+        "Hors du modèle Client (2.6). Le portrait n’est qu’un repère visuel. Aucun formulaire de profil au lancement."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "E-mail modifiable sans vérification, libellé « EMAIL »",
+        "« E-mail » affiché masqué (c•••••@gmail.com), non modifiable dans le compte",
+        "Un e-mail = un compte (3.2) ; la connexion Google porte l’e-mail. Changement d’e-mail : par le support, hors lancement (arbitrage CCO-01)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« Adresse de livraison · Domicile par défaut » à la place du relais (IMG_2386)",
+        "Carte « Relais habituel » en tête, avec gérant, horaires et « Changer » ; l’adresse est une rubrique",
+        "Au lancement le mode principal est le relais, un par zone (1.3). « Changer » ouvre #relais-choix."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Adresse décrite par repères (« face pharmacie du Coin »)",
+        "Idem : « Mvog-Ada, carrefour Emana, immeuble bleu, 2e étage »",
+        "Voir « Mes adresses »."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Raccourcis « Promotions », « Parrainage », carte violette « Parrainez, gagnez · PENGA12 », « Ventes flash », « Abonnement BelivaY+ » (IMG_2386, 2479, 2417, 2418)",
+        "—",
+        "Modules après le lancement (FF-FLASH, FF-ABONNEMENT fermés). L’encart « Prime · actif » n’existe qu’après l’activation du module (9.5, arbitrage 19.4)."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Carte « Votre panier · 6 articles · 272 399 FCFA » et « Espace vendeur · Tonton PG »",
+        "—",
+        "Le panier a son onglet (et son total). L’espace vendeur est une application séparée (2.1) : une seule ligne d’information en bas de l’aide."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« Notifications · À jour », « Notifications SMS · Suivi par SMS » (activé), « Newsletter · Offres par email » (activé)",
+        "Rubrique « Notifications · Repli par SMS sur ton numéro vérifié » qui ouvre le réglage des notifications",
+        "Réglage 10.1 (écran des notifications, #notifs-reglages) : repli SMS, 4 catégories critiques non désactivables, Promotions désactivé par défaut. Le suivi passe en push gratuit."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« L’équipe BelivaY répond vite » (démenti par 11 jours sans réponse)",
+        "Rubrique « Aide et support » ; l’aide affiche le délai réel : « réponse sous 4 h ouvrées »",
+        "SUP-DELAI (proposé)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Icônes carrées bleue, rose, jaune, violette ; casse « Liens Rapides », « Devenir Vendeur », « Mes Commandes »",
+        "Icônes en tons neutres ou mandarine ; casse française",
+        "Aucun bleu (CDS-01) ; vert, ambre et rouge réservés aux états."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "—",
+        "Tuiles « Litiges », « Messages », « Sauvegardés » ; rubriques « Factures », « Avis à donner », « Pages légales » ; lien « Supprimer mon compte »",
+        "9.5 et 15.3. Liens : #litiges, #messagerie, #sauvegardes, #factures, #avis-donner?ref=BLV-51702&from=compte (retour au compte), #legal, #supprimer."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Pas de carte « Retirable maintenant » ni de « colis t’attendent au relais » quand un colis attend (IMG_2384, 2479)",
+        "Sur l’accueil et en tête de Mes commandes, avec « Afficher mon code » : le code en deux taps depuis l’accueil",
+        "9.1, 9.2 : traité par CL-04 (accueil) et CL-09 (Mes commandes), pas par le compte."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Tuile « Réglages » (engrenage bleu) et réglages dispersés entre Profil et Réglages (IMG_2387, 2389)",
+        "Une rubrique « Réglages » : langue, thème, taille du texte, connexion et données",
+        "Voir l’écran Réglages."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Menu de l’avatar : « Support WhatsApp » sans avertissement, « Sécurité » et « Réglages » en double, bouton « remonter » sur « Déconnexion » (IMG_2417, 2418)",
+        "WhatsApp dans l’aide, derrière la feuille de ses interdits ; une entrée par rubrique",
+        "Interdits 15.4 : ni commande, ni paiement, ni photo de litige par WhatsApp."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Déconnexion séparée, en rouge, avec explication (IMG_2416)",
+        "« Se déconnecter » en bouton secondaire ; la suppression est un lien rouge à part",
+        "La déconnexion révoque le jeton de notifications de l’appareil (10.2)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Bandeau noir tournant au-dessus de l’en-tête : « Livraison 24–72h · Cameroun & CEMAC », « Remboursement sous 7 jours · Sans question », « Gagnez des points à chaque achat · Programme Fidélité », « 3 200+ Vendeurs certifiés sur BelivaY », « Paiement sécurisé via MoMo · Escrow BelivaY » (illisible pendant ses transitions)",
+        "Aucun bandeau tournant. Chaque promesse vraie apparaît une fois, là où elle sert (délai ferme au panier, « Retour gratuit si problème validé » dans les CGV et l’aide)",
+        "Supprimer le composant. Les messages 1 à 4 sont faux au lancement : fourchette de délai et CEMAC (1.3, SLA-ZONE-H), retour sans motif (12.2), points (inexistants), compteur écrit en dur (19.3). « Escrow BelivaY » reste réservé au bandeau de réassurance du panier et de la fiche."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Robot flottant (assistant IA), bouton « remonter », dock à 5 onglets (Favoris, Compte), barre Safari, pied de page web (logo, réseaux sociaux, « Liens Rapides »)",
+        "Barre du bas à 5 onglets du socle (Accueil, Catégories, Panier, Sauvegardés, Compte), l’onglet Compte allumé sur ces écrans ; aucun bouton flottant ; aucun pied de page",
+        "Assistant IA : module après le lancement (FF-IA fermé, chap. 24). Le compte s’ouvre par l’onglet Compte, l’avatar de l’en-tête et le Menu ; Mes commandes par l’accueil, le compte et le Menu (CL-01). Rien ne doit recouvrir un bouton ou une valeur."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CCO-01",
+        "Compte minimal : identité (nom, numéro vérifié masqué, e-mail masqué), avantages actifs, relais habituel, rubriques. Ni pseudo, ni biographie, ni jauge de profil, ni points, ni porte-monnaie, ni formulaire de profil ; l’e-mail ne se modifie pas dans le compte au lancement.",
+        "§9.5 p. 56 ; §2.6 p. 14",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCO-02",
+        "Avantages actifs écrits en clair avec leur plafond (« Remboursement immédiat jusqu’à 3 000 F », « Paiement au comptoir jusqu’à 50 000 F ») ; jamais la note IFA, jamais le nom d’un palier client.",
+        "§9.5 p. 56 ; §11.5 p. 70",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCO-03",
+        "Les avantages et leurs plafonds viennent du serveur : LIT-AUTO-STD / LIT-AUTO-ELEVE selon le palier IFA, PAY-CPT-NOUV / STD / FID selon l’historique ; aucun palier ne rallonge un délai. Un palier « À instruire » ou « Plafonné » n’affiche pas l’avantage qu’il n’a pas, sans dire pourquoi.",
+        "§11.5 p. 69 ; §8.5 p. 49",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCO-04",
+        "Compte neuf : palier Standard (aucun palier négatif avant 5 commandes) ; remboursement immédiat jusqu’à 3 000 F ; paiement au comptoir jusqu’à 15 000 F. Le passage à 50 000 F se fait à la première commande retirée (lecture retenue de « nouveau compte »).",
+        "§11.5 p. 68–69 ; §8.5 p. 49",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCO-05",
+        "Relais habituel affiché avec son gérant, ses horaires et « Changer » ; il est présélectionné à chaque commande et fixe l’origine des distances.",
+        "§9.5 p. 56 ; §3.4 p. 18",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCO-06",
+        "Numéro vérifié masqué au milieu (« 6 77 ·· ·· 41 ») avec « Vérifié » ; « Changer de numéro » exige un code sur l’ancien puis sur le nouveau numéro ; les codes de retrait en cours sont régénérés.",
+        "§3.3 p. 18",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCO-07",
+        "Le compte est le point d’entrée de tout ce qui concerne la cliente : Mes commandes, Mes litiges, Messagerie et Sauvegardés (tuiles) ; Factures, Avis à donner, Adresses, Moyens de paiement, Notifications, Aide et support, Réglages, Pages légales (rubriques) ; Supprimer mon compte. Compteurs réels ; au compte neuf, chaque ligne dit quoi faire. Ces écrans reviennent au compte par leur bouton retour.",
+        "§9.5 p. 56 ; §15.3 p. 87",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCO-08",
+        "Aucun encart « Prime · actif » ni aucun encart d’abonnement tant que FF-ABONNEMENT est fermé.",
+        "§9.5 p. 56 ; §19.4 p. 107",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCO-09",
+        "Relais, adresse et moyen de paiement ne sont demandés qu’à la première commande ; le réglage des notifications est proposé après la première commande. Le compte neuf le dit dans chaque rubrique.",
+        "§3.4 p. 18–19",
+        "Décidé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Paramètres (registre)",
+     "colonnes": [
+      "Code",
+      "Paramètre",
+      "Valeur",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "LIT-AUTO-STD",
+        "Remboursement automatique, palier Standard",
+        "jusqu’à 3 000 F",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "LIT-AUTO-ELEVE",
+        "Remboursement automatique, palier Élevé",
+        "jusqu’à 10 000 F",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "PAY-CPT-NOUV",
+        "Comptoir : plafond nouveau compte",
+        "15 000 F",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "PAY-CPT-STD",
+        "Comptoir : plafond de panier",
+        "50 000 F",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "PAY-CPT-FID",
+        "Comptoir : plafond après 5 commandes sans incident",
+        "100 000 F",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "IFA-MIN-CMD",
+        "Commandes avant un palier négatif",
+        "5",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "FF-ABONNEMENT",
+        "Module d’abonnement et tous ses encarts",
+        "fermé",
+        "Décidé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Numéro non vérifié",
+        "« À vérifier avant ta première commande » en ambre et bouton plein « Vérifier mon numéro » ; aucun message n’est envoyé à ce numéro, sauf le code."
+       ]
+      },
+      {
+       "cellules": [
+        "Aucun relais habituel",
+        "« Choisi à ta première commande » ; pas de bouton « Changer »."
+       ]
+      },
+      {
+       "cellules": [
+        "Avantages indisponibles (réseau)",
+        "La carte garde les derniers avantages lus ; bannière « Hors ligne » (mode dégradé)."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écran « Mes adresses »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 3",
+        "Mes adresses (depuis le Compte)",
+        "Liste : carte « Maison · Zone Mvog-Ada · servie », bouton « Modifier », adresse en gras « Mvog-Ada, carrefour Emana, immeuble bleu, 2e étage », carte avec le repère sur « Carrefour Emana », « Position enregistrée sur la carte ». Encadré : « Le livreur voit ton prénom et ces repères, jamais ton numéro : il t’appelle par un appel masqué. » Ligne : « Livraison à domicile : 1 500 F, offerte dès 50 000 F d’articles. Par défaut, tes colis vont au Relais Mvog-Ada. » Bouton plein « Ajouter une adresse »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 4",
+        "Adresses · modifier une adresse par repères",
+        "Modifier « Maison » : Nom de l’adresse « Maison », Quartier « Mvog-Ada » (bordure verte, « Zone servie »), Repères « carrefour Emana, immeuble bleu, 2e étage » avec l’aide « Un carrefour, un commerce, la couleur de l’immeuble, l’étage », carte « Déplace le repère sur ton entrée », bouton plein « Enregistrer l’adresse », lien rouge « Supprimer cette adresse »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 5",
+        "Adresses · quartier hors zone servie",
+        "Quartier hors zone : « Bureau », « Akwa, Douala » en rouge : « BelivaY ne livre pas encore à Douala : au lancement, 12 zones de Yaoundé sont servies. » Position indisponible ; encadré « Tes colis continuent d’aller au Relais Mvog-Ada, ton relais habituel. » « Enregistrer l’adresse » grisé ; bouton « Garder le retrait au relais »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 6",
+        "Adresses · aucune adresse",
+        "Aucune adresse : « Tes colis vont au relais. Ajoute une adresse seulement si tu veux la livraison à domicile. » Bouton plein « Ajouter une adresse », ligne « Livraison à domicile : 1 500 F, offerte dès 50 000 F d’articles. »"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Style",
+        "Style : inspiré des maquettes S’inspirer (IMG_1972, IMG_1974) : en-tête à bouton retour carré, titre dans l’en-tête et phrase d’explication en tête de page, cartes à intitulé en capitales grises, onglet Compte allumé dans la barre du bas",
+        "Palette et graphisme Mandarine & Nuit (variables CSS du socle seulement) ; règles, chiffres, routes et états inchangés."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Adresse par repères, adresse par défaut distinguée, « + Ajouter » visible, libellés parlants (Domicile, Bureau) avec icône",
+        "Même principe : nom, repères, bouton plein « Ajouter une adresse »",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Aucune position ni zone rattachée",
+        "Quartier (zone) et position GPS enregistrés et montrés sur une carte",
+        "Modèle Adresse : nom, quartier, repères, position GPS (2.6) ; « avec position sur la carte » (3.4)."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Le relais habituel n’apparaît nulle part",
+        "« Par défaut, tes colis vont au Relais Mvog-Ada » ; carte Relais habituel dans Mon compte",
+        "Un relais par zone au lancement (1.3)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Adresse « Bureau » à Douala acceptée sans avertissement",
+        "Quartier hors des zones servies : erreur en clair, enregistrement grisé, retrait au relais conservé",
+        "Contrôle serveur du quartier contre les zones exploitées (arbitrage CCO-11)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Corbeille rouge sans libellé collée à « Modifier » ; « Par défaut » à la fois étiquette et bouton",
+        "« Modifier » seul sur la carte ; « Supprimer cette adresse » dans l’écran de modification ; « Définir par défaut » quand il y a plusieurs adresses",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Nom du destinataire répété sur chaque carte ; bloc identité, barre de points, tuiles et puces en tête",
+        "—",
+        "Le destinataire est la titulaire du compte."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Zone et délai de chaque adresse",
+        "Pastille « Zone Mvog-Ada · servie » ; le délai ferme s’affiche au paiement",
+        "SLA-ZONE-H (moins de 5 h) : jamais une fourchette."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Bandeau noir tournant au-dessus de l’en-tête : « Livraison 24–72h · Cameroun & CEMAC », « Remboursement sous 7 jours · Sans question », « Gagnez des points à chaque achat · Programme Fidélité », « 3 200+ Vendeurs certifiés sur BelivaY », « Paiement sécurisé via MoMo · Escrow BelivaY » (illisible pendant ses transitions)",
+        "Aucun bandeau tournant. Chaque promesse vraie apparaît une fois, là où elle sert (délai ferme au panier, « Retour gratuit si problème validé » dans les CGV et l’aide)",
+        "Supprimer le composant. Les messages 1 à 4 sont faux au lancement : fourchette de délai et CEMAC (1.3, SLA-ZONE-H), retour sans motif (12.2), points (inexistants), compteur écrit en dur (19.3). « Escrow BelivaY » reste réservé au bandeau de réassurance du panier et de la fiche."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CCO-10",
+        "Adresse de livraison par repères : nom, quartier (zone), repères écrits comme dans la rue, position sur la carte ; c’est ce que le livreur utilise.",
+        "§9.5 p. 56 ; §3.4 p. 18 ; §2.6 p. 14",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCO-11",
+        "Quartier hors des zones exploitées : adresse refusée avec « BelivaY ne livre pas encore à … : au lancement, 12 zones de Yaoundé sont servies » ; le retrait au relais habituel continue.",
+        "§3.4 p. 19 (hors zone) ; §18.2 p. 100",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCO-12",
+        "Ce que voit le livreur à domicile : le prénom et l’adresse par repères, au moment de la livraison ; jamais le numéro (appel masqué). Tranche la contradiction entre 19.1 (« prénom et quartier seulement »), 2.4 (adresse du domicile) et 9.5 (« c’est ce que le livreur utilise »).",
+        "§19.1 p. 104 ; §2.4 p. 13 ; §9.5 p. 56",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCO-13",
+        "Livraison à domicile au lancement : 1 500 F (500 + 1 000), offerte dès 50 000 F d’articles, livraison individuelle sans regroupement.",
+        "§1.3 p. 8 ; LIV-DOM-BASE, LIV-SEUIL-DOM, LIV-GROUPE-DOM",
+        "Décidé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Paramètres (registre)",
+     "colonnes": [
+      "Code",
+      "Paramètre",
+      "Valeur",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "LIV-DOM-BASE",
+        "Livraison de base domicile",
+        "1 500 F",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "LIV-SEUIL-DOM",
+        "Livraison offerte à domicile",
+        "dès 50 000 F",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "LIV-GROUPE-DOM",
+        "Regroupement à domicile au lancement",
+        "non : livraison individuelle",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "SLA-ZONE-H",
+        "Délai de livraison par zone",
+        "moins de 5 h",
+        "Décidé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Quartier hors zone",
+        "Champ en rouge, message, position indisponible, « Enregistrer » grisé, « Garder le retrait au relais »."
+       ]
+      },
+      {
+       "cellules": [
+        "Repères vides",
+        "« Écris au moins un repère : carrefour, commerce, couleur de l’immeuble. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Position non posée",
+        "Repère au centre du quartier ; « Déplace le repère sur ton entrée »."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écran « Moyens de paiement »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 7",
+        "Moyens de paiement (depuis le Compte)",
+        "Phrase de tête « Tu valides chaque paiement sur ton téléphone, avec ton code secret. BelivaY ne le voit jamais. » Carte « Mobile Money » : pastille MTN, « MTN MoMo · 6 77 ·· ·· 41 », « Numéro du compte · proposé à chaque paiement », « par défaut » en vert ; pastille Orange, « Orange Money · 6 55 ·· ·· 08 », « Pour payer seulement · les messages vont au numéro du compte » ; « Les deux numéros sont vérifiés par un code SMS. » Encadré vert « Remboursement : toujours sur le numéro qui a payé. Jamais d’espèces, ni au relais ni au livreur. » Bloc replié « Un proche à l’étranger peut payer pour toi » (carte Visa ou Mastercard, 3-D Secure, frais de 2 % affichés avant de payer, 150 000 F au plus). Bouton plein « Ajouter un numéro Mobile Money »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 8",
+        "Moyens de paiement · feuille d’ajout d’un numéro",
+        "Feuille « Ajouter un numéro Mobile Money » : « MTN ou Orange : l’opérateur est reconnu tout seul. » Champ « +237 · 6XX XX XX XX » avec le drapeau du Cameroun ; « On envoie un code par SMS à ce numéro pour vérifier qu’il est à toi. » Bouton plein « Recevoir le code », lien « Annuler »."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Style",
+        "Style : inspiré des maquettes S’inspirer (IMG_1972, IMG_1974) : en-tête à bouton retour carré, titre dans l’en-tête et phrase d’explication en tête de page, cartes à intitulé en capitales grises, onglet Compte allumé dans la barre du bas ; pastilles MTN / Orange et « par défaut » de la maquette du compte",
+        "Palette et graphisme Mandarine & Nuit (variables CSS du socle seulement) ; règles, chiffres, routes et états inchangés."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« enregistrés sur cet appareil »",
+        "Moyens portés par le compte",
+        "Stockés côté serveur avec le compte (2.6), jamais dans le téléphone."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« Aucun moyen enregistré » après 10 commandes",
+        "Le numéro vérifié du compte en premier, avec son opérateur et « Vérifié »",
+        "Paiement prérempli avec le numéro vérifié (3.4)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Numéro ajouté sans vérification",
+        "Code SMS avant l’enregistrement d’un nouveau numéro",
+        "Arbitrage CCO-15 ; POST /auth/otp/send puis verify."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Encart « Modes acceptés » vide ; pas de carte pour la diaspora",
+        "MTN MoMo, Orange Money ; bloc replié « Un proche à l’étranger peut payer pour toi » avec 2 %, 3-D Secure, 150 000 F",
+        "7.2, 13.4 ; PAY-CARTE-FRAIS, PAY-CARTE-MAX."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Opérateur déduit du préfixe ; « BelivaY ne stocke jamais votre code secret » ; +237 et format 6XX",
+        "Idem, au tutoiement",
+        "3.3."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Puce « Paieme… » coupée ; état vide sur la moitié de la carte",
+        "Liste des numéros",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Bandeau noir tournant au-dessus de l’en-tête : « Livraison 24–72h · Cameroun & CEMAC », « Remboursement sous 7 jours · Sans question », « Gagnez des points à chaque achat · Programme Fidélité », « 3 200+ Vendeurs certifiés sur BelivaY », « Paiement sécurisé via MoMo · Escrow BelivaY » (illisible pendant ses transitions)",
+        "Aucun bandeau tournant. Chaque promesse vraie apparaît une fois, là où elle sert (délai ferme au panier, « Retour gratuit si problème validé » dans les CGV et l’aide)",
+        "Supprimer le composant. Les messages 1 à 4 sont faux au lancement : fourchette de délai et CEMAC (1.3, SLA-ZONE-H), retour sans motif (12.2), points (inexistants), compteur écrit en dur (19.3). « Escrow BelivaY » reste réservé au bandeau de réassurance du panier et de la fiche."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CCO-14",
+        "Moyens de paiement : MTN MoMo et Orange Money ; le numéro vérifié du compte est proposé à chaque paiement ; l’opérateur est détecté au préfixe.",
+        "§9.5 p. 56 ; §3.3–3.4 p. 18",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCO-15",
+        "Un nouveau numéro de paiement est vérifié par un code SMS avant d’être enregistré ; il sert à payer, les messages restent sur le numéro du compte.",
+        "§3.3 p. 18 ; §11.5 p. 69 (identité élargie)",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCO-16",
+        "Remboursement toujours vers le moyen de paiement d’origine ; zéro espèce, nulle part.",
+        "§2.3 p. 12 ; §19.2 p. 105",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCO-17",
+        "La carte n’est pas un moyen enregistré de la cliente : elle sert au payeur à l’étranger, depuis le panier, avec 3-D Secure, 2 % de frais affichés avant de payer et 150 000 F au plus.",
+        "§13.4 p. 79",
+        "Décidé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Paramètres (registre)",
+     "colonnes": [
+      "Code",
+      "Paramètre",
+      "Valeur",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "PAY-CARTE-FRAIS",
+        "Carte : frais de service",
+        "2 %",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "PAY-CARTE-MAX",
+        "Carte : plafond par transaction",
+        "150 000 F",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "PAY-AGREG",
+        "Agrégateur principal / secours",
+        "CamPay / Fapshi",
+        "Décidé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Numéro d’un autre opérateur que MTN ou Orange",
+        "« Ce numéro n’est pas un numéro MTN ou Orange. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Code faux",
+        "« Ce code ne correspond pas » ; nouvel essai (3.5)."
+       ]
+      },
+      {
+       "cellules": [
+        "Numéro déjà sur un autre compte",
+        "Refus : un numéro Mobile Money appartient à un seul compte (identité élargie IFA)."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écran « Factures »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 9",
+        "Factures (depuis le Compte)",
+        "Liste : « BLV-51702 · 23 900 F · Retirée sam. 19 sept. · Écouteurs sans fil, chargeur rapide 33 W » ; « BLV-51388 · 12 700 F · Retirée le 28 août · Beurre de karité ×2, huile de coco » ; « BLV-51206 · 21 900 F · Retirée le 8 août · Chemise bazin brodée · 3 000 F remboursés (LIT-2987) » ; ligne sans lien « BLV-51533 · annulée · Pas de facture : annulée le 12 sept., 22 900 F remboursés ». Aide : « Commande en cours : sa facture arrive quand elle est terminée. D’ici là, son reçu se partage depuis la confirmation. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 10",
+        "Factures · aperçu du PDF BLV-51702",
+        "Feuille de la facture touchée (factures?st=apercu&ref=BLV-51702) : « Facture · BLV-51702 · Émise par BelivaY · PDF » ; Écouteurs sans fil 16 500 F ; Chargeur rapide 33 W USB-C 6 500 F ; Livraison au relais 900 F ; Total payé 23 900 F ; Retrait Relais Mvog-Ada · sam. 19 sept. à 11 h 32 ; Payé par MTN MoMo · 6 77 ·· ·· 41. Mêmes lignes que la facture ouverte depuis la commande (CL-09). Bouton plein « Partager le PDF », secondaire « Enregistrer sur le téléphone ». Chaque ligne de la liste ouvre sa propre facture (ref=)."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 11",
+        "Factures · BLV-51206 remboursée en partie",
+        "Facture remboursée en partie (ref=BLV-51206) : Chemise bazin brodée 21 000 F ; Livraison au relais 900 F ; Total payé 21 900 F ; Retrait Relais Mvog-Ada · sam. 8 août ; Payé par MTN MoMo · 6 77 ·· ·· 41 ; « Remboursé le lun. 10 août · LIT-2987 : − 3 000 F » (avoir du litige, remboursement partiel automatique le jour de son ouverture). BLV-51388 donne de même : Beurre de karité pur 500 g × 2 7 000 F, Huile de coco vierge 500 ml 4 800 F, livraison 900 F, total 12 700 F, retrait ven. 28 août."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 12",
+        "Factures · aucune",
+        "Aucune facture : « Ta première facture arrivera quand ta première commande sera retirée. » Bouton « Découvrir les produits »."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Style",
+        "Style : inspiré des maquettes S’inspirer (IMG_1972, IMG_1974) : en-tête à bouton retour carré, titre dans l’en-tête et phrase d’explication en tête de page, cartes à intitulé en capitales grises, onglet Compte allumé dans la barre du bas",
+        "Palette et graphisme Mandarine & Nuit (variables CSS du socle seulement) ; règles, chiffres, routes et états inchangés."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "—",
+        "Écran Factures dans Mon compte et « Facture » sur chaque commande terminée",
+        "9.5 : « Facture (PDF partageable) », générée côté serveur."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Calculs",
+     "colonnes": [
+      "Condition ou formule",
+      "Règle d’implémentation"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Total facture = Σ articles + Ram + Rem − Off",
+        "Montants du service de tarification, figés à la commande. BLV-51702 : 16 500 + 6 500 + 500 + 400 = 23 900 F (sous 30 000 F : livraison de base payée)."
+       ]
+      },
+      {
+       "cellules": [
+        "facture ⇔ commande terminée ∧ au moins un colis retiré",
+        "Commande annulée : pas de facture, motif et montant remboursé (BLV-51533 : 22 900 F)."
+       ]
+      },
+      {
+       "cellules": [
+        "Remboursement partiel après la facture",
+        "Ligne « … F remboursés (LIT-…) » sous la facture ; le PDF porte l’avoir (BLV-51206 : 3 000 F, LIT-2987)."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CCO-18",
+        "Une facture PDF par commande terminée, générée côté serveur, partageable ; le panier ne produit pas de facture : le reçu se partage depuis la confirmation.",
+        "§9.5 p. 56",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCO-19",
+        "Commande annulée : pas de facture ; la ligne dit le motif et le montant remboursé.",
+        "§9.5 p. 56",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCO-20",
+        "La facture est émise par BelivaY et ne porte jamais le nom de la boutique (anonymat) ; la mention légale du vendeur est à valider par le juriste.",
+        "§19.1 p. 104",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCO-21",
+        "Commandes de plus de 12 mois archivées : leurs factures restent téléchargeables depuis l’archive.",
+        "§9.5 p. 56",
+        "Recommandé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "PDF indisponible (réseau)",
+        "Bouton grisé avec « Il faut du réseau pour télécharger la facture » ; une facture déjà ouverte reste lisible hors ligne."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écran « Supprimer mon compte »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 13",
+        "Supprimer mon compte · refusé (commandes en cours)",
+        "Refus : carte « Pas possible pour l’instant · 4 commandes sont en cours, dont une en litige. Ton compte garde ton code, ton argent et tes remboursements jusqu’au bout. » Liste : Retirable maintenant · BLV-52018 ; Retrait possible aujourd’hui dès 15 h · BLV-52107 ; Validée · à payer au retrait · BLV-51940 ; En litige · LIT-3042 · BLV-51877. Bouton plein « Voir mes commandes » ; « Supprimer mon compte » grisé ; « Possible quand plus rien n’est en cours : colis retirés, litige clos. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 14",
+        "Supprimer mon compte · confirmation par code",
+        "Confirmation (quand rien n’est en cours) : « Supprimer ton compte ? » ; « Ce qui est effacé » (adresses et moyens de paiement, sauvegardés et réglages, conversations avec le support) ; « Ce qui est gardé » (factures et journal des paiements, le temps exigé par la loi), « Télécharge tes factures avant », lien « Voir mes factures » ; « Pour confirmer, on envoie un code au 6 77 ·· ·· 41 » ; bouton rouge « Recevoir le code et supprimer », bouton « Garder mon compte »."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Style",
+        "Style : inspiré des maquettes S’inspirer (IMG_1972, IMG_1974) : en-tête à bouton retour carré, titre dans l’en-tête et phrase d’explication en tête de page, cartes à intitulé en capitales grises, onglet Compte allumé dans la barre du bas",
+        "Palette et graphisme Mandarine & Nuit (variables CSS du socle seulement) ; règles, chiffres, routes et états inchangés."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "—",
+        "« Supprimer mon compte » en bas de Mon compte, refusé pendant une commande ou un litige",
+        "9.5 ; DELETE /me."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Calculs",
+     "colonnes": [
+      "Condition ou formule",
+      "Règle d’implémentation"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "suppression_possible ⇔ aucune commande ∈ {en attente, payée, validée, en litige} ∧ aucun litige ouvert",
+        "Contrôle serveur au clic ; la réponse de refus liste les commandes et dossiers en cours."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CCO-22",
+        "« Supprimer mon compte » est impossible tant qu’une commande ou un litige est en cours ; l’écran liste ce qui est en cours avec un lien vers chaque commande.",
+        "§9.5 p. 56",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCO-23",
+        "Suppression confirmée par un code SMS au numéro vérifié ; l’écran dit ce qui est effacé et ce qui est gardé pour les obligations légales (factures, journal des paiements), sans autre usage.",
+        "§9.5 p. 56 ; §10.5 p. 63 (journal)",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCO-24",
+        "Après le lancement : la suppression invalide aussi tous les liens de liste partagés (22.4).",
+        "§22.4 (après le lancement)",
+        "Décidé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Commande ou litige en cours",
+        "Écran de refus (figure)."
+       ]
+      },
+      {
+       "cellules": [
+        "Code faux",
+        "« Ce code ne correspond pas » ; rien n’est supprimé."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écrans actuels retirés : fidélité, parrainage, portefeuille",
+   "tableaux": [
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Retirer",
+        "Fidélité : « Solde BelivaY Points 0 pts », « Niveau Bronze · Indice de confiance 70/100 », « Vers Argent 500 pts restants », niveaux Bronze / Argent / Or / « Platinum » (accès basique, livraison −10 %, livraison gratuite, « accès VIP total »), historique des points vide après 10 commandes",
+        "Carte « Tes avantages actifs » de Mon compte",
+        "Aucun programme de points dans la spec ; « Indice de confiance 70/100 » est l’IFA, jamais montré (1.4, 2.4, 11.5, interdits 9.5) ; les paliers portent les noms des paliers vendeurs ; « livraison gratuite » sans limite viole LIV-OFFERT-CLASSE et le plancher de contribution (19.2) ; seule la cagnotte de 2 % de l’abonnement existe, après le lancement (21.2)."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Parrainage : carte violette « Parrainez, gagnez · PENGA12 · Copier mon lien », « Comment ça marche » en 4 étapes (points « dès sa première commande »), « Mes parrainages » vide",
+        "— (écran #parrainage, CL-14)",
+        "Le parrainage appartient à l’abonnement (21.4, ABO-PARRAIN) : 1 mois d’abonnement, 3 par mois au plus, déclenché quand la première commande du filleul est payée et retirée ; module fermé (FF-ABONNEMENT). Violet hors charte."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Portefeuille : « 0 FCFA · Solde disponible · Utilisable pour abonnement », « Total déposé 0 FCFA · 0 dépôt », « En attente · Crédit sous 24–72h », dépôt manuel vers « +237 655 000 000 · Compte officiel BelivaY », « Nouveau solde estimé », « Confirmer le dépôt »",
+        "—",
+        "BelivaY ne garde l’argent du client qu’en escrow lié à une commande (glossaire, 2.5) ; détenir un solde relève de la monnaie électronique. Un dépôt déclaré par le client contourne l’agrégateur et son webhook, seule source de vérité (8.2, PAY-AGREG) : porte ouverte aux fraudes, avec un numéro destinataire fictif. L’abonnement se paie par prélèvement annoncé, après le lancement (21.5)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« Support abonnement · Votre dépôt Mobile Money a été validé » (messagerie) contre « 0 dépôt »",
+        "—",
+        "Message incohérent supprimé avec le portefeuille."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Encarts « À quoi sert mon Compte BelivaY ? », « Actualiser », grandes cartes pour des zéros",
+        "—",
+        "Un statut d’argent se rafraîchit seul (8.2)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Bandeau noir tournant au-dessus de l’en-tête : « Livraison 24–72h · Cameroun & CEMAC », « Remboursement sous 7 jours · Sans question », « Gagnez des points à chaque achat · Programme Fidélité », « 3 200+ Vendeurs certifiés sur BelivaY », « Paiement sécurisé via MoMo · Escrow BelivaY » (illisible pendant ses transitions)",
+        "Aucun bandeau tournant. Chaque promesse vraie apparaît une fois, là où elle sert (délai ferme au panier, « Retour gratuit si problème validé » dans les CGV et l’aide)",
+        "Supprimer le composant. Les messages 1 à 4 sont faux au lancement : fourchette de délai et CEMAC (1.3, SLA-ZONE-H), retour sans motif (12.2), points (inexistants), compteur écrit en dur (19.3). « Escrow BelivaY » reste réservé au bandeau de réassurance du panier et de la fiche."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Robot flottant (assistant IA), bouton « remonter », dock à 5 onglets (Favoris, Compte), barre Safari, pied de page web (logo, réseaux sociaux, « Liens Rapides »)",
+        "Barre du bas à 5 onglets du socle (Accueil, Catégories, Panier, Sauvegardés, Compte), l’onglet Compte allumé sur ces écrans ; aucun bouton flottant ; aucun pied de page",
+        "Assistant IA : module après le lancement (FF-IA fermé, chap. 24). Le compte s’ouvre par l’onglet Compte, l’avatar de l’en-tête et le Menu ; Mes commandes par l’accueil, le compte et le Menu (CL-01). Rien ne doit recouvrir un bouton ou une valeur."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CCO-25",
+        "Ni points, ni niveaux client, ni parrainage, ni porte-monnaie au lancement ; l’argent du client n’existe qu’en escrow lié à une commande et revient au moyen d’origine.",
+        "§1.4 p. 9 ; §2.5 p. 13 ; §21 p. 115–119 ; §32.1 p. 146",
+        "Décidé"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écrans actuels retirés : sécurité, à propos, devenir vendeur",
+   "tableaux": [
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Retirer",
+        "Sécurité : « Double authentification · Désactivée · Recevoir un code par email », « Mot de passe · Modifier », « Appareils connectés » (au moins 6 sessions identiques, IP brutes, « Révoquer » rouges)",
+        "« Changer de numéro » dans Mon compte ; « Se déconnecter »",
+        "Non prévu par la spec : l’identité repose sur le numéro vérifié et la connexion Google, sans mot de passe (3.2, 3.3). Les IP sont des données personnelles et du jargon. Le bug de sessions (une par connexion) est à corriger côté serveur."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "—",
+        "« Changer de numéro » : code sur l’ancien puis sur le nouveau, codes de retrait régénérés",
+        "3.3 ; route #numero-changer."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "« Vous êtes déjà vendeur · Le formulaire vendeur n’est plus affiché… · Ouvrir l’espace vendeur · Retour au profil », double logo, grand vide",
+        "Une ligne en bas de l’aide : « L’espace vendeur est une application à part : « Ouvre ta boutique en deux minutes ». »",
+        "Espace vendeur = application séparée (2.1, 17.1). La phrase décrivait le code, pas la situation."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "À propos : « 3 200+ Vendeurs certifiés », « 15K+ Produits », « 4 Pays CEMAC », « 4.8 », « 98 % », « 100M FCFA de GMV », « 0 % fraude », commissions « 12 % à 23 % », « Présence CEMAC » (6 pays), « Suivi en temps réel », « 24h après votre confirmation, les fonds sont libérés », « Remboursement garanti », « Made in Africa », « Mobile First », « Platinum », « chatbot intelligent », « Commerce équitable »",
+        "— (les engagements vrais sont dans les pages légales et l’aide)",
+        "Chiffres inventés ou faux (19.3, 4.2) ; pas de CEMAC au lancement (12 zones de Yaoundé) ; libération 3 jours après la fermeture du retour, pas 24 h (LIB-STD) ; pas de carte de suivi en temps réel (9.5) ; commissions vendeur montrées au client et fausses (17.4) ; assistant IA après le lancement ; multicolore hors charte."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Histoire en 5 étapes de l’argent protégé (IMG_2455)",
+        "Réponse « Où va mon argent quand je paie ? » des questions fréquentes, avec la vraie séquence",
+        "Retrait, fenêtre de 7 jours ou « Tout est en ordre », vendeur payé 3 jours après (1 jour Or ou Platine)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Bandeau noir tournant au-dessus de l’en-tête : « Livraison 24–72h · Cameroun & CEMAC », « Remboursement sous 7 jours · Sans question », « Gagnez des points à chaque achat · Programme Fidélité », « 3 200+ Vendeurs certifiés sur BelivaY », « Paiement sécurisé via MoMo · Escrow BelivaY » (illisible pendant ses transitions)",
+        "Aucun bandeau tournant. Chaque promesse vraie apparaît une fois, là où elle sert (délai ferme au panier, « Retour gratuit si problème validé » dans les CGV et l’aide)",
+        "Supprimer le composant. Les messages 1 à 4 sont faux au lancement : fourchette de délai et CEMAC (1.3, SLA-ZONE-H), retour sans motif (12.2), points (inexistants), compteur écrit en dur (19.3). « Escrow BelivaY » reste réservé au bandeau de réassurance du panier et de la fiche."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Robot flottant (assistant IA), bouton « remonter », dock à 5 onglets (Favoris, Compte), barre Safari, pied de page web (logo, réseaux sociaux, « Liens Rapides »)",
+        "Barre du bas à 5 onglets du socle (Accueil, Catégories, Panier, Sauvegardés, Compte), l’onglet Compte allumé sur ces écrans ; aucun bouton flottant ; aucun pied de page",
+        "Assistant IA : module après le lancement (FF-IA fermé, chap. 24). Le compte s’ouvre par l’onglet Compte, l’avatar de l’en-tête et le Menu ; Mes commandes par l’accueil, le compte et le Menu (CL-01). Rien ne doit recouvrir un bouton ou une valeur."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écran « Donner mon avis »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 15",
+        "Avis · deux notes (depuis la commande ou le Compte)",
+        "Formulaire vide (avis-donner?ref=BLV-51702) : onglets « Lire les avis » / « Donner mon avis » (actif) ; rappel de la commande : photo, « Écouteurs sans fil · blanc et chargeur rapide 33 W USB-C », « Retirée sam. 19 sept. à 11 h 32 · Relais Mvog-Ada », BLV-51702. Carte « Le vendeur » (« le produit, l’emballage, la conformité ») et cinq étoiles pleines grises, « Touche une étoile » ; carte « Mme Ngo Bassong · Relais Mvog-Ada » (« l’accueil, l’attente, la propreté du point ») et cinq étoiles. Carte « Commentaire — facultatif » (« Dis ce qui t’a plu ou déplu ») avec le bouton « Ajouter une photo ». Bouton « Envoyer mes notes » grisé tant qu’aucune étoile n’est choisie ; dessous : « La note seule suffit. Un avis ne peut pas être retiré contre un remboursement. » ; « Tu peux noter jusqu’au sam. 26 sept. à 11 h 32, 7 jours après ton retrait. » ; bloc replié « Pourquoi deux notes ? ». Les étoiles choisies passent en orange plein."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 16",
+        "Avis · deux colis, deux vendeurs",
+        "Deux colis de deux boutiques (avis-donner?ref=BLV-52018, lien « Donner mes notes » de CL-09 après « Tout est en ordre », 10 h 34) : rappel « Pagne wax 6 yards et sandales cuir femme · 2 colis · Retirée aujourd’hui à 10 h 32 · Relais Mvog-Ada » ; un bloc par vendeur, « Le vendeur du colis 1 » (Pagne wax 6 yards) et « Le vendeur du colis 2 » (Sandales cuir femme), chacun avec sa miniature et ses cinq étoiles ; le bloc de Mme Ngo Bassong une seule fois (CAV-12). « Tu peux noter jusqu’au jeu. 1er oct. à 10 h 32, 7 jours après ton retrait. » Après l’envoi : « Merci Carine, tes 3 notes sont envoyées »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 17",
+        "Avis · note basse",
+        "Note basse (st=bas) : le vendeur « 2 sur 5 · Mauvais », le gérant « 5 sur 5 · Excellent », commentaire « Le son grésille à gauche. » Sous le vendeur, encadré : « Un problème avec l’article ? Tu peux le signaler jusqu’au sam. 26 sept. Ta note part telle quelle : rien n’en dépend. » Bouton plein « Envoyer mes notes »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 18",
+        "Avis · note basse, litige proposé",
+        "Après l’envoi d’une note ≤ 2 (avis-bas) : feuille « Tes notes sont envoyées · Le vendeur : 2 sur 5 · Mme Ngo Bassong : 5 sur 5 » ; « Un problème avec l’article ? Tu peux le signaler jusqu’au sam. 26 sept. » ; « Ton argent reste bloqué pendant l’examen : le vendeur n’est pas encore payé. » Bouton plein « Signaler un problème » (assistant de litige, étape 2 car un seul colis), bouton « Non merci », et « Ta note ne change rien à un litige, et un litige ne change rien à ta note. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 19",
+        "Avis · notes envoyées",
+        "Notes envoyées : « Merci Carine, tes 2 notes sont envoyées », « Elles aident les prochains clients à choisir, et BelivaY à suivre le vendeur et le relais. » Récapitulatif : Le vendeur 4 sur 5 · Bien ; Mme Ngo Bassong 5 sur 5 · Excellent ; Commentaire et photo : Oui. « Ton commentaire et ta photo s’affichent sur la fiche du produit. Le vendeur et Mme Ngo Bassong ne voient jamais ton nom. » Bouton plein « Retour à mes commandes », lien « Modifier mes notes » et « Modifiables jusqu’au sam. 26 sept. à 11 h 32 »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 20",
+        "Avis · modifier ses notes",
+        "Modification dans la fenêtre (st=modifier) : encadré vert « Notes envoyées le mar. 22 sept. · modifiables jusqu’au sam. 26 sept. à 11 h 32 » ; vendeur 4 étoiles, gérant 5 étoiles, commentaire « Son clair, bonne batterie. Chargeur conforme à la photo. », photo jointe ; bouton plein « Enregistrer les changements »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 21",
+        "Avis · notation fermée (7 jours passés)",
+        "Hors fenêtre (st=ferme, BLV-51388 retirée le ven. 28 août) : « Notation fermée · On note pendant 7 jours après le retrait. Pour cette commande, c’était jusqu’au ven. 4 sept. » Aucun bouton d’envoi ; bouton « Lire les avis »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 22",
+        "Avis · colis pas encore retiré",
+        "Commande non retirée (st=non, BLV-52107 payée aujourd’hui à 09 h 02) : « Pas encore de note possible · Seuls les clients qui ont payé et retiré leur colis peuvent noter : c’est ce qui rend les avis fiables. » Bouton « Suivre ma commande ». Cet état n’est atteint que par un lien direct : le bouton « Donner mon avis » n’existe pas sur une commande non retirée."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Style",
+        "Style : maquette S’inspirer IMG_1974 (exact) : onglets orange, rappel de la commande, une carte par note (titre, sous-titre, cinq étoiles pleines grises puis orange), carte du commentaire avec « Ajouter une photo », bouton plein « Envoyer mes notes » et sa phrase",
+        "Écarts tranchés pour la spec : « Le vendeur » au lieu de « La boutique » (CAV-04) ; note en mots sous les étoiles (CAV-14) ; une carte vendeur par colis (CAV-12) ; fenêtre de notation et « Pourquoi deux notes ? » sous le bouton. Palette et graphisme Mandarine & Nuit (variables CSS du socle seulement) ; règles, chiffres, routes et états inchangés."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "—",
+        "Écran « Donner mon avis » ouvert par le push de retrait, le SMS de remerciement et l’écran « Colis remis »",
+        "14.1 ; liens profonds vers #avis-donner?ref=…."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CAV-01",
+        "La notation n’est demandée qu’après la validation du retrait : push de retrait, SMS de remerciement (un des 6 SMS de la commande), écran « Colis remis ». Jamais avant.",
+        "§14.1 p. 82 ; §14.0 p. 82",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAV-02",
+        "Deux onglets : « Lire les avis » et « Donner mon avis ».",
+        "§14.1 p. 82",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAV-03",
+        "Rappel de la commande : photo, article, date et relais de retrait.",
+        "§14.1 p. 82",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAV-04",
+        "Le vendeur : cinq étoiles (« le produit, l’emballage, la conformité ») ; libellé « Le vendeur », jamais le nom de la boutique.",
+        "§14.1 p. 82 ; §14.0",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAV-05",
+        "Le gérant du relais, nommé : cinq étoiles (« l’accueil, l’attente, la propreté du point »).",
+        "§14.1 p. 82",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAV-06",
+        "Deux notes séparées, jamais une note unique pour le vendeur et le relais.",
+        "§14.1 p. 83 ; §14.3 p. 84",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAV-07",
+        "Commentaire facultatif et photo facultative ; la note seule suffit ; une seule des deux notes suffit pour envoyer.",
+        "§14.1 p. 82 ; §14.3 p. 83",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAV-08",
+        "Sous le bouton « Envoyer mes notes » : « La note seule suffit. Un avis ne peut pas être retiré contre un remboursement. »",
+        "§14.1 p. 82",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAV-09",
+        "Acheteur vérifié uniquement : pas d’avis sans commande payée et retirée ; le bouton n’existe pas autrement.",
+        "§14.3 p. 83",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAV-10",
+        "Fenêtre de notation limitée après le retrait (AVIS-FENETRE), puis fermée : hors fenêtre, bouton absent. Le prototype montre 7 jours, valeur proposée par le point relais (AVI-06) et égale à la fenêtre de retour.",
+        "§14.3 p. 83 ; §14.4 p. 84",
+        "À trancher"
+       ]
+      },
+      {
+       "cellules": [
+        "CAV-11",
+        "Une note par (commande, cible), cible = vendeur ou relais ; modifiable dans la fenêtre.",
+        "§14.3 p. 83",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAV-12",
+        "Commande de plusieurs boutiques : une note vendeur par colis (sous-commande), la note du relais une seule fois.",
+        "§14.3 p. 83 (Trust Score par vendeur réel)",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAV-13",
+        "Note ≤ AVIS-BAS (2 étoiles, proposé au registre mais rangé « à trancher » en 19.4) : proposition d’ouvrir un litige, après l’envoi de la note, sans rien y conditionner ; le litige reste possible dans la fenêtre de retour.",
+        "§14.3 p. 83 ; §14.4 p. 84 ; §19.4 p. 106",
+        "Proposé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAV-14",
+        "Note en mots sous les étoiles : 1 Très mauvais, 2 Mauvais, 3 Moyen, 4 Bien, 5 Excellent (lisible sans voir la couleur).",
+        "Charte accessibilité",
+        "Recommandé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Paramètres (registre)",
+     "colonnes": [
+      "Code",
+      "Paramètre",
+      "Valeur",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "AVIS-FENETRE",
+        "Fenêtre de notation",
+        "à fixer (prototype : 7 jours)",
+        "À trancher"
+       ]
+      },
+      {
+       "cellules": [
+        "AVIS-BAS",
+        "Seuil de note basse",
+        "2 étoiles (« Proposé » au registre, rangé parmi les valeurs à trancher en 19.4)",
+        "Proposé"
+       ]
+      },
+      {
+       "cellules": [
+        "SMS-MAX-CMD",
+        "SMS payants par commande (dont le remerciement C12)",
+        "6 au plus",
+        "Décidé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Hors fenêtre",
+        "Bouton absent de la commande ; lien direct : « Notation fermée » et « Lire les avis »."
+       ]
+      },
+      {
+       "cellules": [
+        "Commande non retirée ou non payée",
+        "« Pas encore de note possible » et « Suivre ma commande »."
+       ]
+      },
+      {
+       "cellules": [
+        "Contenu interdit (insulte, coordonnées, hors sujet)",
+        "Accepté puis modéré : le commentaire est masqué, motif tracé au journal ; la note reste."
+       ]
+      },
+      {
+       "cellules": [
+        "Envoi sans réseau",
+        "Bouton grisé avec l’explication ; le brouillon est gardé."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Règles et calculs des avis",
+   "tableaux": [
+    {
+     "sous_titre": "Calculs",
+     "colonnes": [
+      "Condition ou formule",
+      "Règle d’implémentation"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "peut_noter ⇔ payée ∧ retirée ∧ t_now ≤ t_retrait + fenêtre",
+        "fenêtre = AVIS-FENETRE (à trancher ; prototype 7 j). BLV-51702 : retirée sam. 19 sept. 11 h 32 → jusqu’au sam. 26 sept. 11 h 32."
+       ]
+      },
+      {
+       "cellules": [
+        "une note par (commande, cible)",
+        "Cible = vendeur (par colis) ou relais. Modifiable dans la fenêtre."
+       ]
+      },
+      {
+       "cellules": [
+        "note_affichée(maître) = moyenne(notes vendeur de tous les vendeurs du maître), 1 décimale",
+        "« 4,6 · 128 avis vérifiés » sur la fiche (lecture : CL-06)."
+       ]
+      },
+      {
+       "cellules": [
+        "répartition(k) = COUNT(note = k) ÷ n",
+        "Arrondie à l’unité."
+       ]
+      },
+      {
+       "cellules": [
+        "note ≤ seuil_bas ⇒ proposer un litige",
+        "seuil_bas = AVIS-BAS (2 étoiles proposé)."
+       ]
+      },
+      {
+       "cellules": [
+        "p̂ = notes ≥ 4 ÷ n ; score = borne basse de Wilson (z = 1,96)",
+        "Trust Score et départage : 3 avis à 5 étoiles ne passent pas devant 200 avis à 4,7."
+       ]
+      },
+      {
+       "cellules": [
+        "événement vendeur : note ≥ 4 = succès ; ≤ 2 = échec",
+        "Critère Satisfaction (20 points), décroissance à 90 jours."
+       ]
+      },
+      {
+       "cellules": [
+        "suppression ⇒ motif ∈ {insulte, coordonnées, hors sujet} + journal",
+        "Jamais sur demande du vendeur."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Calculs",
+     "colonnes": [
+      "Cas",
+      "n",
+      "p̂",
+      "Borne basse"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "3 avis à 5 étoiles",
+        "3",
+        "1,00",
+        "0,44"
+       ]
+      },
+      {
+       "cellules": [
+        "200 avis, moyenne 4,7 (p̂ = 0,90)",
+        "200",
+        "0,90",
+        "0,85"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CAV-15",
+        "Pas de négociation : un vendeur n’obtient jamais le retrait d’un avis contre un remboursement.",
+        "§14.3 p. 83",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAV-16",
+        "Modération : seulement insultes, coordonnées, hors sujet ; suppression dans ces cas uniquement, motif tracé au journal, jamais à la demande du vendeur. Le « retrait d’un avis manifestement injuste par un médiateur » (vendeur AVI-02) est contraire.",
+        "§14.3 p. 83 ; §18 p. 101",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAV-17",
+        "Avis cumulés sur tout le produit maître, quel que soit le vendeur attribué ; photos réelles des avis mises en avant sur la fiche et sa galerie.",
+        "§14.0 p. 82 ; §14.2 p. 83",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAV-18",
+        "Ce que les avis alimentent : le Trust Score du vendeur (note vendeur, par vendeur réel, même si l’affichage est cumulé) ; le départage de l’attribution et de la recherche, facteur secondaire, jamais principal ; le Trust Score du relais et la revue d’un relais dont les notes chutent.",
+        "§14.3 p. 83–84",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAV-19",
+        "La note « boutique » s’affiche « le vendeur » ; elle nourrit la Satisfaction (20 points) du Trust Score vendeur : ≥ 4 succès, ≤ 2 échec, décroissance à 90 jours. La note du gérant nourrit la Satisfaction (20 points) du Trust Score relais.",
+        "§14.0 p. 82 ; §14.3 p. 83",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAV-20",
+        "Un relais qui passe sous le seuil est revu par Opérations zone, jamais suspendu automatiquement ; la note du gérant est la seule mesure directe de l’accueil.",
+        "§14.3 p. 84",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAV-21",
+        "Un avis bas causé par le transport ne pénalise pas le vendeur : l’arbitrage éventuel l’impute à l’entreprise de livraison.",
+        "§14.3 p. 84",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAV-22",
+        "Le gérant voit sa moyenne et ses derniers commentaires dans son application, jamais l’identité du client ; le vendeur voit ses avis, jamais le client.",
+        "§14.3 p. 84 ; §19.1 p. 104",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAV-23",
+        "La lecture des avis (onglet Avis de la fiche : moyenne, nombre, répartition, « acheteurs vérifiés », note, date, commentaire et photo de chaque avis ; aucun avis sans commande retirée) est traitée par CL-06.",
+        "§14.2 p. 83",
+        "Décidé"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écran « Aide et support »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 23",
+        "Aide et support (depuis le Compte)",
+        "En-tête « Aide et support » et phrase de tête « Une réponse tout de suite, ou une personne de 7 h à 21 h. » Champ de recherche « Code, garde, remboursement… ». « Un problème sur une commande ? » : « Ton dossier LIT-3042 · fer à repasser · Réponse du vendeur avant ven. 25 sept. à 17 h 15 » et « Une autre commande · Ouvre-la et touche « Signaler un problème ». » Questions fréquentes en six tuiles compactes (icône à gauche, 60 px de haut) avec leur nombre réel de questions (Paiement 5, Retrait et code 5, Frais de garde 5, Litige 4, Retour 4, Compte 4). « Parler à quelqu’un » avec la pastille verte « Ouvert · 7 h – 21 h » : Écrire au support (réponse sous 4 h ouvrées, gardée par écrit), WhatsApp (pour une question, jamais pour une commande), Demander un rappel (appel masqué), Mes conversations (3 conversations · 1 non lue, #messagerie?from=aide). Encadré rouge « BelivaY ne te demande jamais ton code secret Mobile Money, ni par appel, ni par SMS, ni sur WhatsApp. » Ligne finale sur l’espace vendeur, application à part."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 24",
+        "Aide · hors heures (22 h 40)",
+        "Hors heures (22 h 40, barre d’état 22:40) : encadré « Il est 22 h 40 : les personnes du support répondent de 7 h à 21 h. Les réponses ci-dessous restent là, et ton message part tout de suite. » Pastille « Fermé · rouvre à 7 h ». Sous-titres : « Écris maintenant : réponse avant 11 h demain, gardée par écrit » (7 h + 4 h ouvrées), « Une personne te répond dès 7 h demain », « Choisis un créneau pour demain. Ton numéro reste caché. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 25",
+        "Aide · feuille WhatsApp et ses interdits",
+        "Feuille « Parler sur WhatsApp · Une personne de BelivaY · 7 h – 21 h, 7 j/7 · gratuit » : ✓ Poser une question, te faire guider ; ✗ Jamais de commande ni de paiement ; ✗ Jamais de photo de litige : elle se prend dans l’application, datée et gardée au dossier ; ✗ Jamais ton code secret ni ton code de retrait. Bouton plein « Ouvrir WhatsApp » (numéro SUP-WA, à publier), bouton « Plutôt écrire ici »."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Style",
+        "Style : inspiré des maquettes S’inspirer (IMG_1972, IMG_1974) : en-tête à bouton retour carré, titre dans l’en-tête et phrase d’explication en tête de page, cartes à intitulé en capitales grises, onglet Compte allumé dans la barre du bas",
+        "Palette et graphisme Mandarine & Nuit (variables CSS du socle seulement) ; règles, chiffres, routes et états inchangés."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Recherche dans l’aide ; thèmes qui filtrent les questions, compteurs réels (1+3+1+3+1+2+1 = 12)",
+        "Recherche et six tuiles avec le nombre réel de questions",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Sur-titre « CENTRE D’AIDE » qui répète le titre, texte indicatif tronqué, héros et titre surdimensionnés (aucune réponse sans défiler)",
+        "Titre court, recherche, puis le bloc commande et les thèmes dès le premier écran",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Thèmes Commandes, Livraison, Retours, Paiement & Escrow, Litiges & Arbitrage, Compte, Vendeurs ; cartes de 280 px (2 thèmes par écran) ; compteur « 1 », « 3 » sans libellé ; une seule question pour les retours et les litiges ; icônes multicolores (bleu, vert, violet, jaune, bouclier rouge)",
+        "Six thèmes de la spec : paiement, retrait et code, frais de garde, litige, retour, compte ; grille 2 colonnes ; icônes mandarine",
+        "15.2. « Garde » et « retrait » manquaient ; le thème vendeur sort de l’aide client ; « Escrow » n’est pas un mot client."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Pas d’accès à « Signaler un problème » ni aux dossiers en cours",
+        "Bloc « Un problème sur une commande ? » avec le dossier ouvert et le chemin vers la commande",
+        "Table des canaux 15.2."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Bloc dégradé orange-violet « Vous ne trouvez pas votre réponse ? · Contacter le Support · Appeler maintenant » (contraste faible)",
+        "« Parler à quelqu’un » : Écrire au support, WhatsApp, Demander un rappel, avec les heures",
+        "Messagerie tracée (15.2) ; « Appeler maintenant » composait un numéro : remplacé par le rappel masqué."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« Contactez-nous · disponible 7j/7 · Chat IA · WhatsApp · Email · contact@belivay.cm · +237 689 002 812 · Yaoundé, Cameroun · CEMAC » (IMG_2467)",
+        "Heures affichées (7 h – 21 h) ; WhatsApp avec ses interdits ; pas d’e-mail ni de numéro à composer",
+        "« Chat IA » : assistant après le lancement ; numéro WhatsApp SUP-WA à trancher ; rappel masqué plutôt qu’un numéro (15.2 point 4) ; pas de CEMAC ; domaine .cm contre .com incohérent."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "WhatsApp comme canal humain",
+        "Gardé, avec la feuille « porte d’entrée, jamais caisse »",
+        "15.2 ; interdits 15.4."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Refonte du 25 sept. : repli « Quel canal pour quoi ? » (tableau des canaux) sous la liste des canaux ; tuiles de questions de 96 px ; sous-titres de deux phrases",
+        "Tableau retiré de l’écran (la page est déjà rangée par canal : dossier, questions, personne) ; tuiles compactes ; une phrase par ligne",
+        "La table 15.2 reste la règle CSV-02 et le tableau « Canaux » ci-dessous. Retour de l’en-tête : #compte (plus #menu)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Bandeau noir tournant au-dessus de l’en-tête : « Livraison 24–72h · Cameroun & CEMAC », « Remboursement sous 7 jours · Sans question », « Gagnez des points à chaque achat · Programme Fidélité », « 3 200+ Vendeurs certifiés sur BelivaY », « Paiement sécurisé via MoMo · Escrow BelivaY » (illisible pendant ses transitions)",
+        "Aucun bandeau tournant. Chaque promesse vraie apparaît une fois, là où elle sert (délai ferme au panier, « Retour gratuit si problème validé » dans les CGV et l’aide)",
+        "Supprimer le composant. Les messages 1 à 4 sont faux au lancement : fourchette de délai et CEMAC (1.3, SLA-ZONE-H), retour sans motif (12.2), points (inexistants), compteur écrit en dur (19.3). « Escrow BelivaY » reste réservé au bandeau de réassurance du panier et de la fiche."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Robot flottant (assistant IA), bouton « remonter », dock à 5 onglets (Favoris, Compte), barre Safari, pied de page web (logo, réseaux sociaux, « Liens Rapides »)",
+        "Barre du bas à 5 onglets du socle (Accueil, Catégories, Panier, Sauvegardés, Compte), l’onglet Compte allumé sur ces écrans ; aucun bouton flottant ; aucun pied de page",
+        "Assistant IA : module après le lancement (FF-IA fermé, chap. 24). Le compte s’ouvre par l’onglet Compte, l’avatar de l’en-tête et le Menu ; Mes commandes par l’accueil, le compte et le Menu (CL-01). Rien ne doit recouvrir un bouton ou une valeur."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Canaux",
+     "colonnes": [
+      "Situation",
+      "Canal",
+      "À l’écran"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Question générale",
+        "Questions fréquentes, puis messagerie",
+        "Recherche, six thèmes, « Écrire au support »"
+       ]
+      },
+      {
+       "cellules": [
+        "Problème sur une commande",
+        "« Signaler un problème » (assistant de litige), jamais un chat libre",
+        "Bloc « Un problème sur une commande ? » en tête"
+       ]
+      },
+      {
+       "cellules": [
+        "Dossier ouvert",
+        "Messagerie du dossier",
+        "« Ton dossier LIT-3042 » et son fil"
+       ]
+      },
+      {
+       "cellules": [
+        "Urgence au comptoir",
+        "Le gérant ouvre le constat ; BelivaY répond sous 48 h ouvrées",
+        "Bloc replié « Quel canal pour quoi ? »"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CSV-01",
+        "Aide en quatre canaux : questions fréquentes par thème ; messagerie interne tracée, gratuite ; WhatsApp Business humain, gratuit au lancement ; rappel masqué.",
+        "§15.2 p. 86–87",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CSV-02",
+        "Table des canaux : question générale → FAQ puis messagerie ; problème sur une commande → « Signaler un problème », jamais un chat libre ; dossier ouvert → messagerie du dossier ; urgence au comptoir → constat du gérant, réponse BelivaY sous 48 h ouvrées.",
+        "§15.2 p. 87 ; LIT-CONSTAT-H",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CSV-03",
+        "WhatsApp : porte d’entrée, jamais caisse — ni commande, ni paiement, ni photo de litige ; la feuille le dit avant d’ouvrir WhatsApp. Le numéro est le paramètre SUP-WA.",
+        "§15.2 p. 86 ; §15.4 interdits p. 88",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CSV-04",
+        "Heures du support humain affichées (SUP-HORAIRES, 7 h – 21 h, 7 j/7 proposé) avec l’état ouvert ou fermé ; hors heures, la FAQ reste et le message part tout de suite.",
+        "§15.2 p. 87",
+        "Proposé"
+       ]
+      },
+      {
+       "cellules": [
+        "CSV-05",
+        "Délai de première réponse affiché (SUP-DELAI, 4 h ouvrées proposé). Heures ouvrées = heures du support : un message à 22 h 40 a sa réponse avant 11 h le lendemain (7 h + 4 h).",
+        "§15.2 p. 87",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CSV-06",
+        "Avertissement permanent : BelivaY ne demande jamais le code secret Mobile Money (ni appel, ni SMS, ni WhatsApp).",
+        "§8 ; §19.3",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CSV-07",
+        "Espace vendeur : une ligne d’information en bas de l’aide ; aucune entrée vers l’espace vendeur dans l’application client.",
+        "§2.1 p. 10 ; §17.1 p. 94",
+        "Recommandé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Paramètres (registre)",
+     "colonnes": [
+      "Code",
+      "Paramètre",
+      "Valeur",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "SUP-WA",
+        "Numéro WhatsApp support (réglable en console)",
+        "à publier",
+        "À trancher"
+       ]
+      },
+      {
+       "cellules": [
+        "SUP-DELAI",
+        "Délai de première réponse en messagerie (console)",
+        "4 h ouvrées",
+        "Proposé"
+       ]
+      },
+      {
+       "cellules": [
+        "SUP-HORAIRES",
+        "Heures du support humain (console)",
+        "7 h – 21 h, 7 j/7",
+        "Proposé"
+       ]
+      },
+      {
+       "cellules": [
+        "LIT-CONSTAT-H",
+        "Réponse BelivaY à un constat du relais",
+        "48 h ouvrées",
+        "Décidé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Hors heures",
+        "Pastille « Fermé · rouvre à 7 h », délais recalculés, FAQ et messagerie disponibles (figure)."
+       ]
+      },
+      {
+       "cellules": [
+        "SUP-WA non publié",
+        "La ligne WhatsApp n’est pas affichée."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écran « Questions fréquentes »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 26",
+        "Questions fréquentes · thème Frais de garde",
+        "Thème « Frais de garde » (faq?t=garde&a=1) : puces des six thèmes, la puce active en nuit. Question ouverte « Combien coûte la garde au relais ? » : « Le jour d’arrivée est gratuit. Ensuite, 100 F par jour les 2e et 3e jours, 200 F les 4e et 5e, 400 F les 6e et 7e. Au plus 1 400 F. » Questions repliées : « Quand le décompte commence-t-il ? », « Combien je dois aujourd’hui ? » (réponse personnelle : BLV-52018, 400 F dus aujourd’hui, 600 F demain, 400 F par jour dès samedi, retrait avant samedi 26 au soir), « Et si je ne retire pas mon colis ? », « Comment je paie la garde ? ». Carte « Pas trouvé ta réponse ? · Écris au support : réponse sous 4 h ouvrées » et bouton « Écrire »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 27",
+        "Questions fréquentes · recherche « code »",
+        "Recherche « code » : « 3 réponses » (les questions qui contiennent le mot d’abord) : « Où trouver mon code de retrait ? » ouverte, avec son thème « Retrait et code », sa réponse (6 chiffres et QR au toucher, masqués en quittant l’écran, jamais dans une notification, biométrie au-delà de 50 000 F) et le lien « Mes commandes » ; « Mon code ne marche plus » ; « BelivaY peut me demander mon code secret ? »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 28",
+        "Questions fréquentes · aucune réponse",
+        "Aucune réponse (« parrainage ») : « Aucune réponse · Essaie un autre mot, ou pose ta question au support : réponse sous 4 h ouvrées. » Bouton plein « Écrire au support »."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Style",
+        "Style : inspiré des maquettes S’inspirer (IMG_1972, IMG_1974) : en-tête à bouton retour carré, titre dans l’en-tête et phrase d’explication en tête de page, cartes à intitulé en capitales grises, onglet Compte allumé dans la barre du bas",
+        "Palette et graphisme Mandarine & Nuit (variables CSS du socle seulement) ; règles, chiffres, routes et états inchangés."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Chaque question porte son thème ; accordéon ; « Où va mon argent quand je paie une commande ? » ; « Comment BelivaY sait quel opérateur utiliser » ; « Ma commande a du retard, que faire ? » ; « Mes coordonnées sont-elles visibles par le vendeur ? »",
+        "Gardées et réécrites avec les règles v3 (argent bloqué jusqu’à la fin du retour, opérateur détecté au préfixe, anonymat)",
+        "« Ma commande a du retard » : le retard est annoncé sous 15 minutes (INC-NOTIF-MIN) ; la réponse vit dans le suivi."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Bande blanche de 130 px, questions en 26 px : 2 à 3 par écran",
+        "Questions en 14 px dans des blocs repliables compacts : 6 à 7 par écran",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« Comment fonctionne le retrait en boutique ? »",
+        "« Où trouver mon code de retrait ? », « Que faire au comptoir ? »",
+        "Le client retire au relais, ne voit jamais la boutique (19.1)."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Rien sur la garde, le code, le retrait par un tiers",
+        "Thèmes « Retrait et code » et « Frais de garde », 5 questions chacun",
+        "15.2 ; grille GARDE-*, CODE-*."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« Comment se passe un litige avec un vendeur ? » ; « Comment devenir vendeur sur Belivay ? » ; « Comment sécuriser mon compte ? »",
+        "« Comment signaler un problème ? », « Que devient mon argent ? », « Combien de temps ça prend ? » ; compte : coordonnées, changement de numéro, suppression, code secret",
+        "Le litige porte sur un colis et se traite avec BelivaY, le vendeur reste anonyme ; la marque s’écrit BelivaY ; pas de question vendeur."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Icônes vertes, violettes, jaunes",
+        "Icône d’aide mandarine",
+        "CDS-01."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Bandeau noir tournant au-dessus de l’en-tête : « Livraison 24–72h · Cameroun & CEMAC », « Remboursement sous 7 jours · Sans question », « Gagnez des points à chaque achat · Programme Fidélité », « 3 200+ Vendeurs certifiés sur BelivaY », « Paiement sécurisé via MoMo · Escrow BelivaY » (illisible pendant ses transitions)",
+        "Aucun bandeau tournant. Chaque promesse vraie apparaît une fois, là où elle sert (délai ferme au panier, « Retour gratuit si problème validé » dans les CGV et l’aide)",
+        "Supprimer le composant. Les messages 1 à 4 sont faux au lancement : fourchette de délai et CEMAC (1.3, SLA-ZONE-H), retour sans motif (12.2), points (inexistants), compteur écrit en dur (19.3). « Escrow BelivaY » reste réservé au bandeau de réassurance du panier et de la fiche."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Robot flottant (assistant IA), bouton « remonter », dock à 5 onglets (Favoris, Compte), barre Safari, pied de page web (logo, réseaux sociaux, « Liens Rapides »)",
+        "Barre du bas à 5 onglets du socle (Accueil, Catégories, Panier, Sauvegardés, Compte), l’onglet Compte allumé sur ces écrans ; aucun bouton flottant ; aucun pied de page",
+        "Assistant IA : module après le lancement (FF-IA fermé, chap. 24). Le compte s’ouvre par l’onglet Compte, l’avatar de l’en-tête et le Menu ; Mes commandes par l’accueil, le compte et le Menu (CL-01). Rien ne doit recouvrir un bouton ou une valeur."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CSV-08",
+        "Questions fréquentes par thème : paiement, retrait, garde, litige, retour, compte ; rédigées en langage simple, au tutoiement ; recherche sans accents ni casse, sur les questions d’abord puis sur les réponses.",
+        "§15.2 p. 86",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CSV-09",
+        "Les montants et délais des réponses sont des paramètres du registre, jamais écrits en dur ; une réponse peut porter un exemple personnel calculé par le serveur (montant dû du jour).",
+        "§1.2 p. 7 ; §19.2 p. 105",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CSV-10",
+        "Chaque réponse finit, quand c’est utile, par un lien vers l’écran concerné ; recherche sans résultat : « Écrire au support » avec le délai.",
+        "§15.2 p. 87",
+        "Recommandé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Aucune réponse",
+        "« Aucune réponse » et « Écrire au support » (figure)."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écrans « Messagerie » et fil de conversation",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 29",
+        "Messagerie (tuile Messages du Compte)",
+        "Liste : « Tes échanges avec BelivaY et les vendeurs, gardés par écrit. » (le masquage est dit dans chaque fil) Trois fils : « Dossier LIT-3042 · fer à repasser » (Support : « Bien reçu… », 10 h 05, 1 non lu) ; « Pagne wax 6 yards · le vendeur » (Le vendeur : « Oui, 100 % coton, 6 yards. », sam.) ; « Support BelivaY » (Toi : « Merci ! » · résolue, mer.). Bouton plein « Écrire au support » ; « Un problème sur une commande ? Ouvre-la et touche « Signaler un problème ». »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 30",
+        "Messagerie · aucune conversation",
+        "Aucune conversation : « Une question ? Regarde d’abord les questions fréquentes, ou écris au support. » Bouton « Écrire au support », lien « Questions fréquentes »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 31",
+        "Fil du dossier LIT-3042",
+        "Fil du dossier LIT-3042 : en-tête (Fer à repasser vapeur 2 200 W · BLV-51877 · constat au comptoir ; « Ton argent reste bloqué : 15 800 F » ; bouton « Le dossier »). Hier · mer. 23 sept. : ligne système « 17 h 15 · Dossier ouvert au comptoir du Relais Mvog-Ada. Mme Ngo Bassong a photographié la semelle et garde le colis. » ; BelivaY 17 h 16 : « Ton paiement reste bloqué, rien n’est versé au vendeur. Le vendeur a jusqu’au ven. 25 sept. à 17 h 15 pour répondre. » Aujourd’hui : Carine 09 h 40 (« La semelle était fendue dès l’ouverture du carton. Je préfère être remplacée. »), Support BelivaY 10 h 05. Barre : appareil photo, champ, envoi ; « Cette conversation fait partie du dossier. Les photos se prennent ici, jamais par WhatsApp. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 32",
+        "Fil du dossier · photo versée",
+        "Photo versée au dossier : photo « Jeu. 24 sept. · 10 h 12 » (horodatage serveur) et ligne « Photo prise dans l’application et versée au dossier LIT-3042. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 33",
+        "Fil du dossier LIT-3044 (ouvert dans l’application)",
+        "Fil d’un litige ouvert dans l’application (fil?id=LIT-3044, bouton « Écrire dans le dossier » de CL-11 ; barre d’état 10:15) : en-tête « Écouteurs sans fil · blanc · BLV-51702 · Colis 1 · ouvert dans l’application », « Ton argent reste bloqué : 23 000 F », bouton « Le dossier ». Aujourd’hui : photo « Jeu. 24 sept. · 10 h 14 » ; Carine 10 h 15 « Carton écrasé : le boîtier des écouteurs et le chargeur sont fendus. » ; ligne « 10 h 15 · Dossier LIT-3044 ouvert dans l’application. Photo prise dans l’application et versée au dossier. » ; BelivaY 10 h 15 : « Ton paiement reste bloqué, rien n’est versé au vendeur. Le vendeur a jusqu’au sam. 26 sept. à 10 h 15 pour répondre. On te prévient dès qu’il répond. » Mêmes faits que CL-11. Variantes : &ref=BLV-51388 ou BLV-51206 (défaut caché : « Le vendeur a déjà été payé »), fil?id=LIT-3045 (pagne, 10 h 40) et &colis=2&via=comptoir (sandales, dossier ouvert au comptoir à 10 h 36)."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 34",
+        "Fil · question au vendeur, numéro masqué",
+        "Question au vendeur (Pagne wax) : « Le vendeur ne voit ni ton nom ni ton numéro. » Ven. 18 sept. 20 h 14 : « Bonjour, il est en coton ? Mon numéro : [numéro masqué] » ; ligne « Un numéro a été retiré de ce message avant l’envoi. Le vendeur répond ici. » Sam. 19 sept. 08 h 30, « Le vendeur » : « Bonjour, oui : 100 % coton, 6 yards. » « Gardé par écrit. BelivaY ne lit cette conversation que si un dossier est ouvert. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 35",
+        "Fil du support · résolu",
+        "Fil du support, résolu : pastille « Résolue », « Réponse sous 4 h ouvrées, de 7 h à 21 h ». Mar. 22 sept. 19 h 02 : « Bonjour, je peux changer mon relais habituel pour Essos ? » ; Mer. 23 sept. 08 h 10 : réponse (Mon compte, « Changer » ; pour une commande payée, passer par la commande, gratuit tant que rien n’est collecté) ; « Merci ! » 08 h 20 ; « Conversation résolue. Écris ici si tu as une autre question. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 36",
+        "Écrire au support",
+        "Écrire au support : « Une personne te répond sous 4 h ouvrées, de 7 h à 21 h. On te prévient par notification. » « C’est à propos de… » (Paiement, Retrait et code choisi, Frais de garde, Retours, Compte, Autre) ; encadré « Un problème sur un colis (abîmé, manquant, pas le bon) ? « Signaler un problème » depuis la commande va plus vite et garde ton argent bloqué. » ; commande concernée facultative (BLV-52018 choisie) ; message ; « Ajouter une photo » ; bouton plein « Envoyer »."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Style",
+        "Style : inspiré des maquettes S’inspirer (IMG_1972, IMG_1974) : en-tête à bouton retour carré, titre dans l’en-tête et phrase d’explication en tête de page, cartes à intitulé en capitales grises, onglet Compte allumé dans la barre du bas ; bulles et barre de saisie gardées",
+        "Palette et graphisme Mandarine & Nuit (variables CSS du socle seulement) ; règles, chiffres, routes et états inchangés."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Rappel juste : un litige s’ouvre depuis la commande ; bulles lisibles avec auteur et date ; champ et bouton d’envoi clairs",
+        "Idem : ligne de rappel sous la liste ; bulles avec l’heure",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« Un litige se fait dans le detail d’une commande… » (faute d’accent, encadré permanent) et « Aller aux commandes » avant les conversations",
+        "Une ligne d’aide sous la liste ; bouton plein « Écrire au support »",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Filtre « Litiges » vide et deux états vides empilés ; « Mes litiges » réduit à un filtre",
+        "Le fil d’un dossier est rattaché au dossier ; « Mes litiges » est une rubrique du compte ; un seul état vide",
+        "11.3 ; 9.5."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Support muet (réponse promise « sous 24h » le 07 sept., relances sans réponse jusqu’au 18 sept.)",
+        "Délai affiché « réponse sous 4 h ouvrées » ; fil marqué « Résolue »",
+        "SUP-DELAI ; suivi du délai en console."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Question de remboursement en chat libre, sans dossier ni commande",
+        "Fil rattaché au dossier (LIT-3042), avec l’état de l’argent et le lien « Le dossier »",
+        "15.2 : fil tracé, rattaché à un dossier."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Pas de photo, pas de statut lu, dates sans heure, texte indicatif coupé « Envoyer un message au su… »",
+        "Bouton appareil photo ; heures sur chaque message ; libellés courts",
+        "Photos versées au dossier (15.2)."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Fil « Support abonnement · Votre dépôt Mobile Money a été validé »",
+        "—",
+        "Abonnement et dépôt n’existent pas au lancement."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Pas de numéro WhatsApp ni de délai annoncé",
+        "Délai dans l’en-tête du fil ; WhatsApp dans l’aide",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Bandeau noir tournant au-dessus de l’en-tête : « Livraison 24–72h · Cameroun & CEMAC », « Remboursement sous 7 jours · Sans question », « Gagnez des points à chaque achat · Programme Fidélité », « 3 200+ Vendeurs certifiés sur BelivaY », « Paiement sécurisé via MoMo · Escrow BelivaY » (illisible pendant ses transitions)",
+        "Aucun bandeau tournant. Chaque promesse vraie apparaît une fois, là où elle sert (délai ferme au panier, « Retour gratuit si problème validé » dans les CGV et l’aide)",
+        "Supprimer le composant. Les messages 1 à 4 sont faux au lancement : fourchette de délai et CEMAC (1.3, SLA-ZONE-H), retour sans motif (12.2), points (inexistants), compteur écrit en dur (19.3). « Escrow BelivaY » reste réservé au bandeau de réassurance du panier et de la fiche."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Robot flottant (assistant IA), bouton « remonter », dock à 5 onglets (Favoris, Compte), barre Safari, pied de page web (logo, réseaux sociaux, « Liens Rapides »)",
+        "Barre du bas à 5 onglets du socle (Accueil, Catégories, Panier, Sauvegardés, Compte), l’onglet Compte allumé sur ces écrans ; aucun bouton flottant ; aucun pied de page",
+        "Assistant IA : module après le lancement (FF-IA fermé, chap. 24). Le compte s’ouvre par l’onglet Compte, l’avatar de l’en-tête et le Menu ; Mes commandes par l’accueil, le compte et le Menu (CL-01). Rien ne doit recouvrir un bouton ou une valeur."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CSV-11",
+        "Messagerie interne : fil tracé, gratuit, rattaché à un dossier quand il y en a un ; photos prises par l’appareil photo, horodatées côté serveur et versées au dossier.",
+        "§15.2 p. 86 ; §11.2 p. 67",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CSV-12",
+        "Anonymat dans les fils : le vendeur s’affiche « le vendeur » (jamais la boutique) ; numéros, e-mails et identifiants sociaux sont masqués automatiquement, avant enregistrement et avant affichage, des deux côtés, avec une ligne qui le signale.",
+        "§19.1 p. 104 ; §6.2 p. 34",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CSV-13",
+        "BelivaY (console) ne lit une conversation client-vendeur que dans un dossier ouvert ; le fil le dit.",
+        "§18 interdits p. 101",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CSV-14",
+        "« Écrire au support » : thème, commande facultative, message, photo ; un problème sur un colis est renvoyé vers « Signaler un problème ».",
+        "§15.2 p. 87",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CSV-15",
+        "Un fil de support peut être marqué « Résolue » par le support ; il reste ouvert à un nouveau message. Le fil d’un dossier passe en lecture seule à la clôture du dossier (règle vendeur MSG-02, absente de la v3).",
+        "§15.2 ; crosslinks ligne 51",
+        "Recommandé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Paramètres (registre)",
+     "colonnes": [
+      "Code",
+      "Paramètre",
+      "Valeur",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "SUP-DELAI",
+        "Délai de première réponse en messagerie",
+        "4 h ouvrées",
+        "Proposé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Envoi sans réseau",
+        "Message en attente, bouton d’envoi grisé avec « Il faut du réseau pour envoyer » ; rien n’est perdu."
+       ]
+      },
+      {
+       "cellules": [
+        "Numéro tapé dans un message",
+        "Remplacé par « numéro masqué » et ligne d’explication (figure)."
+       ]
+      },
+      {
+       "cellules": [
+        "Aucune conversation",
+        "État vide (figure)."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Feuille « Demander un rappel »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 37",
+        "Demander un rappel · feuille",
+        "Feuille sur l’aide : « Une personne t’appelle depuis un numéro BelivaY. Elle ne voit pas ton numéro. » « C’est à propos de… » (Retrait et code choisi), « Commande — facultatif » (BLV-52018 choisie), « Quand ? » (Dès que possible, Avant 12 h, 12 h – 17 h, 17 h – 21 h), « Sur ton numéro 6 77 ·· ·· 41 · vérifié ». Bouton plein « Demander le rappel »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 38",
+        "Rappel demandé",
+        "Rappel demandé : « Une personne de BelivaY t’appelle dès que possible sur le 6 77 ·· ·· 41, depuis un numéro BelivaY. » Récapitulatif (À propos de Retrait et code, Commande BLV-52018, Créneau Dès que possible). Bouton plein « C’est noté », lien rouge « Annuler le rappel »."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CSV-16",
+        "Appel : rappel masqué uniquement ; jamais de numéro personnel exposé, ni celui du client à l’agent, ni celui de l’agent au client.",
+        "§15.2 p. 87 ; §19.1 p. 104",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CSV-17",
+        "Créneaux proposés dans les heures du support (SUP-HORAIRES) ; hors heures, les créneaux du lendemain ; aucun délai de rappel promis au-delà du créneau choisi.",
+        "§15.2 p. 87",
+        "Recommandé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Hors heures",
+        "Créneaux de demain seulement."
+       ]
+      },
+      {
+       "cellules": [
+        "Numéro non vérifié",
+        "Rappel impossible : « Vérifie d’abord ton numéro »."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Pages légales",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 39",
+        "Pages légales (depuis le Compte)",
+        "Liste : encadré vert « Tu as accepté les conditions une fois, à ton inscription le 2 août 2026. Au paiement, aucune case à cocher. Si une version importante change, on te la montre à l’ouverture de l’application. » Huit textes, chacun « Version 1.0 · 1er août 2026 » : Conditions générales d’utilisation, Conditions générales de vente, Politique de confidentialité, Règles des retours et des litiges, Politique de garde au relais, Paiement au comptoir et par carte, Cookies et mesure d’audience, Mentions légales. « Aussi accessibles en bas de l’écran de paiement et sur la page de retour. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 40",
+        "Pages légales · CGV",
+        "CGV en français : bascule Français / English ; titre et phrase ; pastilles « Version 1.0 · 1er août 2026 » et « Acceptée le 2 août 2026 » ; « L’essentiel » en 6 points (coût de retrait montré avec chaque prix, 900 F au relais offerte dès 30 000 F, 1 500 F à domicile offerte dès 50 000 F ; MTN, Orange ou comptoir, jamais d’espèces ; argent bloqué jusqu’au retrait et à la fin de la fenêtre de retour ; code à 6 chiffres et garde ; annulation boutique par boutique sans frais avant collecte ; retour avec motif sous 7 jours, remboursement sur le moyen qui a payé). Bouton « Télécharger le texte complet (PDF) »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 41",
+        "Pages légales · CGU en anglais",
+        "CGU en anglais (legal-doc?d=cgu&lang=en) : « Terms of use », « Version 1.0 · 1 August 2026 », « Accepted on 2 August 2026 », « Key points » en 6 points (navigation sans compte, un e-mail = un compte, vendeur anonyme, preuves dans l’application, jamais d’exclusion définitive, suppression du compte), « Download the full text (PDF) »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 42",
+        "Pages légales · politique de garde",
+        "Politique de garde au relais (legal-doc?d=garde) : tableau Jour 1 Gratuit · Jours 2–3 100 F · Jours 4–5 200 F · Jours 6–7 400 F ; six points (1 400 F au plus ; décompte depuis l’application ouverte ou le SMS délivré ; jour de fermeture jamais facturé, garde arrêtée pendant un litige ; renvoi après le 7e jour, garde + 500 F retenus sur le remboursement, 1 900 F au plus ; paiement en Mobile Money, le gérant ne touche jamais d’argent)."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Style",
+        "Style : inspiré des maquettes S’inspirer (IMG_1972, IMG_1974) : en-tête à bouton retour carré, titre dans l’en-tête et phrase d’explication en tête de page, cartes à intitulé en capitales grises, onglet Compte allumé dans la barre du bas ; bascule Français / English en onglets orange",
+        "Palette et graphisme Mandarine & Nuit (variables CSS du socle seulement) ; règles, chiffres, routes et états inchangés."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Date de mise à jour visible ; accordéon compact icône + titre + résumé ; un seul ouvert à la fois ; « remboursement sur le moyen de paiement d’origine » ; séparation cookies nécessaires / facultatifs",
+        "Liste versionnée ; « L’essentiel » en points ; même engagement de remboursement",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Textes datés du 17 mai 2026, sans numéro de version ni version acceptée",
+        "« Version 1.0 · 1er août 2026 » et « Acceptée le 2 août 2026 »",
+        "15.3 : versionnées, version acceptée horodatée avec le compte."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Enfouies en bas d’une page marketing",
+        "Rubrique « Pages légales » du compte, lien en bas du paiement et sur la page de retour",
+        "15.3."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Cinq textes seulement",
+        "Plus : règles des retours et des litiges, politique de garde au relais, paiement au comptoir et carte",
+        "15.3."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Aucune version anglaise",
+        "Bascule Français / English dans chaque texte",
+        "15.3 : langage simple, FR et EN."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "CGU : « compte nominatif » exigé ; « suspendus sans préavis »",
+        "Navigation sans compte ; limitation après examen humain avec recours, jamais d’exclusion définitive",
+        "3.1 ; garde-fous 11.5."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "CGV : libération « 24h après la confirmation de réception » ; retour « sous 7 jours après réception » sans motif ; rien sur la garde, le comptoir, la carte ; « séquestre Escrow »",
+        "Argent bloqué jusqu’à la fin de la fenêtre de retour ; retour avec motif ; garde, comptoir et carte dans leurs textes",
+        "LIB-STD ; 12.2 ; GARDE-* ; 8.5 ; 13.4."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Confidentialité : export et suppression « depuis votre espace personnel » (inexistants) ; rien sur qui voit quoi",
+        "Qui voit quoi (vendeur, gérant, livreur) ; suppression depuis Mon compte",
+        "Matrice 2.4 ; 9.5."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Mentions légales incomplètes (ni RCCM, ni NIU, ni adresse, ni directeur nommé, hébergeur anonyme) ; e-mail en .cm contre site en .com",
+        "Champs « à publier avant l’ouverture » ; contact par la messagerie",
+        "Arbitrage CLG-06 : données légales à fournir par le juriste."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Cookies : consentement « révocable depuis les paramètres de votre compte » sans réglage",
+        "Réglage « Mesure d’audience » dans Réglages",
+        "Arbitrage CRG-07."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Icônes en cinq couleurs dont le bleu",
+        "Icônes neutres",
+        "CDS-01."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Bandeau noir tournant au-dessus de l’en-tête : « Livraison 24–72h · Cameroun & CEMAC », « Remboursement sous 7 jours · Sans question », « Gagnez des points à chaque achat · Programme Fidélité », « 3 200+ Vendeurs certifiés sur BelivaY », « Paiement sécurisé via MoMo · Escrow BelivaY » (illisible pendant ses transitions)",
+        "Aucun bandeau tournant. Chaque promesse vraie apparaît une fois, là où elle sert (délai ferme au panier, « Retour gratuit si problème validé » dans les CGV et l’aide)",
+        "Supprimer le composant. Les messages 1 à 4 sont faux au lancement : fourchette de délai et CEMAC (1.3, SLA-ZONE-H), retour sans motif (12.2), points (inexistants), compteur écrit en dur (19.3). « Escrow BelivaY » reste réservé au bandeau de réassurance du panier et de la fiche."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Robot flottant (assistant IA), bouton « remonter », dock à 5 onglets (Favoris, Compte), barre Safari, pied de page web (logo, réseaux sociaux, « Liens Rapides »)",
+        "Barre du bas à 5 onglets du socle (Accueil, Catégories, Panier, Sauvegardés, Compte), l’onglet Compte allumé sur ces écrans ; aucun bouton flottant ; aucun pied de page",
+        "Assistant IA : module après le lancement (FF-IA fermé, chap. 24). Le compte s’ouvre par l’onglet Compte, l’avatar de l’en-tête et le Menu ; Mes commandes par l’accueil, le compte et le Menu (CL-01). Rien ne doit recouvrir un bouton ou une valeur."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CLG-01",
+        "Textes : conditions générales d’utilisation et de vente, politique de confidentialité, mentions légales, règles des retours et des litiges, politique de garde au relais, conditions du paiement au comptoir et de la carte ; plus la politique de cookies et de mesure d’audience.",
+        "§15.3 p. 87",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLG-02",
+        "Accessibles depuis le compte, le pied de l’écran de paiement et la page de retour.",
+        "§15.3 p. 87",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLG-03",
+        "Chaque texte est versionné (numéro et date) ; la version acceptée est horodatée avec le compte et affichée (« Acceptée le … »).",
+        "§15.3 p. 87",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLG-04",
+        "Aucune case à cocher dans le parcours d’achat : acceptation à l’inscription, puis à chaque nouvelle version majeure ; la nouvelle version est présentée à l’ouverture de l’application, jamais pendant un paiement.",
+        "§15.3 p. 87 ; §15.4 interdits p. 88",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLG-05",
+        "Rédaction en langage simple, en français et en anglais ; bascule Français / English dans chaque texte ; « L’essentiel » en 3 à 6 points, texte complet en PDF. Le texte s’ouvre dans la langue de l’application ; l’onglet choisi affiche tout le document (titre, version, points, bouton) dans sa langue, même si l’application est dans l’autre.",
+        "§15.3 p. 87 ; croisement proposé pour la langue par défaut",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLG-06",
+        "Le contenu reprend les règles de la spec (garde, retours, comptoir, carte, anonymat) ; le texte juridique complet et les mentions légales (raison sociale, RCCM, NIU, siège, directeur de la publication, hébergeur) sont fournis par le juriste avant l’ouverture ; le prototype écrit « à publier ».",
+        "§15.3 p. 87",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLG-07",
+        "Un changement de tarif (grille de garde, frais) est annoncé avant d’entrer en vigueur et ne s’applique jamais à une commande déjà passée (la commande garde sa version des paramètres).",
+        "§18.3 ; §20 ; crosslinks ligne 12",
+        "Recommandé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Texte indisponible hors ligne",
+        "La dernière version lue reste affichée avec la bannière « Hors ligne »."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Mode dégradé : réseau lent, hors ligne, 2G",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 43",
+        "Connexion et données (depuis Réglages ou une bannière)",
+        "Page « Connexion et données » (#reseau, retour vers Réglages) : « En 2G ou sans réseau, l’application reste utilisable. » Carte « Données économes · Des vignettes à la place des photos. » avec son interrupteur (désactivé ; ?eco=1 l’active et ajoute le lien « Voir l’accueil en données économes »). SANS RÉSEAU, TU PEUX ENCORE : ✓ voir tes commandes, telles qu’à ta dernière connexion ; ✓ afficher un code de retrait déjà affiché une fois ; ✓ retrouver ton panier, gardé sur ton téléphone. IL FAUT DU RÉSEAU POUR : cadenas « Payer, annuler une boutique, signaler un problème : ces gestes touchent ton argent ». Encadré « L’application ne répond pas ? Le SMS de retrait t’apporte ton code et le lien du QR. » L’interrupteur « Données économes » a quitté Réglages pour cette page."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 44",
+        "Mode dégradé · accueil en connexion lente",
+        "Connexion lente (> 3 s par requête) sur l’accueil : bannière nuit « Connexion lente : le texte d’abord, les photos suivent. Données économes » (lien vers la page Connexion et données). « Près de ton relais » : deux cartes complètes (Pagne wax 18 500 F, Beurre de karité 3 500 F) et deux cartes dont la photo arrive encore (pictogramme sur fond gris) mais dont le nom, le prix, « + 900 F de retrait », la distance et la note sont déjà là (Chargeur rapide 33 W USB-C 6 500 F, Écouteurs sans fil 16 500 F)."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 45",
+        "Mode dégradé · Mes commandes hors ligne",
+        "Hors ligne, Mes commandes depuis le cache : « Hors ligne : tes commandes telles qu’à 10 h 02. En savoir plus » (lien vers la page Connexion et données). BLV-52018 « Retirable maintenant » (2 colis au Relais Mvog-Ada · dû 400 F aujourd’hui) avec « Afficher mon code » ; BLV-52107 « Retrait possible aujourd’hui dès 15 h » (3 colis · état à 10 h 02) et « Suivre ma commande » ; BLV-51877 « En litige · réponse avant ven. 25 sept. à 17 h 15 » (LIT-3042 · 15 800 F bloqués) et « Voir le dossier ». « Payer, annuler et contester attendent le réseau. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 46",
+        "Mode dégradé · code de retrait hors ligne",
+        "Code de retrait hors ligne : « Hors ligne : ce code est gardé sur ton téléphone depuis son premier affichage, hier à 18 h 04. » Carte nuit « Code de retrait · BLV-52018 », 6 0 4 3 1 8 en chiffres, QR, « 2 colis · à montrer à Mme Ngo Bassong au Relais Mvog-Ada ». « Un code jamais affiché sur ce téléphone n’est pas disponible hors ligne : le SMS de retrait reste ton secours. » Lien « Voir le SMS de retrait »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 47",
+        "Mode dégradé · panier hors ligne, paiement grisé",
+        "Action d’argent sans réseau (panier) : « Hors ligne : ton panier est gardé sur ton téléphone. En savoir plus » Mon panier · 4 articles (Tecno Camon 30 150 699 F, Ensemble wax 3 pièces 32 000 F, Sac cuir artisanal 52 000 F, Mixeur-blender 37 000 F), Articles 271 699 F, Livraison · 3 colis 880 F, Total 272 579 F. Bouton « Passer commande · 272 579 F » grisé avec cadenas ; « Il faut du réseau pour payer. Le bouton revient avec la connexion. » ; « Même règle pour annuler une boutique ou signaler un problème : ces gestes touchent ton argent, ils attendent le réseau. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 48",
+        "Mode dégradé · accueil en données économes",
+        "Données économes : bannière « Données économes : des vignettes à la place des photos. Réglages » (lien vers la page Connexion et données, interrupteur activé) ; liste compacte à vignettes de 44 px : Pagne wax 18 500 F (0,5 km · + 900 F de retrait), Beurre de karité 3 500 F, Chargeur 6 500 F, Écouteurs 16 500 F, Sandales cuir femme 14 900 F, Huile de coco 4 800 F."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 49",
+        "Mode dégradé · SMS de retrait de repli",
+        "SMS de repli (application qui ne répond pas) : application SMS du téléphone, expéditeur BelivaY, lun. 21 sept. 17 h 40 : « BelivaY: tes 2 colis BLV-52018 sont au Relais Mvog-Ada. Code de retrait: 604318. QR et plan du relais: belivay.com/r/K7Q2 » (121 caractères, sans accent : GSM-7). Le texte définitif du SMS C3 appartient au document des messages."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 50",
+        "Mode dégradé · hors ligne au comptoir",
+        "Hors ligne au comptoir : « Hors ligne au comptoir : ton code reste lisible, mais le paiement attend le réseau. » Code 604 318 ; « Montant dû 400 F · Frais de garde, payés en Mobile Money sur ton téléphone » ; « Payer 400 F » grisé ; « Paiement impossible sans réseau. » ; encadré « Active tes données ou approche-toi de l’entrée : la demande part sur ton téléphone dès que le réseau revient. Mme Ngo Bassong te remet tes colis après le paiement. »"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Style",
+        "Style : inspiré des maquettes S’inspirer (IMG_1972, IMG_1974) : en-tête à bouton retour carré, titre dans l’en-tête et phrase d’explication en tête de page, cartes à intitulé en capitales grises, onglet Compte allumé dans la barre du bas ; en-tête racine et cartes du socle refaits",
+        "Palette et graphisme Mandarine & Nuit (variables CSS du socle seulement) ; règles, chiffres, routes et états inchangés."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "—",
+        "Bannières « Connexion lente » et « Hors ligne », cache des pages vues, code hors ligne, actions d’argent grisées, données économes",
+        "15.4 ; 9.6."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Calculs",
+     "colonnes": [
+      "Condition ou formule",
+      "Règle d’implémentation"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "connexion_lente ⇔ durée d’une requête > NET-LENT (3 s)",
+        "La bannière apparaît à la première requête lente et disparaît après trois requêtes rapides (lissage recommandé)."
+       ]
+      },
+      {
+       "cellules": [
+        "hors_ligne ⇔ aucune réponse du serveur",
+        "Bannière « Hors ligne » ; l’écran affiche la dernière version en cache avec son heure."
+       ]
+      },
+      {
+       "cellules": [
+        "code_hors_ligne ⇔ CACHE-CODE ∧ code déjà affiché une fois sur cet appareil ∧ colis non retiré",
+        "Stocké chiffré dans le téléphone, effacé au retrait, au changement de relais ou de numéro (nouveau code)."
+       ]
+      },
+      {
+       "cellules": [
+        "action_argent ∈ {payer, annuler, contester} ⇒ réseau requis",
+        "Bouton grisé avec l’explication ; jamais mise en file pour exécution automatique."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CDM-01",
+        "Bannière « Connexion lente » (au-delà de NET-LENT, 3 s par requête) ou « Hors ligne », en haut de l’écran ; jamais un écran blanc sans explication.",
+        "§15.4 p. 87–88",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CDM-02",
+        "Pages déjà vues servies depuis le cache : accueil, commandes, reçu, code de retrait déjà affiché une fois ; l’heure de la dernière mise à jour est écrite.",
+        "§15.4 p. 87",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CDM-03",
+        "Le code à 6 chiffres reste lisible hors ligne après un premier affichage (CACHE-CODE) ; un code jamais affiché sur l’appareil ne l’est pas, et l’écran renvoie au SMS de retrait.",
+        "§15.4 p. 87–88 ; §9.2 p. 53",
+        "Proposé"
+       ]
+      },
+      {
+       "cellules": [
+        "CDM-04",
+        "Images compressées et chargement progressif : le texte, le prix et la livraison s’affichent avant la photo.",
+        "§15.4 p. 87",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CDM-05",
+        "Mode « données économes » : vignettes à la place des images ; proposé dans la bannière « Connexion lente ».",
+        "§15.4 p. 87",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CDM-06",
+        "Toute action d’argent (payer, annuler, contester) exige la connexion : bouton grisé avec l’explication ; elle n’est jamais mise en file hors ligne.",
+        "§15.4 p. 87",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CDM-07",
+        "Le SMS de repli reste le canal du code quand l’application ne répond pas : code en clair et lien court vers le QR et la fiche du relais, 160 caractères au plus, sans accent.",
+        "§15.4 p. 87 ; §10.3 p. 61 ; §10.6",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CDM-08",
+        "Hors ligne au comptoir : code lisible, paiement impossible sans réseau ; avec un montant dû, les colis ne sont remis qu’après le paiement (zéro espèce, montant jamais saisi).",
+        "§9.6 p. 57 ; §9.4 p. 55",
+        "Décidé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Paramètres (registre)",
+     "colonnes": [
+      "Code",
+      "Paramètre",
+      "Valeur",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "NET-LENT",
+        "Seuil de connexion lente (non réglable en console)",
+        "> 3 s par requête",
+        "Proposé"
+       ]
+      },
+      {
+       "cellules": [
+        "CACHE-CODE",
+        "Code de retrait disponible hors ligne (non réglable en console)",
+        "oui, après un premier affichage",
+        "Proposé"
+       ]
+      },
+      {
+       "cellules": [
+        "CODE-LONG",
+        "Longueur du code de retrait",
+        "6 chiffres + QR",
+        "Décidé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Code jamais affiché, hors ligne",
+        "« Pas disponible hors ligne » et lien vers le SMS de retrait."
+       ]
+      },
+      {
+       "cellules": [
+        "Retour du réseau",
+        "Bannière retirée, écran rechargé, boutons réactivés ; aucune action d’argent rejouée."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écran « Réglages »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 51",
+        "Réglages (depuis le Compte)",
+        "Réglages : « Langue et thème suivent ton compte sur tous tes téléphones. » Langue (L’application, les notifications et les SMS) : Français · English · Pidgin, Français actif. Thème (Automatique : comme ton téléphone) : Automatique · Clair · Sombre. Taille du texte (Grande : 115 % · Très grande : 130 %) : Normale · Grande · Très grande. Carte à deux lignes : « Connexion et données · Données économes, hors ligne, SMS de repli » (chevron, #reseau) et « Mesure d’audience · Seulement avec ton accord. Aucune publicité d’autres entreprises. » (désactivé). « BelivaY · application client · version 1.0 »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 52",
+        "Réglages · pidgin en relecture",
+        "Pidgin choisi (reglages?pcm=1, lien du Menu) : segment Pidgin actif ; encadré ambre « Pidgin : traduction en relecture. Les écrans déjà traduits (premier lancement) s’affichent en pidgin ; le reste de l’application, les notifications et les SMS restent en français jusqu’à la validation. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 53",
+        "Réglages · très grande taille de texte",
+        "Taille « Très grande » (130 %) : même écran, texte agrandi ; aucun libellé tronqué, les segments passent sur deux lignes si besoin (« Très grande »)."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Style",
+        "Style : inspiré des maquettes S’inspirer (IMG_1972, IMG_1974) : en-tête à bouton retour carré, titre dans l’en-tête et phrase d’explication en tête de page, cartes à intitulé en capitales grises, onglet Compte allumé dans la barre du bas ; réglages en onglets orange",
+        "Palette et graphisme Mandarine & Nuit (variables CSS du socle seulement) ; règles, chiffres, routes et états inchangés."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Thème, FR/EN et taille du texte ; lignes titre + sous-titre + contrôle ; liens vers le centre de notifications et l’aide",
+        "Idem, en trois cartes",
+        "Langue et thème sont des champs du Client (2.6)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Mode daltonien (contraste renforcé, saturation réduite)",
+        "Retiré : contrastes ≥ 4,5:1 dans les deux thèmes et état jamais porté par la couleur seule (note en mots)",
+        "Recommandé : la charte rend le réglage inutile ; à rouvrir si les tests le demandent."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Thème « Clair » seul bouton ; drapeaux France et Royaume-Uni pour la langue",
+        "Automatique · Clair · Sombre ; libellés de langue sans drapeau",
+        "Suivre le téléphone au premier lancement, puis mémoriser (ancienne NOT-05 / CDS-03)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« Notifications SMS · Suivi de commande par SMS » et « Newsletter · Offres par email » activés ; bouton « Enregistrer les préférences »",
+        "Lien vers le réglage des notifications (10.1) ; chaque réglage s’applique au toucher",
+        "Catégories critiques non désactivables, Promotions désactivé par défaut (10.1). Aucun bouton « Enregistrer »."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "« Sécurité & mot de passe · 2FA, sessions actives », « Centre de notifications · Historique des alertes » en double de la cloche",
+        "Changer de numéro dans Mon compte ; centre de notifications par la cloche",
+        "Voir « Écrans retirés »."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Pas de réglage de consentement alors que la politique cookies y renvoie",
+        "« Mesure d’audience » désactivée par défaut",
+        "Arbitrage CRG-07."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Pas de données économes ni de pidgin",
+        "Données économes ; pidgin proposé (écrans du premier lancement traduits, le reste en français)",
+        "15.4 ; CRG-01, CRG-02."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Thème et langue seulement dans Compte › Réglages",
+        "Aussi en tête du Menu (thème et langue en un geste)",
+        "Règle CNV-04 du socle."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« A+ » caché sous le robot ; puces coupées ; 10 onglets",
+        "Aucun bouton flottant",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Refonte du 25 sept. : interrupteur « Données économes » et liens « Notifications » et « Pages légales » répétés dans Réglages",
+        "Une ligne « Connexion et données » qui ouvre #reseau (l’interrupteur y vit) ; Notifications et Pages légales seulement dans le Compte",
+        "Refonte du 26 sept. : un seul chemin par rubrique. Le paramètre reglages?eco= n’existe plus : reseau?eco=1."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Bandeau noir tournant au-dessus de l’en-tête : « Livraison 24–72h · Cameroun & CEMAC », « Remboursement sous 7 jours · Sans question », « Gagnez des points à chaque achat · Programme Fidélité », « 3 200+ Vendeurs certifiés sur BelivaY », « Paiement sécurisé via MoMo · Escrow BelivaY » (illisible pendant ses transitions)",
+        "Aucun bandeau tournant. Chaque promesse vraie apparaît une fois, là où elle sert (délai ferme au panier, « Retour gratuit si problème validé » dans les CGV et l’aide)",
+        "Supprimer le composant. Les messages 1 à 4 sont faux au lancement : fourchette de délai et CEMAC (1.3, SLA-ZONE-H), retour sans motif (12.2), points (inexistants), compteur écrit en dur (19.3). « Escrow BelivaY » reste réservé au bandeau de réassurance du panier et de la fiche."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Robot flottant (assistant IA), bouton « remonter », dock à 5 onglets (Favoris, Compte), barre Safari, pied de page web (logo, réseaux sociaux, « Liens Rapides »)",
+        "Barre du bas à 5 onglets du socle (Accueil, Catégories, Panier, Sauvegardés, Compte), l’onglet Compte allumé sur ces écrans ; aucun bouton flottant ; aucun pied de page",
+        "Assistant IA : module après le lancement (FF-IA fermé, chap. 24). Le compte s’ouvre par l’onglet Compte, l’avatar de l’en-tête et le Menu ; Mes commandes par l’accueil, le compte et le Menu (CL-01). Rien ne doit recouvrir un bouton ou une valeur."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CRG-01",
+        "Langue : français et anglais (spec) ; le pidgin, absent de la v3 client mais présent au relais et au vendeur, est proposé en troisième langue ; son ajout à la spécification reste à décider par le porteur du produit.",
+        "§3.1 p. 17 ; §15.3 ; crosslinks lignes 11 et 77",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRG-02",
+        "Pidgin choisi : chaque texte s’affiche en pidgin s’il est traduit et validé (aujourd’hui les trois écrans du premier lancement, CL-03), sinon en français ; notifications et SMS restent en français jusqu’à la validation, et l’écran le dit.",
+        "Brief du prototype ; croisement relais PAR-04, vendeur GEN-10",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRG-03",
+        "Langue et thème sont portés par le compte (2.6) et suivent la cliente sur tous ses téléphones ; la langue choisit aussi celle des pushs et des SMS (français ou anglais selon le profil).",
+        "§2.6 p. 14 ; §10.2 p. 60",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRG-04",
+        "Thème : Clair par défaut à l’ouverture (décision du porteur du 25 sept.) ; au choix Automatique (suit le téléphone), Clair, Sombre ; le choix est mémorisé.",
+        "Ancienne NOT-05 / CDS-03 ; crosslinks ligne 82",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRG-05",
+        "Taille du texte : Normale, Grande (115 %), Très grande (130 %) ; rien n’est tronqué, en français comme en anglais ; réglage de l’appareil.",
+        "Relais PAR-05 ; crosslinks ligne 81",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRG-06",
+        "Données économes : désactivées par défaut, réglage de l’appareil ; proposées quand la connexion est lente.",
+        "§15.4 p. 87",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRG-07",
+        "Mesure d’audience : désactivée par défaut, activée seulement avec l’accord de la cliente ; aucune publicité de tiers.",
+        "§4.3–4.4 (aucune publicité tierce)",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRG-08",
+        "Les réglages s’appliquent au toucher, sans bouton « Enregistrer » ; le réglage des notifications est l’écran de 10.1.",
+        "§10.1 p. 60",
+        "Recommandé"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Jeu d’essai, liens et points à trancher",
+   "tableaux": [
+    {
+     "sous_titre": "Valeurs ajoutées (objet DX_cl13)",
+     "colonnes": [
+      "Valeur ajoutée au jeu d’essai",
+      "Valeur",
+      "Vérification"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Total payé BLV-51388",
+        "12 700 F",
+        "7 000 + 4 800 = 11 800 F (< 30 000 F) + ramassage 500 + remise 400"
+       ]
+      },
+      {
+       "cellules": [
+        "Total payé BLV-51206",
+        "21 900 F",
+        "21 000 F (< 30 000 F) + 500 + 400 ; puis 3 000 F remboursés (LIT-2987)"
+       ]
+      },
+      {
+       "cellules": [
+        "Moyen de paiement BLV-51702",
+        "MTN MoMo 6 77 ·· ·· 41",
+        "Numéro du compte, moyen par défaut"
+       ]
+      },
+      {
+       "cellules": [
+        "Fenêtre de notation BLV-51702",
+        "jusqu’au sam. 26 sept. à 11 h 32",
+        "Retrait sam. 19 sept. 11 h 32 + 7 jours (AVIS-FENETRE proposé 7 j)"
+       ]
+      },
+      {
+       "cellules": [
+        "Fenêtre fermée BLV-51388",
+        "ven. 4 sept.",
+        "Retrait ven. 28 août + 7 jours"
+       ]
+      },
+      {
+       "cellules": [
+        "Notes envoyées (état « modifier »)",
+        "mar. 22 sept. ; vendeur 4, gérant 5",
+        "Dans la fenêtre"
+       ]
+      },
+      {
+       "cellules": [
+        "Fil LIT-3042",
+        "17 h 15, 17 h 16 (hier) ; 09 h 40, 10 h 05 (aujourd’hui)",
+        "Réponse en 25 min, dans SUP-DELAI"
+       ]
+      },
+      {
+       "cellules": [
+        "Fil LIT-3044 (faits de CL-11)",
+        "photo 10 h 14, dossier 10 h 15 ; vendeur jusqu’au sam. 26 sept. à 10 h 15",
+        "10 h 15 + 48 h ; 23 000 F d’articles bloqués (BLV-51702)"
+       ]
+      },
+      {
+       "cellules": [
+        "Fenêtre de notation BLV-52018",
+        "jusqu’au jeu. 1er oct. à 10 h 32",
+        "Retrait aujourd’hui à 10 h 32 + 7 jours ; 2 notes vendeur + 1 note gérant"
+       ]
+      },
+      {
+       "cellules": [
+        "Remboursement BLV-51206",
+        "3 000 F le lun. 10 août (LIT-2987)",
+        "Retrait sam. 8 août ; litige ouvert et remboursé le 10 août"
+       ]
+      },
+      {
+       "cellules": [
+        "Fil support",
+        "mar. 22 sept. 19 h 02 → mer. 23 sept. 08 h 10",
+        "1 h 58 ouvrées le 22 + 1 h 10 le 23 = 3 h 08 ≤ 4 h ouvrées"
+       ]
+      },
+      {
+       "cellules": [
+        "Question au vendeur (pagne)",
+        "ven. 18 sept. 20 h 14 → sam. 19 sept. 08 h 30",
+        "Avant le paiement de BLV-52018 (sam. 19 sept.)"
+       ]
+      },
+      {
+       "cellules": [
+        "Hors heures",
+        "22 h 40 → réponse avant 11 h",
+        "7 h + 4 h ouvrées"
+       ]
+      },
+      {
+       "cellules": [
+        "Cache hors ligne",
+        "10 h 02 ; code affiché hier à 18 h 04",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Pages légales",
+        "Version 1.0 du 1er août 2026 ; acceptée le 2 août 2026 (inscription)",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Adresse hors zone",
+        "« Bureau », Akwa, Douala",
+        "Douala hors des 12 zones de Yaoundé"
+       ]
+      },
+      {
+       "cellules": [
+        "Version de l’application",
+        "1.0",
+        "—"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Paramètres (registre)",
+     "colonnes": [
+      "Code",
+      "Paramètre",
+      "Valeur",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "AVIS-FENETRE",
+        "Fenêtre de notation",
+        "à fixer (prototype 7 jours)",
+        "À trancher"
+       ]
+      },
+      {
+       "cellules": [
+        "SUP-WA",
+        "Numéro WhatsApp support",
+        "à publier",
+        "À trancher"
+       ]
+      },
+      {
+       "cellules": [
+        "AVIS-BAS",
+        "Seuil de note basse",
+        "2 étoiles",
+        "Proposé"
+       ]
+      },
+      {
+       "cellules": [
+        "SUP-DELAI",
+        "Délai de première réponse",
+        "4 h ouvrées",
+        "Proposé"
+       ]
+      },
+      {
+       "cellules": [
+        "SUP-HORAIRES",
+        "Heures du support humain",
+        "7 h – 21 h, 7 j/7",
+        "Proposé"
+       ]
+      },
+      {
+       "cellules": [
+        "NET-LENT",
+        "Seuil de connexion lente",
+        "> 3 s par requête",
+        "Proposé"
+       ]
+      },
+      {
+       "cellules": [
+        "CACHE-CODE",
+        "Code disponible hors ligne",
+        "oui, après un premier affichage",
+        "Proposé"
+       ]
+      },
+      {
+       "cellules": [
+        "CODE-BIO",
+        "Seuil de biométrie (cité dans la FAQ)",
+        "50 000 F",
+        "Proposé"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Couverture de la spécification",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Section de la spec",
+      "Pages",
+      "Où c’est traité (écran, règles)"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "9.5 Commande terminée (Racheter, Facture, annulée, archivage) et calculs de Mes commandes",
+        "56–57",
+        "Racheter, carte annulée, calculs t_restant, X, segments, garde, biométrie, renvois, libération, « réponse sous X h » : CL-09. Ici : Factures (CCO-18 à 21), montant dû hors ligne (CDM-08)."
+       ]
+      },
+      {
+       "cellules": [
+        "9.5 Le compte client — minimal",
+        "56",
+        "Mon compte (CCO-01 à 09), Adresses (CCO-10 à 13), Moyens de paiement (CCO-14 à 17), Factures, Supprimer (CCO-22 à 24), Écrans retirés (CCO-25)"
+       ]
+      },
+      {
+       "cellules": [
+        "9.5 Critères (Racheter, facture serveur, relais présélectionné, suppression refusée)",
+        "56",
+        "CCO-05, CCO-18, CCO-22 ; Racheter : CL-09"
+       ]
+      },
+      {
+       "cellules": [
+        "9.5 Interdits (Trust Score/IFA, filtres, carte temps réel, code permanent, « Reste à payer », espèces)",
+        "57",
+        "CCO-02, CCO-25, forbid des sections Compte et Écrans retirés ; les autres : CL-09"
+       ]
+      },
+      {
+       "cellules": [
+        "9.6 Hors ligne au comptoir",
+        "57",
+        "Mode dégradé (CDM-08, figure Reseau_comptoir)"
+       ]
+      },
+      {
+       "cellules": [
+        "14.0 Livrables et décisions intégrées",
+        "82",
+        "CAV-01, CAV-04 à 06, CAV-17, CAV-19, CAV-23"
+       ]
+      },
+      {
+       "cellules": [
+        "14.1 Donner mon avis (quand, contenu, pourquoi deux notes)",
+        "82–83",
+        "Donner mon avis (CAV-01 à 14) ; « Pourquoi deux notes ? » replié"
+       ]
+      },
+      {
+       "cellules": [
+        "14.2 Lire les avis",
+        "83",
+        "CAV-23 ; onglet « Lire les avis » → CL-06"
+       ]
+      },
+      {
+       "cellules": [
+        "14.3 Règles, calculs, ce que les avis alimentent, liaisons, interdits",
+        "83–84",
+        "CAV-09 à 11, CAV-13, CAV-15 à 22 ; calculs et Wilson (section Règles et calculs)"
+       ]
+      },
+      {
+       "cellules": [
+        "14.4 API, événements, erreurs, paramètres, définition de terminé",
+        "84–85",
+        "Dev des deux sections avis ; AVIS-FENETRE, AVIS-BAS ; erreurs hors fenêtre et contenu interdit ; critères"
+       ]
+      },
+      {
+       "cellules": [
+        "15.0 Livrables",
+        "86",
+        "Aide, Messagerie, Légal, Mode dégradé ; centre de notifications : CL-10"
+       ]
+      },
+      {
+       "cellules": [
+        "15.1 Centre de notifications",
+        "86",
+        "CL-10 (route notifications) ; ici la rubrique Notifications du compte ouvre le réglage 10.1"
+       ]
+      },
+      {
+       "cellules": [
+        "15.2 Aide et support (FAQ, messagerie, WhatsApp, appel, table des canaux, SUP-*)",
+        "86–87",
+        "Aide (CSV-01 à 07), FAQ (CSV-08 à 10), Messagerie (CSV-11 à 15), Rappel (CSV-16, 17)"
+       ]
+      },
+      {
+       "cellules": [
+        "15.3 Pages légales",
+        "87",
+        "Pages légales (CLG-01 à 07)"
+       ]
+      },
+      {
+       "cellules": [
+        "15.4 Mode dégradé, NET-LENT, CACHE-CODE, interdits, définition de terminé",
+        "87–88",
+        "Mode dégradé (CDM-01 à 08) ; interdit WhatsApp : CSV-03 ; interdit case à cocher : CLG-04"
+       ]
+      },
+      {
+       "cellules": [
+        "2.4 Matrice de visibilité ; 19.1 anonymat",
+        "13 ; 104",
+        "CCO-12, CCO-20, CAV-22, CSV-12, CSV-13, CSV-16"
+       ]
+      },
+      {
+       "cellules": [
+        "2.6 Modèle Client (langue, thème) et Adresse",
+        "14",
+        "CRG-03, CCO-10"
+       ]
+      },
+      {
+       "cellules": [
+        "3.3–3.4 Numéro vérifié, ce qui est demandé plus tard",
+        "18–19",
+        "CCO-06, CCO-09, CCO-14"
+       ]
+      },
+      {
+       "cellules": [
+        "11.5 IFA invisible, paliers",
+        "68–70",
+        "CCO-02 à 04"
+       ]
+      },
+      {
+       "cellules": [
+        "19.3 Interdits valables partout",
+        "105",
+        "Écrans retirés (chiffres inventés), bandeau tournant supprimé, CSV-03"
+       ]
+      },
+      {
+       "cellules": [
+        "Réglages (écran déduit : 2.6, 3.1, 15.4 ; pidgin et taille du texte absents de la v3)",
+        "14, 17, 87",
+        "Réglages (CRG-01 à 08)"
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

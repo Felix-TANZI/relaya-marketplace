@@ -1,0 +1,21 @@
+{
+ "routes": [
+  "paiement-attente",
+  "prix-change",
+  "paiement-echec",
+  "paiement-moyen",
+  "confirmee",
+  "validee",
+  "xp-pay"
+ ],
+ "exclus": {},
+ "repris": {
+  "paiement-moyen": "DP-54 : achat réel (relais ou domicile choisi à l'achat, moyens et plafonds, commande en données, validation, confirmation).",
+  "paiement-attente": "DP-54 : achat réel (relais ou domicile choisi à l'achat, moyens et plafonds, commande en données, validation, confirmation).",
+  "confirmee": "DP-54 : achat réel (relais ou domicile choisi à l'achat, moyens et plafonds, commande en données, validation, confirmation).",
+  "validee": "DP-54 : achat réel (relais ou domicile choisi à l'achat, moyens et plafonds, commande en données, validation, confirmation).",
+  "paiement-echec": "DP-54 : achat réel (relais ou domicile choisi à l'achat, moyens et plafonds, commande en données, validation, confirmation).",
+  "xp-pay": "DP-54 : achat réel (relais ou domicile choisi à l'achat, moyens et plafonds, commande en données, validation, confirmation).",
+  "prix-change": "DP-54 : prix vérifiés avant de payer (hausse bloquée et montrée, baisse appliquée, article retiré ou pris), en données."
+ }
+}

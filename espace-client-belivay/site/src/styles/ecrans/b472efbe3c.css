@@ -1,0 +1,27 @@
+/* Généré par outils/styles.mjs (styles insérés dans l’écran par le prototype). */
+.xp-k{display:flex;align-items:center;gap:8px;margin:14px 2px 8px;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.xp-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.xp-b{height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:4px;font-size:17px;font-weight:700;letter-spacing:-.01em}
+.xp-b.apple{background:#000;color:#fff}
+.xp-b.apple svg{margin-top:-3px}
+.xp-b.gpay{background:#fff;color:#3C4043;box-shadow:inset 0 0 0 1.5px #DADCE0}
+html[data-theme=dark] .xp-b.gpay{box-shadow:inset 0 0 0 1.5px #5F6368}
+.xp-b.wide{width:100%;height:52px;font-size:18px}
+.xp-or{display:flex;align-items:center;gap:10px;margin:14px 0 4px;font-size:12.5px;color:var(--ink-3)}
+.xp-or:before,.xp-or:after{content:"";flex:1;height:1px;background:var(--line-2)}
+.xp-note{font-size:12px;color:var(--ink-3);margin:8px 2px 0;line-height:1.4}
+.cl08-op.apple,.cl08-op.gpay{display:flex;align-items:center;justify-content:center;gap:1px;font-size:12px;font-weight:800}
+.cl08-op.apple{background:#000;color:#fff}
+.cl08-op.gpay{background:#fff;color:#3C4043;box-shadow:inset 0 0 0 1px #DADCE0}
+.xp-sheet .hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.xp-sheet .hd b{display:flex;align-items:center;gap:3px;font-size:20px}
+.xp-sheet .ln{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+.xp-sheet .ln span:first-child{color:var(--ink-3)}
+.xp-sheet .ln b{text-align:right}
+.xp-sheet .cardr{display:flex;align-items:center;gap:10px}
+.xp-sheet .mini{width:40px;height:26px;border-radius:5px;background:linear-gradient(135deg,#1C1917,#57534E)}
+.xp-sheet .tot{display:flex;justify-content:space-between;align-items:baseline;padding:14px 0 6px}
+.xp-sheet .tot b{font-size:24px}
+.xp-fid{display:flex;flex-direction:column;align-items:center;gap:6px;margin:10px 0 0;color:var(--ink-3);font-size:13px}
+.xp-fid svg{color:#1E7A45}
+.cx-apple{margin-top:10px}

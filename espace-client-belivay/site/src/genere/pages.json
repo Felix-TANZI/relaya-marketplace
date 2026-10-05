@@ -1,0 +1,4929 @@
+[
+ {
+  "route": "menu",
+  "titre": "Menu",
+  "onglet": "",
+  "document": "CL-01",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Le Menu de l’application et le Plan du prototype"
+  ],
+  "etats": [
+   {
+    "adresse": "#menu",
+    "libelle": "Menu de l’application : compte, relais, catégories, achats, aide, préférences"
+   }
+  ],
+  "regles": 3,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "kit",
+  "titre": "Composants",
+  "onglet": "",
+  "document": "CL-01",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Design system « Mandarine & Nuit »"
+  ],
+  "etats": [
+   {
+    "adresse": "#kit",
+    "libelle": "Planche de composants"
+   },
+   {
+    "adresse": "#kit?st=feuille",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   }
+  ],
+  "regles": 6,
+  "regles_etape4": [
+   "CDS-01",
+   "CDS-02",
+   "CDS-03",
+   "CDS-04",
+   "CDS-05",
+   "CDS-06"
+  ],
+  "api": []
+ },
+ {
+  "route": "bienvenue",
+  "titre": "Bienvenue",
+  "onglet": "",
+  "document": "CL-03",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écrans « Premier lancement »"
+  ],
+  "etats": [
+   {
+    "adresse": "#bienvenue",
+    "libelle": "Premier lancement · écran 1 sur 3, la promesse"
+   },
+   {
+    "adresse": "#bienvenue?langue=pcm",
+    "libelle": "Premier lancement · écran 1 en pidgin"
+   }
+  ],
+  "regles": 12,
+  "regles_etape4": [
+   "CIN-08",
+   "CIN-09"
+  ],
+  "api": []
+ },
+ {
+  "route": "interets",
+  "titre": "Centres d’intérêt",
+  "onglet": "",
+  "document": "CL-03",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écrans « Premier lancement »"
+  ],
+  "etats": [
+   {
+    "adresse": "#interets",
+    "libelle": "Premier lancement · écran 2, centres d’intérêt"
+   },
+   {
+    "adresse": "#interets?st=choix",
+    "libelle": "Centres d’intérêt · trois catégories touchées"
+   },
+   {
+    "adresse": "#interets?langue=pcm",
+    "libelle": "Centres d’intérêt · en pidgin"
+   }
+  ],
+  "regles": 12,
+  "regles_etape4": [
+   "CIN-08",
+   "CIN-09"
+  ],
+  "api": []
+ },
+ {
+  "route": "connexion",
+  "titre": "Connexion",
+  "onglet": "",
+  "document": "CL-03",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Connexion »"
+  ],
+  "etats": [
+   {
+    "adresse": "#connexion?lancement=1",
+    "libelle": "Premier lancement · écran 3, connexion"
+   },
+   {
+    "adresse": "#connexion?lancement=1&langue=pcm",
+    "libelle": "Connexion · écran 3 en pidgin"
+   },
+   {
+    "adresse": "#connexion?st=google&lancement=1",
+    "libelle": "Connexion · feuille « Choisis un compte » Google"
+   },
+   {
+    "adresse": "#connexion?st=existant&lancement=1",
+    "libelle": "Connexion Google · adresse déjà inscrite, compte ouvert"
+   },
+   {
+    "adresse": "#connexion?st=panier",
+    "libelle": "Connexion demandée au paiement · panier gardé"
+   },
+   {
+    "adresse": "#connexion?st=panier&etape=code",
+    "libelle": "Connexion au paiement · feuille, code reçu par WhatsApp"
+   },
+   {
+    "adresse": "#connexion?st=panier&choix=pays",
+    "libelle": "Connexion au paiement · pays du numéro (diaspora)"
+   },
+   {
+    "adresse": "#connexion?st=existant",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   },
+   {
+    "adresse": "#connexion?st=google",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   }
+  ],
+  "regles": 8,
+  "regles_etape4": [],
+  "api": [
+   "POST /auth/google"
+  ]
+ },
+ {
+  "route": "connexion-email",
+  "titre": "Connexion par e-mail",
+  "onglet": "",
+  "document": "CL-03",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écrans « Connexion par e-mail » et « Mot de passe oublié »"
+  ],
+  "etats": [
+   {
+    "adresse": "#connexion-email",
+    "libelle": "Connexion par e-mail · se connecter"
+   },
+   {
+    "adresse": "#connexion-email?st=inscription",
+    "libelle": "Connexion par e-mail · créer un compte"
+   },
+   {
+    "adresse": "#connexion-email?st=erreur",
+    "libelle": "Connexion par e-mail · identifiants incorrects"
+   },
+   {
+    "adresse": "#connexion-email?st=existe",
+    "libelle": "Créer un compte · adresse déjà inscrite"
+   },
+   {
+    "adresse": "#connexion-email?from=panier",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   }
+  ],
+  "regles": 8,
+  "regles_etape4": [],
+  "api": [
+   "POST /auth/email"
+  ]
+ },
+ {
+  "route": "mdp-oublie",
+  "titre": "Mot de passe oublié",
+  "onglet": "",
+  "document": "CL-03",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écrans « Connexion par e-mail » et « Mot de passe oublié »"
+  ],
+  "etats": [
+   {
+    "adresse": "#mdp-oublie",
+    "libelle": "Mot de passe oublié · saisie de l’e-mail"
+   },
+   {
+    "adresse": "#mdp-oublie?st=envoye",
+    "libelle": "Mot de passe oublié · lien envoyé"
+   }
+  ],
+  "regles": 8,
+  "regles_etape4": [],
+  "api": [
+   "POST /auth/password/forgot · /auth/password/reset"
+  ]
+ },
+ {
+  "route": "numero",
+  "titre": "Ton numéro",
+  "onglet": "",
+  "document": "CL-03",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Vérifier ton numéro »"
+  ],
+  "etats": [
+   {
+    "adresse": "#numero?from=panier",
+    "libelle": "Première commande · étape 1, saisie du numéro"
+   },
+   {
+    "adresse": "#numero?st=code&from=panier",
+    "libelle": "Vérifier le numéro · code à 6 chiffres"
+   },
+   {
+    "adresse": "#numero?st=faux&from=panier",
+    "libelle": "Vérifier le numéro · code faux"
+   },
+   {
+    "adresse": "#numero?st=bloque&from=panier",
+    "libelle": "Vérifier le numéro · trop d’essais"
+   },
+   {
+    "adresse": "#numero?st=utilise&from=panier",
+    "libelle": "Vérifier le numéro · déjà relié à un compte"
+   },
+   {
+    "adresse": "#numero?st=ok&from=panier",
+    "libelle": "Vérifier le numéro · vérifié, droit de commander"
+   },
+   {
+    "adresse": "#numero?st=pays&from=panier",
+    "libelle": "Vérifier le numéro · pays du numéro (diaspora)"
+   },
+   {
+    "adresse": "#numero?pays=fr&canal=whatsapp&from=panier",
+    "libelle": "Vérifier le numéro · numéro français, code par WhatsApp"
+   },
+   {
+    "adresse": "#numero?from=connexion",
+    "libelle": "Connexion par numéro · saisie du numéro"
+   },
+   {
+    "adresse": "#numero?st=code",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   },
+   {
+    "adresse": "#numero?st=ok",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   }
+  ],
+  "regles": 10,
+  "regles_etape4": [],
+  "api": [
+   "POST /auth/otp/send",
+   "POST /auth/otp/verify",
+   "POST /payments/{id}/resend · /cancel · /abandon"
+  ]
+ },
+ {
+  "route": "numero-changer",
+  "titre": "Changer de numéro",
+  "onglet": "",
+  "document": "CL-03",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Changer de numéro »"
+  ],
+  "etats": [
+   {
+    "adresse": "#numero-changer",
+    "libelle": "Compte · changer de numéro, code sur l’ancien"
+   },
+   {
+    "adresse": "#numero-changer?etape=2",
+    "libelle": "Changer de numéro · nouveau numéro"
+   },
+   {
+    "adresse": "#numero-changer?etape=4",
+    "libelle": "Changer de numéro · codes de retrait renouvelés"
+   },
+   {
+    "adresse": "#numero-changer?etape=3",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   }
+  ],
+  "regles": 8,
+  "regles_etape4": [],
+  "api": [
+   "POST /auth/otp/send",
+   "PUT /me/phone"
+  ]
+ },
+ {
+  "route": "relais-choix",
+  "titre": "Mon relais",
+  "onglet": "",
+  "document": "CL-03",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Choisir mon relais »"
+  ],
+  "etats": [
+   {
+    "adresse": "#relais-choix",
+    "libelle": "Puce relais de l’en-tête · mon relais habituel"
+   },
+   {
+    "adresse": "#relais-choix?sel=Essos",
+    "libelle": "Mon relais · autre relais choisi"
+   },
+   {
+    "adresse": "#relais-choix?st=premiere",
+    "libelle": "Première commande · liste des relais"
+   },
+   {
+    "adresse": "#relais-choix?st=hors-zone",
+    "libelle": "Choisir un relais · hors des zones servies"
+   },
+   {
+    "adresse": "#relais-choix?st=sans-relais",
+    "libelle": "Choisir un relais · aucun relais ouvert dans la zone"
+   },
+   {
+    "adresse": "#relais-choix?st=position",
+    "libelle": "Choisir un relais · position refusée"
+   }
+  ],
+  "regles": 13,
+  "regles_etape4": [],
+  "api": [
+   "GET /relais?near=lat,lng · ?q= · &open_today=1&not_full=1",
+   "PUT /me/relais-habituel"
+  ]
+ },
+ {
+  "route": "premiere-commande",
+  "titre": "Première commande",
+  "onglet": "",
+  "document": "CL-03",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Première commande »"
+  ],
+  "etats": [
+   {
+    "adresse": "#premiere-commande",
+    "libelle": "Première commande · étape 2, au relais"
+   },
+   {
+    "adresse": "#premiere-commande?st=domicile",
+    "libelle": "Première commande · étape 2, à domicile"
+   },
+   {
+    "adresse": "#premiere-commande?st=paiement",
+    "libelle": "Première commande · feuille « Avec quel numéro payer ? »"
+   }
+  ],
+  "regles": 8,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "adresse",
+  "titre": "Adresse de livraison",
+  "onglet": "",
+  "document": "CL-03",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Adresse par repères »"
+  ],
+  "etats": [
+   {
+    "adresse": "#adresse",
+    "libelle": "Adresse par repères · point sur la carte"
+   },
+   {
+    "adresse": "#adresse?st=vide",
+    "libelle": "Adresse par repères · formulaire vide"
+   },
+   {
+    "adresse": "#adresse?st=enregistree",
+    "libelle": "Adresse par repères · enregistrée"
+   },
+   {
+    "adresse": "#adresse?st=hors-zone",
+    "libelle": "Adresse par repères · quartier hors zone"
+   }
+  ],
+  "regles": 4,
+  "regles_etape4": [],
+  "api": [
+   "POST · PUT · DELETE /me/adresses · /me/adresses/{id}"
+  ]
+ },
+ {
+  "route": "notifs-proposition",
+  "titre": "Notifications",
+  "onglet": "",
+  "document": "CL-03",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Feuille « Proposition des notifications »"
+  ],
+  "etats": [
+   {
+    "adresse": "#notifs-proposition",
+    "libelle": "Après la première commande · proposition des notifications"
+   },
+   {
+    "adresse": "#notifs-proposition?st=sms",
+    "libelle": "Proposition des notifications · « Plus tard », repli SMS"
+   }
+  ],
+  "regles": 6,
+  "regles_etape4": [],
+  "api": [
+   "POST · DELETE /devices",
+   "GET · PUT /me/notification-settings"
+  ]
+ },
+ {
+  "route": "cgu",
+  "titre": "Conditions",
+  "onglet": "",
+  "document": "CL-03",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Feuille « Conditions générales »"
+  ],
+  "etats": [
+   {
+    "adresse": "#cgu",
+    "libelle": "Ouverture de l’application · nouvelle version des conditions"
+   },
+   {
+    "adresse": "#cgu?st=inscription",
+    "libelle": "Connexion · « Les lire en bref », conditions acceptées"
+   }
+  ],
+  "regles": 10,
+  "regles_etape4": [],
+  "api": [
+   "GET · POST /legal/{doc}?lang= · /me/legal · /me/legal/accept"
+  ]
+ },
+ {
+  "route": "accueil",
+  "titre": "Accueil",
+  "onglet": "accueil",
+  "document": "CL-04",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Carte des écrans et navigation",
+   "Rendus : clair, sombre, anglais, pidgin, taille du texte, iPhone",
+   "Écran « Accueil » — l’accueil d’origine, avec un contenu vrai",
+   "Accueil — ce qui change selon le profil",
+   "Accueil — réseau lent et hors ligne"
+  ],
+  "etats": [
+   {
+    "adresse": "#accueil",
+    "libelle": "Écran racine · accueil"
+   },
+   {
+    "adresse": "#accueil?st=horsligne",
+    "libelle": "Hors ligne"
+   },
+   {
+    "adresse": "#accueil",
+    "libelle": "Accueil · version d’origine, acheteuse fidèle, 3 colis au relais"
+   },
+   {
+    "adresse": "#accueil?st=ferme",
+    "libelle": "Accueil · relais fermé ce jour-là"
+   },
+   {
+    "adresse": "#accueil?profil=nouveau",
+    "libelle": "Accueil · profil nouveau"
+   },
+   {
+    "adresse": "#accueil?profil=navigateur",
+    "libelle": "Accueil · profil navigateur sans achat"
+   },
+   {
+    "adresse": "#accueil?profil=visiteur",
+    "libelle": "Accueil · visiteur sans compte"
+   },
+   {
+    "adresse": "#accueil?st=lent",
+    "libelle": "Accueil · connexion lente"
+   },
+   {
+    "adresse": "#accueil?st=horsligne",
+    "libelle": "Accueil · hors ligne"
+   },
+   {
+    "adresse": "#accueil?pop=profil",
+    "libelle": "Menu du profil · touche l’avatar de l’en-tête"
+   }
+  ],
+  "regles": 40,
+  "regles_etape4": [
+   "CRD-01",
+   "CRD-02",
+   "CRD-03",
+   "CRD-04",
+   "CRD-05",
+   "CAC-18",
+   "CAC-26",
+   "CAC-28"
+  ],
+  "api": [
+   "GET /home?profil=auto · /home/rows/{id}?cursor="
+  ]
+ },
+ {
+  "route": "categories",
+  "titre": "Catégories",
+  "onglet": "categories",
+  "document": "CL-04",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Index des catégories »"
+  ],
+  "etats": [
+   {
+    "adresse": "#categories",
+    "libelle": "Catégories · Téléphones & tablettes"
+   },
+   {
+    "adresse": "#categories?u=sport",
+    "libelle": "Catégories · Sport & loisirs, vignette vide masquée"
+   }
+  ],
+  "regles": 12,
+  "regles_etape4": [],
+  "api": [
+   "GET /categories"
+  ]
+ },
+ {
+  "route": "liste",
+  "titre": "Listing",
+  "onglet": "categories",
+  "document": "CL-04",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Listing » — la page catégorie unique",
+   "Listing — gros colis, filtre de livrabilité, catégorie peu fournie"
+  ],
+  "etats": [
+   {
+    "adresse": "#liste?cat=tel",
+    "libelle": "Listing · Téléphones & tablettes, Pertinence"
+   },
+   {
+    "adresse": "#liste?tri=proche&from=accueil",
+    "libelle": "Listing · tout le catalogue, Au plus proche"
+   },
+   {
+    "adresse": "#liste?cat=tel&sub=Smartphones&sheet=marque&sel=Samsung",
+    "libelle": "Listing · Smartphones, feuille Marque"
+   },
+   {
+    "adresse": "#liste?cat=elec",
+    "libelle": "Listing · Électronique, carte XL"
+   },
+   {
+    "adresse": "#liste?cat=elec&f=relais",
+    "libelle": "Listing · filtre Retirable à mon relais"
+   },
+   {
+    "adresse": "#liste?cat=tel&sub=Tablettes&f=auj",
+    "libelle": "Listing · catégorie peu fournie, Aussi dans"
+   }
+  ],
+  "regles": 19,
+  "regles_etape4": [
+   "CLS-11"
+  ],
+  "api": [
+   "GET /listing/{cat}?sub=&tri=&f=&marque=&cursor="
+  ]
+ },
+ {
+  "route": "recherche",
+  "titre": "Recherche",
+  "onglet": "accueil",
+  "document": "CL-05",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Avant saisie »",
+   "En-tête, voix et suggestions"
+  ],
+  "etats": [
+   {
+    "adresse": "#recherche",
+    "libelle": "Barre de recherche de l’accueil · avant saisie"
+   },
+   {
+    "adresse": "#recherche?st=efface",
+    "libelle": "Recherche · « Effacer » l’historique"
+   },
+   {
+    "adresse": "#recherche?st=voix",
+    "libelle": "Micro de la barre · recherche vocale"
+   }
+  ],
+  "regles": 17,
+  "regles_etape4": [
+   "CRE-11",
+   "CRE-12"
+  ],
+  "api": [
+   "GET /search/trending?zone=",
+   "GET · DELETE /me/search-history · /me/search-history/{id}"
+  ]
+ },
+ {
+  "route": "recherche-saisie",
+  "titre": "Recherche · suggestions",
+  "onglet": "accueil",
+  "document": "CL-05",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "En-tête, voix et suggestions"
+  ],
+  "etats": [
+   {
+    "adresse": "#recherche-saisie?q=ch",
+    "libelle": "Recherche · suggestions dès la 2e lettre"
+   },
+   {
+    "adresse": "#recherche-saisie?q=chargeur+tek",
+    "libelle": "Recherche · suggestion avant la faute"
+   },
+   {
+    "adresse": "#recherche-saisie?q=clim",
+    "libelle": "Recherche · suggestion « 0 · on cherche »"
+   }
+  ],
+  "regles": 8,
+  "regles_etape4": [
+   "CRE-11",
+   "CRE-12"
+  ],
+  "api": [
+   "GET /search/suggest?q="
+  ]
+ },
+ {
+  "route": "recherche-resultats",
+  "titre": "Résultats de recherche",
+  "onglet": "accueil",
+  "document": "CL-05",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Sélecteur de relais",
+   "Écran « Résultats »"
+  ],
+  "etats": [
+   {
+    "adresse": "#recherche-resultats?q=chargeur+tecno&relais=essos&tri=proche",
+    "libelle": "Résultats · autre relais, « Au plus proche »"
+   },
+   {
+    "adresse": "#recherche-resultats?q=chargeur+tekno",
+    "libelle": "Résultats · saisie corrigée, repère panier"
+   },
+   {
+    "adresse": "#recherche-resultats?q=chargeur+tecno&auj=1",
+    "libelle": "Résultats · puce « Retirable aujourd’hui »"
+   },
+   {
+    "adresse": "#recherche-resultats?q=fer+à+repasser",
+    "libelle": "Résultats · produit épuisé en fin de liste"
+   },
+   {
+    "adresse": "#recherche-resultats?q=téléviseur",
+    "libelle": "Résultats · colis XL livrés à domicile"
+   },
+   {
+    "adresse": "#recherche-resultats?q=chargeur+tecno",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   }
+  ],
+  "regles": 13,
+  "regles_etape4": [],
+  "api": [
+   "GET /search?q=&filters=&relais=&tri=&cursor="
+  ]
+ },
+ {
+  "route": "recherche-zero",
+  "titre": "Recherche sans résultat",
+  "onglet": "accueil",
+  "document": "CL-05",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Zéro résultat utile et journal"
+  ],
+  "etats": [
+   {
+    "adresse": "#recherche-zero?q=climatiseur+split",
+    "libelle": "Recherche · zéro résultat utile"
+   },
+   {
+    "adresse": "#recherche-zero?q=climatiseur+split&st=alerte",
+    "libelle": "Zéro résultat · alerte « Préviens-moi » créée"
+   }
+  ],
+  "regles": 11,
+  "regles_etape4": [],
+  "api": [
+   "GET /search?q=&filters=&relais=&tri=&cursor=",
+   "POST /search/alerts"
+  ]
+ },
+ {
+  "route": "recherche-filtres",
+  "titre": "Filtres de recherche",
+  "onglet": "accueil",
+  "document": "CL-05",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Filtres »"
+  ],
+  "etats": [
+   {
+    "adresse": "#recherche-filtres?q=chargeur+tecno",
+    "libelle": "Résultats · « Filtres », quatre familles"
+   },
+   {
+    "adresse": "#recherche-filtres?q=chargeur+tecno&auj=1",
+    "libelle": "Filtres · compteur en direct, option grisée"
+   }
+  ],
+  "regles": 10,
+  "regles_etape4": [
+   "CRE-37"
+  ],
+  "api": [
+   "GET /search?q=&filters=&relais=&tri=&cursor="
+  ]
+ },
+ {
+  "route": "relais-selecteur",
+  "titre": "Relais de la recherche",
+  "onglet": "accueil",
+  "document": "CL-05",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Sélecteur de relais"
+  ],
+  "etats": [
+   {
+    "adresse": "#relais-selecteur?q=chargeur+tecno",
+    "libelle": "Résultats · puce relais, choisir le relais"
+   }
+  ],
+  "regles": 3,
+  "regles_etape4": [],
+  "api": [
+   "GET /relais?near=lat,lng · ?q= · &open_today=1&not_full=1"
+  ]
+ },
+ {
+  "route": "fiche",
+  "titre": "Fiche produit",
+  "onglet": "accueil",
+  "document": "CL-06",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Fiche produit » — haut de fiche",
+   "Fiche produit — variantes, stock et quantité",
+   "Fiche produit — livraison, prix livré et classes de colis",
+   "Fiche produit — garanties, onglets, rangées et barre d’achat",
+   "Fiche produit — après le lancement (interrupteurs fermés)"
+  ],
+  "etats": [
+   {
+    "adresse": "#fiche?p=camon30",
+    "libelle": "Fiche produit · page entière (Tecno Camon 30)"
+   },
+   {
+    "adresse": "#fiche?p=galaxya15&vue=title",
+    "libelle": "Fiche · remise réelle, prix barré"
+   },
+   {
+    "adresse": "#fiche?p=camon30&v=noir-128&vue=title",
+    "libelle": "Fiche · variante choisie, autre vendeur"
+   },
+   {
+    "adresse": "#fiche?p=camon30&st=alerte&al=vert",
+    "libelle": "Fiche · variante en rupture, « Préviens-moi »"
+   },
+   {
+    "adresse": "#fiche?p=camon30&st=alerte-ok&al=vert",
+    "libelle": "Fiche · alerte de retour enregistrée"
+   },
+   {
+    "adresse": "#fiche?p=pagne&q=6&vue=act",
+    "libelle": "Fiche · quantité bornée au stock"
+   },
+   {
+    "adresse": "#fiche?p=robewax&vue=title",
+    "libelle": "Fiche · taille en rupture partout"
+   },
+   {
+    "adresse": "#fiche?p=ferceram&vue=title",
+    "libelle": "Fiche · aucune offre en stock"
+   },
+   {
+    "adresse": "#fiche?p=pagne",
+    "libelle": "Fiche · retrait payant (+ 900 F)"
+   },
+   {
+    "adresse": "#fiche?p=ventilo",
+    "libelle": "Fiche · colis L, supplément"
+   },
+   {
+    "adresse": "#fiche?p=tv43&vue=liv",
+    "libelle": "Fiche · colis XL, livraison à domicile seule"
+   },
+   {
+    "adresse": "#fiche?p=camon30&st=relais-plein",
+    "libelle": "Fiche · relais plein aujourd’hui"
+   },
+   {
+    "adresse": "#fiche?p=camon30&t=spec&st=barre",
+    "libelle": "Fiche · barre d’achat collante en défilant"
+   },
+   {
+    "adresse": "#fiche?p=camon30&st=lent",
+    "libelle": "Fiche · connexion lente"
+   },
+   {
+    "adresse": "#fiche?p=camon30&st=apres",
+    "libelle": "Fiche · blocs après le lancement, à leur place"
+   },
+   {
+    "adresse": "#fiche?p=cartable",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   },
+   {
+    "adresse": "#fiche?p=cartable&st=ajoute",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   },
+   {
+    "adresse": "#fiche?p=montre",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   },
+   {
+    "adresse": "#fiche?p=montre&st=apres",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   }
+  ],
+  "regles": 60,
+  "regles_etape4": [
+   "CFP-54"
+  ],
+  "api": [
+   "GET /products/{maitre}?relais=&variante=&q=",
+   "POST /me/alerts",
+   "POST /cart/lines"
+  ]
+ },
+ {
+  "route": "galerie",
+  "titre": "Galerie photo",
+  "onglet": "accueil",
+  "document": "CL-06",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Galerie » — photos du vendeur et photos d’acheteurs"
+  ],
+  "etats": [
+   {
+    "adresse": "#galerie?p=camon30&i=1",
+    "libelle": "Fiche · galerie plein écran, photo du vendeur"
+   },
+   {
+    "adresse": "#galerie?p=camon30&i=6",
+    "libelle": "Galerie · photo d’acheteur"
+   }
+  ],
+  "regles": 5,
+  "regles_etape4": [],
+  "api": [
+   "GET /products/{maitre}?relais=&variante=&q="
+  ]
+ },
+ {
+  "route": "avis",
+  "titre": "Avis",
+  "onglet": "accueil",
+  "document": "CL-06",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Lire les avis » (14.2)"
+  ],
+  "etats": [
+   {
+    "adresse": "#avis?p=camon30",
+    "libelle": "Fiche · « 128 avis vérifiés », lire les avis"
+   },
+   {
+    "adresse": "#avis?p=ecouteurs",
+    "libelle": "Avis · produit retiré, « Donner mon avis »"
+   },
+   {
+    "adresse": "#avis?p=coque30",
+    "libelle": "Avis · produit sans avis (coque, nouveau)"
+   },
+   {
+    "adresse": "#avis?p=karite",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   }
+  ],
+  "regles": 11,
+  "regles_etape4": [],
+  "api": [
+   "GET /products/{maitre}/reviews?cursor= · /reviews/summary"
+  ]
+ },
+ {
+  "route": "question",
+  "titre": "Question au vendeur",
+  "onglet": "accueil",
+  "document": "CL-06",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Poser une question au vendeur »"
+  ],
+  "etats": [
+   {
+    "adresse": "#question?p=camon30",
+    "libelle": "Fiche · « Poser une question au vendeur »"
+   },
+   {
+    "adresse": "#question?p=camon30&st=masque",
+    "libelle": "Question envoyée · numéro masqué"
+   }
+  ],
+  "regles": 8,
+  "regles_etape4": [],
+  "api": [
+   "POST /messages/threads"
+  ]
+ },
+ {
+  "route": "panier",
+  "titre": "Panier",
+  "onglet": "panier",
+  "document": "CL-07",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Panier » — structure",
+   "Bas du panier — conseil, récapitulatif, paiement",
+   "Le moteur de calcul des frais",
+   "Gestes utiles et actions",
+   "États du panier"
+  ],
+  "etats": [
+   {
+    "adresse": "#panier",
+    "libelle": "Panier · référence 272 579 F (3 boutiques, 4 articles)"
+   },
+   {
+    "adresse": "#panier?st=seuil",
+    "libelle": "Panier · seuil de livraison offerte non atteint"
+   },
+   {
+    "adresse": "#panier?st=comptoir",
+    "libelle": "Panier · paiement au comptoir proposé"
+   },
+   {
+    "adresse": "#panier?st=conseil",
+    "libelle": "Panier · offre changée (même produit, zone du trajet)"
+   },
+   {
+    "adresse": "#panier?suppr=camon30",
+    "libelle": "Panier · article retiré, trajet partagé perdu"
+   },
+   {
+    "adresse": "#panier?st=glisser",
+    "libelle": "Panier · balayage d’un article"
+   },
+   {
+    "adresse": "#panier?st=partage",
+    "libelle": "Panier · envoyer au payeur à l’étranger"
+   },
+   {
+    "adresse": "#panier?st=une",
+    "libelle": "Panier · une seule boutique"
+   },
+   {
+    "adresse": "#panier?st=xl",
+    "libelle": "Panier · colis XL livré à domicile"
+   },
+   {
+    "adresse": "#panier?st=retire",
+    "libelle": "Panier · article retiré par le serveur"
+   },
+   {
+    "adresse": "#panier?prix=hausse",
+    "libelle": "Panier · un prix a augmenté (Passer commande → contrôle des prix)"
+   },
+   {
+    "adresse": "#panier?st=horsligne",
+    "libelle": "Panier · hors ligne"
+   },
+   {
+    "adresse": "#panier?st=invite&feuille=1",
+    "libelle": "Panier · visiteur, connexion pour payer"
+   },
+   {
+    "adresse": "#panier?st=vide",
+    "libelle": "Panier · vide"
+   },
+   {
+    "adresse": "#panier?premiere=1",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   },
+   {
+    "adresse": "#panier?st=invite",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   }
+  ],
+  "regles": 83,
+  "regles_etape4": [
+   "CPN-39",
+   "CPN-56"
+  ],
+  "api": [
+   "GET /cart?mode=&relais=",
+   "POST /cart/lines",
+   "PATCH · DELETE /cart/lines/{id}",
+   "POST /cart/lines/{id}/save · /cart/lines/{id}/swap-offer",
+   "POST /cart/lines/{id}/save · /cart/lines/{id}/swap-offer",
+   "GET /cart/eligibility/counter",
+   "POST /carts/{id}/share"
+  ]
+ },
+ {
+  "route": "panier-retrait",
+  "titre": "Retirer un article",
+  "onglet": "panier",
+  "document": "CL-07",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Gestes utiles et actions"
+  ],
+  "etats": [
+   {
+    "adresse": "#panier-retrait?p=camon30",
+    "libelle": "Panier · retrait qui casse un trajet (avertissement)"
+   }
+  ],
+  "regles": 8,
+  "regles_etape4": [],
+  "api": [
+   "PATCH · DELETE /cart/lines/{id}"
+  ]
+ },
+ {
+  "route": "sauvegardes",
+  "titre": "Sauvegardés",
+  "onglet": "sauvegardes",
+  "document": "CL-07",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Sauvegardés et favoris »"
+  ],
+  "etats": [
+   {
+    "adresse": "#sauvegardes",
+    "libelle": "Sauvegardés · onglet, 2 articles avec alertes"
+   },
+   {
+    "adresse": "#sauvegardes?st=rupture",
+    "libelle": "Sauvegardés · variante épuisée partout"
+   },
+   {
+    "adresse": "#sauvegardes?st=vide",
+    "libelle": "Sauvegardés · vide"
+   }
+  ],
+  "regles": 15,
+  "regles_etape4": [
+   "CSG-11"
+  ],
+  "api": [
+   "GET · POST · PATCH · DELETE /me/favorites · /me/favorites/{id}"
+  ]
+ },
+ {
+  "route": "paiement-attente",
+  "titre": "Paiement en attente",
+  "onglet": "panier",
+  "document": "CL-08",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Un prix a changé » — contrôle au clic sur « Payer »",
+   "Écran « Paiement en attente »"
+  ],
+  "etats": [
+   {
+    "adresse": "#paiement-attente?cas=baisse",
+    "libelle": "Paiement en attente · un prix a baissé, « tu gagnes 1 500 F »"
+   },
+   {
+    "adresse": "#paiement-attente",
+    "libelle": "Paiement en attente · MTN MoMo, « J’ai validé sur mon téléphone »"
+   },
+   {
+    "adresse": "#paiement-attente?st=numero",
+    "libelle": "Paiement en attente · numéro changé, Orange Money"
+   },
+   {
+    "adresse": "#paiement-attente?st=verif",
+    "libelle": "Paiement en attente · délai écoulé, vérification"
+   },
+   {
+    "adresse": "#paiement-attente?mode=comptoir",
+    "libelle": "Paiement en attente · livraison d’une commande au comptoir"
+   },
+   {
+    "adresse": "#paiement-attente?dyn=deplie",
+    "libelle": "Paiement en attente · île dépliée (montant, délai)"
+   },
+   {
+    "adresse": "#paiement-attente?comptoir=1",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   },
+   {
+    "adresse": "#paiement-attente?montant=4000",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   },
+   {
+    "adresse": "#paiement-attente?panier=seuil",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   },
+   {
+    "adresse": "#paiement-attente?premiere=1",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   },
+   {
+    "adresse": "#paiement-attente?st=reprise",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   }
+  ],
+  "regles": 25,
+  "regles_etape4": [],
+  "api": [
+   "POST /checkout",
+   "POST /checkout/counter",
+   "GET /payments/{id}",
+   "POST /payments/{id}/resend · /cancel · /abandon"
+  ]
+ },
+ {
+  "route": "prix-change",
+  "titre": "Un prix a changé",
+  "onglet": "panier",
+  "document": "CL-08",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Un prix a changé » — contrôle au clic sur « Payer »"
+  ],
+  "etats": [
+   {
+    "adresse": "#prix-change?st=hausse",
+    "libelle": "Contrôle des prix · hausse, confirmation"
+   },
+   {
+    "adresse": "#prix-change?st=retire",
+    "libelle": "Contrôle des prix · produit désactivé"
+   },
+   {
+    "adresse": "#prix-change?st=pris",
+    "libelle": "Contrôle des prix · article pris, aucun autre vendeur"
+   }
+  ],
+  "regles": 9,
+  "regles_etape4": [],
+  "api": [
+   "POST /checkout",
+   "POST /checkout/confirm"
+  ]
+ },
+ {
+  "route": "paiement-echec",
+  "titre": "Paiement non abouti",
+  "onglet": "panier",
+  "document": "CL-08",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Charte de simplicité et d’écriture",
+   "Écran « Paiement non abouti »"
+  ],
+  "etats": [
+   {
+    "adresse": "#paiement-echec?cause=solde",
+    "libelle": "État d’erreur"
+   },
+   {
+    "adresse": "#paiement-echec",
+    "libelle": "Paiement non abouti · demande expirée"
+   },
+   {
+    "adresse": "#paiement-echec?cause=solde",
+    "libelle": "Paiement non abouti · solde insuffisant"
+   },
+   {
+    "adresse": "#paiement-echec?cause=carte",
+    "libelle": "Paiement non abouti · carte refusée"
+   }
+  ],
+  "regles": 25,
+  "regles_etape4": [
+   "CCH-22",
+   "CCH-23",
+   "CCH-24",
+   "CCH-26",
+   "CCH-28",
+   "CCH-29",
+   "CCH-30",
+   "CCH-31",
+   "CCH-32",
+   "CCH-35",
+   "CCH-36"
+  ],
+  "api": []
+ },
+ {
+  "route": "paiement-moyen",
+  "titre": "Moyen de paiement",
+  "onglet": "panier",
+  "document": "CL-08",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Feuille « Moyen de paiement »"
+  ],
+  "etats": [
+   {
+    "adresse": "#paiement-moyen?cause=expire",
+    "libelle": "Moyen de paiement · MTN, carte au-delà du plafond"
+   },
+   {
+    "adresse": "#paiement-moyen?choix=autre&cause=expire",
+    "libelle": "Moyen de paiement · autre numéro"
+   },
+   {
+    "adresse": "#paiement-moyen?choix=carte&panier=seuil",
+    "libelle": "Moyen de paiement · carte, 2 % affichés"
+   },
+   {
+    "adresse": "#paiement-moyen?montant=33780&choix=apple",
+    "libelle": "Moyen de paiement · Apple Pay choisi"
+   },
+   {
+    "adresse": "#paiement-moyen?montant=33780&choix=wallet",
+    "libelle": "Moyen de paiement · Wallet BelivaY choisi"
+   },
+   {
+    "adresse": "#paiement-moyen?choix=wallet",
+    "libelle": "Moyen de paiement · Wallet insuffisant pour ce panier"
+   },
+   {
+    "adresse": "#paiement-moyen?from=premiere",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   },
+   {
+    "adresse": "#paiement-moyen?montant=4000&choix=orange",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   },
+   {
+    "adresse": "#paiement-moyen?panier=seuil",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   }
+  ],
+  "regles": 6,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "confirmee",
+  "titre": "Commande confirmée",
+  "onglet": "commandes",
+  "document": "CL-08",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Commande confirmée » — le reçu"
+  ],
+  "etats": [
+   {
+    "adresse": "#confirmee",
+    "libelle": "Commande confirmée · reçu BLV-52107 (depuis la notification)"
+   },
+   {
+    "adresse": "#confirmee?cas=panier&premiere=1",
+    "libelle": "Commande confirmée · première commande payée à 10 h 15 (→ proposition des notifications)"
+   },
+   {
+    "adresse": "#confirmee?st=partage",
+    "libelle": "Commande confirmée · partager la confirmation"
+   }
+  ],
+  "regles": 16,
+  "regles_etape4": [],
+  "api": [
+   "GET /orders/{id}/receipt"
+  ]
+ },
+ {
+  "route": "validee",
+  "titre": "Commande validée",
+  "onglet": "commandes",
+  "document": "CL-08",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Commande validée » — paiement au comptoir"
+  ],
+  "etats": [
+   {
+    "adresse": "#validee",
+    "libelle": "Commande validée · paiement au comptoir (BLV-51940)"
+   }
+  ],
+  "regles": 13,
+  "regles_etape4": [],
+  "api": [
+   "POST /checkout/counter"
+  ]
+ },
+ {
+  "route": "commandes",
+  "titre": "Mes commandes",
+  "onglet": "commandes",
+  "document": "CL-09",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Charte de simplicité et d’écriture",
+   "Écran « Mes commandes » · onglet En cours",
+   "Feuilles « Paiement » et « Annulation » de Mes commandes",
+   "Onglet « Terminées » · racheter, avis, commande annulée"
+  ],
+  "etats": [
+   {
+    "adresse": "#commandes?st=vide",
+    "libelle": "État vide"
+   },
+   {
+    "adresse": "#commandes",
+    "libelle": "Mes commandes · En cours : paiement en attente, livraisons en cours avec plan, cartes"
+   },
+   {
+    "adresse": "#commandes?st=expire",
+    "libelle": "Mes commandes · réservation expirée à 10 h 27"
+   },
+   {
+    "adresse": "#commandes?st=vide",
+    "libelle": "Mes commandes · nouveau client, rien à afficher"
+   },
+   {
+    "adresse": "#commandes?onglet=terminees",
+    "libelle": "Mes commandes · Terminées"
+   },
+   {
+    "adresse": "#commandes?onglet=terminees&st=rachat&ref=BLV-51702",
+    "libelle": "Terminées · « Racheter » : articles remis au panier"
+   },
+   {
+    "adresse": "#commandes?sheet=payer",
+    "libelle": "Mes commandes · feuille Paiement (MTN / Orange) pour reprendre le paiement"
+   },
+   {
+    "adresse": "#commandes?sheet=payer&ref=BLV-52018",
+    "libelle": "Mes commandes · feuille Paiement des frais de garde (400 F)"
+   },
+   {
+    "adresse": "#commandes?sheet=annuler&ref=BLV-52107&motif=delai",
+    "libelle": "Mes commandes · feuille Annulation, motif choisi"
+   },
+   {
+    "adresse": "#commandes?f=retirer",
+    "libelle": "Mes commandes · puce « À retirer »"
+   },
+   {
+    "adresse": "#commandes?onglet=terminees&f=annulee",
+    "libelle": "Mes commandes · Terminées, puce « Annulées »"
+   },
+   {
+    "adresse": "#commandes?st=horsligne",
+    "libelle": "Mes commandes · hors ligne"
+   },
+   {
+    "adresse": "#commandes?onglet=terminees&st=rachat",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   },
+   {
+    "adresse": "#commandes?onglet=terminees&st=rachat&ref=BLV-51206",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   },
+   {
+    "adresse": "#commandes?onglet=terminees&st=rachat&ref=BLV-51388",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   },
+   {
+    "adresse": "#commandes?onglet=terminees&st=rachat&ref=BLV-51533",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   },
+   {
+    "adresse": "#commandes?sheet=annuler&ref=BLV-52107",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   },
+   {
+    "adresse": "#commandes?st=abandon",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   }
+  ],
+  "regles": 49,
+  "regles_etape4": [
+   "CCH-22",
+   "CCH-23",
+   "CCH-24",
+   "CCH-26",
+   "CCH-28",
+   "CCH-29",
+   "CCH-30",
+   "CCH-31",
+   "CCH-32",
+   "CCH-35",
+   "CCH-36",
+   "CMC-15"
+  ],
+  "api": [
+   "POST /payments/{id}/resend · /cancel · /abandon",
+   "GET /me/orders?tab=cours|terminees",
+   "POST /orders/{id}/rebuy"
+  ]
+ },
+ {
+  "route": "commande",
+  "titre": "Ma commande",
+  "onglet": "commandes",
+  "document": "CL-09",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Carte des écrans et navigation",
+   "Écran « Détail d’une commande » · commandes en cours",
+   "Détail d’une commande terminée · facture, annulée, close"
+  ],
+  "etats": [
+   {
+    "adresse": "#commande?ref=BLV-52018",
+    "libelle": "Écran enfant · commande"
+   },
+   {
+    "adresse": "#commande?ref=BLV-51388",
+    "libelle": "Détail · BLV-51388 retirée et close"
+   },
+   {
+    "adresse": "#commande?ref=BLV-51702",
+    "libelle": "Détail · BLV-51702 retirée, fenêtre de retour ouverte"
+   },
+   {
+    "adresse": "#commande?ref=BLV-51702&st=facture",
+    "libelle": "Détail · facture PDF de BLV-51702"
+   },
+   {
+    "adresse": "#commande?ref=BLV-51533",
+    "libelle": "Détail · BLV-51533 annulée et remboursée"
+   },
+   {
+    "adresse": "#commande?ref=BLV-52018",
+    "libelle": "Détail · BLV-52018 retirable maintenant"
+   },
+   {
+    "adresse": "#commande?ref=BLV-52107",
+    "libelle": "Détail · BLV-52107 en préparation, 3 colis"
+   },
+   {
+    "adresse": "#commande?ref=BLV-51940",
+    "libelle": "Détail · BLV-51940 validée, à payer au retrait"
+   },
+   {
+    "adresse": "#commande?ref=BLV-51877",
+    "libelle": "Détail · BLV-51877 en litige (LIT-3042)"
+   }
+  ],
+  "regles": 9,
+  "regles_etape4": [],
+  "api": [
+   "GET /orders/{id}",
+   "GET /orders/{id}/invoice.pdf · /me/factures"
+  ]
+ },
+ {
+  "route": "code",
+  "titre": "Code de retrait",
+  "onglet": "commandes",
+  "document": "CL-09",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Code de retrait »"
+  ],
+  "etats": [
+   {
+    "adresse": "#code?ref=BLV-52018",
+    "libelle": "Code de retrait · plein écran, code et QR"
+   },
+   {
+    "adresse": "#code?ref=BLV-52107",
+    "libelle": "Code de retrait · pas encore de code (3 colis en route)"
+   },
+   {
+    "adresse": "#code?ref=BLV-52107&st=bio",
+    "libelle": "Code de retrait · déverrouillage au-delà de 50 000 F"
+   },
+   {
+    "adresse": "#code?ref=BLV-51940",
+    "libelle": "Code de retrait · commande validée, code bloqué avant paiement"
+   },
+   {
+    "adresse": "#code?ref=BLV-52018&st=bloque",
+    "libelle": "Code de retrait · bloqué 24 h après 3 codes faux"
+   },
+   {
+    "adresse": "#code?ref=BLV-52018&st=nouveau",
+    "libelle": "Code de retrait · nouveau code, l’ancien refusé"
+   },
+   {
+    "adresse": "#code?ref=BLV-52018&st=horsligne",
+    "libelle": "Code de retrait · hors ligne, lisible depuis le téléphone"
+   },
+   {
+    "adresse": "#code?ref=BLV-51702",
+    "libelle": "Code de retrait · colis retiré, code disparu"
+   },
+   {
+    "adresse": "#code?ref=BLV-52018&dyn=deplie",
+    "libelle": "Code de retrait · île dépliée (code et QR)"
+   },
+   {
+    "adresse": "#code?ref=BLV-51940&st=visible",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   },
+   {
+    "adresse": "#code?ref=BLV-52018&st=sms",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   }
+  ],
+  "regles": 19,
+  "regles_etape4": [],
+  "api": [
+   "POST /orders/{id}/code/reveal · /code/resend · /code/renew",
+   "GET /orders/{id}/storage"
+  ]
+ },
+ {
+  "route": "code-partage",
+  "titre": "Envoyer mon code",
+  "onglet": "commandes",
+  "document": "CL-09",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Feuilles du bas, retour arrière et liens profonds",
+   "Écran « Code de retrait »"
+  ],
+  "etats": [
+   {
+    "adresse": "#code-partage?ref=BLV-52018",
+    "libelle": "Feuille du bas"
+   },
+   {
+    "adresse": "#code-partage?ref=BLV-52018",
+    "libelle": "Code de retrait · envoyer à quelqu’un"
+   }
+  ],
+  "regles": 24,
+  "regles_etape4": [
+   "CNV-10",
+   "CNV-11",
+   "CNV-12",
+   "CNV-13",
+   "CNV-14"
+  ],
+  "api": [
+   "POST /orders/{id}/code/reveal · /code/resend · /code/renew"
+  ]
+ },
+ {
+  "route": "suivi",
+  "titre": "Suivi de commande",
+  "onglet": "commandes",
+  "document": "CL-09",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Suivi de commande »"
+  ],
+  "etats": [
+   {
+    "adresse": "#suivi?ref=BLV-52107",
+    "libelle": "Suivi · réponse en tête et 3 colis"
+   },
+   {
+    "adresse": "#suivi?ref=BLV-52107&st=retard",
+    "libelle": "Suivi · colis 2 en retard chez le vendeur"
+   },
+   {
+    "adresse": "#suivi?ref=BLV-52107&st=attente",
+    "libelle": "Suivi · en attente d’un colis, livreur en route"
+   },
+   {
+    "adresse": "#suivi?ref=BLV-52018",
+    "libelle": "Suivi · arrivé au relais, horaires et trajet"
+   },
+   {
+    "adresse": "#suivi?ref=BLV-52096",
+    "libelle": "Suivi · livraison à domicile en route"
+   }
+  ],
+  "regles": 13,
+  "regles_etape4": [],
+  "api": [
+   "GET /orders/{id}/tracking"
+  ]
+ },
+ {
+  "route": "comptoir-payer",
+  "titre": "Montant dû",
+  "onglet": "commandes",
+  "document": "CL-09",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Montant dû » · payer au comptoir"
+  ],
+  "etats": [
+   {
+    "adresse": "#comptoir-payer?ref=BLV-52018",
+    "libelle": "Payer au comptoir · frais de garde 400 F"
+   },
+   {
+    "adresse": "#comptoir-payer?ref=BLV-51940",
+    "libelle": "Payer au comptoir · commande validée 24 000 F"
+   },
+   {
+    "adresse": "#comptoir-payer?ref=BLV-51940&st=attente",
+    "libelle": "Payer au comptoir · demande MoMo envoyée"
+   },
+   {
+    "adresse": "#comptoir-payer?ref=BLV-51940&st=paye",
+    "libelle": "Payer au comptoir · paiement confirmé, code débloqué"
+   },
+   {
+    "adresse": "#comptoir-payer?ref=BLV-51940&st=echec",
+    "libelle": "Payer au comptoir · échec, aucun débit"
+   },
+   {
+    "adresse": "#comptoir-payer?ref=BLV-52018&st=horsligne",
+    "libelle": "Payer au comptoir · hors ligne"
+   },
+   {
+    "adresse": "#comptoir-payer?ref=BLV-52107&st=rien",
+    "libelle": "Payer au comptoir · rien à payer le jour d’arrivée"
+   },
+   {
+    "adresse": "#comptoir-payer?ref=BLV-52018&st=attente",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   }
+  ],
+  "regles": 7,
+  "regles_etape4": [],
+  "api": [
+   "POST /orders/{id}/counter-payment"
+  ]
+ },
+ {
+  "route": "comptoir",
+  "titre": "Au comptoir",
+  "onglet": "commandes",
+  "document": "CL-09",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Au comptoir » · le moment du retrait, côté client"
+  ],
+  "etats": [
+   {
+    "adresse": "#comptoir?ref=BLV-52018",
+    "libelle": "Au comptoir · avant la remise"
+   },
+   {
+    "adresse": "#comptoir?ref=BLV-52018&st=remis",
+    "libelle": "Au comptoir · colis remis, contrôle poussé, deux notes"
+   },
+   {
+    "adresse": "#comptoir?ref=BLV-52018&st=ok",
+    "libelle": "Au comptoir · « Tout est en ordre », deux notes"
+   },
+   {
+    "adresse": "#comptoir?ref=BLV-52018&st=tiers",
+    "libelle": "Au comptoir · retiré par un proche"
+   },
+   {
+    "adresse": "#comptoir?ref=BLV-51702",
+    "libelle": "Au comptoir · retrait passé, pas encore confirmé"
+   },
+   {
+    "adresse": "#comptoir?ref=BLV-51877",
+    "libelle": "Au comptoir · « Un problème » : litige ouvert, colis gardé"
+   }
+  ],
+  "regles": 13,
+  "regles_etape4": [],
+  "api": [
+   "GET /cart/eligibility/counter",
+   "POST /checkout/counter",
+   "POST /orders/{id}/all-good"
+  ]
+ },
+ {
+  "route": "notifications",
+  "titre": "Notifications",
+  "onglet": "compte",
+  "document": "CL-10",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Centre de notifications »"
+  ],
+  "etats": [
+   {
+    "adresse": "#notifications",
+    "libelle": "Centre de notifications · 3 non lues"
+   },
+   {
+    "adresse": "#notifications?st=groupe",
+    "libelle": "Centre · regroupement par commande déplié"
+   },
+   {
+    "adresse": "#notifications?st=horsligne",
+    "libelle": "Centre · hors ligne, liste du cache"
+   },
+   {
+    "adresse": "#notifications?st=vide",
+    "libelle": "Centre · aucune notification"
+   }
+  ],
+  "regles": 12,
+  "regles_etape4": [
+   "CNT-04"
+  ],
+  "api": [
+   "GET · POST /me/notifications?cursor= · /me/notifications/read"
+  ]
+ },
+ {
+  "route": "notifs-reglages",
+  "titre": "Réglage des notifications",
+  "onglet": "compte",
+  "document": "CL-10",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Réglage des notifications »"
+  ],
+  "etats": [
+   {
+    "adresse": "#notifs-reglages",
+    "libelle": "Réglage des notifications"
+   },
+   {
+    "adresse": "#notifs-reglages?st=verrou",
+    "libelle": "Réglage · catégorie critique verrouillée"
+   },
+   {
+    "adresse": "#notifs-reglages?st=whatsapp",
+    "libelle": "Réglage · WhatsApp « bientôt »"
+   },
+   {
+    "adresse": "#notifs-reglages?st=enregistre",
+    "libelle": "Réglage · Suivi désactivé, enregistré"
+   },
+   {
+    "adresse": "#notifs-reglages?st=nonverifie",
+    "libelle": "Réglage · numéro non vérifié"
+   },
+   {
+    "adresse": "#notifs-reglages?from=notifications",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   }
+  ],
+  "regles": 11,
+  "regles_etape4": [
+   "CNT-14"
+  ],
+  "api": [
+   "GET · PUT /me/notification-settings",
+   "POST /me/consents"
+  ]
+ },
+ {
+  "route": "garde",
+  "titre": "Frais de garde",
+  "onglet": "commandes",
+  "document": "CL-10",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Ton colis t’attend » (frais de garde)"
+  ],
+  "etats": [
+   {
+    "adresse": "#garde?ref=BLV-52018",
+    "libelle": "Frais de garde · jour 4, aujourd’hui"
+   },
+   {
+    "adresse": "#garde?ref=BLV-52018&j=1",
+    "libelle": "Frais de garde · jour 1, gratuit"
+   },
+   {
+    "adresse": "#garde?ref=BLV-52018&j=2",
+    "libelle": "Frais de garde · jour 2, 100 F"
+   },
+   {
+    "adresse": "#garde?ref=BLV-52018&j=5",
+    "libelle": "Frais de garde · jour 5, 600 F"
+   },
+   {
+    "adresse": "#garde?ref=BLV-52018&j=6",
+    "libelle": "Frais de garde · jour 6, dernier jour"
+   },
+   {
+    "adresse": "#garde?ref=BLV-52018&j=7",
+    "libelle": "Frais de garde · jour 7, dimanche fermé"
+   },
+   {
+    "adresse": "#garde?ref=BLV-52018&j=ferme",
+    "libelle": "Frais de garde · fermeture déclarée aujourd’hui"
+   },
+   {
+    "adresse": "#garde?ref=BLV-52018&j=renvoye",
+    "libelle": "Frais de garde · renvoyé au vendeur"
+   },
+   {
+    "adresse": "#garde?ref=BLV-52018&j=litige",
+    "libelle": "Frais de garde · litige, compteur gelé"
+   },
+   {
+    "adresse": "#garde?ref=BLV-52018&j=nonvu",
+    "libelle": "Frais de garde · sans accusé fort"
+   },
+   {
+    "adresse": "#garde?ref=BLV-52018&j=groupage",
+    "libelle": "Frais de garde · groupage (après le lancement)"
+   }
+  ],
+  "regles": 23,
+  "regles_etape4": [],
+  "api": [
+   "GET /orders/{id}/storage"
+  ]
+ },
+ {
+  "route": "push",
+  "titre": "Aperçu · notifications",
+  "onglet": "",
+  "document": "CL-10",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Aperçu « Notifications push »",
+   "La série de rappels S0 à S5"
+  ],
+  "etats": [
+   {
+    "adresse": "#push",
+    "libelle": "Aperçu push · écran verrouillé (depuis le réglage)"
+   },
+   {
+    "adresse": "#push?st=banniere",
+    "libelle": "Aperçu push · bannière du rappel S0"
+   },
+   {
+    "adresse": "#push?st=groupe",
+    "libelle": "Aperçu push · notification regroupée (récupéré + arrivé, BLV-51940)"
+   },
+   {
+    "adresse": "#push?st=nuit",
+    "libelle": "Aperçu push · la nuit, sans son"
+   },
+   {
+    "adresse": "#push?st=serie",
+    "libelle": "Aperçu push · série de rappels S0 à S5 (depuis les frais de garde)"
+   }
+  ],
+  "regles": 22,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "sms",
+  "titre": "Aperçu · SMS",
+  "onglet": "",
+  "document": "CL-10",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Aperçu « SMS » et page du lien court"
+  ],
+  "etats": [
+   {
+    "adresse": "#sms",
+    "libelle": "Aperçu SMS · C3 code de retrait"
+   },
+   {
+    "adresse": "#sms?st=c3v",
+    "libelle": "Aperçu SMS · C3 d’une commande « Validée »"
+   },
+   {
+    "adresse": "#sms?st=c1",
+    "libelle": "Aperçu SMS · C1 paiement protégé"
+   },
+   {
+    "adresse": "#sms?st=c4",
+    "libelle": "Aperçu SMS · C4 incident"
+   },
+   {
+    "adresse": "#sms?st=c12",
+    "libelle": "Aperçu SMS · C12 remerciement"
+   },
+   {
+    "adresse": "#sms?st=renvoi",
+    "libelle": "Aperçu SMS · renvoi payant du code"
+   },
+   {
+    "adresse": "#sms?st=otp",
+    "libelle": "Aperçu SMS · code de vérification"
+   },
+   {
+    "adresse": "#sms?st=s1",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   },
+   {
+    "adresse": "#sms?st=s2",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   }
+  ],
+  "regles": 19,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "lien-court",
+  "titre": "Aperçu · lien court",
+  "onglet": "",
+  "document": "CL-10",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Aperçu « SMS » et page du lien court"
+  ],
+  "etats": [
+   {
+    "adresse": "#lien-court",
+    "libelle": "Aperçu · page du lien court · QR, code et relais"
+   },
+   {
+    "adresse": "#lien-court?st=retire",
+    "libelle": "Aperçu · page du lien court · colis retiré"
+   }
+  ],
+  "regles": 19,
+  "regles_etape4": [],
+  "api": [
+   "GET /r/{token}"
+  ]
+ },
+ {
+  "route": "litige",
+  "titre": "Signaler un problème",
+  "onglet": "commandes",
+  "document": "CL-11",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Assistant de litige · étapes 1 et 2",
+   "Assistant · étape 3 « Montre-moi »",
+   "Assistant · étape 4 « Que veux-tu ? »"
+  ],
+  "etats": [
+   {
+    "adresse": "#litige?ref=BLV-52018&etape=1",
+    "libelle": "Litige · assistant, étape 1 « Quel colis ? » (2 colis)"
+   },
+   {
+    "adresse": "#litige?ref=BLV-51702",
+    "libelle": "Litige · assistant, étape 2 « Que s’est-il passé ? » (1 colis)"
+   },
+   {
+    "adresse": "#litige?ref=BLV-51388",
+    "libelle": "Litige · étape 2, retrait de plus de 7 jours (défaut caché)"
+   },
+   {
+    "adresse": "#litige?ref=BLV-51702&etape=3&pb=abime",
+    "libelle": "Litige · étape 3 « Montre-moi », sans photo"
+   },
+   {
+    "adresse": "#litige?ref=BLV-51702&etape=3&pb=abime&st=photo",
+    "libelle": "Litige · étape 3, photos prises"
+   },
+   {
+    "adresse": "#litige?ref=BLV-51702&etape=3&pb=jamais",
+    "libelle": "Litige · étape 3, « Jamais reçu » (photo facultative)"
+   },
+   {
+    "adresse": "#litige?ref=BLV-51702&etape=4&pb=abime",
+    "libelle": "Litige · étape 4 « Que veux-tu ? »"
+   }
+  ],
+  "regles": 16,
+  "regles_etape4": [],
+  "api": [
+   "POST /disputes",
+   "POST /disputes/{id}/photos · /disputes/{id}/messages"
+  ]
+ },
+ {
+  "route": "litige-confirme",
+  "titre": "Litige ouvert",
+  "onglet": "commandes",
+  "document": "CL-11",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Assistant · étape 4 « Que veux-tu ? »",
+   "Écran « Litige ouvert » (confirmation)"
+  ],
+  "etats": [
+   {
+    "adresse": "#litige-confirme?ref=BLV-51702&souhait=signal",
+    "libelle": "Litige · « Je veux juste signaler » envoyé"
+   },
+   {
+    "adresse": "#litige-confirme?ref=BLV-51702",
+    "libelle": "Litige ouvert · LIT-3044, argent bloqué, délai ferme"
+   },
+   {
+    "adresse": "#litige-confirme?ref=BLV-51388&colis=1",
+    "libelle": "Litige ouvert · défaut caché, vendeur déjà payé"
+   }
+  ],
+  "regles": 8,
+  "regles_etape4": [],
+  "api": [
+   "POST /disputes"
+  ]
+ },
+ {
+  "route": "litige-auto",
+  "titre": "Remboursé",
+  "onglet": "commandes",
+  "document": "CL-11",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Remboursé » (remboursement automatique sous le seuil)"
+  ],
+  "etats": [
+   {
+    "adresse": "#litige-auto",
+    "libelle": "Remboursement automatique · palier Standard (3 000 F)"
+   },
+   {
+    "adresse": "#litige-auto?palier=eleve",
+    "libelle": "Remboursement automatique · palier Élevé (4 800 F)"
+   }
+  ],
+  "regles": 6,
+  "regles_etape4": [],
+  "api": [
+   "POST /disputes"
+  ]
+ },
+ {
+  "route": "litige-comptoir",
+  "titre": "Litige ouvert au comptoir",
+  "onglet": "commandes",
+  "document": "CL-11",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Litige ouvert au comptoir »"
+  ],
+  "etats": [
+   {
+    "adresse": "#litige-comptoir",
+    "libelle": "Litige ouvert au comptoir · LIT-3042 (fer)"
+   },
+   {
+    "adresse": "#litige-comptoir?ref=BLV-52018",
+    "libelle": "Litige ouvert au comptoir · LIT-3045, un colis sur deux"
+   }
+  ],
+  "regles": 5,
+  "regles_etape4": [],
+  "api": [
+   "POST /relay/disputes"
+  ]
+ },
+ {
+  "route": "litige-suivi",
+  "titre": "Suivi du litige",
+  "onglet": "commandes",
+  "document": "CL-11",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Suivi du litige » · pendant l’examen",
+   "Écran « Suivi du litige » · la décision",
+   "Feuille « Arrangement proposé par le vendeur »"
+  ],
+  "etats": [
+   {
+    "adresse": "#litige-suivi?id=LIT-3042&st=recu",
+    "libelle": "Suivi du litige · Reçu"
+   },
+   {
+    "adresse": "#litige-suivi?id=LIT-3042",
+    "libelle": "Suivi du litige · le vendeur a 48 h (31 h restantes)"
+   },
+   {
+    "adresse": "#litige-suivi?id=LIT-3042&st=conteste",
+    "libelle": "Suivi du litige · le vendeur conteste"
+   },
+   {
+    "adresse": "#litige-suivi?id=LIT-3042&st=silence",
+    "libelle": "Suivi du litige · vendeur sans réponse à 48 h"
+   },
+   {
+    "adresse": "#litige-suivi?id=LIT-3042&st=examen",
+    "libelle": "Suivi du litige · en examen, preuves côte à côte"
+   },
+   {
+    "adresse": "#litige-suivi?id=LIT-3042&st=accepte",
+    "libelle": "Suivi du litige · le vendeur accepte (remplacement)"
+   },
+   {
+    "adresse": "#litige-suivi?id=LIT-3042&st=rembourse",
+    "libelle": "Décision · remboursement accordé"
+   },
+   {
+    "adresse": "#litige-suivi?id=LIT-3042&st=remplace",
+    "libelle": "Décision · remplacement accordé"
+   },
+   {
+    "adresse": "#litige-suivi?id=LIT-3042&st=refuse",
+    "libelle": "Décision · demande non retenue, motif écrit"
+   },
+   {
+    "adresse": "#litige-suivi?id=LIT-3042&st=arrangement",
+    "libelle": "Suivi du litige · arrangement proposé"
+   }
+  ],
+  "regles": 18,
+  "regles_etape4": [],
+  "api": [
+   "GET /disputes/{id} · /me/disputes"
+  ]
+ },
+ {
+  "route": "litige-arrangement",
+  "titre": "Arrangement proposé",
+  "onglet": "commandes",
+  "document": "CL-11",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Feuille « Arrangement proposé par le vendeur »"
+  ],
+  "etats": [
+   {
+    "adresse": "#litige-arrangement",
+    "libelle": "Arrangement · feuille de la proposition du vendeur"
+   },
+   {
+    "adresse": "#litige-arrangement?st=accepte",
+    "libelle": "Arrangement · accepté, litige clos"
+   },
+   {
+    "adresse": "#litige-arrangement?st=refuse",
+    "libelle": "Arrangement · refusé, BelivaY examine"
+   }
+  ],
+  "regles": 3,
+  "regles_etape4": [],
+  "api": [
+   "POST /disputes/{id}/photos · /disputes/{id}/messages"
+  ]
+ },
+ {
+  "route": "litiges",
+  "titre": "Mes litiges",
+  "onglet": "commandes",
+  "document": "CL-11",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Mes litiges »"
+  ],
+  "etats": [
+   {
+    "adresse": "#litiges",
+    "libelle": "Mes litiges (depuis le Compte)"
+   },
+   {
+    "adresse": "#litiges?st=vide",
+    "libelle": "Mes litiges · aucun litige"
+   }
+  ],
+  "regles": 3,
+  "regles_etape4": [],
+  "api": [
+   "GET /disputes/{id} · /me/disputes"
+  ]
+ },
+ {
+  "route": "retour",
+  "titre": "Retourner un article",
+  "onglet": "commandes",
+  "document": "CL-11",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Retourner un article » · les quatre étapes",
+   "Retour · motifs, fenêtre, qui paie et cas particuliers"
+  ],
+  "etats": [
+   {
+    "adresse": "#retour?ref=BLV-52018",
+    "libelle": "Retour · onglet de l’écran de retrait, aucun retour en cours"
+   },
+   {
+    "adresse": "#retour?ref=BLV-51702&st=depot",
+    "libelle": "Retour · à déposer au relais"
+   },
+   {
+    "adresse": "#retour?ref=BLV-51702&st=depose",
+    "libelle": "Retour · déposé et scanné au relais"
+   },
+   {
+    "adresse": "#retour?ref=BLV-51702&st=collecte",
+    "libelle": "Retour · récupéré par le livreur"
+   },
+   {
+    "adresse": "#retour?ref=BLV-51702&st=inspection",
+    "libelle": "Retour · inspection du vendeur (48 h)"
+   },
+   {
+    "adresse": "#retour?ref=BLV-51702&st=clos",
+    "libelle": "Retour · clos et remboursé"
+   },
+   {
+    "adresse": "#retour?ref=BLV-51702&st=delai",
+    "libelle": "Retour · vendeur sans réponse, remboursement automatique"
+   },
+   {
+    "adresse": "#retour?ref=BLV-51877&st=gratuit",
+    "libelle": "Retour · colis déjà au relais, gratuit"
+   },
+   {
+    "adresse": "#retour?ref=BLV-51702&st=tort",
+    "libelle": "Retour · trajet à la charge du client"
+   },
+   {
+    "adresse": "#retour?st=volumineux",
+    "libelle": "Retour · colis XL collecté à domicile"
+   },
+   {
+    "adresse": "#retour?ref=BLV-51388&st=sans-retour",
+    "libelle": "Retour · remboursé sans retour physique"
+   },
+   {
+    "adresse": "#retour?ref=BLV-51388&st=hors-delai",
+    "libelle": "Retour · hors délai, défaut caché possible"
+   }
+  ],
+  "regles": 25,
+  "regles_etape4": [],
+  "api": [
+   "POST · GET /returns · /returns/{id} · /returns/{id}/inspection",
+   "POST /relay/returns/{id}/deposit"
+  ]
+ },
+ {
+  "route": "remplacement",
+  "titre": "Remplacement",
+  "onglet": "commandes",
+  "document": "CL-11",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Remplacement »"
+  ],
+  "etats": [
+   {
+    "adresse": "#remplacement",
+    "libelle": "Remplacement · délai ferme du vendeur"
+   },
+   {
+    "adresse": "#remplacement?st=expedie",
+    "libelle": "Remplacement · nouveau fer en route"
+   },
+   {
+    "adresse": "#remplacement?st=retard",
+    "libelle": "Remplacement · délai dépassé, remboursement automatique"
+   },
+   {
+    "adresse": "#remplacement?st=autre",
+    "libelle": "Remplacement · autre vendeur proposé"
+   },
+   {
+    "adresse": "#remplacement?st=remis",
+    "libelle": "Remplacement · remis, dossier clos"
+   }
+  ],
+  "regles": 8,
+  "regles_etape4": [],
+  "api": [
+   "GET /replacements/{id}"
+  ]
+ },
+ {
+  "route": "modifier",
+  "titre": "Modifier ma commande",
+  "onglet": "commandes",
+  "document": "CL-12",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Annuler ma commande » et onglet « Annuler »",
+   "Changer l’adresse à domicile et autres modifications",
+   "Onglet « Payer de l’étranger » — côté client"
+  ],
+  "etats": [
+   {
+    "adresse": "#modifier?ref=BLV-52107",
+    "libelle": "Modifier ma commande · onglet Annuler (depuis la commande)"
+   },
+   {
+    "adresse": "#modifier?ref=BLV-52096&onglet=relais",
+    "libelle": "Modifier · livraison à domicile (BLV-52096), onglet Changer d’adresse"
+   },
+   {
+    "adresse": "#modifier?ref=BLV-52107&onglet=etranger",
+    "libelle": "Modifier · onglet Payer de l’étranger (client)"
+   },
+   {
+    "adresse": "#modifier?ref=BLV-52107&onglet=etranger&st=partager",
+    "libelle": "Payer de l’étranger · envoyer son panier (partage du téléphone)"
+   },
+   {
+    "adresse": "#modifier?ref=BLV-52124&onglet=etranger",
+    "libelle": "Payer de l’étranger · commande payée par un proche (BLV-52124)"
+   }
+  ],
+  "regles": 29,
+  "regles_etape4": [],
+  "api": [
+   "POST /carts/{id}/share",
+   "GET /orders/{id}/manage"
+  ]
+ },
+ {
+  "route": "annuler",
+  "titre": "Annuler ma commande",
+  "onglet": "commandes",
+  "document": "CL-12",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Annuler ma commande » et onglet « Annuler »",
+   "Annuler : colis récupéré, état changé, hors ligne",
+   "Annulation par le vendeur ou par BelivaY"
+  ],
+  "etats": [
+   {
+    "adresse": "#annuler?ref=BLV-52107&motif=avis",
+    "libelle": "Annuler ma commande · étape 2 après le motif (depuis Mes commandes)"
+   },
+   {
+    "adresse": "#annuler?ref=BLV-52107&st=arrivee",
+    "libelle": "Annuler · colis arrivés ou récupérés, annulation impossible"
+   },
+   {
+    "adresse": "#annuler?ref=BLV-52107&st=change",
+    "libelle": "Annuler · état changé entre-temps"
+   },
+   {
+    "adresse": "#annuler?ref=BLV-52107&st=horsligne",
+    "libelle": "Annuler · hors ligne, bouton remplacé"
+   },
+   {
+    "adresse": "#annuler?ref=BLV-52107&st=vendeur-suivant",
+    "libelle": "Annuler · rupture, vendeur suivant"
+   },
+   {
+    "adresse": "#annuler?ref=BLV-51533",
+    "libelle": "Commande annulée par le vendeur (BLV-51533)"
+   },
+   {
+    "adresse": "#annuler?ref=BLV-52107&st=belivay",
+    "libelle": "Annuler · boutique C annulée par BelivaY"
+   }
+  ],
+  "regles": 28,
+  "regles_etape4": [],
+  "api": [
+   "GET /orders/{id}/manage"
+  ]
+ },
+ {
+  "route": "annuler-confirmer",
+  "titre": "Confirmer l’annulation",
+  "onglet": "commandes",
+  "document": "CL-12",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Annuler ma commande » et onglet « Annuler »"
+  ],
+  "etats": [
+   {
+    "adresse": "#annuler-confirmer?ref=BLV-52107&boutique=B",
+    "libelle": "Annuler · feuille de confirmation de la boutique B (calcul)"
+   },
+   {
+    "adresse": "#annuler-confirmer?ref=BLV-52107&boutique=B&st=fait",
+    "libelle": "Annuler · boutique B annulée, remboursée"
+   }
+  ],
+  "regles": 19,
+  "regles_etape4": [],
+  "api": [
+   "POST /suborders/{id}/cancel"
+  ]
+ },
+ {
+  "route": "changer-relais",
+  "titre": "Changer de point relais",
+  "onglet": "commandes",
+  "document": "CL-12",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Changer de point relais » — avant collecte et en tournée",
+   "Transfert d’un colis déjà arrivé (400 F)"
+  ],
+  "etats": [
+   {
+    "adresse": "#changer-relais?ref=BLV-52107",
+    "libelle": "Modifier · onglet Changer de relais, gratuit"
+   },
+   {
+    "adresse": "#changer-relais?ref=BLV-52107&st=choisi&relais=Essos",
+    "libelle": "Changer de relais · confirmation (Essos)"
+   },
+   {
+    "adresse": "#changer-relais?ref=BLV-52107&st=tournee",
+    "libelle": "Changer de relais · impossible pendant la tournée"
+   },
+   {
+    "adresse": "#changer-relais?ref=BLV-52018",
+    "libelle": "Changer de relais · colis arrivés, transfert 400 F"
+   },
+   {
+    "adresse": "#changer-relais?ref=BLV-52018&st=payer&relais=Essos",
+    "libelle": "Changer de relais · montant dû du transfert"
+   },
+   {
+    "adresse": "#changer-relais?ref=BLV-52018&st=fait&relais=Essos",
+    "libelle": "Changer de relais · transfert demandé"
+   }
+  ],
+  "regles": 15,
+  "regles_etape4": [],
+  "api": [
+   "GET /relais?near=lat,lng · ?q= · &open_today=1&not_full=1",
+   "PUT /orders/{id}/relais · /orders/{id}/address",
+   "POST /parcels/{id}/transfer"
+  ]
+ },
+ {
+  "route": "changer-adresse",
+  "titre": "Changer d’adresse",
+  "onglet": "commandes",
+  "document": "CL-12",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Changer l’adresse à domicile et autres modifications"
+  ],
+  "etats": [
+   {
+    "adresse": "#changer-adresse?ref=BLV-52096&st=avant",
+    "libelle": "Changer d’adresse · feuille, avant collecte"
+   },
+   {
+    "adresse": "#changer-adresse?ref=BLV-52096&st=fait",
+    "libelle": "Changer d’adresse · adresse changée"
+   },
+   {
+    "adresse": "#changer-adresse?ref=BLV-52096&st=impossible",
+    "libelle": "Changer d’adresse · colis déjà en route"
+   }
+  ],
+  "regles": 5,
+  "regles_etape4": [],
+  "api": [
+   "PUT /orders/{id}/relais · /orders/{id}/address"
+  ]
+ },
+ {
+  "route": "payeur",
+  "titre": "Payer depuis l’étranger",
+  "onglet": "",
+  "document": "CL-12",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Page web du payeur à l’étranger — récapitulatif, carte, 3-D Secure",
+   "Page du payeur — carte refusée, plafond, paiement confirmé"
+  ],
+  "etats": [
+   {
+    "adresse": "#payeur",
+    "libelle": "Page web du payeur · formulaire carte"
+   },
+   {
+    "adresse": "#payeur?st=3ds",
+    "libelle": "Page du payeur · 3-D Secure"
+   },
+   {
+    "adresse": "#payeur?st=refusee",
+    "libelle": "Page du payeur · carte refusée"
+   },
+   {
+    "adresse": "#payeur?st=plafond",
+    "libelle": "Page du payeur · panier au-dessus de 150 000 F"
+   },
+   {
+    "adresse": "#payeur?st=sans-comptoir",
+    "libelle": "Page du payeur · jamais au comptoir"
+   },
+   {
+    "adresse": "#payeur?st=paye",
+    "libelle": "Page du payeur · paiement confirmé"
+   }
+  ],
+  "regles": 13,
+  "regles_etape4": [],
+  "api": [
+   "GET · POST /gift-links/{token} · /gift-payments"
+  ]
+ },
+ {
+  "route": "payeur-preuve",
+  "titre": "Messages au payeur",
+  "onglet": "",
+  "document": "CL-12",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Messages au payeur — push d’abord, e-mail en repli"
+  ],
+  "etats": [
+   {
+    "adresse": "#payeur-preuve?st=paye",
+    "libelle": "Payeur · e-mail de repli"
+   },
+   {
+    "adresse": "#payeur-preuve?st=incident",
+    "libelle": "Payeur · notification d’incident et suivi"
+   },
+   {
+    "adresse": "#payeur-preuve?st=retire",
+    "libelle": "Payeur · preuve de retrait"
+   }
+  ],
+  "regles": 6,
+  "regles_etape4": [],
+  "api": [
+   "GET · POST /gift-links/{token} · /gift-payments"
+  ]
+ },
+ {
+  "route": "compte",
+  "titre": "Mon compte",
+  "onglet": "compte",
+  "document": "CL-13",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Mon compte »"
+  ],
+  "etats": [
+   {
+    "adresse": "#compte",
+    "libelle": "Mon compte · point d’entrée (tuiles, avantages, relais, rubriques)"
+   },
+   {
+    "adresse": "#compte?st=nouveau",
+    "libelle": "Mon compte · compte neuf, numéro à vérifier"
+   }
+  ],
+  "regles": 9,
+  "regles_etape4": [
+   "CCO-08"
+  ],
+  "api": [
+   "GET · PATCH · DELETE /me",
+   "POST · DELETE /devices"
+  ]
+ },
+ {
+  "route": "adresses",
+  "titre": "Mes adresses",
+  "onglet": "",
+  "document": "CL-13",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Mes adresses »"
+  ],
+  "etats": [
+   {
+    "adresse": "#adresses",
+    "libelle": "Mes adresses (depuis le Compte)"
+   },
+   {
+    "adresse": "#adresses?st=modifier",
+    "libelle": "Adresses · modifier une adresse par repères"
+   },
+   {
+    "adresse": "#adresses?st=hors",
+    "libelle": "Adresses · quartier hors zone servie"
+   },
+   {
+    "adresse": "#adresses?st=vide",
+    "libelle": "Adresses · aucune adresse"
+   },
+   {
+    "adresse": "#adresses?st=ajout",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   }
+  ],
+  "regles": 4,
+  "regles_etape4": [],
+  "api": [
+   "POST · PUT · DELETE /me/adresses · /me/adresses/{id}"
+  ]
+ },
+ {
+  "route": "moyens-paiement",
+  "titre": "Moyens de paiement",
+  "onglet": "",
+  "document": "CL-13",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Moyens de paiement »"
+  ],
+  "etats": [
+   {
+    "adresse": "#moyens-paiement",
+    "libelle": "Moyens de paiement (depuis le Compte)"
+   },
+   {
+    "adresse": "#moyens-paiement?st=ajout",
+    "libelle": "Moyens de paiement · feuille d’ajout d’un numéro"
+   }
+  ],
+  "regles": 4,
+  "regles_etape4": [],
+  "api": [
+   "GET · POST /me/moyens-paiement"
+  ]
+ },
+ {
+  "route": "factures",
+  "titre": "Factures",
+  "onglet": "",
+  "document": "CL-13",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Factures »"
+  ],
+  "etats": [
+   {
+    "adresse": "#factures",
+    "libelle": "Factures (depuis le Compte)"
+   },
+   {
+    "adresse": "#factures?st=apercu&ref=BLV-51702",
+    "libelle": "Factures · aperçu du PDF BLV-51702"
+   },
+   {
+    "adresse": "#factures?st=apercu&ref=BLV-51206",
+    "libelle": "Factures · BLV-51206 remboursée en partie"
+   },
+   {
+    "adresse": "#factures?st=vide",
+    "libelle": "Factures · aucune"
+   }
+  ],
+  "regles": 4,
+  "regles_etape4": [],
+  "api": [
+   "GET /orders/{id}/invoice.pdf · /me/factures"
+  ]
+ },
+ {
+  "route": "supprimer",
+  "titre": "Supprimer mon compte",
+  "onglet": "",
+  "document": "CL-13",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Supprimer mon compte »"
+  ],
+  "etats": [
+   {
+    "adresse": "#supprimer",
+    "libelle": "Supprimer mon compte · refusé (commandes en cours)"
+   },
+   {
+    "adresse": "#supprimer?st=possible",
+    "libelle": "Supprimer mon compte · confirmation par code"
+   }
+  ],
+  "regles": 3,
+  "regles_etape4": [],
+  "api": [
+   "GET · PATCH · DELETE /me"
+  ]
+ },
+ {
+  "route": "avis-donner",
+  "titre": "Donner mon avis",
+  "onglet": "",
+  "document": "CL-13",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Donner mon avis »"
+  ],
+  "etats": [
+   {
+    "adresse": "#avis-donner?ref=BLV-51702",
+    "libelle": "Avis · deux notes (depuis la commande ou le Compte)"
+   },
+   {
+    "adresse": "#avis-donner?ref=BLV-52018",
+    "libelle": "Avis · deux colis, deux vendeurs"
+   },
+   {
+    "adresse": "#avis-donner?ref=BLV-51702&st=bas",
+    "libelle": "Avis · note basse"
+   },
+   {
+    "adresse": "#avis-donner?ref=BLV-51702&st=envoye",
+    "libelle": "Avis · notes envoyées"
+   },
+   {
+    "adresse": "#avis-donner?ref=BLV-51702&st=modifier",
+    "libelle": "Avis · modifier ses notes"
+   },
+   {
+    "adresse": "#avis-donner?st=ferme",
+    "libelle": "Avis · notation fermée (7 jours passés)"
+   },
+   {
+    "adresse": "#avis-donner?st=non",
+    "libelle": "Avis · colis pas encore retiré"
+   },
+   {
+    "adresse": "#avis-donner?ref=BLV-51702&from=compte",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   }
+  ],
+  "regles": 14,
+  "regles_etape4": [],
+  "api": [
+   "POST · PUT /orders/{id}/reviews"
+  ]
+ },
+ {
+  "route": "avis-bas",
+  "titre": "Note basse",
+  "onglet": "",
+  "document": "CL-13",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Donner mon avis »"
+  ],
+  "etats": [
+   {
+    "adresse": "#avis-bas?ref=BLV-51702",
+    "libelle": "Avis · note basse, litige proposé"
+   }
+  ],
+  "regles": 14,
+  "regles_etape4": [],
+  "api": [
+   "POST · PUT /orders/{id}/reviews"
+  ]
+ },
+ {
+  "route": "aide",
+  "titre": "Aide et support",
+  "onglet": "",
+  "document": "CL-13",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Aide et support »"
+  ],
+  "etats": [
+   {
+    "adresse": "#aide",
+    "libelle": "Aide et support (depuis le Compte)"
+   },
+   {
+    "adresse": "#aide?st=horsheures",
+    "libelle": "Aide · hors heures (22 h 40)"
+   },
+   {
+    "adresse": "#aide?st=wa",
+    "libelle": "Aide · feuille WhatsApp et ses interdits"
+   }
+  ],
+  "regles": 7,
+  "regles_etape4": [],
+  "api": [
+   "GET /help · /help/faq?lang=&q="
+  ]
+ },
+ {
+  "route": "faq",
+  "titre": "Questions fréquentes",
+  "onglet": "",
+  "document": "CL-13",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Questions fréquentes »"
+  ],
+  "etats": [
+   {
+    "adresse": "#faq?t=garde&a=1",
+    "libelle": "Questions fréquentes · thème Frais de garde"
+   },
+   {
+    "adresse": "#faq?q=code",
+    "libelle": "Questions fréquentes · recherche « code »"
+   },
+   {
+    "adresse": "#faq?q=parrainage",
+    "libelle": "Questions fréquentes · aucune réponse"
+   },
+   {
+    "adresse": "#faq?t=paiement&a=1",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   },
+   {
+    "adresse": "#faq?t=retour",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   },
+   {
+    "adresse": "#faq?t=retrait",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   },
+   {
+    "adresse": "#faq?t=retrait&a=1",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   }
+  ],
+  "regles": 3,
+  "regles_etape4": [],
+  "api": [
+   "GET /help · /help/faq?lang=&q="
+  ]
+ },
+ {
+  "route": "messagerie",
+  "titre": "Messagerie",
+  "onglet": "",
+  "document": "CL-13",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écrans « Messagerie » et fil de conversation"
+  ],
+  "etats": [
+   {
+    "adresse": "#messagerie",
+    "libelle": "Messagerie (tuile Messages du Compte)"
+   },
+   {
+    "adresse": "#messagerie?st=vide",
+    "libelle": "Messagerie · aucune conversation"
+   },
+   {
+    "adresse": "#messagerie?from=aide",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   }
+  ],
+  "regles": 5,
+  "regles_etape4": [],
+  "api": [
+   "GET · POST /me/threads · /support/threads · /support/callback"
+  ]
+ },
+ {
+  "route": "fil",
+  "titre": "Conversation",
+  "onglet": "",
+  "document": "CL-13",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écrans « Messagerie » et fil de conversation"
+  ],
+  "etats": [
+   {
+    "adresse": "#fil?id=LIT-3042",
+    "libelle": "Fil du dossier LIT-3042"
+   },
+   {
+    "adresse": "#fil?id=LIT-3042&st=photo",
+    "libelle": "Fil du dossier · photo versée"
+   },
+   {
+    "adresse": "#fil?id=LIT-3044",
+    "libelle": "Fil du dossier LIT-3044 (ouvert dans l’application)"
+   },
+   {
+    "adresse": "#fil?id=question",
+    "libelle": "Fil · question au vendeur, numéro masqué"
+   },
+   {
+    "adresse": "#fil?id=support",
+    "libelle": "Fil du support · résolu"
+   },
+   {
+    "adresse": "#fil?id=support&st=nouveau",
+    "libelle": "Écrire au support"
+   }
+  ],
+  "regles": 5,
+  "regles_etape4": [],
+  "api": [
+   "POST /disputes/{id}/photos · /disputes/{id}/messages",
+   "GET · POST /me/threads · /support/threads · /support/callback"
+  ]
+ },
+ {
+  "route": "rappel",
+  "titre": "Demander un rappel",
+  "onglet": "",
+  "document": "CL-13",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Feuille « Demander un rappel »"
+  ],
+  "etats": [
+   {
+    "adresse": "#rappel",
+    "libelle": "Demander un rappel · feuille"
+   },
+   {
+    "adresse": "#rappel?st=envoye",
+    "libelle": "Rappel demandé"
+   }
+  ],
+  "regles": 2,
+  "regles_etape4": [],
+  "api": [
+   "GET · POST /me/threads · /support/threads · /support/callback"
+  ]
+ },
+ {
+  "route": "legal",
+  "titre": "Pages légales",
+  "onglet": "",
+  "document": "CL-13",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Pages légales"
+  ],
+  "etats": [
+   {
+    "adresse": "#legal",
+    "libelle": "Pages légales (depuis le Compte)"
+   }
+  ],
+  "regles": 7,
+  "regles_etape4": [],
+  "api": [
+   "GET · POST /legal/{doc}?lang= · /me/legal · /me/legal/accept"
+  ]
+ },
+ {
+  "route": "legal-doc",
+  "titre": "Document légal",
+  "onglet": "",
+  "document": "CL-13",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Pages légales"
+  ],
+  "etats": [
+   {
+    "adresse": "#legal-doc?d=cgv",
+    "libelle": "Pages légales · CGV"
+   },
+   {
+    "adresse": "#legal-doc?d=cgu&lang=en",
+    "libelle": "Pages légales · CGU en anglais"
+   },
+   {
+    "adresse": "#legal-doc?d=garde",
+    "libelle": "Pages légales · politique de garde"
+   },
+   {
+    "adresse": "#legal-doc?d=confidentialite",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   },
+   {
+    "adresse": "#legal-doc?d=mentions",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   },
+   {
+    "adresse": "#legal-doc?d=retours",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   }
+  ],
+  "regles": 7,
+  "regles_etape4": [],
+  "api": [
+   "GET · POST /legal/{doc}?lang= · /me/legal · /me/legal/accept"
+  ]
+ },
+ {
+  "route": "reseau",
+  "titre": "Connexion et données",
+  "onglet": "",
+  "document": "CL-13",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Mode dégradé : réseau lent, hors ligne, 2G"
+  ],
+  "etats": [
+   {
+    "adresse": "#reseau",
+    "libelle": "Connexion et données (depuis Réglages ou une bannière)"
+   },
+   {
+    "adresse": "#reseau?st=lent",
+    "libelle": "Mode dégradé · accueil en connexion lente"
+   },
+   {
+    "adresse": "#reseau?st=horsligne",
+    "libelle": "Mode dégradé · Mes commandes hors ligne"
+   },
+   {
+    "adresse": "#reseau?st=cache",
+    "libelle": "Mode dégradé · code de retrait hors ligne"
+   },
+   {
+    "adresse": "#reseau?st=argent",
+    "libelle": "Mode dégradé · panier hors ligne, paiement grisé"
+   },
+   {
+    "adresse": "#reseau?st=eco",
+    "libelle": "Mode dégradé · accueil en données économes"
+   },
+   {
+    "adresse": "#reseau?st=sms",
+    "libelle": "Mode dégradé · SMS de retrait de repli"
+   },
+   {
+    "adresse": "#reseau?st=comptoir",
+    "libelle": "Mode dégradé · hors ligne au comptoir"
+   },
+   {
+    "adresse": "#reseau?eco=1",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   }
+  ],
+  "regles": 8,
+  "regles_etape4": [
+   "CDM-01",
+   "CDM-02",
+   "CDM-04",
+   "CDM-05",
+   "CDM-06"
+  ],
+  "api": []
+ },
+ {
+  "route": "reglages",
+  "titre": "Réglages",
+  "onglet": "",
+  "document": "CL-13",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": true,
+  "sections": [
+   "Écran « Réglages »"
+  ],
+  "etats": [
+   {
+    "adresse": "#reglages",
+    "libelle": "Réglages (depuis le Compte)"
+   },
+   {
+    "adresse": "#reglages?pcm=1",
+    "libelle": "Réglages · pidgin en relecture"
+   },
+   {
+    "adresse": "#reglages?txt=tres",
+    "libelle": "Réglages · très grande taille de texte"
+   }
+  ],
+  "regles": 8,
+  "regles_etape4": [
+   "CRG-01",
+   "CRG-04",
+   "CRG-05",
+   "CRG-06"
+  ],
+  "api": [
+   "GET · PATCH · DELETE /me"
+  ]
+ },
+ {
+  "route": "abonnements",
+  "titre": "Abonnements",
+  "onglet": "",
+  "document": "CL-14",
+  "phase": "après le lancement",
+  "interrupteur": "FF-ABONNEMENT",
+  "documentee": true,
+  "sections": [
+   "Organisation, ordre de construction, lancement et après le lancement",
+   "Les interrupteurs de fonctionnalité",
+   "Écran « Abonnements »",
+   "Déclencheur au paiement (encart Prime du panier)"
+  ],
+  "etats": [
+   {
+    "adresse": "#abonnements?st=ferme",
+    "libelle": "Interrupteur fermé"
+   },
+   {
+    "adresse": "#abonnements?st=ferme",
+    "libelle": "Abonnement · module fermé, ancien lien neutre"
+   },
+   {
+    "adresse": "#abonnements",
+    "libelle": "Abonnements · paliers, annuel (depuis Compte)"
+   },
+   {
+    "adresse": "#abonnements?per=mois&choisi=1",
+    "libelle": "Abonnements · paliers, mensuel, « le plus choisi »"
+   },
+   {
+    "adresse": "#abonnements?st=declencheur",
+    "libelle": "Panier · « avec Prime, cette livraison était offerte »"
+   }
+  ],
+  "regles": 36,
+  "regles_etape4": [
+   "CCH-17",
+   "CCH-18",
+   "CCH-19",
+   "CFS-01",
+   "CFS-02",
+   "CFS-03",
+   "CFS-04",
+   "CFS-11"
+  ],
+  "api": []
+ },
+ {
+  "route": "abonnement-souscrire",
+  "titre": "Souscrire",
+  "onglet": "",
+  "document": "CL-14",
+  "phase": "après le lancement",
+  "interrupteur": "FF-ABONNEMENT",
+  "documentee": true,
+  "sections": [
+   "Écran « Souscrire »"
+  ],
+  "etats": [
+   {
+    "adresse": "#abonnement-souscrire",
+    "libelle": "Souscrire · premier mois à 1 500 F"
+   },
+   {
+    "adresse": "#abonnement-souscrire?formule=annuel",
+    "libelle": "Souscrire · Prime annuel, non remboursable"
+   },
+   {
+    "adresse": "#abonnement-souscrire?formule=pass7",
+    "libelle": "Souscrire · Pass 7 jours"
+   },
+   {
+    "adresse": "#abonnement-souscrire?st=essai-utilise",
+    "libelle": "Souscrire · essai déjà utilisé"
+   },
+   {
+    "adresse": "#abonnement-souscrire?palier=business",
+    "libelle": "Souscrire · Business, justificatif revendeur"
+   }
+  ],
+  "regles": 10,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "mon-abonnement",
+  "titre": "Mon abonnement",
+  "onglet": "",
+  "document": "CL-14",
+  "phase": "après le lancement",
+  "interrupteur": "FF-ABONNEMENT",
+  "documentee": true,
+  "sections": [
+   "Écrans « Mon abonnement » et « Résilier »"
+  ],
+  "etats": [
+   {
+    "adresse": "#mon-abonnement",
+    "libelle": "Mon abonnement · actif, économies, quotas (depuis Compte)"
+   },
+   {
+    "adresse": "#mon-abonnement?st=renouvellement",
+    "libelle": "Mon abonnement · renouvellement annoncé par push"
+   },
+   {
+    "adresse": "#mon-abonnement?st=grace",
+    "libelle": "Mon abonnement · prélèvement échoué, 7 jours de grâce"
+   },
+   {
+    "adresse": "#mon-abonnement?st=resilie",
+    "libelle": "Mon abonnement · résilié, actif jusqu’au terme"
+   }
+  ],
+  "regles": 18,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "abonnement-resilier",
+  "titre": "Résilier",
+  "onglet": "",
+  "document": "CL-14",
+  "phase": "après le lancement",
+  "interrupteur": "FF-ABONNEMENT",
+  "documentee": true,
+  "sections": [
+   "Écrans « Mon abonnement » et « Résilier »"
+  ],
+  "etats": [
+   {
+    "adresse": "#abonnement-resilier",
+    "libelle": "Mon abonnement · feuille « Résilier Prime ? »"
+   }
+  ],
+  "regles": 18,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "cagnotte",
+  "titre": "Ma cagnotte",
+  "onglet": "",
+  "document": "CL-14",
+  "phase": "après le lancement",
+  "interrupteur": "FF-ABONNEMENT",
+  "documentee": true,
+  "sections": [
+   "Écran « Ma cagnotte »"
+  ],
+  "etats": [
+   {
+    "adresse": "#cagnotte",
+    "libelle": "Cagnotte · 3 918 F en attente"
+   },
+   {
+    "adresse": "#cagnotte?st=creditee",
+    "libelle": "Cagnotte · créditée après libération"
+   },
+   {
+    "adresse": "#cagnotte?st=annulee",
+    "libelle": "Cagnotte · part annulée (colis remboursé)"
+   }
+  ],
+  "regles": 5,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "parrainage",
+  "titre": "Parrainer un proche",
+  "onglet": "",
+  "document": "CL-14",
+  "phase": "après le lancement",
+  "interrupteur": "FF-ABONNEMENT",
+  "documentee": true,
+  "sections": [
+   "Écran « Parrainer un proche »"
+  ],
+  "etats": [
+   {
+    "adresse": "#parrainage",
+    "libelle": "Parrainage · lien, filleul en attente"
+   },
+   {
+    "adresse": "#parrainage?st=recompense",
+    "libelle": "Parrainage · 1 mois offert"
+   },
+   {
+    "adresse": "#parrainage?st=limite",
+    "libelle": "Parrainage · limite de 3 par mois atteinte"
+   }
+  ],
+  "regles": 4,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "abonnement-offrir",
+  "titre": "Offrir un abonnement",
+  "onglet": "",
+  "document": "CL-14",
+  "phase": "après le lancement",
+  "interrupteur": "FF-ABONNEMENT",
+  "documentee": true,
+  "sections": [
+   "Page « Offrir un abonnement » (payeur à l’étranger)"
+  ],
+  "etats": [
+   {
+    "adresse": "#abonnement-offrir",
+    "libelle": "Offrir un abonnement · page web du payeur à l’étranger"
+   },
+   {
+    "adresse": "#abonnement-offrir?st=paye",
+    "libelle": "Offrir un abonnement · payé par carte"
+   },
+   {
+    "adresse": "#abonnement-offrir?duree=1",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   }
+  ],
+  "regles": 4,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "listes",
+  "titre": "Mes listes d’envies",
+  "onglet": "",
+  "document": "CL-14",
+  "phase": "après le lancement",
+  "interrupteur": "FF-LISTE-ENVIES",
+  "documentee": true,
+  "sections": [
+   "Les interrupteurs de fonctionnalité",
+   "Écrans « Mes listes d’envies » et « Nouvelle liste »"
+  ],
+  "etats": [
+   {
+    "adresse": "#listes?st=ferme",
+    "libelle": "Sauvegardés · listes d’envies fermées (une seule liste)"
+   },
+   {
+    "adresse": "#listes",
+    "libelle": "Sauvegardés · mes listes d’envies (module ouvert)"
+   },
+   {
+    "adresse": "#listes?st=defaut",
+    "libelle": "Sauvegardés · favoris seuls, aucune autre liste"
+   }
+  ],
+  "regles": 21,
+  "regles_etape4": [
+   "CFS-01",
+   "CFS-02",
+   "CFS-03",
+   "CFS-04",
+   "CFS-11"
+  ],
+  "api": []
+ },
+ {
+  "route": "liste-creer",
+  "titre": "Nouvelle liste",
+  "onglet": "",
+  "document": "CL-14",
+  "phase": "après le lancement",
+  "interrupteur": "FF-LISTE-ENVIES",
+  "documentee": true,
+  "sections": [
+   "Écrans « Mes listes d’envies » et « Nouvelle liste »"
+  ],
+  "etats": [
+   {
+    "adresse": "#liste-creer?mode=groupe",
+    "libelle": "Sauvegardés · feuille « Nouvelle liste » groupée"
+   }
+  ],
+  "regles": 10,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "liste-envies",
+  "titre": "Ma liste",
+  "onglet": "",
+  "document": "CL-14",
+  "phase": "après le lancement",
+  "interrupteur": "FF-LISTE-ENVIES",
+  "documentee": true,
+  "sections": [
+   "Écran « Ma liste » (propriétaire)"
+  ],
+  "etats": [
+   {
+    "adresse": "#liste-envies?id=anniv",
+    "libelle": "Liste d’envies · groupée, 2 sur 4 offerts"
+   },
+   {
+    "adresse": "#liste-envies?id=favoris",
+    "libelle": "Liste d’envies · favoris (liste par défaut)"
+   },
+   {
+    "adresse": "#liste-envies?id=anniv&st=surprise",
+    "libelle": "Liste d’envies · mode surprise"
+   },
+   {
+    "adresse": "#liste-envies?id=anniv&st=demarrer",
+    "libelle": "Liste d’envies · feuille « Démarrer la livraison maintenant »"
+   },
+   {
+    "adresse": "#liste-envies?id=mariage",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   }
+  ],
+  "regles": 8,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "liste-envoyer",
+  "titre": "Envoyer ma liste",
+  "onglet": "",
+  "document": "CL-14",
+  "phase": "après le lancement",
+  "interrupteur": "FF-LISTE-ENVIES",
+  "documentee": true,
+  "sections": [
+   "Écran « Envoyer ma liste »"
+  ],
+  "etats": [
+   {
+    "adresse": "#liste-envoyer",
+    "libelle": "Envoyer ma liste · avec mon adresse"
+   },
+   {
+    "adresse": "#liste-envoyer?id=mariage",
+    "libelle": "Envoyer ma liste · groupée, relais d’un proche"
+   },
+   {
+    "adresse": "#liste-envoyer?st=hors-zone",
+    "libelle": "Envoyer ma liste · adresse hors zone"
+   },
+   {
+    "adresse": "#liste-envoyer?st=sans-relais",
+    "libelle": "Envoyer ma liste · sans relais habituel"
+   },
+   {
+    "adresse": "#liste-envoyer?id=anniv",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   },
+   {
+    "adresse": "#liste-envoyer?id=favoris",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   }
+  ],
+  "regles": 8,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "liste-publique",
+  "titre": "Liste partagée",
+  "onglet": "",
+  "document": "CL-14",
+  "phase": "après le lancement",
+  "interrupteur": "FF-LISTE-ENVIES",
+  "documentee": true,
+  "sections": [
+   "Page « Liste partagée » (celui qui offre)"
+  ],
+  "etats": [
+   {
+    "adresse": "#liste-publique",
+    "libelle": "Liste partagée · page web de celui qui offre"
+   },
+   {
+    "adresse": "#liste-publique?st=expire",
+    "libelle": "Liste partagée · lien expiré"
+   }
+  ],
+  "regles": 7,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "liste-offrir",
+  "titre": "Offrir un article",
+  "onglet": "",
+  "document": "CL-14",
+  "phase": "après le lancement",
+  "interrupteur": "FF-LISTE-ENVIES",
+  "documentee": true,
+  "sections": [
+   "Pages « Offrir un article » et « Cadeau payé »"
+  ],
+  "etats": [
+   {
+    "adresse": "#liste-offrir",
+    "libelle": "Offrir un article · Mobile Money"
+   },
+   {
+    "adresse": "#liste-offrir?moyen=carte",
+    "libelle": "Offrir un article · carte depuis l’étranger"
+   },
+   {
+    "adresse": "#liste-offrir?st=prix",
+    "libelle": "Offrir un article · prix changé depuis le partage"
+   },
+   {
+    "adresse": "#liste-offrir?st=pris",
+    "libelle": "Offrir un article · déjà offert par quelqu’un"
+   }
+  ],
+  "regles": 13,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "liste-offert",
+  "titre": "Cadeau offert",
+  "onglet": "",
+  "document": "CL-14",
+  "phase": "après le lancement",
+  "interrupteur": "FF-LISTE-ENVIES",
+  "documentee": true,
+  "sections": [
+   "Pages « Offrir un article » et « Cadeau payé »"
+  ],
+  "etats": [
+   {
+    "adresse": "#liste-offert",
+    "libelle": "Cadeau payé · confirmation à celui qui offre"
+   },
+   {
+    "adresse": "#liste-offert?st=retire",
+    "libelle": "Cadeau remis · e-mail de remerciement"
+   }
+  ],
+  "regles": 13,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "ventes-flash",
+  "titre": "Ventes flash",
+  "onglet": "",
+  "document": "CL-14",
+  "phase": "après le lancement",
+  "interrupteur": "FF-FLASH",
+  "documentee": true,
+  "sections": [
+   "Écran « Ventes flash »"
+  ],
+  "etats": [
+   {
+    "adresse": "#ventes-flash",
+    "libelle": "Ventes flash · vraie fin, vrai stock (depuis la fiche)"
+   },
+   {
+    "adresse": "#ventes-flash?offre=cartable",
+    "libelle": "Ventes flash · feuille d’une offre"
+   },
+   {
+    "adresse": "#ventes-flash?st=hors-zone",
+    "libelle": "Ventes flash · aucune offre pour le relais"
+   }
+  ],
+  "regles": 10,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "assistant",
+  "titre": "Assistant BelivaY",
+  "onglet": "",
+  "document": "CL-14",
+  "phase": "après le lancement",
+  "interrupteur": "FF-IA",
+  "documentee": true,
+  "sections": [
+   "Écrans « Assistant BelivaY » et « Confirmer »"
+  ],
+  "etats": [
+   {
+    "adresse": "#assistant",
+    "libelle": "Assistant · réponse, code jamais écrit (depuis Aide)"
+   },
+   {
+    "adresse": "#assistant?st=alternative",
+    "libelle": "Assistant · produit introuvable, alternative"
+   },
+   {
+    "adresse": "#assistant?st=humain",
+    "libelle": "Assistant · passage à un conseiller"
+   },
+   {
+    "adresse": "#assistant?st=proactif",
+    "libelle": "Assistant · propositions proactives"
+   },
+   {
+    "adresse": "#assistant?st=fait",
+    "libelle": "Assistant · action faite après accord"
+   }
+  ],
+  "regles": 12,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "assistant-confirmer",
+  "titre": "Confirmer",
+  "onglet": "",
+  "document": "CL-14",
+  "phase": "après le lancement",
+  "interrupteur": "FF-IA",
+  "documentee": true,
+  "sections": [
+   "Écrans « Assistant BelivaY » et « Confirmer »"
+  ],
+  "etats": [
+   {
+    "adresse": "#assistant-confirmer",
+    "libelle": "Assistant · confirmer une annulation proposée"
+   },
+   {
+    "adresse": "#assistant-confirmer?action=paiement",
+    "libelle": "Assistant · confirmer un paiement proposé"
+   }
+  ],
+  "regles": 12,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "rentree",
+  "titre": "Liste de rentrée",
+  "onglet": "sauvegardes",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX01",
+  "documentee": true,
+  "sections": [
+   "Écran « Chercher l’école »"
+  ],
+  "etats": [
+   {
+    "adresse": "#rentree",
+    "libelle": "Rentrée · chercher l’école, liste en cours (depuis Sauvegardés)"
+   },
+   {
+    "adresse": "#rentree?st=hors-saison",
+    "libelle": "Rentrée · hors saison"
+   }
+  ],
+  "regles": 3,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "rentree-liste-papier",
+  "titre": "Liste papier",
+  "onglet": "sauvegardes",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX01",
+  "documentee": true,
+  "sections": [
+   "Écran « Liste papier »"
+  ],
+  "etats": [
+   {
+    "adresse": "#rentree-liste-papier",
+    "libelle": "Rentrée · photographier la liste papier"
+   },
+   {
+    "adresse": "#rentree-liste-papier?st=envoyee",
+    "libelle": "Rentrée · liste papier reçue"
+   }
+  ],
+  "regles": 3,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "rentree-classe",
+  "titre": "Choisir la classe",
+  "onglet": "sauvegardes",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX01",
+  "documentee": true,
+  "sections": [
+   "Écran « Choisir la classe »"
+  ],
+  "etats": [
+   {
+    "adresse": "#rentree-classe",
+    "libelle": "Rentrée · choisir la classe"
+   }
+  ],
+  "regles": 1,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "rentree-liste",
+  "titre": "Liste CE1",
+  "onglet": "sauvegardes",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX01",
+  "documentee": true,
+  "sections": [
+   "Écran « La liste »"
+  ],
+  "etats": [
+   {
+    "adresse": "#rentree-liste?st=modifiee",
+    "libelle": "Rentrée · la liste, modifiée par l’école"
+   },
+   {
+    "adresse": "#rentree-liste?st=possede",
+    "libelle": "Rentrée · article déjà possédé décoché"
+   },
+   {
+    "adresse": "#rentree-liste?st=equivalent",
+    "libelle": "Rentrée · feuille « équivalent conforme »"
+   }
+  ],
+  "regles": 7,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "rentree-panier",
+  "titre": "Panier de rentrée",
+  "onglet": "sauvegardes",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX01",
+  "documentee": true,
+  "sections": [
+   "Écran « Panier de rentrée »"
+  ],
+  "etats": [
+   {
+    "adresse": "#rentree-panier",
+    "libelle": "Rentrée · panier de rentrée, 3 boutiques"
+   },
+   {
+    "adresse": "#rentree-panier?sac=1",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   }
+  ],
+  "regles": 6,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "rentree-suivi",
+  "titre": "Suivi de la liste",
+  "onglet": "sauvegardes",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX01",
+  "documentee": true,
+  "sections": [
+   "Écran « Suivi de la liste »"
+  ],
+  "etats": [
+   {
+    "adresse": "#rentree-suivi",
+    "libelle": "Rentrée · suivi, 1 colis sur 2 arrivé"
+   },
+   {
+    "adresse": "#rentree-suivi?st=complete",
+    "libelle": "Rentrée · toute la liste au relais, un seul code"
+   },
+   {
+    "adresse": "#rentree-suivi?st=code",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   }
+  ],
+  "regles": 6,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "ecole",
+  "titre": "Espace école",
+  "onglet": "",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX01",
+  "documentee": true,
+  "sections": [
+   "Écran « Espace école »"
+  ],
+  "etats": [
+   {
+    "adresse": "#ecole",
+    "libelle": "Espace école · publier les listes (lien « Tu représentes une école ? »)"
+   }
+  ],
+  "regles": 2,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "cotisation",
+  "titre": "Cotisation",
+  "onglet": "accueil",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX02",
+  "documentee": true,
+  "sections": [
+   "Écran « Créer une cotisation »"
+  ],
+  "etats": [
+   {
+    "adresse": "#cotisation",
+    "libelle": "Cotisation · créer (depuis la fiche du cadeau)"
+   }
+  ],
+  "regles": 4,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "cotisation-partager",
+  "titre": "Partager",
+  "onglet": "accueil",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX02",
+  "documentee": true,
+  "sections": [
+   "Écran « Partager »"
+  ],
+  "etats": [
+   {
+    "adresse": "#cotisation-partager",
+    "libelle": "Cotisation · créée, partager le lien"
+   }
+  ],
+  "regles": 1,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "cotisation-participer",
+  "titre": "Participer",
+  "onglet": "",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX02",
+  "documentee": true,
+  "sections": [
+   "Page « Participer » (page web du lien)"
+  ],
+  "etats": [
+   {
+    "adresse": "#cotisation-participer",
+    "libelle": "Cotisation · page web ouverte par le lien"
+   },
+   {
+    "adresse": "#cotisation-participer?st=carte",
+    "libelle": "Cotisation · participer discrètement, par carte"
+   }
+  ],
+  "regles": 6,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "cotisation-suivre",
+  "titre": "Ma cotisation",
+  "onglet": "commandes",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX02",
+  "documentee": true,
+  "sections": [
+   "Écran « Ma cotisation » (suivre)"
+  ],
+  "etats": [
+   {
+    "adresse": "#cotisation-suivre",
+    "libelle": "Cotisation · suivre la jauge, issues à la date limite"
+   }
+  ],
+  "regles": 3,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "cotisation-atteinte",
+  "titre": "Objectif atteint",
+  "onglet": "commandes",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX02",
+  "documentee": true,
+  "sections": [
+   "Écran « Objectif atteint »"
+  ],
+  "etats": [
+   {
+    "adresse": "#cotisation-atteinte",
+    "libelle": "Cotisation · objectif atteint, commande passée"
+   },
+   {
+    "adresse": "#cotisation-atteinte?st=hausse",
+    "libelle": "Cotisation · objectif atteint, hausse de prix à trancher"
+   }
+  ],
+  "regles": 3,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "cotisation-echue",
+  "titre": "Cotisation terminée",
+  "onglet": "commandes",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX02",
+  "documentee": true,
+  "sections": [
+   "Écran « Cotisation terminée » (échéance manquée)"
+  ],
+  "etats": [
+   {
+    "adresse": "#cotisation-echue",
+    "libelle": "Cotisation · date limite dépassée, remboursements"
+   }
+  ],
+  "regles": 2,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "cote",
+  "titre": "Mettre de côté",
+  "onglet": "accueil",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX03",
+  "documentee": true,
+  "sections": [
+   "Feuille « Mettre de côté » (proposer)"
+  ],
+  "etats": [
+   {
+    "adresse": "#cote",
+    "libelle": "Mise de côté · feuille sur la fiche du produit"
+   },
+   {
+    "adresse": "#cote?st=non",
+    "libelle": "Mise de côté · article sous 20 000 F, non éligible"
+   },
+   {
+    "adresse": "#cote?src=rentree",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   }
+  ],
+  "regles": 5,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "cote-plan",
+  "titre": "Plan de versements",
+  "onglet": "accueil",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX03",
+  "documentee": true,
+  "sections": [
+   "Écran « Plan de versements »"
+  ],
+  "etats": [
+   {
+    "adresse": "#cote-plan",
+    "libelle": "Mise de côté · plan de versements"
+   }
+  ],
+  "regles": 3,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "cote-suivre",
+  "titre": "Mise de côté",
+  "onglet": "commandes",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX03",
+  "documentee": true,
+  "sections": [
+   "Écran « Mise de côté » (suivre)"
+  ],
+  "etats": [
+   {
+    "adresse": "#cote-suivre",
+    "libelle": "Mise de côté · versement du jour"
+   },
+   {
+    "adresse": "#cote-suivre?st=grace",
+    "libelle": "Mise de côté · échéance manquée, délai de grâce"
+   },
+   {
+    "adresse": "#cote-suivre?st=ajour",
+    "libelle": "Mise de côté · versement 2 payé, dernier à venir"
+   }
+  ],
+  "regles": 3,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "cote-versement",
+  "titre": "Versement",
+  "onglet": "commandes",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX03",
+  "documentee": true,
+  "sections": [
+   "Écran « Versement »"
+  ],
+  "etats": [
+   {
+    "adresse": "#cote-versement",
+    "libelle": "Mise de côté · payer le versement 2"
+   },
+   {
+    "adresse": "#cote-versement?n=3",
+    "libelle": "Mise de côté · payer le dernier versement"
+   }
+  ],
+  "regles": 2,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "cote-fini",
+  "titre": "Mise de côté",
+  "onglet": "commandes",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX03",
+  "documentee": true,
+  "sections": [
+   "Écran « Payé en entier » (terminé)"
+  ],
+  "etats": [
+   {
+    "adresse": "#cote-fini",
+    "libelle": "Mise de côté · payé en entier, commande vers le relais"
+   }
+  ],
+  "regles": 2,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "cote-annuler",
+  "titre": "Mise de côté",
+  "onglet": "commandes",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX03",
+  "documentee": true,
+  "sections": [
+   "Feuille « Annuler la mise de côté »"
+  ],
+  "etats": [
+   {
+    "adresse": "#cote-annuler",
+    "libelle": "Mise de côté · feuille « Annuler », remboursement exact"
+   }
+  ],
+  "regles": 4,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "troc",
+  "titre": "Reprise et troc",
+  "onglet": "accueil",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX04",
+  "documentee": true,
+  "sections": [
+   "Écran « Estimer ma reprise »"
+  ],
+  "etats": [
+   {
+    "adresse": "#troc",
+    "libelle": "Troc · estimer l’ancien téléphone (depuis la fiche)"
+   }
+  ],
+  "regles": 3,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "troc-offre",
+  "titre": "Offre de troc",
+  "onglet": "accueil",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX04",
+  "documentee": true,
+  "sections": [
+   "Écran « Offre de troc »"
+  ],
+  "etats": [
+   {
+    "adresse": "#troc-offre",
+    "libelle": "Troc · fourchette de reprise, reste estimé"
+   }
+  ],
+  "regles": 2,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "troc-depot",
+  "titre": "Dépôt au relais",
+  "onglet": "commandes",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX04",
+  "documentee": true,
+  "sections": [
+   "Écran « Dépôt au relais »"
+  ],
+  "etats": [
+   {
+    "adresse": "#troc-depot",
+    "libelle": "Troc · code de dépôt au relais"
+   },
+   {
+    "adresse": "#troc-depot?st=depose",
+    "libelle": "Troc · téléphone déposé, IMEI vérifié"
+   },
+   {
+    "adresse": "#troc-depot?st=refuse",
+    "libelle": "Troc · dépôt refusé, téléphone signalé volé"
+   }
+  ],
+  "regles": 5,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "troc-inspection",
+  "titre": "Inspection",
+  "onglet": "commandes",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX04",
+  "documentee": true,
+  "sections": [
+   "Écran « Inspection »"
+  ],
+  "etats": [
+   {
+    "adresse": "#troc-inspection?st=encours",
+    "libelle": "Troc · inspection en cours, deux issues"
+   },
+   {
+    "adresse": "#troc-inspection",
+    "libelle": "Troc · valeur confirmée"
+   }
+  ],
+  "regles": 3,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "troc-contre-offre",
+  "titre": "Inspection",
+  "onglet": "commandes",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX04",
+  "documentee": true,
+  "sections": [
+   "Feuille « Contre-offre »"
+  ],
+  "etats": [
+   {
+    "adresse": "#troc-contre-offre",
+    "libelle": "Troc · feuille « contre-offre du reconditionneur »"
+   }
+  ],
+  "regles": 2,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "troc-payer",
+  "titre": "Payer le neuf",
+  "onglet": "commandes",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX04",
+  "documentee": true,
+  "sections": [
+   "Écran « Payer le neuf »"
+  ],
+  "etats": [
+   {
+    "adresse": "#troc-payer",
+    "libelle": "Troc · payer le téléphone neuf"
+   }
+  ],
+  "regles": 4,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "famille",
+  "titre": "Panier famille",
+  "onglet": "compte",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX05",
+  "documentee": true,
+  "sections": [
+   "Écran « Panier famille » (choisir)"
+  ],
+  "etats": [
+   {
+    "adresse": "#famille",
+    "libelle": "Panier famille · choisir et modifier (depuis Compte)"
+   },
+   {
+    "adresse": "#famille?st=modifie",
+    "libelle": "Panier famille · article de plus de 5 kg refusé"
+   }
+  ],
+  "regles": 2,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "famille-destinataire",
+  "titre": "Pour qui ?",
+  "onglet": "compte",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX05",
+  "documentee": true,
+  "sections": [
+   "Écran « Pour qui ? » (destinataire)"
+  ],
+  "etats": [
+   {
+    "adresse": "#famille-destinataire",
+    "libelle": "Panier famille · destinataire et relais"
+   }
+  ],
+  "regles": 3,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "famille-payer",
+  "titre": "Payer par carte",
+  "onglet": "compte",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX05",
+  "documentee": true,
+  "sections": [
+   "Écran « Payer par carte »"
+  ],
+  "etats": [
+   {
+    "adresse": "#famille-payer",
+    "libelle": "Panier famille · payer par carte"
+   },
+   {
+    "adresse": "#famille-payer?st=3ds",
+    "libelle": "Panier famille · 3-D Secure"
+   }
+  ],
+  "regles": 3,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "famille-mensuel",
+  "titre": "Chaque mois",
+  "onglet": "compte",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX05",
+  "documentee": true,
+  "sections": [
+   "Écran « Chaque mois »"
+  ],
+  "etats": [
+   {
+    "adresse": "#famille-mensuel",
+    "libelle": "Panier famille · chaque mois"
+   },
+   {
+    "adresse": "#famille-mensuel?st=preavis",
+    "libelle": "Panier famille · préavis, hausse signalée"
+   },
+   {
+    "adresse": "#famille-mensuel?st=suspendu",
+    "libelle": "Atteint par un lien du prototype",
+    "lie": true
+   }
+  ],
+  "regles": 3,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "famille-preuve",
+  "titre": "Preuve de retrait",
+  "onglet": "compte",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX05",
+  "documentee": true,
+  "sections": [
+   "Écran « Preuve de retrait »"
+  ],
+  "etats": [
+   {
+    "adresse": "#famille-preuve",
+    "libelle": "Panier famille · preuve de retrait au payeur"
+   }
+  ],
+  "regles": 2,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "wa",
+  "titre": "WhatsApp · message",
+  "onglet": "",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX06",
+  "documentee": true,
+  "sections": [
+   "Conversation « Message » (texte ou vocal)"
+  ],
+  "etats": [
+   {
+    "adresse": "#wa",
+    "libelle": "WhatsApp · message vocal, accord demandé (depuis Aide)"
+   }
+  ],
+  "regles": 2,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "wa-proposition",
+  "titre": "WhatsApp · proposition",
+  "onglet": "",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX06",
+  "documentee": true,
+  "sections": [
+   "Conversation « Proposition »"
+  ],
+  "etats": [
+   {
+    "adresse": "#wa-proposition",
+    "libelle": "WhatsApp · proposition de l’IA au prix livré"
+   },
+   {
+    "adresse": "#wa-proposition?st=humain",
+    "libelle": "WhatsApp · doute, passage à un humain"
+   }
+  ],
+  "regles": 4,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "wa-confirmer",
+  "titre": "WhatsApp · confirmation",
+  "onglet": "",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX06",
+  "documentee": true,
+  "sections": [
+   "Conversation « Confirmation » (« Réponds OUI »)"
+  ],
+  "etats": [
+   {
+    "adresse": "#wa-confirmer",
+    "libelle": "WhatsApp · récapitulatif, « Réponds OUI »"
+   }
+  ],
+  "regles": 2,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "wa-lien",
+  "titre": "WhatsApp · paiement",
+  "onglet": "",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX06",
+  "documentee": true,
+  "sections": [
+   "Conversation « Lien de paiement »"
+  ],
+  "etats": [
+   {
+    "adresse": "#wa-lien",
+    "libelle": "WhatsApp · lien vers le paiement de base"
+   }
+  ],
+  "regles": 2,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "wa-suite",
+  "titre": "WhatsApp · suite",
+  "onglet": "",
+  "document": "CL-15",
+  "phase": "après le lancement",
+  "interrupteur": "FF-EX06",
+  "documentee": true,
+  "sections": [
+   "Conversation « Suite »"
+  ],
+  "etats": [
+   {
+    "adresse": "#wa-suite",
+    "libelle": "WhatsApp · paiement reçu, code jamais sur WhatsApp"
+   }
+  ],
+  "regles": 2,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "selection",
+  "titre": "Sélection Premium",
+  "onglet": "",
+  "document": "CL-04",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": false,
+  "sections": [],
+  "etats": [
+   {
+    "adresse": "#selection",
+    "libelle": "Sélection Premium · produits triés sur le volet (bandeau CURATED)"
+   }
+  ],
+  "regles": 0,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "diaspora",
+  "titre": "Diaspora",
+  "onglet": "",
+  "document": "CL-12",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": false,
+  "sections": [],
+  "etats": [
+   {
+    "adresse": "#diaspora",
+    "libelle": "Diaspora · un proche paie pour toi (bandeau DIASPORA)"
+   }
+  ],
+  "regles": 0,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "wallet",
+  "titre": "Wallet BelivaY",
+  "onglet": "",
+  "document": "CL-13",
+  "phase": "lancement",
+  "interrupteur": "FF-WALLET",
+  "documentee": false,
+  "sections": [],
+  "etats": [
+   {
+    "adresse": "#wallet",
+    "libelle": "Wallet BelivaY · solde, actions, historique"
+   },
+   {
+    "adresse": "#wallet?st=recharger",
+    "libelle": "Wallet · feuille « Recharger »"
+   },
+   {
+    "adresse": "#wallet?st=recharge&m=10000",
+    "libelle": "Wallet · rechargé"
+   },
+   {
+    "adresse": "#wallet?st=retirer",
+    "libelle": "Wallet · feuille « Retirer vers Mobile Money »"
+   }
+  ],
+  "regles": 0,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "devenir-vendeur",
+  "titre": "Devenir vendeur",
+  "onglet": "",
+  "document": "CL-13",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": false,
+  "sections": [],
+  "etats": [
+   {
+    "adresse": "#devenir-vendeur",
+    "libelle": "Devenir vendeur · ouvrir sa boutique (sans pièce)"
+   },
+   {
+    "adresse": "#devenir-vendeur?st=envoyee",
+    "libelle": "Devenir vendeur · boutique ouverte, produits en brouillon"
+   },
+   {
+    "adresse": "#devenir-vendeur?st=piece",
+    "libelle": "Devenir vendeur · pièce envoyée, vérification en cours"
+   },
+   {
+    "adresse": "#devenir-vendeur?st=verifiee",
+    "libelle": "Devenir vendeur · pièces vérifiées, ventes ouvertes"
+   },
+   {
+    "adresse": "#devenir-vendeur?st=refusee",
+    "libelle": "Devenir vendeur · pièce refusée"
+   },
+   {
+    "adresse": "#devenir-vendeur?st=ouvrir",
+    "libelle": "Devenir vendeur · ouverture de l’espace vendeur"
+   }
+  ],
+  "regles": 0,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "promotions",
+  "titre": "Promotions",
+  "onglet": "",
+  "document": "CL-04",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": false,
+  "sections": [],
+  "etats": [
+   {
+    "adresse": "#promotions",
+    "libelle": "Promotions · toutes les baisses de prix (distinct de Flash Deals)"
+   }
+  ],
+  "regles": 0,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "ouverture",
+  "titre": "Ouverture",
+  "onglet": "",
+  "document": "CL-03",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": false,
+  "sections": [],
+  "etats": [
+   {
+    "adresse": "#ouverture",
+    "libelle": "Écran d’ouverture · logo BelivaY (avant le premier lancement)"
+   }
+  ],
+  "regles": 0,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "xp-pay",
+  "titre": "Paiement express",
+  "onglet": "",
+  "document": "CL-08",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": false,
+  "sections": [],
+  "etats": [
+   {
+    "adresse": "#xp-pay?m=apple&back=paiement-moyen%3Fmontant%3D33780%26choix%3Dapple&t=34456&ok=%23confirmee",
+    "libelle": "Apple Pay · feuille du téléphone, Face ID"
+   },
+   {
+    "adresse": "#xp-pay?m=google&back=payeur&t=12138&ok=%23payeur%3Fst%3Dpaye&st=fait",
+    "libelle": "Google Pay · paiement accepté (payeur à l’étranger)"
+   }
+  ],
+  "regles": 0,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "lancement",
+  "titre": "Lancement de l’app",
+  "onglet": "",
+  "document": "CL-03",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": false,
+  "sections": [],
+  "etats": [
+   {
+    "adresse": "#lancement",
+    "libelle": "Lancement de l’app · animation du logo BelivaY (à chaque ouverture)"
+   }
+  ],
+  "regles": 0,
+  "regles_etape4": [],
+  "api": []
+ },
+ {
+  "route": "faceid",
+  "titre": "Face ID ou empreinte",
+  "onglet": "",
+  "document": "CL-03",
+  "phase": "lancement",
+  "interrupteur": null,
+  "documentee": false,
+  "sections": [],
+  "etats": [
+   {
+    "adresse": "#faceid?nouveau=1",
+    "libelle": "Compte créé · Face ID proposé une fois (iPhone)"
+   },
+   {
+    "adresse": "#faceid?nouveau=1&os=android",
+    "libelle": "Compte créé · empreinte proposée une fois (Android)"
+   }
+  ],
+  "regles": 0,
+  "regles_etape4": [],
+  "api": []
+ }
+]

@@ -1,0 +1,272 @@
+[
+ {
+  "route": "abonnement-offrir",
+  "adresse": "#abonnement-offrir?duree=1",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "adresses",
+  "adresse": "#adresses?st=ajout",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "avis-donner",
+  "adresse": "#avis-donner?ref=BLV-51702&from=compte",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "avis",
+  "adresse": "#avis?p=karite",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "code",
+  "adresse": "#code?ref=BLV-51940&st=visible",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "code",
+  "adresse": "#code?ref=BLV-52018&st=sms",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "commandes",
+  "adresse": "#commandes?onglet=terminees&st=rachat",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "commandes",
+  "adresse": "#commandes?onglet=terminees&st=rachat&ref=BLV-51206",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "commandes",
+  "adresse": "#commandes?onglet=terminees&st=rachat&ref=BLV-51388",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "commandes",
+  "adresse": "#commandes?onglet=terminees&st=rachat&ref=BLV-51533",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "commandes",
+  "adresse": "#commandes?sheet=annuler&ref=BLV-52107",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "commandes",
+  "adresse": "#commandes?st=abandon",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "comptoir-payer",
+  "adresse": "#comptoir-payer?ref=BLV-52018&st=attente",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "connexion-email",
+  "adresse": "#connexion-email?from=panier",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "connexion",
+  "adresse": "#connexion?st=existant",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "connexion",
+  "adresse": "#connexion?st=google",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "cote",
+  "adresse": "#cote?src=rentree",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "famille-mensuel",
+  "adresse": "#famille-mensuel?st=suspendu",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "faq",
+  "adresse": "#faq?t=paiement&a=1",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "faq",
+  "adresse": "#faq?t=retour",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "faq",
+  "adresse": "#faq?t=retrait",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "faq",
+  "adresse": "#faq?t=retrait&a=1",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "fiche",
+  "adresse": "#fiche?p=cartable",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "fiche",
+  "adresse": "#fiche?p=cartable&st=ajoute",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "fiche",
+  "adresse": "#fiche?p=montre",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "fiche",
+  "adresse": "#fiche?p=montre&st=apres",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "kit",
+  "adresse": "#kit?st=feuille",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "legal-doc",
+  "adresse": "#legal-doc?d=confidentialite",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "legal-doc",
+  "adresse": "#legal-doc?d=mentions",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "legal-doc",
+  "adresse": "#legal-doc?d=retours",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "liste-envies",
+  "adresse": "#liste-envies?id=mariage",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "liste-envoyer",
+  "adresse": "#liste-envoyer?id=anniv",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "liste-envoyer",
+  "adresse": "#liste-envoyer?id=favoris",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "messagerie",
+  "adresse": "#messagerie?from=aide",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "notifs-reglages",
+  "adresse": "#notifs-reglages?from=notifications",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "numero-changer",
+  "adresse": "#numero-changer?etape=3",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "numero",
+  "adresse": "#numero?st=code",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "numero",
+  "adresse": "#numero?st=ok",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "paiement-attente",
+  "adresse": "#paiement-attente?comptoir=1",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "paiement-attente",
+  "adresse": "#paiement-attente?montant=4000",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "paiement-attente",
+  "adresse": "#paiement-attente?panier=seuil",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "paiement-attente",
+  "adresse": "#paiement-attente?premiere=1",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "paiement-attente",
+  "adresse": "#paiement-attente?st=reprise",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "paiement-moyen",
+  "adresse": "#paiement-moyen?from=premiere",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "paiement-moyen",
+  "adresse": "#paiement-moyen?montant=4000&choix=orange",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "paiement-moyen",
+  "adresse": "#paiement-moyen?panier=seuil",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "panier",
+  "adresse": "#panier?premiere=1",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "panier",
+  "adresse": "#panier?st=invite",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "recherche-resultats",
+  "adresse": "#recherche-resultats?q=chargeur+tecno",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "rentree-panier",
+  "adresse": "#rentree-panier?sac=1",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "rentree-suivi",
+  "adresse": "#rentree-suivi?st=code",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "reseau",
+  "adresse": "#reseau?eco=1",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "sms",
+  "adresse": "#sms?st=s1",
+  "libelle": "Atteint par un lien du prototype"
+ },
+ {
+  "route": "sms",
+  "adresse": "#sms?st=s2",
+  "libelle": "Atteint par un lien du prototype"
+ }
+]

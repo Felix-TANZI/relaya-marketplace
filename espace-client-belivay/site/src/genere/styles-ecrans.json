@@ -1,0 +1,350 @@
+{
+ "menu": [
+  "57f763a2e1",
+  "1c3d953197",
+  "535caa4335",
+  "118b6d36f2",
+  "0b0ccec1e3",
+  "0b0ccec1e3"
+ ],
+ "kit": [
+  "93ec4c1d2c"
+ ],
+ "bienvenue": [
+  "f16ded0d4c",
+  "0b0ccec1e3",
+  "1c3d953197"
+ ],
+ "interets": [
+  "f16ded0d4c",
+  "1c3d953197"
+ ],
+ "connexion": [
+  "e45eeaa1bc",
+  "f16ded0d4c",
+  "0b0ccec1e3",
+  "1c3d953197",
+  "b472efbe3c"
+ ],
+ "connexion-email": [
+  "f16ded0d4c",
+  "0b0ccec1e3",
+  "1c3d953197"
+ ],
+ "mdp-oublie": [
+  "f16ded0d4c"
+ ],
+ "numero": [
+  "bf169d62ab",
+  "e45eeaa1bc",
+  "f16ded0d4c",
+  "1c3d953197"
+ ],
+ "numero-changer": [
+  "f16ded0d4c"
+ ],
+ "relais-choix": [
+  "f16ded0d4c",
+  "1c3d953197"
+ ],
+ "premiere-commande": [
+  "f16ded0d4c"
+ ],
+ "adresse": [
+  "f16ded0d4c"
+ ],
+ "notifs-proposition": [
+  "f16ded0d4c",
+  "f16ded0d4c"
+ ],
+ "cgu": [
+  "57f763a2e1",
+  "1c3d953197",
+  "f16ded0d4c"
+ ],
+ "accueil": [
+  "57f763a2e1",
+  "1c3d953197"
+ ],
+ "categories": [
+  "57f763a2e1",
+  "1c3d953197",
+  "118b6d36f2"
+ ],
+ "liste": [],
+ "recherche": [],
+ "recherche-saisie": [],
+ "recherche-resultats": [],
+ "recherche-zero": [],
+ "recherche-filtres": [],
+ "relais-selecteur": [],
+ "fiche": [],
+ "galerie": [],
+ "avis": [],
+ "question": [],
+ "panier": [],
+ "panier-retrait": [],
+ "sauvegardes": [],
+ "paiement-attente": [],
+ "prix-change": [],
+ "paiement-echec": [],
+ "paiement-moyen": [
+  "b472efbe3c"
+ ],
+ "confirmee": [],
+ "validee": [],
+ "commandes": [],
+ "commande": [],
+ "code": [],
+ "code-partage": [],
+ "suivi": [],
+ "comptoir-payer": [],
+ "comptoir": [],
+ "notifications": [],
+ "notifs-reglages": [],
+ "garde": [],
+ "push": [],
+ "sms": [],
+ "lien-court": [],
+ "litige": [],
+ "litige-confirme": [],
+ "litige-auto": [],
+ "litige-comptoir": [],
+ "litige-suivi": [],
+ "litige-arrangement": [],
+ "litiges": [],
+ "retour": [],
+ "remplacement": [],
+ "modifier": [],
+ "annuler": [],
+ "annuler-confirmer": [],
+ "changer-relais": [],
+ "changer-adresse": [],
+ "payeur": [
+  "10d630a833",
+  "b472efbe3c"
+ ],
+ "payeur-preuve": [],
+ "compte": [
+  "1c3d953197",
+  "0b0ccec1e3",
+  "118b6d36f2"
+ ],
+ "adresses": [],
+ "moyens-paiement": [],
+ "factures": [],
+ "supprimer": [],
+ "avis-donner": [],
+ "avis-bas": [],
+ "aide": [],
+ "faq": [],
+ "messagerie": [],
+ "fil": [],
+ "rappel": [],
+ "legal": [],
+ "legal-doc": [],
+ "reseau": [],
+ "reglages": [],
+ "abonnements": [
+  "57f763a2e1",
+  "02f3dac5cd"
+ ],
+ "abonnement-souscrire": [
+  "02f3dac5cd"
+ ],
+ "mon-abonnement": [
+  "02f3dac5cd"
+ ],
+ "abonnement-resilier": [
+  "02f3dac5cd"
+ ],
+ "cagnotte": [
+  "02f3dac5cd"
+ ],
+ "parrainage": [
+  "02f3dac5cd"
+ ],
+ "abonnement-offrir": [
+  "02f3dac5cd",
+  "10d630a833",
+  "b472efbe3c"
+ ],
+ "listes": [
+  "02f3dac5cd"
+ ],
+ "liste-creer": [
+  "02f3dac5cd"
+ ],
+ "liste-envies": [
+  "02f3dac5cd"
+ ],
+ "liste-envoyer": [
+  "02f3dac5cd"
+ ],
+ "liste-publique": [
+  "02f3dac5cd"
+ ],
+ "liste-offrir": [
+  "02f3dac5cd"
+ ],
+ "liste-offert": [
+  "02f3dac5cd"
+ ],
+ "ventes-flash": [
+  "1c3d953197",
+  "a623237236",
+  "0b0ccec1e3"
+ ],
+ "assistant": [
+  "02f3dac5cd"
+ ],
+ "assistant-confirmer": [
+  "02f3dac5cd"
+ ],
+ "rentree": [
+  "ddcb0e469a"
+ ],
+ "rentree-liste-papier": [
+  "ddcb0e469a"
+ ],
+ "rentree-classe": [
+  "ddcb0e469a"
+ ],
+ "rentree-liste": [
+  "ddcb0e469a"
+ ],
+ "rentree-panier": [
+  "ddcb0e469a"
+ ],
+ "rentree-suivi": [
+  "ddcb0e469a"
+ ],
+ "ecole": [
+  "ddcb0e469a"
+ ],
+ "cotisation": [
+  "ddcb0e469a"
+ ],
+ "cotisation-partager": [
+  "ddcb0e469a"
+ ],
+ "cotisation-participer": [
+  "ddcb0e469a"
+ ],
+ "cotisation-suivre": [
+  "ddcb0e469a"
+ ],
+ "cotisation-atteinte": [
+  "ddcb0e469a"
+ ],
+ "cotisation-echue": [
+  "ddcb0e469a"
+ ],
+ "cote": [
+  "ddcb0e469a"
+ ],
+ "cote-plan": [
+  "ddcb0e469a"
+ ],
+ "cote-suivre": [
+  "ddcb0e469a"
+ ],
+ "cote-versement": [
+  "ddcb0e469a"
+ ],
+ "cote-fini": [
+  "ddcb0e469a"
+ ],
+ "cote-annuler": [
+  "ddcb0e469a"
+ ],
+ "troc": [
+  "ddcb0e469a"
+ ],
+ "troc-offre": [
+  "ddcb0e469a"
+ ],
+ "troc-depot": [
+  "ddcb0e469a"
+ ],
+ "troc-inspection": [
+  "ddcb0e469a"
+ ],
+ "troc-contre-offre": [
+  "ddcb0e469a"
+ ],
+ "troc-payer": [
+  "ddcb0e469a"
+ ],
+ "famille": [
+  "ddcb0e469a"
+ ],
+ "famille-destinataire": [
+  "ddcb0e469a"
+ ],
+ "famille-payer": [
+  "ddcb0e469a",
+  "10d630a833",
+  "b472efbe3c"
+ ],
+ "famille-mensuel": [
+  "ddcb0e469a"
+ ],
+ "famille-preuve": [
+  "ddcb0e469a"
+ ],
+ "wa": [
+  "ddcb0e469a"
+ ],
+ "wa-proposition": [
+  "ddcb0e469a"
+ ],
+ "wa-confirmer": [
+  "ddcb0e469a"
+ ],
+ "wa-lien": [
+  "ddcb0e469a"
+ ],
+ "wa-suite": [
+  "ddcb0e469a"
+ ],
+ "selection": [
+  "1c3d953197",
+  "118b6d36f2"
+ ],
+ "diaspora": [
+  "1c3d953197",
+  "118b6d36f2"
+ ],
+ "wallet": [
+  "118b6d36f2",
+  "0b0ccec1e3",
+  "1c3d953197",
+  "0b0ccec1e3",
+  "1c3d953197"
+ ],
+ "devenir-vendeur": [
+  "118b6d36f2",
+  "0b0ccec1e3",
+  "1c3d953197"
+ ],
+ "promotions": [
+  "1c3d953197",
+  "0b0ccec1e3",
+  "a623237236"
+ ],
+ "ouverture": [
+  "1c3d953197",
+  "1c3d953197"
+ ],
+ "xp-pay": [
+  "b472efbe3c",
+  "b472efbe3c"
+ ],
+ "lancement": [
+  "e83f62e910"
+ ],
+ "faceid": [
+  "bf169d62ab"
+ ]
+}

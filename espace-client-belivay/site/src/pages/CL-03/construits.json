@@ -1,0 +1,46 @@
+{
+ "routes": [
+  "bienvenue",
+  "interets",
+  "connexion",
+  "connexion-email",
+  "mdp-oublie",
+  "numero",
+  "numero-changer",
+  "relais-choix",
+  "premiere-commande",
+  "adresse",
+  "notifs-proposition",
+  "cgu",
+  "ouverture",
+  "lancement",
+  "faceid"
+ ],
+ "exclus": {
+  "#lancement": "animation d'ouverture : le prototype mesure la largeur du nom avant le chargement de la police et coupe le mot ; le site la mesure police chargée (src/pages/CL-03/Lancement.tsx)",
+  "#numero-changer": "DP-53 : parcours réel (codes saisis et contrôlés, champ du nouveau numéro, résultat lu dans les données) ; le prototype montre des chiffres déjà tapés et un compte à rebours figé. Vérifié par tests/gestes.spec.ts.",
+  "#numero-changer?etape=2": "DP-53 : parcours réel (codes saisis et contrôlés, champ du nouveau numéro, résultat lu dans les données) ; le prototype montre des chiffres déjà tapés et un compte à rebours figé. Vérifié par tests/gestes.spec.ts.",
+  "#numero-changer?etape=3": "DP-53 : parcours réel (codes saisis et contrôlés, champ du nouveau numéro, résultat lu dans les données) ; le prototype montre des chiffres déjà tapés et un compte à rebours figé. Vérifié par tests/gestes.spec.ts.",
+  "#numero-changer?etape=4": "DP-53 : parcours réel (codes saisis et contrôlés, champ du nouveau numéro, résultat lu dans les données) ; le prototype montre des chiffres déjà tapés et un compte à rebours figé. Vérifié par tests/gestes.spec.ts.",
+  "#numero?st=code": "DP-53 : parcours réel (numéro tapé et contrôlé, code saisi et vérifié par la source, essais et blocage) ; le prototype montre des chiffres déjà tapés et un compte à rebours figé. Vérifié par tests/gestes.spec.ts.",
+  "#numero?st=code&from=panier": "DP-53 : parcours réel (numéro tapé et contrôlé, code saisi et vérifié par la source, essais et blocage) ; le prototype montre des chiffres déjà tapés et un compte à rebours figé. Vérifié par tests/gestes.spec.ts.",
+  "#numero?st=faux&from=panier": "DP-53 : parcours réel (numéro tapé et contrôlé, code saisi et vérifié par la source, essais et blocage) ; le prototype montre des chiffres déjà tapés et un compte à rebours figé. Vérifié par tests/gestes.spec.ts."
+ },
+ "repris": {
+  "adresse": "DP-54 : repris pour l'usage réel (position GPS, carte OpenStreetMap, informations pour le livreur).",
+  "bienvenue": "DP-54 : repris pour l'usage réel (connexion sans états écrits d'avance, intérêts gardés, relais par GPS et carte, Face ID réglé, notifications demandées au téléphone, conditions acceptées par version, première commande en liste).",
+  "interets": "DP-54 : repris pour l'usage réel (connexion sans états écrits d'avance, intérêts gardés, relais par GPS et carte, Face ID réglé, notifications demandées au téléphone, conditions acceptées par version, première commande en liste).",
+  "connexion": "DP-54 : repris pour l'usage réel (connexion sans états écrits d'avance, intérêts gardés, relais par GPS et carte, Face ID réglé, notifications demandées au téléphone, conditions acceptées par version, première commande en liste).",
+  "connexion-email": "DP-54 : repris pour l'usage réel (connexion sans états écrits d'avance, intérêts gardés, relais par GPS et carte, Face ID réglé, notifications demandées au téléphone, conditions acceptées par version, première commande en liste).",
+  "mdp-oublie": "DP-54 : repris pour l'usage réel (connexion sans états écrits d'avance, intérêts gardés, relais par GPS et carte, Face ID réglé, notifications demandées au téléphone, conditions acceptées par version, première commande en liste).",
+  "numero": "DP-54 : repris pour l'usage réel (connexion sans états écrits d'avance, intérêts gardés, relais par GPS et carte, Face ID réglé, notifications demandées au téléphone, conditions acceptées par version, première commande en liste).",
+  "numero-changer": "DP-54 : repris pour l'usage réel (connexion sans états écrits d'avance, intérêts gardés, relais par GPS et carte, Face ID réglé, notifications demandées au téléphone, conditions acceptées par version, première commande en liste).",
+  "relais-choix": "DP-54 : repris pour l'usage réel (connexion sans états écrits d'avance, intérêts gardés, relais par GPS et carte, Face ID réglé, notifications demandées au téléphone, conditions acceptées par version, première commande en liste).",
+  "premiere-commande": "DP-54 : repris pour l'usage réel (connexion sans états écrits d'avance, intérêts gardés, relais par GPS et carte, Face ID réglé, notifications demandées au téléphone, conditions acceptées par version, première commande en liste).",
+  "notifs-proposition": "DP-54 : repris pour l'usage réel (connexion sans états écrits d'avance, intérêts gardés, relais par GPS et carte, Face ID réglé, notifications demandées au téléphone, conditions acceptées par version, première commande en liste).",
+  "cgu": "DP-54 : repris pour l'usage réel (connexion sans états écrits d'avance, intérêts gardés, relais par GPS et carte, Face ID réglé, notifications demandées au téléphone, conditions acceptées par version, première commande en liste).",
+  "ouverture": "DP-54 : entrée « S'inscrire en tant que diaspora » ajoutée sous les deux boutons (consigne du porteur).",
+  "lancement": "DP-54 : repris pour l'usage réel (connexion sans états écrits d'avance, intérêts gardés, relais par GPS et carte, Face ID réglé, notifications demandées au téléphone, conditions acceptées par version, première commande en liste).",
+  "faceid": "DP-54 : repris pour l'usage réel (connexion sans états écrits d'avance, intérêts gardés, relais par GPS et carte, Face ID réglé, notifications demandées au téléphone, conditions acceptées par version, première commande en liste)."
+ }
+}

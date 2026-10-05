@@ -1,0 +1,2886 @@
+{
+ "document": "CL-08",
+ "source": "04_Pages_HTML/CL-08_Paiement_Confirmation.html",
+ "sections": [
+  {
+   "section": "Parcours « Payer »",
+   "tableaux": [
+    {
+     "sous_titre": "Les étapes et les écrans",
+     "colonnes": [
+      "Étape",
+      "Écran (route du prototype)",
+      "Ce que voit le client",
+      "Ce que fait le serveur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "1",
+        "Panier (CL-07, panier)",
+        "« Passer commande · 272 579 F » et la phrase de protection",
+        "Panier recalculé à chaque changement ; aucune réservation"
+       ]
+      },
+      {
+       "cellules": [
+        "2",
+        "— (aucun écran si Δ = 0)",
+        "Rien : l’attente s’ouvre directement",
+        "Recalcul, contrôle des prix, réservation, commande « en attente de paiement », clé d’idempotence, demande à CamPay"
+       ]
+      },
+      {
+       "cellules": [
+        "2a",
+        "prix-change?st=hausse · retire · pris",
+        "Arrêt : écart ou article retiré ou pris, nouveau total, confirmation",
+        "Aucune demande envoyée avant la confirmation"
+       ]
+      },
+      {
+       "cellules": [
+        "3",
+        "paiement-attente",
+        "« Valide la demande sur ton téléphone », montant, numéro masqué, temps restant",
+        "Attend le webhook signé ; l’application interroge GET /payments/{id}"
+       ]
+      },
+      {
+       "cellules": [
+        "3a",
+        "paiement-moyen?from=attente → paiement-attente?st=numero",
+        "Autre numéro ou Orange Money",
+        "Nouvelle tentative, l’ancienne annulée"
+       ]
+      },
+      {
+       "cellules": [
+        "4a",
+        "confirmee",
+        "Le reçu, en un écran",
+        "Webhook validé et escrow écrit ; order.paid (vendeurs, escrow, message C1)"
+       ]
+      },
+      {
+       "cellules": [
+        "4b",
+        "paiement-echec?cause=…",
+        "Cause en une phrase, « Aucun montant n’a été débité », panier intact",
+        "Réservations libérées ; payment.failed ; aucun vendeur prévenu"
+       ]
+      },
+      {
+       "cellules": [
+        "4c",
+        "Mes commandes (CL-09, carte « Paiement interrompu ») → « Reprendre le paiement » : paiement-attente?st=reprise",
+        "Le client a quitté pendant l’attente : panier borné, jamais une commande ; au retour, 214 699 F, « 12 min · jusqu’à 10 h 27 »",
+        "La tentative vit jusqu’à t_exp"
+       ]
+      },
+      {
+       "cellules": [
+        "C1",
+        "Panier éligible (CL-07) → paiement-attente?comptoir=1",
+        "Demande de 900 F : la livraison seule",
+        "Commande « Validée » à la réception du webhook ; order.validated"
+       ]
+      },
+      {
+       "cellules": [
+        "C2",
+        "validee → au retrait, comptoir-payer (CL-09)",
+        "« Commande validée · 900 F payés · le reste se paie au retrait en Mobile Money »",
+        "Escrow et code débloqués au webhook du paiement sur place"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CPY-01",
+        "Au clic sur « Payer », l’application n’envoie que le contenu du panier (articles, variantes, quantités, mode de remise, relais). Aucun montant.",
+        "§8.1 p. 46",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-02",
+        "Le serveur enchaîne dans cet ordre, dans une seule transaction : recalcul, contrôle des prix, réservation du stock, commande « en attente de paiement » avec sa clé d’idempotence, demande à l’agrégateur ; puis l’écran « Paiement en attente » s’ouvre.",
+        "§8.1 p. 46",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-03",
+        "Recalcul depuis zéro : prix actuel de chaque variante, frais de chaque ramassage, remise finale, livraison offerte. Aucun montant venant de l’application n’est utilisé ni accepté.",
+        "§8.1 p. 46",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-04",
+        "Stock réservé au clic sur « Payer », sur la variante précise, jamais à l’ajout au panier : décrément atomique du disponible (verrou de ligne sur la variante), réservation datée qui expire avec la fenêtre de validation ; une tâche de fond libère les réservations expirées.",
+        "§8.1 p. 46",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-05",
+        "Clé d’idempotence = id_commande + n° de tentative : deux clics, un double envoi réseau ou une reprise automatique ne produisent jamais deux demandes pour la même tentative.",
+        "§8.1, §8.6 p. 46, 50",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-06",
+        "Le prix payé est celui affiché au moment du paiement, jamais celui du moment de l’ajout au panier.",
+        "§8.1 p. 46",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-07",
+        "Trois écrans distincts, reliés aux vrais états du paiement, qui ne se confondent jamais : « Paiement en attente », « Paiement non abouti », « Commande confirmée ». Aucune commande n’apparaît au client avant le webhook de succès : ni numéro, ni suivi, ni « Reste à payer ».",
+        "§8.0 p. 45, §9.1 p. 53",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-08",
+        "Agrégateur principal CamPay (certifié ANTIC, enregistré ART), secours Fapshi ; rails MTN MoMo et Orange Money ; carte Visa ou Mastercard pour payer depuis l’étranger.",
+        "§8.0 p. 45",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-09",
+        "Zéro espèce, nulle part, y compris au comptoir du relais : Mobile Money et carte uniquement.",
+        "§8.0 p. 45, §19.2",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-10",
+        "Toute action d’argent exige la connexion : hors ligne, les boutons de paiement sont grisés avec l’explication ; jamais de case de conditions à cocher au moment de payer.",
+        "§15.4 p. 87",
+        "Décidé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Où vit chaque écran de CL-08 (refonte du 26 sept.)",
+     "colonnes": [
+      "Écran",
+      "Emplacement",
+      "Geste d’entrée",
+      "Retour"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Un prix a changé",
+        "Onglet Panier",
+        "« Passer commande » quand un prix a augmenté, un article est retiré ou pris (panier?prix=hausse|retire|pris)",
+        "« Panier », « Revenir au panier »"
+       ]
+      },
+      {
+       "cellules": [
+        "Paiement en attente",
+        "Onglet Panier",
+        "« Passer commande » ; « Payer » du contrôle des prix ; « Payer au comptoir du relais » ; « Payer » de la première commande (CL-03) ; « Reprendre le paiement » (CL-09) ; « Réessayer le paiement »",
+        "« Annuler » : panier intact (Mes commandes pour une reprise)"
+       ]
+      },
+      {
+       "cellules": [
+        "Moyen de paiement (feuille)",
+        "Au-dessus de l’attente ou de l’échec",
+        "« Changer de numéro » ; « Changer de moyen de paiement »",
+        "« × »"
+       ]
+      },
+      {
+       "cellules": [
+        "Paiement non abouti",
+        "Onglet Panier",
+        "Fin de la vérification (délai écoulé) ; carte refusée",
+        "« Retour au panier »"
+       ]
+      },
+      {
+       "cellules": [
+        "Commande confirmée",
+        "Compte › Mes commandes",
+        "« J’ai validé sur mon téléphone » (webhook validé) ; notification « Paiement protégé » (centre, écran verrouillé)",
+        "« × » : accueil (Mes commandes après une première commande)"
+       ]
+      },
+      {
+       "cellules": [
+        "Commande validée",
+        "Compte › Mes commandes",
+        "« J’ai validé sur mon téléphone » d’une attente au comptoir",
+        "« × » : accueil"
+       ]
+      },
+      {
+       "cellules": [
+        "Proposition des notifications (CL-03)",
+        "Suivi, juste après le reçu",
+        "« Suivre ma commande » du reçu d’une première commande",
+        "« Plus tard » : Mes commandes"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écran « Un prix a changé » — contrôle au clic sur « Payer »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 1",
+        "Contrôle des prix · hausse, confirmation",
+        "Hausse (Δ = + 2 000 F) : « Passer commande » du panier quand le prix du Camon 30 a augmenté entre l’affichage et le toucher (état panier?prix=hausse). Sans en-tête ni dock : lien « Panier » en haut à gauche. Pictogramme cerclé ambre (courbe montante), « Un prix a augmenté », « Le vendeur a changé son prix depuis ton ajout au panier. » Carte : Tecno Camon 30 · Gris titane · 256 Go ; « Prix à l’ajout 150 699 F », « Prix maintenant 152 699 F », « Écart + 2 000 F » en ambre ; filet pointillé ; « Tu avais vu 272 579 F », « Nouveau total 274 579 F » en orange. Bouton plein « Confirmer et payer 274 579 F », bouton contour « Revenir au panier », ligne « Rien n’a encore été demandé à ton téléphone. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 2",
+        "Contrôle des prix · produit désactivé",
+        "Produit désactivé (panier?prix=retire, puis « Passer commande »). Pictogramme cerclé orange (colis barré), « Un article n’est plus vendu », « Il a été retiré de la vente : on l’a enlevé de ton panier. » Carte : Mixeur-blender 2 L · 600 W, pastille « Retiré de ton panier » ; « Article retiré 37 000 F », « Tu avais vu 272 579 F », « Nouveau total 235 079 F » ; « 3 articles, 2 colis. La boutique C n’a plus rien à ramasser. » Boutons « Payer 235 079 F » et « Revenir au panier » ; même ligne de bas."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 3",
+        "Contrôle des prix · article pris, aucun autre vendeur",
+        "Article pris, aucun autre vendeur (panier?prix=pris). « Cet article vient d’être pris », « Le dernier a été acheté juste avant toi. Aucun autre vendeur ne le propose. » Carte : Sac cuir artisanal · Marron, pastille « Plus disponible », « Ton panier ne change pas : le sac y reste. » ; « Article pris 52 000 F », « Sans cet article 220 579 F », « 3 articles, 3 colis. » Boutons « Payer sans cet article · 220 579 F » et « Revenir au panier »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 4",
+        "Paiement en attente · un prix a baissé, « tu gagnes 1 500 F »",
+        "Baisse (Δ = − 1 500 F, panier?prix=baisse) : pas d’arrêt. « Passer commande » ouvre directement « Paiement en attente » (paiement-attente?cas=baisse) avec l’encadré vert « Un prix a baissé : tu gagnes 1 500 F sur l’Ensemble wax 3 pièces. » ; la demande part déjà au nouveau montant, 271 079 F. Même écran pour la bascule (panier?prix=bascule, cas=bascule) : « Le Tecno Camon 30 venait d’être pris. Un autre vendeur certifié te le fournit, au même prix. » et 272 579 F."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Ajouter",
+        "Montant figé à la création de la « commande »",
+        "Recalcul complet au clic sur « Payer », comparaison au montant vu",
+        "POST /checkout renvoie 409 price_changed avec les lignes, l’ancien et le nouveau total, et n’envoie aucune demande."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Aucune réservation : un article peut être vendu deux fois",
+        "Réservation sur la variante au clic sur « Payer », bascule vers le vendeur suivant ou « cet article vient d’être pris »",
+        "Verrou de ligne et décrément atomique ; 409 item_taken si aucun vendeur suivant."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Produit supprimé : rien ne le signale",
+        "Écran « Un article n’est plus vendu » avec le nouveau total",
+        "409 item_removed ; la ligne est retirée du panier côté serveur."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Aucun gain signalé",
+        "« Un prix a baissé : tu gagnes 1 500 F » sur l’écran d’attente",
+        "Champ gain de la réponse 202."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Style de l’écran",
+        "Fortement inspiré des maquettes S’inspirer (IMG_1952 à IMG_1954) : mêmes composants (pictogramme cerclé, cartes, encadrés, boutons contour), palette « Mandarine & Nuit ».",
+        "Reprendre les positions indiquées ; couleurs uniquement par les variables du socle (CL-01)."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CPY-11",
+        "Δ = M_serveur − M_affiché. Δ = 0 : continuer sans écran. Δ > 0 : arrêter, afficher l’écart (prix à l’ajout, prix maintenant, « + 2 000 F », ancien et nouveau total) et demander une confirmation explicite avant toute demande de paiement.",
+        "§8.1 p. 46, §8.6 p. 50",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-12",
+        "Δ < 0 : le nouveau prix s’applique et se signale comme un gain : « tu gagnes |Δ| F ».",
+        "§8.1 p. 46, §8.6 p. 50",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-13",
+        "La baisse et la bascule vers le vendeur suivant n’arrêtent pas le paiement : leur ligne s’affiche en tête de « Paiement en attente », la demande étant déjà partie au bon montant.",
+        "arbitrage",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-14",
+        "Produit désactivé ou supprimé : retiré du panier avec un message visible, jamais en silence.",
+        "§8.1 p. 46",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-15",
+        "Article non réservable : bascule automatique vers le vendeur suivant du même produit au coût total livré (décision du 17 septembre), sans changer le prix payé ; le client ne choisit jamais un vendeur. Sans vendeur suivant : « cet article vient d’être pris », panier intact.",
+        "§8.1 p. 46, §8.6, §8.7",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-16",
+        "La bascule au paiement suit les garde-fous de la rupture après confirmation : Trust Score ≥ 75 (REMPL-TRUST-MIN), prix livré au plus 5 % au-dessus (REMPL-ECART), écart payé par BelivaY ; sinon « cet article vient d’être pris ».",
+        "§13.2 appliqué au paiement",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-17",
+        "Produit retiré, ou article pris sans vendeur suivant : même arrêt que la hausse, avec le nouveau total recalculé, le nombre d’articles et de colis, « Payer … F » et « Revenir au panier ». Aucune demande n’est envoyée avant ce choix.",
+        "arbitrage",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-18",
+        "Article pris sans vendeur suivant : il reste dans le panier (« Ton panier ne change pas : le sac y reste. ») ; la commande porte sur les autres articles et l’article pris reste au panier après le paiement.",
+        "« panier intact », §8.1",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-19",
+        "Écran d’arrêt sans dock, « ‹ Panier » en haut à gauche, une phrase « Rien n’a été demandé à ton téléphone. », un seul bouton plein qui nomme le montant.",
+        "charte",
+        "Recommandé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Hausse de prix (Δ > 0)",
+        "Écran d’arrêt « Un prix a augmenté » ; « Confirmer et payer 274 579 F » relance la séquence (POST /checkout/confirm) puis ouvre l’attente au nouveau montant."
+       ]
+      },
+      {
+       "cellules": [
+        "Baisse (Δ < 0)",
+        "Pas d’arrêt ; encadré vert sur l’attente : « Un prix a baissé : tu gagnes 1 500 F sur l’Ensemble wax 3 pièces. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Article pris, vendeur suivant trouvé",
+        "Pas d’arrêt ; encadré sur l’attente : « Le Tecno Camon 30 venait d’être pris. Un autre vendeur certifié te le fournit, au même prix. » Total inchangé 272 579 F."
+       ]
+      },
+      {
+       "cellules": [
+        "Article pris, aucun vendeur suivant",
+        "« Cet article vient d’être pris » ; « Payer sans cet article · 220 579 F » ou « Revenir au panier »."
+       ]
+      },
+      {
+       "cellules": [
+        "Produit désactivé ou supprimé",
+        "« Un article n’est plus vendu » ; « Payer 235 079 F » ou « Revenir au panier »."
+       ]
+      },
+      {
+       "cellules": [
+        "Tous les articles pris ou retirés",
+        "Pas de bouton « Payer » : « Plus aucun article de ton panier n’est disponible » et « Revenir au panier »."
+       ]
+      },
+      {
+       "cellules": [
+        "Le prix change encore pendant l’écran d’arrêt",
+        "La confirmation relance le contrôle : nouvel écran d’arrêt avec le dernier total."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écran « Paiement en attente »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 5",
+        "Paiement en attente · MTN MoMo, « J’ai validé sur mon téléphone »",
+        "Attente MTN, panier de référence, ouverte par « Passer commande · 272 579 F » (maquette IMG_1952). Sans en-tête ni dock : lien « Annuler » en haut à gauche (retour au panier intact). Pictogramme téléphone cerclé d’orange, « Valide la demande sur ton téléphone », « Une demande de paiement de 272 579 F a été envoyée au numéro MTN MoMo 6 77 ·· ·· 41. Saisis ton code secret MoMo pour confirmer. » Carte de statut : anneau qui tourne, « En attente de ta validation », « Expire dans 23 min · à 10 h 38 ». Carte « SI RIEN NE S’AFFICHE SUR TON ÉCRAN » : « Compose *126# (MTN), puis valide la demande de BelivaY avec ton code secret. » Bouton plein « J’ai validé sur mon téléphone » (il interroge l’état ; dans le prototype, il ouvre le reçu), puis boutons contour « Rien reçu ? Renvoyer la demande » et « Changer de numéro ». En bas, encadré vert : « Rien n’est débité tant que tu n’as pas validé. Ton panier reste intact si tu abandonnes. » Dans le prototype, toucher la carte de statut fait passer le temps (délai écoulé, fig. suivante)."
+       ],
+       "gras": [
+        "",
+        "",
+        "272 579 F"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 6",
+        "Paiement en attente · numéro changé, Orange Money",
+        "Après « Changer de numéro », Orange Money choisi dans la feuille (?st=numero) : « … envoyée au numéro Orange Money 6 55 ·· ·· 08. Saisis ton code secret Orange Money pour confirmer. », encadré neutre « Nouvelle demande sur Orange Money. Celle envoyée sur 6 77 ·· ·· 41 est annulée. », « Expire dans 24 min · à 10 h 39 », aide « Compose #150*50# (Orange)… ». « J’ai validé » ouvre le reçu débité sur Orange Money. Mêmes écrans : autre numéro (?st=autre : « MTN MoMo 6 71 ·· ·· 95 », « Nouvelle demande sur ce numéro. ») ; renvoi (?st=renvoi : « Nouvelle demande envoyée à 10 h 15. Celle de 10 h 09 est annulée : tu ne peux pas payer deux fois. ») ; retour dans l’application (?st=reprise, cible de « Reprendre le paiement » de la carte « Paiement interrompu », CL-09 : 214 699 F, « Bon retour. Ta demande de 10 h 03 est toujours en cours. Rien n’a été débité. », « Expire dans 12 min · à 10 h 27 », « Annuler » vers Mes commandes). Première commande (?premiere=1, CL-03) : « Annuler » ramène à « Avant de payer »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 7",
+        "Paiement en attente · délai écoulé, vérification",
+        "Délai écoulé (?st=verif), ouvert en touchant la carte de statut : la demande de 09 h 51 arrive à son terme à 10 h 15. Anneau figé, « Délai écoulé : vérification auprès de MTN MoMo », « Si ton paiement est passé, ta commande est confirmée ici. Sinon, rien n’est débité. » Pas de bouton plein ; les deux boutons contour sont inactifs, avec « Ces deux boutons reviennent après la vérification : jamais deux débits. » Toucher le statut donne la réponse du prototype : « Paiement non abouti »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 8",
+        "Paiement en attente · livraison d’une commande au comptoir",
+        "Commande au comptoir, ouverte par « Payer au comptoir du relais » du panier (?comptoir=1, robe wax de BLV-51940) : demande de 900 F, la livraison seule. Encadré orange « Tu paies la livraison maintenant. La robe, 24 000 F, se paie au retrait en Mobile Money. » ; sous les boutons, « La livraison payée n’est pas remboursée si tu refuses le colis au comptoir. » « J’ai validé sur mon téléphone » ouvre « Commande validée » (BLV-51940 ; depuis le panier « seuil », le pagne de 18 500 F, validee?cas=seuil)."
+       ],
+       "gras": [
+        "",
+        "",
+        "900 F"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Retirer",
+        "« Placée le 07/09/2026 · ETA : aujourd’hui avant 14h » sur une tentative de 18 jours (IMG_2438)",
+        "Aucune date de livraison avant le paiement ; le délai apparaît sur le reçu (« Retrait possible dans 4 h 45 »)",
+        "Pas d’ETA ni d’anglais ; le délai vient de pickup_estimated_at après order.paid."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Trois états contradictoires : « Paiement en attente », « Retrait en boutique », « en préparation pour retrait » (IMG_2438)",
+        "Un seul état à la fois : en attente, non abouti ou confirmée",
+        "Machine à états du paiement (2.3) ; rien de logistique avant order.paid."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« Retrait en boutique », « Point de retrait », « Retrait en boutique partenaire » (IMG_2438, IMG_2443)",
+        "« Mme Ngo Bassong t’attend au Relais Mvog-Ada » sur le reçu",
+        "Le client retire au relais, jamais en boutique (19.1)."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Rangée d’icônes colis, boutique, garage sans libellé (IMG_2438)",
+        "—",
+        "Le suivi par colis en quatre états est dans CL-09."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "« Ville: YAOUNDE » en capitales, sans accent ni espace (IMG_2438)",
+        "—",
+        "Typographie française automatique ; aucune ville seule."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Pas de réponse à « quand puis-je y aller ? », pas d’état par colis, pas de relais ni de gérant (IMG_2438)",
+        "Après paiement : reçu (délai, relais, gérant, nombre de colis) puis suivi par colis (CL-09)",
+        "Reçu CRC-03 ; suivi CL-09."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "« Commande recuee et en attente de prise en charge » (IMG_2439)",
+        "—",
+        "Aucune chronologie avant le paiement."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "« La valeur du colis depasse le plafond Trust Score des livreurs disponibles. » avec une coche (IMG_2439)",
+        "—",
+        "Vocabulaire logistique interne jamais montré (16.3) ; le client ne voit qu’un délai calculé."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Événements logistiques sur une tentative non payée (IMG_2439)",
+        "Aucune sous-commande avant le webhook de succès",
+        "CPY-07, CPY-41."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« Relais: Boutique odza. » sans gérant ni horaires (IMG_2439)",
+        "Relais, gérant, photo, horaires du jour et distance sur le reçu",
+        "CRC-04, CRC-12."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Encadrés vert, bleu et jaune identiques sur chaque commande (IMG_2439)",
+        "Une seule phrase de protection, en bas de l’attente",
+        "Aucun bleu (CDS-01) ; couleurs d’état seulement."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Bandeaux « 3 200+ Vendeurs certifiés », « Remboursement sous 7 jours · Sans question », « Gagnez des points » (IMG_2439, IMG_2441, IMG_2442)",
+        "Aucun bandeau sur les écrans de paiement",
+        "Chiffre non réel et promesse fausse (19.3, 12.2) ; programme de points hors lancement."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Chronologie horodatée et encart sur les preuves (IMG_2439)",
+        "Repris après paiement dans le suivi (CL-09) ; ici, la protection en une phrase",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "« Contacter le livreur » sur une commande non payée (IMG_2440)",
+        "—",
+        "Aucun livreur avant le paiement ; ensuite, rappel masqué seulement (16.3)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Montants à virgule (« 150,699 FCFA ») à côté de montants à espace (IMG_2440, IMG_2441, IMG_2443)",
+        "« 272 579 F » partout, espace insécable ; l’anglais écrit « 272,579 F »",
+        "Un seul formateur de montant (CL-01)."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Identifiants internes « Article #40 / #41 », sans photo (IMG_2440)",
+        "—",
+        "Les articles restent dans le panier jusqu’au paiement."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "« Vous pourrez noter cet article après livraison ou confirmation de réception » (IMG_2440)",
+        "—",
+        "La notation vient après le retrait (CL-13), jamais pendant le paiement."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Prix unitaire × quantité et annonce de la notation pour plus tard (IMG_2440)",
+        "Le panier (CL-07) garde le détail ; la notation reste après le retrait",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Pas de bouton « Signaler un problème » (IMG_2440)",
+        "Dans le suivi de la commande payée (CL-09)",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "« RESTE À PAYER 214 699 FCFA » (IMG_2441)",
+        "« Valide la demande sur ton téléphone » et le montant exact de la demande",
+        "Mot interdit (9.1, 9.6)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« Les articles restent réservés jusqu’au paiement » (IMG_2441), contredit par d’autres écrans",
+        "Réservés pendant la fenêtre de validation : « 23 min · jusqu’à 10 h 38 »",
+        "PAY-RESA = PAY-TVAL ; expires_at renvoyé par le serveur."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Barre « Paiement · Livraison · Libération » (IMG_2441)",
+        "—",
+        "« Libération » est un mot du vendeur."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "« Aucun débit n’a eu lieu » (IMG_2441)",
+        "« Rien n’est débité tant que tu n’as pas validé » ; à l’échec, « Aucun montant n’a été débité. »",
+        "CPY-25, CPY-37."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Pas de temps restant, pas de « Abandonner » (IMG_2441)",
+        "Temps restant sur l’attente ; lien « Annuler » en haut ; carte « Paiement interrompu » avec « Abandonner » dans CL-09",
+        "CPY-22, CPY-25."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« Libération au vendeur · Dès que vous confirmez la réception » (IMG_2442)",
+        "« Ton argent reste bloqué jusqu’à ton retrait : le vendeur n’est payé qu’après. » sur le reçu",
+        "La règle exacte (3 jours après la fermeture du retour) est dans CL-09."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« Une commande non payée est automatiquement annulée », contredit par une tentative ouverte depuis 18 jours (IMG_2442)",
+        "La tentative expire à t_exp ; l’écran passe à « Paiement non abouti », la réservation tombe",
+        "CPY-31, CPY-41."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« Fonds sous séquestre » (IMG_2442)",
+        "« Ton argent reste bloqué… »",
+        "Aucun jargon juridique."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Deux boutons « Reprendre le paiement » sur la même page (IMG_2441, IMG_2442)",
+        "Un seul bouton plein sur l’attente, « J’ai validé sur mon téléphone » ; « Réessayer le paiement » seulement après un échec",
+        "Une seule action principale par écran."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Montrer où est l’argent à chaque étape (IMG_2442)",
+        "Protection en bas de l’attente, puis en une ligne sur le reçu",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Pas de « Tu as jusqu’au [date] » pour signaler un problème (IMG_2442)",
+        "Après le retrait, dans CL-09",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Résumé « Retrait boutique 0 FCFA » (IMG_2443)",
+        "Le panier montre « 400 F barré · offert » (CL-07) ; le reçu ne détaille aucun frais",
+        "Interdit du reçu : aucun détail des frais (8.4)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Téléphone « +2376929091 » à 7 chiffres, en clair (IMG_2443)",
+        "« 6 77 ·· ·· 41 », masqué au milieu",
+        "Numéro masqué renvoyé par le serveur (msisdn_masked)."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "« Livreur · En attente d’assignation » (IMG_2443)",
+        "—",
+        "BelivaY n’affecte jamais un livreur (16.3)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« Paiement sécurisé · Mobile Money protégé » sur une tentative non payée (IMG_2443)",
+        "Protection annoncée seulement quand elle est vraie : sur le reçu, après le webhook",
+        "CRC-01."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Petit résumé sous-total, livraison, total (IMG_2443)",
+        "Dans le panier (CL-07), avant le paiement",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Style de l’écran",
+        "Positions de la maquette S’inspirer IMG_1952 (exact) : grand pictogramme cerclé, titre centré, carte d’attente avec anneau et délai, carte d’aide USSD, deux boutons contour, encadré de protection en bas ; palette « Mandarine & Nuit », jamais les couleurs de la maquette.",
+        "Reprendre les positions indiquées ; couleurs uniquement par les variables du socle (CL-01)."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CPY-20",
+        "Affiché dès que la demande est envoyée à l’agrégateur, et tant qu’elle n’est ni validée ni en échec définitif.",
+        "§8.2 p. 46",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-21",
+        "Contenu : titre d’action « Valide la demande sur ton téléphone » ; montant exact ; numéro Mobile Money sollicité, masqué au milieu ; instruction : taper son code secret MoMo pour confirmer.",
+        "§8.2 p. 46",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-22",
+        "Un statut qui se rafraîchit seul, avec le temps restant avant expiration (t_exp = t_demande + T_val) : « 23 min · jusqu’à 10 h 38 ».",
+        "§8.2 p. 46, §8.6",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-23",
+        "Bloc « Si rien ne s’affiche sur ton écran » : *126# pour MTN, #150*50# pour Orange, selon l’opérateur du numéro sollicité (détecté au préfixe).",
+        "§8.2 p. 46, §3.3 p. 18",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-24",
+        "Deux boutons : « Rien reçu ? Renvoyer la demande » et « Changer de numéro ».",
+        "§8.2 p. 46",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-25",
+        "En bas, la phrase de protection : « Rien n’est débité tant que tu n’as pas validé. Si tu abandonnes, ton panier reste intact. » En haut, le lien « Annuler » ramène au panier intact.",
+        "§8.2 p. 47",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-26",
+        "Seule source de vérité : le webhook de l’agrégateur, signature vérifiée. L’application interroge l’état côté serveur et ne décide jamais seule ; fermée puis rouverte, elle affiche l’état réel du paiement.",
+        "§8.2 p. 47",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-27",
+        "« Renvoyer la demande » : nouvelle tentative rattachée à la même commande, nouvelle clé, ancienne tentative annulée ; un renvoi ne produit jamais deux débits.",
+        "§8.2 p. 47, §8.6",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-28",
+        "« Changer de numéro » : autre numéro Mobile Money choisi dans la feuille « Moyen de paiement », nouvelle demande ; la tentative précédente est annulée comme pour un renvoi.",
+        "§8.2 p. 47, §8.6",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-29",
+        "La réservation du stock dure exactement le temps de cet écran (PAY-RESA = fenêtre de validation).",
+        "§8.2 p. 47",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-30",
+        "L’écran ne passe jamais à « confirmée » sans webhook validé et escrow écrit ; webhook en retard : l’écran reste « en attente ».",
+        "§8.2 p. 47, §8.7 p. 51",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-31",
+        "À t_exp sans webhook de succès, le serveur interroge l’agrégateur avant de conclure. Pendant ces secondes, la réservation est tenue, l’écran affiche « Délai écoulé : vérification auprès de MTN MoMo » et les deux boutons sont inactifs. Succès : le reçu. Échec : réservation libérée et « Paiement non abouti ».",
+        "webhook en retard, §8.7",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-32",
+        "« Annuler » annule aussi la tentative chez l’agrégateur et libère la réservation. Un webhook de succès qui arrive malgré tout sur une tentative annulée ou remplacée confirme la commande si les articles sont encore réservables ; sinon il est remboursé en entier, automatiquement, vers le même numéro.",
+        "arbitrage",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-33",
+        "Numéro masqué « 6 77 ·· ·· 41 » (points médians du jeu d’essai) pour le « 6 77 41 » de la spécification ; le même masque sur tous les écrans.",
+        "§8.2, jeu d’essai",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-34",
+        "Écran sans dock ; temps restant en minutes avec l’heure d’expiration ; interrogation de l’état toutes les 3 s la première minute, puis toutes les 10 s. Bouton plein « J’ai validé sur mon téléphone » : il interroge l’état aussitôt (GET /payments/{id}) ; le reçu ne s’ouvre que sur succeeded (webhook validé, escrow écrit), sinon l’écran reste « en attente ».",
+        "charte, PAY-SONDAGE ; refonte du 26 sept.",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-35",
+        "Lignes d’état en tête de l’écran pour le renvoi, le changement de numéro, le retour dans l’application, le gain, la bascule vendeur et la livraison seule d’une commande au comptoir.",
+        "arbitrage",
+        "Recommandé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Double clic ou reprise réseau",
+        "Une seule demande (même clé d’idempotence) ; l’écran s’ouvre une fois."
+       ]
+      },
+      {
+       "cellules": [
+        "Rien reçu sur le téléphone",
+        "Bloc USSD de l’opérateur ; « Rien reçu ? Renvoyer la demande » : nouvelle tentative, « Celle de 10 h 09 est annulée : tu ne peux pas payer deux fois. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Numéro sans solde ou autre opérateur",
+        "« Changer de numéro » → feuille « Moyen de paiement » → nouvelle demande, ligne « Nouvelle demande sur Orange Money… »"
+       ]
+      },
+      {
+       "cellules": [
+        "Application fermée puis rouverte",
+        "L’écran correspond à l’état réel : attente (« Bon retour. Ta demande de 10 h 03 est toujours en cours. », 214 699 F, 12 min), reçu ou échec. « Reprendre le paiement » de la carte « Paiement interrompu » (CL-09) ouvre paiement-attente?st=reprise."
+       ]
+      },
+      {
+       "cellules": [
+        "Webhook en retard",
+        "Reste « en attente » ; à t_exp, « Délai écoulé : vérification auprès de MTN MoMo », boutons inactifs ; jamais « confirmée » sans webhook et escrow."
+       ]
+      },
+      {
+       "cellules": [
+        "Hors ligne pendant l’attente",
+        "Bandeau « Hors ligne » ; le paiement continue chez l’opérateur ; au retour du réseau, l’écran se met à jour. Renvoi et changement de numéro grisés."
+       ]
+      },
+      {
+       "cellules": [
+        "Commande au comptoir",
+        "Même écran pour 900 F (livraison seule), encadré « Tu paies la livraison maintenant… » et « La livraison payée n’est pas remboursée si tu refuses le colis au comptoir. »"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écran « Paiement non abouti »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 9",
+        "Paiement non abouti · demande expirée",
+        "Demande expirée, panier de référence (maquette IMG_1953), ouvert quand la vérification conclut à l’échec. Lien « Retour au panier » en haut à gauche, sans dock. Pictogramme rouge cerclé (croix), « Paiement non abouti », « La demande a expiré : le code secret n’a pas été saisi à temps. Aucun montant n’a été débité. » Carte « CE QUE TU PEUX FAIRE » à puces orange : « Réessayer — ton panier est intact », « Vérifier ton solde MoMo (*126#), puis relancer », « Payer avec un autre numéro ou une carte ». Bouton plein « Réessayer le paiement », bouton contour « Changer de moyen de paiement ». En bas, encadré neutre : « Tes 4 articles sont toujours dans ton panier. Aucun vendeur n’a été notifié. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 10",
+        "Paiement non abouti · solde insuffisant",
+        "Solde insuffisant (?cause=solde) : « Ton solde MTN MoMo était insuffisant pour payer 272 579 F. Aucun montant n’a été débité. » ; le premier conseil devient « Vérifier ton solde MoMo (*126#), puis relancer ». Mêmes boutons. Les causes « refusée » (?cause=refus : « MTN MoMo a refusé la demande : le code secret saisi n’était pas le bon. », premier conseil « Réessayer avec le bon code secret ») et « annulée » (?cause=annule : « Tu as annulé la demande sur ton téléphone. ») suivent le même modèle."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 11",
+        "Paiement non abouti · carte refusée",
+        "Carte refusée (panier « seuil » payé par carte, ?cause=carte, ouvert par « Payer 19 788 F par carte » de la feuille) : « Ta banque a refusé la carte : la confirmation 3-D Secure n’a pas abouti. Aucun montant n’a été débité. » Conseils : « Réessayer — ta banque te demandera de confirmer », « Payer en Mobile Money, sans frais de service », « Essayer une autre carte Visa ou Mastercard ». « Réessayer le paiement » rouvre la feuille sur la carte ; en bas, « Ton article est toujours dans ton panier. Aucun vendeur n’a été notifié. »"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Ajouter",
+        "—",
+        "Écran propre à l’échec, cause en une phrase et « Aucun montant n’a été débité. »",
+        "Table de correspondance des réponses de l’agrégateur (ci-dessous) ; aucun code technique à l’écran."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "—",
+        "Encadré « Tes 4 articles sont toujours dans ton panier. Aucun vendeur n’a été prévenu. »",
+        "Nombre d’articles renvoyé par le serveur ; panier strictement identique."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "—",
+        "« Ce que tu peux faire » dans l’ordre utile à la cause",
+        "Ordre des conseils porté par la table des causes."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Style de l’écran",
+        "Positions de la maquette S’inspirer IMG_1953 (exact) : pictogramme rouge cerclé, cause en une phrase, carte « Ce que tu peux faire », « Réessayer le paiement » plein, « Changer de moyen de paiement » en contour, encadré « articles toujours dans ton panier » ; palette « Mandarine & Nuit ».",
+        "Reprendre les positions indiquées ; couleurs uniquement par les variables du socle (CL-01)."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Table des causes (réponse de l’agrégateur → phrase client)",
+     "colonnes": [
+      "Famille de réponse de l’agrégateur",
+      "Phrase affichée (une seule, suivie de « Aucun montant n’a été débité. »)",
+      "Premier conseil"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Délai dépassé sans validation (t ≥ t_exp)",
+        "« La demande a expiré : le code secret n’a pas été saisi à temps. »",
+        "Réessayer"
+       ]
+      },
+      {
+       "cellules": [
+        "Refus de l’opérateur : code secret faux",
+        "« MTN MoMo a refusé la demande : le code secret saisi n’était pas le bon. »",
+        "Réessayer avec le bon code secret"
+       ]
+      },
+      {
+       "cellules": [
+        "Solde insuffisant",
+        "« Ton solde MTN MoMo était insuffisant pour payer 272 579 F. »",
+        "Vérifier ton solde MoMo (menu *126# chez MTN)"
+       ]
+      },
+      {
+       "cellules": [
+        "Annulée par le client sur son téléphone",
+        "« Tu as annulé la demande sur ton téléphone. »",
+        "Réessayer"
+       ]
+      },
+      {
+       "cellules": [
+        "Carte refusée (3-D Secure non validé, refus de la banque)",
+        "« Ta banque a refusé la carte : la confirmation 3-D Secure n’a pas abouti. »",
+        "Réessayer ; payer en Mobile Money ; autre carte"
+       ]
+      },
+      {
+       "cellules": [
+        "Plafond du compte Mobile Money atteint",
+        "« Ton compte MTN MoMo a atteint son plafond : essaie un autre numéro. »",
+        "Payer avec un autre numéro"
+       ]
+      },
+      {
+       "cellules": [
+        "Numéro non inscrit au Mobile Money",
+        "« Ce numéro n’a pas de compte Mobile Money. »",
+        "Changer de numéro"
+       ]
+      },
+      {
+       "cellules": [
+        "Service de l’opérateur indisponible",
+        "« Le service MTN MoMo ne répond pas en ce moment. »",
+        "Réessayer dans quelques minutes ; payer avec Orange Money"
+       ]
+      },
+      {
+       "cellules": [
+        "Toute autre réponse, ou réponse inconnue",
+        "« Le paiement n’a pas abouti. »",
+        "Réessayer ; la réponse brute est journalisée et signalée en console"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CPY-36",
+        "Affiché sur échec définitif : demande expirée, refusée, solde insuffisant, annulée par le client ; carte refusée pour un paiement par carte.",
+        "§8.3 p. 47, §13.6 p. 80",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-37",
+        "La cause en clair, en une phrase, suivie de « Aucun montant n’a été débité ». Table de correspondance codes de l’agrégateur → phrases client ; chaque cause connue a sa phrase ; aucun code technique à l’écran.",
+        "§8.3 p. 47",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-38",
+        "Bloc « Ce que tu peux faire » : réessayer (panier intact), vérifier son solde MoMo, payer avec un autre numéro ou une carte.",
+        "§8.3 p. 47",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-39",
+        "Bouton principal « Réessayer le paiement » (nouvelle tentative, recalcul complet selon CPY-02) ; secondaire « Changer de moyen de paiement » ; lien « Retour au panier » en haut.",
+        "§8.3 p. 47",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-40",
+        "Un encart : les articles sont toujours dans le panier et aucun vendeur n’a été notifié.",
+        "§8.3 p. 47",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-41",
+        "Réservations de la tentative libérées immédiatement ; aucun vendeur notifié, aucune sous-commande, aucune préparation ; panier jamais vidé, strictement identique à ce qu’il était avant le clic sur « Payer ».",
+        "§8.3 p. 47",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-42",
+        "SMS d’échec seulement si le client a quitté l’application ; il fait partie des SMS autorisés.",
+        "§8.3 p. 47, §8.7",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-43",
+        "Ce SMS n’est pas dans la liste des six SMS de 10.3 : il compte comme variante du SMS d’incident (C4) dans le plafond SMS-MAX-CMD de la tentative ; plafond atteint : push seulement.",
+        "§10.3 contre §8.3",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-44",
+        "L’ordre des trois conseils suit la cause : solde → « Vérifier ton solde MoMo » d’abord ; refus → « Réessayer avec le bon code secret » ; carte → réessayer, payer en Mobile Money, essayer une autre carte.",
+        "arbitrage",
+        "Recommandé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Échec pendant que le client est ailleurs",
+        "SMS d’échec (CPY-42, CPY-43) ; à l’ouverture de l’application, cet écran ; la carte « Paiement interrompu » disparaît de Mes commandes."
+       ]
+      },
+      {
+       "cellules": [
+        "« Réessayer le paiement »",
+        "Relance toute la séquence : recalcul, contrôle des prix (peut ouvrir « Un prix a changé »), nouvelle réservation, nouvelle tentative."
+       ]
+      },
+      {
+       "cellules": [
+        "Articles devenus indisponibles entre-temps",
+        "Au nouvel essai, « Cet article vient d’être pris » ou bascule vers le vendeur suivant."
+       ]
+      },
+      {
+       "cellules": [
+        "Réponse inconnue de l’agrégateur",
+        "« Le paiement n’a pas abouti. » ; alerte en console ; jamais de code technique."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Feuille « Moyen de paiement »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 12",
+        "Moyen de paiement · MTN, carte au-delà du plafond",
+        "Feuille ouverte par « Changer de moyen de paiement » de l’échec (fond voilé, bouton du fond passé en contour) ; « Changer de numéro » de l’attente ouvre la même. « Moyen de paiement » et « × », « Montant recalculé au moment de payer. » « MOBILE MONEY » : MTN MoMo « 6 77 ·· ·· 41 · ton numéro vérifié » (choisi, bord orange), Orange Money « 6 55 ·· ·· 08 », « Autre numéro Mobile Money · L’opérateur est reconnu à la saisie ». « DEPUIS L’ÉTRANGER » : « Carte Visa ou Mastercard · 2 % de frais de service · 3-D Secure » inactive, avec « Pas pour ce panier : 150 000 F au plus par paiement par carte. » Bouton plein « Payer 272 579 F avec MTN MoMo », « Rien n’est débité avant ta validation sur le téléphone. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 13",
+        "Moyen de paiement · autre numéro",
+        "Autre numéro : champ « Numéro Mobile Money » « +237 6 71 47 20 95 », « MTN MoMo » reconnu à droite ; « Opérateur reconnu : MTN MoMo. La demande part sur ce numéro ; tes messages BelivaY restent sur 6 77 ·· ·· 41. » Bouton « Payer 272 579 F avec ce numéro » : l’attente s’ouvre sur « MTN MoMo 6 71 ·· ·· 95 » (?st=autre)."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 14",
+        "Moyen de paiement · carte, 2 % affichés",
+        "Carte, feuille par-dessus le panier « seuil » de CL-07 (Pagne wax 18 500 F) : carte choisie ; « Articles et livraison 19 400 F », « Frais de service carte (2 %) 388 F », « Total débité 19 788 F », « ≈ 30,17 € pour une carte en euros », « 3-D Secure : ta banque te demande de confirmer. » Bouton « Payer 19 788 F par carte », « Rien n’est débité avant la confirmation de ta banque. » Pour une commande au comptoir, la carte est inactive : « Pas de carte pour une commande payée au comptoir. »"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Garder",
+        "Marques MTN et Orange, état choisi net, bouton qui nomme l’opérateur",
+        "Marques « MTN » et « orange » dessinées sur les jetons de la charte ; « Payer 272 579 F avec MTN MoMo »",
+        "Aucune image de logo ; texte de marque sur --gold-l et --esp-2."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Phrase de protection juste avant de payer",
+        "« Rien n’est débité avant ta validation sur le téléphone. »",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "« Commande #21 » : un numéro de commande avant le paiement",
+        "Aucun numéro : la commande naît au webhook de succès",
+        "CPY-07."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Carte « Montant à payer 214 699 FCFA » reprise d’une vieille tentative",
+        "« Montant recalculé au moment de payer. » ; le bouton porte le montant du serveur",
+        "POST /checkout recalcule à chaque essai."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« +237 6929091 » : 7 chiffres, invalide, en clair, sur Orange alors que MTN est choisi",
+        "Numéros masqués au milieu, un par ligne : « 6 77 ·· ·· 41 », « 6 55 ·· ·· 08 »",
+        "Numéros masqués renvoyés par le serveur ; validation à 9 chiffres pour un autre numéro."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« numéro détecté » et « Numéro enregistré » redondants",
+        "« ton numéro vérifié » sur le numéro du compte, rien sur les autres",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« Escrow BelivaY — votre argent … n’est versé au vendeur qu’après confirmation de la réception » (inexact)",
+        "Pas de promesse d’escrow avant le paiement ; sur le reçu : « Ton argent reste bloqué jusqu’à ton retrait : le vendeur n’est payé qu’après. »",
+        "CRC-13."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Feuille en verre translucide, gris sur gris",
+        "Feuille opaque, contraste ≥ 4,5:1 en clair et en sombre",
+        "Voile .veil et feuille .sheet du socle."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Vouvoiement",
+        "Tutoiement",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Après « Continuer », rien : pas d’écran d’attente",
+        "« Paiement en attente » (section précédente)",
+        "CPY-20 à CPY-35."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Pas de carte pour la diaspora",
+        "« Carte Visa ou Mastercard » avec 2 % affichés avant de payer, 3-D Secure, plafond 150 000 F",
+        "CPY-47 à CPY-49 ; parcours du payeur à l’étranger dans CL-12."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Style de l’écran",
+        "Fortement inspiré des maquettes S’inspirer (IMG_1952 à IMG_1954) : mêmes composants (pictogramme cerclé, cartes, encadrés, boutons contour), palette « Mandarine & Nuit ».",
+        "Reprendre les positions indiquées ; couleurs uniquement par les variables du socle (CL-01)."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Calculs",
+     "colonnes": [
+      "Condition ou formule",
+      "Règle d’implémentation"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "frais_carte = arrondi(2 % × (S + livraison))",
+        "19 400 × 2 % = 388 F. Affichés avant le paiement (PAY-CARTE-FRAIS)."
+       ]
+      },
+      {
+       "cellules": [
+        "total_carte = S + livraison + frais_carte",
+        "19 400 + 388 = 19 788 F."
+       ]
+      },
+      {
+       "cellules": [
+        "montant_EUR = total ÷ 655,957, au centime",
+        "30,166 → 30,17 € (PAY-CARTE-ARRONDI) ; autre devise : taux du prestataire figé au paiement."
+       ]
+      },
+      {
+       "cellules": [
+        "carte proposée ⇔ total ≤ 150 000 F ∧ commande non « Validée »",
+        "272 579 F : carte inactive avec l’explication ; commande au comptoir : carte inactive."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CPY-45",
+        "Moyens proposés : MTN MoMo et Orange Money (le numéro vérifié du compte est choisi d’avance, le second numéro enregistré est à un tap), un autre numéro Mobile Money dont l’opérateur est reconnu au préfixe, et la carte Visa ou Mastercard pour payer depuis l’étranger.",
+        "§8.0, §7.2 p. 40, §3.3, §3.4",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-46",
+        "Autre numéro : la demande Mobile Money part sur ce numéro, mais aucun message BelivaY n’y est envoyé (numéro non vérifié) ; les messages restent sur le numéro du compte.",
+        "§3.3 p. 18",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-47",
+        "Carte : frais de service de 2 % affichés avant de payer, jamais cachés jusqu’au débit ; total en francs et équivalent en euros au centime.",
+        "§13.4 p. 79, §13.5",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-48",
+        "Carte : 3-D Secure obligatoire ; 150 000 F au plus par transaction. Au-delà (panier de 272 579 F), la ligne carte est inactive avec l’explication ; le paiement se fait en plusieurs commandes.",
+        "§13.4, §13.6 p. 80",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-49",
+        "Jamais de carte pour une commande au comptoir (jamais de paiement au comptoir depuis l’étranger).",
+        "§8.5 p. 49, §13.4",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-50",
+        "Le bouton plein nomme le montant et le moyen (« Payer 272 579 F avec MTN MoMo », « Payer 19 788 F par carte ») ; sous le bouton, « Rien n’est débité avant ta validation sur le téléphone. » ; feuille opaque, marques d’opérateur en texte sur les jetons de la charte.",
+        "mise à niveau d’IMG_2436",
+        "Recommandé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Paramètres (registre)",
+     "colonnes": [
+      "Code",
+      "Paramètre",
+      "Valeur",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "PAY-CARTE-FRAIS",
+        "Carte : frais de service",
+        "2 %",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "PAY-CARTE-MAX",
+        "Carte : plafond par transaction",
+        "150 000 F",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "PAY-CARTE-ARRONDI",
+        "Conversion en euros",
+        "centime le plus proche",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "PAY-CARTE-PSP",
+        "Prestataire carte",
+        "Flutterwave ou CinetPay",
+        "À trancher"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Portefeuille « Compte BelivaY » et dépôt manuel — supprimés",
+   "tableaux": [
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Retirer",
+        "Page « Mon Compte BelivaY » (tuile « Wallet ») : solde prépayé, « Solde · Dépôts · Payer mon abonnement » (IMG_2407)",
+        "Supprimée, sans remplaçant. Chaque commande se paie au moment de payer, par une demande Mobile Money de l’agrégateur",
+        "Retirer la route, la tuile et les endpoints de solde. Pourquoi : la spécification ne connaît que l’escrow d’une commande (glossaire p. 9 ; 2.5 p. 13) ; détenir des soldes clients relève de la monnaie électronique (agrément)."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Deux noms pour une page : « Wallet » et « Compte BelivaY », confondu avec le compte utilisateur (IMG_2407)",
+        "Plus de page ; « Mon compte » reste le compte de la personne (CL-13)",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Bouton « Actualiser » (IMG_2407)",
+        "Un statut d’argent se met à jour tout seul : « Paiement en attente »",
+        "CPY-22, CPY-34."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Aucune puce active alors que la page est ouverte (IMG_2407)",
+        "Page supprimée",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "« En attente · Crédit sous 24–72h » : dépôt crédité à la main (IMG_2408)",
+        "Paiement confirmé par le webhook signé, en quelques secondes",
+        "Jamais de validation manuelle d’un paiement (CPY-26)."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "« Total déposé 0 FCFA · 0 dépôt » alors qu’un message dit « Votre dépôt Mobile Money a été validé » (IMG_2408, IMG_2404)",
+        "Un seul état par tentative : en attente, non abouti, confirmée",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Trois grandes cartes pour trois zéros, vert hors palette (IMG_2408)",
+        "—",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Bandeau « 3 200+ Vendeurs certifiés sur BelivaY » (IMG_2408)",
+        "Aucun compteur écrit en dur, aucun bandeau sur les écrans de paiement",
+        "Chiffre non réel (19.3) ; le client cherche un produit, jamais un vendeur (1.3)."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Encart « À quoi sert… » qui explique la fonction en une phrase (IMG_2408)",
+        "Une phrase qui dit ce qui se passe, sur chaque écran de paiement (« Rien n’est débité tant que tu n’as pas validé… »)",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Le porte-monnaie ne sert qu’à l’abonnement Premium (IMG_2409)",
+        "Abonnement fermé au lancement (FF-ABONNEMENT) ; après, prélèvement Mobile Money annoncé (21.5), jamais un dépôt",
+        "Aucun encart d’abonnement au paiement ni sur le reçu (interdits 8.4, 19.3)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Opérateurs figurés par des pastilles de couleur (IMG_2409)",
+        "Marques « MTN » et « orange » lisibles dans la feuille « Moyen de paiement »",
+        "CPY-50."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Choix de l’opérateur en grandes cartes faciles à toucher (IMG_2409)",
+        "Lignes de 66 px par moyen dans la feuille « Moyen de paiement »",
+        "Cibles ≥ 44 px."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "« sans avoir à ressaisir vos coordonnées » : faux (IMG_2409)",
+        "—",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Bandeau « Livraison 24–72h · Cameroun & CEMAC » (IMG_2409, IMG_2410)",
+        "Aucune fourchette : une heure ou une date ferme (« 4 h 45 », « jeudi 24 sept. dès 9 h ») ; 12 zones de Yaoundé au lancement",
+        "CRC-05 ; SLA-ZONE-H moins de 5 h."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Transfert manuel vers « +237 655 000 000 · Compte officiel BelivaY » puis « Confirmer le dépôt » (IMG_2410)",
+        "Supprimé. Le client n’envoie jamais d’argent vers un numéro : l’agrégateur (CamPay, secours Fapshi) envoie la demande sur son téléphone, qu’il valide avec son code secret",
+        "Pourquoi : un dépôt déclaré par le client contourne l’agrégateur et son webhook, seule source de vérité ; il ouvre la porte aux fraudes, aux faux numéros « officiels » et à des litiges impossibles à trancher."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Numéro destinataire fictif présenté comme « Compte officiel » (IMG_2410)",
+        "Aucun numéro BelivaY affiché, nulle part",
+        "Aucun champ « destinataire » dans l’application."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "« Nouveau solde estimé » (IMG_2410)",
+        "Un montant se calcule côté serveur, il ne s’estime pas",
+        "CPY-52."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Opérateur choisi deux fois : cartes puis format du numéro (IMG_2410)",
+        "Opérateur reconnu au préfixe quand on saisit un autre numéro",
+        "Table des préfixes par opérateur tenue en console ; CPY-45."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Aide de format du numéro par opérateur (IMG_2410)",
+        "Champ « Numéro Mobile Money » avec « +237 » et l’opérateur reconnu affiché",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "« Réinitialiser » caché par le bouton de remontée (IMG_2410)",
+        "Aucun bouton flottant sur les écrans de paiement",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Style de l’écran",
+        "Fortement inspiré des maquettes S’inspirer (IMG_1952 à IMG_1954) : mêmes composants (pictogramme cerclé, cartes, encadrés, boutons contour), palette « Mandarine & Nuit ».",
+        "Reprendre les positions indiquées ; couleurs uniquement par les variables du socle (CL-01)."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CPY-51",
+        "Aucun porte-monnaie ni dépôt : l’argent du client n’est détenu par BelivaY qu’en escrow, lié à une commande, après un paiement passé par l’agrégateur et confirmé par son webhook. Les pages « Mon Compte BelivaY » et « Déposer des fonds » disparaissent, et aucun numéro « officiel » n’est jamais affiché.",
+        "glossaire p. 9, §2.5, §8.2",
+        "Recommandé"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écran « Commande confirmée » — le reçu",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 15",
+        "Commande confirmée · reçu BLV-52107 (depuis la notification)",
+        "Reçu de BLV-52107 (maquette IMG_1954), rouvert depuis la notification « Paiement protégé » de 09 h 02 (centre de notifications et écran verrouillé, CL-10) : la preuve survit à la page. Sans dock, tout tient dans un écran. Carte : « × » vers l’accueil, coche verte dans un carré, « Commande confirmée », « Commande n° BLV-52107 » ; filet pointillé ; 1 · « Montant débité 196 780 F » en orange, « Numéro débité MTN MoMo · 6 77 ·· ·· 41 », « Date jeu. 24 sept. 2026 · 09 h 02 » ; 2 · encadré vert « Ton argent reste bloqué jusqu’à ton retrait : le vendeur n’est payé qu’après. » ; 3 · bloc relais : portrait, « Ton relais de retrait », « Mme Ngo Bassong », « t’attend au Relais Mvog-Ada · 350 m de chez toi » ; 4 · « Retrait possible dans 4 h 45 » en vert, « aujourd’hui dès 15 h » ; 5 · « 3 colis, retirables ensemble avec un seul code ». 6 · Bouton plein « Suivre ma commande » (suivi de BLV-52107, CL-09). 7 · Bouton contour « Partager la confirmation ». 8 · « Tu recevras une notification dès que tes colis seront au relais. Ton code de retrait t’attendra dans Mes commandes. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 16",
+        "Commande confirmée · première commande payée à 10 h 15 (→ proposition des notifications)",
+        "Le reçu qui suit « J’ai validé sur mon téléphone » : la commande créée par la tentative, BLV-52131 (variante du jeu d’essai, qui garde le panier de référence non payé), « Montant débité 272 579 F », « MTN MoMo · 6 77 ·· ·· 41 », « jeu. 24 sept. 2026 · 10 h 15 », « Retrait possible dans 6 h 45 · aujourd’hui dès 17 h » (boutique C à Mvan, prête sous 6 h), « 3 colis ». Ici, première commande (?premiere=1) : « Suivre ma commande » ouvre le suivi avec la proposition des notifications (notifs-proposition, CL-03), jamais posée sur le reçu ; « × » va à Mes commandes. Hors première commande, « Suivre ma commande » ouvre Mes commandes. Montant, colis et délai suivent ce qui a été payé (?cas=) : hausse 274 579 F, baisse 271 079 F, article retiré 235 079 F (2 colis, dès 15 h), article pris 220 579 F, reprise 214 699 F (1 colis, dès 15 h), panier « seuil » 19 400 F (1 colis, dès 15 h) ; « Orange Money · 6 55 ·· ·· 08 » ou « MTN MoMo · 6 71 ·· ·· 95 » selon la demande (?op=)."
+       ],
+       "gras": [
+        "",
+        "",
+        "BLV-52131"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 17",
+        "Commande confirmée · partager la confirmation",
+        "Partage (fond voilé) : feuille « Partager la confirmation » et « × ». Image : « COMMANDE CONFIRMÉE » en vert, « BLV-52107 », « 196 780 F payés », « jeudi 24 sept. 2026 à 09 h 02 », « 3 colis · Relais Mvog-Ada · aujourd’hui dès 15 h », « Argent bloqué jusqu’au retrait ». Texte : « Commande BelivaY BLV-52107 confirmée : 196 780 F payés le jeudi 24 sept. 2026 à 09 h 02. 3 colis à retirer au Relais Mvog-Ada, aujourd’hui dès 15 h. L’argent reste bloqué jusqu’au retrait. » Applications du téléphone : WhatsApp (en premier), SMS, E-mail, Copier ; « C’est ton téléphone qui partage. BelivaY n’envoie rien à ta place, et jamais ton code de retrait. » Ni code, ni boutique, ni détail des frais."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Ajouter",
+        "—",
+        "Reçu en un écran : preuve, protection, rendez-vous, délai, colis, deux actions, ligne de bas",
+        "GET /orders/{id}/receipt ; l’écran s’ouvre seulement sur succeeded."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "—",
+        "Partage natif (image et texte)",
+        "API de partage du système ; image générée côté application à partir des champs du reçu."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "—",
+        "Reçu retrouvable dans Mes commandes et le centre de notifications, lisible hors ligne",
+        "Mis en cache à la première ouverture (15.4)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Style de l’écran",
+        "Positions de la maquette S’inspirer IMG_1954 (exact) : une seule carte (coche cerclée, titre, numéro, filet pointillé, montant, numéro débité, date, encadré de protection, bloc de la gérante avec le compte à rebours), puis « Suivre ma commande » et « Partager la confirmation » ; palette « Mandarine & Nuit ».",
+        "Reprendre les positions indiquées ; couleurs uniquement par les variables du socle (CL-01)."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CRC-01",
+        "Affiché uniquement quand le webhook de paiement est validé et que l’escrow est écrit dans le registre (confirmée ⇔ webhook_valide ∧ escrow_écrit).",
+        "§8.4 p. 48, §8.6",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRC-02",
+        "Une preuve, pas un accusé de réception : tout le reçu tient en une seule capture, sans défilement, sur les Android de gamme moyenne les plus courants.",
+        "§8.4 p. 48",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRC-03",
+        "Contenu dans cet ordre exact : 1 preuve (numéro de commande, montant débité, numéro MoMo débité, date et heure) ; 2 protection en une ligne ; 3 rendez-vous ; 4 délai ; 5 nombre de colis ; 6 « Suivre ma commande » ; 7 « Partager la confirmation » ; 8 ligne de bas.",
+        "§8.4 p. 48",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRC-04",
+        "Le nom et la photo du gérant du relais choisi sont affichés (portrait G1).",
+        "§8.4 p. 48, §19.5",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRC-05",
+        "Délai : Δt = t_retrait_estimé − t_now. Δt < 24 h : compte à rebours (« 4 h 45 ») ; Δt ≥ 24 h : date ferme (« jeudi 24 sept. dès 9 h ») ; jamais une fourchette.",
+        "§8.4 p. 48, §8.6 p. 50",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRC-06",
+        "Nombre de colis : « 3 colis, retirables ensemble avec un seul code ».",
+        "§8.4 p. 48",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRC-07",
+        "Une seule action principale, « Suivre ma commande » ; action secondaire « Partager la confirmation ».",
+        "§8.4 p. 48",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRC-08",
+        "Ligne de bas mot pour mot : « Tu recevras une notification dès que tes colis seront au relais. Ton code de retrait t’attendra dans Mes commandes. » Le reçu ne promet jamais le code dans la notification ; aucun texte de l’écran ni de la notification ne contient le code de retrait.",
+        "§8.0 p. 45, §8.4 p. 48",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRC-09",
+        "« Partager la confirmation » ouvre le partage natif du téléphone (WhatsApp en premier) avec une image ou un texte ; coût nul pour BelivaY. C’est le téléphone du client qui partage : BelivaY n’envoie jamais rien par WhatsApp (pas d’API au lancement) et n’y transmet ni code, ni preuve, ni litige.",
+        "§8.4 p. 48, §10.5, §19.3",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRC-10",
+        "La preuve survit à la page : centre de notifications et « Mes commandes » ; retrouvable après fermeture ; servie depuis le cache hors ligne.",
+        "§8.4 p. 48, §15.4 p. 87",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRC-11",
+        "Notification : push par défaut (C1 « paiement protégé », criticité 1) ; le SMS C1 ne part que si le push n’est pas ouvert sous 10 minutes (PUSH-REPLI-MIN) ; il compte parmi les 6 SMS payants de la commande (SMS-MAX-CMD).",
+        "§8.0, §8.4, §10.2, §10.3",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRC-12",
+        "« Mme Ngo Bassong t’attend au Relais Mvog-Ada » : tutoiement de la phrase de la spécification (« vous attend au relais Mvog-Ada ») avec le nom officiel du relais ; en dessous, l’état du jour et la distance.",
+        "§8.4, charte",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRC-13",
+        "Protection écrite « Ton argent reste bloqué jusqu’à ton retrait : le vendeur n’est payé qu’après. » (formule commune de l’espace client) pour « l’argent est bloqué jusqu’à la confirmation de réception » ; la règle exacte de libération reste dans CL-09.",
+        "§8.4, charte",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRC-14",
+        "Date de la preuve écrite en entier (« jeudi 24 sept. 2026 à 09 h 02 ») et non « aujourd’hui », pour qu’une capture partagée reste juste plus tard.",
+        "arbitrage",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRC-15",
+        "Contenu partagé (image et texte) : numéro de commande, montant payé, date et heure, nombre de colis, relais, délai, protection ; jamais le code, une boutique ou le détail des frais.",
+        "§8.4 interdits",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRC-16",
+        "Écran sans dock, fermé par « × » vers l’accueil ; titre « Commande confirmée » avec une coche verte.",
+        "charte",
+        "Recommandé"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écran « Commande validée » — paiement au comptoir",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 18",
+        "Commande validée · paiement au comptoir (BLV-51940)",
+        "BLV-51940 à la validation (mar. 22 sept. 2026 à 10 h 15), ouverte par « J’ai validé sur mon téléphone » de l’attente au comptoir. Carte : « × », coche orange dans un carré, « Commande validée », « 900 F payés · le reste se paie au retrait en Mobile Money », « Commande n° BLV-51940 » ; « Livraison payée d’avance 900 F », « Numéro débité MTN MoMo · 6 77 ·· ·· 41 », « Date mar. 22 sept. 2026 · 10 h 15 », « Article Robe wax longue · taille M », « Montant dû au retrait 24 000 F » en orange ; encadré neutre (cadenas) « Au comptoir, tu paies ce montant sur ton téléphone. Ton code de retrait se débloque dès ce paiement. » ; relais : Mme Ngo Bassong, « t’attend au Relais Mvog-Ada · ouvert 8 h – 19 h, fermé le dimanche » ; date ferme « Retrait possible le jeu. 24 sept. », « dès 9 h » (Δt = 46 h 45) ; « 1 colis ». Bouton « Suivre ma commande » ; « Comment ça marche » replié (zéro espèce, grille de garde, refus au comptoir, deux refus, vendeur). Variante ?cas=seuil : pagne de 18 500 F validé maintenant, BLV-52131, « Retrait possible dans 4 h 45 · aujourd’hui dès 15 h »."
+       ],
+       "gras": [
+        "",
+        "",
+        "900 F payés"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Ajouter",
+        "—",
+        "Écran « Commande validée » : 900 F payés, montant dû au retrait, code verrouillé, rendez-vous, date ferme",
+        "POST /checkout/counter puis même attente Mobile Money (livraison seule)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Style de l’écran",
+        "Fortement inspiré des maquettes S’inspirer (IMG_1952 à IMG_1954) : mêmes composants (pictogramme cerclé, cartes, encadrés, boutons contour), palette « Mandarine & Nuit ».",
+        "Reprendre les positions indiquées ; couleurs uniquement par les variables du socle (CL-01)."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Éligibilité (calculée par le serveur)",
+     "colonnes": [
+      "Règle",
+      "Valeur",
+      "Sur le jeu d’essai"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Indice de fiabilité acheteur (IFA, chapitre 11)",
+        "neutre ou positif",
+        "Carine : Standard"
+       ]
+      },
+      {
+       "cellules": [
+        "Nouveau compte",
+        "paiement d’avance, ou plafond 15 000 F (PAY-CPT-NOUV)",
+        "4 commandes terminées : pas un nouveau compte"
+       ]
+      },
+      {
+       "cellules": [
+        "Plafond de panier",
+        "50 000 F (PAY-CPT-STD), puis 100 000 F après 5 commandes sans incident (PAY-CPT-FID)",
+        "Robe 24 000 F ≤ 50 000 F : éligible ; panier de 272 579 F : non proposé"
+       ]
+      },
+      {
+       "cellules": [
+        "Livraison",
+        "payée d’avance, non remboursée en cas de refus au comptoir",
+        "900 F payés le mar. 22 sept."
+       ]
+      },
+      {
+       "cellules": [
+        "Deux refus (PAY-CPT-REFUS)",
+        "paiement d’avance obligatoire, définitivement",
+        "0 refus"
+       ]
+      },
+      {
+       "cellules": [
+        "Jamais",
+        "depuis l’étranger (carte), gros colis (XL, hors gabarit), express",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Vendeur",
+        "peut refuser le paiement au comptoir produit par produit",
+        "Robe : accepté"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CCP-01",
+        "Paiement au comptoir : le client valide sa commande, paie la livraison d’avance, puis règle le reste en Mobile Money sur son téléphone, au comptoir, au moment du retrait ; la confirmation de ce paiement débloque le code de retrait.",
+        "§8.5 p. 49",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCP-02",
+        "Éligibilité calculée côté serveur : IFA neutre ou positif ; nouveau compte : paiement d’avance ou plafond de 15 000 F ; plafond de panier 50 000 F, puis 100 000 F après 5 commandes sans incident.",
+        "§8.5 p. 49",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCP-03",
+        "Jamais depuis l’étranger (carte), pour un gros colis (XL, hors gabarit) ni en express ; le vendeur peut refuser le paiement au comptoir produit par produit.",
+        "§8.5 p. 49",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCP-04",
+        "Deux refus au comptoir : paiement d’avance obligatoire, définitivement.",
+        "§8.5 p. 49",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCP-05",
+        "Le bouton « Payer au comptoir du relais » n’apparaît que si toutes les conditions sont réunies, calculées par le serveur ; sur le panier de 272 579 F il n’est pas proposé (au-delà de 50 000 F) et une ligne l’explique (CL-07).",
+        "§8.5 p. 49, §7.2 p. 40",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCP-06",
+        "La livraison est payée d’avance (900 F pour la robe de 24 000 F) et n’est pas remboursée en cas de refus au comptoir.",
+        "§8.5 p. 49",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCP-07",
+        "Une commande au comptoir est « Validée », jamais « Payée » : l’écran dit « Commande validée · 900 F payés · le reste se paie au retrait en Mobile Money » ; le mot « payé » n’apparaît jamais pour le reste dû, écrit « Montant dû au retrait ».",
+        "§8.5 p. 49",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCP-08",
+        "validée_comptoir ⇔ éligible(IFA, S, compte, mode) ∧ livraison_payée ; l’escrow naît au webhook du paiement sur place ; le code est débloqué à ce moment, jamais avant.",
+        "§8.5 p. 49, §8.6 p. 50",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCP-09",
+        "Le vendeur prépare comme d’habitude ; sa libération suit la règle normale après le retrait.",
+        "§8.5 p. 49",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCP-10",
+        "Au comptoir, le gérant voit « Montant dû (MoMo sur place) » calculé par le système (reste des articles + garde) ; il n’encaisse rien, n’a ni caisse ni plafond de caisse ; la demande part vers le téléphone du client et se valide par le webhook.",
+        "§8.5 p. 49, §9.4",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCP-11",
+        "Refus au comptoir : le colis repart par la course de retour normale (chapitre 12) ; la garde facturée reste due selon la grille (chapitre 10).",
+        "§8.5 p. 49",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCP-12",
+        "Avant de payer la livraison, « Paiement en attente » (mode comptoir) dit ce qui se paie maintenant (900 F), ce qui se paiera au retrait (24 000 F) et que la livraison n’est pas remboursée en cas de refus.",
+        "arbitrage",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCP-13",
+        "L’écran « Commande validée » reprend la structure du reçu : preuve de la livraison payée, montant dû au retrait avec la garde gratuite le jour de l’arrivée, verrou du code, rendez-vous, délai, nombre de colis, un seul bouton « Suivre ma commande » ; les règles sont repliées dans « Comment ça marche ».",
+        "arbitrage",
+        "Recommandé"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Règles de calcul des montants",
+   "tableaux": [
+    {
+     "sous_titre": "Calculs",
+     "colonnes": [
+      "Condition ou formule",
+      "Règle d’implémentation"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "M = S + Ram + Rem − Off",
+        "Montant demandé à l’agrégateur, recalculé au clic sur « Payer » avec les formules du chapitre 7 (Rem_relais = 400 F, livraison de base relais 900 F). Jamais le montant reçu de l’application. Exemple : 271 699 + 1 380 + 400 − 900 = 272 579 F ; BLV-52107 : 195 900 + 1 380 + 400 − 900 = 196 780 F."
+       ],
+       "gras": [
+        "",
+        "272 579 F"
+       ]
+      },
+      {
+       "cellules": [
+        "Δ = M_serveur − M_affiché",
+        "Δ = 0 : continuer sans écran. Δ < 0 : appliquer, afficher « tu gagnes |Δ| F » (Ensemble wax 32 000 → 30 500 F : 271 079 F, « tu gagnes 1 500 F »). Δ > 0 : bloquer, afficher l’écart, confirmation explicite (Tecno Camon 30 150 699 → 152 699 F : « + 2 000 F », 274 579 F)."
+       ]
+      },
+      {
+       "cellules": [
+        "Produit désactivé : recalcul sans la ligne",
+        "Mixeur-blender retiré : S = 234 699 ; Ram = 500 + 380 = 880 (plus de ramassage à Mvan) ; + 400 − 900 = 235 079 F, 3 articles, 2 colis. Jamais « 272 579 − 37 000 »."
+       ],
+       "gras": [
+        "",
+        "235 079 F"
+       ]
+      },
+      {
+       "cellules": [
+        "dispo(v) = stock(v) − Σ réservations_actives(v)",
+        "Réservation si dispo(v) ≥ q pour chaque ligne ; sinon vendeur suivant ; sinon « cet article vient d’être pris ». Verrou sur la variante. Sac cuir pris sans autre vendeur : S = 219 699 ; Ram inchangé 1 380 (la boutique B garde l’ensemble) → 220 579 F, 3 articles, 3 colis."
+       ],
+       "gras": [
+        "",
+        "220 579 F"
+       ]
+      },
+      {
+       "cellules": [
+        "t_exp = t_demande + T_val",
+        "T_val = fenêtre de validation de l’agrégateur (PAY-TVAL). À t ≥ t_exp sans webhook de succès : réservation libérée, « Paiement non abouti ». Prototype : T_val = 24 min (exemple du jeu d’essai) ; demande de 10 h 14 → expire à 10 h 38 ; à 10 h 15, « 23 min »."
+       ]
+      },
+      {
+       "cellules": [
+        "clé = id_commande + n° de tentative",
+        "Deux requêtes de même clé = une seule demande. Un renvoi incrémente la tentative et annule la précédente (renvoi à 10 h 15 : la demande de 10 h 09 est annulée)."
+       ]
+      },
+      {
+       "cellules": [
+        "confirmée ⇔ webhook_valide ∧ escrow_écrit",
+        "Sinon l’écran reste « en attente »."
+       ]
+      },
+      {
+       "cellules": [
+        "validée_comptoir ⇔ éligible(IFA, S, compte, mode) ∧ livraison_payée",
+        "État « Validée » ; escrow créé au webhook du paiement sur place ; code débloqué à ce moment. BLV-51940 : robe 24 000 F ≤ 50 000 F, IFA Standard, 4 commandes sans incident → éligible ; livraison 900 F payée."
+       ]
+      },
+      {
+       "cellules": [
+        "Δt = t_retrait_estimé − t_now",
+        "Δt < 24 h : compte à rebours. Reçu BLV-52107 à 10 h 15, retrait dès 15 h : 4 h 45. Δt ≥ 24 h : date ferme. BLV-51940 validée le mar. 22 à 10 h 15, retrait estimé jeu. 24 dès 9 h (46 h 45) : « jeudi 24 sept. dès 9 h ». Jamais une fourchette."
+       ],
+       "gras": [
+        "",
+        "4 h 45"
+       ]
+      },
+      {
+       "cellules": [
+        "frais_carte = arrondi(2 % × (S + livraison))",
+        "Affichés avant de payer. Panier « seuil » (Pagne wax 18 500 F + livraison 900 F = 19 400 F) : 388 F ; total 19 788 F."
+       ],
+       "gras": [
+        "",
+        "19 788 F"
+       ]
+      },
+      {
+       "cellules": [
+        "montant_EUR = montant_XAF ÷ 655,957, au centime",
+        "19 788 ÷ 655,957 = 30,166 → 30,17 €. Autre devise : taux du prestataire, figé au paiement."
+       ],
+       "gras": [
+        "",
+        "30,17 €"
+       ]
+      },
+      {
+       "cellules": [
+        "montant_XAF ≤ 150 000 par transaction (carte)",
+        "272 579 F > 150 000 F : la carte n’est pas proposée pour le panier de référence ; paiement en plusieurs commandes."
+       ]
+      },
+      {
+       "cellules": [
+        "montant_dû_retrait = reste_validée + frais_garde(t)",
+        "Calculé par le service de tarification (CL-09). BLV-51940 : 24 000 + 0 le jour de l’arrivée = 24 000 F ; la garde s’ajoute à partir du 2e jour (100 F aux jours 2 et 3, 200 F aux jours 4 et 5, 400 F aux jours 6 et 7)."
+       ],
+       "gras": [
+        "",
+        "24 000 F"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CPY-52",
+        "Tout montant est calculé côté serveur, au moment de l’affichage ou de l’envoi ; jamais dans l’application, jamais écrit dans un gabarit.",
+        "§8.6 p. 49",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-53",
+        "Chaque changement déclenche un recalcul complet depuis zéro, jamais une soustraction de ligne.",
+        "§8.6 p. 49",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-54",
+        "Un même montant apparaît à l’identique dans l’application, la notification et l’écran du gérant : un seul service de calcul les produit tous.",
+        "§8.6 p. 49",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-55",
+        "M = S + Ram + Rem − Off (formules du chapitre 7, Rem_relais = 400 F, livraison de base relais 900 F = 500 + 400) : montant demandé à l’agrégateur, recalculé au clic sur « Payer ».",
+        "§8.6 p. 50, §8.0",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-56",
+        "Tout montant renvoyé par l’API vient du service de tarification ; aucune réponse ne contient ce que la matrice de visibilité interdit (nom de boutique, ce que garde le vendeur, IFA).",
+        "§8.7 p. 51, §2.4",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-57",
+        "Montants en francs CFA, espace insécable des milliers, « F » ; l’anglais écrit « 272,579 F ».",
+        "charte",
+        "Recommandé"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Pour le développeur : API, événements, erreurs, paramètres",
+   "tableaux": [
+    {
+     "sous_titre": "Endpoints indicatifs",
+     "colonnes": [
+      "Méthode",
+      "Route",
+      "Rôle",
+      "Réponse utile à l’écran"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "POST",
+        "/checkout",
+        "Recalcul, contrôle des prix, réservation, commande « en attente », demande à l’agrégateur. En-tête Idempotency-Key = commande + tentative.",
+        "202 {payment_id, amount, msisdn_masked, operator, ussd, expires_at} ; ou 409 price_changed {items, old_total, new_total, delta}, 409 item_removed, 409 item_taken (aucune demande envoyée)"
+       ]
+      },
+      {
+       "cellules": [
+        "POST",
+        "/checkout/confirm (nouveau, recommandé)",
+        "Confirmation explicite après une hausse, un retrait ou un article pris ; relance la séquence complète",
+        "Comme /checkout"
+       ]
+      },
+      {
+       "cellules": [
+        "GET",
+        "/payments/{id}",
+        "État réel du paiement : pending · verifying · succeeded · failed, cause client, expires_at, lien du reçu",
+        "Interrogé toutes les 3 s la première minute, puis toutes les 10 s"
+       ]
+      },
+      {
+       "cellules": [
+        "POST",
+        "/payments/{id}/resend",
+        "Nouvelle tentative, l’ancienne est annulée ; corps facultatif {msisdn} pour « Changer de numéro »",
+        "Nouveau payment_id et expires_at"
+       ]
+      },
+      {
+       "cellules": [
+        "POST",
+        "/payments/{id}/cancel (nouveau, recommandé)",
+        "Lien « Annuler » : annule la tentative chez l’agrégateur, libère la réservation",
+        "204"
+       ]
+      },
+      {
+       "cellules": [
+        "POST",
+        "/webhooks/campay",
+        "Webhook signé : seule source de vérité (Fapshi en secours : même traitement)",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "POST",
+        "/checkout/counter",
+        "Commande « Validée » : demande Mobile Money de la livraison seule",
+        "Comme /checkout"
+       ]
+      },
+      {
+       "cellules": [
+        "POST",
+        "/orders/{id}/counter-payment",
+        "Paiement du reste au comptoir (CL-09)",
+        "Montant dû calculé, jamais saisi"
+       ]
+      },
+      {
+       "cellules": [
+        "GET",
+        "/orders/{id}/receipt (nouveau, recommandé)",
+        "Le reçu retrouvé depuis Mes commandes ou le centre de notifications ; mis en cache pour le hors-ligne",
+        "Preuve, relais, gérant, pickup_estimated_at, nombre de colis"
+       ]
+      },
+      {
+       "cellules": [
+        "POST",
+        "/gift-payments (CL-12)",
+        "Paiement par carte depuis l’étranger (3-D Secure, 2 %)",
+        "—"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Événements émis et qui les consomme",
+     "colonnes": [
+      "Événement",
+      "Émis quand",
+      "Consommé par"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "order.paid",
+        "Webhook validé et escrow écrit",
+        "Vendeur (nouvelle commande), escrow, messages (C1 « paiement protégé » : push, SMS si non ouvert sous 10 min)"
+       ]
+      },
+      {
+       "cellules": [
+        "payment.failed",
+        "Échec définitif d’une tentative",
+        "Messages (SMS seulement si le client a quitté l’application), stock (réservations libérées)"
+       ]
+      },
+      {
+       "cellules": [
+        "order.validated",
+        "Livraison d’une commande au comptoir payée",
+        "Relais (montant dû au retrait), vendeur (préparation normale)"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CPY-58",
+        "Notification du paiement : un SMS « paiement protégé » (C1) fait partie des 5 à 6 SMS payants autorisés par commande (décision du 17 septembre).",
+        "§8.0 p. 45",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-59",
+        "Un paiement réel de bout en bout est réalisé avec MTN MoMo et Orange Money, en succès puis en échec, avant la mise en production.",
+        "§8.7 p. 51",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPY-60",
+        "Nouveau paramètre PAY-SONDAGE pour l’intervalle d’interrogation de l’état (3 s la première minute, puis 10 s) ; aucune valeur écrite dans le code.",
+        "§1.2",
+        "Recommandé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Paramètres (registre)",
+     "colonnes": [
+      "Code",
+      "Paramètre",
+      "Valeur",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "PAY-AGREG",
+        "Agrégateur principal / secours",
+        "CamPay / Fapshi",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "PAY-TVAL",
+        "Fenêtre de validation Mobile Money (T_val)",
+        "valeur de l’agrégateur (prototype : 24 min, exemple du jeu d’essai)",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "PAY-RESA",
+        "Durée de réservation du stock",
+        "= fenêtre de validation",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "PAY-CPT-NOUV",
+        "Comptoir : plafond nouveau compte",
+        "15 000 F",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "PAY-CPT-STD",
+        "Comptoir : plafond de panier",
+        "50 000 F",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "PAY-CPT-FID",
+        "Comptoir : plafond après 5 commandes sans incident",
+        "100 000 F",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "PAY-CPT-REFUS",
+        "Refus au comptoir avant paiement d’avance obligatoire",
+        "2",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "PAY-ESPECES",
+        "Espèces",
+        "jamais",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "LIV-RELAIS-BASE",
+        "Livraison de base relais (R + remise)",
+        "900 F",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "LIV-REM-RELAIS",
+        "Remise au relais (Rem_relais)",
+        "400 F",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "SMS-MAX-CMD",
+        "SMS payants par commande",
+        "6 au plus",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "PUSH-REPLI-MIN",
+        "Repli d’un push critique non ouvert (C1)",
+        "10 min",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "REMPL-TRUST-MIN",
+        "Vendeur de remplacement : Trust Score minimal (appliqué à la bascule au paiement, CPY-16)",
+        "75",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "REMPL-ECART",
+        "Vendeur de remplacement : écart de prix livré",
+        "≤ 5 %, payé par BelivaY",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "PAY-SONDAGE",
+        "Intervalle d’interrogation de l’état du paiement (nouveau)",
+        "3 s, puis 10 s après une minute",
+        "Recommandé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Hausse de prix",
+        "Arrêt et confirmation explicite avant toute demande (« Un prix a augmenté »)."
+       ]
+      },
+      {
+       "cellules": [
+        "Article pris entre-temps",
+        "Vendeur suivant au même prix, sinon « cet article vient d’être pris »."
+       ]
+      },
+      {
+       "cellules": [
+        "Double clic, reprise réseau",
+        "Une seule demande (idempotence)."
+       ]
+      },
+      {
+       "cellules": [
+        "Webhook en retard",
+        "L’écran reste « en attente », puis « Délai écoulé : vérification… » ; jamais « confirmée » sans webhook et escrow."
+       ]
+      },
+      {
+       "cellules": [
+        "Webhook de succès sur une tentative annulée",
+        "Commande confirmée si les articles sont encore réservables, sinon remboursement intégral automatique vers le même numéro (CPY-32)."
+       ]
+      },
+      {
+       "cellules": [
+        "Deux débits malgré tout (course chez l’opérateur)",
+        "Le second est remboursé automatiquement vers le même numéro ; alerte en console."
+       ]
+      },
+      {
+       "cellules": [
+        "Agrégateur principal indisponible",
+        "Bascule sur Fapshi (PAY-AGREG) pour les nouvelles tentatives ; une tentative ouverte reste chez son agrégateur."
+       ]
+      },
+      {
+       "cellules": [
+        "Hors ligne au clic sur « Payer »",
+        "Bouton grisé avec l’explication (15.4) ; aucune demande."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Couverture de la spécification",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Section de la spec",
+      "Pages",
+      "Où c’est traité (écran, règles)"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "8.0 · Introduction : pourquoi, livrables, décisions, à savoir",
+        "45",
+        "Parcours « Payer » (encadré, CPY-01 à CPY-10) ; reçu CRC-08, CRC-11 ; comptoir CCP-01 à CCP-04 ; livraison de base CPY-55 ; SMS C1 CPY-58"
+       ]
+      },
+      {
+       "cellules": [
+        "8.1 · Le clic sur « Payer » : ce que fait le serveur",
+        "46",
+        "Parcours (CPY-01 à CPY-06) ; écran « Un prix a changé » (CPY-11 à CPY-19) ; critères d’acceptation des deux sections"
+       ]
+      },
+      {
+       "cellules": [
+        "8.2 · Écran « Paiement en attente »",
+        "46–47",
+        "Écran « Paiement en attente » (CPY-20 à CPY-35), feuille « Moyen de paiement » (CPY-45 à CPY-50)"
+       ]
+      },
+      {
+       "cellules": [
+        "8.3 · Écran « Paiement non abouti »",
+        "47",
+        "Écran « Paiement non abouti » (CPY-36 à CPY-44), table des causes"
+       ]
+      },
+      {
+       "cellules": [
+        "8.4 · Écran « Commande confirmée » — le reçu",
+        "48",
+        "Écran « Commande confirmée » (CRC-01 à CRC-16), interdits, critères"
+       ]
+      },
+      {
+       "cellules": [
+        "8.5 · Paiement au comptoir",
+        "49",
+        "Écran « Commande validée » (CCP-01 à CCP-13), « Paiement en attente » mode comptoir, liaisons relais et vendeur"
+       ]
+      },
+      {
+       "cellules": [
+        "8.6 · Règles de calcul des montants",
+        "49–50",
+        "Règles de calcul (CPY-52 à CPY-57) et table des formules avec les exemples"
+       ]
+      },
+      {
+       "cellules": [
+        "8.7 · API, événements, erreurs, paramètres, définition de terminé",
+        "50–51",
+        "Pour le développeur : endpoints, événements, erreurs, registre PAY-*, définition de terminé (CPY-58 à CPY-60)"
+       ]
+      },
+      {
+       "cellules": [
+        "7.2 · Moyens acceptés, bouton « Payer au comptoir »",
+        "40",
+        "Feuille « Moyen de paiement » (CPY-45) ; CCP-05"
+       ]
+      },
+      {
+       "cellules": [
+        "13.4 · 13.6 · Carte depuis l’étranger (2 %, 3-D Secure, 150 000 F, carte refusée)",
+        "79–80",
+        "Feuille « Moyen de paiement » (CPY-47 à CPY-49), « Paiement non abouti » (carte refusée)"
+       ]
+      },
+      {
+       "cellules": [
+        "3.3 · Opérateur détecté à la saisie ; aucun message sur un numéro non vérifié",
+        "18",
+        "CPY-23, CPY-45, CPY-46"
+       ]
+      },
+      {
+       "cellules": [
+        "9.1 · Paiement interrompu (panier borné)",
+        "53",
+        "Parcours (étape 4c), CPY-07, CPY-35 ; carte construite dans CL-09"
+       ]
+      },
+      {
+       "cellules": [
+        "10.2 · 10.3 · Push et SMS C1, repli à 10 min, 6 SMS",
+        "60–61",
+        "CRC-11, CPY-42, CPY-43, CPY-58"
+       ]
+      },
+      {
+       "cellules": [
+        "15.4 · Action d’argent hors ligne ; reçu en cache ; pas de case à cocher au paiement",
+        "87",
+        "CPY-10, CRC-10, interdits du parcours"
+       ]
+      },
+      {
+       "cellules": [
+        "19.1 à 19.3 · Anonymat, montants, zéro espèce, interdits",
+        "104–105",
+        "CPY-09, CPY-52 à CPY-56, interdits de chaque écran"
+       ]
+      },
+      {
+       "cellules": [
+        "Annexe · recette du chapitre 8",
+        "150–151",
+        "Critères d’acceptation de chaque section et définition de terminé"
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

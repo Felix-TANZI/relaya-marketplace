@@ -1,0 +1,1668 @@
+{
+ "document": "CL-16",
+ "date": "2026-10-03",
+ "methode": "Chaque règle lue en entier dans regles.json. CL-16 est le document de synthèse : liaisons avec le relais, le vendeur, la livraison et la console (CLI, CCN), règles transverses (CTV), registre et recette. Les actions et questions reprennent surtout des points des autres documents : elles renvoient aux décisions du porteur (DP-*) quand elles sont réglées. Les corrections du relais, du vendeur et de la console sont consignées pour leurs paquets.",
+ "regles": [
+  {
+   "id": "CLI-01",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5",
+   "note": "Relais ouverts seulement (CPR-03) ; un relais par zone."
+  },
+  {
+   "id": "CLI-02",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5",
+   "note": "Horaires, capacité et fermetures déclarés par le gérant alimentent le client."
+  },
+  {
+   "id": "CLI-03",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5",
+   "note": "parcel.received ; C2a puis C2 + C3 au dernier colis (CCY-08)."
+  },
+  {
+   "id": "CLI-04",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5",
+   "note": "LIV-XL-RELAIS ; aucun refus de colis S, M, L (DP-20)."
+  },
+  {
+   "id": "CLI-05",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "5",
+   "note": "GET /orders/{id}/storage : même montant de garde partout (CL-D17.A01)."
+  },
+  {
+   "id": "CLI-06",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "5",
+   "note": "RELAIS-GAIN-GARDE 100 F par jour facturé, 300 F pour un gros colis C1, C2 (DP-08)."
+  },
+  {
+   "id": "CLI-07",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5"
+  },
+  {
+   "id": "CLI-08",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "5",
+   "note": "CODE-ESSAIS ; nouveau code dans l'application (DP-26) ; code chiffré + HMAC, pas « haché » (DP-02)."
+  },
+  {
+   "id": "CLI-09",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5"
+  },
+  {
+   "id": "CLI-10",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5",
+   "note": "LIT-CONSTAT-H (48 h ouvrées)."
+  },
+  {
+   "id": "CLI-11",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "5"
+  },
+  {
+   "id": "CLI-12",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "5",
+   "note": "Retenue = garde + GARDE-RENVOI ; plafond 2 500 F avec la grille de DP-08 (pas 1 900 F).",
+   "demo": [
+    "1 900 F (ancien plafond, remplacé par DP-08)"
+   ]
+  },
+  {
+   "id": "CLI-13",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "5"
+  },
+  {
+   "id": "CLI-14",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "5",
+   "note": "RELAIS-GAIN-COLIS (200 / 250 / 400 F) ; RELAIS-GAIN-GARDE (100 F, 300 F gros colis, DP-08)."
+  },
+  {
+   "id": "CLI-15",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5",
+   "note": "Paquet Espace vendeur."
+  },
+  {
+   "id": "CLI-16",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "5",
+   "note": "Même règle que CAL-02."
+  },
+  {
+   "id": "CLI-17",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "5",
+   "note": "CVI-02."
+  },
+  {
+   "id": "CLI-18",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5",
+   "note": "RUPTURE-TENTATIVES (DP-01)."
+  },
+  {
+   "id": "CLI-19",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5",
+   "note": "LIT-VENDEUR-H, LIT-ARRANG-MIN."
+  },
+  {
+   "id": "CLI-20",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5",
+   "note": "RET-INSPECT-H ; RET-TRAJET (DP-35)."
+  },
+  {
+   "id": "CLI-21",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "5",
+   "note": "LIB-STD, LIB-OR, LIB-CARTE, VERSEMENT-JOUR."
+  },
+  {
+   "id": "CLI-22",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "5"
+  },
+  {
+   "id": "CLI-23",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5",
+   "note": "Paquets publiés aux entreprises de livraison (paquet Livraison)."
+  },
+  {
+   "id": "CLI-24",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "5",
+   "note": "TRANSP-PLAFOND (75 000 / 250 000 F, Or sans plafond)."
+  },
+  {
+   "id": "CLI-25",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5",
+   "note": "Cartons S, M, L, C1, C2 ; C1 et C2 = gros colis pour la garde (DP-08)."
+  },
+  {
+   "id": "CLI-26",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "5",
+   "note": "CVI-07."
+  },
+  {
+   "id": "CLI-27",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5",
+   "note": "File hors ligne horodatée côté livreur et relais."
+  },
+  {
+   "id": "CLI-28",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5",
+   "note": "LIV-GROUPE-DOM."
+  },
+  {
+   "id": "CLI-29",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "7",
+   "note": "INC-NOTIF-MIN."
+  },
+  {
+   "id": "CLI-30",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "5",
+   "note": "Six délais de service par zone en console ; jamais de fourchette."
+  },
+  {
+   "id": "CLI-31",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "5",
+   "note": "Filtrage côté serveur, réponse par réponse."
+  },
+  {
+   "id": "CLI-32",
+   "cote": "hors code",
+   "nature": "organisation",
+   "etape": "—",
+   "note": "Règle de lecture entre les paquets."
+  },
+  {
+   "id": "CLI-33",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "5"
+  },
+  {
+   "id": "CLI-34",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5",
+   "note": "Paquet Espace vendeur."
+  },
+  {
+   "id": "CLI-35",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5",
+   "note": "Paquet Espace vendeur."
+  },
+  {
+   "id": "CLI-36",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "5",
+   "note": "LIV-POIDS-VOL : poids facturé = max(réel, volume ÷ 5 000)."
+  },
+  {
+   "id": "CLI-37",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5",
+   "note": "Paquet Espace vendeur."
+  },
+  {
+   "id": "CLI-38",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5",
+   "note": "ZONE-REMPLISSAGE (objectif 8 colis par tournée)."
+  },
+  {
+   "id": "CLI-39",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5"
+  },
+  {
+   "id": "CLI-40",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5"
+  },
+  {
+   "id": "CLI-41",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "5"
+  },
+  {
+   "id": "CLI-42",
+   "cote": "hors code",
+   "nature": "organisation",
+   "etape": "—",
+   "note": "Support vendeur (paquet Espace vendeur)."
+  },
+  {
+   "id": "CCN-01",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5",
+   "note": "Console (paquet Administrateur)."
+  },
+  {
+   "id": "CCN-02",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5",
+   "note": "Console."
+  },
+  {
+   "id": "CCN-03",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5",
+   "note": "Console."
+  },
+  {
+   "id": "CCN-04",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5",
+   "note": "Console (CCY-24)."
+  },
+  {
+   "id": "CCN-05",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5",
+   "note": "Console."
+  },
+  {
+   "id": "CCN-06",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "5",
+   "note": "Console : motif obligatoire (CLT-44)."
+  },
+  {
+   "id": "CCN-07",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5",
+   "note": "Console."
+  },
+  {
+   "id": "CCN-08",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "5",
+   "note": "Console : indicateurs ; CONSOLE-MEDIANE-J."
+  },
+  {
+   "id": "CCN-09",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5",
+   "note": "Zones Z1, Z3, Z6, Z7 exploitées (DP-09)."
+  },
+  {
+   "id": "CCN-10",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5",
+   "note": "search.no_result et adresses hors zone remontent à la console."
+  },
+  {
+   "id": "CCN-11",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "5",
+   "note": "ZONE-SCORE, ZONE-REMPLISSAGE, ZONE-ALERTE à trancher avant la production."
+  },
+  {
+   "id": "CCN-12",
+   "cote": "serveur",
+   "nature": "architecture",
+   "etape": "5"
+  },
+  {
+   "id": "CCN-13",
+   "cote": "serveur",
+   "nature": "architecture",
+   "etape": "5",
+   "note": "Même règle que CDA-26."
+  },
+  {
+   "id": "CCN-14",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "5",
+   "note": "CONSOLE-SIM-J (30 jours) ; bloquant sous le plancher de contribution."
+  },
+  {
+   "id": "CCN-15",
+   "cote": "serveur",
+   "nature": "architecture",
+   "etape": "5"
+  },
+  {
+   "id": "CCN-16",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "5",
+   "note": "FRAUDE-SEUILS à calibrer ; aucune décision automatique (CIF-27)."
+  },
+  {
+   "id": "CCN-17",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5"
+  },
+  {
+   "id": "CCN-18",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "5",
+   "note": "Journal d'audit inaltérable (CAP-23)."
+  },
+  {
+   "id": "CCN-19",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "5",
+   "note": "ESCROW-VALIDEURS à trancher."
+  },
+  {
+   "id": "CCN-20",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "5"
+  },
+  {
+   "id": "CCN-21",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5",
+   "note": "Paquet Point relais."
+  },
+  {
+   "id": "CCN-22",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5",
+   "note": "Paquet Livraison."
+  },
+  {
+   "id": "CCN-23",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5"
+  },
+  {
+   "id": "CTV-01",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "CI",
+   "note": "Test d'API (CVI-01)."
+  },
+  {
+   "id": "CTV-02",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "CI"
+  },
+  {
+   "id": "CTV-03",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "5"
+  },
+  {
+   "id": "CTV-04",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "5"
+  },
+  {
+   "id": "CTV-05",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "5"
+  },
+  {
+   "id": "CTV-06",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "5",
+   "note": "Sérialiseurs par rôle (CVI-08)."
+  },
+  {
+   "id": "CTV-07",
+   "cote": "serveur",
+   "nature": "architecture",
+   "etape": "5"
+  },
+  {
+   "id": "CTV-08",
+   "cote": "serveur",
+   "nature": "architecture",
+   "etape": "5"
+  },
+  {
+   "id": "CTV-09",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5",
+   "note": "PAY-ESPECES : jamais."
+  },
+  {
+   "id": "CTV-10",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "5"
+  },
+  {
+   "id": "CTV-11",
+   "cote": "serveur et écran",
+   "nature": "donnée et sécurité",
+   "etape": "5"
+  },
+  {
+   "id": "CTV-12",
+   "cote": "serveur et écran",
+   "nature": "donnée et sécurité",
+   "etape": "5"
+  },
+  {
+   "id": "CTV-13",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5",
+   "note": "DP-14."
+  },
+  {
+   "id": "CTV-14",
+   "cote": "écran",
+   "nature": "comportement",
+   "etape": "6"
+  },
+  {
+   "id": "CTV-15",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "5"
+  },
+  {
+   "id": "CTV-16",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "5"
+  },
+  {
+   "id": "CTV-17",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5"
+  },
+  {
+   "id": "CTV-18",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "7"
+  },
+  {
+   "id": "CTV-19",
+   "cote": "serveur",
+   "nature": "architecture",
+   "etape": "5",
+   "note": "parametres-en-vigueur.json est le registre à charger."
+  },
+  {
+   "id": "CTV-20",
+   "cote": "serveur",
+   "nature": "architecture",
+   "etape": "5",
+   "note": "Tables parameter et parameter_history ; params_version sur chaque commande (CL-D17.A76)."
+  },
+  {
+   "id": "CTV-21",
+   "cote": "hors code",
+   "nature": "organisation",
+   "etape": "—",
+   "note": "17 valeurs restent à trancher sur 37 (decisions-porteur.md)."
+  },
+  {
+   "id": "CTV-22",
+   "cote": "serveur",
+   "nature": "architecture",
+   "etape": "5"
+  },
+  {
+   "id": "CTV-23",
+   "cote": "hors code",
+   "nature": "organisation",
+   "etape": "—",
+   "note": "Ces codes sont au registre de CL-16 ; à reporter aux registres 20 et 32 de la v3."
+  },
+  {
+   "id": "CTV-24",
+   "cote": "hors code",
+   "nature": "organisation",
+   "etape": "—",
+   "note": "CODE-BIO et GARDE-PRORATA décidés (DP-29), AVIS-BAS décidé (DP-35)."
+  },
+  {
+   "id": "CTV-25",
+   "cote": "hors code",
+   "nature": "organisation",
+   "etape": "—"
+  },
+  {
+   "id": "CTV-26",
+   "cote": "serveur et écran",
+   "nature": "comportement",
+   "etape": "5"
+  },
+  {
+   "id": "CTV-27",
+   "cote": "hors code",
+   "nature": "contenu",
+   "etape": "contenu"
+  },
+  {
+   "id": "CTV-28",
+   "cote": "hors code",
+   "nature": "contenu",
+   "etape": "contenu"
+  },
+  {
+   "id": "CTV-29",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "5"
+  },
+  {
+   "id": "CTV-30",
+   "cote": "serveur",
+   "nature": "architecture",
+   "etape": "5",
+   "note": "Préfixes distincts dans le code (MSG-C1, crit_1, CARTON-C1, PHOTO-C1)."
+  },
+  {
+   "id": "CTV-31",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5",
+   "note": "CAT-INTERDITS à trancher : liste publiée avant le lancement."
+  },
+  {
+   "id": "CTV-32",
+   "cote": "écran",
+   "nature": "navigation",
+   "etape": "4"
+  },
+  {
+   "id": "CTV-33",
+   "cote": "écran",
+   "nature": "navigation",
+   "etape": "CI",
+   "note": "Contrôle des liens entrants avant chaque recette."
+  },
+  {
+   "id": "CTV-34",
+   "cote": "serveur et écran",
+   "nature": "comportement",
+   "etape": "4"
+  },
+  {
+   "id": "CLI-43",
+   "cote": "hors code",
+   "nature": "organisation",
+   "etape": "—",
+   "note": "Sur une règle commune, la v3 client l'emporte ; les décisions du porteur (DP-*) l'emportent sur la v3 (CCH-13)."
+  },
+  {
+   "id": "CLI-44",
+   "cote": "écran",
+   "nature": "comportement",
+   "etape": "6",
+   "note": "L'exemple « garde d'un colis L non doublée » est remplacé par DP-08 : gros colis C1, C2 = + 300 F par jour."
+  },
+  {
+   "id": "CLI-45",
+   "cote": "serveur",
+   "nature": "architecture",
+   "etape": "5"
+  }
+ ],
+ "actions": [
+  {
+   "id": "CL-D17.A01",
+   "type": "construction",
+   "fait": false,
+   "resultat": "GET /orders/{id}/storage.",
+   "etape": "5"
+  },
+  {
+   "id": "CL-D17.A02",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Stockage du code : chiffré + HMAC (DP-02)."
+  },
+  {
+   "id": "CL-D17.A03",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Relais payé seulement pour les jours facturés (CLI-06), 300 F pour un gros colis (DP-08).",
+   "etape": "5"
+  },
+  {
+   "id": "CL-D17.A04",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Retour déposé rémunéré comme une remise, hors capacité, sans garde.",
+   "etape": "5"
+  },
+  {
+   "id": "CL-D17.A05",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Sérialiseurs par rôle.",
+   "etape": "5"
+  },
+  {
+   "id": "CL-D17.A06",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "§3.1 et §6.2 : heure ou date ferme."
+  },
+  {
+   "id": "CL-D17.A07",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Six délais de service par zone en console.",
+   "etape": "5"
+  },
+  {
+   "id": "CL-D17.A08",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Plafond de valeur du transporteur dans le délai affiché.",
+   "etape": "5"
+  },
+  {
+   "id": "CL-D17.A09",
+   "type": "construction",
+   "fait": false,
+   "resultat": "File hors ligne horodatée (paquets Livraison et Point relais).",
+   "etape": "5"
+  },
+  {
+   "id": "CL-D17.A10",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Carte « Message » à t + 10 min.",
+   "etape": "5"
+  },
+  {
+   "id": "CL-D17.A11",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Type « Caisse » remplacé par « Relais » et « Livraison ».",
+   "etape": "5"
+  },
+  {
+   "id": "CL-D17.A12",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Motif obligatoire ; dispute.decided avec decision.reason.",
+   "etape": "5"
+  },
+  {
+   "id": "CL-D17.A13",
+   "type": "décision",
+   "fait": false,
+   "resultat": "ZONE-SCORE, ZONE-REMPLISSAGE, ZONE-ALERTE."
+  },
+  {
+   "id": "CL-D17.A14",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Simulation de 30 jours bloquante (CONSOLE-SIM-J).",
+   "etape": "5"
+  },
+  {
+   "id": "CL-D17.A15",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Commande figée sur sa version des paramètres.",
+   "etape": "5"
+  },
+  {
+   "id": "CL-D17.A16",
+   "type": "décision",
+   "fait": false,
+   "resultat": "ESCROW-VALIDEURS."
+  },
+  {
+   "id": "CL-D17.A17",
+   "type": "vérification",
+   "fait": true,
+   "resultat": "TRANSP-PLAFOND est au registre (Décidé)."
+  },
+  {
+   "id": "CL-D17.A18",
+   "type": "décision",
+   "fait": false,
+   "resultat": "FRAUDE-SEUILS : calibrer sur données réelles."
+  },
+  {
+   "id": "CL-D17.A19",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Tests : aucune réponse client avec shop.name, shop.phone, courier.phone ; aucune réponse vendeur avec client.*, relay.*, order.total.",
+   "etape": "CI"
+  },
+  {
+   "id": "CL-D17.A20",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Masquage à l'écriture et à la lecture.",
+   "etape": "5"
+  },
+  {
+   "id": "CL-D17.A21",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Charger parametres-en-vigueur.json (registre + décisions) dans la table des paramètres.",
+   "etape": "5"
+  },
+  {
+   "id": "CL-D17.A22",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Valeurs du tableau 19.4 : 17 restent sur 37 (decisions-porteur.md)."
+  },
+  {
+   "id": "CL-D17.A23",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Préfixes MSG-C1, crit_1, CARTON-C1, PHOTO-C1 (CTV-30).",
+   "etape": "5"
+  },
+  {
+   "id": "CL-D17.A24",
+   "type": "contenu",
+   "fait": false,
+   "resultat": "Vraies photos selon la consigne."
+  },
+  {
+   "id": "CL-D17.A25",
+   "type": "construction",
+   "fait": false,
+   "resultat": "CAT-INTERDITS publié et appliqué (publication, recherche, fiche).",
+   "etape": "5"
+  },
+  {
+   "id": "CL-D17.A26",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Menu construit depuis les données du compte ; entrées de module selon les interrupteurs.",
+   "etape": "4"
+  },
+  {
+   "id": "CL-D17.A27",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "Paquet Point relais : garde des gros colis selon DP-08 (+ 300 F par jour, cartons C1, C2), pas de doublement."
+  },
+  {
+   "id": "CL-D17.A28",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "Paquet Point relais : J0 sans « WhatsApp lu » ; alerte console à GARDE-NONVU-H."
+  },
+  {
+   "id": "CL-D17.A29",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "Paquet Point relais : rang des jours fermés (compté, jamais facturé)."
+  },
+  {
+   "id": "CL-D17.A30",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "Paquet Point relais : série S0 à S5 validée (DP-34)."
+  },
+  {
+   "id": "CL-D17.A31",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "Paquet Point relais : jours offerts aux abonnés jamais payés ; masqués tant que FF-ABONNEMENT est fermé."
+  },
+  {
+   "id": "CL-D17.A32",
+   "type": "décision",
+   "fait": false,
+   "resultat": "« Deux non-retraits ⇒ paiement d'avance » ?"
+  },
+  {
+   "id": "CL-D17.A33",
+   "type": "contenu",
+   "fait": false,
+   "resultat": "Pages légales : préavis de 30 jours avant un changement de grille."
+  },
+  {
+   "id": "CL-D17.A34",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "Paquet Point relais : nouveau code dans l'application (DP-26)."
+  },
+  {
+   "id": "CL-D17.A35",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "Paquet Point relais : C3 toujours en SMS."
+  },
+  {
+   "id": "CL-D17.A36",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Relais fermé plusieurs jours : transfert automatique ou choix du client ?"
+  },
+  {
+   "id": "CL-D17.A37",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "Glossaire : « code de dépôt » et « code de dépôt du téléphone »."
+  },
+  {
+   "id": "CL-D17.A38",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "Paquet Point relais : « Tout est en ordre » par le client (DP-28)."
+  },
+  {
+   "id": "CL-D17.A39",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "Paquets Point relais et Espace vendeur : défaut après confirmation = vice caché (DP-27)."
+  },
+  {
+   "id": "CL-D17.A40",
+   "type": "vérification",
+   "fait": true,
+   "resultat": "Nom d'affichage déclaré par le relais (donnée, CRC-12)."
+  },
+  {
+   "id": "CL-D17.A41",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Afficher au client le score du relais ?"
+  },
+  {
+   "id": "CL-D17.A42",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "Paquet Espace vendeur : PAY-CPT-FID (100 000 F après 5 commandes)."
+  },
+  {
+   "id": "CL-D17.A43",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Terme « Validée » / « Payable au retrait » : chaque espace garde ses mots (DP-22)."
+  },
+  {
+   "id": "CL-D17.A44",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "Paquet Point relais : recherche par numéro sans afficher le numéro."
+  },
+  {
+   "id": "CL-D17.A45",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "v3 : refus motivé ou non ; garde retenue sur la livraison payée (DP-24)."
+  },
+  {
+   "id": "CL-D17.A46",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Console : correspondance des motifs client ↔ constat.",
+   "etape": "5"
+  },
+  {
+   "id": "CL-D17.A47",
+   "type": "décision",
+   "fait": false,
+   "resultat": "RET-SANS-RETOUR (DP-10)."
+  },
+  {
+   "id": "CL-D17.A48",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "Paquets Point relais et Espace vendeur : « présomption en faveur du client ; BelivaY décide »."
+  },
+  {
+   "id": "CL-D17.A49",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Délai de décision, recours, réponse à un arrangement (DP-35)."
+  },
+  {
+   "id": "CL-D17.A50",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Constat : 48 h ouvrées depuis la réception par le serveur, des deux côtés.",
+   "etape": "5"
+  },
+  {
+   "id": "CL-D17.A51",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Retour sans motif exclu au lancement (DP-35)."
+  },
+  {
+   "id": "CL-D17.A52",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "RET-TRAJET 500 F au registre de la v3 (DP-35)."
+  },
+  {
+   "id": "CL-D17.A53",
+   "type": "décision",
+   "fait": false,
+   "resultat": "RET-REMPL-DELAI (DP-15) ; remplacement proposé par le vendeur via un arrangement (DP-35)."
+  },
+  {
+   "id": "CL-D17.A54",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Transfert 400 F, 600 F pour un colis L (DP-37)."
+  },
+  {
+   "id": "CL-D17.A55",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "v3 : seuil de 90 % d'occupation (« avec de la place »)."
+  },
+  {
+   "id": "CL-D17.A56",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Aucun refus de colis (DP-20)."
+  },
+  {
+   "id": "CL-D17.A57",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "§15.2 : fil fermé à la clôture du dossier."
+  },
+  {
+   "id": "CL-D17.A58",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "v3 : carton d'origine filmé pour les encombrants."
+  },
+  {
+   "id": "CL-D17.A59",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Suppléments de classe (DP-07)."
+  },
+  {
+   "id": "CL-D17.A60",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Bonus Premium du relais (+ 25 F) : paquet Point relais."
+  },
+  {
+   "id": "CL-D17.A61",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "Paquets Point relais et Espace vendeur : pas d'option WhatsApp de repli ; CNO-02 remplacée."
+  },
+  {
+   "id": "CL-D17.A62",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "Paquet Point relais : liste des six SMS (C12 est un SMS)."
+  },
+  {
+   "id": "CL-D17.A63",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "Paquet Espace vendeur : CDE-21 remplacée."
+  },
+  {
+   "id": "CL-D17.A64",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "Paquets Point relais et Espace vendeur : masquer ce qui dépend d'un module fermé."
+  },
+  {
+   "id": "CL-D17.A65",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "Paquet Point relais : abonnement du destinataire pour un colis de liste."
+  },
+  {
+   "id": "CL-D17.A66",
+   "type": "décision",
+   "fait": false,
+   "resultat": "AVIS-FENETRE 7 jours (DP-15)."
+  },
+  {
+   "id": "CL-D17.A67",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Réponse privée du gérant (DP-39) ; AVI-02 du vendeur à retirer."
+  },
+  {
+   "id": "CL-D17.A68",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "Paquet Espace vendeur : pas de filtre « zone du vendeur »."
+  },
+  {
+   "id": "CL-D17.A69",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Pas de « Sponsorisé » côté client (DP-14)."
+  },
+  {
+   "id": "CL-D17.A70",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "Paquet Espace vendeur : CDS-05 et DEC-07 remplacées."
+  },
+  {
+   "id": "CL-D17.A71",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Pas de pidgin (DP-13)."
+  },
+  {
+   "id": "CL-D17.A72",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Vocabulaire (DP-22)."
+  },
+  {
+   "id": "CL-D17.A73",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Heures du support assumées par acteur (DP-12)."
+  },
+  {
+   "id": "CL-D17.A74",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Conservation des preuves de carte : 180 jours (paramètre à créer)."
+  },
+  {
+   "id": "CL-D17.A75",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "v3 : définir C10 ; code de l'échec de paiement ; seuil et écran du porteur nommé (CODE-PORTEUR)."
+  },
+  {
+   "id": "CL-D17.A76",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Tables parameter et parameter_history ; params_version sur chaque commande.",
+   "etape": "5"
+  },
+  {
+   "id": "CL-D17.A77",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Charger parametres-en-vigueur.json (registre de CL-16 et décisions).",
+   "etape": "5"
+  },
+  {
+   "id": "CL-D17.A78",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Codes proposés : la plupart décidés (DP-32, DP-35) ou au registre (TRANSP-PLAFOND, CODE-PORTEUR, STOCK-JAUGE, LISTE-SEUIL-ECRAN, CTRL-RAMASSAGE, CONSOLE-SIM-J, CONSOLE-MEDIANE-J) ; restent ZONE-*, FRAUDE-SEUILS, ESCROW-VALIDEURS, CAT-INTERDITS, SMS-BUDGET-JOUR."
+  },
+  {
+   "id": "CL-D17.A79",
+   "type": "jeu d’essai",
+   "fait": false,
+   "resultat": "Feuille de CL-03 : plus de seuil sans retour (DP-10)."
+  },
+  {
+   "id": "CL-D17.A80",
+   "type": "décision",
+   "fait": false,
+   "resultat": "37 valeurs à trancher : 17 restent."
+  },
+  {
+   "id": "CL-D17.A81",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Décisions du porteur du 26 sept. appliquées (accueil d'origine, plan indicatif, puces locales, menu réel).",
+   "etape": "6"
+  },
+  {
+   "id": "CL-D17.A82",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Délai ferme calculé par le serveur partout (CPN-30).",
+   "etape": "6"
+  },
+  {
+   "id": "CL-D17.A83",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Jamais de demande de paiement de 0 F (CPN-38).",
+   "etape": "5"
+  },
+  {
+   "id": "CL-D17.A84",
+   "type": "construction",
+   "fait": false,
+   "resultat": "SMS d'échec compté comme C4 (CPY-43).",
+   "etape": "7"
+  },
+  {
+   "id": "CL-D17.A85",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Annulable tant que l'état est avant la collecte.",
+   "etape": "5"
+  },
+  {
+   "id": "CL-D17.A86",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Frais carte selon CET-24.",
+   "etape": "5"
+  },
+  {
+   "id": "CL-D17.A87",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Formes des liens profonds unifiées.",
+   "etape": "4"
+  },
+  {
+   "id": "CL-D17.A88",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Défaut entre 48 h et 7 jours (DP-35)."
+  },
+  {
+   "id": "CL-D17.A89",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Pas de pidgin (DP-13)."
+  },
+  {
+   "id": "CL-D17.A90",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Les 392 règles « Recommandé » appliquées telles qu'écrites (revues dans revue/CL-XX).",
+   "etape": "5"
+  },
+  {
+   "id": "CL-D17.A91",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "« Chiffré + HMAC » dans la v3 et CL-16 (DP-02)."
+  },
+  {
+   "id": "CL-D17.A92",
+   "type": "décision",
+   "fait": false,
+   "resultat": "belivay.com (DP-38)."
+  },
+  {
+   "id": "CL-D17.A93",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Sérialiseurs par rôle (CVI-08).",
+   "etape": "5"
+  },
+  {
+   "id": "CL-D17.A94",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Table d'envoi transactionnelle ; consommateurs idempotents.",
+   "etape": "5"
+  },
+  {
+   "id": "CL-D17.A95",
+   "type": "vérification",
+   "fait": true,
+   "resultat": "Ces événements sont déjà au catalogue (CEV-07, vu pour CL-D03.A26)."
+  },
+  {
+   "id": "CL-D17.A96",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Jeu d'essai chargé comme données de démonstration (fixtures), retirable d'un bloc (consigne du porteur).",
+   "etape": "5"
+  },
+  {
+   "id": "CL-D17.A97",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Ne pas reprendre les composants vendeur ni les repères de revue du prototype.",
+   "etape": "4"
+  },
+  {
+   "id": "CL-D17.A98",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Chaque valeur décidée passe au statut Décidé dans la table (parametres-en-vigueur.json le fait)."
+  },
+  {
+   "id": "CL-D17.A99",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Remise à domicile par colis (DP-19)."
+  },
+  {
+   "id": "CL-D17.A100",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Livraison remboursée en cas de tort ; calcul d'un montant partiel (DP-35)."
+  },
+  {
+   "id": "CL-D17.A101",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Retenue jamais au-delà du payé (DP-24)."
+  },
+  {
+   "id": "CL-D17.A102",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Valeurs des modules avant leur ouverture (DP-41 et CL-15)."
+  },
+  {
+   "id": "CL-D17.A103",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Test des gabarits : aucun motif à 6 chiffres hors C3 (CAP-19).",
+   "etape": "CI"
+  },
+  {
+   "id": "CL-D17.A104",
+   "type": "vérification",
+   "fait": true,
+   "resultat": "Le contrôle existe : organiser.py vérifie les 1 669 identifiants sans doublon, et revue.py qu'aucune règle n'est oubliée."
+  },
+  {
+   "id": "CL-D17.A105",
+   "type": "vérification",
+   "fait": true,
+   "resultat": "Aucune action nouvelle : les fiches CL-02 à CL-08 sont revues."
+  },
+  {
+   "id": "CL-D17.A106",
+   "type": "décision",
+   "fait": false,
+   "resultat": "OTP (DP-05), ACC-RANGEE-MIN (DP-11), suppléments (DP-07), remise à domicile (DP-19)."
+  },
+  {
+   "id": "CL-D17.A107",
+   "type": "vérification",
+   "fait": true,
+   "resultat": "Aucune action nouvelle : les fiches CL-08 à CL-12 sont revues."
+  },
+  {
+   "id": "CL-D17.A108",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Toutes décidées (DP-24, DP-35, DP-10, DP-15, DP-31, DP-32) sauf SMS-SECOURS."
+  },
+  {
+   "id": "CL-D17.A109",
+   "type": "vérification",
+   "fait": true,
+   "resultat": "Aucune action nouvelle : les fiches CL-12 à CL-15 sont revues."
+  },
+  {
+   "id": "CL-D17.A110",
+   "type": "décision",
+   "fait": false,
+   "resultat": "LST-VALIDITE (DP-41), SUP-HORAIRES (DP-12) ; RNT-OUVERTURE, COT-FRAIS, MDC-FORFAIT avant l'ouverture des modules."
+  },
+  {
+   "id": "CL-D17.A111",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Recette des 220 critères, FR/EN, clair/sombre (étape 8).",
+   "etape": "CI"
+  },
+  {
+   "id": "CL-D17.A112",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Contrôles des liens et des écrans avant chaque recette.",
+   "etape": "CI"
+  },
+  {
+   "id": "CL-D17.A113",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Critères serveur vérifiés par l'API.",
+   "etape": "CI"
+  },
+  {
+   "id": "CL-D17.A114",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Critères des chapitres 17 et 18 dans l'espace vendeur et la console.",
+   "etape": "CI"
+  },
+  {
+   "id": "CL-D17.A115",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "Critères 4.5 et chapitre 9 : écarts assumés du 26 sept."
+  },
+  {
+   "id": "CL-D17.A116",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "Critères de recette des chapitres 23 et 24 à écrire avant l'ouverture des modules."
+  },
+  {
+   "id": "CL-D17.A117",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "Paquets Point relais et Espace vendeur : remplacer les anciennes règles client citées."
+  },
+  {
+   "id": "CL-D17.A118",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "Homonymes CNV et CDS anciens / CL-01 dans les renvois."
+  },
+  {
+   "id": "CL-D17.A119",
+   "type": "construction",
+   "fait": false,
+   "resultat": "15 scénarios automatisés de bout en bout.",
+   "etape": "CI"
+  },
+  {
+   "id": "CL-D17.A120",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Lexique comme source unique des traductions (FR, EN).",
+   "etape": "4"
+  },
+  {
+   "id": "CL-D17.A121",
+   "type": "décision",
+   "fait": false,
+   "resultat": "belivay.com (DP-38)."
+  }
+ ],
+ "questions": [
+  {
+   "id": "CL-D17.Q01",
+   "reponse_donnees": "DP-26.",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q02",
+   "reponse_donnees": "Un relais par zone ; les autres sont dans d'autres zones (CPR-05).",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q03",
+   "reponse_donnees": "4 zones exploitées (DP-09).",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q04",
+   "reponse_donnees": "Oui : 900 F = 500 + 400 (par colis, DP-18).",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q05",
+   "reponse_donnees": "TRANSP-PLAFOND est au registre, Décidé.",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q06",
+   "reponse_donnees": "CCN-11 et CCN-19 restent à trancher.",
+   "decision_porteur": "Score et alertes de zone ; rôles des deux validateurs de l'escrow."
+  },
+  {
+   "id": "CL-D17.Q07",
+   "reponse_donnees": "« 1 + bonus » (CAB-40).",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q08",
+   "reponse_donnees": "Mot interdit (CCH-46) ; correction de la v3.",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q09",
+   "reponse_donnees": "Heure ou date ferme (CCH-03).",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q10",
+   "reponse_donnees": "CPY-43.",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q11",
+   "reponse_donnees": "Sens retenu : avertissement avant la libération du vendeur.",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q12",
+   "reponse_donnees": "CGA-25.",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q13",
+   "reponse_donnees": "DP-35.",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q14",
+   "reponse_donnees": "CPR-23.",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q15",
+   "reponse_donnees": "DP-29, DP-35.",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q16",
+   "reponse_donnees": "La plupart réglés par les décisions DP-* ; restent n° 10 (deux non-retraits), n° 17 (relais fermé plusieurs jours), n° 24 (score du relais), n° 55 (bonus Premium du relais).",
+   "decision_porteur": "Trancher ces quatre points."
+  },
+  {
+   "id": "CL-D17.Q17",
+   "reponse_donnees": "DP-10.",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q18",
+   "reponse_donnees": "DP-35.",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q19",
+   "reponse_donnees": "DP-13.",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q20",
+   "reponse_donnees": "Écarts assumés ; correction A115.",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q21",
+   "reponse_donnees": "17 sur 37 restent (decisions-porteur.md).",
+   "decision_porteur": "Les 17 valeurs restantes."
+  },
+  {
+   "id": "CL-D17.Q22",
+   "reponse_donnees": "DP-02.",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q23",
+   "reponse_donnees": "DP-38.",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q24",
+   "reponse_donnees": "DP-13.",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q25",
+   "reponse_donnees": "Compte vérifié par organiser.py : 392 « Recommandé » au registre.",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q26",
+   "reponse_donnees": "Voir Q21.",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q27",
+   "reponse_donnees": "392 : cohérent.",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q28",
+   "reponse_donnees": "24 h (DP-35).",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q29",
+   "reponse_donnees": "Tous décidés (DP-05, DP-11, DP-07, DP-19).",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q30",
+   "reponse_donnees": "Aucune divergence.",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q31",
+   "reponse_donnees": "Décidés dans les DP-*.",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q32",
+   "reponse_donnees": "Aucune divergence.",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q33",
+   "reponse_donnees": "Assumées par acteur (DP-12).",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q34",
+   "reponse_donnees": "Aucune divergence.",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q35",
+   "reponse_donnees": "À écrire avant l'ouverture des modules (A116).",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q36",
+   "reponse_donnees": "Correction A115.",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q37",
+   "reponse_donnees": "CCN-11 et CTV-31 restent à trancher.",
+   "decision_porteur": "Score de zone ; liste des produits interdits."
+  },
+  {
+   "id": "CL-D17.Q38",
+   "reponse_donnees": "Texte de C2 et C3 validé (DP-34).",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q39",
+   "reponse_donnees": "« Annulée par le vendeur » (CAN-25).",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q40",
+   "reponse_donnees": "DP-38.",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q41",
+   "reponse_donnees": "RET-TRAJET 500 F (DP-35).",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D17.Q42",
+   "reponse_donnees": "CET-20 (Décidé) : 22 h – 7 h à l'heure du payeur ; paramètre à créer.",
+   "decision_porteur": ""
+  }
+ ]
+}

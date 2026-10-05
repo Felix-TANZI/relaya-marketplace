@@ -1,0 +1,12 @@
+/* Généré par outils/styles.mjs (styles insérés dans l’écran par le prototype). */
+#app .cl03-g,#app .cx-apple,#app .cx-duo .btn{height:54px;border-radius:16px;font-size:15.5px;font-weight:800}
+#app .cl03-g .gg{width:26px;height:26px;border-radius:50%;background:#fff;display:inline-grid;place-items:center;margin-right:2px}
+#app .cx-apple{margin-top:10px!important}
+.cx-duo{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.cx-duo .btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:0 10px;white-space:nowrap;font-size:14.5px}
+.cx-duo .btn svg{color:var(--or-txt);flex-shrink:0}
+#app .cl03-info{margin-top:14px;border-radius:16px}
+.nm-cc{display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:var(--ink);font-weight:800}
+.nm-cc svg{color:var(--ink-3)}
+.nm-alt{display:flex;flex-wrap:wrap;gap:6px 14px;margin:10px 2px 0;font-size:13px}
+.nm-alt a{color:var(--or-txt);font-weight:800;text-decoration:none;display:inline-flex;align-items:center;gap:5px}

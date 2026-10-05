@@ -1,0 +1,17 @@
+/* Généré par outils/styles.mjs (styles insérés dans l’écran par le prototype). */
+.blv-spl{position:absolute;inset:0;z-index:9999;display:grid;place-items:center;background:radial-gradient(110% 80% at 50% 45%,#F58B47,#EE7324 72%);color:#fff;border-radius:inherit;transition:opacity .45s ease,transform .45s ease}
+.blv-spl.out{opacity:0;transform:scale(1.04);pointer-events:none}
+.blv-spl .lu{display:flex;align-items:center}
+.blv-spl .lg{width:76px;height:auto;display:block;fill:#fff;transform-origin:50% 92%}
+.blv-spl .nm{overflow:hidden;white-space:nowrap;max-width:var(--nw,260px)}
+.blv-spl .nm span{display:inline-block;padding-left:14px;font:800 44px/1.1 "Plus Jakarta Sans",system-ui,sans-serif;letter-spacing:-.025em}
+.blv-spl .spl-tg{position:absolute;left:0;right:0;bottom:64px;margin:0;padding:0;background:none;color:#fff;width:auto;text-align:center;font:600 14px/1.3 "Plus Jakarta Sans",system-ui,sans-serif;opacity:.9}
+.blv-spl.run .lg{animation:splCart .82s cubic-bezier(.22,.9,.3,1) both}
+.blv-spl.run .nm{animation:splNm .62s cubic-bezier(.3,.8,.2,1) .7s both}
+.blv-spl.run .nm span{animation:splTx .62s cubic-bezier(.3,.8,.2,1) .7s both}
+.blv-spl.run .spl-tg{animation:splTg .5s ease 1.25s both}
+@keyframes splCart{0%{transform:translateX(-170px) rotate(-7deg);opacity:0}55%{transform:translateX(6px) rotate(2.4deg);opacity:1}78%{transform:translateX(-1.5px) rotate(-.7deg)}100%{transform:none}}
+@keyframes splNm{from{max-width:0}to{max-width:var(--nw,260px)}}
+@keyframes splTx{from{transform:translateX(-20px);opacity:0}to{transform:none;opacity:1}}
+@keyframes splTg{from{opacity:0;transform:translateY(6px)}to{opacity:.9;transform:none}}
+@media (prefers-reduced-motion:reduce){.blv-spl.run .lg,.blv-spl.run .nm,.blv-spl.run .nm span,.blv-spl.run .spl-tg{animation:none}}

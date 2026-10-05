@@ -1,0 +1,138 @@
+{
+ "description": "Extrait de CL-02 : Matrice de visibilité (anonymat).",
+ "source": "Extrait de CL-02 et CL-16 (04_Pages_HTML) par logique-metier/outils/",
+ "sections": [
+  {
+   "section": "Matrice de visibilité (anonymat)",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Donnée",
+      "Client",
+      "Vendeur",
+      "Livreur",
+      "Relais",
+      "Console"
+     ],
+     "lignes": [
+      {
+       "donnee": "Identité du client",
+       "client": "— (la sienne)",
+       "vendeur": "jamais",
+       "livreur": "prénom à domicile, avec l’adresse par repères ; rien pour une remise au relais",
+       "relais": "nom saisi au retrait (porteur)",
+       "console": "oui"
+      },
+      {
+       "donnee": "Nom, page, adresse, numéro de la boutique",
+       "client": "jamais : « Boutique A », « Colis 1 »",
+       "vendeur": "oui (le sien)",
+       "livreur": "oui (collecte)",
+       "relais": "non",
+       "console": "oui"
+      },
+      {
+       "donnee": "Palier et Trust Score du vendeur",
+       "client": "palier + score (« Vendeur certifié Or · Trust Score 91 »)",
+       "vendeur": "le sien",
+       "livreur": "non",
+       "relais": "non",
+       "console": "oui"
+      },
+      {
+       "donnee": "Total payé par le client",
+       "client": "oui",
+       "vendeur": "jamais",
+       "livreur": "non",
+       "relais": "non",
+       "console": "oui"
+      },
+      {
+       "donnee": "Ce que garde le vendeur (commission)",
+       "client": "non",
+       "vendeur": "oui",
+       "livreur": "non",
+       "relais": "non",
+       "console": "oui"
+      },
+      {
+       "donnee": "Code de retrait",
+       "client": "oui, masqué (affiché au toucher)",
+       "vendeur": "jamais",
+       "livreur": "jamais",
+       "relais": "vérifié, jamais stocké en clair",
+       "console": "jamais en clair"
+      },
+      {
+       "donnee": "Numéro de téléphone du client",
+       "client": "le sien",
+       "vendeur": "jamais",
+       "livreur": "masqué (rappel masqué)",
+       "relais": "masqué",
+       "console": "oui"
+      },
+      {
+       "donnee": "IFA (indice de fiabilité acheteur)",
+       "client": "jamais (seulement ses avantages)",
+       "vendeur": "jamais",
+       "livreur": "jamais",
+       "relais": "jamais",
+       "console": "oui"
+      },
+      {
+       "donnee": "Adresse du domicile",
+       "client": "oui",
+       "vendeur": "jamais",
+       "livreur": "oui, au départ de la livraison à domicile",
+       "relais": "non",
+       "console": "oui"
+      },
+      {
+       "donnee": "Quartier et relais du client",
+       "client": "oui",
+       "vendeur": "jamais",
+       "livreur": "relais de destination du paquet",
+       "relais": "le sien",
+       "console": "oui"
+      },
+      {
+       "donnee": "Livreur",
+       "client": "prénom et photo quand il est en route, heure estimée ; jamais numéro, entreprise ni position en direct",
+       "vendeur": "—",
+       "livreur": "—",
+       "relais": "prénom (remise au relais)",
+       "console": "oui"
+      },
+      {
+       "donnee": "Payeur à l’étranger",
+       "client": "prénom et pays",
+       "vendeur": "jamais",
+       "livreur": "jamais",
+       "relais": "jamais",
+       "console": "oui"
+      },
+      {
+       "donnee": "Bénéficiaire (vu par le payeur)",
+       "client": "—",
+       "vendeur": "—",
+       "livreur": "—",
+       "relais": "—",
+       "console": "oui ; le payeur voit prénom, relais et quartier seulement"
+      }
+     ]
+    }
+   ],
+   "regles": [
+    "CVI-01",
+    "CVI-02",
+    "CVI-03",
+    "CVI-04",
+    "CVI-05",
+    "CVI-06",
+    "CVI-07",
+    "CVI-08"
+   ]
+  }
+ ]
+}

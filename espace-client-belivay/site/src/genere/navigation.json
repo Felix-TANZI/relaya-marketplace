@@ -1,0 +1,3010 @@
+{
+ "menu": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Menu",
+  "sousTitre": null,
+  "retour": "accueil",
+  "droite": "accueil",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": null,
+  "prototype": {
+   "titre": "Menu",
+   "sousTitre": null,
+   "retour": "#accueil",
+   "droite": [
+    "ibtn hd-mark → #accueil"
+   ]
+  }
+ },
+ "kit": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Composants",
+  "sousTitre": "Planche de référence · CL-01",
+  "retour": "accueil",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": null,
+  "prototype": {
+   "titre": "Composants",
+   "sousTitre": "Planche de référence · CL-01",
+   "retour": "#menu",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  },
+  "ecart": "CNV-10 : aucun retour ne mène au Menu (prototype : #menu)"
+ },
+ "bienvenue": {
+  "entete": "aucun",
+  "margeHaute": 0,
+  "titre": "Bienvenue",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ },
+ "interets": {
+  "entete": "aucun",
+  "margeHaute": 0,
+  "titre": "Centres d’intérêt",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ },
+ "connexion": {
+  "entete": "aucun",
+  "margeHaute": 0,
+  "titre": "Connexion",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ },
+ "connexion-email": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Connexion par e-mail",
+  "sousTitre": null,
+  "retour": "connexion",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": "Connexion par e-mail",
+   "sousTitre": null,
+   "retour": "#connexion",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "mdp-oublie": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Mot de passe oublié",
+  "sousTitre": null,
+  "retour": "connexion-email",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": "Mot de passe oublié",
+   "sousTitre": null,
+   "retour": "#connexion-email",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "numero": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Ton numéro",
+  "sousTitre": null,
+  "retour": "compte",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": "Ton numéro",
+   "sousTitre": null,
+   "retour": "#compte",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "numero-changer": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Changer de numéro",
+  "sousTitre": "Étape 1 sur 3",
+  "retour": "compte",
+  "droite": "accueil",
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": "Changer de numéro",
+   "sousTitre": "Étape 1 sur 3",
+   "retour": "#compte",
+   "droite": [
+    "ibtn hd-mark → #accueil"
+   ]
+  }
+ },
+ "relais-choix": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Choisir mon relais",
+  "sousTitre": null,
+  "retour": "accueil",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "accueil",
+  "prototype": {
+   "titre": "Choisir mon relais",
+   "sousTitre": null,
+   "retour": "#accueil",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "premiere-commande": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Avant de payer",
+  "sousTitre": "Première commande · étape 2 sur 2",
+  "retour": "panier",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": "Avant de payer",
+   "sousTitre": "Première commande · étape 2 sur 2",
+   "retour": "#panier?premiere=1",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "adresse": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Adresse de livraison",
+  "sousTitre": null,
+  "retour": "premiere-commande",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": "Adresse de livraison",
+   "sousTitre": null,
+   "retour": "#premiere-commande?st=domicile",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "notifs-proposition": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "classesApp": [
+   "fixed"
+  ],
+  "titre": "Suivi de commande",
+  "sousTitre": null,
+  "retour": "commandes",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "calme": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Suivi de commande",
+   "sousTitre": "BLV-52131",
+   "retour": "#commandes",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "cgu": {
+  "entete": "racine",
+  "margeHaute": 148,
+  "styleMain": "padding-bottom:240px",
+  "classesApp": [
+   "fixed"
+  ],
+  "titre": "Conditions",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": true,
+  "bandeau": true,
+  "barre": true,
+  "onglet": "accueil",
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ },
+ "accueil": {
+  "entete": "racine",
+  "margeHaute": 148,
+  "styleMain": "padding-bottom:240px",
+  "titre": "Accueil",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": true,
+  "bandeau": true,
+  "barre": true,
+  "onglet": "accueil",
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ },
+ "categories": {
+  "entete": "racine",
+  "margeHaute": 148,
+  "titre": "Catégories",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": true,
+  "bandeau": true,
+  "barre": true,
+  "onglet": "categories",
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ },
+ "liste": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Tout le catalogue",
+  "sousTitre": null,
+  "retour": "categories",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "categories",
+  "prototype": {
+   "titre": "Tout le catalogue",
+   "sousTitre": "1 387 produits",
+   "retour": "#categories",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "recherche": {
+  "entete": "aucun",
+  "margeHaute": 122,
+  "styleMain": "padding-bottom:300px",
+  "classesApp": [
+   "fixed"
+  ],
+  "titre": "Recherche",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ },
+ "recherche-saisie": {
+  "entete": "aucun",
+  "margeHaute": 122,
+  "styleMain": "padding-bottom:300px",
+  "classesApp": [
+   "fixed"
+  ],
+  "titre": "Recherche · suggestions",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ },
+ "recherche-resultats": {
+  "entete": "aucun",
+  "margeHaute": 122,
+  "styleMain": "padding-bottom:40px",
+  "titre": "Résultats de recherche",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ },
+ "recherche-zero": {
+  "entete": "aucun",
+  "margeHaute": 122,
+  "styleMain": "padding-bottom:40px",
+  "titre": "Recherche sans résultat",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ },
+ "recherche-filtres": {
+  "entete": "aucun",
+  "margeHaute": 122,
+  "styleMain": "padding-bottom:40px",
+  "titre": "Filtres de recherche",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ },
+ "relais-selecteur": {
+  "entete": "aucun",
+  "margeHaute": 122,
+  "classesApp": [
+   "fixed"
+  ],
+  "titre": "Relais de la recherche",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ },
+ "fiche": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Fiche produit",
+  "sousTitre": null,
+  "retour": "liste",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "accueil",
+  "prototype": {
+   "titre": "Smartphones",
+   "sousTitre": null,
+   "retour": "#liste?cat=tel&sub=Smartphones",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "galerie": {
+  "entete": "aucun",
+  "margeHaute": 4,
+  "styleMain": "background:var(--esp-3)",
+  "classesApp": [
+   "fixed"
+  ],
+  "titre": "Galerie photo",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ },
+ "avis": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Avis",
+  "sousTitre": null,
+  "retour": "fiche",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "accueil",
+  "prototype": {
+   "titre": "Avis",
+   "sousTitre": null,
+   "retour": "#fiche?p=camon30",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "question": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Question au vendeur",
+  "sousTitre": null,
+  "retour": "fiche",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "accueil",
+  "prototype": {
+   "titre": "Question au vendeur",
+   "sousTitre": null,
+   "retour": "#fiche?p=camon30",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "panier": {
+  "entete": "enfant",
+  "margeHaute": 100,
+  "styleMain": "padding-bottom:250px",
+  "titre": "Mon panier",
+  "sousTitre": null,
+  "retour": "accueil",
+  "droite": "propre",
+  "action": {
+   "balise": "a",
+   "classe": "cl07-sq",
+   "adresse": "#panier?st=partage",
+   "aria": "Partager le panier",
+   "texte": "",
+   "icone": "share-2",
+   "taille": 20
+  },
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": "Mon panier",
+   "sousTitre": null,
+   "retour": "#accueil",
+   "droite": [
+    "cl07-sq → #panier?st=partage"
+   ]
+  }
+ },
+ "panier-retrait": {
+  "entete": "enfant",
+  "margeHaute": 100,
+  "styleMain": "padding-bottom:250px",
+  "classesApp": [
+   "fixed"
+  ],
+  "titre": "Mon panier",
+  "sousTitre": null,
+  "retour": "accueil",
+  "droite": "propre",
+  "action": {
+   "balise": "a",
+   "classe": "cl07-sq",
+   "adresse": "#panier?st=partage",
+   "aria": "Partager le panier",
+   "texte": "",
+   "icone": "share-2",
+   "taille": 20
+  },
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": "Mon panier",
+   "sousTitre": null,
+   "retour": "#accueil",
+   "droite": [
+    "cl07-sq → #panier?st=partage"
+   ]
+  }
+ },
+ "sauvegardes": {
+  "entete": "racine",
+  "margeHaute": 92,
+  "titre": "Sauvegardés",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": false,
+  "bandeau": true,
+  "barre": true,
+  "onglet": "sauvegardes",
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ },
+ "paiement-attente": {
+  "entete": "aucun",
+  "margeHaute": 6,
+  "styleMain": "padding-bottom:40px",
+  "titre": "Paiement en attente",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ },
+ "prix-change": {
+  "entete": "aucun",
+  "margeHaute": 6,
+  "styleMain": "padding-bottom:40px",
+  "titre": "Un prix a changé",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ },
+ "paiement-echec": {
+  "entete": "aucun",
+  "margeHaute": 6,
+  "styleMain": "padding-bottom:40px",
+  "titre": "Paiement non abouti",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ },
+ "paiement-moyen": {
+  "entete": "enfant",
+  "margeHaute": 100,
+  "styleMain": "padding-bottom:250px",
+  "classesApp": [
+   "fixed"
+  ],
+  "titre": "Mon panier",
+  "sousTitre": null,
+  "retour": "accueil",
+  "droite": "propre",
+  "action": {
+   "balise": "a",
+   "classe": "cl07-sq",
+   "adresse": "#panier?st=partage",
+   "aria": "Partager le panier",
+   "texte": "",
+   "icone": "share-2",
+   "taille": 20
+  },
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": "Mon panier",
+   "sousTitre": null,
+   "retour": "#accueil",
+   "droite": [
+    "cl07-sq → #panier?st=partage"
+   ]
+  }
+ },
+ "confirmee": {
+  "entete": "aucun",
+  "margeHaute": 6,
+  "styleMain": "padding-bottom:40px",
+  "titre": "Commande confirmée",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ },
+ "validee": {
+  "entete": "aucun",
+  "margeHaute": 6,
+  "styleMain": "padding-bottom:40px",
+  "titre": "Commande validée",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ },
+ "commandes": {
+  "entete": "racine",
+  "margeHaute": 148,
+  "titre": "Mes commandes",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": true,
+  "bandeau": true,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ },
+ "commande": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Ma commande",
+  "sousTitre": null,
+  "retour": "commandes",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Ma commande",
+   "sousTitre": "BLV-52018",
+   "retour": "#commandes",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "code": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Code de retrait",
+  "sousTitre": null,
+  "retour": "commande",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": "Code de retrait",
+   "sousTitre": "BLV-52018",
+   "retour": "#commande?ref=BLV-52018",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "code-partage": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "classesApp": [
+   "fixed"
+  ],
+  "titre": "Code de retrait",
+  "sousTitre": null,
+  "retour": "code",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": "Code de retrait",
+   "sousTitre": "BLV-52018",
+   "retour": "#code?ref=BLV-52018",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "suivi": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Suivi de commande",
+  "sousTitre": null,
+  "retour": "commandes",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Suivi de commande",
+   "sousTitre": "BLV-52018",
+   "retour": "#commandes",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "comptoir-payer": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Montant dû",
+  "sousTitre": null,
+  "retour": "code",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Montant dû",
+   "sousTitre": "BLV-52018",
+   "retour": "#code?ref=BLV-52018",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "comptoir": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Au comptoir",
+  "sousTitre": null,
+  "retour": "commande",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Au comptoir",
+   "sousTitre": "BLV-52018",
+   "retour": "#commande?ref=BLV-52018",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "notifications": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Notifications",
+  "sousTitre": null,
+  "retour": "accueil",
+  "droite": "propre",
+  "action": {
+   "balise": "a",
+   "classe": "ibtn",
+   "adresse": "#notifs-reglages?from=notifications",
+   "aria": "Réglage des notifications",
+   "texte": "",
+   "icone": "settings",
+   "taille": 22
+  },
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Notifications",
+   "sousTitre": null,
+   "retour": "#accueil",
+   "droite": [
+    "ibtn → #notifs-reglages?from=notifications"
+   ]
+  }
+ },
+ "notifs-reglages": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Notifications",
+  "sousTitre": "Réglages",
+  "retour": "compte",
+  "droite": "accueil",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Notifications",
+   "sousTitre": "Réglages",
+   "retour": "#compte",
+   "droite": [
+    "ibtn hd-mark → #accueil"
+   ]
+  }
+ },
+ "garde": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Frais de garde",
+  "sousTitre": null,
+  "retour": "commande",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Frais de garde",
+   "sousTitre": "BLV-52018",
+   "retour": "#commande?ref=BLV-52018",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "push": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Aperçu",
+  "sousTitre": "Écran verrouillé",
+  "retour": "notifs-reglages",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": "Aperçu",
+   "sousTitre": "Écran verrouillé",
+   "retour": "#notifs-reglages",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "sms": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Aperçu",
+  "sousTitre": "SMS",
+  "retour": "notifs-reglages",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": "Aperçu",
+   "sousTitre": "SMS",
+   "retour": "#notifs-reglages",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "lien-court": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Aperçu",
+  "sousTitre": "Lien court du SMS",
+  "retour": "sms",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": "Aperçu",
+   "sousTitre": "Lien court du SMS",
+   "retour": "#sms",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "litige": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "styleMain": "padding-bottom:60px",
+  "titre": "Que s’est-il passé ?",
+  "sousTitre": "Étape 2 sur 4",
+  "retour": "commande",
+  "droite": "propre",
+  "action": {
+   "balise": "span",
+   "classe": "cl11-hsp",
+   "adresse": null,
+   "aria": null,
+   "texte": "",
+   "icone": null,
+   "taille": null
+  },
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": "Que s’est-il passé ?",
+   "sousTitre": "Étape 2 sur 4",
+   "retour": "#commande?ref=BLV-51702",
+   "droite": [
+    "cl11-hsp"
+   ]
+  }
+ },
+ "litige-confirme": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Litige ouvert",
+  "sousTitre": null,
+  "retour": "commande",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Litige ouvert",
+   "sousTitre": null,
+   "retour": "#commande?ref=BLV-51702",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "litige-auto": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Remboursé",
+  "sousTitre": null,
+  "retour": "commande",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Remboursé",
+   "sousTitre": null,
+   "retour": "#commande?ref=BLV-51206",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "litige-comptoir": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Litige ouvert",
+  "sousTitre": null,
+  "retour": "comptoir",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Litige ouvert",
+   "sousTitre": null,
+   "retour": "#comptoir?ref=BLV-51877",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "litige-suivi": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Suivi du litige",
+  "sousTitre": null,
+  "retour": "litiges",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Litige LIT-3042",
+   "sousTitre": null,
+   "retour": "#litiges",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "litige-arrangement": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "classesApp": [
+   "fixed"
+  ],
+  "titre": "Arrangement proposé",
+  "sousTitre": null,
+  "retour": "litiges",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Litige LIT-3042",
+   "sousTitre": null,
+   "retour": "#litiges",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "litiges": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Mes litiges",
+  "sousTitre": null,
+  "retour": "compte",
+  "droite": "accueil",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Mes litiges",
+   "sousTitre": null,
+   "retour": "#compte",
+   "droite": [
+    "ibtn hd-mark → #accueil"
+   ]
+  }
+ },
+ "retour": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Retourner un article",
+  "sousTitre": null,
+  "retour": "commande",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Commande BLV-51702",
+   "sousTitre": null,
+   "retour": "#commande?ref=BLV-51702",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "remplacement": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Remplacement",
+  "sousTitre": null,
+  "retour": "litige-suivi",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Remplacement",
+   "sousTitre": null,
+   "retour": "#litige-suivi?id=LIT-3042&st=accepte",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "modifier": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Modifier ma commande",
+  "sousTitre": null,
+  "retour": "commande",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Modifier ma commande",
+   "sousTitre": null,
+   "retour": "#commande?ref=BLV-52107",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "annuler": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Annuler ma commande",
+  "sousTitre": null,
+  "retour": "commandes",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Annuler ma commande",
+   "sousTitre": "BLV-52107 · 3 boutiques",
+   "retour": "#commandes?sheet=annuler",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "annuler-confirmer": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "classesApp": [
+   "fixed"
+  ],
+  "titre": "Annuler ma commande",
+  "sousTitre": null,
+  "retour": "commandes",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Annuler ma commande",
+   "sousTitre": "BLV-52107 · 3 boutiques",
+   "retour": "#commandes?sheet=annuler",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "changer-relais": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Modifier ma commande",
+  "sousTitre": null,
+  "retour": "commande",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Modifier ma commande",
+   "sousTitre": null,
+   "retour": "#commande?ref=BLV-52107",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "changer-adresse": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "classesApp": [
+   "fixed"
+  ],
+  "titre": "Modifier ma commande",
+  "sousTitre": null,
+  "retour": "suivi",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Modifier ma commande",
+   "sousTitre": null,
+   "retour": "#suivi?ref=BLV-52096",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "payeur": {
+  "entete": "aucun",
+  "margeHaute": 0,
+  "titre": "Payer depuis l’étranger",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ },
+ "payeur-preuve": {
+  "entete": "aucun",
+  "margeHaute": 0,
+  "titre": "Messages au payeur",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ },
+ "compte": {
+  "entete": "racine",
+  "margeHaute": 92,
+  "titre": "Mon compte",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": false,
+  "bandeau": true,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ },
+ "adresses": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Mes adresses",
+  "sousTitre": null,
+  "retour": "compte",
+  "droite": "accueil",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Mes adresses",
+   "sousTitre": null,
+   "retour": "#compte",
+   "droite": [
+    "ibtn hd-mark → #accueil"
+   ]
+  }
+ },
+ "moyens-paiement": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Moyens de paiement",
+  "sousTitre": null,
+  "retour": "compte",
+  "droite": "accueil",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Moyens de paiement",
+   "sousTitre": null,
+   "retour": "#compte",
+   "droite": [
+    "ibtn hd-mark → #accueil"
+   ]
+  }
+ },
+ "factures": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Factures",
+  "sousTitre": null,
+  "retour": "compte",
+  "droite": "accueil",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Factures",
+   "sousTitre": null,
+   "retour": "#compte",
+   "droite": [
+    "ibtn hd-mark → #accueil"
+   ]
+  }
+ },
+ "supprimer": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Supprimer mon compte",
+  "sousTitre": null,
+  "retour": "compte",
+  "droite": "accueil",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Supprimer mon compte",
+   "sousTitre": null,
+   "retour": "#compte",
+   "droite": [
+    "ibtn hd-mark → #accueil"
+   ]
+  }
+ },
+ "avis-donner": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Avis",
+  "sousTitre": null,
+  "retour": "commande",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Avis",
+   "sousTitre": null,
+   "retour": "#commande?ref=BLV-51702",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "avis-bas": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "classesApp": [
+   "fixed"
+  ],
+  "titre": "Avis",
+  "sousTitre": null,
+  "retour": "avis-donner",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Avis",
+   "sousTitre": null,
+   "retour": "#avis-donner?ref=BLV-51702",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "aide": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Aide et support",
+  "sousTitre": null,
+  "retour": "compte",
+  "droite": "accueil",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Aide et support",
+   "sousTitre": null,
+   "retour": "#compte",
+   "droite": [
+    "ibtn hd-mark → #accueil"
+   ]
+  }
+ },
+ "faq": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Questions fréquentes",
+  "sousTitre": null,
+  "retour": "aide",
+  "droite": "accueil",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Questions fréquentes",
+   "sousTitre": null,
+   "retour": "#aide",
+   "droite": [
+    "ibtn hd-mark → #accueil"
+   ]
+  }
+ },
+ "messagerie": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Messagerie",
+  "sousTitre": null,
+  "retour": "compte",
+  "droite": "accueil",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Messagerie",
+   "sousTitre": null,
+   "retour": "#compte",
+   "droite": [
+    "ibtn hd-mark → #accueil"
+   ]
+  }
+ },
+ "fil": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Conversation",
+  "sousTitre": null,
+  "retour": "messagerie",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Dossier LIT-3042",
+   "sousTitre": null,
+   "retour": "#messagerie",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "rappel": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "classesApp": [
+   "fixed"
+  ],
+  "titre": "Aide et support",
+  "sousTitre": null,
+  "retour": "aide",
+  "droite": "accueil",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Aide et support",
+   "sousTitre": null,
+   "retour": "#aide",
+   "droite": [
+    "ibtn hd-mark → #accueil"
+   ]
+  }
+ },
+ "legal": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Pages légales",
+  "sousTitre": null,
+  "retour": "compte",
+  "droite": "accueil",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Pages légales",
+   "sousTitre": null,
+   "retour": "#compte",
+   "droite": [
+    "ibtn hd-mark → #accueil"
+   ]
+  }
+ },
+ "legal-doc": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Pages légales",
+  "sousTitre": null,
+  "retour": "legal",
+  "droite": "accueil",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Pages légales",
+   "sousTitre": null,
+   "retour": "#legal",
+   "droite": [
+    "ibtn hd-mark → #accueil"
+   ]
+  }
+ },
+ "reseau": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Connexion et données",
+  "sousTitre": null,
+  "retour": "reglages",
+  "droite": "accueil",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Connexion et données",
+   "sousTitre": null,
+   "retour": "#reglages",
+   "droite": [
+    "ibtn hd-mark → #accueil"
+   ]
+  }
+ },
+ "reglages": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Réglages",
+  "sousTitre": null,
+  "retour": "compte",
+  "droite": "accueil",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Réglages",
+   "sousTitre": null,
+   "retour": "#compte",
+   "droite": [
+    "ibtn hd-mark → #accueil"
+   ]
+  }
+ },
+ "abonnements": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Abonnements",
+  "sousTitre": null,
+  "retour": "compte",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Abonnements",
+   "sousTitre": null,
+   "retour": "#compte",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "abonnement-souscrire": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Souscrire",
+  "sousTitre": null,
+  "retour": "abonnements",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Souscrire",
+   "sousTitre": null,
+   "retour": "#abonnements",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "mon-abonnement": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Mon abonnement",
+  "sousTitre": null,
+  "retour": "compte",
+  "droite": "accueil",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Mon abonnement",
+   "sousTitre": null,
+   "retour": "#compte",
+   "droite": [
+    "ibtn hd-mark → #accueil"
+   ]
+  }
+ },
+ "abonnement-resilier": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "classesApp": [
+   "fixed"
+  ],
+  "titre": "Mon abonnement",
+  "sousTitre": null,
+  "retour": "mon-abonnement",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Mon abonnement",
+   "sousTitre": null,
+   "retour": "#mon-abonnement",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "cagnotte": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Ma cagnotte",
+  "sousTitre": null,
+  "retour": "mon-abonnement",
+  "droite": "accueil",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Ma cagnotte",
+   "sousTitre": null,
+   "retour": "#mon-abonnement",
+   "droite": [
+    "ibtn hd-mark → #accueil"
+   ]
+  }
+ },
+ "parrainage": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Parrainer un proche",
+  "sousTitre": null,
+  "retour": "mon-abonnement",
+  "droite": "accueil",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Parrainer un proche",
+   "sousTitre": null,
+   "retour": "#mon-abonnement",
+   "droite": [
+    "ibtn hd-mark → #accueil"
+   ]
+  }
+ },
+ "abonnement-offrir": {
+  "entete": "enfant",
+  "margeHaute": 78,
+  "titre": "Offrir un abonnement",
+  "sousTitre": null,
+  "retour": null,
+  "droite": "propre",
+  "action": {
+   "balise": "button",
+   "classe": "lang",
+   "adresse": null,
+   "aria": "Langue",
+   "texte": "FR",
+   "icone": null,
+   "taille": null
+  },
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": [
+    "lang"
+   ]
+  }
+ },
+ "listes": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Sauvegardés",
+  "sousTitre": "Envies et listes partagées",
+  "retour": "sauvegardes",
+  "droite": "propre",
+  "action": {
+   "balise": "a",
+   "classe": "ibtn cl14-plus",
+   "adresse": "#liste-creer",
+   "aria": "Nouvelle liste",
+   "texte": "",
+   "icone": "plus",
+   "taille": 22
+  },
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "sauvegardes",
+  "prototype": {
+   "titre": "Sauvegardés",
+   "sousTitre": "Envies et listes partagées",
+   "retour": "#sauvegardes",
+   "droite": [
+    "ibtn cl14-plus → #liste-creer"
+   ]
+  }
+ },
+ "liste-creer": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "classesApp": [
+   "fixed"
+  ],
+  "titre": "Sauvegardés",
+  "sousTitre": "Envies et listes partagées",
+  "retour": "sauvegardes",
+  "droite": "propre",
+  "action": {
+   "balise": "a",
+   "classe": "ibtn cl14-plus",
+   "adresse": "#liste-creer",
+   "aria": "Nouvelle liste",
+   "texte": "",
+   "icone": "plus",
+   "taille": 22
+  },
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "sauvegardes",
+  "prototype": {
+   "titre": "Sauvegardés",
+   "sousTitre": "Envies et listes partagées",
+   "retour": "#sauvegardes",
+   "droite": [
+    "ibtn cl14-plus → #liste-creer"
+   ]
+  }
+ },
+ "liste-envies": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Sauvegardés",
+  "sousTitre": "Envies et listes partagées",
+  "retour": "sauvegardes",
+  "droite": "propre",
+  "action": {
+   "balise": "a",
+   "classe": "ibtn cl14-plus",
+   "adresse": "#liste-creer",
+   "aria": "Nouvelle liste",
+   "texte": "",
+   "icone": "plus",
+   "taille": 22
+  },
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "sauvegardes",
+  "prototype": {
+   "titre": "Sauvegardés",
+   "sousTitre": "Envies et listes partagées",
+   "retour": "#sauvegardes",
+   "droite": [
+    "ibtn cl14-plus → #liste-creer"
+   ]
+  }
+ },
+ "liste-envoyer": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Sauvegardés",
+  "sousTitre": "Envies et listes partagées",
+  "retour": "sauvegardes",
+  "droite": "propre",
+  "action": {
+   "balise": "a",
+   "classe": "ibtn cl14-plus",
+   "adresse": "#liste-creer",
+   "aria": "Nouvelle liste",
+   "texte": "",
+   "icone": "plus",
+   "taille": 22
+  },
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "sauvegardes",
+  "prototype": {
+   "titre": "Sauvegardés",
+   "sousTitre": "Envies et listes partagées",
+   "retour": "#sauvegardes",
+   "droite": [
+    "ibtn cl14-plus → #liste-creer"
+   ]
+  }
+ },
+ "liste-publique": {
+  "entete": "enfant",
+  "margeHaute": 108,
+  "titre": "Liste partagée",
+  "sousTitre": null,
+  "retour": null,
+  "droite": "propre",
+  "action": {
+   "balise": "button",
+   "classe": "lang",
+   "adresse": null,
+   "aria": "Langue",
+   "texte": "FR",
+   "icone": null,
+   "taille": null
+  },
+  "recherche": false,
+  "bandeau": true,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": [
+    "lang"
+   ]
+  }
+ },
+ "liste-offrir": {
+  "entete": "enfant",
+  "margeHaute": 108,
+  "titre": "Offrir un article",
+  "sousTitre": null,
+  "retour": null,
+  "droite": "propre",
+  "action": {
+   "balise": "button",
+   "classe": "lang",
+   "adresse": null,
+   "aria": "Langue",
+   "texte": "FR",
+   "icone": null,
+   "taille": null
+  },
+  "recherche": false,
+  "bandeau": true,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": [
+    "lang"
+   ]
+  }
+ },
+ "liste-offert": {
+  "entete": "enfant",
+  "margeHaute": 108,
+  "titre": "Cadeau offert",
+  "sousTitre": null,
+  "retour": null,
+  "droite": "propre",
+  "action": {
+   "balise": "button",
+   "classe": "lang",
+   "adresse": null,
+   "aria": "Langue",
+   "texte": "FR",
+   "icone": null,
+   "taille": null
+  },
+  "recherche": false,
+  "bandeau": true,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": [
+    "lang"
+   ]
+  }
+ },
+ "ventes-flash": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Flash Deals",
+  "sousTitre": null,
+  "retour": "accueil",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "accueil",
+  "prototype": {
+   "titre": "Flash Deals",
+   "sousTitre": null,
+   "retour": "#accueil",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "assistant": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Assistant BelivaY",
+  "sousTitre": null,
+  "retour": "aide",
+  "droite": "propre",
+  "action": {
+   "balise": "a",
+   "classe": "ibtn",
+   "adresse": "#assistant?st=humain",
+   "aria": "Parler à un conseiller",
+   "texte": "",
+   "icone": "headset",
+   "taille": 22
+  },
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": "Assistant BelivaY",
+   "sousTitre": null,
+   "retour": "#aide",
+   "droite": [
+    "ibtn → #assistant?st=humain"
+   ]
+  }
+ },
+ "assistant-confirmer": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "classesApp": [
+   "fixed"
+  ],
+  "titre": "Assistant BelivaY",
+  "sousTitre": null,
+  "retour": "aide",
+  "droite": "propre",
+  "action": {
+   "balise": "a",
+   "classe": "ibtn",
+   "adresse": "#assistant?st=humain",
+   "aria": "Parler à un conseiller",
+   "texte": "",
+   "icone": "headset",
+   "taille": 22
+  },
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": "Assistant BelivaY",
+   "sousTitre": null,
+   "retour": "#aide",
+   "droite": [
+    "ibtn → #assistant?st=humain"
+   ]
+  }
+ },
+ "rentree": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Liste de rentrée",
+  "sousTitre": "Étape 1 sur 4",
+  "retour": "sauvegardes",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "sauvegardes",
+  "prototype": {
+   "titre": "Liste de rentrée",
+   "sousTitre": "Étape 1 sur 4",
+   "retour": "#sauvegardes",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "rentree-liste-papier": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Liste papier",
+  "sousTitre": null,
+  "retour": "rentree",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "sauvegardes",
+  "prototype": {
+   "titre": "Liste papier",
+   "sousTitre": null,
+   "retour": "#rentree",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "rentree-classe": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Choisir la classe",
+  "sousTitre": "Étape 2 sur 4",
+  "retour": "rentree",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "sauvegardes",
+  "prototype": {
+   "titre": "Choisir la classe",
+   "sousTitre": "Étape 2 sur 4",
+   "retour": "#rentree",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "rentree-liste": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Liste CE1",
+  "sousTitre": "Étape 3 sur 4",
+  "retour": "rentree-classe",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "sauvegardes",
+  "prototype": {
+   "titre": "Liste CE1",
+   "sousTitre": "Étape 3 sur 4",
+   "retour": "#rentree-classe",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "rentree-panier": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Panier de rentrée",
+  "sousTitre": "Étape 4 sur 4",
+  "retour": "rentree-liste",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "sauvegardes",
+  "prototype": {
+   "titre": "Panier de rentrée",
+   "sousTitre": "Étape 4 sur 4",
+   "retour": "#rentree-liste?st=possede",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "rentree-suivi": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Suivi de la liste",
+  "sousTitre": null,
+  "retour": "rentree",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "sauvegardes",
+  "prototype": {
+   "titre": "Suivi de la liste",
+   "sousTitre": "BLV-52089",
+   "retour": "#rentree",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "ecole": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Espace école",
+  "sousTitre": null,
+  "retour": "rentree",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": "Espace école",
+   "sousTitre": "Rentrée 2026-2027",
+   "retour": "#rentree",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "cotisation": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Cotisation",
+  "sousTitre": "Étape 1 sur 2",
+  "retour": "fiche",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "accueil",
+  "prototype": {
+   "titre": "Cotisation",
+   "sousTitre": "Étape 1 sur 2",
+   "retour": "#fiche?p=montre&st=apres",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "cotisation-partager": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Partager",
+  "sousTitre": "Étape 2 sur 2",
+  "retour": "cotisation",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "accueil",
+  "prototype": {
+   "titre": "Partager",
+   "sousTitre": "Étape 2 sur 2",
+   "retour": "#cotisation",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "cotisation-participer": {
+  "entete": "aucun",
+  "margeHaute": 0,
+  "titre": "Participer",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ },
+ "cotisation-suivre": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Ma cotisation",
+  "sousTitre": null,
+  "retour": "commandes",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Ma cotisation",
+   "sousTitre": "Les 30 ans de Junior",
+   "retour": "#commandes",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "cotisation-atteinte": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Objectif atteint",
+  "sousTitre": null,
+  "retour": "cotisation-suivre",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Objectif atteint",
+   "sousTitre": "Les 30 ans de Junior",
+   "retour": "#cotisation-suivre",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "cotisation-echue": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Cotisation terminée",
+  "sousTitre": null,
+  "retour": "cotisation-suivre",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Cotisation terminée",
+   "sousTitre": "Les 30 ans de Junior",
+   "retour": "#cotisation-suivre",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "cote": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "classesApp": [
+   "fixed"
+  ],
+  "titre": "Produit",
+  "sousTitre": null,
+  "retour": "fiche",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "accueil",
+  "prototype": {
+   "titre": "Produit",
+   "sousTitre": null,
+   "retour": "#fiche?p=camon30&st=apres",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "cote-plan": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Plan de versements",
+  "sousTitre": null,
+  "retour": "cote",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "accueil",
+  "prototype": {
+   "titre": "Plan de versements",
+   "sousTitre": "Tecno Camon 30 · 256 Go",
+   "retour": "#cote",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "cote-suivre": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Mise de côté",
+  "sousTitre": null,
+  "retour": "commandes",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Mise de côté",
+   "sousTitre": "Ventilateur sur pied 16″",
+   "retour": "#commandes",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "cote-versement": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Versement",
+  "sousTitre": null,
+  "retour": "cote-suivre",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Versement",
+   "sousTitre": null,
+   "retour": "#cote-suivre",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "cote-fini": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Mise de côté",
+  "sousTitre": null,
+  "retour": "commandes",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Mise de côté",
+   "sousTitre": "Ventilateur sur pied 16″",
+   "retour": "#commandes",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "cote-annuler": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "classesApp": [
+   "fixed"
+  ],
+  "titre": "Mise de côté",
+  "sousTitre": null,
+  "retour": "cote-suivre",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Mise de côté",
+   "sousTitre": "Ventilateur sur pied 16″",
+   "retour": "#cote-suivre",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "troc": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Reprise et troc",
+  "sousTitre": "Étape 1 sur 5",
+  "retour": "fiche",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "accueil",
+  "prototype": {
+   "titre": "Reprise et troc",
+   "sousTitre": "Étape 1 sur 5",
+   "retour": "#fiche?p=camon30&st=apres",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "troc-offre": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Offre de troc",
+  "sousTitre": "Étape 2 sur 5",
+  "retour": "troc",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "accueil",
+  "prototype": {
+   "titre": "Offre de troc",
+   "sousTitre": "Étape 2 sur 5",
+   "retour": "#troc",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "troc-depot": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Dépôt au relais",
+  "sousTitre": "Étape 3 sur 5",
+  "retour": "troc-offre",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Dépôt au relais",
+   "sousTitre": "Étape 3 sur 5",
+   "retour": "#troc-offre",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "troc-inspection": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Inspection",
+  "sousTitre": "Étape 4 sur 5",
+  "retour": "commandes",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Inspection",
+   "sousTitre": "Étape 4 sur 5",
+   "retour": "#commandes",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "troc-contre-offre": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "classesApp": [
+   "fixed"
+  ],
+  "titre": "Inspection",
+  "sousTitre": "Étape 4 sur 5",
+  "retour": "troc-inspection",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Inspection",
+   "sousTitre": "Étape 4 sur 5",
+   "retour": "#troc-inspection",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "troc-payer": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Payer le neuf",
+  "sousTitre": "Étape 5 sur 5",
+  "retour": "troc-inspection",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Payer le neuf",
+   "sousTitre": "Étape 5 sur 5",
+   "retour": "#troc-inspection",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "famille": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Panier famille",
+  "sousTitre": "Étape 1 sur 3",
+  "retour": "compte",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "calme": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Panier famille",
+   "sousTitre": "Étape 1 sur 3",
+   "retour": "#compte",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "famille-destinataire": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Pour qui ?",
+  "sousTitre": "Étape 2 sur 3",
+  "retour": "famille",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "calme": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Pour qui ?",
+   "sousTitre": "Étape 2 sur 3",
+   "retour": "#famille",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "famille-payer": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Payer par carte",
+  "sousTitre": "Étape 3 sur 3",
+  "retour": "famille-destinataire",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "calme": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Payer par carte",
+   "sousTitre": "Étape 3 sur 3",
+   "retour": "#famille-destinataire",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "famille-mensuel": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Chaque mois",
+  "sousTitre": null,
+  "retour": "famille",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "calme": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Chaque mois",
+   "sousTitre": "Panier de Maman",
+   "retour": "#famille",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "famille-preuve": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Preuve de retrait",
+  "sousTitre": null,
+  "retour": "famille-mensuel",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "calme": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Preuve de retrait",
+   "sousTitre": "Panier de Maman",
+   "retour": "#famille-mensuel",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "wa": {
+  "entete": "aucun",
+  "margeHaute": 0,
+  "titre": "WhatsApp · message",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ },
+ "wa-proposition": {
+  "entete": "aucun",
+  "margeHaute": 0,
+  "titre": "WhatsApp · proposition",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ },
+ "wa-confirmer": {
+  "entete": "aucun",
+  "margeHaute": 0,
+  "titre": "WhatsApp · confirmation",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ },
+ "wa-lien": {
+  "entete": "aucun",
+  "margeHaute": 0,
+  "titre": "WhatsApp · paiement",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ },
+ "wa-suite": {
+  "entete": "aucun",
+  "margeHaute": 0,
+  "titre": "WhatsApp · suite",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ },
+ "selection": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Sélection Premium",
+  "sousTitre": null,
+  "retour": "accueil",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "accueil",
+  "prototype": {
+   "titre": "Sélection Premium",
+   "sousTitre": null,
+   "retour": "#accueil",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "diaspora": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Diaspora",
+  "sousTitre": null,
+  "retour": "accueil",
+  "droite": "accueil",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "accueil",
+  "prototype": {
+   "titre": "Diaspora",
+   "sousTitre": null,
+   "retour": "#accueil",
+   "droite": [
+    "ibtn hd-mark → #accueil"
+   ]
+  }
+ },
+ "wallet": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Wallet BelivaY",
+  "sousTitre": null,
+  "retour": "compte",
+  "droite": "accueil",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Wallet BelivaY",
+   "sousTitre": null,
+   "retour": "#compte",
+   "droite": [
+    "ibtn hd-mark → #accueil"
+   ]
+  }
+ },
+ "devenir-vendeur": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Devenir vendeur",
+  "sousTitre": null,
+  "retour": "compte",
+  "droite": "accueil",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "compte",
+  "prototype": {
+   "titre": "Devenir vendeur",
+   "sousTitre": null,
+   "retour": "#compte",
+   "droite": [
+    "ibtn hd-mark → #accueil"
+   ]
+  }
+ },
+ "promotions": {
+  "entete": "enfant",
+  "margeHaute": 64,
+  "titre": "Promotions",
+  "sousTitre": null,
+  "retour": "accueil",
+  "droite": "panier",
+  "recherche": false,
+  "bandeau": false,
+  "barre": true,
+  "onglet": "accueil",
+  "prototype": {
+   "titre": "Promotions",
+   "sousTitre": null,
+   "retour": "#accueil",
+   "droite": [
+    "ibtn cart → #panier"
+   ]
+  }
+ },
+ "ouverture": {
+  "entete": "aucun",
+  "margeHaute": 8,
+  "titre": "Ouverture",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ },
+ "xp-pay": {
+  "entete": "enfant",
+  "margeHaute": 100,
+  "styleMain": "padding-bottom:250px",
+  "classesApp": [
+   "fixed"
+  ],
+  "titre": "Mon panier",
+  "sousTitre": null,
+  "retour": "accueil",
+  "droite": "propre",
+  "action": {
+   "balise": "a",
+   "classe": "cl07-sq",
+   "adresse": "#panier?st=partage",
+   "aria": "Partager le panier",
+   "texte": "",
+   "icone": "share-2",
+   "taille": 20
+  },
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": "Mon panier",
+   "sousTitre": null,
+   "retour": "#accueil",
+   "droite": [
+    "cl07-sq → #panier?st=partage"
+   ]
+  }
+ },
+ "lancement": {
+  "entete": "aucun",
+  "margeHaute": 8,
+  "titre": "Lancement de l’app",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ },
+ "faceid": {
+  "entete": "aucun",
+  "margeHaute": 8,
+  "titre": "Face ID ou empreinte",
+  "sousTitre": null,
+  "retour": null,
+  "droite": null,
+  "recherche": false,
+  "bandeau": false,
+  "barre": false,
+  "onglet": null,
+  "prototype": {
+   "titre": null,
+   "sousTitre": null,
+   "retour": null,
+   "droite": []
+  }
+ }
+}

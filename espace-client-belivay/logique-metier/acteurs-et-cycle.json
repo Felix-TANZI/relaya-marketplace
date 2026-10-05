@@ -1,0 +1,226 @@
+{
+ "description": "Extrait de CL-02 : Acteurs et applications, Le cycle de vie d’une commande, étape par étape.",
+ "source": "Extrait de CL-02 et CL-16 (04_Pages_HTML) par logique-metier/outils/",
+ "sections": [
+  {
+   "section": "Acteurs et applications",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Acteur",
+      "Application · documents",
+      "Ce qu’il fait pour le client",
+      "Limite"
+     ],
+     "lignes": [
+      {
+       "acteur": "Client",
+       "application_documents": "Application client (mobile d’abord, web) · CL-01 à CL-15",
+       "ce_qu_il_fait_pour_le_client": "Cherche, achète, paie, suit, retire, conteste, note",
+       "limite": "Ne voit jamais la boutique, le livreur (sauf prénom et photo en route), l’IFA"
+      },
+      {
+       "acteur": "Vendeur",
+       "application_documents": "Espace vendeur (V01–V15) · VD-01 à VD-12",
+       "ce_qu_il_fait_pour_le_client": "Publie ses offres, confirme, prépare, marque « C’est prêt », répond aux litiges",
+       "limite": "Ne voit ni l’identité, ni le quartier, ni le relais, ni le total du client"
+      },
+      {
+       "acteur": "Entreprise de livraison",
+       "application_documents": "Portail transporteur (L01)",
+       "ce_qu_il_fait_pour_le_client": "Prend les paquets de sa zone, affecte ses livreurs, respecte le plafond de valeur (75 000 F Nouveau · 250 000 F Confirmé · Or sans plafond, assurance)",
+       "limite": "BelivaY n’affecte jamais un livreur ; au moins deux partenaires par zone visés"
+      },
+      {
+       "acteur": "Livreur",
+       "application_documents": "Application livreur (L01)",
+       "ce_qu_il_fait_pour_le_client": "Collecte chez le vendeur : contrôle en 2 photos, emballe (S, M, L, C1, C2), scelle, code de remise ; remet au relais ou à domicile",
+       "limite": "Rappel masqué ; hors ligne : file d’attente horodatée"
+      },
+      {
+       "acteur": "Point relais (gérant)",
+       "application_documents": "Application point relais (P01–P12) · PR-01 à PR-11",
+       "ce_qu_il_fait_pour_le_client": "Réceptionne, range, garde, remet contre le code, photographie, constate un litige, reçoit les retours",
+       "limite": "Ne manipule jamais d’argent ; ne voit jamais le code en clair"
+      },
+      {
+       "acteur": "Console BelivaY",
+       "application_documents": "Console d’administration (chapitre 18)",
+       "ce_qu_il_fait_pour_le_client": "Arbitre, paramètre, surveille les zones, gère les partenaires, journalise",
+       "limite": "Toute décision est humaine, motivée, journalisée"
+      },
+      {
+       "acteur": "Services communs",
+       "application_documents": "Serveur (Django, PostgreSQL)",
+       "ce_qu_il_fait_pour_le_client": "Tarification, attribution, recherche, paiement, escrow, envoi des messages, scores, logistique",
+       "limite": "Seule source des montants et des états (section Services)"
+      }
+     ]
+    }
+   ],
+   "regles": [
+    "CCY-01",
+    "CCY-02"
+   ]
+  },
+  {
+   "section": "Le cycle de vie d’une commande, étape par étape",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "#",
+      "Étape",
+      "Acteur",
+      "Ce que voit le client",
+      "Écran (route · doc.)",
+      "Effet argent et événements"
+     ],
+     "lignes": [
+      {
+       "colonne": "1",
+       "etape": "Recherche et fiche",
+       "acteur": "Client",
+       "ce_que_voit_le_client": "Produit maître, prix livré de l’offre attribuée",
+       "ecran_route_doc": "recherche-resultats, fiche?p=camon30 · CL-05, CL-06",
+       "effet_argent_et_evenements": "—"
+      },
+      {
+       "colonne": "2",
+       "etape": "Ajout au panier",
+       "acteur": "Client",
+       "ce_que_voit_le_client": "Sections boutique, frais recalculés",
+       "ecran_route_doc": "panier · CL-07",
+       "effet_argent_et_evenements": "Aucune réservation de stock ; cart.updated"
+      },
+      {
+       "colonne": "3",
+       "etape": "Clic sur « Payer »",
+       "acteur": "Serveur",
+       "ce_que_voit_le_client": "« Paiement en attente » (ou « Un prix a changé »)",
+       "ecran_route_doc": "paiement-attente, prix-change · CL-08",
+       "effet_argent_et_evenements": "Recalcul, contrôle des prix, réservation du stock, commande en_attente_paiement, demande à l’agrégateur"
+      },
+      {
+       "colonne": "4",
+       "etape": "Validation Mobile Money",
+       "acteur": "Client, agrégateur",
+       "ce_que_voit_le_client": "« Commande confirmée » ; échec : « Paiement non abouti »",
+       "ecran_route_doc": "confirmee, paiement-echec · CL-08",
+       "effet_argent_et_evenements": "Webhook validé + escrow écrit ; commande payee ; sous-commandes créées ; order.paid ; push C1 (SMS si non ouvert à 10 min)"
+      },
+      {
+       "colonne": "4 bis",
+       "etape": "Commande au comptoir",
+       "acteur": "Client",
+       "ce_que_voit_le_client": "« Commande validée »",
+       "ecran_route_doc": "validee · CL-08",
+       "effet_argent_et_evenements": "Livraison payée ; validee_comptoir ; order.validated ; escrow créé au paiement sur place"
+      },
+      {
+       "colonne": "5",
+       "etape": "Confirmation vendeur",
+       "acteur": "Vendeur",
+       "ce_que_voit_le_client": "« Préparation en cours »",
+       "ecran_route_doc": "commandes, suivi?ref=BLV-52107 · CL-09",
+       "effet_argent_et_evenements": "Vendeur notifié ; le délai de préparation démarre ; rupture ⇒ vendeur suivant ou remboursement (C4)"
+      },
+      {
+       "colonne": "6",
+       "etape": "« C’est prêt »",
+       "acteur": "Vendeur",
+       "ce_que_voit_le_client": "« Prêt dans X h »",
+       "ecran_route_doc": "suivi?ref=BLV-52107 · CL-09",
+       "effet_argent_et_evenements": "suborder.ready : la collecte entre dans le paquet de la zone"
+      },
+      {
+       "colonne": "7",
+       "etape": "Prise du paquet",
+       "acteur": "Entreprise de livraison",
+       "ce_que_voit_le_client": "— (rien ne change pour le client)",
+       "ecran_route_doc": "—",
+       "effet_argent_et_evenements": "Affectation d’un livreur ; plafond de valeur vérifié"
+      },
+      {
+       "colonne": "8",
+       "etape": "Collecte",
+       "acteur": "Livreur",
+       "ce_que_voit_le_client": "« Récupéré par le livreur »",
+       "ecran_route_doc": "suivi?ref=BLV-52107 · CL-09 ; annuler?st=collectee · CL-12",
+       "effet_argent_et_evenements": "parcel.collected : contrôle (2 photos), emballage, scellé, code de remise ; annulation désormais impossible"
+      },
+      {
+       "colonne": "9",
+       "etape": "Remise au relais",
+       "acteur": "Livreur, gérant",
+       "ce_que_voit_le_client": "« Arrivé au relais », colis par colis",
+       "ecran_route_doc": "suivi?ref=BLV-52107&st=attente · CL-09 ; notifications · CL-10",
+       "effet_argent_et_evenements": "parcel.received : scan, photo de réception, étagère ; C2a (push) si colis intermédiaire"
+      },
+      {
+       "colonne": "10",
+       "etape": "Groupe complet",
+       "acteur": "Serveur",
+       "ce_que_voit_le_client": "« Retirable maintenant », code disponible",
+       "ecran_route_doc": "commandes, code?ref=BLV-52018 · CL-09 ; push, sms, lien-court, garde · CL-10",
+       "effet_argent_et_evenements": "C2 (push) + C3 (SMS avec le code) ; J0 = premier accusé fort ; décompte de garde (storage.day)"
+      },
+      {
+       "colonne": "11",
+       "etape": "Retrait",
+       "acteur": "Client, gérant",
+       "ce_que_voit_le_client": "« Colis remis »",
+       "ecran_route_doc": "comptoir?ref=BLV-52018, comptoir-payer?ref=BLV-51940 · CL-09",
+       "effet_argent_et_evenements": "Code, nombre de colis, photo de remise, montant dû payé en MoMo ; parcel.handed ; notification au client"
+      },
+      {
+       "colonne": "12",
+       "etape": "Contrôle au comptoir",
+       "acteur": "Client",
+       "ce_que_voit_le_client": "« Tout est en ordre » ou « Un problème »",
+       "ecran_route_doc": "comptoir?ref=BLV-52018&st=ok · CL-09 ; litige-comptoir · CL-11",
+       "effet_argent_et_evenements": "Tout est en ordre : return.closed ; problème : dispute.opened, escrow retenu"
+      },
+      {
+       "colonne": "13",
+       "etape": "Fenêtre de retour",
+       "acteur": "Client",
+       "ce_que_voit_le_client": "Encart « Le vendeur n’est pas encore payé »",
+       "ecran_route_doc": "commande?ref=BLV-51702 · CL-09 ; retour, litige · CL-11",
+       "effet_argent_et_evenements": "7 jours après le retrait, fermée plus tôt par « Tout est en ordre »"
+      },
+      {
+       "colonne": "14",
+       "etape": "Libération",
+       "acteur": "Serveur",
+       "ce_que_voit_le_client": "— (« ton paiement est libéré pour le vendeur » après un remplacement)",
+       "ecran_route_doc": "—",
+       "effet_argent_et_evenements": "3 jours après la fermeture (Or, Platine : 1 ; carte : 14) ; payout.friday"
+      },
+      {
+       "colonne": "15",
+       "etape": "Avis",
+       "acteur": "Client",
+       "ce_que_voit_le_client": "Deux notes : vendeur et gérant",
+       "ecran_route_doc": "avis-donner?ref=BLV-51702 · CL-13",
+       "effet_argent_et_evenements": "review.created : Trust Scores vendeur et relais"
+      }
+     ]
+    }
+   ],
+   "regles": [
+    "CCY-03",
+    "CCY-04",
+    "CCY-05",
+    "CCY-06",
+    "CCY-07",
+    "CCY-08",
+    "CCY-09",
+    "CCY-10",
+    "CCY-11",
+    "CCY-12"
+   ]
+  }
+ ]
+}

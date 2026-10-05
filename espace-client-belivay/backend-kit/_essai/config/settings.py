@@ -1,6 +1,7 @@
 # Projet d'essai du kit de reprise : PAS pour la production.
 # Reprend les réglages de relaya-marketplace utiles au kit (backend/relaya/settings/base.py, commit 9546ffe) et
 # ajoute exactement ce que REPRISE-BACKEND.md demande d'ajouter chez eux (bloc « AJOUTS DU KIT »).
+import os
 from datetime import timedelta
 from pathlib import Path
 
@@ -8,7 +9,8 @@ ESSAI = Path(__file__).resolve().parent.parent
 KIT = ESSAI.parent
 DEPOT = KIT.parent
 
-SECRET_KEY = "essai-kit-belivay-pas-un-secret-de-production-32o"
+# Clé du projet d'essai uniquement (tests locaux) ; la production fournit DJANGO_SECRET_KEY.
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "essai-local-non-secret")
 DEBUG = False
 ALLOWED_HOSTS = ["*"]
 USE_TZ = True

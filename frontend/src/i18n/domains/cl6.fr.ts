@@ -21,9 +21,7 @@ export default {
   },
 
   cl6_social_auth: {
-    facebook_coming_soon: 'Connexion Facebook bientôt disponible.',
     continue_with_apple: 'Continuer avec Apple',
-    continue_with_facebook: 'Continuer avec Facebook',
     apple_connecting: 'Connexion...',
     apple_login_failed: 'Connexion Apple impossible. Réessayez ou utilisez un autre mode de connexion.',
   },

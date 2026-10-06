@@ -64,9 +64,10 @@ INSTALLED_APPS = [
 
     # Third-party
     "rest_framework",
+    "rest_framework_simplejwt.token_blacklist",
     "drf_spectacular",
     "corsheaders",
-    "django_filters", 
+    "django_filters",
 
     # Local apps
     "apps.common",
@@ -79,6 +80,16 @@ INSTALLED_APPS = [
     "apps.contact",
     # Module détachable : voir apps/whatsapp_assistant/README.md (activation, retrait).
     "apps.whatsapp_assistant",
+
+    # Espace client (kit espace-client-belivay/backend-kit, socle uniquement pour
+    # l'instant : client_core/otp/client_accounts/notifications_client — voir
+    # espace-client-belivay/backend-kit/REPRISE-BACKEND.md §5 pour le reste du
+    # rollout. wallet volontairement exclu (en attente de confirmation CEO : le
+    # référentiel verrouillé interdit tout solde/jeton stocké côté client).
+    "apps.client_core",
+    "apps.otp",
+    "apps.client_accounts",
+    "apps.notifications_client",
 ]
 
 MIDDLEWARE = [
@@ -258,7 +269,16 @@ CORS_ALLOWED_ORIGINS = [
     ]
     if origin
 ]
+# Origines supplémentaires pour le site espace-client-belivay (déployé à part,
+# voir espace-client-belivay/site/README.md) une fois son domaine connu.
+CORS_ALLOWED_ORIGINS += [
+    origin for origin in os.getenv("CORS_EXTRA_ORIGINS", "").split(",") if origin
+]
 CORS_ALLOW_CREDENTIALS = True
+
+from corsheaders.defaults import default_headers as _cors_default_headers
+CORS_ALLOW_HEADERS = (*_cors_default_headers, "idempotency-key", "x-device-id")
+CORS_EXPOSE_HEADERS = ["Retry-After", "Idempotent-Replayed"]
 
 # DRF Settings
 REST_FRAMEWORK = {
@@ -284,6 +304,9 @@ REST_FRAMEWORK = {
         "user": "2000/min",   # généreux pour les utilisateurs connectés
         "login": "5/min",     # strict : anti-brute-force sur /auth/login
         "payments_webhook": "120/min", # strict : anti-spam sur les webhooks de paiement
+        # Espace client (apps/otp) : limite d'infra en plus du contrôle métier
+        # OTP-ESSAIS/OTP-RENVOI déjà géré par ParametreMetier ; évite l'abus SMS.
+        "otp": "10/min",
     },
 }
 
@@ -305,16 +328,30 @@ SPECTACULAR_SETTINGS = {
         {"name": "Analytics", "description": "KPI, dashboards, exports"},
         {"name": "AI", "description": "Fonctionnalités IA et alertes"},
     ],
+    # Évite que les routes du kit espace-client-belivay (contrat déjà documenté
+    # par son propre openapi.yaml) polluent le schéma Relaya existant.
+    "PREPROCESSING_HOOKS": ["apps.client_core.schema.sans_routes_du_kit"],
 }
 
 # JWT Settings
+# ── Espace client (kit espace-client-belivay, socle) ─────────────────────────
+# Voir espace-client-belivay/backend-kit/REPRISE-BACKEND.md §3.2. Prestataires
+# SMS/push en mode "console" (ils journalisent sans envoyer) tant que les vrais
+# comptes SMS/VAPID ne sont pas branchés — décision D-à-finir, pas bloquant
+# pour valider le socle en local.
+BELIVAY_PARAMETRES_JSON = BASE_DIR / "apps" / "client_core" / "donnees" / "parametres-en-vigueur.json"
+BELIVAY_INTERRUPTEURS_JSON = BASE_DIR / "apps" / "client_core" / "donnees" / "interrupteurs.json"
+BELIVAY_SITE_URL = os.getenv("BELIVAY_SITE_URL", "https://belivay.com")
+BELIVAY_SMS = "apps.otp.prestataires.SmsConsole"
+BELIVAY_PUSH = "apps.notifications_client.prestataires.PushConsole"
+
 from datetime import timedelta
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "ROTATE_REFRESH_TOKENS": True,
-    "BLACKLIST_AFTER_ROTATION": False,
+    "BLACKLIST_AFTER_ROTATION": True,
     "ALGORITHM": "HS256",
     "SIGNING_KEY": SECRET_KEY,
     "AUTH_HEADER_TYPES": ("Bearer",),

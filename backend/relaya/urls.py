@@ -41,6 +41,10 @@ urlpatterns = [
 
     path('api/boutique/<slug:slug>/', vendors_views.public_shop, name='public-shop'),
 
+    # Espace client (kit espace-client-belivay/backend-kit) : une seule ligne,
+    # le module lui-même n'inclut que les sous-apps réellement installées.
+    path("api/", include("apps.client_core.urls_api")),
+
     # OpenAPI / Swagger
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),

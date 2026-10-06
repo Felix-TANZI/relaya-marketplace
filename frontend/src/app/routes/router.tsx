@@ -45,6 +45,7 @@ const SearchPage = lazy(() => import('@/features/search/SearchPage'));
 const ContactPage = lazy(() => import('@/features/contact/ContactPage'));
 const HelpPage = lazy(() => import('@/features/help/HelpPage'));
 const AboutPage = lazy(() => import('@/features/about/AboutPage'));
+const PrivacyPage = lazy(() => import('@/features/legal/PrivacyPage'));
 const BecomeSellerPage = lazy(() => import('@/features/vendors/BecomeSellerPage'));
 const NotFoundPage = lazy(() => import('@/features/system/NotFoundPage'));
 const PromotionsPage = lazy(() => import('@/features/promotions/PromotionsPage'));
@@ -265,6 +266,7 @@ export const router = createBrowserRouter([
       { path: 'contact',         element: <ContactPage /> },
       { path: 'help',            element: <HelpPage /> },
       { path: 'about',           element: <AboutPage /> },
+      { path: 'privacy',         element: <PrivacyPage /> },
       { path: 'become-seller',   element: <BecomeSellerPage /> },
       { path: 'vendeur/connexion',              element: <VendorConnexionPage /> },
       { path: 'vendeur/ouvrir-boutique',        element: <VendorOuvrirBoutiquePage /> },

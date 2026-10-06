@@ -28,6 +28,7 @@ type GoogleMapsNamespace = {
   };
   event: {
     addListener: (target: unknown, eventName: string, handler: (event: GoogleMapMouseEvent) => void) => void;
+    addListenerOnce: (target: unknown, eventName: string, handler: (event: GoogleMapMouseEvent) => void) => void;
   };
 };
 

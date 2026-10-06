@@ -1,6 +1,16 @@
 # backend/apps/client_core/tests/test_webhooks.py
 # Webhooks d'argent de relaya → applications du kit (apps.client_core.webhooks.confirmer_paiement_externe).
+#
+# Ce test exerce le parcours panier → paiement → webhook, donc dépend de apps.cart/
+# apps.pickup/apps.wallet. Lors d'une installation partielle du kit (rollout par
+# phases, voir backend-kit/REPRISE-BACKEND.md §5), ces apps peuvent être absentes :
+# le module se saute alors proprement plutôt que de faire planter toute la collecte
+# pytest (ModuleNotFoundError non récupérable autrement).
 import pytest
+
+pytest.importorskip("apps.cart")
+pytest.importorskip("apps.pickup")
+pytest.importorskip("apps.wallet")
 
 from apps.cart import services as cart_services
 from apps.cart.models import FicheLogistique

@@ -1,0 +1,234 @@
+/* Ce que le site ajoute à la feuille du prototype (prototype.css), sans rien redessiner.
+   --sb : hauteur de la barre d'état du téléphone. Le prototype la dessine sur 50 px ; le site prend la
+   zone sûre réelle (CNV-05 : viewport-fit=cover et env(safe-area-inset-top)). Les tests de comparaison
+   avec le prototype la fixent à 50 px. */
+#app{--sb:env(safe-area-inset-top,0px)}
+
+/* Champs à saisir (DP-52, « Modifier mon profil ») : le champ .inp du prototype, avec un vrai input dedans. */
+.inp input{flex:1;min-width:0;border:0;padding:0;margin:0;background:transparent;font:inherit;word-spacing:inherit;letter-spacing:inherit;color:inherit;outline:none}
+.inp input::placeholder{color:var(--ink-4)}
+.inp:focus-within{border-color:var(--braise-1);box-shadow:0 0 0 4px rgba(201,80,14,.12)}
+html[data-theme=dark] .inp:focus-within{box-shadow:0 0 0 4px rgba(255,154,85,.16)}
+.inp.err:focus-within{border-color:var(--red);box-shadow:0 0 0 4px rgba(180,35,24,.10)}
+/* Code à 6 chiffres saisi au clavier : un input invisible posé sur les six cases du prototype (.otp). */
+.otp-saisie{position:relative}
+.otp-saisie input{position:absolute;inset:0;width:100%;height:100%;opacity:0;font-size:16px;border:0;caret-color:transparent}
+/* Photo de profil : grand portrait et pastille appareil photo. */
+.pf-photo{display:flex;flex-direction:column;align-items:center;gap:10px;margin:6px 0 18px}
+.pf-photo .cadre{position:relative;width:104px;height:104px;border:0;padding:0;background:none;cursor:pointer}
+.pf-photo .portrait{width:104px;height:104px;box-shadow:0 0 0 3px var(--card),0 10px 24px -12px rgba(0,0,0,.45)}
+.pf-photo .appareil{position:absolute;right:0;bottom:2px;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(180deg,var(--braise-1,#C9500E),var(--braise-2,#B0430A));box-shadow:0 0 0 3px var(--card)}
+.pf-ligne .ls{display:flex;align-items:center;gap:6px}
+.inp textarea{display:block;flex:1;min-width:0;border:0;padding:0;margin:0;background:transparent;font:inherit;word-spacing:inherit;letter-spacing:inherit;line-height:inherit;color:inherit;outline:none;resize:none}
+.inp textarea::placeholder{color:var(--ink-4)}
+/* Montant du portefeuille saisi au clavier : le grand montant du prototype (.wl-big), vrai champ. */
+.wl-big input{display:block;width:100%;border:0;padding:0;margin:0;background:transparent;font:inherit;word-spacing:inherit;letter-spacing:inherit;color:inherit;text-align:inherit;outline:none}
+/* Champ éditable posé comme un texte du prototype (zone d'écriture d'une conversation) : la consigne s'affiche
+   tant qu'il est vide. */
+.inp [contenteditable]{outline:none;min-width:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.inp [contenteditable]:empty::before{content:attr(data-ph);color:inherit}
+.ax-srch [contenteditable]{outline:none;min-width:0}.ax-srch [contenteditable]:empty::before{content:attr(data-ph);color:inherit}
+/* DP-54 : carte mise en avant (sections importantes seulement, 3 au plus par écran) : léger dégradé orange en
+   haut, bordure orange douce. Clair et sombre suivent les jetons --or-soft et --or-line. */
+.card.vedette{background:linear-gradient(180deg,var(--or-soft) 0,var(--card) 72px);border:1px solid var(--or-line)}
+.card.vedette .kick{color:var(--or-deep)}
+/* DP-54 : taille du texte fine (85 à 140 %) : remplace le zoom fixe des familles grande et très grande. */
+html[data-echelle] main > *,html[data-echelle][data-text] main > *{zoom:var(--zoom)}
+/* Animations réduites (réglage de l'application, en plus du réglage du téléphone). */
+html[data-anim=reduites] *,html[data-anim=reduites] *::before,html[data-anim=reduites] *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+/* Barre de taille du texte (Réglages). */
+.taille-barre{flex:1;min-width:0;accent-color:var(--or);height:28px;cursor:pointer}
+.taille-graduation{display:flex;justify-content:space-between;padding:0 30px 0 22px;margin-top:2px}
+.taille-graduation i{width:4px;height:4px;border-radius:50%;background:var(--line-2)}
+.taille-graduation i.ref{background:var(--ink-4)}
+.taille-graduation i.on{background:var(--or);transform:scale(1.6)}
+/* Panier (DP-54) : quantité, petites cartes qui défilent (suggestions, favoris). */
+.qte{display:inline-flex;align-items:center;border:1px solid var(--line-2);border-radius:999px;overflow:hidden}
+.qte button{width:34px;height:32px;border:0;background:transparent;font:inherit;font-size:18px;font-weight:800;color:var(--ink);cursor:pointer}
+.qte button:disabled{color:var(--ink-4);cursor:default}
+.qte span{min-width:24px;text-align:center;font-weight:800}
+.defile{display:flex;gap:10px;overflow-x:auto;padding:4px 0 8px;scrollbar-width:none}
+.defile .mini{flex:0 0 132px;display:flex;flex-direction:column;gap:4px;padding:8px}
+.defile .mini .btn{margin-top:auto}
+/* Panier (photo du porteur) : stock, actions de ligne, paramètres, autres vendeurs. */
+.pan-st{display:flex;align-items:center;gap:8px;margin-top:8px}
+.pan-st .jauge{flex:1;height:4px;border-radius:4px;background:var(--line);overflow:hidden;display:block}
+.pan-st .jauge b{display:block;height:100%;background:var(--green)}
+.pan-act{display:flex;gap:16px;margin-top:8px;font-size:13px;font-weight:700}
+.pan-act a{color:var(--or-txt);display:inline-flex;align-items:center;gap:4px}
+.pan-opt{margin-top:10px}
+.pan-opt .kick{margin-bottom:4px}
+.chip.off{opacity:.55;border-style:dashed}
+.pan-vd{margin-top:8px}
+.pan-vd .mini{flex-basis:150px}
+/* Fiche produit (photo du porteur, DP-54). */
+.fp-gal{display:flex;gap:10px;padding:10px}
+.fp-th{display:flex;flex-direction:column;gap:8px;width:58px;flex-shrink:0}
+.fp-th button{width:58px;height:58px;padding:0;border-radius:12px;overflow:hidden;border:1.5px solid var(--line-2);background:var(--sand-2,var(--card));cursor:pointer}
+.fp-th button.on{border-color:var(--or)}
+.fp-main{position:relative;flex:1;min-height:250px;border-radius:16px;overflow:hidden;background:var(--sand-2,var(--card));display:block}
+.fp-main svg{width:100%;height:100%}
+.fp-cert{position:absolute;top:10px;right:10px}
+.fp-zoom{position:absolute;right:10px;bottom:10px;width:34px;height:34px;border-radius:50%;background:var(--card);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card)}
+.fp-ar{font-size:12.5px;color:var(--ink-3);margin:12px 2px 6px}
+.fp-ar a{color:inherit}
+.fp-bdg{display:flex;flex-wrap:wrap;gap:6px}
+.fp-t{font-size:22px;font-weight:800;line-height:1.25;margin:10px 0 6px;color:var(--ink)}
+.fp-p{font-size:28px;font-weight:800;color:var(--or-txt)}
+.fp-note{display:flex;align-items:center;gap:8px;margin-top:8px;color:var(--ink)}
+.fp-opt{margin-top:14px}
+.fp-opt .chip.off{opacity:.55;border-style:dashed}
+.fp-km{margin-top:10px;padding-top:10px;border-top:1px solid var(--line);color:var(--green);display:flex;align-items:center;gap:4px}
+.fp-qte{display:flex;align-items:center;gap:12px}
+.fp-sub{color:var(--or-txt);font-size:15px}
+.fp-av.on{border:1.5px solid var(--or)}
+.fp-gar{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
+.fp-gar .card{margin:0;padding:12px}
+.fp-tabs{display:flex;gap:18px;border-bottom:1px solid var(--line);margin-top:16px}
+.fp-tabs button{background:none;border:0;font:inherit;font-weight:700;color:var(--ink-3);padding:10px 0;cursor:pointer;border-bottom:2px solid transparent}
+.fp-tabs button.on{color:var(--or-txt);border-bottom-color:var(--or)}
+.fp-tab{padding:12px 0}
+.fp-bar{position:absolute;left:0;right:0;bottom:0;z-index:30;display:flex;gap:10px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:var(--card);border-top:1px solid var(--line);box-shadow:var(--shadow-pop)}
+.fp-bar .btn{flex:1;margin:0}
+.fp-fav{width:48px;height:48px;border-radius:14px;border:1.5px solid var(--line-2);background:var(--card);color:var(--or);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.fp-fav.on{border-color:var(--or)}
+#app:has(.fp-bar) nav.dock{display:none}
+
+/* Données économes (DP-54) : l'image attend le toucher. */
+.dessin-eco{display:flex;width:100%;height:100%;min-height:24px;align-items:center;justify-content:center;background:var(--sand-2,var(--line));cursor:pointer}
+.dessin-eco::after{content:"";width:22px;height:22px;opacity:.5;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Ccircle cx='9' cy='9' r='2'/%3E%3Cpath d='m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Ccircle cx='9' cy='9' r='2'/%3E%3Cpath d='m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21'/%3E%3C/svg%3E") center/contain no-repeat}
+
+/* Panier : « Ajouter de cette boutique » montre 3 produits côte à côte (DP-54). */
+.cl07-mc{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.cl07-mc>div{padding:6px}
+.cl07-mc .ph{height:72px}
+.cl07-mc .t{font-size:12px;min-height:46px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.cl07-mc .p{font-size:13.5px}
+.cl07-mc .btn{height:34px;font-size:12px;padding:0 4px}
+html[data-text=grande] .cl07-mc{grid-template-columns:repeat(2,minmax(0,1fr))}
+html[data-text=tres] .cl07-mc{grid-template-columns:1fr}
+
+/* Recherche : la ligne marque · note · vendeur laisse la place à « En stock » (DP-54). */
+.cl05-row .tt+.xs{padding-right:70px}
+
+/* Profil : rognage de la photo dans un cercle (demande du porteur, 4 oct. 2026). */
+.pf-rog{position:relative;width:100%;max-width:300px;aspect-ratio:1;margin:14px auto 0;overflow:hidden;border-radius:16px;background:#14100c;touch-action:none;user-select:none;outline:none}
+.pf-rog:focus-visible{box-shadow:0 0 0 3px var(--or-txt,var(--braise-1))}
+.pf-rog img{position:absolute;left:50%;top:50%;max-width:none;transform-origin:center;pointer-events:none}
+.pf-rog-masque{position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 999px rgba(0,0,0,.55);border:2px solid rgba(255,255,255,.85);pointer-events:none}
+.pf-rog-zoom{display:flex;align-items:center;gap:6px;max-width:300px;margin:8px auto 0}
+.pf-rog-zoom input{flex:1;accent-color:var(--braise-1)}
+.pf-rog-act{display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap}
+.pf-rog-act .btn{width:auto;flex:1 1 0;min-width:130px}
+
+/* Accessibilité (passage professionnel) : un anneau de focus visible au clavier sur tout ce qui se touche, aux
+   couleurs du site ; les champs gardent le leur (.inp:focus-within). Rien ne change au doigt ni à la souris. */
+:where(a,button,summary,[role=button],[role=switch],[role=tab],[role=option],[role=link],[tabindex]:not([tabindex="-1"])):focus-visible{outline:2px solid var(--or-txt);outline-offset:2px}
+
+/* DP-54 diaspora : choix segmentés à texte long (relais du proche, qui paie, façon de relier) ; choix impossible estompé. */
+.seg.dia-seg a{white-space:normal;text-align:center;height:auto;min-height:40px;padding:4px 6px;line-height:1.2}
+.seg a.off{opacity:.45}
+/* DP-54 devise d'affichage d'un compte diaspora : un prix écrit en deux monnaies peut passer à la ligne. */
+html[data-devise] .cl07-op{white-space:normal;font-size:16px;text-align:right}
+
+/* Mettre sa liste en statut (DP-54, CL-14/ListeStatut) : l'aperçu vertical de l'image 1080 × 1920. */
+.blv-statut canvas{display:block;width:100%;max-width:300px;height:auto;aspect-ratio:9/16;margin:0 auto;border-radius:18px;box-shadow:0 10px 30px rgba(28,25,23,.16);background:var(--sand-2)}
+/* Ouverture : entrée diaspora, sous les deux boutons (consigne du porteur). */
+.op-sc .op-dia{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:10px;min-height:36px;padding:0 14px;border-radius:999px;font-size:13px;font-weight:700;color:#fff;background:rgba(255,255,255,.1);border:1px solid rgba(255,214,170,.4);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.op-sc .op-dia span{text-align:center}
+/* Connexion : ligne « Tu vis à l'étranger ? » visible mais discrète (consigne du porteur). */
+.cl03-dia{gap:10px;padding:10px 12px;border:1px solid var(--or-line,rgba(232,93,36,.3));background:var(--or-soft,#FFF1E8)}
+.cl03-dia b{display:block;font-size:14px;font-weight:800;color:var(--ink)}
+.cl03-dia small{display:block;margin-top:1px;font-size:12px;line-height:1.3;color:var(--ink-3)}
+.cl03-dia-ic{width:32px;height:32px;flex:0 0 32px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(135deg,var(--braise-1),var(--or))}
+/* « Pour qui ? » d'un compte diaspora (composants/PourQui.tsx) : une ligne discrète, jamais une carte. */
+.lien-pq{display:inline-flex;align-items:center;gap:4px;background:none;border:0;padding:0;font:inherit;font-weight:700;color:var(--or);cursor:pointer;text-decoration:none}
+.lien-pq .c3{color:var(--ink-3);font-weight:500}
+.pq-ligne{display:flex;align-items:center;gap:8px;width:100%;margin-top:10px;padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);font:inherit;font-size:13px;color:var(--ink);text-align:left;cursor:pointer;text-decoration:none}
+.pq-ligne .grow{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pq-ligne .c3{color:var(--ink-3)}
+
+/* ---------- Carrousel de l'accueil : photo déposée (public/images/carrousel/<nom>.webp|jpg) ----------
+   Posée sur le dessin, invisible tant qu'elle n'est pas chargée (fichier absent : rien ne change), puis en fondu.
+   Recadrage automatique, sujet à droite ; voile sombre en bas à gauche pour lire le titre. */
+.h0-band .im .h0-ph{position:absolute;inset:0;opacity:0;transition:opacity .45s ease}
+.h0-band .im .h0-ph.on{opacity:1}
+.h0-band .im .h0-ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 50%;display:block}
+.h0-band .im .h0-ph::after{content:"";position:absolute;inset:0;background:radial-gradient(130% 120% at 0% 100%,rgba(16,14,20,.78) 0%,rgba(16,14,20,.42) 42%,rgba(16,14,20,0) 72%)}
+html[data-anim=reduites] .h0-band .im .h0-ph{transition:none}
+@media (prefers-reduced-motion:reduce){.h0-band .im .h0-ph{transition:none}}
+
+/* ---------- Ligne glissée (composants/Glisser.tsx ; panier) ---------- */
+.gl{position:relative;border-radius:14px;touch-action:pan-y}
+.gl-av{position:relative;z-index:1;background:var(--card);border-radius:14px;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.gl-av img{-webkit-user-drag:none}
+.gl.gl-retour .gl-av{transition:transform .42s cubic-bezier(.2,1.5,.4,1)}
+.gl.gl-part .gl-av{transition:transform .2s cubic-bezier(.4,0,1,1)}
+.gl-fond{position:absolute;inset:0;display:flex;align-items:center;gap:8px;padding:0 18px;border-radius:14px;color:#fff;font-size:13.5px;font-weight:800;opacity:0;transition:opacity .12s}
+.gl-fond.vu{opacity:1}
+.gl-fond svg{transition:transform .18s cubic-bezier(.2,1.6,.4,1)}
+.gl-fond.arme svg{transform:scale(1.25)}
+.gl-g{justify-content:flex-start}
+.gl-d{justify-content:flex-end}
+.gl-fond.rouge{background:linear-gradient(90deg,#E5484D,#B42318)}
+.gl-fond.rouge.gl-g{background:linear-gradient(270deg,#E5484D,#B42318)}
+.gl-fond.marque{background:linear-gradient(90deg,var(--braise-1),#F7A04A)}
+.gl-fond:not(.arme){filter:saturate(.75) brightness(.96)}
+.pan-gl{margin:-6px -8px}
+.pan-gl .gl-av{padding:6px 8px}
+html[data-anim=reduites] .gl .gl-av,html[data-anim=reduites] .gl-fond svg{transition:none!important}
+@media (prefers-reduced-motion:reduce){.gl .gl-av,.gl-fond svg{transition:none!important}}
+
+/* ---------- Bannière vendeur en relief (composants/BanniereVendeur.tsx) ----------
+   Au niveau de la carte orange du compte : dégradé, reflet, liseré, ombre portée et socle ; boutique dessinée en
+   volume ; inclinaison au survol (souris), appui qui s'enfonce (doigt). « ouverte » : la boutique du client. */
+#app .vd-ban.vd3{position:relative;overflow:hidden;isolation:isolate;padding:16px 14px 16px 12px;border-radius:24px;color:#fff;
+  background:radial-gradient(120% 95% at 100% 0%,rgba(94,234,212,.55) 0%,rgba(94,234,212,0) 55%),linear-gradient(140deg,#1BAA98 0%,#0F766E 52%,#0A5650 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.38),inset 0 -2px 0 rgba(0,0,0,.18),0 4px 0 #0A4F49,0 20px 34px -20px rgba(10,86,80,.95);
+  transform:perspective(900px) translateZ(0);transition:transform .28s cubic-bezier(.2,.9,.3,1.2),box-shadow .28s}
+#app .vd-ban.vd3::before{content:"";position:absolute;z-index:-1;left:-20%;right:-20%;top:-60%;height:110%;border-radius:50%;background:linear-gradient(180deg,rgba(255,255,255,.26),rgba(255,255,255,0) 70%);pointer-events:none}
+#app .vd-ban.vd3::after{content:"";position:absolute;z-index:-1;width:200px;height:200px;right:-70px;bottom:-120px;border-radius:50%;border:1.5px solid rgba(255,255,255,.18);box-shadow:0 0 0 26px rgba(255,255,255,.05);pointer-events:none}
+#app .vd-ban.vd3 .i{width:58px;height:58px;border-radius:18px;background:linear-gradient(160deg,rgba(255,255,255,.3),rgba(255,255,255,.08));box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 8px 16px -8px rgba(0,0,0,.45)}
+#app .vd-ban.vd3 .vd3-svg{width:50px;height:50px;filter:drop-shadow(0 3px 3px rgba(0,0,0,.22));transform:translateY(-1px)}
+#app .vd-ban.vd3 b{font-size:15.5px;text-shadow:0 1px 0 rgba(0,0,0,.18)}
+#app .vd-ban.vd3 .go{background:linear-gradient(180deg,#fff,#E9F6F3);color:#0B5E57;box-shadow:0 2px 0 rgba(0,0,0,.16),0 6px 12px -6px rgba(0,0,0,.4)}
+#app .vd-ban.vd3.ouverte{background:radial-gradient(120% 95% at 100% 0%,rgba(255,210,122,.5) 0%,rgba(255,210,122,0) 52%),linear-gradient(140deg,#17A394 0%,#0E6E67 50%,#0B4F4A 100%)}
+#app .vd-ban.vd3.ouverte .go{color:#8A4B06;background:linear-gradient(180deg,#FFF6E2,#FFE2A8)}
+@media (hover:hover) and (pointer:fine){
+  #app .vd-ban.vd3:hover{transform:perspective(900px) rotateX(3deg) rotateY(-4deg) translateY(-3px);box-shadow:inset 0 1px 0 rgba(255,255,255,.42),inset 0 -2px 0 rgba(0,0,0,.18),0 6px 0 #0A4F49,0 30px 40px -22px rgba(10,86,80,.95)}
+  #app .vd-ban.vd3:hover .vd3-svg{transform:translateY(-3px) scale(1.04);transition:transform .3s cubic-bezier(.2,1.4,.4,1)}
+}
+#app .vd-ban.vd3:active{transform:perspective(900px) translateY(3px) scale(.99);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),inset 0 -1px 0 rgba(0,0,0,.18),0 1px 0 #0A4F49,0 8px 16px -12px rgba(10,86,80,.9);transition-duration:.08s}
+html[data-theme=dark] #app .vd-ban.vd3{background:radial-gradient(120% 95% at 100% 0%,rgba(45,212,191,.32) 0%,rgba(45,212,191,0) 55%),linear-gradient(140deg,#138A7D 0%,#0C5F59 52%,#083F3B 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -2px 0 rgba(0,0,0,.3),0 4px 0 #052E2B,0 20px 34px -18px rgba(0,0,0,.85)}
+html[data-theme=dark] #app .vd-ban.vd3.ouverte{background:radial-gradient(120% 95% at 100% 0%,rgba(255,200,100,.28) 0%,rgba(255,200,100,0) 52%),linear-gradient(140deg,#138A7D 0%,#0C5F59 52%,#083F3B 100%)}
+html[data-anim=reduites] #app .vd-ban.vd3,html[data-anim=reduites] #app .vd-ban.vd3 .vd3-svg{transition:none;transform:none}
+@media (prefers-reduced-motion:reduce){#app .vd-ban.vd3,#app .vd-ban.vd3 .vd3-svg{transition:none!important;transform:none!important}}
+
+/* ---------- Réseaux sociaux et coordonnées officielles (composants/Reseaux.tsx) ---------- */
+.rs-liens{display:flex;flex-wrap:wrap;gap:10px;list-style:none;margin:0;padding:0}
+.pied .rs-liens{display:flex;gap:10px;margin-top:10px}
+.rs-liens a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;color:var(--ink);background:var(--card-2,var(--card));box-shadow:inset 0 0 0 1px var(--line-2);transition:transform .15s,color .15s,background .15s}
+.rs-liens a:hover,.rs-liens a:focus-visible{color:#fff;transform:translateY(-1px)}
+.rs-liens a.rs-facebook:hover,.rs-liens a.rs-facebook:focus-visible{background:#1877F2}
+.rs-liens a.rs-instagram:hover,.rs-liens a.rs-instagram:focus-visible{background:radial-gradient(circle at 30% 107%,#fdf497 0%,#fd5949 45%,#d6249f 60%,#285AEB 90%)}
+.rs-liens a.rs-tiktok:hover,.rs-liens a.rs-tiktok:focus-visible{background:#111}
+.rs-liens.rs-petit a{width:32px;height:32px;border-radius:10px}
+.rs-liens.rs-petit svg{width:16px;height:16px}
+.rs-contacts ul{list-style:none;margin:0;padding:0;display:grid;gap:9px;font-size:14px}
+.rs-contacts li{display:flex;align-items:center;gap:9px;color:var(--ink-2)}
+.rs-contacts li svg{color:var(--or-txt);flex-shrink:0}
+.rs-contacts a{color:var(--ink);font-weight:700;text-decoration:none}
+.rs-wa{display:inline-flex;align-items:center;gap:8px;margin-top:12px;padding:10px 16px;border-radius:999px;background:#25D366;color:#073B1E!important;font-size:14px;font-weight:800;text-decoration:none;box-shadow:0 8px 16px -10px rgba(37,211,102,.9)}
+.rs-wa:hover{filter:brightness(1.05)}
+.rs-carte{padding:16px}
+.rs-accroche{margin:0 0 12px;font-weight:800;font-size:15px;color:var(--ink)}
+.rs-suivre{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.mn-suivre{padding:16px;display:grid;gap:16px}
+.pied .pp-accroche{font-weight:800;color:var(--ink-2)!important}
+.pied .pp-suivre{margin-top:18px!important}
+.pied .rs-contacts{margin-top:14px}
+.pied .rs-contacts ul{font-size:13.5px}
+/* Bannière d'univers (Catégories) : photo déposée posée en fondu sur l'illustration, fondue vers la gauche par le masque. */
+.cl04-ban2 .im .h0-ph{position:absolute;inset:0;opacity:0;transition:opacity .45s ease}
+.cl04-ban2 .im .h0-ph.on{opacity:1}
+.cl04-ban2 .im .h0-ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:62% 45%;display:block}

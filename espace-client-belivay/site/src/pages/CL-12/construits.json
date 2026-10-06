@@ -1,0 +1,23 @@
+{
+ "routes": [
+  "modifier",
+  "annuler",
+  "annuler-confirmer",
+  "changer-relais",
+  "changer-adresse",
+  "payeur",
+  "payeur-preuve",
+  "diaspora"
+ ],
+ "exclus": {},
+ "repris": {
+  "modifier": "DP-54 : repris pour l'usage réel (annulation par boutique avec frais recalculés, changement de relais ou d'adresse, transfert, panier payé depuis l'étranger et preuve de retrait, en données).",
+  "annuler": "DP-54 : repris pour l'usage réel (annulation par boutique avec frais recalculés, changement de relais ou d'adresse, transfert, panier payé depuis l'étranger et preuve de retrait, en données).",
+  "annuler-confirmer": "DP-54 : repris pour l'usage réel (annulation par boutique avec frais recalculés, changement de relais ou d'adresse, transfert, panier payé depuis l'étranger et preuve de retrait, en données).",
+  "changer-relais": "DP-54 : repris pour l'usage réel (annulation par boutique avec frais recalculés, changement de relais ou d'adresse, transfert, panier payé depuis l'étranger et preuve de retrait, en données).",
+  "changer-adresse": "DP-54 : repris pour l'usage réel (annulation par boutique avec frais recalculés, changement de relais ou d'adresse, transfert, panier payé depuis l'étranger et preuve de retrait, en données).",
+  "payeur": "DP-54 : repris pour l'usage réel (annulation par boutique avec frais recalculés, changement de relais ou d'adresse, transfert, panier payé depuis l'étranger et preuve de retrait, en données).",
+  "payeur-preuve": "DP-54 : repris pour l'usage réel (annulation par boutique avec frais recalculés, changement de relais ou d'adresse, transfert, panier payé depuis l'étranger et preuve de retrait, en données).",
+  "diaspora": "DP-54 : repris pour l'usage réel (annulation par boutique avec frais recalculés, changement de relais ou d'adresse, transfert, panier payé depuis l'étranger et preuve de retrait, en données)."
+ }
+}

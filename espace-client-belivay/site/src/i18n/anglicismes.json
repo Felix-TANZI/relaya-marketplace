@@ -1,0 +1,66 @@
+[
+ [
+  "\\bTous les Flash Deals\\b",
+  "Toutes les ventes flash"
+ ],
+ [
+  "\\bFlash Deals\\b",
+  "Ventes flash"
+ ],
+ [
+  "\\bMon Wallet\\b",
+  "Mon portefeuille"
+ ],
+ [
+  "\\bWallet BelivaY\\b",
+  "Portefeuille BelivaY"
+ ],
+ [
+  "\\bWallet\\b",
+  "Portefeuille"
+ ],
+ [
+  "Sauvegardés et favoris",
+  "Favoris"
+ ],
+ [
+  "favoris et des sauvegardés du panier",
+  "favoris du panier"
+ ],
+ [
+  "Rien de sauvegardé pour l’instant",
+  "Aucun favori pour l’instant"
+ ],
+ [
+  "depuis ta sauvegarde",
+  "depuis ton ajout aux favoris"
+ ],
+ [
+  "articles sauvegardés",
+  "articles en favoris"
+ ],
+ [
+  "article sauvegardé(?![a-zàâäçéèêëîïôöùûü])",
+  "article en favori"
+ ],
+ [
+  "Sauvegarder pour plus tard",
+  "Mettre en favori pour plus tard"
+ ],
+ [
+  "\\bSauvegarder(?![a-zàâäçéèêëîïôöùûü])",
+  "Mettre en favori"
+ ],
+ [
+  "\\bsauvegardé(?![a-zàâäçéèêëîïôöùûü])",
+  "mis en favori"
+ ],
+ [
+  "\\bSauvegardés(?![a-zàâäçéèêëîïôöùûü])",
+  "Favoris"
+ ],
+ [
+  "\\bsauvegardés(?![a-zàâäçéèêëîïôöùûü])",
+  "favoris"
+ ]
+]

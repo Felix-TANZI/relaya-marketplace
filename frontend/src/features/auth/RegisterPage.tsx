@@ -5,12 +5,13 @@ import { User, Lock, Mail, Eye, EyeOff, CheckCircle, ArrowRight } from 'lucide-r
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import GoogleAuthButton from '@/components/auth/GoogleAuthButton';
+import AppleAuthButton, { type AppleCredential } from '@/components/auth/AppleAuthButton';
 import { PhoneInput } from '@/components/ui/PhoneInput';
 
 export default function RegisterPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { register, googleLogin } = useAuth();
+  const { register, googleLogin, appleLogin } = useAuth();
   const { showToast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -103,6 +104,28 @@ export default function RegisterPage() {
       navigate('/');
     } catch (error) {
       showToast(error instanceof Error ? error.message : t('cl1_register.google_register_unavailable'), 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Meme parcours que handleGoogleRegister : appleLogin cree le compte au
+  // premier passage, d'ou la reutilisation du meme enchainement 2FA/redirection.
+  const handleAppleRegister = async (credential: AppleCredential) => {
+    setLoading(true);
+    try {
+      const result = await appleLogin(credential);
+      if (result.twoFactorRequired) {
+        showToast(`Un code de verification a ete envoye a ${result.email}`, 'success');
+        navigate('/login', {
+          state: { googleTwoFA: { userId: result.userId, email: result.email } },
+        });
+        return;
+      }
+      showToast(t('auth.register_success'), 'success');
+      navigate('/');
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : t('cl6_social_auth.apple_login_failed'), 'error');
     } finally {
       setLoading(false);
     }
@@ -385,24 +408,31 @@ export default function RegisterPage() {
                 )}
               </button>
 
-              {!googleUnavailable && (
-                <>
-                  <div className="flex items-center gap-3 pt-1">
-                    <div className="h-px flex-1 bg-white/40" />
-                    <span className="text-xs font-bold uppercase tracking-[0.12em] text-gray-800">{t('cl1_register.or_divider')}</span>
-                    <div className="h-px flex-1 bg-white/40" />
-                  </div>
+              {/* Le separateur est hors du test sur googleUnavailable : Apple
+                  s'affiche sur toutes les plateformes, il reste donc toujours
+                  au moins un fournisseur sous ce separateur. */}
+              <div className="flex items-center gap-3 pt-1">
+                <div className="h-px flex-1 bg-white/40" />
+                <span className="text-xs font-bold uppercase tracking-[0.12em] text-gray-800">{t('cl1_register.or_divider')}</span>
+                <div className="h-px flex-1 bg-white/40" />
+              </div>
 
-                  <GoogleAuthButton
-                    onCredential={handleGoogleRegister}
-                    disabled={loading}
-                    label="signup_with"
-                    locale={String(i18n.language || 'fr').split('-')[0]}
-                    onUnavailable={() => setGoogleUnavailable(true)}
-                    onError={(message) => showToast(message, 'error')}
-                  />
-                </>
+              {!googleUnavailable && (
+                <GoogleAuthButton
+                  onCredential={handleGoogleRegister}
+                  disabled={loading}
+                  label="signup_with"
+                  locale={String(i18n.language || 'fr').split('-')[0]}
+                  onUnavailable={() => setGoogleUnavailable(true)}
+                  onError={(message) => showToast(message, 'error')}
+                />
               )}
+
+              <AppleAuthButton
+                onCredential={handleAppleRegister}
+                disabled={loading}
+                onError={(message) => showToast(message, 'error')}
+              />
             </form>
 
             {/* Security Features */}

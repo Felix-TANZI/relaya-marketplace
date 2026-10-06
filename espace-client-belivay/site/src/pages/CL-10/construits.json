@@ -1,0 +1,19 @@
+{
+ "routes": [
+  "notifications",
+  "notifs-reglages",
+  "garde",
+  "push",
+  "sms",
+  "lien-court"
+ ],
+ "exclus": {},
+ "repris": {
+  "notifs-reglages": "DP-54 : repris pour l'usage réel (WhatsApp disponible avec accord, heures calmes, autorisation du téléphone, message d'essai).",
+  "notifications": "DP-54 : repris pour l'usage réel (notifications lues dans les données, garde calculée, SMS, écran verrouillé et lien court selon les commandes).",
+  "garde": "DP-54 : repris pour l'usage réel (notifications lues dans les données, garde calculée, SMS, écran verrouillé et lien court selon les commandes).",
+  "push": "DP-54 : repris pour l'usage réel (notifications lues dans les données, garde calculée, SMS, écran verrouillé et lien court selon les commandes).",
+  "sms": "DP-54 : repris pour l'usage réel (notifications lues dans les données, garde calculée, SMS, écran verrouillé et lien court selon les commandes).",
+  "lien-court": "DP-54 : repris pour l'usage réel (notifications lues dans les données, garde calculée, SMS, écran verrouillé et lien court selon les commandes)."
+ }
+}

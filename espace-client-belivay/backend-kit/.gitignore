@@ -1,0 +1,8 @@
+outils/node_modules/
+outils/.types-generes.ts
+outils/.source-copie.ts
+_essai/.venv/
+_essai/*.sqlite3
+_essai/mediafiles/
+__pycache__/
+.coverage

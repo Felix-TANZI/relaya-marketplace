@@ -1,0 +1,15 @@
+{
+  "name": "belivay-backend-kit-outils",
+  "private": true,
+  "type": "module",
+  "description": "Génère backend-kit/openapi.yaml depuis site/src/api/routes.ts et site/src/donnees/source.ts (lecture seule du site).",
+  "scripts": {
+    "openapi": "node generer-openapi.mjs"
+  },
+  "devDependencies": {
+    "ts-json-schema-generator": "2.4.0",
+    "typescript": "5.8.3",
+    "tsx": "4.19.4",
+    "yaml": "2.8.0"
+  }
+}

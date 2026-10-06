@@ -365,6 +365,8 @@ export default function TrackingMap({
           ]}
           center={deliveryPos}
           zoom={13}
+          minZoom={17}
+          showMapTypeToggle
           height={height}
           scrollWheelZoom={false}
           className="rounded-none"

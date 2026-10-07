@@ -492,7 +492,7 @@ export default {
     change_language: 'Change language',
     back: 'Back',
     places_count: '{{used}}/{{max}} slots',
-    interface_compliance_notice: "Relay point interface aligned with BelivaY's vision: seller anonymity, transfer proof, slot-based storage, pickup code, D+7 disputes, public Trust Score and MoMo finances. Relay levels remain intentionally in development.",
+    interface_compliance_notice: "Relay point interface aligned with BelivaY's vision: seller anonymity, transfer proof, slot-based storage, pickup code, D+7 disputes, public Trust Score, Starter/Confirmed/Premium tiers and MoMo finances.",
     avatar_updated: 'Profile photo updated.',
     precision_score: 'Precision {{score}}/100',
   },

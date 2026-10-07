@@ -105,7 +105,7 @@ const COUNTER_SITUATIONS: Array<{
   {
     id: "payable",
     icon: CreditCard,
-    tone: "bg-[#FDEADC] text-[#E07B3C] dark:bg-orange-950 dark:text-orange-300",
+    tone: "bg-[#FFF1E2] text-[#EF6A00] dark:bg-orange-950 dark:text-orange-300",
     title: "Commande payable au retrait",
     body:
       "Pas encore de code : retrouvez le colis par sa référence ou le numéro du client. Le ticket affiche "
@@ -116,7 +116,7 @@ const COUNTER_SITUATIONS: Array<{
   {
     id: "refuse",
     icon: X,
-    tone: "bg-[#FDECEC] text-[#E05B5B] dark:bg-red-950 dark:text-red-300",
+    tone: "bg-[#FDECEA] text-[#B42318] dark:bg-red-950 dark:text-red-300",
     title: "Le client refuse le colis",
     body:
       "Avec un motif (non conforme, abîmé, contrefaçon) : ouvrez un constat au comptoir, avec photos. "
@@ -127,7 +127,7 @@ const COUNTER_SITUATIONS: Array<{
   {
     id: "multiple",
     icon: Layers,
-    tone: "bg-[#E8EFFD] text-[#4F7DF3] dark:bg-blue-950 dark:text-blue-300",
+    tone: "bg-[#EAF0FF] text-[#3A6BEA] dark:bg-blue-950 dark:text-blue-300",
     title: "Plusieurs colis pour un même client",
     body:
       "Un code par groupe de remise, envoyé à l'arrivée du dernier colis du groupe. L'écran liste tous les "
@@ -136,7 +136,7 @@ const COUNTER_SITUATIONS: Array<{
   {
     id: "contest",
     icon: Scale,
-    tone: "bg-[#FDF3DC] text-[#E0A020] dark:bg-amber-950 dark:text-amber-300",
+    tone: "bg-[#FFF4D6] text-[#E8A10E] dark:bg-amber-950 dark:text-amber-300",
     title: "Le client ouvre et conteste sur place",
     body:
       "Il touche « Un problème » à l'étape « Tout est en ordre ? » : ne remettez pas le colis. Le constat au "
@@ -145,7 +145,7 @@ const COUNTER_SITUATIONS: Array<{
   {
     id: "code",
     icon: Lock,
-    tone: "bg-[#F0F1F3] text-[#9AA1AC] dark:bg-slate-800 dark:text-slate-300",
+    tone: "bg-[#F1ECE6] text-[#9FAACB] dark:bg-slate-800 dark:text-slate-300",
     title: "Code bloqué ou oublié",
     body:
       "Le client réaffiche son code (QR ou 6 chiffres) dans son app. Sans app, il demande un renvoi payant "
@@ -155,7 +155,7 @@ const COUNTER_SITUATIONS: Array<{
   {
     id: "transfer",
     icon: MapPin,
-    tone: "bg-[#E8EFFD] text-[#4F7DF3] dark:bg-blue-950 dark:text-blue-300",
+    tone: "bg-[#EAF0FF] text-[#3A6BEA] dark:bg-blue-950 dark:text-blue-300",
     title: "Le client veut changer de relais",
     body:
       "Il le demande dans son app : gratuit avant la collecte, 400 F si le colis est déjà arrivé. Un nouveau "
@@ -236,7 +236,7 @@ function HandOverSheet({
         onClose={onCancel}
       />
 
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800">
+      <div className="rounded-[14px] border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800">
         <div className="text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
           {parcels.length > 1 ? `${parcels.length} colis remis` : "Colis remis"}
         </div>
@@ -246,7 +246,7 @@ function HandOverSheet({
       </div>
 
       {needsId ? (
-        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/40">
+        <div className="mt-4 rounded-[14px] border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/40">
           <p className="text-xs font-black uppercase tracking-[0.12em] text-amber-700 dark:text-amber-300">
             Retrait par un tiers — {authorized?.authorizedName}
           </p>
@@ -264,7 +264,7 @@ function HandOverSheet({
         </div>
       ) : null}
 
-      <label className="mt-4 flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-3.5 text-sm font-black text-slate-600 transition active:scale-[.98] dark:border-slate-600 dark:bg-slate-950 dark:text-slate-200">
+      <label className="mt-4 flex cursor-pointer items-center justify-center gap-2 rounded-[14px] border border-dashed border-slate-300 bg-white px-4 py-3.5 text-sm font-black text-slate-600 transition active:scale-[.98] dark:border-slate-600 dark:bg-slate-950 dark:text-slate-200">
         <Camera size={17} />
         {photo ? "Photo de la remise prête — reprendre" : "Photo de la remise (obligatoire)"}
         <input
@@ -296,7 +296,7 @@ function HandOverSheet({
           type="button"
           onClick={onCancel}
           disabled={busy}
-          className="rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-black text-slate-600 transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+          className="rounded-[14px] border border-slate-200 bg-white px-5 py-2.5 text-sm font-black text-slate-600 transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
         >
           Annuler
         </button>
@@ -384,7 +384,7 @@ function IssueSheet({
         />
       </label>
 
-      <label className="mt-4 flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-3.5 text-sm font-black text-slate-600 transition active:scale-[.98] dark:border-slate-600 dark:bg-slate-950 dark:text-slate-200">
+      <label className="mt-4 flex cursor-pointer items-center justify-center gap-2 rounded-[14px] border border-dashed border-slate-300 bg-white px-4 py-3.5 text-sm font-black text-slate-600 transition active:scale-[.98] dark:border-slate-600 dark:bg-slate-950 dark:text-slate-200">
         <Camera size={17} />
         {photo ? "Photo prête — reprendre" : "Photo du constat (obligatoire)"}
         <input
@@ -404,7 +404,7 @@ function IssueSheet({
           type="button"
           onClick={onCancel}
           disabled={busy}
-          className="rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-black text-slate-600 transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+          className="rounded-[14px] border border-slate-200 bg-white px-5 py-2.5 text-sm font-black text-slate-600 transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
         >
           Annuler
         </button>
@@ -473,7 +473,7 @@ function PickupScanSheet({
           <span className="absolute right-0 top-0 h-8 w-8 rounded-tr-2xl border-r-4 border-t-4 border-blue-400" />
           <span className="absolute bottom-0 left-0 h-8 w-8 rounded-bl-2xl border-b-4 border-l-4 border-blue-400" />
           <span className="absolute bottom-0 right-0 h-8 w-8 rounded-br-2xl border-b-4 border-r-4 border-blue-400" />
-          <span className="animate-qr-scan absolute inset-x-4 h-0.5 rounded-full bg-gradient-to-r from-transparent via-blue-300 to-transparent shadow-[0_0_18px_rgba(96,165,250,.9)]" />
+          <span className="animate-qr-scan absolute inset-x-4 h-0.5 rounded-full bg-gradient-to-r from-transparent via-blue-300 to-transparent shadow-[0_0_18px_rgba(143,176,255,.9)]" />
         </div>
       </div>
 
@@ -482,7 +482,7 @@ function PickupScanSheet({
       <button
         type="button"
         onClick={onCancel}
-        className="mt-5 w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+        className="mt-5 w-full rounded-[14px] border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
       >
         Saisir le code à la main
       </button>
@@ -608,7 +608,7 @@ export default function RelayPickup({
           gerant de recopier six chiffres lus sur un ecran fissure, au-dessus
           d'un comptoir, avec la queue derriere. */}
       {!resolved ? (
-        <section className="rounded-[18px] border border-slate-200/70 bg-white p-5 shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
+        <section className="rounded-[14px] border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
           <label className="block text-[11px] font-black uppercase leading-none tracking-[0.1em] text-slate-500 dark:text-slate-400">
             Code de retrait du client
           </label>
@@ -618,10 +618,10 @@ export default function RelayPickup({
             inputMode="numeric"
             autoComplete="off"
             placeholder="000000"
-            className={`mt-3 w-full rounded-2xl border-2 bg-white px-4 py-4 text-center text-[30px] font-black tracking-[0.3em] text-slate-950 outline-none transition dark:bg-slate-950 dark:text-white ${
+            className={`mt-3 w-full rounded-[14px] border-2 bg-white px-4 py-4 text-center text-[30px] font-black tracking-[0.3em] text-slate-950 outline-none transition dark:bg-slate-950 dark:text-white ${
               notFound
                 ? "border-red-400 focus:border-red-500"
-                : "border-slate-200 focus:border-[#1D4ED8] dark:border-slate-700"
+                : "border-slate-200 focus:border-[#2456D6] dark:border-slate-700"
             }`}
           />
 
@@ -647,16 +647,16 @@ export default function RelayPickup({
         </section>
       ) : (
         /* ── Recapitulatif et issues ─────────────────────────────────────── */
-        <section className="rounded-[18px] border border-slate-200/70 bg-white p-5 shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
+        <section className="rounded-[14px] border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-start justify-between gap-3">
-            <h3 className="text-[19px] font-black tracking-[-0.015em] text-slate-900 dark:text-white">
+            <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
               Tout est en ordre ?
             </h3>
             <span
               className={`flex-shrink-0 rounded-full px-3 py-[5px] text-[12.5px] font-semibold ${
                 gardeTotal > 0
-                  ? "bg-[#FDF3DC] text-[#B4791A] dark:bg-amber-950 dark:text-amber-300"
-                  : "bg-[#E3F5E9] text-[#2E7D4F] dark:bg-emerald-950 dark:text-emerald-300"
+                  ? "bg-[#FFF4D6] text-[#8A5A00] dark:bg-amber-950 dark:text-amber-300"
+                  : "bg-[#E6F4EC] text-[#1F7A4D] dark:bg-emerald-950 dark:text-emerald-300"
               }`}
             >
               {gardeTotal > 0 ? `${nf(gardeTotal)} F de garde` : "Garde offerte"}
@@ -695,7 +695,7 @@ export default function RelayPickup({
                       type="button"
                       onClick={() => toggleCounter(parcel.id)}
                       aria-pressed={checked}
-                      className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left transition active:scale-[.98] ${
+                      className={`flex w-full items-center gap-3 rounded-[14px] border px-4 py-3 text-left transition active:scale-[.98] ${
                         checked
                           ? "border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/50"
                           : "border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800"
@@ -729,7 +729,7 @@ export default function RelayPickup({
             type="button"
             disabled={!allOnCounter || busy}
             onClick={() => setSheet("ACCEPTED")}
-            className="mt-4 flex w-full items-center justify-center gap-2.5 rounded-[12px] bg-gradient-to-r from-[#F58A1F] to-[#E8590C] px-4 py-4 text-[17px] font-black text-white shadow-[0_4px_14px_rgba(232,89,12,.38)] transition active:scale-[.97] disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none dark:disabled:from-slate-700 dark:disabled:to-slate-700"
+            className="pr-btn mt-4 flex w-full items-center justify-center gap-2.5 rounded-[12px] px-4 py-4 text-[17px] font-black text-white transition active:scale-[.97] disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none dark:disabled:from-slate-700 dark:disabled:to-slate-700"
           >
             <Check size={19} strokeWidth={3} /> Tout est en ordre
           </button>
@@ -747,7 +747,7 @@ export default function RelayPickup({
             type="button"
             disabled={!allOnCounter || busy}
             onClick={() => setSheet("SKIPPED")}
-            className="mt-4 w-full text-center text-[14px] font-black text-[#1D4ED8] transition active:scale-95 disabled:opacity-40 dark:text-blue-300"
+            className="mt-4 w-full text-center text-[14px] font-black text-[#2456D6] transition active:scale-95 disabled:opacity-40 dark:text-blue-300"
           >
             Le client préfère ne pas ouvrir · continuer
           </button>
@@ -769,7 +769,7 @@ export default function RelayPickup({
       )}
 
       {/* ── Consignes de comptoir ──────────────────────────────────────────── */}
-      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,.05)] dark:border-slate-800 dark:bg-slate-900">
+      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
         <h3 className="px-5 pb-1 pt-5 text-[18px] font-black tracking-[-0.015em] text-slate-900 dark:text-white">
           Autres situations au comptoir
         </h3>
@@ -795,9 +795,9 @@ export default function RelayPickup({
                       quelque chose en plus a lire, le chevron aurait promis
                       une navigation. */}
                   {open ? (
-                    <Minus size={19} strokeWidth={2.6} className="flex-shrink-0 text-[#1D4ED8] dark:text-blue-300" />
+                    <Minus size={19} strokeWidth={2.6} className="flex-shrink-0 text-[#2456D6] dark:text-blue-300" />
                   ) : (
-                    <Plus size={19} strokeWidth={2.6} className="flex-shrink-0 text-[#1D4ED8] dark:text-blue-300" />
+                    <Plus size={19} strokeWidth={2.6} className="flex-shrink-0 text-[#2456D6] dark:text-blue-300" />
                   )}
                 </button>
                 {open ? (
@@ -814,7 +814,7 @@ export default function RelayPickup({
       {/* Deux sorties de secours du comptoir. Elles ne font pas partie du
           geste de remise — d'ou la forme sobre, cote a cote, hors des cartes
           blanches qui portent le travail. */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="pr-span grid grid-cols-2 gap-3">
         <button
           type="button"
           onClick={() => setSignatureHelp(true)}
@@ -842,7 +842,7 @@ export default function RelayPickup({
       <button
         type="button"
         onClick={onOpenReturnDeposit}
-        className="flex w-full items-center gap-3 overflow-hidden rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-left transition active:scale-[.99] dark:border-emerald-900 dark:bg-emerald-950/40"
+        className="flex w-full items-center gap-3 overflow-hidden rounded-[14px] border border-emerald-200 bg-emerald-50 px-5 py-4 text-left transition active:scale-[.99] dark:border-emerald-900 dark:bg-emerald-950/40"
       >
         <RotateCcw size={19} className="flex-shrink-0 text-emerald-700 dark:text-emerald-300" strokeWidth={2.4} />
         <span className="min-w-0 flex-1">
@@ -878,7 +878,7 @@ export default function RelayPickup({
           <button
             type="button"
             onClick={() => setSignatureHelp(false)}
-            className="mt-5 w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+            className="mt-5 w-full rounded-[14px] border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
           >
             J'ai compris
           </button>

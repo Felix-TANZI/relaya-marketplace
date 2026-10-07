@@ -101,7 +101,7 @@ export default function RelayStockList({
               onClick={() => setActive(tab.key)}
               className={`rounded-[10px] px-2 py-2.5 text-[13.5px] font-bold leading-tight transition active:scale-[.96] ${
                 on
-                  ? "bg-white text-slate-900 shadow-[0_2px_8px_rgba(15,23,42,.10)] dark:bg-slate-800 dark:text-white"
+                  ? "bg-white text-slate-900 shadow-[0_2px_8px_rgba(60,35,15,.10)] dark:bg-slate-800 dark:text-white"
                   : "text-slate-500 dark:text-slate-400"
               }`}
             >
@@ -111,7 +111,7 @@ export default function RelayStockList({
         })}
       </div>
 
-      <section className="rounded-[18px] border border-slate-200/70 bg-white px-4 shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
+      <section className="rounded-[14px] border border-slate-200 bg-white px-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
         {visibles.length === 0 ? (
           <p className="py-6 text-center text-[13.5px] font-medium text-slate-400 dark:text-slate-500">
             Aucun colis dans cette catégorie.
@@ -138,7 +138,7 @@ export default function RelayStockList({
                   >
                     {/* Le casier d'abord : c'est la premiere chose que le
                         gerant fait, aller le chercher. */}
-                    <span className="flex h-[38px] w-[46px] flex-shrink-0 items-center justify-center rounded-[10px] bg-[#0F1C3F] text-[12px] font-black text-[#E9A93A]">
+                    <span className="flex h-[38px] w-[46px] flex-shrink-0 items-center justify-center rounded-[10px] bg-[#0E1B38] text-[12px] font-black text-[#E8A10E]">
                       {parcel.slot || "—"}
                     </span>
                     <span className="min-w-0 flex-1">

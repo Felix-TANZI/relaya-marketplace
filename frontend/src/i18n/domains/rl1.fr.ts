@@ -492,7 +492,7 @@ export default {
     change_language: 'Changer de langue',
     back: 'Retour',
     places_count: '{{used}}/{{max}} places',
-    interface_compliance_notice: "Interface point relais conforme a la vision BelivaY : anonymat vendeur, preuves de transfert, stockage par slot, code de retrait, litiges J+7, Trust Score public et finances MoMo. Les niveaux PR restent volontairement en developpement.",
+    interface_compliance_notice: "Interface point relais conforme a la vision BelivaY : anonymat vendeur, preuves de transfert, stockage par slot, code de retrait, litiges J+7, Trust Score public, paliers Starter/Confirme/Premium et finances MoMo.",
     avatar_updated: 'Photo de profil mise à jour.',
     precision_score: 'Précision {{score}}/100',
   },

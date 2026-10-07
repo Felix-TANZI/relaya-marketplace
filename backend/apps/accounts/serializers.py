@@ -176,6 +176,7 @@ class RelayPointProfileSerializer(serializers.ModelSerializer):
             "relay_code",
             "opening_hours",
             "storage_capacity",
+            "accepts_bulky",
             "status",
             "is_active",
             "created_at",

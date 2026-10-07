@@ -35,6 +35,17 @@ import { appReleaseApi, type AppRelease } from "@/services/api/appRelease";
 import { useQrCamera } from "@/lib/useQrCamera";
 
 /** Une entrée de la liste, et son icône dans la maquette. */
+/**
+ * Les entrees qui ouvrent un ecran entier au lieu de se deplier.
+ *
+ * Se connecter, rejoindre un relais, voir un relais neuf : ce sont des
+ * ecrans, pas des explications. Les resumer dans un panneau deplie ferait
+ * lire une description la ou la maquette montre la chose meme — et le
+ * meme libelle donnerait deux resultats selon qu'on vienne du tiroir ou
+ * de cette liste.
+ */
+const ECRANS_ENTIERS = ["connexion", "invitation", "neuf"];
+
 const STATE_ENTRIES: Array<{ id: string; icon: LucideIcon; label: string }> = [
   { id: "connexion", icon: User, label: "Connexion" },
   { id: "invitation", icon: UserPlus, label: "Invitation d'un employé" },
@@ -118,25 +129,20 @@ export default function RelayStates({
   focus,
   readiness,
   status,
-  manager,
-  email,
   lastError,
-  parcelCount,
   onNavigate,
-  onLogout,
+  onOpenScreen,
 }: {
   /** Entrée dépliée à l'ouverture, quand on arrive depuis le menu. */
   focus?: string | null;
   /** Les trois conditions d'ouverture, telles que le portail les évalue. */
   readiness: ReadonlyArray<readonly [string, boolean, string]>;
   status: string;
-  manager: string;
-  email: string;
   /** Dernier message d'erreur d'opération, s'il y en a eu un. */
   lastError: string | null;
-  parcelCount: number;
   onNavigate: (tab: "capacite" | "kyc" | "aide") => void;
-  onLogout: () => void;
+  /** Ouvre un des ecrans entiers (voir `ECRANS_ENTIERS`). */
+  onOpenScreen?: (id: string) => void;
 }) {
   const [open, setOpen] = useState<string | null>(focus ?? null);
   // Photo du cache prise au montage : elle sert a expliquer ce que le gerant
@@ -170,59 +176,6 @@ export default function RelayStates({
 
   const body = (id: string) => {
     switch (id) {
-      case "connexion":
-        return (
-          <>
-            <div className="divide-y divide-slate-100 dark:divide-slate-800">
-              <Fact label="Session ouverte au nom de" value={manager} />
-              <Fact label="Adresse du compte" value={email || "non renseignée"} />
-            </div>
-            <p className="mt-3 text-[13px] font-medium leading-[1.55] text-slate-500 dark:text-slate-400">
-              Un seul compte tient ce relais. Si vous vous déconnectez, il faudra les identifiants
-              BelivaY pour rouvrir le guichet — ne le faites pas en pleine journée sans les avoir sous
-              la main.
-            </p>
-            <button
-              type="button"
-              onClick={onLogout}
-              className="mt-3 w-full rounded-[12px] border border-red-100 bg-red-50 px-4 py-3 text-[15px] font-black text-red-700 transition active:scale-[.97] dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
-            >
-              Se déconnecter
-            </button>
-          </>
-        );
-
-      case "invitation":
-        return (
-          <p className="text-[13px] font-medium leading-[1.55] text-slate-500 dark:text-slate-400">
-            Pas encore disponible. Un point relais est aujourd'hui un compte unique : il n'y a ni
-            second identifiant, ni rôle limité, ni invitation. Si quelqu'un d'autre tient le comptoir
-            à votre place, il travaille sous votre compte et les remises sont tracées à votre nom.
-            Prévenez le support avant de confier vos identifiants.
-          </p>
-        );
-
-      case "neuf":
-        return (
-          <>
-            <p className="text-[13px] font-medium leading-[1.55] text-slate-500 dark:text-slate-400">
-              {parcelCount > 0
-                ? `Votre relais n'est plus neuf : ${parcelCount} colis y sont passés ou s'y trouvent. Les écrans vides ne s'affichent plus.`
-                : "Tant qu'aucun colis n'est arrivé, chaque écran affiche son état vide : pas de tableau à moitié rempli, pas de chiffre à zéro sans explication."}
-            </p>
-            <div className="mt-3 divide-y divide-slate-100 dark:divide-slate-800">
-              {readiness.map(([label, ok, detail]) => (
-                <Fact
-                  key={label}
-                  label={label}
-                  value={ok ? "fait" : detail}
-                  tone={ok ? "text-emerald-600 dark:text-emerald-400" : "text-orange-600 dark:text-orange-400"}
-                />
-              ))}
-            </div>
-          </>
-        );
-
       case "statut":
         return (
           <>
@@ -250,7 +203,7 @@ export default function RelayStates({
               <button
                 type="button"
                 onClick={() => onNavigate(pending[0][0] === "KYC BelivaY" ? "kyc" : "capacite")}
-                className="mt-3 w-full rounded-[12px] bg-gradient-to-r from-[#F58A1F] to-[#E8590C] px-4 py-3 text-[15px] font-black text-white transition active:scale-[.97]"
+                className="pr-btn mt-3 w-full rounded-[12px] px-4 py-3 text-[15px] font-black text-white transition active:scale-[.97]"
               >
                 Compléter maintenant
               </button>
@@ -324,7 +277,7 @@ export default function RelayStates({
             </p>
             <a
               href={release.apk_url}
-              className="mt-3 block w-full rounded-[12px] bg-gradient-to-r from-[#F58A1F] to-[#E8590C] px-4 py-3 text-center text-[15px] font-black text-white transition active:scale-[.97]"
+              className="pr-btn mt-3 block w-full rounded-[12px] px-4 py-3 text-center text-[15px] font-black text-white transition active:scale-[.97]"
             >
               Télécharger l'application
             </a>
@@ -352,7 +305,7 @@ export default function RelayStates({
         </p>
       </header>
 
-      <section className="overflow-hidden rounded-[18px] border border-slate-200/70 bg-white shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
+      <section className="overflow-hidden rounded-[14px] border border-slate-200 bg-white shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
         <ul className="divide-y divide-slate-100 dark:divide-slate-800">
           {STATE_ENTRIES.map(({ id, icon: Icon, label }) => {
             const on = open === id;
@@ -361,14 +314,16 @@ export default function RelayStates({
               <li key={id}>
                 <button
                   type="button"
-                  onClick={() => setOpen(on ? null : id)}
-                  aria-expanded={on}
+                  onClick={() =>
+                    ECRANS_ENTIERS.includes(id) ? onOpenScreen?.(id) : setOpen(on ? null : id)
+                  }
+                  aria-expanded={ECRANS_ENTIERS.includes(id) ? undefined : on}
                   className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition active:scale-[.99]"
                 >
                   {offlineRow ? (
                     <WifiOff size={20} strokeWidth={2.1} className="flex-shrink-0 text-orange-500" />
                   ) : (
-                    <Icon size={20} strokeWidth={2.1} className="flex-shrink-0 text-[#E8590C]" />
+                    <Icon size={20} strokeWidth={2.1} className="flex-shrink-0 text-[#EF6A00]" />
                   )}
                   <span className="min-w-0 flex-1 text-[15.5px] font-bold text-slate-900 dark:text-white">
                     {label}

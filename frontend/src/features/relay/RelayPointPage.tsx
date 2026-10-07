@@ -13,18 +13,13 @@ import {
   BookOpen,
   ChevronLeft,
   Clock,
-  FileCheck2,
-  HelpCircle,
   IdCard,
   Layers,
-  Layers3,
   LockKeyhole,
   Menu as MenuIcon,
   LogOut,
-  MessageSquareText,
   Moon,
   Scale,
-  ShieldCheck,
   Sun,
   Truck,
   UserCircle,
@@ -38,7 +33,6 @@ import { http } from "@/services/api/http";
 // pareil sur l'accueil et sur le releve.
 import { formatCourt } from "@/services/api/relaySettlements";
 import { PayoutAccountVerificationCard } from "@/components/payments/PayoutAccountVerificationCard";
-import RelayFinancePanel from "./RelayFinancePanel";
 import AvatarCropDialog from "@/components/profile/AvatarCropDialog";
 import RelayReception, { type RelayArrival, type RefuseInput } from "./RelayReception";
 import RelayPickup, {
@@ -49,10 +43,7 @@ import RelayPickup, {
 import RelayReviews from "./RelayReviews";
 import RelayTrust, { type RelayTrustScore } from "./RelayTrust";
 import RelayTraining from "./RelayTraining";
-import RelayReports from "./RelayReports";
-import RelayClosure from "./RelayClosure";
 import RelayInbox from "./RelayInbox";
-import RelayOnboarding from "./RelayOnboarding";
 import RelaySidebar from "./RelaySidebar";
 import RelayMobileNav from "./RelayMobileNav";
 import RelayToday, { type RelayTodoItem } from "./RelayToday";
@@ -65,6 +56,24 @@ import RelayOutbound, {
 } from "./RelayOutbound";
 import RelayCapacity from "./RelayCapacity";
 import RelayDisputes, { type DisputeFile, type DisputeParcel } from "./RelayDisputes";
+import RelayHistory from "./RelayHistory";
+import RelayTiers from "./RelayTiers";
+import RelayStatus from "./RelayStatus";
+import RelayOffline from "./RelayOffline";
+import RelayErrorStates from "./RelayErrorStates";
+import RelayCamera from "./RelayCamera";
+import RelayInstall from "./RelayInstall";
+import RelayPinLogin from "./RelayPinLogin";
+import RelayInvitation from "./RelayInvitation";
+import RelayHelp from "./RelayHelp";
+import RelayApply from "./RelayApply";
+import RelayTrainingMobile from "./RelayTrainingMobile";
+import RelayActivation from "./RelayActivation";
+import RelayTeam from "./RelayTeam";
+import RelayDocuments from "./RelayDocuments";
+import RelayClosureMobile from "./RelayClosureMobile";
+import RelayReportsMobile from "./RelayReportsMobile";
+import RelayNotifications, { type NotifItem, type NotifSettings } from "./RelayNotifications";
 import RelayPayouts from "./RelayPayouts";
 import { parseOpeningHours, todayClosing } from "./relayHours";
 import RelayShelfPlan, { type ShelfParcel } from "./RelayShelfPlan";
@@ -78,8 +87,27 @@ import RelaySettingsBody from "./RelaySettingsBody";
 import { RELAY_TABS, type RelayNavGroup, type RelayTab } from "./relayNav";
 import { Panel, StatusPill } from "./RelayUi";
 
+/* La matiere du portail : le papier chaud du fond, le verre du bandeau et
+   du dock, la carte, le bandeau orange, le panneau bleu nuit, et la mise
+   en deux colonnes de la tablette. Importee ici et non dans `index.css`
+   parce que cet ecran est charge a la demande : sa feuille arrive donc
+   apres celle de Tailwind, et ses regles la recouvrent sans `!important`.
+   Voir `relayTheme.css`, qui importe lui-meme la remise a la palette. */
+import "./relayTheme.css";
+
 /** Les destinations de la barre du bas : elles gardent le bandeau complet. */
 const PRIMARY_TABS: RelayTab[] = ["dashboard", "reception", "retrait", "stock"];
+
+/**
+ * Ecrans qui ne portent PAS la boite des demandes de preuve.
+ *
+ * Elle appelle une action de dossier : sa place est au-dessus d'un ecran
+ * metier, pas au-dessus d'un formulaire de reglages, ou elle coiffe le titre
+ * et repousse ce qu'on est venu modifier. L'accueil l'affiche en pied de
+ * page, et sa ligne « constat a completer » l'annonce depuis le haut.
+ */
+const ECRANS_SANS_BOITE_PREUVES: RelayTab[] = ["dashboard", "capacite"];
+
 
 function getInitialRelayTab(): RelayTab {
   const requested = new URLSearchParams(window.location.search).get("tab") as RelayTab | null;
@@ -183,11 +211,11 @@ const relayCopy = {
       finances: "Versements",
       rapports: "Rapports & export",
       capacite: "Capacité & horaires",
-      reseau: "Réseau partenaires",
+      reseau: "Mon équipe",
       fermeture: "Fermeture exceptionnelle",
       litiges: "Litiges",
       kyc: "Documents KYC",
-      inscription: "Inscription & cycle de vie",
+      inscription: "Activation et partenariat",
       messagerie: "Messagerie",
       aide: "Aide & support",
       parametres: "Paramètres",
@@ -244,11 +272,11 @@ const relayCopy = {
       finances: "Payouts",
       rapports: "Reports & export",
       capacite: "Capacity & hours",
-      reseau: "Partner network",
+      reseau: "My team",
       fermeture: "Exceptional closure",
       litiges: "Disputes",
       kyc: "KYC documents",
-      inscription: "Onboarding & lifecycle",
+      inscription: "Activation & partnership",
       messagerie: "Messages",
       aide: "Help & support",
       parametres: "Settings",
@@ -299,21 +327,6 @@ function anonymizedBuyerRef(parcel: RelayParcel) {
   return `BV-ACH-${seed}`;
 }
 
-function precisionTone(score: number): "emerald" | "amber" | "red" {
-  return score >= 75 ? "emerald" : score >= 55 ? "amber" : "red";
-}
-
-function PrecisionHint({ precision }: { precision?: Partial<LocationPrecisionResult> }) {
-  const { t } = useTranslation();
-  if (!precision || typeof precision.precisionScore !== "number") return null;
-  return (
-    <div className="mt-2 flex flex-wrap items-center gap-2">
-      <StatusPill tone={precisionTone(precision.precisionScore)}>{t("rl1_point_page.precision_score", { score: precision.precisionScore })}</StatusPill>
-      {precision.driverHint ? <span className="text-xs font-semibold text-amber-900/75 dark:text-amber-100/75">{precision.driverHint}</span> : null}
-    </div>
-  );
-}
-
 export default function RelayPointPage() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
@@ -321,6 +334,20 @@ export default function RelayPointPage() {
   const { theme, toggleTheme } = useTheme();
   const [tab, setTabState] = useState<RelayTab>(getInitialRelayTab);
   const [tabHistory, setTabHistory] = useState<RelayTab[]>([]);
+
+  /**
+   * La page ouverte depuis le menu, s'il y en a une.
+   *
+   * Le menu est une LISTE : on y vient pour parcourir, on ouvre une entree,
+   * on revient en choisir une autre. Sans cette memoire, le retour renvoyait
+   * a la page d'ou l'on venait avant d'ouvrir le menu — l'accueil, le plus
+   * souvent — et il fallait rouvrir le tiroir a chaque fois pour avancer
+   * d'une ligne dans la liste.
+   *
+   * Une reference et non un etat : elle ne change rien a l'affichage, et la
+   * faire passer par un rendu ferait clignoter le tiroir.
+   */
+  const origineMenu = useRef<RelayTab | null>(null);
   const tabRef = useRef<RelayTab>(tab);
   useEffect(() => {
     tabRef.current = tab;
@@ -348,11 +375,19 @@ export default function RelayPointPage() {
   const [relayDisputes, setRelayDisputes] = useState<RelayDispute[]>([]);
   const [operationBusy, setOperationBusy] = useState(false);
   const [operationMessage, setOperationMessage] = useState<{ tone: "success" | "error"; text: string } | null>(null);
-  const [supportSubject, setSupportSubject] = useState("");
-  const [supportBody, setSupportBody] = useState("");
   const [complianceDocuments, setComplianceDocuments] = useState<ComplianceDocument[]>([]);
   /** Passages annonces au comptoir — voir `RelayPointCollectionScheduleView`. */
   const [collectionPassages, setCollectionPassages] = useState<CollectionPassage[]>([]);
+  /** Les modules obligatoires sont-ils suivis ? Lu pour l'ecran d'accueil. */
+  const [trainingDone, setTrainingDone] = useState(false);
+  useEffect(() => {
+    http<{ core_completed: number; core_total: number }>("/api/auth/relay-point/training/")
+      .then((etat) => setTrainingDone(etat.core_total > 0 && etat.core_completed >= etat.core_total))
+      .catch(() => setTrainingDone(false));
+  }, []);
+
+  /** Cours de formation deplie : la grille cede la place au module. */
+  const [trainingOpen, setTrainingOpen] = useState(false);
   /** Onglet a ouvrir sur « Constats et retours » quand on y arrive d'ailleurs. */
   const [disputeFocus, setDisputeFocus] = useState("");
   const locale = i18n.language.startsWith("en") ? "en" : "fr";
@@ -420,6 +455,8 @@ export default function RelayPointPage() {
    * moment ne se valent pas un appel de plus.
    */
   const [payoutMasked, setPayoutMasked] = useState("");
+  /** Un numero verifie par code : c'est l'etape 2 de l'activation. */
+  const [payoutVerified, setPayoutVerified] = useState(false);
   useEffect(() => {
     http<Array<{ operator: string; masked_phone: string; is_primary: boolean; status: string }>>(
       "/api/auth/payout-accounts/",
@@ -432,8 +469,12 @@ export default function RelayPointPage() {
         setPayoutMasked(
           principal ? `${principal.operator.replace("_MOMO", "").replace("_MONEY", "")} ${principal.masked_phone}` : "",
         );
+        setPayoutVerified(comptes.some((compte) => compte.status === "VERIFIED"));
       })
-      .catch(() => setPayoutMasked(""));
+      .catch(() => {
+        setPayoutMasked("");
+        setPayoutVerified(false);
+      });
   }, []);
 
   const parcels = useMemo(
@@ -523,13 +564,6 @@ export default function RelayPointPage() {
     ],
     [t("rl1_point_page.readiness_hours_label"), hasHours, hasHours ? relayAccount?.opening_hours || "" : t("rl1_point_page.readiness_hours_pending")],
   ] as const;
-  const kycItems = [
-    [t("rl1_point_page.kyc_manager_id_label"), isKycApproved ? t("rl1_point_page.status_verified") : t("rl1_point_page.status_to_send"), t("rl1_point_page.kyc_manager_id_body")],
-    [t("rl1_point_page.kyc_activity_record_label"), isKycApproved ? t("rl1_point_page.status_verified") : t("rl1_point_page.status_to_send"), t("rl1_point_page.kyc_activity_record_body")],
-    [t("rl1_point_page.kyc_payout_account_label"), isKycApproved ? t("rl1_point_page.status_verified") : t("rl1_point_page.status_to_configure"), t("rl1_point_page.kyc_payout_account_body")],
-    [t("rl1_point_page.kyc_premises_photos_label"), isKycApproved ? t("rl1_point_page.status_verified") : t("rl1_point_page.status_to_send"), t("rl1_point_page.kyc_premises_photos_body")],
-    [t("rl1_point_page.kyc_field_validation_label"), isKycApproved ? t("rl1_point_page.status_validated") : t("rl1_point_page.status_to_plan"), t("rl1_point_page.kyc_field_validation_body")],
-  ] as const;
 
   const relayProfile = {
     name: relayAccount?.name || t("rl1_point_page.default_relay_name"),
@@ -554,8 +588,6 @@ export default function RelayPointPage() {
     address: relayProfile.address,
     status: relayAccount?.status ?? null,
   };
-  const capacityPct = Math.round((relayProfile.capacityUsed / relayProfile.capacityMax) * 100);
-  const safeCapacityPct = Number.isFinite(capacityPct) ? capacityPct : 0;
   const statusTone = relayProfile.statusCode === "OPEN" ? "emerald" : relayProfile.statusCode === "SUSPENDED" ? "red" : "amber";
 
   /**
@@ -750,6 +782,29 @@ export default function RelayPointPage() {
   };
 
   const goBack = () => {
+    // On quitte l'ecran d'etat en meme temps que la page qui le portait.
+    //
+    // Sans cette ligne, revenir depuis « Connexion » ne faisait que retirer
+    // le focus : on decouvrait la LISTE des etats, et il fallait un second
+    // retour pour atteindre le menu. Une escale que personne n'a demandee,
+    // sur un chemin qu'on ne prend que pour en sortir.
+    setStateFocus(null);
+    // Venu du menu, on y retourne — et seulement pour la page qu'on y a
+    // ouverte : si le gerant a navigue plus loin depuis, c'est l'historique
+    // qui reprend la main.
+    if (origineMenu.current === tabRef.current) {
+      origineMenu.current = null;
+      // La page qui reste DERRIERE le menu est celle d'ou l'on venait avant
+      // de l'ouvrir, et non celle qu'on vient de quitter : fermer le menu
+      // sans rien choisir doit ramener la ou on etait, pas rouvrir l'ecran
+      // qu'on fermait a l'instant.
+      if (tabHistory.length > 0) {
+        setTabState(tabHistory[tabHistory.length - 1]);
+        setTabHistory((previous) => previous.slice(0, -1));
+      }
+      setDrawerOpen(true);
+      return;
+    }
     if (tabHistory.length > 0) {
       setTabState(tabHistory[tabHistory.length - 1]);
       setTabHistory((previous) => previous.slice(0, -1));
@@ -962,7 +1017,25 @@ export default function RelayPointPage() {
     }
   };
 
-  const updateRelaySettings = async (payload: { storage_capacity?: number; opening_hours?: string }) => {
+  /**
+   * L'ecriture des reglages du relais.
+   *
+   * Un seul appel pour tout ce que `/relay-point/profile/` accepte : la
+   * capacite et les horaires, l'acceptation des encombrants, et l'identite —
+   * celle-ci sous mot de passe, verifie par le serveur dans l'ecriture
+   * elle-meme.
+   */
+  const updateRelaySettings = async (payload: {
+    storage_capacity?: number;
+    opening_hours?: string;
+    accepts_bulky?: boolean;
+    name?: string;
+    manager_name?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    current_password?: string;
+  }) => {
     setOperationBusy(true);
     setOperationMessage(null);
     try {
@@ -975,20 +1048,63 @@ export default function RelayPointPage() {
     }
   };
 
-  const sendRelaySupportMessage = async () => {
-    if (supportSubject.trim().length < 3 || supportBody.trim().length < 10) return;
+  /**
+   * L'enregistrement de l'identité du relais.
+   *
+   * Rend le message d'erreur du serveur plutôt que de le pousser dans le
+   * bandeau de la page : un « mot de passe incorrect » doit s'afficher dans
+   * le formulaire, sous le champ, et non derrière la feuille qui le cache.
+   */
+  const saveRelayIdentity = async (payload: {
+    name: string;
+    manager_name: string;
+    phone: string;
+    address: string;
+    city: string;
+    current_password: string;
+  }): Promise<string | null> => {
+    try {
+      await http("/api/auth/relay-point/profile/", {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      });
+      setOperationMessage({ tone: "success", text: "Vos informations sont enregistrées." });
+      // Le profil du relais vient de la session : on la relit plutôt que de
+      // recopier les valeurs à la main dans dix endroits de l'écran.
+      window.setTimeout(() => window.location.reload(), 500);
+      return null;
+    } catch (error) {
+      return error instanceof Error ? error.message : "Enregistrement impossible.";
+    }
+  };
+
+  /**
+   * Une demande au support, depuis l'ecran d'aide.
+   *
+   * Le sujet et le corps sont passes en argument plutot que lus d'un etat de
+   * page : le formulaire vit dans `RelayHelp`, et deux copies du meme texte
+   * finiraient par diverger.
+   */
+  const sendRelaySupportMessage = async (sujet: string, corps: string): Promise<boolean> => {
+    if (sujet.trim().length < 3 || corps.trim().length < 10) return false;
     setOperationBusy(true);
     setOperationMessage(null);
     try {
       await http("/api/contact/", {
         method: "POST",
-        body: JSON.stringify({ name: relayProfile.name, email: user?.email || "support@belivay.com", phone: relayAccount?.phone || "", subject: `[Point relais] ${supportSubject.trim()}`, message: supportBody.trim() }),
+        body: JSON.stringify({
+          name: relayProfile.name,
+          email: user?.email || "support@belivay.com",
+          phone: relayAccount?.phone || "",
+          subject: `[Point relais] ${sujet.trim()}`,
+          message: corps.trim(),
+        }),
       });
-      setSupportSubject("");
-      setSupportBody("");
       setOperationMessage({ tone: "success", text: t("rl1_point_page.support_message_sent") });
+      return true;
     } catch (error) {
       showOperationError(error);
+      return false;
     } finally {
       setOperationBusy(false);
     }
@@ -1027,26 +1143,40 @@ export default function RelayPointPage() {
    * lecture sous la pile d'actions donnaient surtout a l'accueil une longueur
    * que personne ne faisait defiler.
    */
-  const renderDashboard = () => (
+  /**
+   * Le tableau de bord, et sa version « relais neuf ».
+   *
+   * `vide` met les compteurs a zero pour montrer l'ecran d'un relais qui
+   * n'a encore rien vu passer — c'est une entree de demonstration du menu
+   * « Etats », pas un etat du compte. On passe par le meme rendu : deux
+   * appels separes divergeraient des le premier champ ajoute.
+   */
+  const renderDashboard = (vide = false) => (
     <RelayToday
       locale={locale}
       manager={relayProfile.manager}
-      arrivalCount={arrivals.length}
+      arrivalCount={vide ? 0 : arrivals.length}
       arrivalCourier={arrivalCourier}
       arrivalVehicle={arrivalVehicle}
       arrivalMission={arrivalMission}
-      readyForPickup={todayCounters.readyForPickup}
-      lastDay={todayCounters.lastDay}
-      outbound={todayCounters.outbound}
-      capacityUsed={relayProfile.capacityUsed}
+      readyForPickup={vide ? 0 : todayCounters.readyForPickup}
+      lastDay={vide ? 0 : todayCounters.lastDay}
+      outbound={vide ? 0 : todayCounters.outbound}
+      capacityUsed={vide ? 0 : relayProfile.capacityUsed}
       capacityMax={relayProfile.capacityMax}
       closingLabel={closingLabel}
-      todos={todayTodos}
+      todos={vide ? [] : todayTodos}
       trust={relayProfile.trust}
+      // Le signal d'un relais NEUF : aucun colis jamais passe. Les compteurs
+      // du jour tombent a zero chaque matin — s'y fier ferait reapparaitre
+      // l'ecran de bienvenue a un gerant qui travaille depuis six mois.
+      lifetimeParcels={vide ? 0 : relayParcels.length}
+      trainingDone={trainingDone}
+      payoutVerified={payoutVerified}
       onNavigate={setTab}
       footer={
         <>
-          <EvidenceRequestInbox accent="#2563EB" />
+          <EvidenceRequestInbox accent="#2456D6" />
           {!Capacitor.isNativePlatform() && <AppDownloadBanner portal="RELAY_POINT" />}
         </>
       }
@@ -1336,7 +1466,7 @@ export default function RelayPointPage() {
   const renderTokens = () => (
     <Panel kicker={t("rl1_point_page.tokens_kicker")} title={t("rl1_point_page.module_in_development_title")}>
       <div className="rounded-3xl border border-dashed border-blue-300 bg-blue-50 p-8 text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-blue-700 shadow-sm">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-blue-700 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)]">
           <BadgeCheck size={30} />
         </div>
         <h3 className="mt-5 text-2xl font-black text-blue-950">{t("rl1_point_page.tokens_in_development_title")}</h3>
@@ -1347,26 +1477,27 @@ export default function RelayPointPage() {
     </Panel>
   );
 
-  const renderNiveaux = () => (
-    <Panel kicker={t("rl1_point_page.levels_kicker")} title={t("rl1_point_page.module_in_development_title")}>
-      <div className="rounded-3xl border border-dashed border-blue-300 bg-blue-50 p-8 text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-blue-700 shadow-sm">
-          <Layers3 size={30} />
-        </div>
-        <h3 className="mt-5 text-2xl font-black text-blue-950">{t("rl1_point_page.levels_in_development_title")}</h3>
-        <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-blue-950/70">
-          {t("rl1_point_page.levels_in_development_body")}
-        </p>
-      </div>
-    </Panel>
-  );
+  /**
+   * L'ecran des paliers.
+   *
+   * Il remplace un panneau « en cours de developpement » qui annoncait des
+   * paliers Starter/Confirme/Premium non actives. Ils le sont : la regle
+   * `ROLE_TIER_RULES[RELAY_POINT]` les applique depuis le serveur, avec un
+   * seuil de score ET un seuil de volume.
+   */
+  const renderNiveaux = () => <RelayTiers />;
 
   /**
    * L'ecran des versements.
    *
    * `RelayPayouts` repond aux trois questions du gerant — combien, quand, sur
-   * quel numero. Le panneau complet reste dessous : grille tarifaire,
-   * ajustements, historique des versements. On ne perd rien, on hierarchise.
+   * quel numero — et la page s'arrete la.
+   *
+   * L'ancien `RelayFinancePanel` vivait dessous. Il faisait doublon : la
+   * grille tarifaire, le motif de blocage et la date du prochain versement
+   * sont deja dans `RelayPayouts`, qui les lit des memes endpoints. Deux
+   * lectures du meme chiffre sur un meme ecran, c'est une de trop — le jour
+   * ou elles divergent, le gerant ne sait plus laquelle croire.
    */
   const renderFinances = () => (
     <div className="space-y-4">
@@ -1378,8 +1509,7 @@ export default function RelayPointPage() {
           verification — ne se deroule que si on le demande : sur un ecran
           qu'on ouvre pour voir son argent, un formulaire de numero ouvert en
           permanence invite a toucher a ce qui marche. */}
-      {payoutFormOpen ? <PayoutAccountVerificationCard ownerRole="RELAY_POINT" accent="#1D4ED8" /> : null}
-      <RelayFinancePanel onOpenKyc={() => setTab("kyc")} />
+      {payoutFormOpen ? <PayoutAccountVerificationCard ownerRole="RELAY_POINT" accent="#2456D6" /> : null}
     </div>
   );
 
@@ -1388,6 +1518,7 @@ export default function RelayPointPage() {
       capacity={relayProfile.capacityMax}
       used={placesUsed}
       hours={relayAccount?.opening_hours || ""}
+      acceptsBulky={relayAccount?.accepts_bulky ?? true}
       busy={operationBusy}
       onSave={(payload) => void updateRelaySettings(payload)}
       onOpenClosure={() => setTab("fermeture")}
@@ -1412,6 +1543,177 @@ export default function RelayPointPage() {
         pickedUpAt: parcel.picked_up_at,
       })),
     [relayParcels],
+  );
+
+  /**
+   * Le resume du matin, et ce qui attend le gerant.
+   *
+   * ───────────────────────────────────────────────────────────────────────
+   * TOUT EST DERIVE, RIEN N'EST STOCKE
+   *
+   * Aucune table ne range un « resume du matin ». Les chiffres sont lus de
+   * l'etat reel du relais : colis annonces, colis qui attendent leur client,
+   * colis qui doivent partir. Ils sont donc toujours justes.
+   *
+   * ───────────────────────────────────────────────────────────────────────
+   * CE QUI N'EST PAS ANNONCE
+   *
+   * La maquette affiche « Livreur dans ~12 min ». Aucune donnee ne le
+   * permet : le portail relais ne recoit ni position du livreur, ni heure de
+   * passage — `RelayParcelSerializer` n'expose ni tournee, ni creneau, ni
+   * `ShipmentLocation`. On annonce donc ce qu'on sait : qu'un livreur est en
+   * route, avec sa mission, son nombre de colis et les places a prevoir.
+   */
+  /**
+   * Les reglages de notification.
+   *
+   * Charges a part des autres donnees : ils ne changent pas d'un
+   * rafraichissement a l'autre, et les recharger avec les colis ferait une
+   * requete de plus toutes les minutes pour rien.
+   */
+  const [notifSettings, setNotifSettings] = useState<NotifSettings | null>(null);
+  const [notifSettingsBusy, setNotifSettingsBusy] = useState(false);
+
+  useEffect(() => {
+    http<NotifSettings>("/api/auth/relay-point/notification-preferences/")
+      .then(setNotifSettings)
+      .catch(() => setNotifSettings(null));
+  }, []);
+
+  /**
+   * Enregistrement optimiste.
+   *
+   * L'interrupteur bascule tout de suite, puis le serveur confirme. Attendre
+   * l'aller-retour donnerait un bouton mou ; et si le serveur refuse — une
+   * heure de resume avant 7 h, par exemple — sa reponse ecrase la valeur
+   * affichee, donc rien ne reste faux a l'ecran.
+   */
+  const changeNotifSettings = useCallback(
+    (patch: Partial<NotifSettings>) => {
+      setNotifSettings((current) => (current ? { ...current, ...patch } : current));
+      setNotifSettingsBusy(true);
+      http<NotifSettings>("/api/auth/relay-point/notification-preferences/", {
+        method: "PATCH",
+        body: JSON.stringify(patch),
+      })
+        .then(setNotifSettings)
+        .catch(() =>
+          // Le refus du serveur fait foi : on relit plutot que de garder une
+          // valeur que personne n'a acceptee.
+          http<NotifSettings>("/api/auth/relay-point/notification-preferences/")
+            .then(setNotifSettings)
+            .catch(() => undefined),
+        )
+        .finally(() => setNotifSettingsBusy(false));
+    },
+    [],
+  );
+
+  const notifSummary = useMemo(
+    () => ({
+      toReceive: arrivals.length,
+      pickupsExpected: todayCounters.readyForPickup,
+      outbound: todayCounters.outbound,
+      freePlaces: Math.max(0, (relayAccount?.storage_capacity || 0) - placesUsed),
+      capacity: relayAccount?.storage_capacity || 0,
+    }),
+    [arrivals.length, placesUsed, relayAccount?.storage_capacity, todayCounters],
+  );
+
+  /** Ce qui appelle un geste, dans l'ordre ou il coute cher de l'ignorer. */
+  const notifTodo = useMemo<NotifItem[]>(() => {
+    const items: NotifItem[] = [];
+
+    if (arrivals.length > 0) {
+      // Places, pas colis : un encombrant en occupe cinq. Annoncer « 6 colis »
+      // a un gerant qui n'a que six places libres lui ferait croire que ca
+      // passe, et le livreur repartirait avec la moitie du lot.
+      const places = relayParcels
+        .filter((parcel) => parcel.status === "EXPECTED")
+        .reduce((total, parcel) => total + placesOf(parcel.parcel_size || "STANDARD"), 0);
+      items.push({
+        id: "arrivee",
+        tone: "orange",
+        icon: "truck",
+        title: arrivals.length > 1 ? `${arrivals.length} colis en route` : "Un colis en route",
+        detail: [arrivalMission, `${arrivals.length} colis`, `${places} place${places > 1 ? "s" : ""} a prevoir`]
+          .filter(Boolean)
+          .join(" · "),
+        at: "",
+        onOpen: () => setTab("reception"),
+      });
+    }
+
+    const aRenvoyer = outboundParcels.pending[0];
+    if (aRenvoyer) {
+      items.push({
+        id: "renvoi",
+        tone: "red",
+        icon: "retour",
+        title:
+          outboundParcels.pending.length > 1
+            ? `${outboundParcels.pending.length} colis a faire partir`
+            : "Un colis a renvoyer",
+        detail: `${aRenvoyer.ref} · ${aRenvoyer.detail}`,
+        at: "",
+        onOpen: () => setTab("sortie"),
+      });
+    }
+
+    // Les pieces reclamees AU RELAIS. Celles qui visent le vendeur ou
+    // l'acheteur ne le regardent pas.
+    relayDisputes.forEach((dispute) => {
+      (dispute.evidence_requests || []).forEach((demande, rang) => {
+        items.push({
+          id: `piece-${dispute.id}-${rang}`,
+          tone: "gold",
+          icon: "dossier",
+          title: "Photo demandee",
+          detail: `${dispute.ref} · ${demande.instructions}`,
+          at: dispute.updated_at,
+          onOpen: () => {
+            setDisputeFocus("dossiers");
+            setTab("litiges");
+          },
+        });
+      });
+    });
+
+    return items;
+  }, [arrivalMission, arrivals.length, outboundParcels.pending, relayDisputes, relayParcels, setTab]);
+
+  /**
+   * Ce qui ne demande rien.
+   *
+   * Les notifications du serveur (`UserNotification`) atterrissent ici, et
+   * non dans « A traiter » : elles racontent ce qui s'est passe, pas ce
+   * qu'on attend du gerant. Les melanger viderait la premiere section de
+   * son sens.
+   */
+  const notifInfo = useMemo<NotifItem[]>(
+    () =>
+      notifications.slice(0, 8).map((notification) => {
+        // Correspondance par TYPE, jamais par mots du titre : une icone
+        // choisie sur le libelle changerait de sens a la premiere
+        // reformulation, et personne ne saurait pourquoi.
+        const parType: Record<string, { tone: NotifItem["tone"]; icon: NotifItem["icon"] }> = {
+          PAYMENT: { tone: "green", icon: "versement" },
+          SYSTEM: { tone: "blue", icon: "bouclier" },
+          SUPPORT: { tone: "gold", icon: "dossier" },
+          ORDER: { tone: "blue", icon: "colis" },
+          PROMOTION: { tone: "orange", icon: "cloche" },
+        };
+        const style = parType[notification.notification_type] ?? { tone: "blue" as const, icon: "cloche" as const };
+        return {
+          id: `notif-${notification.id}`,
+          tone: style.tone,
+          icon: style.icon,
+          title: notification.title,
+          detail: notification.message,
+          at: notification.created_at,
+        };
+      }),
+    [notifications],
   );
 
   const disputeFiles = useMemo<DisputeFile[]>(
@@ -1448,122 +1750,61 @@ export default function RelayPointPage() {
 
   const renderSimple = (kind: RelayTab) => {
     if (kind === "kyc") {
+      // L'ancien panneau listait cinq lignes de conformite dans une grille
+      // bureau. L'ecran mobile met en tete la seule chose qui decide : le
+      // dossier autorise-t-il a recevoir et a etre paye. Les pieces suivent,
+      // chacune avec son etat reel et son geste.
       return (
-        <Panel kicker={t("rl1_point_page.compliance_kicker")} title={t("rl1_point_page.kyc_documents_title")}>
-          <div className="grid gap-4 lg:grid-cols-[1fr_0.85fr]">
-            <div className="space-y-3">
-              {kycItems.map(([title, status, body], index) => {
-                const documentType = ["MANAGER_ID", "ACTIVITY_RECORD", "PAYOUT_ACCOUNT", "PREMISES_PHOTOS", "FIELD_VALIDATION"][index];
-                const uploaded = complianceDocuments.find((document) => document.document_type === documentType);
-                return (
-                <div key={title} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <strong className="text-slate-950 dark:text-white">{title}</strong>
-                    <StatusPill tone={isKycApproved ? "emerald" : "amber"}>{status}</StatusPill>
-                  </div>
-                  <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{body}</p>
-                  <label className="mt-3 inline-flex cursor-pointer items-center rounded-xl border border-blue-200 bg-white px-4 py-2 text-sm font-black text-blue-700 dark:border-blue-800 dark:bg-slate-900 dark:text-blue-200">
-                    {uploaded ? t("rl1_point_page.document_uploaded_status", { status: uploaded.status }) : t("rl1_point_page.send_document")}
-                    <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" disabled={operationBusy} className="sr-only" onChange={(event) => void uploadRelayDocument(documentType, event.target.files?.[0])} />
-                  </label>
-                </div>
-                );
-              })}
-            </div>
-            <div className="hidden rounded-2xl border border-blue-100 bg-blue-50 p-5 dark:border-blue-900 dark:bg-blue-950/40 lg:block">
-              <FileCheck2 className="text-blue-700 dark:text-blue-300" />
-              <h3 className="mt-4 font-black text-blue-950 dark:text-blue-50">{t("rl1_point_page.opening_rule_title")}</h3>
-              <p className="mt-2 text-sm leading-7 text-blue-950/75 dark:text-blue-100/80">
-                {t("rl1_point_page.opening_rule_body")}
-              </p>
-            </div>
-          </div>
-        </Panel>
+        <RelayDocuments
+          documents={complianceDocuments}
+          kycApproved={isKycApproved}
+          busy={operationBusy}
+          onUpload={(documentType, file) => void uploadRelayDocument(documentType, file)}
+          onOpenPayoutNumber={() => {
+            setPayoutFormOpen(true);
+            setTab("finances");
+          }}
+        />
       );
     }
 
     if (kind === "historique") {
-      const receivedCount = relayParcels.filter((parcel) => parcel.received_at).length;
-      const pickedUpCount = relayParcels.filter((parcel) => parcel.status === "PICKED_UP").length;
-      const returnedCount = relayParcels.filter((parcel) => parcel.status.startsWith("RETURNED_")).length;
-      return (
-        <Panel kicker={t("rl1_point_page.traceability_kicker")} title={t("rl1_point_page.operational_history_title")}>
-          <div className="mb-4 grid gap-3 md:grid-cols-4">
-            {[t("rl1_point_page.filter_today"), t("rl1_point_page.filter_7_days"), t("rl1_point_page.filter_30_days"), t("rl1_point_page.filter_all_statuses")].map((filter) => (
-              <button key={filter} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100">
-                {filter}
-              </button>
-            ))}
-          </div>
-          <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-            <div className="space-y-3">
-              {relayParcels.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm font-semibold text-slate-500 dark:border-slate-800 dark:bg-slate-800">{t("rl1_point_page.no_operations_recorded")}</div> : relayParcels.map((parcel) => (
-                <article key={parcel.id} className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-                  <div className="flex items-center justify-between gap-3"><strong className="text-slate-950 dark:text-white">BV-{parcel.order_id}</strong><StatusPill tone={parcel.status === "PICKED_UP" ? "emerald" : parcel.status.startsWith("RETURNED_") ? "amber" : "blue"}>{parcel.status}</StatusPill></div>
-                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{t("rl1_point_page.slot_updated_at", { slot: parcel.slot_code || t("rl1_point_page.slot_undefined"), date: new Date(parcel.updated_at).toLocaleString(locale === "en" ? "en-US" : "fr-FR") })}</p>
-                </article>
-              ))}
-            </div>
-            <div className="grid gap-3 md:grid-cols-2">
-              {[[t("rl1_point_page.stat_receptions"), receivedCount], [t("rl1_point_page.stat_pickups"), pickedUpCount], [t("rl1_point_page.stat_returns"), returnedCount], [t("rl1_point_page.stat_disputes"), relayDisputes.length]].map(([label, value]) => (
-                <div key={label} className="rounded-2xl border border-slate-100 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-                  <div className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">{label}</div>
-                  <div className="mt-2 text-2xl font-black text-slate-950 dark:text-white">{value}</div>
-                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{t("rl1_point_page.computed_from_operations")}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Panel>
-      );
+      // L'ancien panneau etait une console de bureau : quatre pseudo-filtres
+      // sans effet, une grille de cartes, des statuts bruts. Il est remplace
+      // par une ligne de temps que le serveur compose
+      // (`RelayPointHistoryView`), et qui repond a la seule question posee au
+      // comptoir : a quelle heure, a qui, avec quelle preuve.
+      return <RelayHistory />;
     }
 
     if (kind === "aide") {
+      // L'ancien panneau d'aide etait une page bureau. L'ecran mobile met en
+      // tete le contact humain : quand on cherche de l'aide au comptoir, un
+      // client attend, et lire sept questions n'est pas toujours la reponse.
       return (
-        <Panel kicker={t("rl1_point_page.support_kicker")} title={t("rl1_point_page.help_support_title")}>
-          <div className="grid gap-4 md:grid-cols-3">
-            {[
-              [HelpCircle, t("rl1_point_page.help_quick_guide_title"), t("rl1_point_page.help_quick_guide_body")],
-              [MessageSquareText, t("rl1_point_page.help_contact_title"), t("rl1_point_page.help_contact_body")],
-              [ShieldCheck, t("rl1_point_page.help_mediation_title"), t("rl1_point_page.help_mediation_body")],
-            ].map(([Icon, title, body]) => (
-              <div key={title as string} className="rounded-2xl border border-slate-100 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-800">
-                <Icon className="text-blue-700 dark:text-blue-300" />
-                <h3 className="mt-4 font-black text-slate-950 dark:text-white">{title as string}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{body as string}</p>
-              </div>
-            ))}
-          </div>
-          <div className="mt-5 grid gap-2 rounded-2xl border border-blue-100 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/30 sm:grid-cols-[.8fr_1.2fr_auto] sm:items-end">
-            <label className="text-xs font-black uppercase tracking-[0.12em] text-blue-900 dark:text-blue-100">{t("rl1_point_page.support_subject_label")}<input value={supportSubject} onChange={(event) => setSupportSubject(event.target.value)} placeholder={t("rl1_point_page.support_subject_placeholder")} className="mt-2 w-full rounded-xl border border-blue-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none dark:bg-slate-900 dark:text-white" /></label>
-            <label className="text-xs font-black uppercase tracking-[0.12em] text-blue-900 dark:text-blue-100">{t("rl1_point_page.support_message_label")}<textarea value={supportBody} onChange={(event) => setSupportBody(event.target.value)} placeholder={t("rl1_point_page.support_message_placeholder")} className="mt-2 min-h-20 w-full rounded-xl border border-blue-200 bg-white px-3 py-2.5 text-sm font-normal normal-case text-slate-900 outline-none dark:bg-slate-900 dark:text-white" /></label>
-            <button type="button" onClick={sendRelaySupportMessage} disabled={operationBusy || supportSubject.trim().length < 3 || supportBody.trim().length < 10} className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-black text-white disabled:opacity-50">{t("rl1_point_page.send")}</button>
-          </div>
-        </Panel>
+        <RelayHelp
+          onOpenInbox={() => setTab("messagerie")}
+          busy={operationBusy}
+          onSend={sendRelaySupportMessage}
+        />
       );
     }
 
     if (kind === "notifications") {
+      // L'ancien panneau listait les `UserNotification` brutes, statut
+      // technique compris. Il est remplace par un resume derive de l'etat du
+      // relais, puis par ce qui attend reellement un geste : un gerant qui
+      // recoit une alerte par colis n'en lit plus aucune au bout d'une
+      // semaine.
       return (
-        <Panel kicker={t("rl1_point_page.alerts_kicker")} title={t("rl1_point_page.operational_notifications_title")}>
-          <div className="space-y-3">
-            {notifications.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-200 p-5 text-sm font-semibold text-slate-500">{t("rl1_point_page.no_notification")}</div> : notifications.map((notification) => (
-              <div key={notification.id} className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
-                <div className="flex gap-3">
-                  <Bell className="mt-0.5 flex-shrink-0 text-blue-700 dark:text-blue-300" size={18} />
-                  <div>
-                    <div className="font-black text-slate-950 dark:text-white">{notification.title}</div>
-                    <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">{notification.message}</p>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <StatusPill tone="slate">{notification.notification_type}</StatusPill>
-                  <StatusPill tone={notification.is_read ? "emerald" : "amber"}>{notification.is_read ? t("rl1_point_page.read_status") : t("rl1_point_page.unread_status")}</StatusPill>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Panel>
+        <RelayNotifications
+          summary={notifSummary}
+          todo={notifTodo}
+          info={notifInfo}
+          settings={notifSettings}
+          settingsBusy={notifSettingsBusy}
+          onChangeSettings={changeNotifSettings}
+        />
       );
     }
 
@@ -1646,12 +1887,54 @@ export default function RelayPointPage() {
     kyc: () => renderSimple("kyc"),
     aide: () => renderSimple("aide"),
     notifications: () => renderSimple("notifications"),
-    formation: () => <RelayTraining onError={showOperationError} />,
+    // La grille mobile remplace le panneau bureau. `RelayTraining` garde le
+    // CONTENU des modules : « Commencer » l'ouvre, au lieu de dupliquer le
+    // cours dans deux composants qui divergeraient.
+    formation: () =>
+      // « Commencer » ouvre le COURS existant plutot qu'un second ecran : le
+      // contenu pedagogique et le quiz vivent dans `RelayTraining`, et le
+      // dupliquer garantirait qu'un jour les deux divergent.
+      trainingOpen ? (
+        <RelayTraining onError={showOperationError} />
+      ) : (
+        <RelayTrainingMobile onError={showOperationError} onOpenModule={() => setTrainingOpen(true)} />
+      ),
     avis: () => <RelayReviews onError={showOperationError} />,
-    rapports: () => <RelayReports onError={showOperationError} />,
-    reseau: () => renderSimple("reseau"),
-    fermeture: () => <RelayClosure onError={showOperationError} relay={relayIdentity} />,
-    inscription: () => <RelayOnboarding onError={showOperationError} relay={relayIdentity} />,
+    // L'ancien `RelayReports` etait un panneau bureau : exports, bareme,
+    // tableaux. L'ecran mobile repond d'abord a « combien ai-je touche »,
+    // et les volumes ne viennent qu'ensuite, parce qu'ils EXPLIQUENT le
+    // montant. L'export vit desormais sur l'ecran Historique, ou l'on
+    // choisit deja une periode.
+    rapports: () => <RelayReportsMobile onError={showOperationError} />,
+    // Le menu annonce « Mon equipe » : l'ecran porte donc l'equipe, pas un
+    // reseau de partenaires. L'onglet garde sa cle `reseau` pour ne pas
+    // casser les liens existants.
+    reseau: () => (
+      <RelayTeam onError={showOperationError} onOpenHistory={() => setTab("historique")} />
+    ),
+    fermeture: () => <RelayClosureMobile onError={showOperationError} relay={relayIdentity} />,
+    // Le menu annonce « Activation et partenariat ». L'ecran montre donc ou
+    // en est l'ouverture, etape par etape, chacune lue d'un etat reel.
+    inscription: () =>
+      // Deux entrees du menu mènent ici : « Activation et partenariat »
+      // regarde SON relais, « Devenir point relais » est la candidature d'un
+      // commercant qui n'en a pas encore. Le focus les separe.
+      stateFocus === "candidature" ? (
+        <RelayApply onOpenTraining={() => setTab("formation")} />
+      ) : (
+      <RelayActivation
+        relay={{
+          name: relayProfile.name,
+          city: relayAccount?.city || "",
+          address: relayAccount?.address || "",
+          openedAt: relayAccount?.created_at || "",
+          capacity: relayAccount?.storage_capacity || 0,
+          hours: relayAccount?.opening_hours || "",
+        }}
+        documents={complianceDocuments}
+        payoutVerified={payoutVerified}
+      />
+    ),
     messagerie: () => (
       <RelayInbox
         onError={showOperationError}
@@ -1666,6 +1949,7 @@ export default function RelayPointPage() {
         profile={{
           name: relayProfile.name,
           manager: relayProfile.manager,
+          phone: relayAccount?.phone || "",
           city: relayProfile.city,
           address: relayProfile.address,
           relayCode: relayAccount?.relay_code || "",
@@ -1677,6 +1961,7 @@ export default function RelayPointPage() {
         avatarUrl={avatarUrl || undefined}
         onAvatarFile={setAvatarFile}
         onRequestChange={() => setTab("messagerie")}
+        onSaveIdentity={saveRelayIdentity}
       >
         <RelaySettingsBody
           locale={locale}
@@ -1705,17 +1990,70 @@ export default function RelayPointPage() {
         onValidate={validateOutbound}
       />
     ),
-    etats: () => (
+    etats: () =>
+      // « Statut du relais » est un ecran a part : il dit POURQUOI le relais
+      // n'est pas ouvert, et ce qu'il reste a faire. Les autres entrees du
+      // groupe (erreur, hors connexion, camera) restent sur `RelayStates`.
+      stateFocus === "connexion" ? (
+        // L'ecran de connexion occupe tout l'ecran : on y entre un PIN, et
+        // rien d'autre ne doit attirer le pouce a ce moment-la.
+        <div className="fixed inset-0 z-[90] overflow-y-auto">
+          {/* `RelayPinLogin` sert aussi d'ecran d'entree hors du portail :
+              on ne le fige pas lui-meme, on l'enveloppe ici, et on lui
+              ajoute la sortie qui lui manque — sans elle, la demonstration
+              serait sans retour. */}
+          <button
+            type="button"
+            onClick={goBack}
+            aria-label="Revenir"
+            className="safe-pt-header absolute left-2 top-0 z-10 flex h-10 w-10 items-center justify-center rounded-full text-slate-900 transition active:scale-90 dark:text-white"
+          >
+            <ChevronLeft size={24} strokeWidth={2.4} />
+          </button>
+          <RelayPinLogin onAuthenticated={() => setTab("dashboard")} />
+        </div>
+      ) : stateFocus === "invitation" ? (
+        <RelayInvitation
+          relais={`${relayProfile.name} · ${relayProfile.city}`}
+          inviteur={relayProfile.manager}
+          onDone={() => setTab("dashboard")}
+          onClose={goBack}
+        />
+      ) : stateFocus === "neuf" ? (
+        // Le meme accueil, compteurs a zero : c'est ce que voit un gerant le
+        // matin de son ouverture.
+        renderDashboard(true)
+      ) : stateFocus === "install" ? (
+        <RelayInstall />
+      ) : stateFocus === "camera" ? (
+        // L'ecran camera occupe tout l'ecran : il se ferme en revenant a
+        // l'accueil, comme n'importe quelle prise de vue du comptoir.
+        <RelayCamera
+          onClose={() => setTab("dashboard")}
+          onManual={() => setTab("retrait")}
+          onDecoded={() => setTab("retrait")}
+        />
+      ) : stateFocus === "erreur" ? (
+        <RelayErrorStates onNavigate={setTab} />
+      ) : stateFocus === "offline" ? (
+        <RelayOffline />
+      ) : stateFocus === "statut" ? (
+        <RelayStatus
+          status={relayAccount?.status || ""}
+          documents={complianceDocuments}
+          payoutVerified={payoutVerified}
+          capacity={relayAccount?.storage_capacity || 0}
+          hours={relayAccount?.opening_hours || ""}
+          onNavigate={setTab}
+        />
+      ) : (
       <RelayStates
         focus={stateFocus}
         readiness={readiness}
         status={relayProfile.status}
-        manager={relayProfile.manager}
-        email={user?.email || ""}
         lastError={operationMessage?.tone === "error" ? operationMessage.text : null}
-        parcelCount={relayParcels.length}
         onNavigate={setTab}
-        onLogout={handleLogout}
+        onOpenScreen={setStateFocus}
       />
     ),
   }[tab];
@@ -1726,7 +2064,7 @@ export default function RelayPointPage() {
   // `bg-fixed` cale le degrade sur la fenetre, pas sur la hauteur de page :
   // sans lui, un ecran long l'etire et un ecran court le coupe.
   return (
-    <main className="belivay-portal min-h-screen bg-[linear-gradient(180deg,#F5F4F2_0%,#F1EFEC_55%,#EDEAE5_100%)] bg-fixed font-sans text-slate-950 dark:bg-slate-950 dark:bg-none dark:text-white">
+    <main className="belivay-portal relay-shell min-h-screen font-sans">
       <div className="flex">
         <RelaySidebar
           activeTab={tab}
@@ -1755,7 +2093,7 @@ export default function RelayPointPage() {
               trait : un filet de 1 px se lit comme une separation de tableau,
               une ombre comme une surface posee au-dessus de la page qui
               defile dessous. */}
-          <header className="safe-pt-header sticky top-0 z-30 bg-white/90 px-4 pb-3.5 shadow-[0_1px_2px_rgba(15,23,42,.05),0_4px_12px_rgba(15,23,42,.04)] backdrop-blur-xl dark:bg-slate-900/90 dark:shadow-[0_1px_2px_rgba(0,0,0,.4)] sm:px-6 sm:pb-4">
+          <header className="safe-pt-header pr-glass sticky top-0 z-30 px-4 pb-3.5 sm:px-6 sm:pb-4 md:px-3 lg:px-6">
             {/* ── Bandeau de sous-page ───────────────────────────────────────
                 Les quatre destinations de la barre du bas sont l'application :
                 elles gardent le bandeau complet. Tout le reste est une page ou
@@ -1862,7 +2200,7 @@ export default function RelayPointPage() {
                 aria-label={ui.openProfile}
                 aria-haspopup="dialog"
                 aria-expanded={profileSheetOpen}
-                className="flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-xs font-black text-white ring-1 ring-blue-300/40 shadow-[0_2px_10px_rgba(37,99,235,.45)] transition active:scale-90"
+                className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#0E1B38] text-[12px] font-black tracking-wide text-white ring-2 ring-blue-500 transition active:scale-90 dark:bg-slate-800"
               >
                 {avatarUrl ? (
                   <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
@@ -1880,14 +2218,14 @@ export default function RelayPointPage() {
                 l'ecran trois lignes plus bas, et deux titres empiles valent
                 zero titre. */}
             <div className={`mt-2.5 min-w-0 lg:hidden ${PRIMARY_TABS.includes(tab) ? "" : "hidden"}`}>
-              <p className="flex items-center gap-2 text-[12px] font-black uppercase leading-none tracking-[0.055em] text-[#1D4ED8] dark:text-blue-300">
-                <span aria-hidden className="h-[9px] w-[9px] flex-shrink-0 rounded-[2px] bg-[#1D4ED8] dark:bg-blue-400" />
+              <p className="flex items-center gap-2 text-[12px] font-black uppercase leading-none tracking-[0.055em] text-[#2456D6] dark:text-blue-300">
+                <span aria-hidden className="h-[9px] w-[9px] flex-shrink-0 rounded-[2px] bg-[#2456D6] dark:bg-blue-400" />
                 <span className="truncate">
                   {ui.brand} · {relayProfile.name}{relayProfile.city ? `, ${relayProfile.city}` : ""}
                 </span>
               </p>
               {tab === "dashboard" ? null : (
-                <h1 className="truncate text-[19px] font-black leading-tight tracking-tight">{activeLabel}</h1>
+                <h1 className="truncate text-[17px] font-black leading-tight tracking-[-0.02em]">{activeLabel}</h1>
               )}
             </div>
 
@@ -1965,7 +2303,7 @@ export default function RelayPointPage() {
                   pose le gerant en arrivant le matin. Le point coloré porte
                   l'etat a lui seul, lisible avant meme d'avoir lu le mot. */}
               <span
-                className={`inline-flex flex-shrink-0 items-center whitespace-nowrap rounded-full border px-3 py-[5px] text-[12.5px] font-semibold ${
+                className={`inline-flex h-[26px] flex-shrink-0 items-center gap-[5px] whitespace-nowrap rounded-full border px-2.5 text-[12px] font-bold ${
                   statusTone === "emerald"
                     ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-200"
                     : statusTone === "red"
@@ -1983,10 +2321,10 @@ export default function RelayPointPage() {
               </span>
               {/* La capacite est le seul chiffre du bandeau qui peut devenir
                   bloquant : il porte donc l'orange, pas le bleu d'information. */}
-              <span className="inline-flex flex-shrink-0 items-center whitespace-nowrap rounded-full border border-orange-200 bg-orange-50 px-3 py-[5px] text-[12.5px] font-semibold text-orange-600 dark:border-orange-900 dark:bg-orange-950 dark:text-orange-200">
+              <span className="inline-flex h-[26px] flex-shrink-0 items-center whitespace-nowrap rounded-full border border-orange-200 bg-orange-50 px-2.5 text-[12px] font-bold text-orange-600 dark:border-orange-900 dark:bg-orange-950 dark:text-orange-200">
                 {relayProfile.capacityUsed} / {relayProfile.capacityMax} places
               </span>
-              <span className="inline-flex flex-shrink-0 items-center whitespace-nowrap rounded-full border border-blue-200 bg-blue-50 px-3 py-[5px] text-[12.5px] font-semibold text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200">
+              <span className="inline-flex h-[26px] flex-shrink-0 items-center whitespace-nowrap rounded-full border border-blue-200 bg-blue-50 px-2.5 text-[12px] font-bold text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200">
                 Trust {relayProfile.trust}
               </span>
             </div>
@@ -1995,19 +2333,17 @@ export default function RelayPointPage() {
 
           {/* `pb-tabbar` : le dernier bloc de chaque ecran reste atteignable
               au-dessus de la barre d'onglets fixe et de la barre gestuelle. */}
-          <div className="pb-tabbar pb-tabbar-tall p-4 sm:p-6 lg:pb-6">
-            {/* Les demandes de preuve ouvrent chaque ecran metier — sauf
-                l'accueil, ou elles passeraient devant « Bonjour X » et
-                l'arrivee livreur. Elles y sont rendues en pied de page, et la
-                ligne « constat a completer » les annonce depuis le haut. */}
-            {tab === "dashboard" ? null : <EvidenceRequestInbox accent="#2563EB" />}
+          <div className="pb-tabbar pb-tabbar-tall p-4 sm:p-6 md:px-7 lg:px-6 lg:pb-6">
+            {/* Les demandes de preuve ouvrent les ecrans METIER, pas les
+                ecrans de reglage : voir `ECRANS_SANS_BOITE_PREUVES`. */}
+            {ECRANS_SANS_BOITE_PREUVES.includes(tab) ? null : <EvidenceRequestInbox accent="#2456D6" />}
             {operationMessage ? (
-              <div className={`mb-5 flex items-start justify-between gap-3 rounded-2xl border p-4 text-sm font-bold ${operationMessage.tone === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-800"}`}>
+              <div className={`mb-5 flex items-start justify-between gap-3 rounded-[14px] border p-4 text-sm font-bold ${operationMessage.tone === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-800"}`}>
                 <span>{operationMessage.text}</span>
                 <button type="button" onClick={() => setOperationMessage(null)} className="rounded-lg p-1 hover:bg-black/5" title={t("rl1_point_page.close")}><X size={16} /></button>
               </div>
             ) : null}
-            <div className="mb-5 hidden rounded-2xl border border-blue-100 bg-blue-50 p-4 lg:block">
+            <div className="mb-5 hidden rounded-[14px] border border-blue-100 bg-blue-50 p-4 lg:block">
               <div className="flex items-start gap-3">
                 <LockKeyhole className="mt-0.5 flex-shrink-0 text-blue-700" size={20} />
                 <p className="text-sm leading-6 text-blue-950/75">
@@ -2015,7 +2351,10 @@ export default function RelayPointPage() {
                 </p>
               </div>
             </div>
-            {content()}
+            {/* La mise en page de la tablette se decide ici, une fois, parce
+                que c'est ici qu'on sait quel ecran est affiche. Les regles
+                sont dans `relayTheme.css`. */}
+            <div className="pr-flow">{content()}</div>
           </div>
         </section>
       </div>
@@ -2041,6 +2380,7 @@ export default function RelayPointPage() {
         onSelect={(next, focus) => {
           setDrawerOpen(false);
           setStateFocus(focus ?? null);
+          origineMenu.current = next;
           setTab(next);
         }}
         labels={ui.tabs}
@@ -2067,7 +2407,7 @@ export default function RelayPointPage() {
       {avatarFile ? (
         <AvatarCropDialog
           file={avatarFile}
-          accent="#2563EB"
+          accent="#2456D6"
           onClose={() => setAvatarFile(null)}
           onUploaded={(updatedUser) => {
             setAvatarUrl(updatedUser.avatar_url || "");

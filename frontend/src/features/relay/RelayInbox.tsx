@@ -200,7 +200,7 @@ export default function RelayInbox({ onError, relay, onNavigate, outbound = 0, a
   return (
     <div className="space-y-3">
       {/* ── Les conversations ──────────────────────────────────────────── */}
-      <section className="overflow-hidden rounded-[18px] border border-slate-200/70 bg-white shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
+      <section className="overflow-hidden rounded-[14px] border border-slate-200 bg-white shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
         <ul>
           {conversations.map((conversation) => {
             const on = conversation.key === courante.key;
@@ -210,16 +210,16 @@ export default function RelayInbox({ onError, relay, onNavigate, outbound = 0, a
                   type="button"
                   onClick={() => setActive(conversation.key)}
                   className={`flex w-full items-center gap-3 px-4 py-3.5 text-left transition active:scale-[.99] ${
-                    on ? "bg-[#EEF3FE] dark:bg-blue-950/40" : ""
+                    on ? "bg-[#EAF0FF] dark:bg-blue-950/40" : ""
                   }`}
                 >
                   <span
                     className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full ${
                       conversation.avatar === "cart"
-                        ? "border border-slate-200 bg-white text-[#E8590C] dark:border-slate-700 dark:bg-slate-800"
+                        ? "border border-slate-200 bg-white text-[#EF6A00] dark:border-slate-700 dark:bg-slate-800"
                         : conversation.avatar === "truck"
-                          ? "bg-[#0F1C3F] text-[#E9A93A]"
-                          : "bg-[#8B6914] text-[13px] font-black text-white"
+                          ? "bg-[#0E1B38] text-[#E8A10E]"
+                          : "bg-[#6B4700] text-[13px] font-black text-white"
                     }`}
                   >
                     {conversation.avatar === "cart" ? (
@@ -241,7 +241,7 @@ export default function RelayInbox({ onError, relay, onNavigate, outbound = 0, a
                   </span>
 
                   {conversation.badge > 0 ? (
-                    <span className="flex h-[26px] min-w-[26px] flex-shrink-0 items-center justify-center rounded-full bg-[#FDF0DC] px-1.5 text-[12.5px] font-black text-[#D98324] dark:bg-orange-950 dark:text-orange-300">
+                    <span className="flex h-[26px] min-w-[26px] flex-shrink-0 items-center justify-center rounded-full bg-[#FFF1E2] px-1.5 text-[12.5px] font-black text-[#B84A00] dark:bg-orange-950 dark:text-orange-300">
                       {conversation.badge}
                     </span>
                   ) : conversation.time ? (
@@ -257,7 +257,7 @@ export default function RelayInbox({ onError, relay, onNavigate, outbound = 0, a
       </section>
 
       {/* ── Le fil ─────────────────────────────────────────────────────── */}
-      <section className="rounded-[18px] border border-slate-200/70 bg-white px-4 pb-4 pt-4 shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
+      <section className="rounded-[14px] border border-slate-200 bg-white px-4 pb-4 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
         <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3 dark:border-slate-800">
           <div className="min-w-0">
             <h3 className="truncate text-[16px] font-black text-slate-900 dark:text-white">{courante.title}</h3>
@@ -265,7 +265,7 @@ export default function RelayInbox({ onError, relay, onNavigate, outbound = 0, a
               {courante.subtitle}
             </p>
           </div>
-          <span className="flex-shrink-0 rounded-full bg-[#FDF3DC] px-3 py-[5px] text-[12.5px] font-bold text-[#B4791A] dark:bg-amber-950 dark:text-amber-300">
+          <span className="flex-shrink-0 rounded-full bg-[#FFF4D6] px-3 py-[5px] text-[12.5px] font-bold text-[#8A5A00] dark:bg-amber-950 dark:text-amber-300">
             {courante.status}
           </span>
         </div>
@@ -281,13 +281,13 @@ export default function RelayInbox({ onError, relay, onNavigate, outbound = 0, a
             courante.messages.map((message) =>
               message.attachment ? (
                 <div key={message.id} className="flex justify-end">
-                  <div className="flex items-center gap-2 rounded-[14px] bg-[#0F1C3F] px-4 py-3.5 text-[14.5px] font-black text-[#E9A93A]">
+                  <div className="flex items-center gap-2 rounded-[14px] bg-[#0E1B38] px-4 py-3.5 text-[14.5px] font-black text-[#E8A10E]">
                     <Camera size={17} strokeWidth={2.4} /> {message.body}
                   </div>
                 </div>
               ) : message.from === "relais" ? (
                 <div key={message.id} className="flex justify-end">
-                  <div className="max-w-[82%] rounded-[14px] bg-gradient-to-r from-[#F58A1F] to-[#E8590C] px-4 py-3 text-white">
+                  <div className="pr-sunrise max-w-[82%] rounded-[16px] rounded-br-[4px] px-4 py-3 text-white">
                     <p className="text-[14.5px] font-medium leading-[1.45]">{message.body}</p>
                     <p className="mt-1.5 text-[11.5px] font-medium text-white/80">
                       Vous · {heure(message.at)}
@@ -326,7 +326,7 @@ export default function RelayInbox({ onError, relay, onNavigate, outbound = 0, a
                   key={texte}
                   type="button"
                   onClick={() => setDraft(texte)}
-                  className="rounded-full border border-[#C3D4FA] bg-[#EEF3FE] px-3.5 py-[7px] text-[13px] font-semibold text-[#2A5BD7] transition active:scale-95 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200"
+                  className="rounded-full border border-[#C9D7FB] bg-[#EAF0FF] px-3.5 py-[7px] text-[13px] font-semibold text-[#2456D6] transition active:scale-95 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200"
                 >
                   {texte}
                 </button>
@@ -361,7 +361,7 @@ export default function RelayInbox({ onError, relay, onNavigate, outbound = 0, a
                   if (event.key === "Enter") void envoyer();
                 }}
                 placeholder="Votre message"
-                className="min-w-0 flex-1 rounded-full border border-slate-200 bg-white px-4 py-3 text-[14.5px] font-medium text-slate-900 outline-none transition focus:border-[#1D4ED8] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                className="min-w-0 flex-1 rounded-full border border-slate-200 bg-white px-4 py-3 text-[14.5px] font-medium text-slate-900 outline-none transition focus:border-[#2456D6] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
               />
 
               <button
@@ -369,7 +369,7 @@ export default function RelayInbox({ onError, relay, onNavigate, outbound = 0, a
                 onClick={() => void envoyer()}
                 disabled={!draft.trim() || sending}
                 aria-label="Envoyer"
-                className="flex h-[46px] w-[46px] flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#F58A1F] to-[#E8590C] text-white transition active:scale-90 disabled:opacity-40"
+                className="flex h-[46px] w-[46px] flex-shrink-0 items-center justify-center pr-sunrise rounded-full transition active:scale-90 disabled:opacity-40"
               >
                 <Send size={19} strokeWidth={2.4} />
               </button>
@@ -379,9 +379,9 @@ export default function RelayInbox({ onError, relay, onNavigate, outbound = 0, a
       </section>
 
       {/* ── Le rappel qui compte ───────────────────────────────────────── */}
-      <div className="flex items-start gap-3 rounded-[14px] bg-[#EEF3FE] px-4 py-3.5 dark:bg-blue-950/40">
-        <Lock size={18} strokeWidth={2.2} className="mt-0.5 flex-shrink-0 text-[#5B7FC7] dark:text-blue-300" />
-        <p className="text-[13.5px] font-medium leading-[1.55] text-[#4A5E8A] dark:text-blue-100/80">
+      <div className="flex items-start gap-3 rounded-[14px] bg-[#EAF0FF] px-4 py-3.5 dark:bg-blue-950/40">
+        <Lock size={18} strokeWidth={2.2} className="mt-0.5 flex-shrink-0 text-[#8FB0FF] dark:text-blue-300" />
+        <p className="text-[13.5px] font-medium leading-[1.55] text-[#9FAACB] dark:text-blue-100/80">
           Vous échangez uniquement avec BelivaY, jamais directement avec un client, un vendeur ou un
           livreur. Les messages servent de preuve.
         </p>

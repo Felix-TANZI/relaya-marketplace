@@ -106,7 +106,25 @@ const PRIMARY_TABS: RelayTab[] = ["dashboard", "reception", "retrait", "stock"];
  * et repousse ce qu'on est venu modifier. L'accueil l'affiche en pied de
  * page, et sa ligne « constat a completer » l'annonce depuis le haut.
  */
-const ECRANS_SANS_BOITE_PREUVES: RelayTab[] = ["dashboard", "capacite"];
+/**
+ * Les ecrans qui n'ouvrent PAS sur les demandes de preuve.
+ *
+ * Receptionner, remettre, ranger : ces trois ecrans sont le geste en
+ * cours, et le gerant y arrive avec un colis dans les mains. Une demande
+ * de piece pour un litige d'il y a trois jours n'a pas a s'y poser en
+ * tete de page — elle retarde le geste sans rien faire avancer, et le
+ * client attend au comptoir.
+ *
+ * Les demandes restent la ou on vient les traiter : l'accueil les montre
+ * en pied d'ecran, la Messagerie et les Litiges les portent en entier.
+ */
+const ECRANS_SANS_BOITE_PREUVES: RelayTab[] = [
+  "dashboard",
+  "capacite",
+  "reception",
+  "retrait",
+  "stock",
+];
 
 
 function getInitialRelayTab(): RelayTab {

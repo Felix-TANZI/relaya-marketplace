@@ -86,6 +86,9 @@ urlpatterns = [
     path('returns/',                                views.vendor_return_list,   name='vendor-return-list'),
     path('returns/<int:return_id>/review/',         views.vendor_return_review, name='vendor-return-review'),
 
+    # AVIS VENDEUR
+    path('reviews/',                                views.vendor_reviews,       name='vendor-reviews'),
+
     #  ADMINISTRATION
     path('admin/vendors/',                           views.admin_list_vendors,       name='admin-list-vendors'),
     path('admin/vendors/<int:vendor_id>/',           views.admin_vendor_detail,      name='admin-vendor-detail'),

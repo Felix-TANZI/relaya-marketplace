@@ -1881,6 +1881,65 @@ def vendor_dispute_reply(request, dispute_id):
         )
 
 
+@extend_schema(
+    tags=["Vendors"],
+    summary="Lister les avis laisses sur mes produits",
+    description=(
+        "Seuls les avis approuves sont renvoyes. L'identite de l'acheteur reste "
+        "anonyme (meme convention que les commandes : 'Acheteur #XXXX', code non "
+        "reversible base sur un hash de son identifiant) — le vendeur ne voit "
+        "jamais le nom reel d'un client, y compris dans ses avis."
+    ),
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_reviews(request):
+    import hashlib
+
+    from apps.catalog.models import ProductReview
+
+    try:
+        vendor_profile = VendorProfile.objects.get(user=request.user)
+        if not vendor_profile.is_active_vendor:
+            return Response(
+                {'detail': "Votre compte vendeur n'est pas encore approuvé."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        reviews = (
+            ProductReview.objects.filter(product__vendor=request.user, is_approved=True)
+            .select_related('product')
+            .order_by('-created_at')
+        )
+
+        def anonymous_buyer(user_id):
+            code = hashlib.sha256(str(user_id).encode()).hexdigest()[:4].upper()
+            return f"Acheteur #{code}"
+
+        data = [
+            {
+                'id': r.id,
+                'product_id': r.product_id,
+                'product_name': r.product.title,
+                'buyer_display': anonymous_buyer(r.user_id),
+                'rating': r.rating,
+                'title': r.title,
+                'comment': r.comment,
+                'is_verified_purchase': r.is_verified_purchase,
+                'created_at': r.created_at,
+            }
+            for r in reviews
+        ]
+        average = reviews.aggregate(avg=Avg('rating'))['avg']
+        return Response({
+            'average_rating': round(average, 1) if average is not None else None,
+            'count': len(data),
+            'results': data,
+        })
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+
+
 @extend_schema(tags=["Vendors"], summary="Lister les retours concernant mes produits")
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

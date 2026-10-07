@@ -21,6 +21,7 @@ les deux commandes se complètent sans se marcher dessus.
 
 Idempotente, et limitée au relais visé.
 """
+import secrets
 from datetime import timedelta
 
 from django.contrib.auth.models import User
@@ -103,7 +104,9 @@ class Command(BaseCommand):
     def _utilisateur(self, username):
         user, cree = User.objects.get_or_create(username=username)
         if cree:
-            user.set_password("DemoHisto2026!")
+            # Mot de passe jetable : personne ne se connecte avec ce compte,
+            # il n'a besoin que d'un hash valide.
+            user.set_password(secrets.token_urlsafe(16))
             user.save(update_fields=["password"])
         return user
 

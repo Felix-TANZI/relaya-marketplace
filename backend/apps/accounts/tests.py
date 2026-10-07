@@ -1,3 +1,4 @@
+import secrets
 import uuid
 from unittest.mock import patch
 
@@ -12,6 +13,11 @@ from apps.orders.models import Order
 from django.urls import reverse
 
 from .models import CourierProfile, DeliveryOrganizationProfile, RelayPointProfile, TrustScoreProfile, UserProfile
+
+# Mot de passe de fixture : jamais relu, juste exige par create_user()/les
+# serializers d'inscription. Genere plutot qu'ecrit en dur pour ne pas faire
+# remonter de faux positifs sur les scanners de secrets.
+TEST_PASSWORD = secrets.token_urlsafe(16)
 
 
 @override_settings(GOOGLE_CLIENT_ID="belivay-test.apps.googleusercontent.com")
@@ -47,7 +53,7 @@ class GoogleLoginTests(APITestCase):
         User.objects.create_user(
             username="existing_google_client",
             email=self.identity["email"],
-            password="Existing2026",
+            password=TEST_PASSWORD,
         )
         verify.return_value = self.identity
 
@@ -71,8 +77,8 @@ class ClientRegistrationUniquenessTests(APITestCase):
             "username": "nouveau_client",
             "email": "nouveau.client@example.com",
             "phone": "+237690123456",
-            "password": "ClientSolide2026!",
-            "password2": "ClientSolide2026!",
+            "password": TEST_PASSWORD,
+            "password2": TEST_PASSWORD,
             "first_name": "Nouveau",
             "last_name": "Client",
         }
@@ -107,7 +113,7 @@ class ClientRegistrationUniquenessTests(APITestCase):
 
 class TrustScoreV55Tests(APITestCase):
     def setUp(self):
-        self.user = User.objects.create_user("trust_courier", password="Trust2026!")
+        self.user = User.objects.create_user("trust_courier", password=TEST_PASSWORD)
         CourierProfile.objects.create(
             user=self.user,
             phone="+237670123456",
@@ -160,7 +166,7 @@ class TrustScoreV55Tests(APITestCase):
     def test_vendor_confirmed_tier_requires_minimum_order_volume(self, observations):
         from .trust_score import Observation, calculate_trust_score
 
-        vendor = User.objects.create_user("trust_vendor_volume", password="Trust2026!")
+        vendor = User.objects.create_user("trust_vendor_volume", password=TEST_PASSWORD)
         high = [Observation(100, timezone.now()) for _ in range(20)]
         base_obs = {
             "punctuality": high, "quality": high, "satisfaction": high,
@@ -180,7 +186,7 @@ class TrustScoreV55Tests(APITestCase):
     def test_vendor_gold_tier_requires_audit_passed(self, observations):
         from .trust_score import Observation, calculate_trust_score
 
-        vendor = User.objects.create_user("trust_vendor_audit", password="Trust2026!")
+        vendor = User.objects.create_user("trust_vendor_audit", password=TEST_PASSWORD)
         # 35 observations -> score ~88.9 : au-dessus du seuil Or (80) mais
         # sous le seuil Platine (90), pour isoler le blocage "audit requis".
         high = [Observation(100, timezone.now()) for _ in range(35)]
@@ -213,8 +219,8 @@ class TrustScoreCatastrophicVetoTests(APITestCase):
         from apps.catalog.models import Category, Product
         from apps.orders.models import Dispute, Order, OrderItem
 
-        self.vendor = User.objects.create_user("veto_vendor", password="pass")
-        self.buyer = User.objects.create_user("veto_buyer", password="pass")
+        self.vendor = User.objects.create_user("veto_vendor", password=TEST_PASSWORD)
+        self.buyer = User.objects.create_user("veto_buyer", password=TEST_PASSWORD)
         category = Category.objects.create(name="Veto", slug="veto")
         product = Product.objects.create(
             title="Article veto", slug="article-veto", price_xaf=5000,
@@ -271,14 +277,14 @@ class EnterpriseTrustScoreRollupTests(APITestCase):
     """V5.5 : Trust_Ent = 0.8 x moyenne ponderee par volume + 0.2 x pire livreur."""
 
     def setUp(self):
-        org_user = User.objects.create_user("rollup_org", password="pass")
+        org_user = User.objects.create_user("rollup_org", password=TEST_PASSWORD)
         self.organization = DeliveryOrganizationProfile.objects.create(
             user=org_user, company_name="Rollup Logistics", phone="+237690300001",
             city="Yaounde", status=DeliveryOrganizationProfile.Status.APPROVED,
         )
 
     def _courier_with_score(self, username, score, volume):
-        user = User.objects.create_user(username, password="pass")
+        user = User.objects.create_user(username, password=TEST_PASSWORD)
         CourierProfile.objects.create(
             user=user, delivery_organization=self.organization, phone="+237690300002",
             city="Yaounde", id_card=f"CNI-{username}", is_active=True, is_approved=True,
@@ -316,14 +322,14 @@ class BuyerIFATests(APITestCase):
     """IFA acheteur (V5.5 §6) : indice interne, jamais un Trust Score public."""
 
     def setUp(self):
-        self.buyer = User.objects.create_user("ifa_buyer", password="pass")
+        self.buyer = User.objects.create_user("ifa_buyer", password=TEST_PASSWORD)
 
     def _order(self, *, status_, suffix, buyer=None):
         from apps.catalog.models import Category, Product
         from apps.orders.models import OrderItem
 
         category, _ = Category.objects.get_or_create(name="IFA", slug="ifa")
-        vendor = User.objects.create_user(f"ifa_vendor_{suffix}", password="pass")
+        vendor = User.objects.create_user(f"ifa_vendor_{suffix}", password=TEST_PASSWORD)
         product = Product.objects.create(
             title=f"Article IFA {suffix}", slug=f"article-ifa-{suffix}", price_xaf=5000,
             category=category, vendor=vendor,
@@ -367,7 +373,7 @@ class BuyerIFATests(APITestCase):
         # Les 4 commandes contestées par cet acheteur sortent du "confirmé
         # sans litige" ET ajoutent une observation à 0 chacune : score net
         # sous celui d'un acheteur sans aucun litige rejeté.
-        clean_buyer = User.objects.create_user("ifa_buyer_clean", password="pass")
+        clean_buyer = User.objects.create_user("ifa_buyer_clean", password=TEST_PASSWORD)
         for i in range(10):
             self._order(status_=Order.FulfillmentStatus.BUYER_CONFIRMED, suffix=f"clean-{i}", buyer=clean_buyer)
         clean_profile = calculate_trust_score(clean_buyer, TrustScoreProfile.Role.BUYER)
@@ -391,7 +397,7 @@ class SanctionsLadderTests(APITestCase):
     """Échelle de sanctions 1→4 complète (V5.5 §8)."""
 
     def setUp(self):
-        self.user = User.objects.create_user("sanction_target", password="pass")
+        self.user = User.objects.create_user("sanction_target", password=TEST_PASSWORD)
         CourierProfile.objects.create(
             user=self.user, phone="+237699000000", city="Douala", id_card="SANCTION-CNI-000",
             is_active=True, is_approved=True,
@@ -510,8 +516,8 @@ class SanctionEscalationTests(APITestCase):
         from apps.catalog.models import Category, Product
         from apps.orders.models import Dispute, OrderItem
 
-        self.vendor = User.objects.create_user("escalation_vendor", password="pass")
-        self.buyer = User.objects.create_user("escalation_buyer", password="pass")
+        self.vendor = User.objects.create_user("escalation_vendor", password=TEST_PASSWORD)
+        self.buyer = User.objects.create_user("escalation_buyer", password=TEST_PASSWORD)
         category = Category.objects.create(name="Escalation", slug="escalation")
 
         def make_dispute(suffix):
@@ -595,8 +601,8 @@ class AntiCollusionTests(APITestCase):
         from apps.orders.models import OrderItem
         from apps.vendors.models import VendorProfile
 
-        self.buyer = User.objects.create_user("collusion_buyer", password="pass")
-        self.vendor_user = User.objects.create_user("collusion_vendor", password="pass")
+        self.buyer = User.objects.create_user("collusion_buyer", password=TEST_PASSWORD)
+        self.vendor_user = User.objects.create_user("collusion_vendor", password=TEST_PASSWORD)
         VendorProfile.objects.create(
             user=self.vendor_user, business_name="Complice SARL", phone="+237699111111", city="Douala",
         )
@@ -650,7 +656,7 @@ class AntiCollusionTests(APITestCase):
 
         shared_phone = "+237677000000"
         for i in range(3):
-            buyer = User.objects.create_user(f"shared_buyer_{i}", password="pass")
+            buyer = User.objects.create_user(f"shared_buyer_{i}", password=TEST_PASSWORD)
             order = Order.objects.create(
                 user=buyer, customer_phone=shared_phone, city="Douala", address="Bonanjo", total_xaf=3000,
             )
@@ -667,7 +673,7 @@ class AntiCollusionTests(APITestCase):
 
         shared_phone = "+237677111111"
         for i in range(2):
-            buyer = User.objects.create_user(f"family_buyer_{i}", password="pass")
+            buyer = User.objects.create_user(f"family_buyer_{i}", password=TEST_PASSWORD)
             order = Order.objects.create(
                 user=buyer, customer_phone=shared_phone, city="Douala", address="Bonanjo", total_xaf=3000,
             )
@@ -702,7 +708,7 @@ class BlacklistEnforcementTests(APITestCase):
     def test_vendor_application_rejects_blacklisted_id_document(self):
         from django.urls import reverse
 
-        user = User.objects.create_user("blacklist_vendor_cni", password="pass")
+        user = User.objects.create_user("blacklist_vendor_cni", password=TEST_PASSWORD)
         self.client.force_authenticate(user)
 
         response = self.client.post(reverse("vendors:apply-vendor"), {
@@ -716,7 +722,7 @@ class BlacklistEnforcementTests(APITestCase):
     def test_vendor_application_rejects_blacklisted_momo_number(self):
         from django.urls import reverse
 
-        user = User.objects.create_user("blacklist_vendor_momo", password="pass")
+        user = User.objects.create_user("blacklist_vendor_momo", password=TEST_PASSWORD)
         self.client.force_authenticate(user)
 
         response = self.client.post(reverse("vendors:apply-vendor"), {
@@ -730,7 +736,7 @@ class BlacklistEnforcementTests(APITestCase):
     def test_vendor_application_with_clean_identifiers_still_succeeds(self):
         from django.urls import reverse
 
-        user = User.objects.create_user("clean_vendor", password="pass")
+        user = User.objects.create_user("clean_vendor", password=TEST_PASSWORD)
         self.client.force_authenticate(user)
 
         response = self.client.post(reverse("vendors:apply-vendor"), {
@@ -744,7 +750,7 @@ class BlacklistEnforcementTests(APITestCase):
     def test_courier_application_rejects_blacklisted_id_card(self):
         from django.urls import reverse
 
-        user = User.objects.create_user("blacklist_courier_cni", password="pass")
+        user = User.objects.create_user("blacklist_courier_cni", password=TEST_PASSWORD)
         self.client.force_authenticate(user)
 
         response = self.client.post(reverse("courier-application"), {
@@ -757,7 +763,7 @@ class BlacklistEnforcementTests(APITestCase):
     def test_courier_application_rejects_blacklisted_momo_number(self):
         from django.urls import reverse
 
-        user = User.objects.create_user("blacklist_courier_momo", password="pass")
+        user = User.objects.create_user("blacklist_courier_momo", password=TEST_PASSWORD)
         self.client.force_authenticate(user)
 
         response = self.client.post(reverse("courier-application"), {
@@ -770,7 +776,7 @@ class BlacklistEnforcementTests(APITestCase):
     def test_courier_application_with_clean_identifiers_still_succeeds(self):
         from django.urls import reverse
 
-        user = User.objects.create_user("clean_courier", password="pass")
+        user = User.objects.create_user("clean_courier", password=TEST_PASSWORD)
         self.client.force_authenticate(user)
 
         response = self.client.post(reverse("courier-application"), {
@@ -783,7 +789,7 @@ class BlacklistEnforcementTests(APITestCase):
     def test_admin_cannot_create_a_delivery_org_with_a_blacklisted_momo_number(self):
         from django.urls import reverse
 
-        admin = User.objects.create_superuser("blacklist_admin", password="pass")
+        admin = User.objects.create_superuser("blacklist_admin", password=TEST_PASSWORD)
         self.client.force_authenticate(admin)
 
         response = self.client.post(reverse("auth-admin-create-user"), {
@@ -805,7 +811,7 @@ class AppReleaseEndpointTests(APITestCase):
         from .models import AppRelease
 
         self.AppRelease = AppRelease
-        self.user = User.objects.create_user("app_release_user", password="pass")
+        self.user = User.objects.create_user("app_release_user", password=TEST_PASSWORD)
         self.client.force_authenticate(self.user)
 
     def test_returns_the_configured_release_for_a_portal(self):

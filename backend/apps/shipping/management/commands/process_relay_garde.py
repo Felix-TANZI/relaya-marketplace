@@ -57,11 +57,12 @@ class Command(BaseCommand):
         ).strip()
         parcel.save(update_fields=["status", "returned_at", "non_retrait_processed_at", "proof_note", "updated_at"])
 
-        ShipmentEvent.objects.create(
+        ShipmentEvent.record(
             shipment=shipment,
             status=Shipment.Status.FAILED,
             message=f"Colis non retiré — retourné au vendeur après échéance de garde ({parcel.relay_point.name}).",
             location=parcel.relay_point.name,
+            actor_role=ShipmentEvent.ACTOR_ROLE_SYSTEM,
         )
 
         # Gel puis remboursement partiel — reutilise le meme circuit que le

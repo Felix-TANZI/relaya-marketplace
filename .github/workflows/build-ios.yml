@@ -35,14 +35,12 @@ jobs:
       - name: Activer la config Capacitor du portail client
         run: cp capacitor.client.config.ts capacitor.config.ts
 
-      # Le projet Xcode natif n'est pas versionné (contrairement aux dossiers
-      # android-*) : on le régénère à chaque run pour rester simple, plutôt
-      # que de maintenir un gros dossier Xcode dans git sans jamais pouvoir
-      # le tester localement (cette CI tourne sur Linux).
-      - name: Ajouter et synchroniser la plateforme iOS
-        run: |
-          npx cap add ios
-          npx cap sync ios
+      # Le projet Xcode natif (frontend/ios) est versionné : il contient la
+      # configuration iOS (signature, Sign in with Apple, autorisations,
+      # SceneDelegate iOS 27, cible iOS 15, icônes). On se contente donc de
+      # le synchroniser avec le build web, sans jamais le régénérer.
+      - name: Synchroniser la plateforme iOS
+        run: npx cap sync ios
 
       - name: Installer les pods CocoaPods
         working-directory: frontend/ios/App

@@ -12,10 +12,12 @@
 //   - Pas de génération PDF côté serveur pour un relevé ou une facture de
 //     commission : seul l'export CSV est réellement disponible (comme
 //     SellerSettlementsPage.tsx / SellerPaymentsPage.tsx). Le bouton PDF du
-//     mockup Documents.html (fig. 6) n'est donc pas reproduit tel quel.
-//   - Les reçus de commande individuels, eux, existent réellement
-//     (orderUtils.openInvoice, déjà utilisé par SellerPaymentsPage.tsx) : on
-//     les réutilise tels quels plutôt que de les refaire.
+//     mockup Documents.html (fig. 6) n'est donc pas reproduit tel quel pour
+//     ces deux sections.
+//   - Les reçus de commande individuels, eux, sont maintenant un vrai PDF
+//     généré côté serveur (GET /api/vendors/orders/:id/receipt-pdf/,
+//     reportlab) : mêmes règles que l'écran Reçu (ReceiptPage.tsx — RCU-01 à
+//     RCU-04) — identité acheteur masquée, pas de ligne de commission.
 //   - Pas de facture de commission "légale" avec RCCM/NIU/TVA : VendorProfile
 //     n'expose aucun de ces champs. Le mockup mentionne un contrat vendeur
 //     signé électroniquement et un identifiant RCCM/NIU — ni l'un ni l'autre
@@ -30,8 +32,8 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Download, FileText, Printer, ShieldCheck } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
+import { useToast } from '@/context/ToastContext';
 import { vendorsApi, type VendorOrder } from '@/services/api/vendors';
-import { openInvoice } from '../../orderUtils';
 import { palette } from '../theme';
 import ScreenHeader from '../compte/shared/ScreenHeader';
 import Collapsible from '../compte/shared/Collapsible';
@@ -103,10 +105,12 @@ export default function DocumentsPage() {
   const { theme } = useTheme();
   const p = palette(theme);
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const [orders, setOrders] = useState<VendorOrder[]>([]);
   const [shopName, setShopName] = useState('Ma Boutique');
   const [loading, setLoading] = useState(true);
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -141,6 +145,25 @@ export default function DocumentsPage() {
         Math.round(o.vendor_net_amount ?? 0), o.escrow_status_display,
       ]),
     );
+  }
+
+  async function downloadReceiptPDF(o: VendorOrder) {
+    setDownloadingId(o.id);
+    try {
+      const blob = await vendorsApi.downloadOrderReceiptPDF(o.id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `recu_${orderRef(o.id)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      showToast(t('sl12_argent.documents_receipt_pdf_error'), 'error');
+    } finally {
+      setDownloadingId(null);
+    }
   }
 
   function exportCommissionInvoice(g: MonthGroup) {
@@ -214,9 +237,10 @@ export default function DocumentsPage() {
                 <button
                   key={o.id}
                   type="button"
-                  onClick={() => openInvoice([o], shopName, t)}
+                  disabled={downloadingId === o.id}
+                  onClick={() => downloadReceiptPDF(o)}
                   className="w-full flex items-center gap-3 text-left"
-                  style={{ padding: '12px 14px', borderBottom: `1px solid ${p.border}` }}
+                  style={{ padding: '12px 14px', borderBottom: `1px solid ${p.border}`, opacity: downloadingId === o.id ? 0.6 : 1 }}
                 >
                   <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: p.cardAlt, color: p.textMuted }}>
                     <Printer size={15} />
@@ -228,7 +252,9 @@ export default function DocumentsPage() {
                     </span>
                   </span>
                   <span className="font-semibold flex-shrink-0" style={{ fontSize: 11, color: p.textMuted }}>
-                    {t('sl12_argent.documents_receipt_cta')}
+                    {downloadingId === o.id
+                      ? t('sl12_argent.loading')
+                      : t('sl12_argent.documents_receipt_cta')}
                   </span>
                 </button>
               ))}

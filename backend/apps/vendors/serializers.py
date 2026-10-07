@@ -187,6 +187,48 @@ class VendorOrderItemSerializer(serializers.ModelSerializer):
         return None
 
 
+SHIPMENT_STATUS_LABELS = {
+    Shipment.Status.CREATED: 'Livraison créée',
+    Shipment.Status.ASSIGNED: 'Livreur assigné',
+    Shipment.Status.PICKED_UP: 'Colis pris en main',
+    Shipment.Status.IN_TRANSIT: 'Colis en transit',
+    Shipment.Status.OUT_FOR_DELIVERY: 'En cours de livraison',
+    Shipment.Status.DELIVERED: 'Colis livré',
+    Shipment.Status.FAILED: 'Livraison échouée',
+    Shipment.Status.CANCELLED: 'Livraison annulée',
+}
+
+
+def _shipment_event_actor_label(event):
+    """
+    Signature de chaque entrée du journal (audit vendeur) : jamais le nom réel
+    d'un acheteur (même convention que customer_name → "Acheteur #XXXX"),
+    une identification utile pour les autres rôles, et "Système BelivaY" pour
+    les transitions automatiques (dispatch, libération de mission...).
+    """
+    role = event.actor_role
+    if role == 'COURIER':
+        name = event.actor.get_full_name().strip() if event.actor else ''
+        return f"Livreur {name}".strip() if name else 'Livreur'
+    if role == 'RELAY_POINT':
+        name = event.location or (event.actor.get_full_name().strip() if event.actor else '')
+        return f"Point relais {name}".strip() if name else 'Point relais'
+    if role == 'VENDOR':
+        return 'Vous'
+    if role == 'DISPATCHER':
+        name = event.actor.get_full_name().strip() if event.actor else ''
+        return f"Organisation de livraison ({name})" if name else 'Organisation de livraison'
+    if role == 'SUPPORT':
+        name = event.actor.get_full_name().strip() if event.actor else ''
+        return f"Support BelivaY ({name})" if name else 'Support BelivaY'
+    if role == 'CLIENT':
+        if event.actor_id:
+            code = hashlib.sha256(str(event.actor_id).encode()).hexdigest()[:4].upper()
+            return f"Acheteur #{code}"
+        return 'Acheteur'
+    return 'Système BelivaY'
+
+
 class VendorOrderSerializer(serializers.ModelSerializer):
     """
     Commande vue vendeur.
@@ -292,13 +334,16 @@ class VendorOrderSerializer(serializers.ModelSerializer):
         if not shipment:
             return None
 
+        order_created_label = 'Achat client initié'
         order_events = [
             {
                 'id': f"order-{obj.id}-created",
                 'status': 'ORDER_CREATED',
-                'label': 'Achat client initié',
+                'label': order_created_label,
+                'previous_label': '',
                 'message': f"Le client a initié la commande à {obj.city}.",
                 'location': obj.city,
+                'actor_label': self.get_customer_name(obj),
                 'created_at': obj.created_at,
             }
         ]
@@ -319,8 +364,10 @@ class VendorOrderSerializer(serializers.ModelSerializer):
                 'id': f"order-{obj.id}-vendor",
                 'status': 'VENDOR_PROCESSING',
                 'label': 'Préparation vendeur',
+                'previous_label': order_created_label,
                 'message': 'La commande est suivie dans l’espace vendeur.',
                 'location': obj.city,
+                'actor_label': 'Vous',
                 'created_at': obj.updated_at,
             })
 
@@ -328,21 +375,17 @@ class VendorOrderSerializer(serializers.ModelSerializer):
             {
                 'id': event.id,
                 'status': event.status,
-                'label': {
-                    Shipment.Status.CREATED: 'Livraison créée',
-                    Shipment.Status.ASSIGNED: 'Livreur assigné',
-                    Shipment.Status.PICKED_UP: 'Colis pris en main',
-                    Shipment.Status.IN_TRANSIT: 'Colis en transit',
-                    Shipment.Status.OUT_FOR_DELIVERY: 'En cours de livraison',
-                    Shipment.Status.DELIVERED: 'Colis livré',
-                    Shipment.Status.FAILED: 'Livraison échouée',
-                    Shipment.Status.CANCELLED: 'Livraison annulée',
-                }.get(event.status, event.status),
+                'label': SHIPMENT_STATUS_LABELS.get(event.status, event.status),
+                'previous_label': (
+                    SHIPMENT_STATUS_LABELS.get(event.previous_status, event.previous_status)
+                    if event.previous_status else ''
+                ),
                 'message': event.message,
                 'location': event.location,
+                'actor_label': _shipment_event_actor_label(event),
                 'created_at': event.created_at,
             }
-            for event in shipment.events.all().order_by('created_at')
+            for event in shipment.events.all().select_related('actor').order_by('created_at')
         ]
 
         timeline = sorted(

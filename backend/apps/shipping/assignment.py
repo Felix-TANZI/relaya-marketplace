@@ -147,11 +147,12 @@ def assign_shipment_or_mark_blocked(shipment: Shipment, required_vehicle_type=""
             ]
         )
         order.assign_driver()
-        ShipmentEvent.objects.create(
+        ShipmentEvent.record(
             shipment=shipment,
             status=Shipment.Status.ASSIGNED,
             message="Livraison assignee automatiquement au livreur partenaire disponible",
             location=order.city,
+            actor_role=ShipmentEvent.ACTOR_ROLE_SYSTEM,
         )
         return shipment
 
@@ -174,10 +175,11 @@ def assign_shipment_or_mark_blocked(shipment: Shipment, required_vehicle_type=""
             "updated_at",
         ]
     )
-    ShipmentEvent.objects.create(
+    ShipmentEvent.record(
         shipment=shipment,
         status=shipment.status,
         message=shipment.assignment_issue_message,
         location=order.city,
+        actor_role=ShipmentEvent.ACTOR_ROLE_SYSTEM,
     )
     return shipment

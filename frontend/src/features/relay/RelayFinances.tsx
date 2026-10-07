@@ -101,7 +101,7 @@ export default function RelayFinances({ onError }: { onError: (error: unknown) =
       <Panel kicker={t("rl2_finances.kicker_settlements")} title={t("rl2_finances.title_momo")}>
         <div className="grid gap-4 md:grid-cols-4">
           {cards.map(([Icon, label, value, body]) => (
-            <div key={label} className="rounded-2xl border border-slate-100 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-800">
+            <div key={label} className="rounded-[14px] border border-slate-100 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-800">
               <Icon className="text-blue-700 dark:text-blue-300" />
               <div className="mt-3 text-sm font-bold text-slate-500 dark:text-slate-400">{label}</div>
               <div className="mt-1 text-2xl font-black text-slate-950 dark:text-white">{loading ? "…" : value}</div>
@@ -118,7 +118,7 @@ export default function RelayFinances({ onError }: { onError: (error: unknown) =
       </Panel>
 
       <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-        <PayoutAccountVerificationCard ownerRole="RELAY_POINT" accent="#1D4ED8" />
+        <PayoutAccountVerificationCard ownerRole="RELAY_POINT" accent="#2456D6" />
 
         <Panel kicker={t("rl2_finances.kicker_contract")} title={t("rl2_finances.tariff_grid_title")}>
           {loading ? (
@@ -172,7 +172,7 @@ export default function RelayFinances({ onError }: { onError: (error: unknown) =
             {payouts.map((payout) => (
               <article
                 key={payout.reference}
-                className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800"
+                className="rounded-[14px] border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">

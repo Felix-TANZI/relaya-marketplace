@@ -280,11 +280,13 @@ class CancelOrderView(APIView):
                 indemnified_couriers.append(shipment.courier_id)
             shipment.status = Shipment.Status.CANCELLED
             shipment.save(update_fields=["status", "updated_at"])
-            ShipmentEvent.objects.create(
+            ShipmentEvent.record(
                 shipment=shipment,
                 status=Shipment.Status.CANCELLED,
                 message=f"Commande annulée par le client ({reason_label})",
                 location=order.city,
+                actor=request.user,
+                actor_role="CLIENT",
             )
 
         OrderHistory.objects.create(
@@ -422,11 +424,13 @@ class ConfirmReceiptView(APIView):
             shipment.status = Shipment.Status.DELIVERED
             shipment.buyer_confirmed_at = timezone.now()
             shipment.save(update_fields=['status', 'buyer_confirmed_at', 'updated_at'])
-            ShipmentEvent.objects.create(
+            ShipmentEvent.record(
                 shipment=shipment,
                 status=Shipment.Status.DELIVERED,
                 message="Reception confirmee par le client",
                 location=order.city,
+                actor=request.user,
+                actor_role="CLIENT",
             )
             # La liberation de l'escrow (evenement plus bas) reste au niveau
             # commande — elle n'intervient qu'une fois TOUS les colis
@@ -441,11 +445,13 @@ class ConfirmReceiptView(APIView):
             for shipment in shipments:
                 shipment.status = Shipment.Status.DELIVERED
                 shipment.save(update_fields=['status', 'updated_at'])
-                ShipmentEvent.objects.create(
+                ShipmentEvent.record(
                     shipment=shipment,
                     status=Shipment.Status.DELIVERED,
                     message="Reception confirmee par le client",
                     location=order.city,
+                    actor=request.user,
+                    actor_role="CLIENT",
                 )
 
         OrderHistory.objects.create(

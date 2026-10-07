@@ -152,7 +152,7 @@ def _depart_tournee(tournee: Tournee, shipments, courier):
             "tournee", "stop_order", "courier", "courier_name", "courier_phone", "status", "updated_at",
         ])
         shipment.order.assign_driver()
-        ShipmentEvent.objects.create(
+        ShipmentEvent.record(
             shipment=shipment,
             status=Shipment.Status.ASSIGNED,
             message=(
@@ -160,6 +160,7 @@ def _depart_tournee(tournee: Tournee, shipments, courier):
                 f"({len(shipments)} colis, arrêt {index + 1}/{len(shipments)})."
             ),
             location=tournee.zone.city,
+            actor_role=ShipmentEvent.ACTOR_ROLE_SYSTEM,
         )
     tournee.colis_count = len(shipments)
     tournee.status = Tournee.Status.DEPARTED

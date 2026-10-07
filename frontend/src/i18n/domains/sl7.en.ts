@@ -129,6 +129,7 @@ export default {
     // Order journal (VD-05 §JRN-01/02)
     journal_title: 'Order journal',
     journal_subtitle: 'Every action is signed',
+    journal_signed_by: 'Signed by {{actor}}',
     journal_immutable: 'No one can edit or delete this journal.',
 
     // Hand over to the courier (VD-06 §REM-01 to REM-09)

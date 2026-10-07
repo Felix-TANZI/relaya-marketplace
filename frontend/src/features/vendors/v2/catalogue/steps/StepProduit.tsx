@@ -11,6 +11,7 @@ import { Barcode, Camera, Mic, Search } from 'lucide-react';
 import { vendorsApi, type MasterFiche } from '@/services/api/vendors';
 import type { VendorPalette } from '../../theme';
 import { CenterState, Pill } from '../ui';
+import ScanBarcodeScreen from './ScanBarcodeScreen';
 
 export default function StepProduit({
   query, onQueryChange, onSelectMaster, onRequestSheet, onShowToast, p, t,
@@ -25,6 +26,7 @@ export default function StepProduit({
 }) {
   const [results, setResults] = useState<MasterFiche[]>([]);
   const [loading, setLoading] = useState(false);
+  const [scanOpen, setScanOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -63,7 +65,7 @@ export default function StepProduit({
       </div>
 
       <div className="flex items-center gap-2 mb-4">
-        <ShortcutButton icon={<Barcode size={14} />} label={t('sl10_catalogue.step1_shortcut_barcode')} p={p} onClick={() => inputRef.current?.focus()} />
+        <ShortcutButton icon={<Barcode size={14} />} label={t('sl10_catalogue.step1_shortcut_barcode')} p={p} onClick={() => setScanOpen(true)} />
         <ShortcutButton icon={<Camera size={14} />} label={t('sl10_catalogue.step1_shortcut_photo')} p={p} onClick={() => onShowToast(t('sl10_catalogue.toast_soon'))} />
         <ShortcutButton icon={<Mic size={14} />} label={t('sl10_catalogue.step1_shortcut_dictate')} p={p} onClick={() => onShowToast(t('sl10_catalogue.toast_soon'))} />
       </div>
@@ -104,6 +106,16 @@ export default function StepProduit({
             {t('sl10_catalogue.step1_request_sheet')}
           </button>
         </div>
+      ) : null}
+
+      {scanOpen ? (
+        <ScanBarcodeScreen
+          p={p}
+          t={t}
+          onClose={() => setScanOpen(false)}
+          onFound={(m) => { setScanOpen(false); onSelectMaster(m); }}
+          onNotFound={() => { setScanOpen(false); onShowToast(t('sl10_catalogue.scan_not_found')); inputRef.current?.focus(); }}
+        />
       ) : null}
     </div>
   );

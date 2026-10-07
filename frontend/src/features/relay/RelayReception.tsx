@@ -153,7 +153,7 @@ function ScanDialog({
           <span className="absolute right-0 top-0 h-8 w-8 rounded-tr-2xl border-r-4 border-t-4 border-blue-400" />
           <span className="absolute bottom-0 left-0 h-8 w-8 rounded-bl-2xl border-b-4 border-l-4 border-blue-400" />
           <span className="absolute bottom-0 right-0 h-8 w-8 rounded-br-2xl border-b-4 border-r-4 border-blue-400" />
-          <span className="animate-qr-scan absolute inset-x-4 h-0.5 rounded-full bg-gradient-to-r from-transparent via-blue-300 to-transparent shadow-[0_0_18px_rgba(96,165,250,.9)]" />
+          <span className="animate-qr-scan absolute inset-x-4 h-0.5 rounded-full bg-gradient-to-r from-transparent via-blue-300 to-transparent shadow-[0_0_18px_rgba(143,176,255,.9)]" />
         </div>
       </div>
 
@@ -186,7 +186,7 @@ function ScanDialog({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-black text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+          className="rounded-[14px] border border-slate-200 bg-white px-5 py-2.5 text-sm font-black text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
         >
           {t("rl1_reception.cancel")}
         </button>
@@ -300,7 +300,7 @@ function RefusalDialog({
           type="button"
           onClick={onCancel}
           disabled={busy}
-          className="rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-black text-slate-600 transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+          className="rounded-[14px] border border-slate-200 bg-white px-5 py-2.5 text-sm font-black text-slate-600 transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
         >
           {t("rl1_reception.cancel")}
         </button>
@@ -385,7 +385,7 @@ function ReceptionDialog({
     <RelaySheet label="Réception, QR scanné" onClose={onCancel}>
       <RelaySheetHeader icon={PackagePlus} title="Réception · QR scanné" onClose={onCancel} />
 
-      <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/40">
+      <div className="flex items-start gap-3 rounded-[14px] border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/40">
         <CheckCircle2 className="mt-0.5 flex-shrink-0 text-emerald-600" size={18} />
         <p className="text-sm font-bold text-emerald-900 dark:text-emerald-100">
           {t("rl1_reception.qr_recognized_prefix")} <strong>{missionId}</strong>
@@ -492,7 +492,7 @@ function ReceptionDialog({
           type="button"
           onClick={onCancel}
           disabled={busy}
-          className="rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-black text-slate-600 transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+          className="rounded-[14px] border border-slate-200 bg-white px-5 py-2.5 text-sm font-black text-slate-600 transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
         >
           {t("rl1_reception.cancel")}
         </button>
@@ -566,7 +566,7 @@ function CodeDialog({
         inputMode="numeric"
         autoComplete="off"
         placeholder="000000"
-        className={`w-full rounded-2xl border-2 bg-white px-4 py-4 text-center text-[30px] font-black tracking-[0.3em] text-slate-950 outline-none transition dark:bg-slate-950 dark:text-white ${
+        className={`w-full rounded-[14px] border-2 bg-white px-4 py-4 text-center text-[30px] font-black tracking-[0.3em] text-slate-950 outline-none transition dark:bg-slate-950 dark:text-white ${
           notFound
             ? "border-red-400 focus:border-red-500"
             : matched
@@ -576,7 +576,7 @@ function CodeDialog({
       />
 
       {matched ? (
-        <div className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-800 dark:bg-emerald-950/50">
+        <div className="mt-3 rounded-[14px] border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-800 dark:bg-emerald-950/50">
           <div className="flex items-center gap-2 text-[13px] font-black text-emerald-700 dark:text-emerald-300">
             <CheckCircle2 size={15} strokeWidth={2.6} /> Arrivée reconnue
           </div>
@@ -605,7 +605,7 @@ function CodeDialog({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-black text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+          className="rounded-[14px] border border-slate-200 bg-white px-5 py-2.5 text-sm font-black text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
         >
           Annuler
         </button>
@@ -613,7 +613,7 @@ function CodeDialog({
           type="button"
           disabled={!matched}
           onClick={() => matched && onConfirm(matched.shipmentId)}
-          className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#F58A1F] to-[#E8590C] px-5 py-2.5 text-sm font-black text-white transition disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 dark:disabled:from-slate-700 dark:disabled:to-slate-700"
+          className="pr-btn inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-black text-white transition disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 dark:disabled:from-slate-700 dark:disabled:to-slate-700"
         >
           Continuer <ArrowRight size={16} />
         </button>
@@ -858,10 +858,10 @@ export default function RelayReception({
           en diagonale, traverse d'une lueur chaude au coin haut droit — les
           deux couleurs de BelivaY se rejoignent la ou le travail commence. */}
       <section
-        className="-mx-4 -mt-4 px-4 pb-5 pt-4 text-white sm:-mx-6 sm:-mt-6 sm:px-6"
+        className="pr-span pr-bleed -mx-4 -mt-4 px-4 pb-5 pt-4 text-white sm:-mx-6 sm:-mt-6 sm:px-6"
         style={{
           backgroundImage:
-            "radial-gradient(75% 110% at 99% -6%, rgba(214,116,62,.42) 0%, rgba(160,80,60,.14) 40%, rgba(160,80,60,0) 68%),"
+            "radial-gradient(75% 110% at 99% -6%, rgba(239,106,0,.42) 0%, rgba(239,106,0,.14) 40%, rgba(239,106,0,0) 68%),"
             + " linear-gradient(132deg, #0B1734 0%, #12254C 46%, #1B3570 100%)",
         }}
       >
@@ -873,12 +873,12 @@ export default function RelayReception({
             <li key={label} className="flex min-w-0 items-center gap-2">
               <span
                 className={`flex h-[22px] w-[22px] flex-shrink-0 items-center justify-center rounded-full text-[11.5px] font-black ${
-                  index === 0 ? "bg-[#E9A93A] text-[#1B2540]" : "bg-[#1E2F55] text-[#8A97B8]"
+                  index === 0 ? "bg-[#E8A10E] text-[#1A2A52]" : "bg-[#1A2A52] text-[#9FAACB]"
                 }`}
               >
                 {index + 1}
               </span>
-              <span className={`truncate text-[13px] font-black ${index === 0 ? "text-white" : "text-[#C3CCE2]"}`}>
+              <span className={`truncate text-[13px] font-black ${index === 0 ? "text-white" : "text-[#C3CCE0]"}`}>
                 {label}
               </span>
             </li>
@@ -891,13 +891,13 @@ export default function RelayReception({
               c'est lui qui dit d'un coup d'oeil de quoi parle ce bloc. */}
           <div
             aria-hidden
-            className="flex h-[88px] w-[88px] flex-shrink-0 items-center justify-center rounded-[14px] border-2 border-dashed border-[#E9A93A] text-[#E9A93A]"
+            className="flex h-[88px] w-[88px] flex-shrink-0 items-center justify-center rounded-[14px] border-2 border-dashed border-[#E8A10E] text-[#E8A10E]"
           >
             <KeyRound size={38} strokeWidth={1.8} />
           </div>
 
           <div className="min-w-0 flex-1">
-            <h2 className="text-[19px] font-black leading-tight tracking-[-0.01em]">Saisissez le code de dépôt</h2>
+            <h2 className="text-[17px] font-black leading-tight tracking-[-0.02em]">Saisissez le code de dépôt</h2>
             <p className="mt-1.5 text-[13.5px] font-medium leading-[1.45] text-white/65">
               6 chiffres donnés par le livreur. Pas de code, pas de lot.
             </p>
@@ -905,7 +905,7 @@ export default function RelayReception({
             <button
               type="button"
               onClick={() => setCodeOpen(true)}
-              className="mt-3.5 flex w-full items-center justify-center gap-2.5 rounded-[10px] bg-gradient-to-r from-[#F58A1F] to-[#E8590C] px-4 py-3 text-[17px] font-black text-white shadow-[0_4px_14px_rgba(232,89,12,.4)] transition active:scale-[.97]"
+              className="pr-btn mt-3.5 flex w-full items-center justify-center gap-2.5 rounded-[10px] px-4 py-3 text-[17px] font-black text-white transition active:scale-[.97]"
             >
               <KeyRound size={19} strokeWidth={2.5} /> Saisir le code
             </button>
@@ -916,7 +916,7 @@ export default function RelayReception({
             <button
               type="button"
               onClick={() => openScan(null, true)}
-              className="mt-3 text-[13.5px] font-semibold text-[#8AB4F8] underline underline-offset-4 transition active:scale-95"
+              className="mt-3 text-[13.5px] font-semibold text-[#8FB0FF] underline underline-offset-4 transition active:scale-95"
             >
               Le livreur n'a pas de code ?
             </button>
@@ -924,9 +924,9 @@ export default function RelayReception({
         </div>
       </section>
 
-      <div className="flex items-start gap-3 rounded-xl border border-blue-100 bg-[#EFF4FE] p-4 dark:border-blue-900 dark:bg-blue-950/50">
-        <LockKeyhole className="mt-0.5 flex-shrink-0 text-[#5B7FC7] dark:text-blue-300" size={18} />
-        <p className="text-[13.5px] font-medium leading-[1.5] text-[#4A5E8A] dark:text-blue-100/80">
+      <div className="flex items-start gap-3 rounded-xl border border-blue-100 bg-[#EAF0FF] p-4 dark:border-blue-900 dark:bg-blue-950/50">
+        <LockKeyhole className="mt-0.5 flex-shrink-0 text-[#8FB0FF] dark:text-blue-300" size={18} />
+        <p className="text-[13.5px] font-medium leading-[1.5] text-[#9FAACB] dark:text-blue-100/80">
           Vous ne voyez jamais le vendeur ni le client : uniquement la référence BelivaY, la taille et l'emplacement.
         </p>
       </div>

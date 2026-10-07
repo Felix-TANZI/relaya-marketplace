@@ -321,7 +321,7 @@ export default function RelayClosure({ onError, relay }: RelayClosureProps) {
         tone="text-rose-600 dark:text-rose-400"
       />
 
-      <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30">
+      <div className="flex items-start gap-3 rounded-[14px] border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30">
         <Package size={18} strokeWidth={2.4} className="mt-0.5 flex-shrink-0 text-amber-600 dark:text-amber-300" />
         <p className="text-sm font-semibold leading-6 text-amber-900 dark:text-amber-100">
           {t("rl2_closure.stock_notice_prefix")} <strong className="font-black">{t("rl2_closure.stock_notice_count", { count: stockCount })}</strong>{" "}
@@ -391,7 +391,7 @@ export default function RelayClosure({ onError, relay }: RelayClosureProps) {
               );
             })}
 
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950/30">
+            <div className="rounded-[14px] border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950/30">
               <div className="flex items-start gap-3">
                 <Handshake size={18} strokeWidth={2.4} className="mt-0.5 flex-shrink-0 text-emerald-600 dark:text-emerald-300" />
                 <p className="text-sm leading-6 text-slate-700 dark:text-slate-200">
@@ -469,7 +469,7 @@ export default function RelayClosure({ onError, relay }: RelayClosureProps) {
 
         {feedback ? (
           <div
-            className={`mt-4 flex items-start gap-2 rounded-2xl border p-4 text-sm font-bold leading-6 ${
+            className={`mt-4 flex items-start gap-2 rounded-[14px] border p-4 text-sm font-bold leading-6 ${
               feedback.tone === "success"
                 ? "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100"
                 : "border-red-200 bg-red-50 text-red-900 dark:border-red-800 dark:bg-red-950/40 dark:text-red-100"
@@ -493,7 +493,7 @@ export default function RelayClosure({ onError, relay }: RelayClosureProps) {
           type="button"
           onClick={submit}
           disabled={busy || Boolean(error)}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-700 to-blue-600 px-4 py-3 text-sm font-black text-white shadow-[0_10px_22px_-12px_rgba(29,78,216,.9)] transition hover:from-blue-800 hover:to-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-700 to-blue-600 px-4 py-3 text-sm font-black text-white shadow-[0_10px_22px_-12px_rgba(36,86,214,.9)] transition hover:from-blue-800 hover:to-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <CalendarOff size={16} strokeWidth={2.6} />
           {busy ? t("rl2_closure.submitting") : t("rl2_closure.submit_button")}

@@ -1,3 +1,4 @@
+import secrets
 import uuid
 from unittest.mock import patch
 
@@ -9,7 +10,14 @@ from rest_framework.test import APITestCase
 
 from apps.orders.models import Order
 
-from .models import CourierProfile, DeliveryOrganizationProfile, TrustScoreProfile, UserProfile
+from django.urls import reverse
+
+from .models import CourierProfile, DeliveryOrganizationProfile, RelayPointProfile, TrustScoreProfile, UserProfile
+
+# Mot de passe de fixture : jamais relu, juste exige par create_user()/les
+# serializers d'inscription. Genere plutot qu'ecrit en dur pour ne pas faire
+# remonter de faux positifs sur les scanners de secrets.
+TEST_PASSWORD = secrets.token_urlsafe(16)
 
 
 @override_settings(GOOGLE_CLIENT_ID="belivay-test.apps.googleusercontent.com")
@@ -45,7 +53,7 @@ class GoogleLoginTests(APITestCase):
         User.objects.create_user(
             username="existing_google_client",
             email=self.identity["email"],
-            password="Existing2026",
+            password=TEST_PASSWORD,
         )
         verify.return_value = self.identity
 
@@ -69,8 +77,8 @@ class ClientRegistrationUniquenessTests(APITestCase):
             "username": "nouveau_client",
             "email": "nouveau.client@example.com",
             "phone": "+237690123456",
-            "password": "ClientSolide2026!",
-            "password2": "ClientSolide2026!",
+            "password": TEST_PASSWORD,
+            "password2": TEST_PASSWORD,
             "first_name": "Nouveau",
             "last_name": "Client",
         }
@@ -105,7 +113,7 @@ class ClientRegistrationUniquenessTests(APITestCase):
 
 class TrustScoreV55Tests(APITestCase):
     def setUp(self):
-        self.user = User.objects.create_user("trust_courier", password="Trust2026!")
+        self.user = User.objects.create_user("trust_courier", password=TEST_PASSWORD)
         CourierProfile.objects.create(
             user=self.user,
             phone="+237670123456",
@@ -158,7 +166,7 @@ class TrustScoreV55Tests(APITestCase):
     def test_vendor_confirmed_tier_requires_minimum_order_volume(self, observations):
         from .trust_score import Observation, calculate_trust_score
 
-        vendor = User.objects.create_user("trust_vendor_volume", password="Trust2026!")
+        vendor = User.objects.create_user("trust_vendor_volume", password=TEST_PASSWORD)
         high = [Observation(100, timezone.now()) for _ in range(20)]
         base_obs = {
             "punctuality": high, "quality": high, "satisfaction": high,
@@ -178,7 +186,7 @@ class TrustScoreV55Tests(APITestCase):
     def test_vendor_gold_tier_requires_audit_passed(self, observations):
         from .trust_score import Observation, calculate_trust_score
 
-        vendor = User.objects.create_user("trust_vendor_audit", password="Trust2026!")
+        vendor = User.objects.create_user("trust_vendor_audit", password=TEST_PASSWORD)
         # 35 observations -> score ~88.9 : au-dessus du seuil Or (80) mais
         # sous le seuil Platine (90), pour isoler le blocage "audit requis".
         high = [Observation(100, timezone.now()) for _ in range(35)]
@@ -211,8 +219,8 @@ class TrustScoreCatastrophicVetoTests(APITestCase):
         from apps.catalog.models import Category, Product
         from apps.orders.models import Dispute, Order, OrderItem
 
-        self.vendor = User.objects.create_user("veto_vendor", password="pass")
-        self.buyer = User.objects.create_user("veto_buyer", password="pass")
+        self.vendor = User.objects.create_user("veto_vendor", password=TEST_PASSWORD)
+        self.buyer = User.objects.create_user("veto_buyer", password=TEST_PASSWORD)
         category = Category.objects.create(name="Veto", slug="veto")
         product = Product.objects.create(
             title="Article veto", slug="article-veto", price_xaf=5000,
@@ -269,14 +277,14 @@ class EnterpriseTrustScoreRollupTests(APITestCase):
     """V5.5 : Trust_Ent = 0.8 x moyenne ponderee par volume + 0.2 x pire livreur."""
 
     def setUp(self):
-        org_user = User.objects.create_user("rollup_org", password="pass")
+        org_user = User.objects.create_user("rollup_org", password=TEST_PASSWORD)
         self.organization = DeliveryOrganizationProfile.objects.create(
             user=org_user, company_name="Rollup Logistics", phone="+237690300001",
             city="Yaounde", status=DeliveryOrganizationProfile.Status.APPROVED,
         )
 
     def _courier_with_score(self, username, score, volume):
-        user = User.objects.create_user(username, password="pass")
+        user = User.objects.create_user(username, password=TEST_PASSWORD)
         CourierProfile.objects.create(
             user=user, delivery_organization=self.organization, phone="+237690300002",
             city="Yaounde", id_card=f"CNI-{username}", is_active=True, is_approved=True,
@@ -314,14 +322,14 @@ class BuyerIFATests(APITestCase):
     """IFA acheteur (V5.5 §6) : indice interne, jamais un Trust Score public."""
 
     def setUp(self):
-        self.buyer = User.objects.create_user("ifa_buyer", password="pass")
+        self.buyer = User.objects.create_user("ifa_buyer", password=TEST_PASSWORD)
 
     def _order(self, *, status_, suffix, buyer=None):
         from apps.catalog.models import Category, Product
         from apps.orders.models import OrderItem
 
         category, _ = Category.objects.get_or_create(name="IFA", slug="ifa")
-        vendor = User.objects.create_user(f"ifa_vendor_{suffix}", password="pass")
+        vendor = User.objects.create_user(f"ifa_vendor_{suffix}", password=TEST_PASSWORD)
         product = Product.objects.create(
             title=f"Article IFA {suffix}", slug=f"article-ifa-{suffix}", price_xaf=5000,
             category=category, vendor=vendor,
@@ -365,7 +373,7 @@ class BuyerIFATests(APITestCase):
         # Les 4 commandes contestées par cet acheteur sortent du "confirmé
         # sans litige" ET ajoutent une observation à 0 chacune : score net
         # sous celui d'un acheteur sans aucun litige rejeté.
-        clean_buyer = User.objects.create_user("ifa_buyer_clean", password="pass")
+        clean_buyer = User.objects.create_user("ifa_buyer_clean", password=TEST_PASSWORD)
         for i in range(10):
             self._order(status_=Order.FulfillmentStatus.BUYER_CONFIRMED, suffix=f"clean-{i}", buyer=clean_buyer)
         clean_profile = calculate_trust_score(clean_buyer, TrustScoreProfile.Role.BUYER)
@@ -389,7 +397,7 @@ class SanctionsLadderTests(APITestCase):
     """Échelle de sanctions 1→4 complète (V5.5 §8)."""
 
     def setUp(self):
-        self.user = User.objects.create_user("sanction_target", password="pass")
+        self.user = User.objects.create_user("sanction_target", password=TEST_PASSWORD)
         CourierProfile.objects.create(
             user=self.user, phone="+237699000000", city="Douala", id_card="SANCTION-CNI-000",
             is_active=True, is_approved=True,
@@ -508,8 +516,8 @@ class SanctionEscalationTests(APITestCase):
         from apps.catalog.models import Category, Product
         from apps.orders.models import Dispute, OrderItem
 
-        self.vendor = User.objects.create_user("escalation_vendor", password="pass")
-        self.buyer = User.objects.create_user("escalation_buyer", password="pass")
+        self.vendor = User.objects.create_user("escalation_vendor", password=TEST_PASSWORD)
+        self.buyer = User.objects.create_user("escalation_buyer", password=TEST_PASSWORD)
         category = Category.objects.create(name="Escalation", slug="escalation")
 
         def make_dispute(suffix):
@@ -593,8 +601,8 @@ class AntiCollusionTests(APITestCase):
         from apps.orders.models import OrderItem
         from apps.vendors.models import VendorProfile
 
-        self.buyer = User.objects.create_user("collusion_buyer", password="pass")
-        self.vendor_user = User.objects.create_user("collusion_vendor", password="pass")
+        self.buyer = User.objects.create_user("collusion_buyer", password=TEST_PASSWORD)
+        self.vendor_user = User.objects.create_user("collusion_vendor", password=TEST_PASSWORD)
         VendorProfile.objects.create(
             user=self.vendor_user, business_name="Complice SARL", phone="+237699111111", city="Douala",
         )
@@ -648,7 +656,7 @@ class AntiCollusionTests(APITestCase):
 
         shared_phone = "+237677000000"
         for i in range(3):
-            buyer = User.objects.create_user(f"shared_buyer_{i}", password="pass")
+            buyer = User.objects.create_user(f"shared_buyer_{i}", password=TEST_PASSWORD)
             order = Order.objects.create(
                 user=buyer, customer_phone=shared_phone, city="Douala", address="Bonanjo", total_xaf=3000,
             )
@@ -665,7 +673,7 @@ class AntiCollusionTests(APITestCase):
 
         shared_phone = "+237677111111"
         for i in range(2):
-            buyer = User.objects.create_user(f"family_buyer_{i}", password="pass")
+            buyer = User.objects.create_user(f"family_buyer_{i}", password=TEST_PASSWORD)
             order = Order.objects.create(
                 user=buyer, customer_phone=shared_phone, city="Douala", address="Bonanjo", total_xaf=3000,
             )
@@ -700,7 +708,7 @@ class BlacklistEnforcementTests(APITestCase):
     def test_vendor_application_rejects_blacklisted_id_document(self):
         from django.urls import reverse
 
-        user = User.objects.create_user("blacklist_vendor_cni", password="pass")
+        user = User.objects.create_user("blacklist_vendor_cni", password=TEST_PASSWORD)
         self.client.force_authenticate(user)
 
         response = self.client.post(reverse("vendors:apply-vendor"), {
@@ -714,7 +722,7 @@ class BlacklistEnforcementTests(APITestCase):
     def test_vendor_application_rejects_blacklisted_momo_number(self):
         from django.urls import reverse
 
-        user = User.objects.create_user("blacklist_vendor_momo", password="pass")
+        user = User.objects.create_user("blacklist_vendor_momo", password=TEST_PASSWORD)
         self.client.force_authenticate(user)
 
         response = self.client.post(reverse("vendors:apply-vendor"), {
@@ -728,7 +736,7 @@ class BlacklistEnforcementTests(APITestCase):
     def test_vendor_application_with_clean_identifiers_still_succeeds(self):
         from django.urls import reverse
 
-        user = User.objects.create_user("clean_vendor", password="pass")
+        user = User.objects.create_user("clean_vendor", password=TEST_PASSWORD)
         self.client.force_authenticate(user)
 
         response = self.client.post(reverse("vendors:apply-vendor"), {
@@ -742,7 +750,7 @@ class BlacklistEnforcementTests(APITestCase):
     def test_courier_application_rejects_blacklisted_id_card(self):
         from django.urls import reverse
 
-        user = User.objects.create_user("blacklist_courier_cni", password="pass")
+        user = User.objects.create_user("blacklist_courier_cni", password=TEST_PASSWORD)
         self.client.force_authenticate(user)
 
         response = self.client.post(reverse("courier-application"), {
@@ -755,7 +763,7 @@ class BlacklistEnforcementTests(APITestCase):
     def test_courier_application_rejects_blacklisted_momo_number(self):
         from django.urls import reverse
 
-        user = User.objects.create_user("blacklist_courier_momo", password="pass")
+        user = User.objects.create_user("blacklist_courier_momo", password=TEST_PASSWORD)
         self.client.force_authenticate(user)
 
         response = self.client.post(reverse("courier-application"), {
@@ -768,7 +776,7 @@ class BlacklistEnforcementTests(APITestCase):
     def test_courier_application_with_clean_identifiers_still_succeeds(self):
         from django.urls import reverse
 
-        user = User.objects.create_user("clean_courier", password="pass")
+        user = User.objects.create_user("clean_courier", password=TEST_PASSWORD)
         self.client.force_authenticate(user)
 
         response = self.client.post(reverse("courier-application"), {
@@ -781,7 +789,7 @@ class BlacklistEnforcementTests(APITestCase):
     def test_admin_cannot_create_a_delivery_org_with_a_blacklisted_momo_number(self):
         from django.urls import reverse
 
-        admin = User.objects.create_superuser("blacklist_admin", password="pass")
+        admin = User.objects.create_superuser("blacklist_admin", password=TEST_PASSWORD)
         self.client.force_authenticate(admin)
 
         response = self.client.post(reverse("auth-admin-create-user"), {
@@ -803,7 +811,7 @@ class AppReleaseEndpointTests(APITestCase):
         from .models import AppRelease
 
         self.AppRelease = AppRelease
-        self.user = User.objects.create_user("app_release_user", password="pass")
+        self.user = User.objects.create_user("app_release_user", password=TEST_PASSWORD)
         self.client.force_authenticate(self.user)
 
     def test_returns_the_configured_release_for_a_portal(self):
@@ -934,3 +942,499 @@ class AccountDeletionTests(APITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class RelayNotificationPreferencesTests(APITestCase):
+    """
+    Les reglages de notification du comptoir.
+
+    Ce que ces tests tiennent : un reglage qui ne se souvient pas est pire
+    qu'un reglage absent, parce que le gerant croit l'avoir pose. Et la
+    reponse doit dire ce qui est REELLEMENT applique, sans quoi l'ecran
+    promettrait un telephone qui sonne alors qu'aucun canal n'existe.
+    """
+
+    def setUp(self):
+        self.url = reverse("relay-point-notification-preferences")
+        self.relay_user = User.objects.create_user("prefs_relay", password="Relay2026")
+        RelayPointProfile.objects.create(
+            user=self.relay_user,
+            name="Relais Preferences",
+            phone="+237690500001",
+            city="Yaounde",
+            status=RelayPointProfile.Status.APPROVED,
+            is_active=True,
+        )
+        self.autre = User.objects.create_user("prefs_autre", password="Client2026")
+
+    def test_valeurs_par_defaut_a_la_premiere_lecture(self):
+        """La premiere ouverture cree les preferences, elle n'echoue pas."""
+        self.client.force_authenticate(self.relay_user)
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["push_enabled"])
+        self.assertEqual(response.data["digest_hour"], 7)
+        self.assertEqual(response.data["quiet_from_hour"], 22)
+
+    def test_reglage_modifie_est_conserve(self):
+        self.client.force_authenticate(self.relay_user)
+        self.client.patch(self.url, {"push_enabled": False, "digest_hour": 9}, format="json")
+
+        relu = self.client.get(self.url)
+
+        self.assertFalse(relu.data["push_enabled"])
+        self.assertEqual(relu.data["digest_hour"], 9)
+        # Les reglages non touches ne bougent pas.
+        self.assertTrue(relu.data["settlements"])
+
+    def test_resume_refuse_avant_sept_heures(self):
+        """
+        Un relais ouvre rarement avant 7 h.
+
+        Une alerte a 5 h du matin est une alerte qu'on apprend a ignorer —
+        et c'est toute la chaine de notification qui perd sa credibilite.
+        """
+        self.client.force_authenticate(self.relay_user)
+        response = self.client.patch(self.url, {"digest_hour": 5}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("digest_hour", response.data)
+        self.assertEqual(self.client.get(self.url).data["digest_hour"], 7)
+
+    def test_heure_hors_cadran_refusee(self):
+        self.client.force_authenticate(self.relay_user)
+        response = self.client.patch(self.url, {"quiet_from_hour": 26}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_heure_non_numerique_refusee(self):
+        self.client.force_authenticate(self.relay_user)
+        response = self.client.patch(self.url, {"digest_hour": "sept"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_requete_sans_reglage_connu_refusee(self):
+        self.client.force_authenticate(self.relay_user)
+        response = self.client.patch(self.url, {"couleur": "bleu"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_reponse_annonce_ce_qui_est_applique(self):
+        """
+        `honored` est vide tant qu'aucun canal n'existe.
+
+        Le portail s'en sert pour avertir le gerant. Le jour ou un canal
+        arrive, il s'ajoute a cette liste et l'avertissement disparait tout
+        seul — ce test tombera alors, et c'est le signal attendu.
+        """
+        self.client.force_authenticate(self.relay_user)
+        response = self.client.get(self.url)
+        self.assertEqual(response.data["honored"], [])
+
+    def test_preferences_privees_a_chaque_relais(self):
+        self.client.force_authenticate(self.relay_user)
+        self.client.patch(self.url, {"push_enabled": False}, format="json")
+
+        voisin = User.objects.create_user("prefs_voisin", password="Relay2026")
+        RelayPointProfile.objects.create(
+            user=voisin,
+            name="Relais Voisin",
+            phone="+237690500002",
+            city="Yaounde",
+            status=RelayPointProfile.Status.APPROVED,
+            is_active=True,
+        )
+        self.client.force_authenticate(voisin)
+
+        self.assertTrue(self.client.get(self.url).data["push_enabled"])
+
+    def test_compte_non_relais_refuse(self):
+        self.client.force_authenticate(self.autre)
+        self.assertEqual(self.client.get(self.url).status_code, status.HTTP_403_FORBIDDEN)
+
+class RelayTeamTests(APITestCase):
+    """
+    Le registre des personnes autorisees au guichet.
+
+    Ce que ces tests tiennent : la limite de trois, l'impossibilite de
+    retirer le responsable, et surtout le drapeau `enforced`. Ce dernier dit
+    au portail que les permissions ne sont PAS appliquees a l'acces — le
+    taire ferait partager l'identifiant du relais a la legere.
+    """
+
+    def setUp(self):
+        from .models import RelayEmployee
+        self.RelayEmployee = RelayEmployee
+        self.url = reverse("relay-point-team")
+        self.relay_user = User.objects.create_user("equipe_relay", password="Relay2026")
+        self.relay_point = RelayPointProfile.objects.create(
+            user=self.relay_user,
+            name="Relais Equipe",
+            phone="+237690600001",
+            city="Yaounde",
+            status=RelayPointProfile.Status.APPROVED,
+            is_active=True,
+        )
+        self.autre = User.objects.create_user("equipe_autre", password="Client2026")
+
+    def _ajouter(self, nom):
+        return self.client.post(self.url, {"display_name": nom}, format="json")
+
+    def test_equipe_vide_au_depart(self):
+        self.client.force_authenticate(self.relay_user)
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["members"], [])
+        self.assertEqual(response.data["active_count"], 0)
+        self.assertEqual(response.data["max_active"], 3)
+
+    def test_ajout_ouvre_le_comptoir_pas_l_argent(self):
+        """
+        Un employe recoit et remet par defaut ; l'argent et les reglages
+        restent fermes. On OUVRE un acces, on ne le referme pas apres coup.
+        """
+        self.client.force_authenticate(self.relay_user)
+        response = self._ajouter("Aicha N.")
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(response.data["can_receive"])
+        self.assertTrue(response.data["can_hand_over"])
+        self.assertFalse(response.data["can_money"])
+        self.assertFalse(response.data["can_settings"])
+
+    def test_nom_vide_refuse(self):
+        self.client.force_authenticate(self.relay_user)
+        self.assertEqual(self._ajouter("   ").status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_quatrieme_personne_refusee(self):
+        self.client.force_authenticate(self.relay_user)
+        for nom in ("Un", "Deux", "Trois"):
+            self.assertEqual(self._ajouter(nom).status_code, status.HTTP_201_CREATED)
+
+        response = self._ajouter("Quatre")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(self.client.get(self.url).data["active_count"], 3)
+
+    def test_retirer_un_acces_libere_une_place(self):
+        """La limite porte sur les ACTIFS : un depart libere une place."""
+        self.client.force_authenticate(self.relay_user)
+        ids = [self._ajouter(nom).data["id"] for nom in ("Un", "Deux", "Trois")]
+
+        self.client.patch(self.url, {"id": ids[0], "is_active": False}, format="json")
+        response = self._ajouter("Quatre")
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        # Le partant reste au registre : son passage ne s'efface pas.
+        self.assertEqual(len(self.client.get(self.url).data["members"]), 4)
+        self.assertEqual(self.client.get(self.url).data["active_count"], 3)
+
+    def test_reactivation_refusee_si_le_comptoir_est_plein(self):
+        self.client.force_authenticate(self.relay_user)
+        ids = [self._ajouter(nom).data["id"] for nom in ("Un", "Deux", "Trois")]
+        self.client.patch(self.url, {"id": ids[0], "is_active": False}, format="json")
+        self._ajouter("Quatre")
+
+        response = self.client.patch(self.url, {"id": ids[0], "is_active": True}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_responsable_non_desactivable(self):
+        """Un relais sans responsable n'a plus personne pour repondre."""
+        proprietaire = self.RelayEmployee.objects.create(
+            relay_point=self.relay_point,
+            display_name="Franck Penga",
+            role=self.RelayEmployee.Role.OWNER,
+        )
+        self.client.force_authenticate(self.relay_user)
+
+        response = self.client.patch(
+            self.url, {"id": proprietaire.id, "is_active": False}, format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        proprietaire.refresh_from_db()
+        self.assertTrue(proprietaire.is_active)
+
+    def test_permissions_modifiables(self):
+        self.client.force_authenticate(self.relay_user)
+        membre_id = self._ajouter("Aicha N.").data["id"]
+
+        response = self.client.patch(
+            self.url, {"id": membre_id, "can_money": True}, format="json",
+        )
+
+        self.assertTrue(response.data["can_money"])
+
+    def test_equipe_d_un_autre_relais_inaccessible(self):
+        voisin_user = User.objects.create_user("equipe_voisin", password="Relay2026")
+        voisin = RelayPointProfile.objects.create(
+            user=voisin_user,
+            name="Relais Voisin",
+            phone="+237690600002",
+            city="Yaounde",
+            status=RelayPointProfile.Status.APPROVED,
+            is_active=True,
+        )
+        etranger = self.RelayEmployee.objects.create(
+            relay_point=voisin, display_name="Chez le voisin",
+        )
+
+        self.client.force_authenticate(self.relay_user)
+        response = self.client.patch(
+            self.url, {"id": etranger.id, "can_money": True}, format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_permissions_annoncees_comme_non_appliquees(self):
+        """
+        `enforced` est faux tant qu'aucune authentification par personne
+        n'existe : un relais, un compte.
+
+        Ce test tombera le jour ou chaque employe se connectera vraiment —
+        et c'est le signal attendu pour retirer l'avertissement du portail.
+        """
+        self.client.force_authenticate(self.relay_user)
+        self.assertFalse(self.client.get(self.url).data["enforced"])
+
+    def test_compte_non_relais_refuse(self):
+        self.client.force_authenticate(self.autre)
+        self.assertEqual(self.client.get(self.url).status_code, status.HTTP_403_FORBIDDEN)
+
+class RelayAccessPinTests(APITestCase):
+    """
+    La connexion par PIN du portail point relais.
+
+    Quatre chiffres ne valent que par ce qui les entoure. Ces tests tiennent
+    exactement cela : le PIN ne s'etablit que contre un code valide, il est
+    hache, cinq echecs ferment la porte, et aucune reponse ne dit a un
+    inconnu si un numero appartient a un relais.
+    """
+
+    def setUp(self):
+        from .models import RelayAccessPin
+        self.RelayAccessPin = RelayAccessPin
+        self.url_code = reverse("relay-pin-request-code")
+        self.url_set = reverse("relay-pin-set")
+        self.url_login = reverse("relay-pin-login")
+        self.url_status = reverse("relay-pin-status")
+
+        self.phone = "+237691248350"
+        self.user = User.objects.create_user(
+            "pin_relay", email="pin.relay@example.com", password="Relay2026",
+            first_name="Franck",
+        )
+        RelayPointProfile.objects.create(
+            user=self.user,
+            name="Relais PIN",
+            phone=self.phone,
+            city="Yaounde",
+            status=RelayPointProfile.Status.APPROVED,
+            is_active=True,
+        )
+
+    def _poser_pin(self, pin="1974"):
+        acces, _ = self.RelayAccessPin.objects.get_or_create(user=self.user, defaults={"pin_hash": ""})
+        acces.set_pin(pin)
+        acces.save()
+        return acces
+
+    # ── Format ──────────────────────────────────────────────────────────────
+
+    def test_pin_faible_refuse(self):
+        """
+        « 1111 » et « 1234 » se devinent avant d'etre attaques.
+
+        Les refuser a la source coute une seconde au gerant, et retire les
+        deux premiers essais de quiconque tente sa chance au comptoir.
+        """
+        for faible in ("1111", "0000", "1234", "4321"):
+            self.assertFalse(self.RelayAccessPin.valide_format(faible), faible)
+        for correct in ("1974", "2608", "9513"):
+            self.assertTrue(self.RelayAccessPin.valide_format(correct), correct)
+
+    def test_longueur_et_chiffres_exiges(self):
+        for mauvais in ("", "123", "12345", "12a4", "    "):
+            self.assertFalse(self.RelayAccessPin.valide_format(mauvais), repr(mauvais))
+
+    def test_pin_jamais_stocke_en_clair(self):
+        acces = self._poser_pin("1974")
+        self.assertNotIn("1974", acces.pin_hash)
+        self.assertTrue(len(acces.pin_hash) > 20)
+
+    # ── Mise en place ───────────────────────────────────────────────────────
+
+    def test_pin_refuse_sans_code_valide(self):
+        """Le code OTP est la seule porte : sans lui, pas de PIN."""
+        response = self.client.post(
+            self.url_set, {"phone": self.phone, "code": "000000", "pin": "1974"}, format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(self.RelayAccessPin.objects.filter(user=self.user).exists())
+
+    def test_pin_pose_avec_un_code_valide(self):
+        from .models import OTPCode
+        OTPCode.objects.create(
+            user=self.user, code="123456", purpose="2FA_LOGIN",
+            expires_at=timezone.now() + timezone.timedelta(minutes=10),
+        )
+
+        response = self.client.post(
+            self.url_set, {"phone": self.phone, "code": "123456", "pin": "1974"}, format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.data)
+        self.assertTrue(self.RelayAccessPin.objects.get(user=self.user).check_pin("1974"))
+
+    def test_code_a_usage_unique(self):
+        """Un code qui resservirait laisserait reposer le PIN a volonte."""
+        from .models import OTPCode
+        OTPCode.objects.create(
+            user=self.user, code="123456", purpose="2FA_LOGIN",
+            expires_at=timezone.now() + timezone.timedelta(minutes=10),
+        )
+        self.client.post(
+            self.url_set, {"phone": self.phone, "code": "123456", "pin": "1974"}, format="json",
+        )
+
+        rejoue = self.client.post(
+            self.url_set, {"phone": self.phone, "code": "123456", "pin": "8520"}, format="json",
+        )
+
+        self.assertEqual(rejoue.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(self.RelayAccessPin.objects.get(user=self.user).check_pin("1974"))
+
+    def test_code_expire_refuse(self):
+        from .models import OTPCode
+        OTPCode.objects.create(
+            user=self.user, code="123456", purpose="2FA_LOGIN",
+            expires_at=timezone.now() - timezone.timedelta(minutes=1),
+        )
+
+        response = self.client.post(
+            self.url_set, {"phone": self.phone, "code": "123456", "pin": "1974"}, format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    # ── Connexion ───────────────────────────────────────────────────────────
+
+    def test_connexion_rend_un_jeton(self):
+        self._poser_pin("1974")
+
+        response = self.client.post(
+            self.url_login, {"phone": self.phone, "pin": "1974"}, format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.data)
+        self.assertIn("access", response.data)
+        self.assertEqual(response.data["first_name"], "Franck")
+
+    def test_mauvais_pin_refuse_et_compte(self):
+        self._poser_pin("1974")
+
+        response = self.client.post(
+            self.url_login, {"phone": self.phone, "pin": "8520"}, format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.data["attempts_left"], 4)
+
+    def test_cinq_echecs_ferment_trente_minutes(self):
+        """
+        Le compteur est tenu par le SERVEUR.
+
+        Un compteur cote ecran ne protege de rien : il suffit d'appeler
+        l'API directement. Quatre chiffres tombent alors en quelques
+        milliers d'essais.
+        """
+        self._poser_pin("1974")
+        for _ in range(5):
+            self.client.post(self.url_login, {"phone": self.phone, "pin": "8520"}, format="json")
+
+        # Meme le BON code est refuse pendant le blocage.
+        response = self.client.post(
+            self.url_login, {"phone": self.phone, "pin": "1974"}, format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+        self.assertEqual(response.data["locked_minutes"], self.RelayAccessPin.LOCK_MINUTES)
+
+    def test_compteur_remis_a_zero_seulement_sur_succes(self):
+        """
+        Le vider a l'expiration du blocage offrirait cinq essais toutes les
+        trente minutes, indefiniment.
+        """
+        acces = self._poser_pin("1974")
+        for _ in range(3):
+            self.client.post(self.url_login, {"phone": self.phone, "pin": "8520"}, format="json")
+        acces.refresh_from_db()
+        self.assertEqual(acces.failed_attempts, 3)
+
+        self.client.post(self.url_login, {"phone": self.phone, "pin": "1974"}, format="json")
+
+        acces.refresh_from_db()
+        self.assertEqual(acces.failed_attempts, 0)
+
+    def test_numero_inconnu_repond_comme_un_mauvais_pin(self):
+        """Separer les deux indiquerait ou insister."""
+        self._poser_pin("1974")
+
+        inconnu = self.client.post(
+            self.url_login, {"phone": "+237600000000", "pin": "1974"}, format="json",
+        )
+
+        self.assertEqual(inconnu.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertNotIn("attempts_left", inconnu.data)
+
+    def test_compte_sans_relais_refuse(self):
+        """Un PIN relais n'ouvre que le portail relais."""
+        autre = User.objects.create_user("pin_client", password="Client2026")
+        from .models import RelayAccessPin
+        acces = RelayAccessPin(user=autre)
+        acces.set_pin("1974")
+        acces.save()
+
+        response = self.client.post(
+            self.url_login, {"phone": autre.username, "pin": "1974"}, format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    # ── Envoi du code, et enumeration ───────────────────────────────────────
+
+    def test_envoi_de_code_ne_revele_pas_les_numeros(self):
+        """
+        Repondre 404 sur un numero inconnu ferait de cet endpoint un
+        annuaire des points relais : il suffirait de balayer les numeros.
+        """
+        connu = self.client.post(self.url_code, {"phone": self.phone}, format="json")
+        inconnu = self.client.post(self.url_code, {"phone": "+237600000000"}, format="json")
+
+        self.assertEqual(connu.status_code, status.HTTP_200_OK)
+        self.assertEqual(inconnu.status_code, status.HTTP_200_OK)
+        self.assertEqual(connu.data["detail"], inconnu.data["detail"])
+
+    def test_canal_annonce_est_l_email(self):
+        """
+        La maquette annonce un SMS. Aucun envoi SMS n'existe.
+
+        Ce test tombera le jour ou un fournisseur sera branche — et c'est
+        le signal attendu pour changer le texte des ecrans.
+        """
+        response = self.client.post(self.url_code, {"phone": self.phone}, format="json")
+        self.assertEqual(response.data["channel"], "email")
+
+    def test_statut_oriente_l_ecran(self):
+        sans = self.client.get(self.url_status, {"phone": self.phone})
+        self.assertFalse(sans.data["has_pin"])
+        self.assertEqual(sans.data["first_name"], "")
+
+        self._poser_pin("1974")
+        avec = self.client.get(self.url_status, {"phone": self.phone})
+
+        self.assertTrue(avec.data["has_pin"])
+        self.assertEqual(avec.data["first_name"], "Franck")
+        self.assertEqual(avec.data["max_attempts"], 5)
+        self.assertEqual(avec.data["lock_minutes"], 30)

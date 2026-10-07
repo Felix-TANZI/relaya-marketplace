@@ -14,6 +14,12 @@
 # d'incident, pas le SHA256 attendu par `ignored_matches` — l'exclusion
 # par chemin est donc le moyen fiable et verifiable de fermer ce bruit,
 # sur le meme principe que l'exception tests/ de .gitleaks.toml.
+#
+# PR #70 (fusion dev1 + ecrans vendeur/relais) : meme bruit, deux nouveaux
+# fichiers. "DemoHisto2026!" (seed_relay_history_demo.py) et une dizaine
+# de password="pass"/"Trust2026!"/"ClientSolide2026!" (accounts/tests.py)
+# sont les memes mots de passe factices de tests/demo jetables, jamais
+# utilises en dehors d'une base de test locale.
 
 version: 2
 
@@ -21,3 +27,5 @@ secret:
   ignored_paths:
     - 'backend/apps/shipping/tests.py'
     - 'backend/apps/shipping/management/commands/seed_relay_counter_demo.py'
+    - 'backend/apps/accounts/tests.py'
+    - 'backend/apps/shipping/management/commands/seed_relay_history_demo.py'

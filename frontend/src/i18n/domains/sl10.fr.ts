@@ -101,6 +101,15 @@ export default {
     step1_no_results: 'Aucun résultat pour cette recherche.',
     step1_request_sheet: 'Aucun de ces produits · Demander une fiche',
 
+    // Scanner code-barres (NOF-01)
+    scan_title: 'Scanner un code',
+    scan_hint: 'Visez le code-barres ou le QR du produit.',
+    scan_checking: 'Vérification du code…',
+    scan_opening: 'Ouverture de la caméra…',
+    scan_manual: 'Saisir le nom à la main',
+    scan_close: 'Fermer',
+    scan_not_found: 'Code non reconnu. Cherchez le produit par son nom.',
+
     // Demander une fiche
     sheet_request_title: 'Demander une fiche',
     sheet_field_name: 'Nom du produit',

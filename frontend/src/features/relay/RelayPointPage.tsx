@@ -38,6 +38,7 @@ import RelayReception, { type RelayArrival, type RefuseInput } from "./RelayRece
 import RelayPickup, {
   type CounterIssueInput,
   type HandOverInput,
+  type PickupCodeCheck,
   type RelayPickupParcel,
 } from "./RelayPickup";
 import RelayReviews from "./RelayReviews";
@@ -1420,34 +1421,59 @@ export default function RelayPointPage() {
 
 
   /**
-   * Les colis en stock, tels que le comptoir a besoin de les voir.
+   * Un `RelayParcel` brut vers ce que l'ecran de retrait a besoin de voir.
    *
-   * On ne passe pas `RelayParcel` brut a l'ecran de retrait : celui-ci n'a
-   * aucune raison de connaitre le telephone du client ni son adresse. Il lui
-   * faut de quoi retrouver un casier et controler une identite, rien de plus.
+   * On ne lui passe pas le type brut : celui-ci n'a aucune raison de
+   * connaitre le telephone du client ni son adresse. Il lui faut de quoi
+   * retrouver un casier et controler une identite, rien de plus.
    */
-  const pickupParcels = useMemo<RelayPickupParcel[]>(
-    () =>
-      relayParcels
-        .filter((parcel) => ["RECEIVED", "STORED"].includes(parcel.status) && parcel.pickup_code)
-        .map((parcel) => ({
-          id: parcel.id,
-          orderId: parcel.order_id,
-          ref: `BV-${parcel.order_id}`,
-          slot: parcel.slot_code || "à définir",
-          sizeLabel: parcel.parcel_size_label || "Taille non renseignée",
-          pickupCode: parcel.pickup_code,
-          authorizedName: parcel.authorized_pickup_name || "",
-          authorizedPhone: parcel.authorized_pickup_phone || "",
-          gardeFeeXaf: parcel.garde_fee_due_xaf || 0,
-        })),
-    [relayParcels],
-  );
+  const toPickupParcel = (parcel: RelayParcel): RelayPickupParcel => ({
+    id: parcel.id,
+    orderId: parcel.order_id,
+    ref: `BV-${parcel.order_id}`,
+    slot: parcel.slot_code || "à définir",
+    sizeLabel: parcel.parcel_size_label || "Taille non renseignée",
+    pickupCode: parcel.pickup_code,
+    authorizedName: parcel.authorized_pickup_name || "",
+    authorizedPhone: parcel.authorized_pickup_phone || "",
+    gardeFeeXaf: parcel.garde_fee_due_xaf || 0,
+  });
+
+  /**
+   * Verifie un code de retrait aupres du serveur, seule source fiable pour
+   * les deux sous-etats jusque-la invisibles au comptoir : code faux (avec
+   * essais restants) et colis bloque 24 h apres 3 echecs consecutifs
+   * (Regles Systeme DEV v2.0 §8.2). Remplace la comparaison locale : un
+   * compteur qu'une simple recharge de page remettrait a zero ne protegerait
+   * personne.
+   */
+  const checkPickupCode = async (code: string): Promise<PickupCodeCheck> => {
+    try {
+      const data = await http<{
+        locked: boolean;
+        locked_until: string | null;
+        attempts_left: number | null;
+        parcels: RelayParcel[];
+      }>("/api/shipping/relay-point/pickup/check/", {
+        method: "POST",
+        body: JSON.stringify({ pickup_code: code }),
+      });
+      return {
+        locked: data.locked,
+        lockedUntil: data.locked_until,
+        attemptsLeft: data.attempts_left,
+        parcels: data.parcels.map(toPickupParcel),
+      };
+    } catch (error) {
+      showOperationError(error);
+      return { locked: false, lockedUntil: null, attemptsLeft: null, parcels: [] };
+    }
+  };
 
   const renderRetrait = () => (
     <RelayPickup
-      parcels={pickupParcels}
       busy={operationBusy}
+      onCheckCode={checkPickupCode}
       onHandOver={handOverParcels}
       onIssue={reportCounterIssue}
       onOpenReturnDeposit={() => {
@@ -1458,6 +1484,7 @@ export default function RelayPointPage() {
         setStateFocus("erreur");
         setTab("etats");
       }}
+      onContactSupport={() => setTab("messagerie")}
     />
   );
 

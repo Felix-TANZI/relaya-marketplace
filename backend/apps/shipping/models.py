@@ -14,6 +14,28 @@ def shipment_evidence_retention_deadline():
     return timezone.now() + timezone.timedelta(days=days)
 
 
+def infer_actor_role(user):
+    """
+    Déduit le rôle d'un utilisateur authentifié pour signer un ShipmentEvent
+    (VENDOR/COURIER/RELAY_POINT/SUPPORT/CLIENT) — même logique que les
+    contrôles d'accès déjà en place (getattr(user, "courier_profile", None)
+    dans shipping/views.py).
+    """
+    if not user or not getattr(user, "is_authenticated", False):
+        return ShipmentEvent.ACTOR_ROLE_SYSTEM
+    if getattr(user, "courier_profile", None):
+        return "COURIER"
+    if getattr(user, "relay_point_profile", None):
+        return "RELAY_POINT"
+    if getattr(user, "vendor_profile", None):
+        return "VENDOR"
+    if getattr(user, "delivery_organization_profile", None):
+        return "DISPATCHER"
+    if user.is_staff:
+        return "SUPPORT"
+    return "CLIENT"
+
+
 class Zone(models.Model):
     """
     Zone de livraison — regroupe des quartiers pour le calcul de prix, les
@@ -295,10 +317,29 @@ class ShipmentEvent(models.Model):
     Timeline d'un shipment : chaque event est un statut + message + localisation.
     """
 
+    # Rôles possibles pour actor_role (même convention libre que
+    # ShipmentEvidence.actor_role) : VENDOR, COURIER, RELAY_POINT, CLIENT,
+    # SUPPORT. SYSTEM désigne une transition automatique (pas d'utilisateur
+    # a l'origine du changement) — valeur sobre plutôt qu'une règle inventée
+    # pour distinguer les cas automatiques.
+    ACTOR_ROLE_SYSTEM = "SYSTEM"
+
     shipment = models.ForeignKey(Shipment, on_delete=models.CASCADE, related_name="events")
     status = models.CharField(max_length=32)
+    previous_status = models.CharField(
+        max_length=32, blank=True, default="",
+        help_text="Statut du shipment juste avant cet événement, vide si c'est le premier événement.",
+    )
     message = models.CharField(max_length=255, blank=True, default="")
     location = models.CharField(max_length=120, blank=True, default="")
+    actor = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="shipment_events",
+        help_text="Compte ayant déclenché ce changement — vide pour une transition automatique.",
+    )
+    actor_role = models.CharField(
+        max_length=20, blank=True, default="",
+        help_text="Rôle de l'acteur au moment de l'action (VENDOR, COURIER, RELAY_POINT, CLIENT, SUPPORT, SYSTEM).",
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -307,6 +348,30 @@ class ShipmentEvent(models.Model):
 
     def __str__(self):
         return f"ShipmentEvent(shipment={self.shipment_id}, status={self.status})"
+
+    @classmethod
+    def record(cls, *, shipment, status, message="", location="", actor=None, actor_role=""):
+        """
+        Crée un event en capturant automatiquement previous_status (statut du
+        dernier event existant pour ce shipment, vide s'il n'y en a aucun) —
+        évite de dupliquer cette lecture dans chaque site d'appel.
+        """
+        previous_status = (
+            cls.objects.filter(shipment=shipment)
+            .order_by("-created_at", "-id")
+            .values_list("status", flat=True)
+            .first()
+            or ""
+        )
+        return cls.objects.create(
+            shipment=shipment,
+            status=status,
+            previous_status=previous_status,
+            message=message,
+            location=location,
+            actor=actor,
+            actor_role=actor_role,
+        )
 
 
 class ShipmentLocation(models.Model):
@@ -465,6 +530,66 @@ class RelayParcel(models.Model):
 
     def __str__(self):
         return f"RelayParcel(shipment={self.shipment_id}, relay={self.relay_point_id}, status={self.status})"
+
+
+class RelayPickupAttempt(models.Model):
+    """
+    Trace chaque code de retrait saisi au comptoir (Règles Système DEV v2.0,
+    §8.2) : 3 essais faux consécutifs sur un même code bloquent ce code 24 h
+    pour ce relais — seul le support peut lever le blocage.
+    """
+
+    MAX_ATTEMPTS = 3
+    LOCK_HOURS = 24
+
+    relay_point = models.ForeignKey(
+        "accounts.RelayPointProfile",
+        on_delete=models.CASCADE,
+        related_name="pickup_attempts",
+    )
+    code = models.CharField(max_length=24)
+    success = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["relay_point", "code", "-created_at"])]
+        verbose_name = "Tentative de retrait"
+        verbose_name_plural = "Tentatives de retrait"
+
+    def __str__(self):
+        etat = "ok" if self.success else "echec"
+        return f"RelayPickupAttempt(relay={self.relay_point_id}, code={self.code}, {etat})"
+
+    @classmethod
+    def register(cls, relay_point, code, success):
+        return cls.objects.create(relay_point=relay_point, code=(code or "").strip().upper(), success=success)
+
+    @classmethod
+    def _recent_failures(cls, relay_point, code):
+        """Les echecs consecutifs les plus recents pour ce code, du plus recent au plus ancien."""
+        code = (code or "").strip().upper()
+        recent = cls.objects.filter(relay_point=relay_point, code=code).order_by("-created_at")[: cls.MAX_ATTEMPTS]
+        failures = []
+        for attempt in recent:
+            if attempt.success:
+                break
+            failures.append(attempt)
+        return failures
+
+    @classmethod
+    def locked_until(cls, relay_point, code):
+        """Date de levee du blocage si ce code vient de subir 3 echecs consecutifs, sinon None."""
+        failures = cls._recent_failures(relay_point, code)
+        if len(failures) < cls.MAX_ATTEMPTS:
+            return None
+        until = failures[0].created_at + timezone.timedelta(hours=cls.LOCK_HOURS)
+        return until if timezone.now() < until else None
+
+    @classmethod
+    def attempts_left(cls, relay_point, code):
+        """Essais encore disponibles avant blocage (0 si deja au seuil)."""
+        return max(0, cls.MAX_ATTEMPTS - len(cls._recent_failures(relay_point, code)))
 
 
 class ShipmentMessage(models.Model):

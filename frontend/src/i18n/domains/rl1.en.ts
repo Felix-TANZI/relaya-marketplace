@@ -496,4 +496,13 @@ export default {
     avatar_updated: 'Profile photo updated.',
     precision_score: 'Precision {{score}}/100',
   },
+
+  rl1_pickup_lock: {
+    checking: 'Checking code...',
+    attempts_remaining: 'No parcel in stock has this code. {{count}} attempt left before 24h lock.',
+    attempts_remaining_plural: 'No parcel in stock has this code. {{count}} attempts left before 24h lock.',
+    locked_title: 'Parcel locked 24h',
+    locked_body: 'Too many wrong codes for this number. BelivaY has been notified: the customer must contact support. Unlocked on {{until}}.',
+    locked_action: 'Write to support',
+  },
 };

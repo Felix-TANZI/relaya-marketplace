@@ -328,16 +328,19 @@ export function detectHandoverIssue(order: VendorOrder, isOnline: boolean): Hand
 export interface JournalEvent {
   id: string;
   label: string;
+  previousLabel: string;
   detail: string;
   location: string;
+  actorLabel: string;
   at: string;
 }
 
 /**
- * Journal (JRN-01/02) : pas d'endpoint GET /orders/{id}/journal ni d'auteur
- * signé (actor_id) exposés aujourd'hui — on reconstitue un fil en lecture
- * seule à partir de la création de la commande et de shipment.timeline (déjà
- * réel, déjà horodaté), du plus récent au plus ancien.
+ * Journal (JRN-01/02) : pas d'endpoint GET /orders/{id}/journal dédié — on
+ * reconstitue un fil en lecture seule à partir de la création de la commande
+ * (acheteur déjà anonymisé par order.customer_name) et de shipment.timeline,
+ * qui porte désormais l'acteur signé (actor_label) et le statut précédent
+ * (previous_label) pour chaque étape réelle, du plus récent au plus ancien.
  */
 export function journalEventsOf(order: VendorOrder): JournalEvent[] {
   const events: JournalEvent[] = [
@@ -347,15 +350,19 @@ export function journalEventsOf(order: VendorOrder): JournalEvent[] {
       // "Escrow", un mot banni par GEN-11).
       id: 'created',
       label: 'Payée',
+      previousLabel: '',
       detail: orderRef(order.id),
       location: '',
+      actorLabel: order.customer_name,
       at: order.created_at,
     },
     ...(order.shipment?.timeline ?? []).map((ev) => ({
       id: String(ev.id),
       label: ev.label || ev.status,
+      previousLabel: ev.previous_label || '',
       detail: ev.message || '',
       location: ev.location || '',
+      actorLabel: ev.actor_label || '',
       at: ev.created_at,
     })),
   ];

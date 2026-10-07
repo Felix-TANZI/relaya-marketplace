@@ -298,19 +298,34 @@ class VendorProductViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='master-search')
     def master_search(self, request):
-        """Recherche de fiches maîtres (validées) pour rattacher une offre."""
-        from apps.catalog.models import MasterProduct, ModerationStatus
+        """Recherche de fiches maîtres (validées) pour rattacher une offre.
+
+        `barcode` : correspondance exacte sur le SKU canonique ou le
+        code-barres EAN/UPC d'un Variant (scanner caméra, NOF-01). Prioritaire
+        sur `search` si les deux sont fournis.
+        """
+        from apps.catalog.models import MasterProduct, ModerationStatus, ProductVariant
         from django.db.models import Q
-        q = request.query_params.get('search', '').strip()
-        qs = MasterProduct.objects.filter(moderation_status=ModerationStatus.APPROVED)
-        if q:
-            qs = qs.filter(Q(title__icontains=q) | Q(brand__icontains=q))
+        barcode = request.query_params.get('barcode', '').strip()
+        if barcode:
+            master_ids = ProductVariant.objects.filter(
+                Q(sku=barcode) | Q(barcode=barcode),
+                is_active=True, moderation_status=ModerationStatus.APPROVED,
+            ).values_list('master_id', flat=True)
+            qs = MasterProduct.objects.filter(
+                id__in=master_ids, moderation_status=ModerationStatus.APPROVED,
+            )
+        else:
+            q = request.query_params.get('search', '').strip()
+            qs = MasterProduct.objects.filter(moderation_status=ModerationStatus.APPROVED)
+            if q:
+                qs = qs.filter(Q(title__icontains=q) | Q(brand__icontains=q))
         qs = qs.select_related('category').order_by('title')[:20]
         data = [{
         'id': m.id, 'slug': m.slug, 'title': m.title, 'brand': m.brand,
         'category': m.category_id, 'category_name': m.category.name,
     } for m in qs]
-        return Response(data)        
+        return Response(data)
 
 
 @extend_schema(
@@ -759,7 +774,159 @@ def vendor_order_note(request, order_id):
         return Response(
             {'detail': 'Profil vendeur introuvable.'},
             status=status.HTTP_404_NOT_FOUND,
-        ) 
+        )
+
+
+@extend_schema(
+    tags=["Vendors"],
+    summary="Download order receipt PDF",
+    description=(
+        "Génère le reçu PDF d'une commande, limité aux articles du vendeur. "
+        "L'identité de l'acheteur reste masquée (comme sur l'écran Reçu "
+        "vendeur) : ce n'est pas une facture fiscale."
+    ),
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_order_receipt_pdf(request, order_id):
+    """Génère un reçu PDF pour une commande (articles du vendeur uniquement)."""
+    import io
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import mm
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_RIGHT
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+
+    try:
+        vendor_profile = VendorProfile.objects.get(user=request.user)
+    except VendorProfile.DoesNotExist:
+        return Response(
+            {'detail': 'Profil vendeur introuvable.'},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    if not vendor_profile.is_active_vendor:
+        return Response(
+            {'detail': "Votre compte vendeur n'est pas encore approuvé."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    order = Order.objects.filter(
+        id=order_id,
+        items__product__vendor=request.user,
+    ).distinct().first()
+    if not order:
+        return Response(
+            {'detail': 'Commande introuvable ou ne contient pas vos produits.'},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    items = list(order.items.filter(product__vendor=request.user))
+    vendor_subtotal = sum(item.line_total_xaf for item in items)
+    commission_amount = round(vendor_subtotal * float(order.commission_rate_snapshot) / 100)
+    vendor_net_amount = vendor_subtotal - commission_amount
+    order_ref = f"BLV-{order.id:05d}"
+
+    def fmt_xaf(amount):
+        return f"{round(amount):,} FCFA".replace(',', ' ')
+
+    styles = getSampleStyleSheet()
+    muted = colors.HexColor('#7C6E5A')
+    orange = colors.HexColor('#F47920')
+    dark = colors.HexColor('#1A1209')
+    light = colors.HexColor('#F5F0E8')
+
+    title_style = ParagraphStyle('Title', parent=styles['Title'], textColor=dark, fontSize=18, spaceAfter=2)
+    muted_style = ParagraphStyle('Muted', parent=styles['Normal'], textColor=muted, fontSize=9.5)
+    muted_right = ParagraphStyle('MutedRight', parent=muted_style, alignment=TA_RIGHT)
+    label_style = ParagraphStyle('Label', parent=styles['Normal'], textColor=muted, fontSize=9)
+    value_style = ParagraphStyle('Value', parent=styles['Normal'], textColor=dark, fontSize=11, fontName='Helvetica-Bold')
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer, pagesize=A4,
+        topMargin=22 * mm, bottomMargin=18 * mm, leftMargin=18 * mm, rightMargin=18 * mm,
+    )
+
+    elements = [
+        Paragraph(vendor_profile.business_name, title_style),
+        Paragraph('BelivaY Marketplace', muted_style),
+        Spacer(1, 10 * mm),
+        Paragraph(f"Reçu de commande {order_ref}", ParagraphStyle('Ref', parent=styles['Heading2'], textColor=orange)),
+        Paragraph(f"Encaissé le {order.created_at.strftime('%d/%m/%Y à %H:%M')}", muted_style),
+        Spacer(1, 6 * mm),
+    ]
+
+    info_table = Table(
+        [
+            [Paragraph('Client', label_style), Paragraph('Identité masquée', value_style)],
+            [Paragraph('Encaissé par', label_style), Paragraph('BelivaY, pour votre compte', value_style)],
+        ],
+        colWidths=[40 * mm, 120 * mm],
+    )
+    info_table.setStyle(TableStyle([
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+    ]))
+    elements.append(info_table)
+    elements.append(Spacer(1, 8 * mm))
+
+    rows = [['Produit', 'Qté', 'Prix unitaire', 'Total']]
+    for item in items:
+        rows.append([
+            item.title_snapshot,
+            str(item.qty),
+            fmt_xaf(item.price_xaf_snapshot),
+            fmt_xaf(item.line_total_xaf),
+        ])
+
+    items_table = Table(rows, colWidths=[80 * mm, 20 * mm, 35 * mm, 35 * mm])
+    items_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), light),
+        ('TEXTCOLOR', (0, 0), (-1, 0), muted),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 9.5),
+        ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
+        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('LINEBELOW', (0, 0), (-1, 0), 0.75, colors.HexColor('#E0D8CE')),
+        ('LINEBELOW', (0, 1), (-1, -1), 0.5, colors.HexColor('#E0D8CE')),
+    ]))
+    elements.append(items_table)
+    elements.append(Spacer(1, 8 * mm))
+
+    totals_table = Table(
+        [
+            ['Prix de vente', fmt_xaf(vendor_subtotal)],
+            ['Vous gardez', fmt_xaf(vendor_net_amount)],
+        ],
+        colWidths=[135 * mm, 35 * mm],
+    )
+    totals_table.setStyle(TableStyle([
+        ('FONTSIZE', (0, 0), (-1, -1), 11),
+        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+        ('TEXTCOLOR', (0, 0), (0, -1), muted),
+        ('TEXTCOLOR', (1, 0), (1, 0), dark),
+        ('TEXTCOLOR', (0, 1), (1, 1), colors.HexColor('#16A34A')),
+        ('FONTNAME', (0, 1), (-1, 1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 1), (-1, 1), 14),
+        ('TOPPADDING', (0, 0), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+        ('LINEABOVE', (0, 1), (-1, 1), 0.75, colors.HexColor('#E0D8CE')),
+    ]))
+    elements.append(totals_table)
+    elements.append(Spacer(1, 10 * mm))
+    elements.append(Paragraph("Ceci n'est pas une facture fiscale.", muted_right))
+    elements.append(Paragraph('belivay.com · support@belivay.cm', muted_right))
+
+    doc.build(elements)
+    buffer.seek(0)
+
+    response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="recu_{order_ref}.pdf"'
+    return response
 
 
 @extend_schema(

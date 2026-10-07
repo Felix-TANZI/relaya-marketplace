@@ -50,7 +50,7 @@ from .models import AppleIdentity, AppRelease, ComplianceDocument, RelayEmployee
 from apps.common.phone import normalize_cameroon_phone
 from django.core.exceptions import ValidationError as DjangoValidationError
 from apps.orders.models import Dispute, DisputeEvidenceRequest, DisputeMessage
-from apps.shipping.models import Shipment, ShipmentEvent
+from apps.shipping.models import Shipment, ShipmentEvent, infer_actor_role
 
 
 logger = logging.getLogger(__name__)
@@ -1498,11 +1498,13 @@ def delivery_organization_assign_mission(request, shipment_id):
     shipment.assignment_issue_code = ""
     shipment.assignment_issue_message = ""
     shipment.save(update_fields=["courier", "courier_name", "courier_phone", "status", "assignment_issue_code", "assignment_issue_message", "updated_at"])
-    ShipmentEvent.objects.create(
+    ShipmentEvent.record(
         shipment=shipment,
         status=Shipment.Status.ASSIGNED,
         message=f"Mission affectée par {organization.company_name} à {shipment.courier_name}",
         location=shipment.order.city,
+        actor=request.user,
+        actor_role=infer_actor_role(request.user),
     )
     UserNotification.objects.create(
         user=courier.user,

@@ -24,6 +24,7 @@ from .serializers import (
     RelayParcelReceiveSerializer,
     RelayParcelReturnSerializer,
     RelayParcelSerializer,
+    RelayPickupCodeCheckSerializer,
     RelayPointReviewSerializer,
     ShipmentMessageCreateSerializer,
     ShipmentMessageSerializer,
@@ -144,11 +145,12 @@ def _release_overdue_accepted_shipments():
             notification_type=UserNotification.NotificationType.SYSTEM,
             action_url="/courier",
         )
-        ShipmentEvent.objects.create(
+        ShipmentEvent.record(
             shipment=shipment,
             status=Shipment.Status.CREATED,
             message="Mission liberee automatiquement apres depassement du delai de prise en charge.",
             location=order.city,
+            actor_role=ShipmentEvent.ACTOR_ROLE_SYSTEM,
         )
         shipment.status = Shipment.Status.CREATED
         shipment.courier = None
@@ -300,7 +302,9 @@ class RelayPointParcelReceiveView(APIView):
 
     def post(self, request):
         relay_point = _get_active_relay_point(request.user)
-        serializer = RelayParcelReceiveSerializer(data=request.data, context={"relay_point": relay_point})
+        serializer = RelayParcelReceiveSerializer(
+            data=request.data, context={"relay_point": relay_point, "user": request.user},
+        )
         serializer.is_valid(raise_exception=True)
         parcel = serializer.save()
         return Response(RelayParcelSerializer(parcel).data, status=status.HTTP_201_CREATED)
@@ -422,11 +426,13 @@ class RelayPointParcelRefuseView(APIView):
         shipment.status = Shipment.Status.INCIDENT
         shipment.save(update_fields=["status", "updated_at"])
         incident_message = f"Refusé au contrôle du point relais {relay_point.name} — {reason_label}." + (f" {note}" if note else "")
-        ShipmentEvent.objects.create(
+        ShipmentEvent.record(
             shipment=shipment,
             status=Shipment.Status.INCIDENT,
             message=incident_message,
             location=relay_point.name,
+            actor=request.user,
+            actor_role="RELAY_POINT",
         )
         # État incident visible + notification immédiate (Reste à construire,
         # portail acheteur) — le livreur en a déjà une équivalente pour son
@@ -457,6 +463,32 @@ class RelayPointParcelRefuseView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+
+
+@extend_schema(
+    tags=["Relay Point"],
+    summary="Point relais : verifier un code de retrait avant remise",
+    description=(
+        "Detecte en direct, avant la remise, les deux sous-etats jusque-la "
+        "invisibles au comptoir : code faux (avec essais restants) et colis "
+        "bloque 24 h apres 3 echecs consecutifs (Regles Systeme DEV v2.0 §8.2)."
+    ),
+)
+class RelayPointPickupCodeCheckView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = RelayPickupCodeCheckSerializer
+
+    def post(self, request):
+        relay_point = _get_active_relay_point(request.user)
+        serializer = RelayPickupCodeCheckSerializer(data=request.data, context={"relay_point": relay_point})
+        serializer.is_valid(raise_exception=True)
+        result = serializer.check()
+        return Response({
+            "locked": result["locked"],
+            "locked_until": result["locked_until"],
+            "attempts_left": result["attempts_left"],
+            "parcels": RelayParcelSerializer(result["parcels"], many=True).data,
+        })
 
 
 @extend_schema(tags=["Relay Point"], summary="Confirmer le retrait client au point relais")
@@ -533,7 +565,9 @@ class RelayPointParcelReturnView(APIView):
 
     def post(self, request):
         relay_point = _get_active_relay_point(request.user)
-        serializer = RelayParcelReturnSerializer(data=request.data, context={"relay_point": relay_point})
+        serializer = RelayParcelReturnSerializer(
+            data=request.data, context={"relay_point": relay_point, "user": request.user},
+        )
         serializer.is_valid(raise_exception=True)
         parcel = serializer.save()
         return Response(RelayParcelSerializer(parcel).data, status=status.HTTP_200_OK)
@@ -1445,11 +1479,13 @@ class CourierShipmentMessageListCreateView(generics.GenericAPIView):
             sender_role=ShipmentMessage.SenderRole.COURIER,
             message=serializer.validated_data["message"],
         )
-        ShipmentEvent.objects.create(
+        ShipmentEvent.record(
             shipment=shipment,
             status=shipment.status,
             message=f"Message {message.channel.lower()} envoye par le livreur",
             location=shipment.order.city,
+            actor=request.user,
+            actor_role="COURIER",
         )
         return Response(
             ShipmentMessageSerializer(message, context={"request": request}).data,
@@ -1485,11 +1521,13 @@ class CourierShipmentScanView(generics.GenericAPIView):
             event_message = "Colis scanne et livre"
 
         shipment.save(update_fields=["status", "updated_at"])
-        ShipmentEvent.objects.create(
+        ShipmentEvent.record(
             shipment=shipment,
             status=shipment.status,
             message=event_message,
             location=order.city,
+            actor=request.user,
+            actor_role="COURIER",
         )
         ShipmentMessage.objects.create(
             shipment=shipment,
@@ -1607,11 +1645,13 @@ class CourierClaimShipmentView(generics.GenericAPIView):
 
         shipment = Shipment.objects.select_related("order", "courier", "courier__user").get(id=id)
 
-        ShipmentEvent.objects.create(
+        ShipmentEvent.record(
             shipment=shipment,
             status=Shipment.Status.ASSIGNED,
             message="Mission acceptée par le livreur",
             location=courier.city or "",
+            actor=request.user,
+            actor_role="COURIER",
         )
 
         order = shipment.order

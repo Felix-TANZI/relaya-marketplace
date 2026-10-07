@@ -44,3 +44,6 @@ cryptography>=42.0,<47.0
 
 # Taches asynchrones (emails, etc.) hors du cycle requete/reponse
 celery>=5.3,<6.0
+
+# Generation de PDF (recus vendeur)
+reportlab>=4.0,<5.0

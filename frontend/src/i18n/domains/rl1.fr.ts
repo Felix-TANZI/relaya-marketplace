@@ -496,4 +496,13 @@ export default {
     avatar_updated: 'Photo de profil mise à jour.',
     precision_score: 'Précision {{score}}/100',
   },
+
+  rl1_pickup_lock: {
+    checking: 'Vérification du code...',
+    attempts_remaining: 'Aucun colis en stock ne porte ce code. Encore {{count}} essai avant blocage 24 h.',
+    attempts_remaining_plural: 'Aucun colis en stock ne porte ce code. Encore {{count}} essais avant blocage 24 h.',
+    locked_title: 'Colis bloqué 24 h',
+    locked_body: 'Trop de codes faux pour ce numéro. BelivaY est prévenu : le client doit passer par le support. Débloqué le {{until}}.',
+    locked_action: 'Écrire au support',
+  },
 };

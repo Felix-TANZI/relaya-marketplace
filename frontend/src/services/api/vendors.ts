@@ -181,8 +181,10 @@ export interface VendorShipmentTimelineEvent {
   id: number | string;
   status: string;
   label: string;
+  previous_label: string;
   message: string;
   location: string;
+  actor_label: string;
   created_at: string;
 }
 
@@ -1056,6 +1058,16 @@ export const vendorsApi = {
     };
     document.body.appendChild(closeBtn);
   },
+
+  /** Télécharge le reçu PDF d'une commande (articles du vendeur uniquement). */
+  downloadOrderReceiptPDF: async (orderId: number): Promise<Blob> => {
+    const token = localStorage.getItem("access_token");
+    const res = await fetch(`/api/vendors/orders/${orderId}/receipt-pdf/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Erreur génération du reçu PDF");
+    return res.blob();
+  },
   // ── Litiges vendeur ──────────────────────────────────────────────────────
 
   /** Liste des litiges sur les commandes du vendeur. */
@@ -1272,6 +1284,17 @@ export const vendorsApi = {
     const token = localStorage.getItem("access_token");
     const qs = search ? `?search=${encodeURIComponent(search)}` : "";
     return http<MasterFiche[]>(`/api/vendors/products/master-search/${qs}`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  // ── Recherche d'une fiche produit par SKU/code-barres (scanner caméra) ────
+  searchMasterByBarcode: async (barcode: string): Promise<MasterFiche[]> => {
+    const token = localStorage.getItem("access_token");
+    return http<MasterFiche[]>(`/api/vendors/products/master-search/?barcode=${encodeURIComponent(barcode)}`, {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,

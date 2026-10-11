@@ -1,0 +1,33 @@
+/* « Nouveau produit » (VD-08, offre1) : panneaux de l'interface réelle (Produit, Photos réelles, Prix et stock), une
+   colonne au téléphone, deux colonnes dès 768 px (produit et photos à gauche, prix et stock à droite).
+   Jetons du site seulement : clair et sombre suivent d'eux-mêmes. */
+.np-grille{display:flex;flex-direction:column;gap:14px;margin-top:12px}
+.np-col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.np-panneau{background:var(--card);border:1.5px solid var(--or-line);border-radius:18px;overflow:hidden;box-shadow:var(--shadow-card)}
+.np-panneau.off{border-color:var(--line-2);box-shadow:none}
+.np-tete{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--or-soft);border-bottom:1px solid var(--or-line)}
+.np-panneau.off .np-tete{background:var(--sand-2);border-bottom-color:var(--line)}
+.np-ic{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--card);color:var(--or-txt)}
+.np-corps{padding:14px}
+.np-corps>.fld:first-child{margin-top:0}
+.np-outil{display:flex;align-items:center;justify-content:center;min-width:36px;min-height:36px;border:0;background:transparent;color:var(--or-txt);cursor:pointer;border-radius:10px;flex-shrink:0;padding:0}
+.np-outil:hover{background:var(--or-soft)}
+.np-intro{margin:6px 0 2px}
+.np-lien{display:inline-flex;align-items:center;gap:6px;min-height:44px;border:0;background:transparent;font-family:inherit;padding:0;cursor:pointer;color:var(--or-txt);text-decoration:none}
+.np-liste{border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.np-ligne{display:flex;gap:12px;align-items:flex-start;padding:12px;border-top:1px solid var(--line)}
+.np-ligne:first-child{border-top:0}
+.np-ligne.mienne{background:var(--or-soft)}
+.np-vide{border:1.5px dashed var(--or-line);border-radius:14px;padding:14px;background:var(--or-soft)}
+.np-creer{margin-top:14px;display:flex;flex-direction:column;gap:6px}
+.np-creer-b{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:48px;padding:10px 14px;border-radius:14px;border:1.5px solid var(--or);background:var(--card);color:var(--or-txt);font-family:inherit;font-weight:800;font-size:14px;line-height:1.3;text-align:left;cursor:pointer;transition:background .2s,opacity .2s}
+.np-creer-b:not(.off):hover{background:var(--or-soft)}
+.np-creer-b.off{border-style:dashed;border-color:var(--line-2);color:var(--ink-3);cursor:not-allowed}
+.np-photos{grid-template-columns:repeat(4,1fr)}
+.np-principale{position:absolute;left:4px;top:4px;padding:2px 7px;border-radius:999px;background:var(--or);color:#fff;font-size:12px;font-weight:800}
+.np-conseil{display:flex;gap:10px;align-items:flex-start;margin-top:10px;padding:12px;border-radius:14px;background:var(--or-soft);border:1px solid var(--or-line)}
+.np-publier{display:flex;flex-direction:column}
+@media (min-width:768px){
+  .np-grille{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);align-items:start;gap:18px}
+  .np-photos{grid-template-columns:repeat(5,1fr)}
+}

@@ -19,6 +19,7 @@ Rien n'a été modifié dans `Felix-TANZI/relaya-marketplace` : le kit a été �
 | Générateur du contrat (depuis `site/src/api/routes.ts` et `site/src/donnees/source.ts`) | `backend-kit/outils/generer-openapi.mts` |
 | 13 applications Django à copier dans `backend/apps/` | `backend-kit/apps/*` |
 | Projet Django d'essai (Python 3.11, Django 5.1, DRF 3.14, simplejwt) : migrations et tests | `backend-kit/_essai/` (pas pour la production) |
+| **Espace vendeur** : 8 applications `vendeur_*` (routes `/api/vendors/…`), même contrat, même projet d'essai | `backend-kit/apps/vendeur_*`, § 10 |
 
 **État vérifié le 5 octobre 2026** (projet d'essai, Python 3.11.17, Django 5.1.15, DRF 3.14.0, simplejwt 5.x, SQLite) :
 
@@ -599,4 +600,134 @@ cd site && npx playwright test -c pw-api.config.ts
   tests la renvoient vers la page de banque d'essai) et refuse `tok_refus`.
 - Le serveur garde ses données d'un lancement à l'autre ; pour repartir de zéro : supprimer
   `_essai/essai-serveur.sqlite3` (et `_essai/mediafiles/`), puis relancer `./lancer-serveur.sh`.
+
+
+---
+
+## 10. Espace vendeur (vague 3)
+
+L'espace vendeur (`espace-vendeur/`, servi sous `/vendeur/`, même domaine et **même jeton** que le site client) a son
+back-end dans le même kit, avec les mêmes conventions (§ 1) : huit applications `apps/vendeur_*`, toutes sous
+**`/api/vendors/`** (votre préfixe, Q-51 ; noms du paquet, table de correspondance `logique-metier/vendeur/api-vendeur.json`,
+champ `route_relaya`), **sans barre finale** : elles coexistent avec vos routes vendeur existantes (`/api/vendors/orders/`,
+avec barre) sans les masquer. Le contrat est le même `openapi.yaml` (étiquettes « Espace client » / « Espace vendeur »,
+`x-tagGroups` ; schémas `Vendeur_<domaine>_<Type>`), généré par le même outil depuis `espace-vendeur/src/api/routes.ts`
+et les types de `espace-vendeur/src/donnees/domaines/*.ts`. Connecteurs côté site : `espace-vendeur/CONNECTEURS-VENDEUR.md`
+(208 méthodes, toutes branchées sauf 4 gestes propres à la démonstration et 2 à finir côté site : Google / Apple, filtre local).
+
+### 10.1 Les applications
+
+| Application | Domaines du site | Ce qu'elle porte |
+|---|---|---|
+| `vendeur_core` (socle) | — | `Boutique` (horaires, passages du livreur, point vérifié, palier, Trust Score relevé, plan, numéro de versement chiffré), `Membre` (propriétaire, accès Préparation), `Livreur`, `FicheCatalogue`, `Offre` (→ votre `Product` par le pont), `CommandeVendeur` (la sous-commande du client vue par la boutique, montant gardé **figé au paiement** par le moteur de commission), journal signé, notifications, fermetures programmées ; accès (`VueVendeur`, `VueProprietaire`, 403 `owner_only`), calendrier d'ouverture, **horloge** (décalable sur le serveur d'essai seulement), faits du client (retrait, « Tout est en ordre », gel), anonymat |
+| `vendeur_session` | session | connexion (identifiant, e-mail ou numéro ; second facteur par SMS sur appareil inconnu ; blocage après 5 essais), mot de passe oublié (lien 15 min), ouverture en trois étapes, KYC (pièces en fichiers privés, hors `MEDIA_ROOT`), contrat signé, saisie assistée |
+| `vendeur_commandes` | commandes, préparation, remise | liste et compteurs d'une même requête, « C'est prêt », rupture → vendeur suivant (DP-01, `catalogue.vendeur_suivant`), plus de temps, bon de préparation, code de remise (chiffré, montré au toucher, journalisé), saisie du livreur (3 faux ⇒ 24 h), reçu |
+| `vendeur_litiges` | litiges, retours | les dossiers que le client ouvre dans `aftersales` : réponse (accepte, conteste, arrangement), preuves, brouillon 24 h, recours, décision humaine ; retour, réception, inspection, remplacement ou remboursement |
+| `vendeur_catalogue` | produits, offres | brouillons, variantes, photos réelles (variantes WebP comme `contenus`), aperçu « Vous gardez » et publication par le moteur (prix minimum, plafond de démarrage PRX-09), prix conseillé, demande de fiche, modération |
+| `vendeur_argent` | argent, versements, accueil | états de l'argent (`argent_vendeur`), libération (`versements`), versement du vendredi (arrêté du jeudi 23 h 59, `BLV-VS-nnnn`, sans frais ni minimum), refus et essais, reprise, numéro changé avec deux codes et 7 jours de revue ; accueil, premier jour, file hors connexion |
+| `vendeur_croissance` | trust, paliers, plans | score (six critères), décisions et contestation unique, contrôle au ramassage, paliers et projection, plans (essai, paiement Mobile Money confirmé avant activation, grâce), visibilité au mérite, services, statistiques, demande de la zone |
+| `vendeur_boutique` | boutique, compte, équipe, messages, notifications, aide | horaires, fermer aujourd'hui, pause, fermetures, emplacement (au-delà de 200 m : nouvelle vérification), vitrine interne, avis et réponse privée ; profil, e-mail et numéro (deux codes), appareils, mot de passe, export, clôture ; équipe (3 accès) ; messages (le vendeur répond dans les conversations du client, `messaging`) ; notifications ; aide |
+
+Règles tenues partout (tests) : **tous les calculs par `belivay_moteurs`** (commission, versements, argent_vendeur, paliers,
+plans, sanctions, demarrage, litiges, catalogue, annulation) avec les paramètres du registre (`apps/vendeur_core/parametres.py`) ;
+**anonymat** : aucune réponse ne porte le client (`vendeur_core/tests/test_contrat_vendeur.py` lit toutes les routes de
+lecture du contrat sur la boutique de démonstration, en propriétaire et en Préparation) ; **accès Préparation** : 403
+`owner_only` sur l'argent, les versements, les plans, l'équipe, et aucun montant ailleurs.
+
+### 10.1 bis Ajouts du 6 octobre (DP-58, vague « équipe »)
+
+| Quoi | Où | Routes |
+|---|---|---|
+| Droits par employé (EQU-01 à 04) : catalogue, rôles, interdits retirés d'office, règle par route → 403 `forbidden_right` ; suspension (sessions coupées), réactivation et changement de droits avec le code du propriétaire, journal par membre | `vendeur_core/droits.py`, `acces.py` ; `vendeur_boutique/services.py` | `shop/members/{id}/rights · code · suspend · reactivate · journal`, `DELETE shop/members/invitations/{id}` ; `droits`, `profil` dans la session |
+| Emplacements multiples (principal = point de Boutique), centres BelivaY, demandes de modification (72 h ouvrées) | `vendeur_boutique/lieux.py` | `shop/locations…`, `hubs`, `shop/change-requests…` |
+| Stock signé, livraison et colis (défauts appliqués à toute offre créée) ; produit nouveau (DP-58), prix barré, note du vendeur, ordre des photos | `vendeur_catalogue/ajouts.py`, `services.py` | `stock…`, `delivery-settings…`, `offers/{id}/delivery`, `catalog/suggest`, `offers/new`, `offers/{id}/attach`, `PUT offers/{id}/photos` |
+| Promotions = ventes flash (une seule notion avec le mérite) : prix payé remisé pendant la fenêtre, commission sur le prix payé | `vendeur_croissance/promotions.py` | `promotions…` |
+| Questions des clients, Apprendre, présentation, recherche, activité de la boutique, flux des événements | `vendeur_boutique/ajouts.py`, `vendeur_core/echanges.py` | `questions…`, `learning/progress…`, `search`, `shop/activity`, `events`, `events/stream` |
+| Ramassages d'une période, colis pas prêt au passage du livreur | `vendeur_commandes/services.py` | `pickups`, `orders/{id}/not-ready` |
+| Votre activité et objectif du mois | `vendeur_argent/activite.py` | `seller/activity`, `seller/goal` |
+
+À brancher chez vous : tâche toutes les 5 minutes `vendeur_croissance.promotions.appliquer_toutes()` (début et fin des
+ventes flash sur le prix du Product) ; console : `vendeur_boutique.lieux.verifier_lieu`, `decider_demande` ; fiche
+produit du client : `vendeur_boutique.ajouts.poser_question(offre, texte)`. Migrations : `vendeur_core 0004`,
+`vendeur_boutique 0003`, `vendeur_catalogue 0002`, `vendeur_croissance 0002`, `vendeur_argent 0002`.
+
+### 10.2 Installer
+
+Comme § 3, avec en plus :
+
+```python
+INSTALLED_APPS += ["apps.vendeur_core", "apps.vendeur_session", "apps.vendeur_commandes", "apps.vendeur_litiges",
+                   "apps.vendeur_catalogue", "apps.vendeur_argent", "apps.vendeur_croissance", "apps.vendeur_boutique"]
+```
+
+Aucune ligne d'URL en plus : `apps.client_core.urls_api` monte `apps.vendeur_core.urls` (« vendors/… »). CORS : l'espace
+vendeur est sur la même origine que le site (`/vendeur/`). `migrate` crée les tables ; aucune migration ne dépend de vos
+applications.
+
+### 10.3 À brancher chez vous (le kit ne le fait pas)
+
+- **Boutique ↔ `VendorProfile`** : `Boutique.vendor_id` ; à l'accord du KYC, le kit crée le `VendorProfile` par le pont
+  (`vendeur_session.ouverture.repondre_verification`). Chez vous : votre circuit d'approbation, puis la même fonction.
+- **Entrée des commandes** : `vendeur_core.services.synchroniser(boutique)` fait entrer les sous-commandes payées
+  (`pickup.SousCommande` du kit client) à la lecture ; branchez-la aussi sur la confirmation de paiement.
+- **Score et palier** : relevés de votre service Scores (`TrustScoreProfile`) → `vendeur_croissance.services.enregistrer_releve`,
+  `journaliser_evenement` ; décisions de la console → `decider`, `lever_suspension`, `repondre_contestation`.
+- **Argent** : `vendeur_argent.services.executer_versements()` (tâche du vendredi, après l'arrêté du jeudi) → vos
+  `payments` (`SettlementBatch`, `PayoutRequest`) ; refus de l'opérateur → `refuser_versement`, crédit → `crediter`.
+- **Livreur et relais** : l'application du livreur envoie le code saisi → `vendeur_commandes.services.saisie_livreur` ;
+  retours → `vendeur_litiges.services.avancer_retour` ; médiation → `vendeur_litiges.services.decider`.
+- **Modération** : `vendeur_catalogue.services.moderer` ; paiements Mobile Money des plans → `vendeur_croissance.services.confirmer_paiement`.
+- Paramètres encore absents du registre : constantes marquées `# PARAMÈTRE À AJOUTER AU REGISTRE` dans `apps/vendeur_*`.
+
+### 10.4 Lancer l'espace vendeur contre le kit
+
+```bash
+cd espace-vendeur && npx playwright test -c pw-api.config.ts
+#   serveur d'essai sur 8020 (base neuve essai-vendeur.sqlite3 à chaque passage, BELIVAY_DEMO_VENDEUR=1 : boutique
+#   « Tonton PG » du paquet), espace vendeur en mode API sur 5190 (VITE_SOURCE=api, VITE_API_URL=http://localhost:8020/api)
+#   comptes : franck.penga@belivay.test (propriétaire, aussi « @Penga12 »), aicha.n@belivay.test (Préparation),
+#   mot de passe Essai-BelivaY-2026 ; clients du site : carine@gmail.com, bertrand.essomba@gmail.com
+```
+
+Routes réservées à l'essai de l'espace vendeur (`_essai/relaya_essai/essai_vendeur.py`) :
+
+| Route | Ce qu'elle remplace |
+|---|---|
+| `GET·POST /api/_essai/horloge {jours?, heures?, remettre?}` | le temps qui passe (libération, arrêté du jeudi, revue du numéro) |
+| `POST /api/_essai/vendeur/kyc/{ref} {accord, motif?}` | le prestataire de vérification d'identité |
+| `GET /api/_essai/vendeur/lien-mdp?destination=` | le lien « mot de passe oublié » reçu par SMS |
+| `POST /api/_essai/vendeur/offres/{id}/moderer {accord, motif?}` | la modération de la console |
+| `POST /api/_essai/vendeur/commandes/{ref}/livreur {code}` | l'application du livreur qui saisit le code de remise |
+| `POST /api/_essai/vendeur/commandes/{ref}/simuler {quoi}` | livreur absent, annulation du client avant le ramassage |
+| `POST /api/_essai/vendeur/litiges/{ref}/decider {issue, motif}` · `…/retour {categorie?}` | la médiation : décision, retour accepté |
+| `POST /api/_essai/vendeur/retours/{ref}/avancer {evenement}` | le relais et le livreur (dépôt, collecte du retour) |
+| `POST /api/_essai/vendeur/versements/executer` · `…/{reference}/refuser {motif}` | la tâche du vendredi, le refus de l'opérateur |
+| `POST /api/_essai/vendeur/paiements/{id}/confirmer {reussi}` | le webhook Mobile Money d'un plan ou d'un service |
+| `POST /api/_essai/vendeur/boutiques/{identifiant}/support {texte}` · `…/point` | le support qui répond, l'agent de zone qui valide le point |
+
+Le parcours (`espace-vendeur/tests/api-bout-en-bout.spec.ts`, 9 étapes) : connexion et accueil, ouverture et KYC jusqu'au
+contrat signé, publication d'une offre et modération, commande passée par un client par les routes du kit client,
+« C'est prêt », remise avec le code saisi par le livreur, litige ouvert par le client et réponse du vendeur, retour et
+inspection, accès Préparation refusé sur l'argent, libération et versement du vendredi à l'horloge d'essai, changement
+de numéro avec deux codes et revue.
+
+## 11. Publicité (DP-59)
+
+Application `apps/publicite` (à ajouter à `INSTALLED_APPS` ; routes montées seules : `/api/sponsored/…` par
+`client_core.urls_api`, `/api/vendors/ads/…` par `vendeur_core.urls`). Calculs par `belivay_moteurs.publicite`, paramètres
+`VD-PUB-*` du registre (DP-59 ; `FLASH-REMISE-MIN`, `FLASH-DUREE-MAX`, `VD-TVA`).
+
+| Route | Ce qu'elle fait |
+|---|---|
+| `GET /api/sponsored/placements?ou=recherche\|categorie&q=&cat=` (publique) | annonces au clic éligibles (stock, Trust Score, aucun litige), rangées par l'enchère, coût du clic (second prix + 1 F) signé dans le jeton, diffusables dans le budget du jour et le solde ; Boosts en cours ; règles de densité que le site applique (`site/src/donnees/annonces.ts` = `placer_annonces`) |
+| `GET /api/sponsored/home` (publique) | À la une et carrousel achetés pour la semaine, offres de la sélection flash en cours |
+| `POST /api/sponsored/clicks {annonce}` → 204 | un clic facturé une fois par client (utilisateur, sinon empreinte du visiteur), par annonce et par jour ; suivants comptés, jamais facturés |
+| `GET /api/vendors/ads` · `POST …/top-up` · `POST …/campaigns` · `GET …/campaigns/{id}` · `POST …/campaigns/{id}/pause` · `POST …/campaigns/{id}/stop` · `GET …/slots` · `POST …/slots/book` · `POST …/boost` · `POST …/flash` · `GET …/invoices/{mois}` | propriétaire seulement : solde prépayé, campagnes au clic, emplacements (tarif fixe au prorata des heures restantes, ou enchère de la semaine à venir), Boost 24 h / 7 j, proposition à la sélection flash, arrêt (heures non diffusées rendues), statistiques (impressions, clics, clics facturés, ventes, dépense), facture du mois |
+
+À brancher chez vous : webhook Mobile Money de la recharge → `publicite.services.confirmer_recharge(id, reussi)` ; tâche du
+dimanche → `attribuer_semaine("a_la_une" | "carrousel", lundi)` ; console → `selectionner_flash(id, accord, motif)` (crée
+l'offre de `extras`) et `rembourser_heures(campagne, heures)` (panne, offre devenue inéligible). À l'entrée d'une commande
+(`vendeur_core.services.entrer`), `a_l_entree` attribue la vente au dernier clic du client sur le produit (7 jours) et fige
+la commission majorée de la vente flash (`commission_vente_flash`, sur la seule part vendue au prix flash). Le solde n'est
+jamais retenu sur les versements. L'écran vendeur de la publicité viendra ensuite (routes en état « serveur » au contrat).
 

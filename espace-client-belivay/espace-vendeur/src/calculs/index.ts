@@ -1,0 +1,17 @@
+// Calculs de l'espace vendeur : portage TypeScript des moteurs Python (moteurs/belivay_moteurs), mêmes règles, mêmes
+// exemples (*.test.ts). Paramètres lus dans logique-metier/parametres-en-vigueur.json (registre.ts).
+export * from './argent'
+export * from './argent-vendeur'
+export * from './commission'
+export * from './demarrage'
+export * from './erreurs'
+export * from './etats'
+export * from './litiges'
+export * from './ouverture'
+export * from './paliers'
+export * from './plans'
+export * from './registre'
+export * from './sanctions'
+export * from './temps'
+export * from './versements'
+export * from './publicite'

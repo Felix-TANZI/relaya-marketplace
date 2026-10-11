@@ -14,15 +14,24 @@ l'application les met en mots (CCH-32), ce module donne les valeurs.
 
 from __future__ import annotations
 
+import calendar
 from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from .registre import ParametresGarde
 
 UN_JOUR = timedelta(hours=24)
 YAOUNDE = ZoneInfo("Africa/Douala")
+
+
+def ajouter_mois(jour: date, mois: int) -> date:
+    """Même jour, `mois` mois plus tard, ramené au dernier jour d'un mois plus court : 27 août + 3 mois = 27 nov. ;
+    30 nov. + 3 mois = 28 févr. (offre de découverte, palier de lancement du vendeur)."""
+    rang = jour.month - 1 + mois
+    annee, mois_vise = jour.year + rang // 12, rang % 12 + 1
+    return date(annee, mois_vise, min(jour.day, calendar.monthrange(annee, mois_vise)[1]))
 
 
 def _verifier(*moments: datetime) -> None:

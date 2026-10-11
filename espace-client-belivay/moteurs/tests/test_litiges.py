@@ -171,7 +171,9 @@ def test_liberation(palier, carte, liberee, versement):
 
 
 def test_liberation_un_vendredi_et_litige():
-    assert liberation(date(2026, 9, 24), Palier.OR, False, False, P) == (date(2026, 9, 25), date(2026, 9, 25))
+    # Libéré le vendredi 25, après l'arrêté du jeudi 24 à 23 h 59 : versé le vendredi 2 oct. (Q-59).
+    assert liberation(date(2026, 9, 24), Palier.OR, False, False, P) == (date(2026, 9, 25), date(2026, 10, 2))
+    assert liberation(date(2026, 9, 23), Palier.OR, False, False, P) == (date(2026, 9, 24), date(2026, 9, 25))
     assert liberation(date(2026, 9, 26), Palier.OR, False, True, P) is None
 
 

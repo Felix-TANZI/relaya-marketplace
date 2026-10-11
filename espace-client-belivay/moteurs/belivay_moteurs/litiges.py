@@ -1,5 +1,5 @@
 """Litiges, retours, remplacement et libération du vendeur (CL-09, CL-11 ; CAL-27 à CAL-29 ; CLT-24, CCY-23,
-CIF-17 ; décisions DP-01, DP-10, DP-27, DP-28, DP-35).
+CIF-17 ; RET-04, DCS-03 ; décisions DP-01, DP-10, DP-27, DP-28, DP-35 ; DP-56 : Q-26, Q-27 ; DP-57 : L-4).
 
 - Remboursement automatique sous le seuil du palier du client (LIT-AUTO-STD 3 000 F, LIT-AUTO-ELEVE 10 000 F) ;
   jamais aux paliers « À instruire » et « Plafonné » (CLT-24) ; payé par BelivaY, le vendeur est payé et son
@@ -15,12 +15,18 @@ CIF-17 ; décisions DP-01, DP-10, DP-27, DP-28, DP-35).
 - Trajet retour RET-TRAJET (500 F) à la charge de la partie en tort : retenu sur le remboursement si c'est le
   client ; si c'est le vendeur ou le transporteur, la livraison du colis est remboursée aussi, à sa charge (DP-35).
   Part de livraison d'un colis = F(commande) − F(commande sans ce colis), Off conservé, comme une annulation.
+- Dû du vendeur en tort (RET-04, Q-27) : trajet + livraison remboursée ; pris d'abord sur le montant gelé de la
+  commande, le reste sur ses versements suivants, comme une reprise (Q-11, versements.appliquer_reprise).
+- Gel pendant le recours (DCS-03, Q-26, L-4) : après la décision, l'argent reste gelé jusqu'à la fin du délai de
+  recours, ou jusqu'à la réponse au recours déposé dans ce délai.
 - Remboursement à la réception du retour et après inspection (RET-INSPECT-H) ; sans réponse du vendeur à la fin
   de l'inspection, il part automatiquement.
 - Remplacement non expédié dans RET-REMPL-DELAI (heures ouvrées, dimanche non compté) : remboursement.
 - Rupture de stock : voir catalogue.vendeur_suivant (DP-01).
 - Libération du vendeur = fermeture du retour + LIB-STD (Bronze, Argent) ou LIB-OR (Or, Platine) ; carte :
-  LIB-CARTE ; un litige suspend ; versement le vendredi suivant (CAL-29).
+  LIB-CARTE ; un litige suspend ; versement le vendredi suivant (CAL-29), le suivant encore si la libération
+  tombe un vendredi, après l'arrêté du jeudi (Q-59). Une seule source (audit V3) : les fonctions de ce module
+  appellent celles de versements.py, et les codes LIB-* concordent avec VD-LIB-* (sinon le registre s'arrête).
 """
 
 from __future__ import annotations
@@ -29,8 +35,10 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from enum import Enum
 
+from . import versements
 from .annulation import frais_de_livraison
 from .frais import Panier
+from .paliers import Palier
 from .registre import ParametresLitiges, ParametresLivraison
 
 # ── Remboursement automatique ───────────────────────────────────────────────────────────────────────────
@@ -69,6 +77,21 @@ def echeances(ouverture: datetime, p: ParametresLitiges) -> Echeances:
 
 def recours_possible(decision: datetime, maintenant: datetime, recours_deja_fait: bool, p: ParametresLitiges) -> bool:
     return not recours_deja_fait and maintenant <= decision + timedelta(hours=p.recours_heures)
+
+
+def fin_du_gel(
+    decision: datetime, recours_depose: datetime | None, reponse_au_recours: datetime | None, p: ParametresLitiges
+) -> datetime | None:
+    """Gel pendant le recours (DCS-03, DP-56 Q-26 ; DP-57 L-4 pour un retour contesté) : après la décision, l'argent
+    reste gelé jusqu'à la fin du délai de recours (48 h, LIT-RECOURS-H) ; si un recours est déposé dans ce délai,
+    jusqu'à la réponse. None : toujours gelé (recours en attente de réponse). La libération se calcule ensuite avec
+    versements.liberation_apres_litige(date prévue, fin du gel) (Q-60). « BelivaY ne perd jamais » : rien ne part
+    tant qu'un recours peut encore retourner la décision. Décision sam. 26 à 17 h 15, sans recours : gel jusqu'au
+    lun. 28 à 17 h 15."""
+    fin_du_delai = decision + timedelta(hours=p.recours_heures)
+    if recours_depose is None or recours_depose > fin_du_delai:
+        return fin_du_delai  # un recours hors délai n'est pas reçu
+    return reponse_au_recours
 
 
 def fin_reponse_arrangement(proposition: datetime, p: ParametresLitiges) -> datetime:
@@ -152,6 +175,31 @@ def rembourser_retour(
     return RemboursementRetour(prix_des_articles, livraison, 0, prix_des_articles + livraison, en_tort)
 
 
+@dataclass(frozen=True)
+class DuDuVendeur:
+    """Ce que doit le vendeur en tort sur un retour (RET-04, DP-35, DP-56 Q-27)."""
+
+    trajet: int  # trajet retour (RET-TRAJET)
+    livraison: int  # part de livraison remboursée au client
+    total: int
+    pris_sur_la_commande: int  # retenu sur le montant gelé de la commande
+    reporte: int  # reste : déduit des versements suivants comme une reprise (Q-11)
+
+
+def du_du_vendeur(r: RemboursementRetour, gele_sur_la_commande: int, p: ParametresLitiges) -> DuDuVendeur:
+    """Vendeur en tort : il paie le trajet retour (500 F) et la livraison remboursée au client (« vous payez seulement
+    le retour et la livraison »), pris sur la commande gelée, sinon sur ses versements suivants (Q-27, Q-11). Client
+    ou transporteur en tort : le vendeur ne doit rien (le client paie par la retenue, le transporteur à part).
+    BLV-51702, vendeur en tort : 500 + 900 = 1 400 F ; rien de gelé : 1 400 F reportés."""
+    if gele_sur_la_commande < 0:
+        raise ValueError("montant gelé négatif")
+    if r.trajet_a_la_charge_de is not PartieEnTort.VENDEUR:
+        return DuDuVendeur(0, 0, 0, 0, 0)
+    total = p.trajet_retour + r.livraison
+    pris = min(total, gele_sur_la_commande)
+    return DuDuVendeur(p.trajet_retour, r.livraison, total, pris, total - pris)
+
+
 def fin_inspection(reception: datetime, p: ParametresLitiges) -> datetime:
     """Sans réponse du vendeur à cette heure, le remboursement part automatiquement."""
     return reception + timedelta(hours=p.inspection_heures)
@@ -177,32 +225,19 @@ def echeance_remplacement(debut: datetime, p: ParametresLitiges) -> datetime:
 # ── Libération du vendeur ───────────────────────────────────────────────────────────────────────────────
 
 
-class Palier(str, Enum):
-    BRONZE = "Bronze"
-    ARGENT = "Argent"
-    OR = "Or"
-    PLATINE = "Platine"
-
-
 def fermeture_du_retour(retrait: date, tout_en_ordre_le: date | None, p: ParametresLitiges) -> date:
-    """Fermeture = 7 jours après le retrait, ou le jour où le client touche « Tout est en ordre » (CAL-29)."""
-    fin = retrait + timedelta(days=p.fenetre_retour_jours)
-    return min(fin, tout_en_ordre_le) if tout_en_ordre_le else fin
+    """Fermeture = 7 jours après le retrait, ou le jour où le client touche « Tout est en ordre » (CAL-29) :
+    versements.fermeture_du_retour, en jours civils."""
+    return versements.fermeture_du_retour(retrait, tout_en_ordre_le, p.versements)
 
 
 def liberation(
     fermeture: date, palier: Palier, payee_par_carte: bool, litige_en_cours: bool, p: ParametresLitiges
 ) -> tuple[date, date] | None:
-    """(date de libération, vendredi du versement) ; None tant qu'un litige suspend (CAL-29).
-    Carte : 14 jours ; Or et Platine : 1 jour ; sinon 3 jours."""
+    """(date de libération, vendredi du versement) ; None tant qu'un litige suspend (CAL-29). Carte : 14 jours ; Or
+    et Platine : 1 jour ; sinon 3 jours ; arrêté le jeudi à 23 h 59 : libéré un vendredi, versé le vendredi suivant
+    (Q-59). Une seule source : versements.date_de_liberation et versements.vendredi_de_versement (audit V3)."""
     if litige_en_cours:
         return None
-    if payee_par_carte:
-        jours = p.lib_carte_jours
-    elif palier in (Palier.OR, Palier.PLATINE):
-        jours = p.lib_or_jours
-    else:
-        jours = p.lib_standard_jours
-    libre = fermeture + timedelta(days=jours)
-    vendredi = libre + timedelta(days=(4 - libre.weekday()) % 7)
-    return libre, vendredi
+    libre = versements.date_de_liberation(fermeture, Palier(palier), payee_par_carte, p.versements)
+    return libre, versements.vendredi_de_versement(libre, p.versements)

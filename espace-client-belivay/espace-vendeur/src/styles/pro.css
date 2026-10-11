@@ -1,0 +1,181 @@
+/* Signature de l'espace vendeur : « espace pro » de la famille BelivaY. Jetons du prototype seulement (espresso
+   --esp-1..3, braise --braise-1/2, or --gold-l, --or-*) : carte de tête et barre latérale nuit, accent braise et or,
+   chiffres alignés (tabulaires), cartes et pastilles homogènes.
+   - Partout (téléphone compris) : seulement ce qui ne touche pas l'en-tête à design du prototype (intouchable,
+     tests/identique.spec.ts) : photo dans l'avatar, recadrage de la couverture, carte de profil du Menu, chiffres.
+   - Ordinateur (dès 1024 px, #app.a-ord) : barre latérale nuit, grille de 12 colonnes pour toutes les pages, blocs
+     plus larges (contenu jusqu'à 1240 px pour les listes et tableaux, 1040 px pour les détails et formulaires),
+     tableau de bord en rangées (accueil et compteurs ; à faire et à côté ; activité et revenus). */
+
+/* ================================ Partout ================================ */
+/* Photo de profil dans l'avatar (en-tête, menu du profil, barre latérale, tiroir) : sans photo, les initiales. */
+.avatar.a-photo{overflow:hidden;padding:0}
+.avatar.a-photo img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
+/* Recadrage de la couverture : bandeau 3:1, cadre aux coins arrondis. */
+.pf-rog.vd-rog-couv{max-width:560px;aspect-ratio:3}
+.pf-rog.vd-rog-couv .pf-rog-masque{border-radius:12px}
+.pf-rog-zoom.vd-rog-couv-z{max-width:560px}
+/* Couverture posée sur une carte nuit (Menu, Mon profil, barre latérale). */
+.hero.a-couv,.tr-hd.a-couv{background-size:cover;background-position:center}
+.ajb-apercu-couv{display:block;width:100%;aspect-ratio:3;margin:12px 0 0;border-radius:14px;object-fit:cover}
+.ajb-couv-act{margin-top:8px}
+/* Carte de tête du Menu : elle ouvre Mon profil. */
+a.vd-carte-profil{text-decoration:none}
+a.vd-carte-profil:focus-visible{outline:3px solid var(--gold-l);outline-offset:2px}
+.vd-carte-profil-l{margin-left:auto;display:inline-flex;align-items:center;gap:2px;font-size:12.5px;font-weight:800;color:var(--gold-l)}
+html[data-mouv] a.vd-carte-profil{transition:transform var(--blv-court) ease}
+html[data-mouv] a.vd-carte-profil:active{transform:scale(.985)}
+/* Chiffres : alignés (tabulaires) dans le contenu ; l'en-tête garde le dessin du prototype. */
+#app main :is(.big,.v,.vd4-taux-v,.vd4-cpt-v,.badge-num,.tr-bdg,.kv,.pill,b){font-variant-numeric:tabular-nums}
+
+/* ================================ Retouches communes (contenu seulement, en-têtes intacts) ================================ */
+/* Titre et sous-titre d'une ligne (.lt / .ls) : même dessin dans une carte que dans une liste (Équipe, cartes simples). */
+#app main .lt{font-size:14.5px;font-weight:700;line-height:1.3;color:var(--ink)}
+#app main .ls{font-size:12.5px;color:var(--ink-3);margin-top:2px;line-height:1.38}
+/* États vides : texte sur une largeur de lecture. */
+#app main .empty p{max-width:46ch;margin-left:auto;margin-right:auto}
+
+/* ================================ Tiroir (tablette) : carte cliquable ================================ */
+@media (min-width:768px){
+  /* Barre de titre et titre de page identiques l'un sous l'autre : la barre (retour + titre) suffit, le sous-titre
+     de la page la suit directement. */
+  #app .hd-page+.pg>.pg-t,#app .hd-page+.aja>.pg:first-child>.pg-t{display:none}
+  #app .hd-page+.pg,#app .hd-page+.aja>.pg:first-child{margin-top:-14px}
+  #app .tr-hd.tr-carte{gap:8px}
+  #app .tr-carte-l{display:flex;align-items:center;gap:12px;flex:1;min-width:0;color:inherit;text-decoration:none;border-radius:12px}
+  #app .tr-carte-l:focus-visible{outline:2px solid var(--or-txt);outline-offset:2px}
+  #app .tr-carte-l .grow{flex:1;min-width:0}
+  #app .tr-hd.a-couv{color:#fff}
+  #app .tr-hd.a-couv span:not(.avatar){color:rgba(255,255,255,.78)}
+}
+
+/* ================================ Ordinateur (dès 1024 px) ================================ */
+@media (min-width:1024px){
+  /* ---- Largeurs : blocs plus larges, une seule grille de 12 colonnes ---- */
+  #app.a-ord{--sl:272px;--marge:32px;--l-max:1040px;--gout:24px}
+  #app.a-ord.l-large{--l-max:1240px}
+  /* Lignes à leur hauteur réelle (max-content) : main défile, une carte à overflow:hidden (carte nuit) ne s'écrase pas. */
+  #app.a-ord main{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));grid-auto-rows:max-content;column-gap:var(--gout);align-content:start;align-items:start}
+  #app.a-ord.l-large main{align-items:stretch}
+  #app.a-ord main>*{grid-column:1/-1;min-width:0}
+  #app.a-ord main>.pied{grid-column:1/-1}
+  /* Listes (commandes, produits, litiges, retours…) : deux cartes par rangée, même hauteur. */
+  #app.a-ord.l-large main>.card.ord{grid-column:span 6}
+  #app.a-ord.l-large main>details.more{grid-column:span 6}
+  /* Pages de détail et formulaires : les cartes vont par deux ; la carte nuit, les titres, les onglets, les notes et
+     les boutons d'action prennent toute la largeur. */
+  #app.a-ord:not(.l-large) main>.card:not(.ord){grid-column:span 6}
+  #app.a-ord:not(.l-large) main>.card:only-of-type{grid-column:1/-1}
+  #app.a-ord main>:is(.btn,.mt10,.mt12,.mt14,.mt16):has(>.btn:only-child){grid-column:span 4}
+  #app.a-ord main>:is(.btn,.mt10,.mt12,.mt14,.mt16):has(>.btn:only-child)>.btn{width:100%}
+  /* Pages ajoutées (Stock, Promotions, Questions, Livraison : enveloppe .aja) : leurs blocs suivent la même grille. */
+  #app.a-ord main>.aja{display:contents}
+  #app.a-ord main>.aja>*{grid-column:1/-1;min-width:0}
+  #app.a-ord main>.aja>:is(.mt10,.mt12,.mt14,.mt16):has(>.btn:only-child){grid-column:span 4}
+  #app.a-ord main>.aja>:is(.mt10,.mt12,.mt14,.mt16):has(>.btn:only-child)>.btn{width:100%}
+  /* Mon argent : la somme à verser et « Où est votre argent » côte à côte. */
+  #app.a-ord.r-argent main>.hero.night{grid-column:span 5;display:flex;flex-direction:column}
+  #app.a-ord.r-argent main>.hero.night>:last-child{margin-top:auto;padding-top:12px}
+  #app.a-ord.r-argent main>.hero.night+.card{grid-column:span 7}
+  #app.a-ord.r-argent main>.hero.night+.card+.card{grid-column:1/-1}
+  /* Menu : la carte de tête sur toute la largeur, les groupes par deux colonnes. */
+  #app.a-ord.r-menu main>div:not([class]){grid-column:span 6}
+  /* Mon profil : photo et couverture sur une même rangée de boutons. */
+  #app.a-ord .ajb-tete{display:flex;flex-direction:column;align-items:center}
+  #app.a-ord .ajb-tete .ajb-actions+.ajb-couv-act{margin-top:8px}
+  /* Recherche posée seule dans la page (Litiges…) : toute la largeur, sans trou dans la grille. */
+  #app.a-ord main>.inp{grid-column:1/-1}
+  /* Cartes côte à côte : même hauteur. Bouton d'action seul : largeur d'un tiers, comme les autres. */
+  #app.a-ord main>.card{align-self:stretch}
+  #app.a-ord main>.btn{grid-column:span 4}
+
+  /* ---- Rythme : mêmes espacements partout ---- */
+  #app.a-ord main>.card,#app.a-ord main>.hero,#app.a-ord main>details.more{margin-top:var(--gout)}
+  #app.a-ord main .card{border-radius:20px}
+  #app.a-ord main .hero{border-radius:24px}
+  #app.a-ord .hd-page .hd-sub h1,#app.a-ord main .pg-t{font-size:26px;letter-spacing:-.03em}
+
+  /* ---- Barre latérale nuit (signature « espace pro ») ---- */
+  #app.a-ord .sl{background:radial-gradient(120% 40% at 0% 0%,rgba(239,106,0,.20),rgba(239,106,0,0) 60%),linear-gradient(180deg,var(--esp-1) 0%,var(--esp-2) 55%,var(--esp-3) 100%);box-shadow:1px 0 0 rgba(255,255,255,.04);color:#fff}
+  #app.a-ord .sl-logo{height:64px;padding:0 22px}
+  #app.a-ord .sl .tr-hd{margin:0 14px 6px;padding:12px;border:1px solid rgba(255,255,255,.1);border-radius:18px;background:rgba(255,255,255,.06);color:#fff}
+  #app.a-ord .sl .tr-hd b{color:#fff}
+  #app.a-ord .sl .tr-hd span:not(.avatar){color:rgba(255,255,255,.66)}
+  #app.a-ord .sl .tr-hd .avatar{box-shadow:0 0 0 2px var(--gold-l)}
+  #app.a-ord .sl .tr-carte-l:focus-visible{outline-color:var(--gold-l)}
+  #app.a-ord .sl .tr-ls{scrollbar-color:rgba(255,255,255,.18) transparent;padding:4px 12px 20px}
+  #app.a-ord .sl .tr-g{border-bottom-color:rgba(255,255,255,.08)}
+  #app.a-ord .sl .tr-gt{color:rgba(255,255,255,.48);font-size:11.5px}
+  #app.a-ord .sl .tr-it{color:rgba(255,255,255,.80);min-height:40px;font-size:14.5px;font-weight:700}
+  #app.a-ord .sl .tr-it svg{color:rgba(255,255,255,.56)}
+  #app.a-ord .sl .tr-it.on{background:linear-gradient(135deg,var(--braise-1),var(--braise-2));color:#fff;box-shadow:0 8px 18px -10px rgba(239,106,0,.8)}
+  #app.a-ord .sl .tr-it.on svg{color:#fff}
+  #app.a-ord .sl .tr-it:focus-visible{outline-color:var(--gold-l)}
+  #app.a-ord .sl .tr-it.tr-site{color:var(--gold-l)}
+  #app.a-ord .sl .tr-it.tr-site svg{color:var(--gold-l)}
+  #app.a-ord .sl .tr-bdg{background:var(--gold-l);color:var(--esp-1)}
+  #app.a-ord .sl .tr-it.on .tr-bdg{background:#fff;color:var(--braise-2)}
+
+  /* ---- Tableau de bord ---- */
+  /* Rangée 1 : carte d'accueil nuit (bonjour, boutique, palier) et ses quatre compteurs. */
+  #app.a-ord .vd4-tdb{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:0 var(--gout);align-items:start}
+  #app.a-ord .vd4-tdb>.vd4-accueil{grid-column:1/-1}
+  #app.a-ord .vd4-tdb>.vd4-tdb-a{grid-column:span 8}
+  #app.a-ord .vd4-tdb>.vd4-tdb-b{grid-column:span 4;position:sticky;top:12px}
+  #app.a-ord .vd4-tdb-b>:first-child{margin-top:var(--gout)}
+  #app.a-ord .vd4-tdb-b>.card{margin-top:16px}
+  #app.a-ord .vd4-accueil{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;margin-top:8px;padding:26px 28px}
+  #app.a-ord .vd4-accueil .hk{margin:0}
+  #app.a-ord .vd4-accueil-t{margin:6px 0 0;font-size:30px;font-weight:800;letter-spacing:-.03em;line-height:1.1;color:#fff}
+  #app.a-ord .vd4-accueil .hs{margin-top:6px}
+  #app.a-ord .vd4-accueil .meta{margin-top:12px}
+  #app.a-ord .vd4-cpts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+  #app.a-ord .vd4-cpt{display:flex;flex-direction:column;gap:4px;min-width:0;padding:14px;border-radius:16px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:#fff;text-decoration:none}
+  #app.a-ord .vd4-cpt:focus-visible{outline:2px solid var(--gold-l);outline-offset:2px}
+  #app.a-ord .vd4-cpt-i{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.1);color:var(--gold-l);margin-bottom:6px}
+  #app.a-ord .vd4-cpt.or .vd4-cpt-i{background:linear-gradient(135deg,var(--braise-1),var(--braise-2));color:#fff}
+  #app.a-ord .vd4-cpt.rouge .vd4-cpt-i{background:rgba(255,120,110,.22);color:#FFB4AC}
+  #app.a-ord .vd4-cpt-v{font-size:24px;font-weight:800;letter-spacing:-.02em;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #app.a-ord .vd4-cpt-l{font-size:12.5px;font-weight:700;color:rgba(255,255,255,.7)}
+  /* Rangée 3 : « Votre activité » sur la même grille (jalons, objectif, taux ; revenus et carte de chaleur). */
+  #app.a-ord .vd4-act{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px var(--gout);align-items:stretch;margin-top:8px}
+  #app.a-ord .vd4-act>*{margin-top:0!important}
+  #app.a-ord .vd4-act>.sec{grid-column:1/-1;margin-bottom:-4px}
+  #app.a-ord .vd4-act>.card.tight{grid-column:span 4;padding:16px}
+  #app.a-ord .vd4-act>.vd4-act-g{display:contents}
+  #app.a-ord .vd4-act-g>.card{grid-column:span 4;margin-top:0}
+  #app.a-ord .vd4-act-g>.vd4-taux{grid-column:span 4;gap:16px}
+  #app.a-ord .vd4-act-g>.vd4-taux .card{margin-top:0}
+  #app.a-ord .vd4-act>.vd4-act-g~.card{grid-column:span 7}
+  #app.a-ord .vd4-act>.vd4-act-g~.card:last-child{grid-column:span 5}
+
+  /* ---- Pied de page : quatre colonnes ---- */
+  #app.a-ord .pied .pp-cols{grid-template-columns:minmax(0,2fr) repeat(3,minmax(0,1fr))}
+  #app.a-ord .pied .pp-in{max-width:calc(var(--l-max) + 2 * var(--marge))}
+}
+@media (min-width:1360px){
+  /* Assez de place : bonjour à gauche, les quatre compteurs à droite. */
+  #app.a-ord .vd4-accueil{grid-template-columns:minmax(0,4fr) minmax(0,7fr);align-items:center;gap:28px}
+}
+@media (min-width:1024px) and (hover:hover) and (pointer:fine){
+  #app.a-ord .sl .tr-it:not(.on):hover{background:rgba(255,255,255,.07);color:#fff}
+  #app.a-ord .sl .tr-carte-l:hover b{text-decoration:underline;text-underline-offset:3px}
+  #app.a-ord .vd4-cpt:hover{background:rgba(255,255,255,.12)}
+  #app.a-ord main .card.ord{transition:box-shadow var(--blv-court,.15s) ease,transform var(--blv-court,.15s) ease}
+}
+@media (min-width:1440px){
+  #app.a-ord{--marge:40px}
+}
+
+/* Taille du texte dans le menu du profil (même commande que le client). */
+.pm .pp-choix{display:inline-flex;gap:2px;padding:2px;border:1px solid var(--line-2);border-radius:999px;background:var(--card);flex-shrink:0}
+.pm .pp-choix button{display:inline-flex;align-items:center;justify-content:center;height:30px;min-width:34px;padding:0 10px;border:0;border-radius:999px;background:transparent;color:var(--ink-2);font:inherit;font-size:12.5px;font-weight:800;cursor:pointer}
+.pm .pp-choix button.on{background:var(--or-soft);color:var(--or-txt);box-shadow:inset 0 0 0 1px var(--or-line)}
+.pm .pp-choix button:disabled{opacity:.4;cursor:default}
+
+/* Taille du texte libre (Paramètres), comme les Réglages du client. */
+.taille-barre{flex:1;min-width:0;accent-color:var(--or);height:28px;cursor:pointer}
+.taille-graduation{display:flex;justify-content:space-between;padding:0 30px 0 22px;margin-top:2px}
+.taille-graduation i{width:4px;height:4px;border-radius:50%;background:var(--line-2)}
+.taille-graduation i.ref{background:var(--ink-4)}
+.taille-graduation i.on{background:var(--or);transform:scale(1.6)}

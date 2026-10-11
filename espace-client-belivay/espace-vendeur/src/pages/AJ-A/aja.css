@@ -1,0 +1,51 @@
+/* Pages AJ-A (stock, promotions, questions, livraison) : classes du prototype (card, li, pill, seg, chip, tg, inp,
+   btn) et quelques compléments, téléphone d'abord ; tablette (600–1023 px) : grilles de deux colonnes. */
+.aja .aja-tuiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.aja .aja-tuile{background:var(--card);border-radius:var(--r-l);box-shadow:var(--shadow-card);padding:12px 13px;text-align:left;border:1.5px solid transparent;font:inherit;color:inherit;cursor:pointer;min-height:44px}
+html[data-theme=dark] .aja .aja-tuile{box-shadow:var(--shadow-card),inset 0 0 0 1px var(--line)}
+.aja .aja-tuile[aria-pressed=true]{border-color:var(--or)}
+.aja .aja-tuile .ic{width:30px;height:30px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--sand-2);color:var(--ink-2)}
+.aja .aja-tuile .ic.red{background:var(--red-soft);color:var(--red)}
+.aja .aja-tuile .ic.amber{background:var(--amber-soft);color:var(--amber)}
+.aja .aja-tuile .ic.green{background:var(--green-soft);color:var(--green)}
+.aja .aja-tuile .tv{font-size:26px;font-weight:800;letter-spacing:-.03em;margin-top:8px;line-height:1}
+.aja .aja-tuile .tk{font-size:13px;font-weight:700;margin-top:4px}
+.aja .aja-tuile .ts{font-size:12px;color:var(--ink-3);margin-top:2px}
+.aja .aja-alerte{margin-top:14px;border-radius:var(--r-l);padding:12px 14px;background:var(--amber-soft);border:1px solid var(--amber-line);color:var(--amber)}
+.aja .aja-alerte.red{background:var(--red-soft);border-color:var(--red-line);color:var(--red)}
+.aja .aja-alerte .chips{margin-top:8px}
+.aja .aja-alerte .chip{height:36px;font-size:12.5px}
+.aja .aja-liste{display:grid;grid-template-columns:1fr;gap:12px;margin-top:12px}
+.aja .aja-liste > .card{margin-top:0}
+.aja .aja-pas{display:inline-flex;align-items:center;gap:6px}
+.aja .aja-pas .ibtn{width:44px;height:44px;border-radius:12px;background:var(--sand-2);flex-shrink:0}
+.aja .aja-pas .inp{width:76px;height:44px;padding:0 6px}
+.aja .aja-pas input{text-align:center;font-size:18px;font-weight:800;width:100%;border:0;background:none;outline:none;color:var(--ink);font-family:inherit}
+.aja .aja-pas.red .inp{border-color:var(--red-line);background:var(--red-soft)}
+.aja .aja-pas.amber .inp{border-color:var(--amber-line);background:var(--amber-soft)}
+.aja .aja-mv{display:flex;gap:12px;padding:11px 0;border-top:1px solid var(--line);align-items:flex-start}
+.aja .aja-mv:first-child{border-top:0}
+.aja .aja-mv .d{font-weight:800;font-size:15px;min-width:44px;text-align:right}
+.aja .aja-mv .d.plus{color:var(--green)}
+.aja .aja-mv .d.moins{color:var(--red)}
+.aja .aja-barre{text-decoration:line-through;color:var(--ink-3);font-weight:600}
+.aja .aja-client{border-radius:var(--r-l);border:1px dashed var(--line-2);padding:12px;background:var(--card-2);display:flex;gap:12px;align-items:center}
+.aja .aja-remise{display:inline-flex;align-items:center;height:24px;padding:0 8px;border-radius:8px;background:var(--red);color:#fff;font-size:12px;font-weight:800}
+html[data-theme=dark] .aja .aja-remise{color:#141415}
+.aja .aja-carte{border-radius:var(--r-l);overflow:hidden;height:200px;background:var(--map-bg);margin-top:12px;position:relative}
+.aja .aja-carte iframe{display:block;width:100%;height:100%;border:0}
+.aja .aja-champ{display:block;width:100%;box-sizing:border-box;border-radius:12px;border:1.5px solid var(--input-line);background:var(--input-bg);padding:12px 13px;font:inherit;font-size:16px;color:var(--ink);resize:vertical;min-height:96px}
+.aja .aja-champ.err{border-color:var(--red)}
+.aja .aja-ligne-ch{display:flex;gap:10px;flex-wrap:wrap}
+.aja .aja-ligne-ch > *{flex:1 1 170px;min-width:0}
+.aja select.inp{width:100%;font:inherit;font-size:15px;appearance:auto}
+.aja .seg a{cursor:pointer}
+.aja .aja-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.aja .aja-actions .chip{height:44px;flex:1 1 auto;justify-content:center}
+@media (min-width:600px){
+  .aja .aja-tuiles{grid-template-columns:repeat(4,1fr)}
+  .aja .aja-liste.deux{grid-template-columns:1fr 1fr}
+  .aja .aja-deux{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+  .aja .aja-deux > .card{margin-top:14px}
+  .aja .aja-carte{height:260px}
+}

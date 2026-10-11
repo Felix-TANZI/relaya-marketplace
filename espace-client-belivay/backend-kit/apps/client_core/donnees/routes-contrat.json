@@ -2869,6 +2869,76 @@
  },
  {
   "methode": "POST",
+  "chemin": "/api/sponsored/clicks",
+  "sources": [
+   "cliquerAnnonce"
+  ],
+  "domaines": [
+   "Annonces sponsorisées"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/sponsored/home",
+  "sources": [
+   "emplacementsAccueil"
+  ],
+  "domaines": [
+   "Annonces sponsorisées"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/sponsored/impressions",
+  "sources": [
+   "voirAnnonce"
+  ],
+  "domaines": [
+   "Annonces sponsorisées"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/sponsored/placements",
+  "sources": [
+   "annoncesListe"
+  ],
+  "domaines": [
+   "Annonces sponsorisées"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/sponsored/reports",
+  "sources": [
+   "signalerAnnonce"
+  ],
+  "domaines": [
+   "Annonces sponsorisées"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
   "chemin": "/api/suborders/{id}/cancel",
   "sources": [
    "annulerColis"
@@ -2931,6 +3001,3849 @@
   ],
   "domaines": [
    "Messagerie, aide et rappel"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/vendors/account/closure",
+  "sources": [
+   "compte.annulerCloture"
+  ],
+  "domaines": [
+   "Vendeur · Compte et sécurité"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/account/closure",
+  "sources": [
+   "compte.cloturer"
+  ],
+  "domaines": [
+   "Vendeur · Compte et sécurité"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/account/decisions",
+  "sources": [
+   "trust.decisions"
+  ],
+  "domaines": [
+   "Vendeur · Trust Score et sanctions"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/account/decisions/{id}",
+  "sources": [
+   "trust.decision"
+  ],
+  "domaines": [
+   "Vendeur · Trust Score et sanctions"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/account/status",
+  "sources": [
+   "trust.statut"
+  ],
+  "domaines": [
+   "Vendeur · Trust Score et sanctions"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/account/summary",
+  "sources": [
+   "compte.statut"
+  ],
+  "domaines": [
+   "Vendeur · Compte et sécurité"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/ads",
+  "sources": [
+   "publicite.aperçu"
+  ],
+  "domaines": [
+   "Vendeur · Publicité (DP-59)"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/ads/boost",
+  "sources": [
+   "publicite.booster"
+  ],
+  "domaines": [
+   "Vendeur · Publicité (DP-59)"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/ads/campaigns",
+  "sources": [
+   "publicite.campagnes"
+  ],
+  "domaines": [
+   "Vendeur · publicite"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/ads/campaigns",
+  "sources": [
+   "publicite.creerCampagneClic"
+  ],
+  "domaines": [
+   "Vendeur · Publicité (DP-59)"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/ads/campaigns/{id}",
+  "sources": [
+   "publicite.campagne"
+  ],
+  "domaines": [
+   "Vendeur · Publicité (DP-59)"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/ads/campaigns/{id}/bid",
+  "sources": [
+   "publicite.enchere"
+  ],
+  "domaines": [
+   "Vendeur · publicite"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/ads/campaigns/{id}/pause",
+  "sources": [
+   "publicite.pauseCampagne"
+  ],
+  "domaines": [
+   "Vendeur · Publicité (DP-59)"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/ads/campaigns/{id}/resume",
+  "sources": [
+   "publicite.reprendre"
+  ],
+  "domaines": [
+   "Vendeur · publicite"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/ads/campaigns/{id}/stop",
+  "sources": [
+   "publicite.arreterCampagne"
+  ],
+  "domaines": [
+   "Vendeur · Publicité (DP-59)"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/ads/campaigns/new",
+  "sources": [
+   "publicite.creer"
+  ],
+  "domaines": [
+   "Vendeur · publicite"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/ads/dashboard",
+  "sources": [
+   "publicite.tableau"
+  ],
+  "domaines": [
+   "Vendeur · publicite"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/ads/flash",
+  "sources": [
+   "publicite.proposerFlash"
+  ],
+  "domaines": [
+   "Vendeur · Publicité (DP-59)"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/ads/invoices/{mois}",
+  "sources": [
+   "publicite.facturePublicitaire"
+  ],
+  "domaines": [
+   "Vendeur · Publicité (DP-59)"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/ads/ledger",
+  "sources": [
+   "publicite.mouvements"
+  ],
+  "domaines": [
+   "Vendeur · publicite"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/ads/products",
+  "sources": [
+   "publicite.produits"
+  ],
+  "domaines": [
+   "Vendeur · publicite"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/ads/quote",
+  "sources": [
+   "publicite.estimer"
+  ],
+  "domaines": [
+   "Vendeur · publicite"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/ads/slots",
+  "sources": [
+   "publicite.emplacements"
+  ],
+  "domaines": [
+   "Vendeur · Publicité (DP-59)"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/ads/slots/book",
+  "sources": [
+   "publicite.reserverEmplacement"
+  ],
+  "domaines": [
+   "Vendeur · Publicité (DP-59)"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/ads/top-up",
+  "sources": [
+   "publicite.recharger"
+  ],
+  "domaines": [
+   "Vendeur · Publicité (DP-59)"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/vendors/ads/top-up/{id}",
+  "sources": [
+   "publicite.annulerRecharge"
+  ],
+  "domaines": [
+   "Vendeur · publicite"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/ads/top-up/{id}",
+  "sources": [
+   "publicite.recharge"
+  ],
+  "domaines": [
+   "Vendeur · publicite"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/assisted-entry",
+  "sources": [
+   "session.saisieAssistee"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/vendors/assisted-entry/{id}",
+  "sources": [
+   "session.modifierFiche"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/assisted-entry/approve",
+  "sources": [
+   "session.validerFiches"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/auth/2fa",
+  "sources": [
+   "session.defiEnCours"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/auth/2fa",
+  "sources": [
+   "session.validerDeuxiemeFacteur"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/auth/2fa/resend",
+  "sources": [
+   "session.renvoyerDeuxiemeFacteur"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/auth/devices/forget",
+  "sources": [
+   "session.oublierAppareil"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/auth/login",
+  "sources": [
+   "session.connecter",
+   "session.connecterAvec"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/auth/logout",
+  "sources": [
+   "session.deconnecter"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/auth/otp",
+  "sources": [
+   "session.envoiNumero"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/auth/otp",
+  "sources": [
+   "session.demanderCodeNumero"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/auth/otp/resend",
+  "sources": [
+   "session.renvoyerCodeNumero"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/auth/password-reset",
+  "sources": [
+   "session.demanderLienMotDePasse"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/auth/password-reset/confirm",
+  "sources": [
+   "session.choisirMotDePasse"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/auth/password-reset/open",
+  "sources": [
+   "session.ouvrirLienMotDePasse"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/auth/verify",
+  "sources": [
+   "session.validerCodeNumero"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/catalog/barcode/{code}",
+  "sources": [
+   "offres.parCodeBarres"
+  ],
+  "domaines": [
+   "Vendeur · Nouvelle offre"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/catalog/recognize",
+  "sources": [
+   "offres.reconnaitre"
+  ],
+  "domaines": [
+   "Vendeur · Nouvelle offre"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/catalog/search",
+  "sources": [
+   "offres.rechercher"
+  ],
+  "domaines": [
+   "Vendeur · Nouvelle offre"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/catalog/suggest",
+  "sources": [
+   "offres.suggerer"
+  ],
+  "domaines": [
+   "Vendeur · Nouvelle offre"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/categories",
+  "sources": [
+   "session.categories"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/config",
+  "sources": [
+   "offres.reglages"
+  ],
+  "domaines": [
+   "Vendeur · Nouvelle offre"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/contract/sign",
+  "sources": [
+   "session.signerContrat"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/delivery-settings",
+  "sources": [
+   "livraison.reglages"
+  ],
+  "domaines": [
+   "Vendeur · Livraison et colis (AJ-A)"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/vendors/delivery-settings",
+  "sources": [
+   "livraison.regler"
+  ],
+  "domaines": [
+   "Vendeur · Livraison et colis (AJ-A)"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/vendors/delivery-settings/relays/{id}",
+  "sources": [
+   "livraison.relais"
+  ],
+  "domaines": [
+   "Vendeur · Livraison et colis (AJ-A)"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/vendors/delivery-settings/slots/{id}",
+  "sources": [
+   "livraison.creneau"
+  ],
+  "domaines": [
+   "Vendeur · Livraison et colis (AJ-A)"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/demand",
+  "sources": [
+   "plans.demande"
+  ],
+  "domaines": [
+   "Vendeur · Plans et visibilité"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/devices",
+  "sources": [
+   "compte.appareils"
+  ],
+  "domaines": [
+   "Vendeur · Compte et sécurité"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/vendors/devices/{id}",
+  "sources": [
+   "compte.deconnecterAppareil"
+  ],
+  "domaines": [
+   "Vendeur · Compte et sécurité"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/devices/revoke-others",
+  "sources": [
+   "compte.deconnecterAutres"
+  ],
+  "domaines": [
+   "Vendeur · Compte et sécurité"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/disputes",
+  "sources": [
+   "litiges.liste"
+  ],
+  "domaines": [
+   "Vendeur · Litiges"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/disputes/{id}",
+  "sources": [
+   "litiges.detail"
+  ],
+  "domaines": [
+   "Vendeur · Litiges"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/disputes/{id}/answer",
+  "sources": [
+   "litiges.repondre"
+  ],
+  "domaines": [
+   "Vendeur · Litiges"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/disputes/{id}/appeal",
+  "sources": [
+   "litiges.contester"
+  ],
+  "domaines": [
+   "Vendeur · Litiges"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/vendors/disputes/{id}/draft",
+  "sources": [
+   "litiges.garderBrouillon"
+  ],
+  "domaines": [
+   "Vendeur · Litiges"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/disputes/{id}/evidence",
+  "sources": [
+   "litiges.ajouterPreuve"
+  ],
+  "domaines": [
+   "Vendeur · Litiges"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/vendors/disputes/{id}/evidence/{pieceId}",
+  "sources": [
+   "litiges.retirerPreuve"
+  ],
+  "domaines": [
+   "Vendeur · Litiges"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/disputes/counts",
+  "sources": [
+   "litiges.compteurs"
+  ],
+  "domaines": [
+   "Vendeur · Litiges"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/disputes/rules",
+  "sources": [
+   "litiges.regles"
+  ],
+  "domaines": [
+   "Vendeur · Litiges"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/documents",
+  "sources": [
+   "argent.documents"
+  ],
+  "domaines": [
+   "Vendeur · Argent"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/documents/content",
+  "sources": [
+   "argent.document"
+  ],
+  "domaines": [
+   "Vendeur · Argent"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/events",
+  "sources": [
+   "echanges.evenements"
+  ],
+  "domaines": [
+   "Vendeur · Échanges avec les autres interfaces"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/events/stream",
+  "sources": [
+   "echanges.evenements"
+  ],
+  "domaines": [
+   "Vendeur · Échanges avec les autres interfaces"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/flash-sales",
+  "sources": [
+   "plans.programmerVenteFlash"
+  ],
+  "domaines": [
+   "Vendeur · Plans et visibilité"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/handovers",
+  "sources": [
+   "remise.aRemettre",
+   "remise.toutes"
+  ],
+  "domaines": [
+   "Vendeur · Remise au livreur"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/help/contacts",
+  "sources": [
+   "aide.contacts"
+  ],
+  "domaines": [
+   "Vendeur · Aide"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/help/forbidden-products",
+  "sources": [
+   "aide.produitsInterdits"
+  ],
+  "domaines": [
+   "Vendeur · Aide"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/help/questions",
+  "sources": [
+   "aide.questions"
+  ],
+  "domaines": [
+   "Vendeur · Aide"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/help/tip",
+  "sources": [
+   "aide.conseil"
+  ],
+  "domaines": [
+   "Vendeur · Aide"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/hubs",
+  "sources": [
+   "centres.liste"
+  ],
+  "domaines": [
+   "Vendeur · Centres BelivaY"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/learning/progress",
+  "sources": [
+   "apprendre.faites"
+  ],
+  "domaines": [
+   "Vendeur · Apprendre (AJ-B)"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/vendors/learning/progress/{fiche}",
+  "sources": [
+   "apprendre.recommencer"
+  ],
+  "domaines": [
+   "Vendeur · Apprendre (AJ-B)"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/vendors/learning/progress/{fiche}",
+  "sources": [
+   "apprendre.cocher"
+  ],
+  "domaines": [
+   "Vendeur · Apprendre (AJ-B)"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/me",
+  "sources": [
+   "compte.profil"
+  ],
+  "domaines": [
+   "Vendeur · Compte et sécurité"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PATCH",
+  "chemin": "/api/vendors/me",
+  "sources": [
+   "compte.modifierProfil",
+   "profilAJB.changerBio"
+  ],
+  "domaines": [
+   "Vendeur · Compte et sécurité",
+   "Vendeur · Mon profil (AJ-B)"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/me/biometrics",
+  "sources": [
+   "session.biometrie"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/vendors/me/biometrics",
+  "sources": [
+   "session.reglerBiometrie"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/me/codes",
+  "sources": [
+   "compte.demanderCode"
+  ],
+  "domaines": [
+   "Vendeur · Compte et sécurité"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/me/corrections",
+  "sources": [
+   "compte.demanderModification"
+  ],
+  "domaines": [
+   "Vendeur · Compte et sécurité"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/me/email/code",
+  "sources": [
+   "compte.demanderCodeEmail"
+  ],
+  "domaines": [
+   "Vendeur · Compte et sécurité"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/me/email/confirm",
+  "sources": [
+   "compte.confirmerEmail"
+  ],
+  "domaines": [
+   "Vendeur · Compte et sécurité"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/me/export",
+  "sources": [
+   "compte.exporterDonnees"
+  ],
+  "domaines": [
+   "Vendeur · Compte et sécurité"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/vendors/me/password",
+  "sources": [
+   "compte.changerMotDePasse"
+  ],
+  "domaines": [
+   "Vendeur · Compte et sécurité"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/vendors/me/phone",
+  "sources": [
+   "compte.confirmerNumero"
+  ],
+  "domaines": [
+   "Vendeur · Compte et sécurité"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/me/phone/codes",
+  "sources": [
+   "compte.demanderCodesNumero"
+  ],
+  "domaines": [
+   "Vendeur · Compte et sécurité"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/me/security",
+  "sources": [
+   "compte.securite"
+  ],
+  "domaines": [
+   "Vendeur · Compte et sécurité"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/vendors/me/security/face-id",
+  "sources": [
+   "compte.reglerFaceId"
+  ],
+  "domaines": [
+   "Vendeur · Compte et sécurité"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/money/earnings",
+  "sources": [
+   "argent.gains"
+  ],
+  "domaines": [
+   "Vendeur · Argent"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/money/frozen",
+  "sources": [
+   "argent.gele"
+  ],
+  "domaines": [
+   "Vendeur · Argent"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/money/releasing",
+  "sources": [
+   "argent.seLibere"
+  ],
+  "domaines": [
+   "Vendeur · Argent"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/money/summary",
+  "sources": [
+   "argent.resume"
+  ],
+  "domaines": [
+   "Vendeur · Argent"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/notifications",
+  "sources": [
+   "notifications.liste"
+  ],
+  "domaines": [
+   "Vendeur · Notifications"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/notifications/{id}/read",
+  "sources": [
+   "notifications.marquerLue"
+  ],
+  "domaines": [
+   "Vendeur · Notifications"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/notifications/counts",
+  "sources": [
+   "notifications.compteurs"
+  ],
+  "domaines": [
+   "Vendeur · Notifications"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/notifications/read-all",
+  "sources": [
+   "notifications.toutMarquerLu"
+  ],
+  "domaines": [
+   "Vendeur · Notifications"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/notifications/settings",
+  "sources": [
+   "notifications.reglages"
+  ],
+  "domaines": [
+   "Vendeur · Notifications"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/vendors/notifications/settings",
+  "sources": [
+   "notifications.regler"
+  ],
+  "domaines": [
+   "Vendeur · Notifications"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/notifications/unread-count",
+  "sources": [
+   "notifications.nonLues"
+  ],
+  "domaines": [
+   "Vendeur · Notifications"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/offers",
+  "sources": [
+   "produits.liste"
+  ],
+  "domaines": [
+   "Vendeur · Produits"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/offers",
+  "sources": [
+   "offres.commencer"
+  ],
+  "domaines": [
+   "Vendeur · Nouvelle offre"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/vendors/offers/{id}",
+  "sources": [
+   "produits.supprimer"
+  ],
+  "domaines": [
+   "Vendeur · Produits"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/offers/{id}",
+  "sources": [
+   "produits.detail"
+  ],
+  "domaines": [
+   "Vendeur · Produits"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PATCH",
+  "chemin": "/api/vendors/offers/{id}",
+  "sources": [
+   "offres.modifier"
+  ],
+  "domaines": [
+   "Vendeur · Nouvelle offre"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/vendors/offers/{id}",
+  "sources": [
+   "produits.regler"
+  ],
+  "domaines": [
+   "Vendeur · Produits"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/offers/{id}/attach",
+  "sources": [
+   "offres.rattacher"
+  ],
+  "domaines": [
+   "Vendeur · Nouvelle offre"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/vendors/offers/{id}/delivery",
+  "sources": [
+   "livraison.reglerProduit"
+  ],
+  "domaines": [
+   "Vendeur · Livraison et colis (AJ-A)"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/offers/{id}/description-proposal",
+  "sources": [
+   "offres.proposerDescription"
+  ],
+  "domaines": [
+   "Vendeur · Nouvelle offre"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/offers/{id}/duplicate",
+  "sources": [
+   "produits.dupliquer"
+  ],
+  "domaines": [
+   "Vendeur · Produits"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/offers/{id}/pause",
+  "sources": [
+   "produits.pause"
+  ],
+  "domaines": [
+   "Vendeur · Produits"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/offers/{id}/photos",
+  "sources": [
+   "offres.photos"
+  ],
+  "domaines": [
+   "Vendeur · Nouvelle offre"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/offers/{id}/photos",
+  "sources": [
+   "offres.ajouterPhoto"
+  ],
+  "domaines": [
+   "Vendeur · Nouvelle offre"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/vendors/offers/{id}/photos",
+  "sources": [
+   "offres.ordonnerPhotos"
+  ],
+  "domaines": [
+   "Vendeur · Nouvelle offre"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/vendors/offers/{id}/photos/{photoId}",
+  "sources": [
+   "offres.retirerPhoto"
+  ],
+  "domaines": [
+   "Vendeur · Nouvelle offre"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/vendors/offers/{id}/price",
+  "sources": [
+   "offres.changerPrix"
+  ],
+  "domaines": [
+   "Vendeur · Nouvelle offre"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/offers/{id}/price-advice",
+  "sources": [
+   "offres.conseil"
+  ],
+  "domaines": [
+   "Vendeur · Nouvelle offre"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/offers/{id}/publication",
+  "sources": [
+   "offres.publication"
+  ],
+  "domaines": [
+   "Vendeur · Nouvelle offre"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/offers/{id}/publish",
+  "sources": [
+   "offres.publier"
+  ],
+  "domaines": [
+   "Vendeur · Nouvelle offre"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/offers/{id}/restore",
+  "sources": [
+   "produits.restaurer"
+  ],
+  "domaines": [
+   "Vendeur · Produits"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/vendors/offers/{id}/stock",
+  "sources": [
+   "produits.changerStock"
+  ],
+  "domaines": [
+   "Vendeur · Produits"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/offers/draft",
+  "sources": [
+   "offres.brouillon"
+  ],
+  "domaines": [
+   "Vendeur · Nouvelle offre"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/offers/export",
+  "sources": [
+   "produits.exporter"
+  ],
+  "domaines": [
+   "Vendeur · Produits"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/offers/import",
+  "sources": [
+   "produits.importer"
+  ],
+  "domaines": [
+   "Vendeur · Produits"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/offers/new",
+  "sources": [
+   "offres.creer"
+  ],
+  "domaines": [
+   "Vendeur · Nouvelle offre"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/offers/publication",
+  "sources": [
+   "offres.publication"
+  ],
+  "domaines": [
+   "Vendeur · Nouvelle offre"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/offers/quote",
+  "sources": [
+   "offres.apercu"
+  ],
+  "domaines": [
+   "Vendeur · Nouvelle offre"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/offline-queue",
+  "sources": [
+   "accueil.file"
+  ],
+  "domaines": [
+   "Vendeur · Accueil"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/offline-queue",
+  "sources": [
+   "accueil.mettreEnFile"
+  ],
+  "domaines": [
+   "Vendeur · Accueil"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/vendors/offline-queue/{id}",
+  "sources": [
+   "accueil.retirer"
+  ],
+  "domaines": [
+   "Vendeur · Accueil"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/vendors/offline-queue/network",
+  "sources": [
+   "accueil.noterReseau"
+  ],
+  "domaines": [
+   "Vendeur · Accueil"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/offline-queue/send",
+  "sources": [
+   "accueil.envoyerFile"
+  ],
+  "domaines": [
+   "Vendeur · Accueil"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/orders",
+  "sources": [
+   "commandes.vue",
+   "commandes.liste",
+   "commandes.compteurs"
+  ],
+  "domaines": [
+   "Vendeur · Commandes"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/orders/{id}",
+  "sources": [
+   "commandes.detail"
+  ],
+  "domaines": [
+   "Vendeur · Commandes"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/orders/{id}/extend",
+  "sources": [
+   "preparation.optionsDelai"
+  ],
+  "domaines": [
+   "Vendeur · Préparation"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/orders/{id}/extend",
+  "sources": [
+   "preparation.demanderDelai"
+  ],
+  "domaines": [
+   "Vendeur · Préparation"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/orders/{id}/handover",
+  "sources": [
+   "remise.remise"
+  ],
+  "domaines": [
+   "Vendeur · Remise au livreur"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/orders/{id}/handover-code",
+  "sources": [
+   "remise.afficherCode"
+  ],
+  "domaines": [
+   "Vendeur · Remise au livreur"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/orders/{id}/handover-code/renew",
+  "sources": [
+   "remise.nouveauCode"
+  ],
+  "domaines": [
+   "Vendeur · Remise au livreur"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/orders/{id}/journal",
+  "sources": [
+   "commandes.journal"
+  ],
+  "domaines": [
+   "Vendeur · Commandes"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/orders/{id}/not-ready",
+  "sources": [
+   "echanges.colisNonPret"
+  ],
+  "domaines": [
+   "Vendeur · Échanges avec les autres interfaces"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/orders/{id}/ready",
+  "sources": [
+   "preparation.cestPret"
+  ],
+  "domaines": [
+   "Vendeur · Préparation"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/orders/{id}/receipt",
+  "sources": [
+   "remise.recu"
+  ],
+  "domaines": [
+   "Vendeur · Remise au livreur"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/orders/{id}/slip",
+  "sources": [
+   "preparation.bon"
+  ],
+  "domaines": [
+   "Vendeur · Préparation"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/orders/{id}/slip/checks",
+  "sources": [
+   "preparation.cocher"
+  ],
+  "domaines": [
+   "Vendeur · Préparation"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/orders/{id}/slip/open",
+  "sources": [
+   "preparation.ouvrirBon"
+  ],
+  "domaines": [
+   "Vendeur · Préparation"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/orders/{id}/slip/verify",
+  "sources": [
+   "preparation.verifierReference"
+  ],
+  "domaines": [
+   "Vendeur · Préparation"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/orders/{id}/stockout",
+  "sources": [
+   "preparation.signalerRupture"
+  ],
+  "domaines": [
+   "Vendeur · Préparation"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/vendors/payments/{id}",
+  "sources": [
+   "plans.annulerPaiement"
+  ],
+  "domaines": [
+   "Vendeur · Plans et visibilité"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/payments/{id}",
+  "sources": [
+   "plans.paiement"
+  ],
+  "domaines": [
+   "Vendeur · Plans et visibilité"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/payout-number",
+  "sources": [
+   "versements.numero"
+  ],
+  "domaines": [
+   "Vendeur · Versements"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/vendors/payout-number",
+  "sources": [
+   "versements.confirmerNumero"
+  ],
+  "domaines": [
+   "Vendeur · Versements"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/vendors/payout-number/codes",
+  "sources": [
+   "versements.annulerSaisie"
+  ],
+  "domaines": [
+   "Vendeur · Versements"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/payout-number/codes",
+  "sources": [
+   "versements.demanderCodes"
+  ],
+  "domaines": [
+   "Vendeur · Versements"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/payout-number/codes/resend",
+  "sources": [
+   "versements.renvoyerCode"
+  ],
+  "domaines": [
+   "Vendeur · Versements"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/payouts",
+  "sources": [
+   "versements.historique"
+  ],
+  "domaines": [
+   "Vendeur · Versements"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/payouts/{id}/incident",
+  "sources": [
+   "versements.signalerNonRecu"
+  ],
+  "domaines": [
+   "Vendeur · Versements"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/payouts/next",
+  "sources": [
+   "versements.prochain"
+  ],
+  "domaines": [
+   "Vendeur · Versements"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/pickups",
+  "sources": [
+   "activite.ramassages"
+  ],
+  "domaines": [
+   "Vendeur · Activité, ramassages, objectif"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/plans",
+  "sources": [
+   "plans.plans"
+  ],
+  "domaines": [
+   "Vendeur · Plans et visibilité"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/plans/simulate",
+  "sources": [
+   "plans.simuler"
+  ],
+  "domaines": [
+   "Vendeur · Plans et visibilité"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/plans/state",
+  "sources": [
+   "plans.etat"
+  ],
+  "domaines": [
+   "Vendeur · Plans et visibilité"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/plans/stop",
+  "sources": [
+   "plans.arreter"
+  ],
+  "domaines": [
+   "Vendeur · Plans et visibilité"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/plans/subscribe",
+  "sources": [
+   "plans.essayer",
+   "plans.souscrire"
+  ],
+  "domaines": [
+   "Vendeur · Plans et visibilité"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/promotions",
+  "sources": [
+   "promotions.liste"
+  ],
+  "domaines": [
+   "Vendeur · Promotions (AJ-A)"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/promotions",
+  "sources": [
+   "promotions.creer"
+  ],
+  "domaines": [
+   "Vendeur · Promotions (AJ-A)"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/promotions/{id}/stop",
+  "sources": [
+   "promotions.arreter"
+  ],
+  "domaines": [
+   "Vendeur · Promotions (AJ-A)"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/promotions/offers",
+  "sources": [
+   "promotions.offres"
+  ],
+  "domaines": [
+   "Vendeur · Promotions (AJ-A)"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/promotions/quote",
+  "sources": [
+   "promotions.apercu"
+  ],
+  "domaines": [
+   "Vendeur · Promotions (AJ-A)"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/promotions/rules",
+  "sources": [
+   "promotions.regles"
+  ],
+  "domaines": [
+   "Vendeur · Promotions (AJ-A)"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/questions",
+  "sources": [
+   "questions.liste"
+  ],
+  "domaines": [
+   "Vendeur · Questions des clients (AJ-A)"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/questions/{id}/answer",
+  "sources": [
+   "questions.repondre"
+  ],
+  "domaines": [
+   "Vendeur · Questions des clients (AJ-A)"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/questions/{id}/report",
+  "sources": [
+   "questions.signaler"
+  ],
+  "domaines": [
+   "Vendeur · Questions des clients (AJ-A)"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/questions/filter",
+  "sources": [
+   "questions.filtrer"
+  ],
+  "domaines": [
+   "Vendeur · Questions des clients (AJ-A)"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/questions/templates",
+  "sources": [
+   "questions.modeles"
+  ],
+  "domaines": [
+   "Vendeur · Questions des clients (AJ-A)"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/questions/templates",
+  "sources": [
+   "questions.enregistrerModele"
+  ],
+  "domaines": [
+   "Vendeur · Questions des clients (AJ-A)"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/vendors/questions/templates/{id}",
+  "sources": [
+   "questions.supprimerModele"
+  ],
+  "domaines": [
+   "Vendeur · Questions des clients (AJ-A)"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/quick-replies",
+  "sources": [
+   "messages.reponsesRapides"
+  ],
+  "domaines": [
+   "Vendeur · Messages"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/receipts",
+  "sources": [
+   "remise.recus"
+  ],
+  "domaines": [
+   "Vendeur · Remise au livreur"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/returns",
+  "sources": [
+   "retours.liste"
+  ],
+  "domaines": [
+   "Vendeur · Retours"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/returns/{id}",
+  "sources": [
+   "retours.detail"
+  ],
+  "domaines": [
+   "Vendeur · Retours"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/vendors/returns/{id}/draft",
+  "sources": [
+   "retours.garderBrouillon"
+  ],
+  "domaines": [
+   "Vendeur · Retours"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/returns/{id}/inspection",
+  "sources": [
+   "retours.inspecter"
+  ],
+  "domaines": [
+   "Vendeur · Retours"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/returns/{id}/photos",
+  "sources": [
+   "retours.ajouterPhoto"
+  ],
+  "domaines": [
+   "Vendeur · Retours"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/vendors/returns/{id}/photos/{photoId}",
+  "sources": [
+   "retours.retirerPhoto"
+  ],
+  "domaines": [
+   "Vendeur · Retours"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/returns/{id}/receive",
+  "sources": [
+   "retours.recevoir"
+  ],
+  "domaines": [
+   "Vendeur · Retours"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/returns/{id}/replacement",
+  "sources": [
+   "retours.proposer"
+  ],
+  "domaines": [
+   "Vendeur · Retours"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/returns/{id}/replacement/ready",
+  "sources": [
+   "retours.remplacementPret"
+  ],
+  "domaines": [
+   "Vendeur · Retours"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/returns/counts",
+  "sources": [
+   "retours.compteurs"
+  ],
+  "domaines": [
+   "Vendeur · Retours"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/reviews",
+  "sources": [
+   "boutique.avis"
+  ],
+  "domaines": [
+   "Vendeur · Boutique"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/reviews/{id}/private-reply",
+  "sources": [
+   "boutique.repondreAvis"
+  ],
+  "domaines": [
+   "Vendeur · Boutique"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/rewards/{id}/use",
+  "sources": [
+   "plans.utiliserRecompense"
+  ],
+  "domaines": [
+   "Vendeur · Plans et visibilité"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/score",
+  "sources": [
+   "trust.score"
+  ],
+  "domaines": [
+   "Vendeur · Trust Score et sanctions"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/score/appeal",
+  "sources": [
+   "trust.contester"
+  ],
+  "domaines": [
+   "Vendeur · Trust Score et sanctions"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/search",
+  "sources": [
+   "recherche.chercher"
+  ],
+  "domaines": [
+   "Vendeur · Rechercher (AJ-B)"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/seller/activity",
+  "sources": [
+   "activite.tableau"
+  ],
+  "domaines": [
+   "Vendeur · Activité, ramassages, objectif"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/seller/calm",
+  "sources": [
+   "accueil.calme"
+  ],
+  "domaines": [
+   "Vendeur · Accueil"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/seller/goal",
+  "sources": [
+   "activite.objectif"
+  ],
+  "domaines": [
+   "Vendeur · Activité, ramassages, objectif"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/vendors/seller/goal",
+  "sources": [
+   "activite.fixerObjectif"
+  ],
+  "domaines": [
+   "Vendeur · Activité, ramassages, objectif"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/seller/onboarding",
+  "sources": [
+   "accueil.premierJour"
+  ],
+  "domaines": [
+   "Vendeur · Accueil"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/seller/suspension",
+  "sources": [
+   "accueil.suspension"
+  ],
+  "domaines": [
+   "Vendeur · Accueil"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/seller/today",
+  "sources": [
+   "accueil.aujourdhui"
+  ],
+  "domaines": [
+   "Vendeur · Accueil"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/seller/today/hide-alert",
+  "sources": [
+   "accueil.masquerAlerte"
+  ],
+  "domaines": [
+   "Vendeur · Accueil"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/services",
+  "sources": [
+   "plans.services"
+  ],
+  "domaines": [
+   "Vendeur · Plans et visibilité"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/services/request",
+  "sources": [
+   "plans.demanderService"
+  ],
+  "domaines": [
+   "Vendeur · Plans et visibilité"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/session",
+  "sources": [
+   "session.session"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/sheets/{id}/variants",
+  "sources": [
+   "produits.variantes"
+  ],
+  "domaines": [
+   "Vendeur · Produits"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/shop",
+  "sources": [
+   "boutique.boutique"
+  ],
+  "domaines": [
+   "Vendeur · Boutique"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/shop/activity",
+  "sources": [
+   "activite.journal"
+  ],
+  "domaines": [
+   "Vendeur · Activité, ramassages, objectif"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/shop/change-requests",
+  "sources": [
+   "boutique.demandes"
+  ],
+  "domaines": [
+   "Vendeur · Boutique"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/shop/change-requests",
+  "sources": [
+   "boutique.demanderModification"
+  ],
+  "domaines": [
+   "Vendeur · Boutique"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/vendors/shop/change-requests/{id}",
+  "sources": [
+   "boutique.annulerDemande"
+  ],
+  "domaines": [
+   "Vendeur · Boutique"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/shop/change-requests/code",
+  "sources": [
+   "boutique.demanderCodeModification"
+  ],
+  "domaines": [
+   "Vendeur · Boutique"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/shop/closed-today",
+  "sources": [
+   "boutique.fermerAujourdhui"
+  ],
+  "domaines": [
+   "Vendeur · Boutique"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/shop/closures",
+  "sources": [
+   "boutique.programmerFermeture"
+  ],
+  "domaines": [
+   "Vendeur · Boutique"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/vendors/shop/closures/{id}",
+  "sources": [
+   "boutique.annulerFermeture"
+  ],
+  "domaines": [
+   "Vendeur · Boutique"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PATCH",
+  "chemin": "/api/vendors/shop/closures/{id}",
+  "sources": [
+   "boutique.ecourterFermeture"
+  ],
+  "domaines": [
+   "Vendeur · Boutique"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/vendors/shop/hours",
+  "sources": [
+   "boutique.changerHoraires"
+  ],
+  "domaines": [
+   "Vendeur · Boutique"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/vendors/shop/landmark",
+  "sources": [
+   "boutique.changerRepere"
+  ],
+  "domaines": [
+   "Vendeur · Boutique"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/vendors/shop/location",
+  "sources": [
+   "boutique.replacer"
+  ],
+  "domaines": [
+   "Vendeur · Boutique"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/shop/locations",
+  "sources": [
+   "boutique.lieux"
+  ],
+  "domaines": [
+   "Vendeur · Boutique"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/shop/locations",
+  "sources": [
+   "boutique.ajouterLieu"
+  ],
+  "domaines": [
+   "Vendeur · Boutique"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/vendors/shop/locations/{id}",
+  "sources": [
+   "boutique.retirerLieu"
+  ],
+  "domaines": [
+   "Vendeur · Boutique"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PATCH",
+  "chemin": "/api/vendors/shop/locations/{id}",
+  "sources": [
+   "boutique.modifierLieu"
+  ],
+  "domaines": [
+   "Vendeur · Boutique"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/vendors/shop/locations/{id}/point",
+  "sources": [
+   "boutique.replacerLieu"
+  ],
+  "domaines": [
+   "Vendeur · Boutique"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/shop/locations/{id}/principal",
+  "sources": [
+   "boutique.rendrePrincipal"
+  ],
+  "domaines": [
+   "Vendeur · Boutique"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/shop/locations/principal-code",
+  "sources": [
+   "boutique.demanderCodePrincipal"
+  ],
+  "domaines": [
+   "Vendeur · Boutique"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/shop/members",
+  "sources": [
+   "equipe.membres"
+  ],
+  "domaines": [
+   "Vendeur · Équipe"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/shop/members",
+  "sources": [
+   "equipe.inviter"
+  ],
+  "domaines": [
+   "Vendeur · Équipe"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/vendors/shop/members/{id}",
+  "sources": [
+   "equipe.retirer"
+  ],
+  "domaines": [
+   "Vendeur · Équipe"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/shop/members/{id}/code",
+  "sources": [
+   "equipe.demanderCodeMembre"
+  ],
+  "domaines": [
+   "Vendeur · Équipe"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/shop/members/{id}/journal",
+  "sources": [
+   "equipe.journal"
+  ],
+  "domaines": [
+   "Vendeur · Équipe"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/shop/members/{id}/reactivate",
+  "sources": [
+   "equipe.reactiver"
+  ],
+  "domaines": [
+   "Vendeur · Équipe"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/shop/members/{id}/removal-code",
+  "sources": [
+   "equipe.demanderCodeRetrait"
+  ],
+  "domaines": [
+   "Vendeur · Équipe"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/shop/members/{id}/resend",
+  "sources": [
+   "equipe.renvoyerInvitation"
+  ],
+  "domaines": [
+   "Vendeur · Équipe"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/vendors/shop/members/{id}/rights",
+  "sources": [
+   "equipe.changerDroits"
+  ],
+  "domaines": [
+   "Vendeur · Équipe"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/shop/members/{id}/suspend",
+  "sources": [
+   "equipe.suspendre"
+  ],
+  "domaines": [
+   "Vendeur · Équipe"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/vendors/shop/members/invitations/{id}",
+  "sources": [
+   "equipe.annulerInvitation"
+  ],
+  "domaines": [
+   "Vendeur · Équipe"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/shop/members/invitations/{id}/confirm",
+  "sources": [
+   "equipe.confirmerInvitation"
+  ],
+  "domaines": [
+   "Vendeur · Équipe"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/shop/pause",
+  "sources": [
+   "boutique.mettreEnPause"
+  ],
+  "domaines": [
+   "Vendeur · Boutique"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/shop/resume",
+  "sources": [
+   "boutique.reprendre"
+  ],
+  "domaines": [
+   "Vendeur · Boutique"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PATCH",
+  "chemin": "/api/vendors/shop/showcase",
+  "sources": [
+   "boutique.modifierVitrine"
+  ],
+  "domaines": [
+   "Vendeur · Boutique"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/shops",
+  "sources": [
+   "session.demarrerOuverture"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/shops/{id}/kyc",
+  "sources": [
+   "session.envoyerPiece"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/shops/{id}/payout-number",
+  "sources": [
+   "session.demanderCodeVersement"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/shops/{id}/payout-number/verify",
+  "sources": [
+   "session.validerCodeVersement"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/shops/{id}/submit",
+  "sources": [
+   "session.envoyerPourVerification"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/shops/current",
+  "sources": [
+   "session.ouverture"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/shops/current/code",
+  "sources": [
+   "session.envoiOuverture"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/shops/current/resend",
+  "sources": [
+   "session.renvoyerCodeOuverture"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/shops/current/verify",
+  "sources": [
+   "session.validerCodeOuverture"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/shops/from-client",
+  "sources": [
+   "session.arriveeClient"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/shops/from-client",
+  "sources": [
+   "session.confirmerArriveeClient"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/stats",
+  "sources": [
+   "plans.stats"
+  ],
+  "domaines": [
+   "Vendeur · Plans et visibilité"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/stock",
+  "sources": [
+   "stock.inventaire"
+  ],
+  "domaines": [
+   "Vendeur · Stock et inventaire (AJ-A)"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/stock/{id}/adjust",
+  "sources": [
+   "stock.ajuster"
+  ],
+  "domaines": [
+   "Vendeur · Stock et inventaire (AJ-A)"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/vendors/stock/{id}/threshold",
+  "sources": [
+   "stock.regler"
+  ],
+  "domaines": [
+   "Vendeur · Stock et inventaire (AJ-A)"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/stock/export",
+  "sources": [
+   "stock.exporter"
+  ],
+  "domaines": [
+   "Vendeur · Stock et inventaire (AJ-A)"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/stock/movements",
+  "sources": [
+   "stock.mouvements"
+  ],
+  "domaines": [
+   "Vendeur · Stock et inventaire (AJ-A)"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/threads",
+  "sources": [
+   "messages.fils"
+  ],
+  "domaines": [
+   "Vendeur · Messages"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/threads",
+  "sources": [
+   "messages.ouvrirFil"
+  ],
+  "domaines": [
+   "Vendeur · Messages"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/threads/{id}",
+  "sources": [
+   "messages.fil"
+  ],
+  "domaines": [
+   "Vendeur · Messages"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/threads/{id}/messages",
+  "sources": [
+   "messages.envoyer"
+  ],
+  "domaines": [
+   "Vendeur · Messages"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/threads/{id}/read",
+  "sources": [
+   "messages.lire"
+  ],
+  "domaines": [
+   "Vendeur · Messages"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/vendors/threads/support",
+  "sources": [
+   "messages.ecrireAuSupport"
+  ],
+  "domaines": [
+   "Vendeur · Messages"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/tiers",
+  "sources": [
+   "paliers.monPalier"
+  ],
+  "domaines": [
+   "Vendeur · Paliers"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/visibility",
+  "sources": [
+   "plans.visibilite"
+  ],
+  "domaines": [
+   "Vendeur · Plans et visibilité"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/vendors/zone",
+  "sources": [
+   "session.zoneDuPoint"
+  ],
+  "domaines": [
+   "Vendeur · Session, connexion et ouverture"
   ],
   "etat": "a_creer",
   "idempotent": false,

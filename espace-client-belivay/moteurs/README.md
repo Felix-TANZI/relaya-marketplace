@@ -98,6 +98,36 @@ Les textes des rappels (montants et paliers) sont à refaire avec la nouvelle gr
 | `geo.py` | distance géodésique WGS 84 (celle d'OpenStreetMap et de PostGIS, au millimètre), distance d'une carte et du supplément XL, relais proposés par distance, zones exploitées | CAL-04, CDA-05, CRL-03, CCO-11, DP-09, DP-46, DP-49 |
 | `etats.py` | machines à états : commande, sous-commande, tentative de paiement, escrow, litige, retour, remplacement ; chaque transition avec ses gardes | CL-02, machines-a-etats.json |
 
+## Espace vendeur (DP-55, DP-56)
+
+Seules sources : le paquet « Espace vendeur » du 1er octobre (synthèses dans `logique-metier/vendeur/analyse/`) et
+les décisions DP-55 et DP-56 (recommandations Q-01 à Q-16 et Q-54 à Q-65 appliquées). Paramètres `VD-…` ajoutés au
+registre (catégorie « Créés par une décision du porteur », DP-55). Principe : **BelivaY ne perd jamais**.
+
+| Module | Ce qu'il calcule | Règles |
+|---|---|---|
+| `commission.py` | barème dégressif par famille A–E (taux par tranche du prix unitaire, +3 points sous 5 000 F, −2 Made in Cameroon, tranche sans taux = taux précédent), × palier, × 0,80 découverte, planchers par sous-commande (700 F, 2 %), un seul arrondi final, TVA en plus (0 %), montant gardé, vente refusée sous 0 F gardé, prix minimum publiable, seuil « sous X F, le minimum s'applique », remboursement (prorata sans plancher), offre de découverte (3 mois ou 50 commandes), remise de plan du mois (5 % / 10 %, plafonnée au prix du plan et aux planchers), simulateur des plans ; M05 et M06 : emplacements neutres, en attente | VD-02 p5-6, PLN-01, D8, Q-01 à Q-09, Q-55, Q-57, Q-62 |
+| `publicite.py` | revenus publicitaires : seuil de qualité (stock, Trust Score, litige), enchère au clic au second prix + 1 F (plancher, jamais au-dessus de l'enchère), clic facturé une fois par client et par jour, budget quotidien et solde, densité (20 %, 2 sur 10, jamais au-dessus d'une offre moins chère et mieux notée du même produit), À la une et carrousel à la semaine (tarif fixe ou enchère), vente flash (remise minimale, commission majorée de points par-dessus commission.py, un seul arrondi, refus sous 0 F gardé), Boost 24 h / 7 j (multiplicateur plafonné), solde prépayé (recharge, débit, heures non diffusées rendues), facture | DP-59 |
+| `versements.py` | fermeture du retour, libération (3 j, 1 j Or et Platine, 14 j carte), après un litige gagné, barre « Se libère », vendredi du versement (arrêté jeudi 23 h 59, heure de Yaoundé), montant dû sans minimum, essais après refus et suspension, revue de 7 jours du numéro, reprise d'un montant libéré, cadeaux groupés = commandes normales | VD-02 p7, VD-09, Q-11 à Q-13, Q-15, Q-19, Q-58 à Q-60, Q-65 |
+| `paliers.py` | palier atteint (conditions cumulées, A-6), montée après 14 jours, descente proposée après 14 jours sous le seuil (A-5), alerte à 3 points d'un seuil (une fois par semaine), palier de lancement (produits actifs, 2 mois), palier de commission et palier de libération | PAL-01, C4, TRU-07, ACC-15, ACC-25, SAN-02, DP-21, Q-10 |
+| `demarrage.py` | plafond de démarrage de 500 000 F par sous-commande jusqu'à 10 commandes livrées sans incident (compteur au total, A-7), quantité attribuable, refus de publier au-dessus du plafond (brouillon gardé), start_cap | KYC-09, PRX-09, Q-14, Q-63 |
+| `plans.py` | prix des plans, année (10 mois payés, plafond de remise = prix annuel ÷ 12), essai d'un mois, grâce de 7 jours, TVA du plan | PLN-01, PLN-02, PLN-05, VD10-R32, A-2, A-3, C5 |
+| `argent_vendeur.py` | cinq états de l'argent (En cours, Se libère, Gelé, À verser, Versé), En circulation, gel prioritaire, frozen.checks | ARG-01, VD09-R04, LIB-02, GEL-01, GEL-02, Q-64 |
+| `sanctions.py` | niveaux 1 à 4, durées (visibilité 14 j, suspension 30 j au plus), suspension proposée (sous 40, 3 non-préparations en 30 j), période probatoire (20 commandes), contrôle au ramassage et contrôle renforcé | SAN-01 à SAN-06, CTRL-RAMASSAGE, Q-31, L-1 |
+
+Écarts de l'audit vendeur corrigés selon DP-57 (`logique-metier/vendeur/AUDIT-EXHAUSTIVITE.md`, « Écarts corrigés » ;
+tests `tests/test_ecarts_audit.py`) : plages exactes de la commission minimale (A-4), restitution et TVA de la remise de
+plan, alerte et descente sur le seuil du palier (A-5), dû du vendeur en tort, gel pendant le recours, référence
+BLV-VS et machine du versement, reprise jamais payée (A-8). La libération n'a plus qu'une source :
+`litiges.fermeture_du_retour` et `litiges.liberation` appellent `versements.py`, et les codes LIB-* doivent concorder
+avec VD-LIB-* (sinon le registre s'arrête). `Palier` est défini dans `paliers.py` (toujours lisible par `litiges.Palier`).
+
+Jeu d'essai VD-02 p6 retrouvé (ITEL 17 840 F gardés en découverte Bronze, 18 164 F en Argent, 150 000 F → 142 050 F,
+chargeur → 700 F, simulateur 53 520 / 51 344 / 46 668 F…). Les trois références qui dépendent de M05 et M06 (iPhone
+335 324 F, pagne 67 600 F, panier 27 989 F) sont des tests `xfail` stricts « en attente de M05/M06 » : le barème
+seul donne 339 640, 67 460 et 28 050 F. `litiges.liberation` suit désormais Q-59 (libéré un vendredi : versé le
+vendredi suivant).
+
 ## Plan et distances : OpenStreetMap (DP-49)
 
 Le fond de plan est OpenStreetMap, comme dans relaya-marketplace (Leaflet, tuiles OSM, géocodage Nominatim) :

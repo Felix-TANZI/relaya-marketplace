@@ -1,0 +1,24 @@
+{
+  "source": "espace-vendeur/src/demo/aide.ts (VD11-R63 à R65) ; montants calculés par le serveur (moteur de commission)",
+  "questions": [
+    {"cle": "q1", "theme": "argent", "question": "Quand suis-je payé ?", "reponse": "Chaque vendredi avant 12 h, sans frais et sans minimum, pour tout ce qui s’est libéré avant jeudi minuit. Vous n’avez rien à demander.", "calcul": "", "ecran": "versements", "lien": "Voir mes versements"},
+    {"cle": "q2", "theme": "argent", "question": "Combien je garde sur une vente ?", "reponse": "Chaque commande affiche « Vous gardez » avant que vous la prépariez. Exemple : un ITEL AC52 vendu {prix}, vous gardez {garde}.", "calcul": "exemple_garde", "ecran": "argent", "lien": "Voir mon argent"},
+    {"cle": "q3", "theme": "argent", "question": "Pourquoi mon argent est-il gelé ?", "reponse": "Un litige, un retour ou une vérification est en cours sur la commande. L’argent se libère dès que le dossier est réglé.", "calcul": "", "ecran": "gele", "lien": "Voir l’argent gelé"},
+    {"cle": "q4", "theme": "commandes", "question": "Je n’ai plus le produit : que faire ?", "reponse": "Ouvrez la commande et touchez « Rupture », le plus tôt possible. BelivaY confie la commande à un autre vendeur. Signaler tôt coûte peu.", "calcul": "", "ecran": "commandes", "lien": "Voir mes commandes"},
+    {"cle": "q5", "theme": "commandes", "question": "Le livreur ne vient pas", "reponse": "Votre délai est suspendu jusqu’à son prochain passage : aucun effet pour vous. Gardez le colis prêt.", "calcul": "", "ecran": "horaires", "lien": "Voir le passage du livreur"},
+    {"cle": "q6", "theme": "litiges", "question": "Un client ouvre un litige : que faire ?", "reponse": "Répondez dans les 48 h : acceptez, contestez avec vos preuves, ou proposez un arrangement. Sans réponse, BelivaY décide en partant de ce que dit le client.", "calcul": "", "ecran": "litiges", "lien": "Voir mes litiges"},
+    {"cle": "q7", "theme": "retours", "question": "Un produit me revient : que faire ?", "reponse": "Inspectez-le dans les 48 h après réception. Si le défaut est réel : remboursement, ou remplacement sous 72 h ouvrées. Le trajet retour de 500 F et la livraison remboursée sont alors à votre charge.", "calcul": "", "ecran": "retours", "lien": "Voir mes retours"},
+    {"cle": "q8", "theme": "palier", "question": "Comment passer au palier Argent ?", "reponse": "Trois conditions, tenues {j} jours : Trust Score {s} au moins, {n} commandes livrées, note de {note} au moins. Vous garderez alors {argent} au lieu de {bronze} par ITEL.", "calcul": "palier_argent", "ecran": "palier", "lien": "Voir mon palier"},
+    {"cle": "q9", "theme": "boutique", "question": "Qui voit le nom de ma boutique ?", "reponse": "Vous et BelivaY seulement. Le client voit « Vendeur certifié {palier} · Trust Score {score} », rien d’autre.", "calcul": "apercu_client", "ecran": "boutique", "lien": "Voir ce que voit le client"},
+    {"cle": "q10", "theme": "produits", "question": "Quels produits sont interdits ?", "reponse": "Une offre sur ces produits est refusée et peut mener à l’exclusion.", "calcul": "", "ecran": "", "lien": "", "mots": "interdits"}
+  ],
+  "interdits": [
+    "Armes, munitions et explosifs",
+    "Drogues et médicaments",
+    "Contrefaçons et copies de marque",
+    "Produits volés ou sans preuve d’origine",
+    "Espèces protégées : ivoire, écailles, peaux",
+    "Documents officiels et moyens de paiement"
+  ],
+  "conseil": {"titre": "Des photos à la lumière du jour", "texte": "Posez le produit près d’une fenêtre, sur un fond uni. Une photo nette rassure le client et vend plus.", "publieLe": "2026-09-14"}
+}

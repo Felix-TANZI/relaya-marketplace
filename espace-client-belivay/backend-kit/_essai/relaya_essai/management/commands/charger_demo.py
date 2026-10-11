@@ -66,6 +66,15 @@ class Command(BaseCommand):
             comptes = self._comptes(relais)
             self._diaspora(comptes, relais)
             self._photos()
+        # Espace vendeur : la boutique du jeu d'essai du paquet et ses données (apps.vendeur_*), sur le serveur d'essai de
+        # l'espace vendeur seulement (BELIVAY_DEMO_VENDEUR=1, espace-vendeur/pw-api.config.ts) : ses offres sont de vrais
+        # produits, que le catalogue du site client (30 produits de la démonstration) ne doit pas compter.
+        import os
+
+        from django.apps import apps as registre_apps
+
+        if registre_apps.is_installed("apps.vendeur_core") and os.environ.get("BELIVAY_DEMO_VENDEUR") == "1":
+            call_command("charger_demo_vendeur")
         self.stdout.write(self.style.SUCCESS(f"Démo chargée : {n} produits, {len(relais)} relais, comptes {', '.join(COMPTES)}."))
 
     def _utilisateur(self, nom: str, **champs):

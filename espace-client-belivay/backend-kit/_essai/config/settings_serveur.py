@@ -18,8 +18,9 @@ INSTALLED_APPS = [*INSTALLED_APPS, "relaya_essai"]
 # Ce que relaya a et que les bouchons n'ont pas : centre de notifications, sessions par appareil (relaya_essai.models).
 BELIVAY_MODELES = {**BELIVAY_MODELES, "notification": "relaya_essai.UserNotification", "session": "relaya_essai.UserSession"}
 
-# Site en local : serveur Vite (5173), aperçu du build (4173, 4174), serveur Vite du mode API (5180).
-_locaux = [f"http://{h}:{p}" for p in (5173, 5180, 4173, 4174) for h in ("localhost", "127.0.0.1")]
+# Site en local : serveur Vite (5173), aperçu du build (4173, 4174), serveur Vite du mode API (5180) ; espace vendeur :
+# serveur Vite (5174), aperçu (4175), mode API (5190).
+_locaux = [f"http://{h}:{p}" for p in (5173, 5180, 4173, 4174, 5174, 4175, 5190) for h in ("localhost", "127.0.0.1")]
 CORS_ALLOWED_ORIGINS = [*CORS_ALLOWED_ORIGINS, *(o for o in _locaux if o not in CORS_ALLOWED_ORIGINS)]
 CORS_ALLOWED_ORIGINS += [o for o in os.environ.get("CORS_EXTRA_ORIGINS", "").split(",") if o]
 

@@ -1,0 +1,72 @@
+/* VD-03 · Accès et ouverture de la boutique : ce que les écrans repris ajoutent à la feuille du prototype vendeur
+   (prototype.css) et à celle du client (site.css, animations.css), sans rien redessiner. */
+
+/* Six cases du code : le vrai champ est posé dessus (.otp-saisie du client) ; code faux : cases rouges, secousse. */
+.vd03-otp .otp span.f,.vd03-otp .otp span.cur{transition:border-color .15s}
+.vd03-otp.err .otp span{border-color:var(--red);color:var(--red)}
+html[data-mouv] .vd03-otp.err .otp{animation:vd03-secousse var(--blv-long) ease}
+@keyframes vd03-secousse{0%,100%{transform:none}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+.vd03-otpm{min-height:44px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-3);text-align:center;margin-top:4px}
+.vd03-otpm.err{color:var(--red);font-weight:700}
+.vd03-lien{display:inline-flex;align-items:center;min-height:44px;font-size:13px;font-weight:800;color:var(--or-txt);background:none;border:0;padding:0 4px;cursor:pointer;font-family:inherit}
+.keypad span[role=button]{cursor:pointer;user-select:none;-webkit-user-select:none}
+html[data-mouv] .keypad span[role=button]:active{transform:scale(.94);background:var(--sand-2)}
+.keypad span[role=button]:focus-visible,.vd03-lien:focus-visible{outline:2px solid var(--or);outline-offset:2px}
+
+/* Vrais champs dans le balisage du prototype (.inp, .vx-num) */
+.inp input,.inp select,.vx-num input{flex:1;min-width:0;border:0;background:transparent;font:inherit;color:inherit;outline:none;height:100%;padding:0}
+.inp select{appearance:none;-webkit-appearance:none;cursor:pointer}
+.inp:focus-within{border-color:var(--braise-1);box-shadow:0 0 0 4px rgba(204,74,11,.12)}
+.inp.err:focus-within{border-color:var(--red)}
+.vx-num input{font-size:19px;font-weight:700;letter-spacing:.02em;font-variant-numeric:tabular-nums}
+.vx-ph.err{box-shadow:inset 0 0 0 2px var(--red)}
+.hint.err{color:var(--red);font-weight:700}
+.vd03-oeil{display:flex;align-items:center;justify-content:center;width:44px;height:44px;margin-right:-10px;background:none;border:0;color:var(--ink-3);cursor:pointer}
+
+/* Carte du point de la boutique : toucher pose le point ; l'épingle tombe. */
+.vd03-carte{cursor:crosshair;touch-action:manipulation}
+.vd03-carte>svg{width:100%;height:100%;display:block}
+/* Le repère dessiné du prototype (3 derniers tracés) laisse place au vrai point posé. */
+.vd03-carte>svg>:nth-last-child(-n+3){display:none}
+.vd03-pin{position:absolute;width:34px;height:34px;margin:-34px 0 0 -17px;color:var(--braise-1);pointer-events:none;filter:drop-shadow(0 4px 4px rgba(0,0,0,.3))}
+html[data-mouv] .vd03-pin{animation:vd03-tombe var(--blv-long) var(--blv-ressort)}
+@keyframes vd03-tombe{from{transform:translateY(-22px);opacity:0}to{transform:none;opacity:1}}
+.vd03-carte-a{position:absolute;left:10px;top:10px;display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:var(--card);box-shadow:var(--shadow-card);font-size:12px;font-weight:700;color:var(--ink-2)}
+
+/* Barre des trois étapes : le trait qui se remplit. */
+html[data-mouv] .vd03-etapes i{transition:background var(--blv-moyen) ease}
+html[data-mouv] .vd03-etapes .vd03-faite{animation:vd03-pop var(--blv-long) var(--blv-ressort)}
+@keyframes vd03-pop{0%{transform:scale(.6)}60%{transform:scale(1.15)}100%{transform:none}}
+
+/* Liste de choix (feuille) : catégorie, langue. */
+.vd03-choix{display:flex;flex-direction:column;margin-top:6px}
+.vd03-choix [role=option],.vd03-choix [role=radio]{display:flex;align-items:center;gap:10px;min-height:52px;padding:0 4px;border:0;border-top:1px solid var(--line);background:none;font:inherit;font-size:15px;font-weight:700;color:var(--ink);text-align:left;cursor:pointer;width:100%}
+.vd03-choix [aria-selected=true],.vd03-choix [aria-checked=true]{color:var(--or-txt)}
+.vd03-choix .g{flex:1}
+.vd03-choix small{display:block;font-size:12px;font-weight:600;color:var(--ink-3)}
+
+/* Mode démonstration (comme l'« Aperçu du prototype » du client) : visible, jamais confondu avec l'écran. */
+.vd03-demo{margin-top:16px;border:1.5px dashed var(--line-2);border-radius:14px;padding:10px 12px;font-size:12.5px;color:var(--ink-3);line-height:1.45}
+.vd03-demo b{color:var(--ink-2)}
+.vd03-demo .btns{margin-top:8px}
+
+/* Compte à rebours qui défile (minuteur du client). */
+.vd03-cd{font-variant-numeric:tabular-nums}
+
+/* Saisie assistée : fiche validée qui s'efface. */
+html[data-mouv] .vd03-part{animation:vd03-part var(--blv-long) var(--blv-doux) forwards}
+@keyframes vd03-part{to{opacity:0;transform:translateX(30px)}}
+.vd03-recherche{display:flex;align-items:center;gap:8px;height:44px;border-radius:12px;background:var(--card);box-shadow:inset 0 0 0 1.5px var(--line-2);padding:0 12px;margin-top:12px}
+.vd03-recherche input{flex:1;min-width:0;border:0;background:transparent;font:inherit;font-size:14.5px;color:var(--ink);outline:none}
+/* Focus visible au clavier (accessibilité, vague 4) : la boîte de recherche s'allume comme un champ .inp (site.css). */
+.vd03-recherche:focus-within{box-shadow:inset 0 0 0 1.5px var(--braise-1),0 0 0 4px rgba(201,80,14,.12)}
+html[data-theme=dark] .vd03-recherche:focus-within{box-shadow:inset 0 0 0 1.5px var(--braise-1),0 0 0 4px rgba(255,154,85,.16)}
+
+/* Lancement : la page d'ouverture prend tout l'écran. */
+.vd03-lance .blv-spl{position:fixed}
+
+/* Face ID : le scan qui tourne pendant l'activation. */
+html[data-mouv] .vx-fid.scan{animation:vd03-scan 1s ease-in-out infinite}
+@keyframes vd03-scan{50%{box-shadow:0 0 0 12px var(--or-soft)}}
+
+@media (max-width:370px){.cx-duo{grid-template-columns:1fr}.vx-ch{grid-template-columns:1fr}}

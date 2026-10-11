@@ -27,6 +27,8 @@ for _app in (
     "extras",
     "recus",
     "contenus",
+    "publicite",  # annonces sponsorisées : /api/sponsored/… (DP-59)
+    "vendeur_core",  # espace vendeur : /api/vendors/… (apps.vendeur_core.urls)
 ):
     if apps.is_installed(f"apps.{_app}"):
         urlpatterns.append(path("", include(f"apps.{_app}.urls")))

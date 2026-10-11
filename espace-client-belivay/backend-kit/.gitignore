@@ -6,3 +6,5 @@ _essai/*.sqlite3
 _essai/mediafiles/
 __pycache__/
 .coverage
+outils/.vendeur-*.ts
+_essai/fichiers-prives/

@@ -16,7 +16,7 @@ import { source, type CommandeClient, type NotificationClient, type Relais } fro
 import { F } from '../../i18n/format'
 import { dateA, heureSeule, jourSeul } from '../../i18n/dates'
 import { usePreferences } from '../../preferences'
-import { echeancier, RENVOI_GARDE, tarifGarde } from '../CL-09/Commun'
+import { echeancier, tarifGarde } from '../CL-09/Commun'
 
 const GROUPE_MIN = 10 // deux nouvelles d'une même commande à moins de 10 minutes : une seule notification
 const CRITIQUES = ['Incident', 'Paiement'] // seules alertes qui sonnent la nuit
@@ -105,7 +105,7 @@ export function Push() {
     const e = echeancier(c, maintenant, r?.ferme ?? null)
     const n = e.n
     const limite = jourSeul(e.dernier.le, langue)
-    const renvoi = tf('sinon renvoi (+ {m} F)', { m: F(RENVOI_GARDE) })
+    const renvoi = t('sinon renvoi au vendeur')
     const pastille = (texte: string, ton = 'ink') => <span className={'pill ' + ton + ' sm'}>{t(texte)}</span>
     const mp = (titre: string, texte: string) => (
       <div className="cl10-mp">
@@ -174,8 +174,8 @@ export function Push() {
                   {mp(
                     tf('Dernier jour · {ref}', { ref: c.ref }),
                     lendemain?.ferme
-                      ? tf('Montant dû : {m} F. Relais fermé demain : retire avant {h}, sinon renvoi au vendeur {d} (+ {r} F).', { m: F(x.cumul), h: r ? (r.horaires.split('–')[1] ?? '').trim() : '', d: jourSeul(e.renvoi, langue), r: F(RENVOI_GARDE) })
-                      : tf('Montant dû : {m} F. Retire aujourd’hui, sinon renvoi au vendeur {d} (+ {r} F).', { m: F(x.cumul), d: jourSeul(e.renvoi, langue), r: F(RENVOI_GARDE) }),
+                      ? tf('Montant dû : {m} F, en espèces au gérant. Relais fermé demain : retire avant {h}, sinon renvoi au vendeur {d}.', { m: F(x.cumul), h: r ? (r.horaires.split('–')[1] ?? '').trim() : '', d: jourSeul(e.renvoi, langue) })
+                        : tf('Montant dû : {m} F, en espèces au gérant. Retire aujourd’hui, sinon renvoi au vendeur {d}.', { m: F(x.cumul), d: jourSeul(e.renvoi, langue) }),
                   )}
                   {lendemain?.ferme && <div className="tsm">{tf('Le relais est fermé le {f} : {d} est le dernier jour.', { f: t(r?.ferme ?? ''), d: jourSeul(x.le, langue) })}</div>}
                 </div>
@@ -202,7 +202,7 @@ export function Push() {
                   ) : (
                     <Link to={chemin('sms')} className="cl10-pl">
                       <div className="sms cl10-bub">
-                        <span>{tf('{ref}, {l}. Montant du : {m} F. {s} F demain. Retrait avant {d} au soir, sinon renvoi au vendeur (+{r} F).', { ref: c.ref, l: c.lieu, m: F(x.cumul), s: F(lendemain?.cumul ?? x.cumul), d: limite, r: F(RENVOI_GARDE) })}</span>
+                        <span>{tf('{ref}, {l}. Montant du : {m} F. {s} F demain. Retrait avant {d} au soir, sinon renvoi au vendeur.', { ref: c.ref, l: c.lieu, m: F(x.cumul), s: F(lendemain?.cumul ?? x.cumul), d: limite })}</span>
                       </div>
                     </Link>
                   )}
@@ -225,7 +225,7 @@ export function Push() {
             </div>
             {mp(
               tf('Colis renvoyé au vendeur · {ref}', { ref: c.ref }),
-              tf('Frais retenus : {m} F (garde {g} F + renvoi {r} F). Ton solde est remboursé sur ton Mobile Money.', { m: F(e.retenue), g: F(e.jours[6].cumul), r: F(RENVOI_GARDE) }),
+              tf('Garde retenue : {m} F, sans autre frais. Le reste revient sur le moyen de paiement d’origine.', { m: F(e.retenue) }),
             )}
             <div className="tsm">{t('Seulement si tes colis n’ont pas été retirés. Ton retrait annule les rappels prévus.')}</div>
           </div>

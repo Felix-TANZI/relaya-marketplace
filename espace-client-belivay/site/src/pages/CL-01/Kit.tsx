@@ -147,7 +147,7 @@ export function Kit() {
             </span>
           </span>
           <span className="pc-b">
-            <span className="pc-t">{t("Huile d’arachide 5 L")}</span>
+            <span className="pc-t">{t("Huile d’arachide Lesieur 5 L")}</span>
             <span className="pc-p">
               <span className="price">
                 {t("9\u00A0800")}
@@ -192,7 +192,7 @@ export function Kit() {
               </span>
             </span>
             <span className="pc-b">
-              <span className="pc-t">{t("Montre acier bracelet cuir")}</span>
+              <span className="pc-t">{t("Montre Casio chronographe acier, bracelet cuir")}</span>
               <span className="pc-p">
                 <span className="price">
                   {t("27\u00A0500")}

@@ -32,6 +32,7 @@ export interface Badges {
   panier: number // somme des quantités (CPN-56)
   nonLus: number // notifications non lues (CNT-04)
   compte: number // commandes à retirer (CMC-16)
+  favoris?: number // produits en favori (onglet Sauvegardés, même pastille que le panier)
 }
 
 export interface Client {
@@ -782,6 +783,44 @@ export interface OffreFlash {
   fin: number
   stock: number // restant à ce prix
   livraison: number
+  selection?: boolean // offre de la sélection BelivaY (DP-59) : commission majorée pendant la vente
+  annonce?: string // sélection : jeton de la campagne du vendeur (impression et clic comptés pour ses statistiques)
+}
+
+// Annonces sponsorisées (DP-59) : produits sponsorisés (recherche, catégories), Boost, emplacements « À la une » et
+// carrousel de l'accueil, sélection flash. Le serveur choisit les annonces (enchère, budget, seuil de qualité) ;
+// l'écran les mêle aux résultats avec les garde-fous de densité (donnees/annonces.ts, VD-PUB-DENSITE) et les
+// étiquette « Sponsorisé ».
+export interface AnnonceSponsorisee {
+  id: string // jeton de l'annonce, renvoyé au clic
+  p: string // Produit.p
+  campagne: string
+  fiche: string // produit commun (même produit chez plusieurs boutiques)
+}
+export interface ReglesAnnonces {
+  partMaxPourCent: number // VD-PUB-DENSITE : 20 % des positions au plus
+  maxParFenetre: number // … 2 annonces au plus
+  fenetre: number // … sur 10 résultats
+  boostMultiplicateur: number // VD-PUB-BOOST : classement × 1,5 au plus
+}
+export interface AnnoncesListe {
+  annonces: AnnonceSponsorisee[] // rangées par l'enchère
+  boosts: string[] // Produit.p en Boost
+  jetonsBoost?: Record<string, string> // Produit.p → jeton de sa campagne Boost (impression et clic comptés, jamais facturés)
+  regles: ReglesAnnonces
+}
+// Où une annonce a été montrée (impression) ; motifs de « Signaler cette annonce ».
+export type EmplacementVu = 'recherche' | 'categorie' | 'accueil' | 'une' | 'carrousel' | 'flash' | 'boost'
+export type MotifSignalement = 'trompeuse' | 'inappropriee' | 'interdit' | 'repetitive' | 'autre'
+export interface DiapoSponsorisee extends AnnonceSponsorisee {
+  titre: string
+  sousTitre: string
+}
+export interface EmplacementsAccueil {
+  aLaUne: AnnonceSponsorisee[]
+  carrousel: DiapoSponsorisee[]
+  flash: OffreFlash[] // offres de la sélection flash en cours
+  encart?: number // produits de l'encart ordinateur sous les Ventes flash (paramètre de console : 2, 4 ou 6 ; défaut 4)
 }
 
 // Mise de côté (CL-15 ; EX-03) : règles dans donnees/cote.ts.
@@ -1583,6 +1622,11 @@ export interface Source {
   ventesFlash(): Promise<{ offres: OffreFlash[]; alerte: boolean; relais: string | null; maintenant: number }>
   ajouterFlash(p: string): Promise<{ ok: boolean }> // au prix de l'offre, si elle court encore et qu'il reste du stock
   alerteFlash(actif: boolean): Promise<void>
+  annoncesListe(ou: 'recherche' | 'categorie', q: string | null, cat: string | null): Promise<AnnoncesListe>
+  emplacementsAccueil(): Promise<EmplacementsAccueil>
+  cliquerAnnonce(id: string): Promise<void> // un clic facturé une fois par client et par jour (VD-PUB-CLIC)
+  voirAnnonce(id: string, emplacement: EmplacementVu, visite: string): Promise<void> // une impression par client, emplacement et visite
+  signalerAnnonce(id: string, motif: MotifSignalement): Promise<void>
   listes(): Promise<{ listes: ListeEnvies[]; relais: string | null; maintenant: number }>
   creerListe(l: { nom: string; mode: 'fil' | 'groupe'; remiseLe: number | null; surprise: boolean; occasion?: OccasionListe | null; hotes?: string[]; cagnotte?: { titre: string; objectif: number } | null }): Promise<ListeEnvies>
   ajouterArticleListe(id: string, p: string): Promise<void>

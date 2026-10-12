@@ -1,7 +1,8 @@
 // Bannière vendeur (Mon compte, Menu) en relief, au niveau de la carte orange du compte (consigne du porteur) :
 // dégradé, reflet, ombre portée, boutique dessinée en volume, inclinaison au survol (ordinateur) et appui qui
 // s'enfonce (téléphone). Deux variantes : « devenir vendeur » (pas de boutique) et « boutique ouverte ». Même lien
-// (/devenir-vendeur), même place, mêmes textes que la bannière .vd-ban d'origine. Styles : fin de site.css.
+// (/devenir-vendeur ; boutique ouverte : l'espace vendeur, `vers`), même place, mêmes textes que la bannière .vd-ban
+// d'origine. Styles : fin de site.css.
 import { useId, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -54,9 +55,9 @@ function Boutique3D({ ouverte }: { ouverte: boolean }) {
   )
 }
 
-export function BanniereVendeur({ ouverte, titre, sous, action }: { ouverte: boolean; titre: ReactNode; sous: ReactNode; action: ReactNode }) {
-  return (
-    <Link to="/devenir-vendeur" className={'vd-ban vd3' + (ouverte ? ' ouverte' : '')}>
+export function BanniereVendeur({ ouverte, titre, sous, action, vers }: { ouverte: boolean; titre: ReactNode; sous: ReactNode; action: ReactNode; vers?: string }) {
+  const contenu = (
+    <>
       <span className="i">
         <Boutique3D ouverte={ouverte} />
       </span>
@@ -65,6 +66,16 @@ export function BanniereVendeur({ ouverte, titre, sous, action }: { ouverte: boo
         <small>{sous}</small>
       </span>
       <span className="go">{action}</span>
+    </>
+  )
+  // « Ma boutique » mène à l'espace vendeur (autre application du même domaine : rechargement complet).
+  return vers ? (
+    <a href={vers} className={'vd-ban vd3' + (ouverte ? ' ouverte' : '')}>
+      {contenu}
+    </a>
+  ) : (
+    <Link to="/devenir-vendeur" className={'vd-ban vd3' + (ouverte ? ' ouverte' : '')}>
+      {contenu}
     </Link>
   )
 }

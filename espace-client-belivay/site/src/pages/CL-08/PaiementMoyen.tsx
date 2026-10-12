@@ -17,14 +17,14 @@ import { Icone } from '../../composants/Icone'
 import { Module } from '../../composants/Module'
 import { Styles } from '../../composants/Styles'
 import { chemin } from '../../config/pages'
-import { calculer, classeColis, type SousCommandeFrais } from '../../donnees/frais'
+import { calculer, classeColis, fraisPaiement, libelleFraisPaiement, type SousCommandeFrais } from '../../donnees/frais'
 import { chiffres, erreurNumero, espacer, masquer, nomMoMo, operateur } from '../../donnees/numeros'
 import { palier, remisePrime } from '../../donnees/prime'
 import { source, type Carte, type DonneesPanier, type DonneesPrime, type MoyenCommande, type MoyenPaiement } from '../../donnees/source'
 import { F } from '../../i18n/format'
 import { quand } from '../../i18n/dates'
 import { usePreferences } from '../../preferences'
-import { useCompteDiaspora, useSession } from '../../session'
+import { useCompteDiaspora } from '../../session'
 import { Panier } from '../CL-07/Panier'
 import { PremiereCommande } from '../CL-03/PremiereCommande'
 import { EURO } from '../CL-12/Diaspora'
@@ -78,10 +78,13 @@ export function useAchat() {
   const aPayer = auComptoir ? livraison : f.total - remise
   const estCarte = (x: string) => x.startsWith('carte:') || x === 'apple' || x === 'google'
   const parCarte = estCarte(moyen)
-  const frais = parCarte ? Math.round(aPayer * 0.02) : 0
+  // Frais de paiement (v6) : CamPay 2 % sur le Mobile Money, 2 % sur la carte, rien sur le Wallet.
+  const famille = parCarte ? 'carte' : moyen === 'wallet' ? 'wallet' : 'mobile'
+  const frais = fraisPaiement(famille, aPayer)
+  const libelleFrais = libelleFraisPaiement(famille)
   const montant = aPayer + frais
   const carteTropHaute = parCarte && montant > MAX_CARTE
-  const walletOk = d.solde >= aPayer
+  const walletOk = d.solde >= aPayer // le Wallet paie sans frais
   const articles = p.lignes.reduce((n, l) => n + l.qte, 0)
   // Colis prêts sous le plus long délai des boutiques.
   const heures = Math.max(0, ...boutiques.map((b) => parseInt(p.boutiques[b]?.delai ?? '') || 0))
@@ -149,7 +152,7 @@ export function useAchat() {
     naviguer(c.etat === 'payee' ? chemin(auComptoir ? 'validee' : 'confirmee', { ref: c.ref }) : chemin('paiement-attente', { ref: c.ref }), { replace: true })
   }
   return {
-    d, p, sc, xl, m, f, ab, remise, livraison, comptoirPossible, auComptoir, aPayer, parCarte, frais, montant, carteTropHaute, walletOk, articles, pretVers,
+    d, p, sc, xl, m, f, ab, remise, livraison, comptoirPossible, auComptoir, aPayer, parCarte, frais, libelleFrais, montant, carteTropHaute, walletOk, articles, pretVers,
     mm, carte, nomMoyen, moyen, autre, devise, erreur, envoi, enLigne, cause, heures,
     choisirMode, choisirMoyen, setComptoir: choisirComptoir, setAutre: (v: string) => (setAutre(espacer(v)), setErreur(null)), setDevise, payer,
   }
@@ -180,7 +183,6 @@ function Rangee(p: { on: boolean; inactif?: boolean; op: ReactNode; titre: strin
 
 function FeuilleAchat({ a, fermer }: { a: Achat; fermer: string }) {
   const { t, tf, langue } = usePreferences()
-  const { interrupteurs } = useSession()
   const naviguer = useNavigate()
   const { d, p, m } = a
   const compte = d.moyens.find((x) => x.duCompte)?.numeroMasque
@@ -213,7 +215,7 @@ function FeuilleAchat({ a, fermer }: { a: Achat; fermer: string }) {
                 a.cause === 'solde'
                   ? 'Ton dernier paiement n’a pas abouti : solde Mobile Money insuffisant. Rien n’a été débité. Choisis un autre numéro, le portefeuille, ou recharge ton compte Mobile Money puis réessaie.'
                   : a.cause === 'carte'
-                    ? 'Ta banque a refusé la carte au dernier essai. Rien n’a été débité. Le Mobile Money se paie sans frais de service.'
+                    ? 'Ta banque a refusé la carte au dernier essai. Rien n’a été débité. Tu peux payer en Mobile Money (frais CamPay 2 %) ou avec ton Wallet, sans frais.'
                     : 'Ta dernière demande a expiré sans validation. Rien n’a été débité. Garde ton téléphone près de toi : la demande se valide en 15 minutes.',
               )}
             </div>
@@ -481,7 +483,7 @@ function FeuilleAchat({ a, fermer }: { a: Achat; fermer: string }) {
           )}
           {a.frais > 0 && (
             <div className="cl07-r">
-              <span className="lb">{t('Frais de service carte (2 %)')}</span>
+              <span className="lb">{t(a.libelleFrais)}</span>
               <span className="v">{F(a.frais)}&nbsp;F</span>
             </div>
           )}
@@ -584,7 +586,7 @@ function FeuilleAchat({ a, fermer }: { a: Achat; fermer: string }) {
         </div>
         <div className="t12 c3 center mt8">
           {momo
-            ? t('Rien n’est débité avant ta validation sur le téléphone.')
+            ? tf('Dont {f} F de frais CamPay (2 %). Rien n’est débité avant ta validation sur le téléphone.', { f: F(a.frais) })
             : a.moyen === 'wallet'
               ? tf('Ton solde passera à {s} F. L’argent reste bloqué jusqu’à ton retrait.', { s: F(d.solde - a.montant) })
               : express
@@ -635,9 +637,9 @@ function FeuilleAchat({ a, fermer }: { a: Achat; fermer: string }) {
               {t(
                 a.parCarte
                   ? ' Un remboursement revient sur la même carte.'
-                  : interrupteurs['FF-WALLET']
-                    ? ' Un remboursement est crédité sur ton portefeuille BelivaY, retirable sans frais vers ton Mobile Money.'
-                    : ' Un remboursement revient sur le numéro Mobile Money qui a payé.',
+                  : a.moyen === 'wallet'
+                    ? ' Un remboursement revient sur ton Wallet BelivaY, le moyen de paiement d’origine.'
+                    : ' Un remboursement revient sur le moyen de paiement d’origine : le numéro Mobile Money qui a payé.',
               )}
             </p>
           </div>

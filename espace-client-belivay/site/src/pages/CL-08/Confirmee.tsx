@@ -122,8 +122,8 @@ export function useRemboursement(c: CommandePassee | null | undefined) {
   if (!c) return ''
   if (c.payeur) return tf('Un remboursement revient sur la carte de {p}, qui a payé.', { p: c.payeur.prenom })
   if (c.moyen === 'carte' || c.moyen === 'apple' || c.moyen === 'google') return t('Un remboursement revient sur la même carte.')
-  if (interrupteurs['FF-WALLET']) return t('Un remboursement est crédité sur ton portefeuille BelivaY, retirable sans frais vers ton Mobile Money.')
-  return t('Un remboursement revient sur le numéro Mobile Money qui a payé.')
+  if (c.moyen === 'wallet' && interrupteurs['FF-WALLET']) return t('Un remboursement revient sur ton Wallet BelivaY, le moyen de paiement d’origine.')
+  return t('Un remboursement revient sur le moyen de paiement d’origine : le numéro Mobile Money qui a payé.')
 }
 
 // Liens d'aide sous le reçu : le détail, l'annulation, le support (sujet Paiement, cette commande).
@@ -313,7 +313,7 @@ export function Confirmee() {
           )}
           {c.frais > 0 && (
             <div className="cl08-ln">
-              <span className="k">{t('Frais de service')}</span>
+              <span className="k">{t(['carte', 'apple', 'google'].includes(c.moyen) ? 'Frais de service carte (2 %)' : 'Frais CamPay 2 %')}</span>
               <span className="v">{F(c.frais)}&nbsp;F</span>
             </div>
           )}

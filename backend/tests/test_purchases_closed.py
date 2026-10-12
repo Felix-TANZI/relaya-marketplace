@@ -13,12 +13,16 @@
 # cas. Le test du corps vide est donc le discriminant : 404 au lieu de 400
 # prouve que le verrou est passe en premier.
 
+import secrets
+
 import pytest
 
 from apps.client_core.models import Interrupteur
 from apps.common.purchases import CODE_INTERRUPTEUR, purchases_open_for
 
 pytestmark = pytest.mark.django_db
+# Mot de passe de fixture : jamais relu, juste exige par create_user().
+TEST_PASSWORD = secrets.token_urlsafe(16)
 
 ORDERS_URL = "/api/orders/"
 PAY_URL = "/api/payments/v2/me/payments/REF-QUI-N-EXISTE-PAS/pay/"
@@ -49,7 +53,7 @@ def acheteur(django_user_model):
     return django_user_model.objects.create_user(
         username="acheteur_vitrine",
         email="acheteur.vitrine@example.com",
-        password="Vitrine-pass-2026",
+        password=TEST_PASSWORD,
     )
 
 
@@ -169,7 +173,7 @@ def staff(django_user_model):
     return django_user_model.objects.create_user(
         username="staff_vitrine",
         email="staff.vitrine@example.com",
-        password="Vitrine-pass-2026",
+        password=TEST_PASSWORD,
         is_staff=True,
         is_superuser=True,
     )

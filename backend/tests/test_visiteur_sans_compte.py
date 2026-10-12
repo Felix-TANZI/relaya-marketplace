@@ -6,6 +6,8 @@
 # les points relais exigeaient un compte. Ces tests figent les deux cotes :
 # ce qui doit s'ouvrir, et ce qui ne doit SURTOUT pas sortir au passage.
 
+import secrets
+
 import pytest
 
 from apps.accounts.models import RelayPointProfile
@@ -13,13 +15,15 @@ from apps.accounts.models import RelayPointProfile
 pytestmark = pytest.mark.django_db
 
 RELAIS_URL = "/api/shipping/relay-points/nearby/"
+# Mot de passe de fixture : jamais relu, juste exige par create_user().
+TEST_PASSWORD = secrets.token_urlsafe(16)
 
 
 def _cree_relais(django_user_model, suffixe, **surcharges):
     gerant = django_user_model.objects.create_user(
         username=f"gerant_{suffixe}",
         email=f"gerant.{suffixe}@example.com",
-        password="Relais-pass-2026",
+        password=TEST_PASSWORD,
     )
     valeurs = {
         "name": f"Relais {suffixe}",
@@ -46,7 +50,7 @@ def visiteur(django_user_model):
     return django_user_model.objects.create_user(
         username="client_connecte",
         email="client.connecte@example.com",
-        password="Relais-pass-2026",
+        password=TEST_PASSWORD,
     )
 
 
@@ -69,7 +73,7 @@ def test_les_six_acces_exiges_par_D3_sont_ouverts(api_client, django_user_model,
 
     categorie = Category.objects.create(name="Telephones", slug="telephones")
     vendeur = django_user_model.objects.create_user(
-        username="vendeur_d3", email="vendeur.d3@example.com", password="Visite-2026",
+        username="vendeur_d3", email="vendeur.d3@example.com", password=TEST_PASSWORD,
     )
     fiche = Product.objects.create(
         title="Telephone", category=categorie, vendor=vendeur, price_xaf=100_000,

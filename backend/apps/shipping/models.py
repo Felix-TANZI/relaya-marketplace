@@ -9,8 +9,20 @@ from apps.accounts.models import CourierProfile
 
 
 def shipment_evidence_retention_deadline():
+    # values_list : ne lit QUE la colonne necessaire, jamais toute la ligne
+    # (PlatformSettings.get_settings() le ferait) — ce callable est le
+    # default= d'un champ ajoute par une migration ancienne (0009). Toute
+    # migration ulterieure ajoutant un champ a PlatformSettings ferait
+    # echouer un replay de migrations depuis zero si on selectionnait la
+    # ligne entiere ici.
     from apps.orders.models import PlatformSettings
-    days = PlatformSettings.get_settings().evidence_retention_days
+    days = (
+        PlatformSettings.objects.filter(id=1)
+        .values_list('evidence_retention_days', flat=True)
+        .first()
+    )
+    if days is None:
+        days = PlatformSettings._meta.get_field('evidence_retention_days').default
     return timezone.now() + timezone.timedelta(days=days)
 
 

@@ -18,7 +18,21 @@ from apps.catalog.models import Product
 
 
 def dispute_evidence_retention_deadline():
-    return timezone.now() + timedelta(days=PlatformSettings.get_settings().dispute_evidence_retention_days)
+    # Ne lit QUE la colonne necessaire (values_list), jamais toute la ligne
+    # (PlatformSettings.get_settings() le ferait) : ce callable est utilise
+    # comme default= d'un champ ajoute par une migration passee (0031). Une
+    # migration ulterieure qui ajoute un champ a PlatformSettings ferait
+    # echouer un replay de migrations depuis zero si on selectionnait la
+    # ligne entiere ici — la colonne n'existerait pas encore a ce point du
+    # graphe de migrations.
+    jours = (
+        PlatformSettings.objects.filter(id=1)
+        .values_list('dispute_evidence_retention_days', flat=True)
+        .first()
+    )
+    if jours is None:
+        jours = PlatformSettings._meta.get_field('dispute_evidence_retention_days').default
+    return timezone.now() + timedelta(days=jours)
 
 
 class TimeStampedModel(models.Model):

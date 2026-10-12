@@ -994,6 +994,50 @@ class PlatformSettings(models.Model):
         help_text="Nombre maximum d'offres vendeurs visibles sur une fiche produit (côté acheteur).",
     )
 
+    # ── Anomalie de prix (VD-PRIX-ANORMAL) ──────────────────────────────────
+    # Reglages intentionnellement modifiables depuis l'admin, pas des
+    # constantes codees en dur : a ajuster une fois le vrai catalogue rempli.
+    price_anomaly_min_offers = models.PositiveIntegerField(
+        default=3,
+        verbose_name="Nb minimum d'autres offres pour comparer",
+        help_text="En dessous de ce nombre d'autres offres sur la même fiche, on compare au prix précédent du vendeur (variation brutale) plutôt qu'à une médiane peu fiable.",
+    )
+    price_anomaly_low_flag_pct = models.DecimalField(
+        max_digits=6, decimal_places=2, default=60.00,
+        verbose_name="Seuil bas signalé (% médiane)",
+        help_text="Prix inférieur à ce pourcentage de la médiane des autres offres : publié mais envoyé en file de contrôle admin.",
+    )
+    price_anomaly_high_flag_pct = models.DecimalField(
+        max_digits=6, decimal_places=2, default=200.00,
+        verbose_name="Seuil haut signalé (% médiane)",
+    )
+    price_anomaly_low_block_pct = models.DecimalField(
+        max_digits=6, decimal_places=2, default=30.00,
+        verbose_name="Seuil bas bloqué (% médiane)",
+        help_text="Prix inférieur à ce pourcentage de la médiane : publication bloquée, le vendeur doit confirmer puis l'admin contrôle (quasi toujours un zéro en trop ou en moins).",
+    )
+    price_anomaly_high_block_pct = models.DecimalField(
+        max_digits=6, decimal_places=2, default=500.00,
+        verbose_name="Seuil haut bloqué (% médiane)",
+    )
+    price_own_variation_block_pct = models.DecimalField(
+        max_digits=6, decimal_places=2, default=50.00,
+        verbose_name="Variation brutale de son propre prix (%)",
+        help_text="Si le vendeur change son propre prix de plus de ce pourcentage d'un coup, confirmation demandée.",
+    )
+
+    # ── Doublons (VD-DOUBLON) ────────────────────────────────────────────────
+    duplicate_title_similarity_pct = models.DecimalField(
+        max_digits=5, decimal_places=2, default=85.00,
+        verbose_name="Seuil de similarité des titres (%)",
+        help_text="Titres jugés 'doublon probable' à partir de ce pourcentage de similarité (après normalisation), même catégorie et même marque.",
+    )
+    duplicate_image_hash_max_distance = models.PositiveIntegerField(
+        default=8,
+        verbose_name="Distance max empreinte image (sur 64)",
+        help_text="Deux photos principales sont jugées identiques si la distance de Hamming entre leurs empreintes (dHash 64 bits) est inférieure ou égale à cette valeur.",
+    )
+
     class Meta:
         verbose_name = "Paramètres Plateforme"
         verbose_name_plural = "Paramètres Plateforme"

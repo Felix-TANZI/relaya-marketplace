@@ -1141,14 +1141,13 @@ def vendor_withdrawal_create(request):
     # ─────────────────────────────────────────────────────────────────────
     # LE RETRAIT PASSE PAR LE MODULE FINANCIER
     #
-    # Il emprunte EXACTEMENT le meme circuit qu'un reglement par cycle :
-    # lot, confirmation, demande de versement, approbation par un tiers,
-    # execution. Seul le DECLENCHEUR change — le partenaire au lieu du
-    # calendrier.
-    #
-    # L'ancien chemin est conserve plus bas, inatteignable : il creait une
-    # WithdrawalRequest sans aucune ecriture comptable. Un administrateur
-    # approuvait, l'argent partait manuellement, et le registre l'ignorait.
+    # Decision produit confirmee : le vendeur retire quand il veut (PULL),
+    # pas de versement automatique par cycle. Cette vue emprunte le meme
+    # circuit comptable qu'un reglement par cycle (lot, confirmation,
+    # approbation par un tiers, execution) mais le DECLENCHEUR reste le
+    # vendeur, pas un calendrier — request_withdrawal() ne verse jamais
+    # plus que le montant deja libere (`amount_due`), donc aucun risque de
+    # payer ce qui n'est pas du.
     # ─────────────────────────────────────────────────────────────────────
     from apps.payments.bridge.actors import payee_for_vendor
     from apps.payments.settlements.services import (
@@ -1206,47 +1205,7 @@ def vendor_withdrawal_create(request):
         status=status.HTTP_201_CREATED,
     )
 
-    # ── Ancien chemin, conserve pour reference ───────────────────────────
-    return Response(
-        {
-            'detail': (
-                "Les retraits a la demande sont desactives. BelivaY vous "
-                "regle automatiquement selon votre cycle contractuel."
-            ),
-            'code': 'WITHDRAWAL_DISABLED',
-            'see': '/api/payments/v2/partner/due/',
-        },
-        status=status.HTTP_409_CONFLICT,
-    )
-    # ── Fin de la bascule ────────────────────────────────────────────────
 
-    try:
-        vendor_profile = VendorProfile.objects.get(user=request.user)
-        if not vendor_profile.is_active_vendor:
-            return Response(
-                {'detail': "Votre compte vendeur n'est pas encore approuvé."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
- 
-        serializer = WithdrawalRequestCreateSerializer(
-            data=request.data,
-            context={'vendor': request.user},
-        )
- 
-        if serializer.is_valid():
-            withdrawal = serializer.save()
-            result = WithdrawalRequestSerializer(withdrawal)
-            return Response(result.data, status=status.HTTP_201_CREATED)
- 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
- 
-    except VendorProfile.DoesNotExist:
-        return Response(
-            {'detail': 'Profil vendeur introuvable.'},
-            status=status.HTTP_404_NOT_FOUND,
-        )
- 
- 
 @extend_schema(
     tags=["Vendors"],
     summary="Cancel a withdrawal request",
@@ -9392,13 +9351,24 @@ def vd_catalog_suggest(request):
     vp, err = _vd_active_vendor(request)
     if err:
         return err
+    from apps.orders.models import PlatformSettings
     from apps.catalog.models import MasterProduct, ModerationStatus, Brand
+    from apps.vendors.price_duplicate_checks import title_similarity_pct
     q = (request.query_params.get('q') or '').strip()
     if not q:
         return Response({'categorie': None, 'marque': None, 'description': '', 'doublon': None})
-    doublon = MasterProduct.objects.filter(
-        moderation_status=ModerationStatus.APPROVED, title__icontains=q,
-    ).select_related('category').first()
+    # VD-DOUBLON (titre) : similarite reelle (normalisee), pas une simple
+    # sous-chaine — a ce stade (saisie du nom) on n'a encore ni categorie ni
+    # marque choisies, donc pas de filtre supplementaire possible.
+    reglages = PlatformSettings.get_settings()
+    seuil = float(reglages.duplicate_title_similarity_pct)
+    doublon, meilleur_score = None, 0.0
+    for candidat in MasterProduct.objects.filter(moderation_status=ModerationStatus.APPROVED).select_related('category')[:500]:
+        score = title_similarity_pct(q, candidat.title)
+        if score > meilleur_score:
+            doublon, meilleur_score = candidat, score
+    if meilleur_score < seuil:
+        doublon = None
     brand = Brand.objects.filter(name__icontains=q).first()
     return Response({
         'categorie': doublon.category.name if doublon else None,
@@ -9928,25 +9898,102 @@ def vd_offers_quote(request):
     })
 
 
-@extend_schema(tags=["Vendors"], summary="Prix conseillé (non disponible — aucune donnée de marché)")
+@extend_schema(tags=["Vendors"], summary="Prix conseillé (VD-CONSEIL-PRIX — fondé sur les autres offres BelivaY, jamais la concurrence externe)")
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def vd_offer_price_advice(request, offer_id):
-    """AUCUNE donnée de demande de recherche ni de prix concurrents n'est collectée nulle part
-    dans le système (confirmé par l'audit du 12 oct.) : construire un vrai moteur de prix conseillé
-    est hors scope (demanderait une collecte de données inexistante). 404 ⇒ le connecteur frontend
-    (ouNull) le traduit en `null`, l'état honnête déjà prévu par le contrat (`Conseil | null`),
-    plutôt qu'un chiffre fabriqué."""
+    """
+    Decision produit (12 oct.) : pas de conseil fonde sur la concurrence
+    exterieure (conditions d'utilisation, maintenance, fiabilite des
+    donnees) et pas de structure vide non plus. BelivaY a ses propres
+    donnees : les AUTRES offres actives sur la MEME fiche produit.
+
+    Formule (deja ecrite dans le contrat TypeScript du prototype, DP-56/Q-36) :
+    conseille = mediane - 100 F, jamais sous le 10e centile du marche, jamais
+    au-dessus du prix tape. Sous le seuil PlatformSettings.price_anomaly_min_offers
+    (3 par defaut), pas assez d'offres pour un conseil fiable -> 404, que le
+    connecteur frontend (ouNull) traduit en `null` (etat honnete deja prevu
+    par le contrat `Conseil | null`), exactement comme l'ecran se comporte
+    deja aujourd'hui.
+
+    Pas de rang affiche (« vous etes 2e ») : decision produit explicite, la
+    distance de livraison compte dans le choix de la meilleure offre, le
+    rang changerait d'un client a l'autre.
+    """
+    import statistics
+
+    from apps.orders.models import PlatformSettings
+    from apps.catalog.models import ModerationStatus
+
     vp, err = _vd_active_vendor(request)
     if err:
         return err
-    return Response({'detail': 'Prix conseillé indisponible : aucune donnée de marché collectée.'}, status=404)
+    product, err2 = _vd_offer_or_404(request, offer_id)
+    if err2:
+        return err2
+    try:
+        prix_saisi = int(request.query_params.get('prix') or product.price_xaf or 0)
+    except (TypeError, ValueError):
+        prix_saisi = product.price_xaf or 0
+
+    reglages = PlatformSettings.get_settings()
+    if not product.master_id or not prix_saisi:
+        return Response(status=404)
+
+    autres_prix = list(
+        Product.objects.filter(
+            master_id=product.master_id, is_active=True,
+            moderation_status=ModerationStatus.APPROVED,
+        ).exclude(pk=product.pk).exclude(price_xaf=0)
+        .values_list('price_xaf', flat=True)
+    )
+    if len(autres_prix) < reglages.price_anomaly_min_offers:
+        return Response(status=404)
+
+    autres_prix_tries = sorted(autres_prix)
+    mediane = statistics.median(autres_prix_tries)
+    p10 = (
+        statistics.quantiles(autres_prix_tries, n=10)[0]
+        if len(autres_prix_tries) >= 2 else autres_prix_tries[0]
+    )
+    conseille = int(mediane) - 100
+    conseille = max(conseille, int(p10))
+    conseille = min(conseille, prix_saisi)
+    conseille = max(conseille, 0)
+
+    garde_conseille, _commission, _rate = _vd_commission_kept(product.vendor, conseille)
+    part_conseille = round(garde_conseille / conseille * 100, 1) if conseille else 0.0
+    moins_cher = min(autres_prix_tries)
+    economie_client = max(0, moins_cher - conseille)
+
+    return Response({
+        'prixSaisi': prix_saisi,
+        'conseille': conseille,
+        'gardeConseille': garde_conseille,
+        'partConseille': part_conseille,
+        # Pas de classement par zone : decision produit (12 oct.), la distance de
+        # livraison influence le choix du client, le rang ne serait pas stable.
+        'zones': [],
+        'marche': {'nombre': len(autres_prix_tries), 'min': autres_prix_tries[0], 'max': autres_prix_tries[-1]},
+        'economieClient': economie_client,
+        # Aucun suivi d'audience/analytics de commandes par offre n'existe dans le
+        # systeme : honnete a zero plutot qu'un chiffre d'exemple invente.
+        'clientsSemaine': 0,
+        'commandesAuxMoinsChers': [0, 0],
+        'dejaLeMoinsCher': prix_saisi <= moins_cher,
+    })
 
 
 @extend_schema(tags=["Vendors"], summary="Publier une offre")
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def vd_offer_publish(request, offer_id):
+    from apps.orders.models import PlatformSettings
+    from apps.vendors.price_duplicate_checks import (
+        apply_duplicate_flag, apply_price_flag, check_cross_vendor_duplicate_fiche,
+        check_price_anomaly, check_same_vendor_duplicate,
+    )
+
     vp, err = _vd_active_vendor(request)
     if err:
         return err
@@ -9957,11 +10004,49 @@ def vd_offer_publish(request, offer_id):
     if d['manques']:
         raison = {'photos': 'photos', 'prix': 'prix', 'stock': 'stock'}.get(d['manques'][0], 'etat')
         return Response({'ok': False, 'raison': raison}, status=200)
+
+    reglages = PlatformSettings.get_settings()
+    confirme = bool(request.data.get('confirmer'))
+
+    # VD-DOUBLON, cas (1) : le MEME vendeur publie-t-il deja un produit quasi
+    # identique ? Univoque, toujours bloquant.
+    doublon_vendeur = check_same_vendor_duplicate(product, reglages)
+    if doublon_vendeur is not None:
+        return Response({
+            'ok': False, 'raison': 'doublon_vendeur',
+            'detail': {'offreExistanteId': str(doublon_vendeur.id), 'titre': doublon_vendeur.title},
+        }, status=200)
+
+    # VD-PRIX-ANORMAL, a la publication (prix initial).
+    anomalie = None
+    if product.price_xaf:
+        anomalie = check_price_anomaly(product, product.price_xaf, reglages)
+    if anomalie and anomalie['niveau'] == 'bloque' and not confirme:
+        return Response({'ok': False, 'raison': 'prix_anormal', 'detail': anomalie}, status=200)
+
+    # VD-DOUBLON, cas (2) : fiche d'un AUTRE vendeur deja existante ?
+    # 'certain' -> rattachement silencieux (Publication.rattache, FCH-02).
+    # 'probable' -> signalement admin seulement, jamais bloquant.
+    if product.master_id is None:
+        niveau_doublon, master_trouve = check_cross_vendor_duplicate_fiche(
+            product, product.title, product.category, reglages,
+        )
+        if niveau_doublon == 'certain' and master_trouve is not None:
+            product.master = master_trouve
+            product.category = master_trouve.category
+            product.save(update_fields=['master', 'category', 'updated_at'])
+        elif niveau_doublon == 'probable' and master_trouve is not None:
+            apply_duplicate_flag(product, master_trouve)
+
     hors_ligne = bool(request.data.get('horsLigne'))
     product.is_active = not hors_ligne
     deja_approuve = bool(product.master_id and product.master.moderation_status == 'APPROVED')
     product.moderation_status = 'APPROVED' if deja_approuve else 'PENDING'
     product.save(update_fields=['is_active', 'moderation_status', 'updated_at'])
+
+    if anomalie:
+        apply_price_flag(product, anomalie)
+
     publication = _vd_publication_dict(product)
     return Response({'ok': True, **publication})
 
@@ -9982,6 +10067,9 @@ def _vd_publication_dict(product):
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
 def vd_offer_price(request, offer_id):
+    from apps.orders.models import PlatformSettings
+    from apps.vendors.price_duplicate_checks import apply_price_flag, check_price_anomaly
+
     vp, err = _vd_active_vendor(request)
     if err:
         return err
@@ -9996,11 +10084,20 @@ def vd_offer_price(request, offer_id):
         return Response({'ok': False, 'raison': 'prix'}, status=200)
     if prix < 500:
         return Response({'ok': False, 'raison': 'prix_minimum'}, status=200)
+
+    confirme = bool(request.data.get('confirmer'))
+    reglages = PlatformSettings.get_settings()
+    anomalie = check_price_anomaly(product, prix, reglages)
+    if anomalie and anomalie['niveau'] in ('bloque', 'confirmation') and not confirme:
+        return Response({'ok': False, 'raison': 'prix_anormal', 'detail': anomalie}, status=200)
+
     rester = bool(request.data.get('rester'))
     product.price_xaf = prix
     if not rester:
         product.is_active = True
     product.save(update_fields=['price_xaf', 'is_active', 'updated_at'])
+    if anomalie:
+        apply_price_flag(product, anomalie)
     return Response({'ok': True, 'produit': _vd_offer_dict(product, request)})
 
 

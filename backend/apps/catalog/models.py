@@ -1295,6 +1295,24 @@ class Product(SoftDeleteModel):
     )
     moderation_reason = models.TextField(blank=True, default='', verbose_name="Motif de modération")
 
+    # ── File de controle prix/doublon (VD-PRIX-ANORMAL, VD-DOUBLON) ─────────
+    # Un prix "signale" ou un titre juge "doublon probable" ne bloque jamais
+    # la publication : l'offre reste en vente, mais atterrit ici pour qu'un
+    # admin la regarde. Vide une fois traitee.
+    price_flag_reason = models.CharField(
+        max_length=20, blank=True, default='',
+        choices=[('ecart_mediane_bas', 'Prix anormalement bas'), ('ecart_mediane_haut', 'Prix anormalement haut')],
+        verbose_name="Signalement prix",
+    )
+    price_flag_at = models.DateTimeField(null=True, blank=True, verbose_name="Signalé le")
+    duplicate_flag_master = models.ForeignKey(
+        "catalog.MasterProduct", null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='duplicate_candidates_for',
+        verbose_name="Doublon probable de",
+        help_text="Fiche dont le titre est jugé semblable (≥ seuil VD-DOUBLON) — à confirmer ou écarter par un admin.",
+    )
+    duplicate_flag_at = models.DateTimeField(null=True, blank=True, verbose_name="Doublon signalé le")
+
     condition = models.ForeignKey(
         "ProductCondition", null=True, blank=True, on_delete=models.SET_NULL,
         related_name="products", verbose_name="État",

@@ -1389,9 +1389,24 @@ class PromotionCampaign(TimeStampedModel):
         SUSPENDED = "SUSPENDED", "Suspendue"
         EXPIRED = "EXPIRED", "Expirée"
 
+    class Origin(models.TextChoices):
+        """Qui est à l'origine de la campagne — ajouté pour l'espace vendeur (AJ-A, 12 oct.) :
+        le domaine « ventes flash » doit distinguer une promotion demandée par le vendeur
+        (`seller`) d'une vente flash offerte au mérite par BelivaY (`merit`, créée par
+        `POST /plans/rewards/{id}/flash`, créneau choisi par BelivaY, hors prix/stock/durée
+        choisis par le vendeur). Valeur par défaut = seller pour ne rien changer aux campagnes
+        existantes (promotion-request)."""
+        SELLER = "seller", "Vendeur"
+        MERIT = "merit", "Mérite (récompense BelivaY)"
+
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="promotion_campaigns")
     campaign_type = models.CharField(max_length=12, choices=CampaignType.choices, default=CampaignType.REGULAR)
     status = models.CharField(max_length=12, choices=Status.choices, default=Status.PENDING)
+    origin = models.CharField(
+        max_length=10, choices=Origin.choices, default=Origin.SELLER, db_index=True,
+        verbose_name="Origine",
+        help_text="seller : demandée par le vendeur. merit : offerte au mérite par BelivaY.",
+    )
     requested_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="requested_promotions")
     approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="approved_promotions")
     title = models.CharField(max_length=160)
@@ -1620,3 +1635,97 @@ class ProductReview(models.Model):
 
     def __str__(self):
         return f"{self.user.username} — {self.product.title} ({self.rating}★)"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# QUESTIONS CLIENTS (AJ-A, 12 oct.) — espace vendeur
+#
+# DIFFÉRENT de ProductReview (avis, après achat, note 1-5) : une question est
+# posée AVANT achat, sans vérification de commande, et attend une réponse
+# publique du vendeur. Vérifié avant construction : aucun modèle « question »
+# n'existait dans le code (seul ProductReview existait, et c'est un avis).
+# ─────────────────────────────────────────────────────────────────────────────
+
+class ProductQuestion(TimeStampedModel):
+    """Question d'un client sur une offre (Product), avant achat."""
+
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="questions")
+    asker = models.ForeignKey(User, on_delete=models.CASCADE, related_name="product_questions_asked")
+    text = models.TextField(verbose_name="Question")
+    answer_text = models.TextField(blank=True, default="", verbose_name="Réponse du vendeur")
+    answered_at = models.DateTimeField(null=True, blank=True)
+    answered_by = models.ForeignKey(
+        User, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="product_questions_answered",
+    )
+    is_reported = models.BooleanField(default=False, verbose_name="Signalée (abus)")
+    report_reason = models.CharField(max_length=255, blank=True, default="")
+    reported_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Question client"
+        verbose_name_plural = "Questions clients"
+        indexes = [
+            models.Index(fields=["product", "-created_at"]),
+            models.Index(fields=["answered_at"]),
+        ]
+
+    def __str__(self):
+        return f"Question sur {self.product.title} — {self.text[:40]}"
+
+
+class VendorQuestionTemplate(TimeStampedModel):
+    """Modèle de réponse réutilisable par le vendeur pour répondre vite aux questions clients."""
+
+    vendor = models.ForeignKey(User, on_delete=models.CASCADE, related_name="question_templates")
+    text = models.TextField()
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Modèle de réponse (questions clients)"
+        verbose_name_plural = "Modèles de réponse (questions clients)"
+
+    def __str__(self):
+        return self.text[:50]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STOCK — HISTORIQUE DES MOUVEMENTS (AJ-A, 12 oct.) — espace vendeur
+#
+# Vérifié avant construction : Product.stock_threshold existe déjà, mais aucun
+# historique de mouvements de stock n'existait (seul Inventory.quantity, un
+# instantané sans trace du "pourquoi"/"quand"). Ce modèle n'est alimenté QUE
+# par l'ajustement manuel du vendeur (POST /api/vendors/stock/{offre}/adjust) ;
+# il n'est PAS branché automatiquement sur les ventes/retours dans cette vague
+# (hors scope : toucherait le flux de commande d'un autre agent).
+# ─────────────────────────────────────────────────────────────────────────────
+
+class StockMovement(TimeStampedModel):
+    """Mouvement de stock d'une offre, avec motif et quantité résultante."""
+
+    class Reason(models.TextChoices):
+        ADJUSTMENT = "adjustment", "Ajustement manuel"
+        RESTOCK = "restock", "Réapprovisionnement"
+        CORRECTION = "correction", "Correction d'erreur"
+        LOSS = "loss", "Perte / casse"
+        OTHER = "other", "Autre"
+
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="stock_movements")
+    delta = models.IntegerField(help_text="Variation appliquée (+ ou -).")
+    quantity_after = models.IntegerField(help_text="Quantité en stock après ce mouvement.")
+    reason = models.CharField(max_length=20, choices=Reason.choices, default=Reason.ADJUSTMENT)
+    note = models.CharField(max_length=255, blank=True, default="")
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="stock_movements_made",
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Mouvement de stock"
+        verbose_name_plural = "Mouvements de stock"
+        indexes = [models.Index(fields=["product", "-created_at"])]
+
+    def __str__(self):
+        signe = "+" if self.delta >= 0 else ""
+        return f"{self.product.title} — {signe}{self.delta} ({self.get_reason_display()})"

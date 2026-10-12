@@ -77,6 +77,7 @@ INSTALLED_APPS = [
     "apps.payments",
     "apps.shipping",
     'apps.vendors',
+    'apps.vendor_team',
     "apps.contact",
     # Module détachable : voir apps/whatsapp_assistant/README.md (activation, retrait).
     "apps.whatsapp_assistant",

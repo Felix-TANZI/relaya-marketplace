@@ -203,6 +203,61 @@ class Order(TimeStampedModel):
     prep_admin_alert_sent_at = models.DateTimeField(null=True, blank=True)
     prep_reassignment_flagged_at = models.DateTimeField(null=True, blank=True)
 
+    # Horodatage de la transition PAID_IN_ESCROW → VENDOR_ACKNOWLEDGED — "début"
+    # du compte à rebours de préparation (espace-vendeur, VD05-R02). Additif :
+    # ne remplace pas le calcul existant de prep_deadline.
+    vendor_acknowledged_at = models.DateTimeField(null=True, blank=True, verbose_name="Accusé de réception vendeur")
+
+    # Bon de préparation (espace-vendeur BON-01/BON-02) : ouverture, quatre
+    # cases cochées (modele/etat/accessoires/boite) avec qui a coché (journal),
+    # référence scannée. Un seul JSONField plutôt qu'un modèle séparé — pas de
+    # requêtage transversal nécessaire, juste de la présentation par commande.
+    # Forme : {"opened_at": iso, "opened_by": "username",
+    #          "checks": {"modele": {"fait": bool, "par": "username"}, …},
+    #          "reference_verified_at": iso|null}
+    prep_slip_state = models.JSONField(default=dict, blank=True, verbose_name="État du bon de préparation")
+
+    # « Plus de temps » (DEL-01 à DEL-04, espace-vendeur VD-05) : une seule
+    # prolongation possible, jamais au-delà de l'échéance absolue (début + 24h
+    # ouvrées). prep_deadline porte la nouvelle échéance une fois prolongée.
+    prep_extended = models.BooleanField(default=False, verbose_name="Délai de préparation déjà prolongé")
+
+    # ── Annulation (Q-73 : quatre motifs affichés côté vendeur) ──────────────
+    class CancellationReason(models.TextChoices):
+        CLIENT_BEFORE_PICKUP = "CLIENT_BEFORE_PICKUP", "Annulée par le client avant ramassage"
+        STOCKOUT             = "STOCKOUT",             "Rupture de stock"
+        DISPUTE_LOST         = "DISPUTE_LOST",         "Litige perdu"
+        BELIVAY              = "BELIVAY",              "Annulée par BelivaY"
+
+    cancellation_reason = models.CharField(
+        max_length=30, choices=CancellationReason.choices, blank=True, default="",
+        verbose_name="Motif d'annulation",
+    )
+    cancelled_at = models.DateTimeField(null=True, blank=True, verbose_name="Annulée le")
+
+    # Colis pas prêt au passage du livreur (espace-vendeur §8, POST .../not-ready) :
+    # le ramassage repasse au créneau suivant disponible, sans pénalité automatique.
+    not_ready_reason = models.CharField(max_length=255, blank=True, default="", verbose_name="Motif « colis pas prêt »")
+    not_ready_at = models.DateTimeField(null=True, blank=True, verbose_name="Signalé pas prêt le")
+
+    # Montant gelé par un litige ou un retour en cours (CMD-09) — distinct de
+    # l'escrow global : c'est la part de CETTE sous-commande vendeur. Mis à
+    # jour par le domaine litiges/retours ; None = rien de gelé (ou accès
+    # Préparation, qui ne reçoit jamais de montant).
+    frozen_amount_xaf = models.PositiveIntegerField(
+        null=True, blank=True, verbose_name="Montant gelé (XAF)",
+        help_text="Part vendeur gelée par un litige/retour ouvert sur cette commande ; vidé à la clôture (CMD-07).",
+    )
+
+    # Sous-commande de remplacement d'un retour (REFCL-R080) — créée par le
+    # domaine retours (POST /returns/{id}/replacement) ; même parcours que
+    # toute commande, mais sans garde ni argent propres (ils restent sur la
+    # commande d'origine).
+    replacement_of = models.ForeignKey(
+        "self", on_delete=models.SET_NULL, null=True, blank=True, related_name="replacements",
+        verbose_name="Remplace la commande",
+    )
+
     class Meta:
         ordering = ["-created_at"]
         verbose_name = "Commande"
@@ -459,6 +514,58 @@ class Dispute(models.Model):
         help_text="Le vendeur n'a pas répondu sous 48h : arbitrage BelivaY sur pièces, présomption favorable à l'acheteur (pas un gain automatique).",
     )
 
+    # ── Arrangement proposé (posture COMPROMISE, espace vendeur VD-07) ─────
+    class ArrangementType(models.TextChoices):
+        REMPLACEMENT = 'REMPLACEMENT', 'Remplacement'
+        REMISE       = 'REMISE',       'Remise'
+
+    vendor_arrangement_type = models.CharField(
+        max_length=14, choices=ArrangementType.choices, null=True, blank=True,
+        verbose_name="Type d'arrangement proposé",
+        help_text="Rempli uniquement si vendor_reply_type = COMPROMISE (espace vendeur VD-07, POST /disputes/{ref}/answer).",
+    )
+
+    # ── Brouillon de réponse (gardé LIT-BROUILLON-H, sync best-effort) ─────
+    draft_answer = models.JSONField(
+        null=True, blank=True,
+        verbose_name="Brouillon de réponse en cours",
+        help_text="{posture, arrangement, texte, gardeA} — PUT /disputes/{ref}/draft. Sync best-effort : l'appareil garde sa propre copie.",
+    )
+
+    # ── Effet sur le Trust Score (DCS-02) ───────────────────────────────────
+    class ScoreEffect(models.TextChoices):
+        AUCUN = 'aucun', 'Aucun'
+        G1    = 'g1',    'Échec léger'
+        G3    = 'g3',    'Faute avérée'
+
+    decision_score_effect = models.CharField(
+        max_length=8, choices=ScoreEffect.choices, default=ScoreEffect.AUCUN,
+        verbose_name="Effet décision sur le Trust Score",
+        help_text=(
+            "Pas de déclenchement automatique construit ici (Trust Score V5.5 pas encore "
+            "implémenté — voir memoire projet) : reste à AUCUN tant qu'aucun processus admin "
+            "ne le renseigne explicitement."
+        ),
+    )
+
+    # ── Recours (appel) du vendeur ou du client sur une décision ────────────
+    class AppealOutcome(models.TextChoices):
+        PENDING    = 'PENDING',    'En attente'
+        UPHELD     = 'UPHELD',     'Décision maintenue'
+        OVERTURNED = 'OVERTURNED', 'Décision infirmée'
+
+    appeal_text        = models.TextField(blank=True, default='', verbose_name="Texte du recours")
+    appeal_filed_at     = models.DateTimeField(null=True, blank=True, verbose_name="Recours déposé le")
+    appeal_filed_by     = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='filed_dispute_appeals',
+        verbose_name="Recours déposé par",
+    )
+    appeal_decided_at  = models.DateTimeField(null=True, blank=True, verbose_name="Recours tranché le")
+    appeal_outcome     = models.CharField(
+        max_length=12, choices=AppealOutcome.choices, null=True, blank=True,
+        verbose_name="Issue du recours",
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -616,6 +723,7 @@ class Return(models.Model):
         NOT_AS_DESCRIBED = "NOT_AS_DESCRIBED", "Non conforme à la description"
         WRONG_ITEM = "WRONG_ITEM", "Mauvais article reçu"
         COUNTERFEIT = "COUNTERFEIT", "Suspicion de contrefaçon"
+        HIDDEN_DEFECT = "HIDDEN_DEFECT", "Défaut caché (vice caché)"
         OTHER = "OTHER", "Autre"
 
     class Status(models.TextChoices):
@@ -624,6 +732,9 @@ class Return(models.Model):
         REJECTED = "REJECTED", "Retour rejeté"
         AWAITING_DROPOFF = "AWAITING_DROPOFF", "En attente de dépôt/ramassage"
         RECEIVED = "RECEIVED", "Colis reçu — inspection en cours"
+        MEDIATION = "MEDIATION", "Non conforme — médiation BelivaY"
+        REPLACEMENT_PENDING = "REPLACEMENT_PENDING", "Remplacement choisi — préparation"
+        REPLACEMENT_READY = "REPLACEMENT_READY", "Remplacement prêt pour enlèvement"
         REFUNDED = "REFUNDED", "Remboursé"
         CLOSED_NO_REFUND = "CLOSED_NO_REFUND", "Clôturé sans remboursement"
 
@@ -666,7 +777,46 @@ class Return(models.Model):
     )
     inspection_passed = models.BooleanField(null=True, blank=True)
     inspection_note = models.TextField(blank=True, default="")
+    inspection_controles = models.JSONField(
+        null=True, blank=True,
+        verbose_name="Contrôles d'inspection soumis",
+        help_text="{scelle, serie} — tel que soumis par POST /returns/{ref}/inspection.",
+    )
+    inspected_at = models.DateTimeField(null=True, blank=True, verbose_name="Inspecté le")
+    inspected_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="inspected_returns",
+    )
     refund_amount_xaf = models.IntegerField(null=True, blank=True)
+
+    # ── Brouillon d'inspection (gardé sur l'appareil, sync best-effort) ─────
+    draft_inspection = models.JSONField(
+        null=True, blank=True,
+        verbose_name="Brouillon d'inspection en cours",
+        help_text="{controles, verdict} — PUT /returns/{ref}/draft (espace vendeur VD-07).",
+    )
+
+    # ── Défaut confirmé : remplacer ou rembourser (espace vendeur VD-07) ───
+    class ReplacementChoice(models.TextChoices):
+        REPLACE = 'REPLACE', 'Remplacer'
+        REFUND  = 'REFUND',  'Rembourser'
+
+    replacement_choice = models.CharField(
+        max_length=10, choices=ReplacementChoice.choices, null=True, blank=True,
+        verbose_name="Remède choisi par le vendeur",
+    )
+    replacement_order = models.ForeignKey(
+        Order, on_delete=models.SET_NULL, null=True, blank=True, related_name="source_return",
+        verbose_name="Sous-commande de remplacement",
+        help_text=(
+            "Créée par POST /returns/{ref}/replacement quand replacement_choice=REPLACE "
+            "(REFCL-R080). Le domaine commandes expose son propre lien (Commande.remplacementDe / "
+            "replacement_of) — coordination nécessaire, voir rapport de l'agent litiges/retours."
+        ),
+    )
+    replacement_ship_deadline = models.DateTimeField(
+        null=True, blank=True, verbose_name="Remplacement à expédier avant",
+    )
+    replacement_ready_at = models.DateTimeField(null=True, blank=True, verbose_name="Remplacement prêt le")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -678,6 +828,34 @@ class Return(models.Model):
 
     def __str__(self):
         return f"Retour #{self.id} — Commande #{self.order_id}"
+
+
+def return_photo_upload_path(instance, filename):
+    return f"returns/{instance.return_obj_id}/{filename}"
+
+
+class ReturnPhoto(models.Model):
+    """
+    Photo d'inspection d'un retour (espace vendeur VD-07, INP-01 : au moins
+    RET_INSPECTION_MIN_PHOTOS requises avant de trancher le verdict).
+    Même convention d'horodatage/empreinte que DisputeEvidence, sans le
+    cycle de conservation litigation_hold (pas de délai légal connu ici).
+    """
+    return_obj = models.ForeignKey(Return, on_delete=models.CASCADE, related_name="photos")
+    uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="return_photos")
+    file = models.FileField(upload_to="returns/%Y/%m/")
+    content_type = models.CharField(max_length=100, blank=True)
+    size_bytes = models.PositiveBigIntegerField(default=0)
+    sha256 = models.CharField(max_length=64, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+        verbose_name = "Photo de retour"
+        verbose_name_plural = "Photos de retour"
+
+    def __str__(self):
+        return f"Photo — Retour #{self.return_obj_id}"
 
 
 class PlatformSettings(models.Model):

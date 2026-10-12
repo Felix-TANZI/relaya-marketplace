@@ -1,0 +1,28 @@
+/* Corrections de la spécification sur le prototype vendeur (DP-44, 3 oct. ; Q-43 de DP-56 : mêmes règles que le
+   client, site/src/styles/ecarts.css). Chargé après la feuille du prototype (par vendeur.css) ; tests/identique.spec.ts
+   le pose aussi sur le prototype avant la comparaison, pour juger l'espace vendeur contre « le prototype corrigé ».
+   Les autres corrections de DP-44 : textes sous 12 px portés à 12 px (CRD-07) par outils/styles.mjs, dans la feuille
+   elle-même ; bouton retour et avatar : 44 px visibles dans le prototype vendeur, zone de toucher déjà de 44 px (CRD-06).
+   tests/accessibilite.spec.ts vérifie le tout. */
+
+/* (2) Braise des boutons pleins, pastilles et badges : #C9500E → #B0430A, texte blanc à 4,5 et 5,8 : 1 (CDS-11,
+   CRD-08). Le prototype vendeur reprend les jetons du client (Q-42), qui éclaircissent la braise (#EA6C1F → #D95D12 :
+   texte blanc à 3,2 : 1). */
+:root{--braise-1:#C9500E;--braise-2:#B0430A}
+
+/* Texte orangé en clair (--or-txt) : #C2530F des jetons du client ne fait que 4,2 : 1 sur le sable et 3,8 : 1 sur la
+   capsule de l'onglet actif (CRD-08 : 4,5 : 1). Il prend la braise foncée de DP-44 (#B0430A) : 5,2 : 1 sur le sable,
+   4,7 : 1 sur la capsule, 5,3 : 1 sur les fonds orangés pâles. Le sombre garde le sien (#FF9549). */
+html:not([data-theme=dark]){--or-txt:var(--braise-2)}
+
+/* Carte de commande braise (.hero.orange, en clair) : le halo doré du coin haut droit éclaircissait la braise sous le
+   texte blanc du haut de la carte (4,4 : 1). La carte garde son dégradé braise, sans halo, comme en sombre. */
+html:not([data-theme=dark]) .hero.orange{background:linear-gradient(160deg,var(--braise-1) 0%,var(--braise-2) 100%)}
+
+/* Médaille Bronze : lettre blanche sur le dégradé bronze clair (2,1 : 1). Elle prend le bas du dégradé du prototype
+   (#A8622F) jusqu'au bronze du thème clair (#8E5024) : 4,7 à 6,3 : 1 ; les autres médailles ont déjà une lettre foncée. */
+.medal.bronze{background:linear-gradient(135deg,#A8622F,#8E5024)}
+
+/* Horodatage posé sur une photo de preuve : voile noir de 45 % à 60 %, texte blanc à 4,5 : 1 au moins sur une photo
+   claire (3,6 : 1 avant). */
+.photo .ts{background:rgba(0,0,0,.6)}

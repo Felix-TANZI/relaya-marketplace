@@ -448,6 +448,25 @@ CAMPAY_TOKEN_LIVE = os.getenv("CAMPAY_TOKEN_LIVE", "")
 CAMPAY_WEBHOOK_KEY = os.getenv("CAMPAY_WEBHOOK_KEY", "")
 
 
+# ── VITRINE V2 : FERMETURE DES ACHATS (tache D2) ─────────────────────────────
+# La V2 part en ligne en mode decouverte : le catalogue se consulte, mais
+# aucune commande ne doit pouvoir naitre, ni aucun paiement etre emis.
+#
+# L'ouverture des achats n'est PAS reglee ici : elle depend de l'interrupteur
+# FF-ACHAT (administration > Interrupteurs de module), comme toutes les autres
+# fonctionnalites du socle client. Voir apps/common/purchases.py.
+#
+# Seule exception gardee en environnement : les comptes de test. La tache D23
+# impose de valider le parcours de bout en bout sur ce meme serveur, achats
+# fermes au public. Liste separee par des virgules, vide par defaut — donc
+# aucune exception tant qu'on n'en declare pas.
+PURCHASES_TEST_USERNAMES = [
+    u.strip()
+    for u in os.getenv("PURCHASES_TEST_USERNAMES", "").split(",")
+    if u.strip()
+]
+
+
 # ========================================
 # PRODUCTION HTTPS & CSRF CONFIGURATION
 # ========================================

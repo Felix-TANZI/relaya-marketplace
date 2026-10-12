@@ -113,7 +113,10 @@ export default function SearchPage() {
     setLoading(true);
     setSearched(true);
     try {
-      const response: ProductListResponse = await productsApi.list({ search: q, page_size: 40 });
+      // group_by_master : une seule carte par produit (tâche D5).
+      const response: ProductListResponse = await productsApi.list({
+        search: q, page_size: 40, group_by_master: true,
+      });
       const results = response.results ?? [];
       setSearchMeta(response.search_meta ?? null);
       setProducts(results.length > 0 ? results : searchMockProducts(q));

@@ -329,6 +329,15 @@ class TestEspaceAcheteur:
     def test_declencher_un_paiement_deja_encaisse(
         self, acheteur, vendeur_user, client_acheteur,
     ):
+        # L'emission d'un paiement est fermee par l'interrupteur FF-ACHAT
+        # pendant la phase vitrine (tache D2, voir apps/common/purchases.py).
+        # Ce test porte sur le comportement une fois les achats ouverts : on
+        # ouvre donc l'interrupteur, comme le fera l'administration au
+        # lancement.
+        from apps.client_core.models import Interrupteur
+        Interrupteur.objects.update_or_create(
+            code="FF-ACHAT", defaults={"ouvert": True})
+
         _, intent = payer(acheteur, vendeur_user)
         reponse = client_acheteur.post(
             f"/api/payments/v2/me/payments/{intent.reference}/pay/", {})

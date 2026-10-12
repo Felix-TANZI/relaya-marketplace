@@ -15,7 +15,7 @@ from .models import VendorProfile, VendorOrderNote, WithdrawalRequest, \
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAdminUser
 from django.utils import timezone
-from datetime import timedelta, date
+from datetime import timedelta, date, datetime
 from rest_framework.decorators import action
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -60,6 +60,11 @@ from apps.orders.models import Order, OrderItem, DisputeEvidenceRequest, Dispute
 from apps.orders.serializers import ReturnSerializer
 from apps.orders.evidence import create_evidence, resolve_dispute_actor
 from apps.accounts.models import UserNotification
+from .models import ShopClosure, VendorNotificationSettings, MessageThread, ThreadMessage, VendorEvent
+from django.http import StreamingHttpResponse
+import re
+import time
+import json as _json
 
 
 # Constantes de validation upload — centralisées et réutilisables
@@ -1136,14 +1141,13 @@ def vendor_withdrawal_create(request):
     # ─────────────────────────────────────────────────────────────────────
     # LE RETRAIT PASSE PAR LE MODULE FINANCIER
     #
-    # Il emprunte EXACTEMENT le meme circuit qu'un reglement par cycle :
-    # lot, confirmation, demande de versement, approbation par un tiers,
-    # execution. Seul le DECLENCHEUR change — le partenaire au lieu du
-    # calendrier.
-    #
-    # L'ancien chemin est conserve plus bas, inatteignable : il creait une
-    # WithdrawalRequest sans aucune ecriture comptable. Un administrateur
-    # approuvait, l'argent partait manuellement, et le registre l'ignorait.
+    # Decision produit confirmee : le vendeur retire quand il veut (PULL),
+    # pas de versement automatique par cycle. Cette vue emprunte le meme
+    # circuit comptable qu'un reglement par cycle (lot, confirmation,
+    # approbation par un tiers, execution) mais le DECLENCHEUR reste le
+    # vendeur, pas un calendrier — request_withdrawal() ne verse jamais
+    # plus que le montant deja libere (`amount_due`), donc aucun risque de
+    # payer ce qui n'est pas du.
     # ─────────────────────────────────────────────────────────────────────
     from apps.payments.bridge.actors import payee_for_vendor
     from apps.payments.settlements.services import (
@@ -1201,47 +1205,7 @@ def vendor_withdrawal_create(request):
         status=status.HTTP_201_CREATED,
     )
 
-    # ── Ancien chemin, conserve pour reference ───────────────────────────
-    return Response(
-        {
-            'detail': (
-                "Les retraits a la demande sont desactives. BelivaY vous "
-                "regle automatiquement selon votre cycle contractuel."
-            ),
-            'code': 'WITHDRAWAL_DISABLED',
-            'see': '/api/payments/v2/partner/due/',
-        },
-        status=status.HTTP_409_CONFLICT,
-    )
-    # ── Fin de la bascule ────────────────────────────────────────────────
 
-    try:
-        vendor_profile = VendorProfile.objects.get(user=request.user)
-        if not vendor_profile.is_active_vendor:
-            return Response(
-                {'detail': "Votre compte vendeur n'est pas encore approuvé."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
- 
-        serializer = WithdrawalRequestCreateSerializer(
-            data=request.data,
-            context={'vendor': request.user},
-        )
- 
-        if serializer.is_valid():
-            withdrawal = serializer.save()
-            result = WithdrawalRequestSerializer(withdrawal)
-            return Response(result.data, status=status.HTTP_201_CREATED)
- 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
- 
-    except VendorProfile.DoesNotExist:
-        return Response(
-            {'detail': 'Profil vendeur introuvable.'},
-            status=status.HTTP_404_NOT_FOUND,
-        )
- 
- 
 @extend_schema(
     tags=["Vendors"],
     summary="Cancel a withdrawal request",
@@ -7766,3 +7730,4241 @@ def admin_delete_master(request, master_id):
         return Response({'detail': 'Fiche introuvable.'}, status=status.HTTP_404_NOT_FOUND)
     master.delete()  # soft delete (SoftDeleteModel)
     return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ESPACE VENDEUR AUTONOME (espace-client-belivay/espace-vendeur) — vague
+# d'intégration du 12 oct. Domaine de cet agent : boutique (pause, fermetures
+# programmées, avis + réponse privée), messages (conversations), notifications
+# (alias de UserNotification), aide, événements temps réel (§8).
+#
+# AVERTISSEMENT PRODUIT (à valider par le porteur) : la réponse privée à un
+# avis (POST /reviews/{id}/private-reply) et la messagerie de commande
+# (MessageThread/ThreadMessage) créent un canal de communication DIRECT
+# vendeur → client. Jusqu'ici, deux règles documentées allaient dans le sens
+# inverse : (1) `Product.faq` (apps.catalog.models) compense explicitement
+# l'ABSENCE de messagerie directe acheteur-vendeur (Addendum Décisions v1.0) ;
+# (2) les litiges passent par un admin médiateur, jamais vendeur→client direct
+# (DisputeMessage.SenderRole). Construit quand même ici car demandé
+# explicitement par la vague d'intégration (INTEGRATION-API.md §domaine
+# "messages", §VD-11 §4) — anonymisation des deux côtés conservée (même
+# convention que les commandes/avis : jamais le nom réel du client).
+# ══════════════════════════════════════════════════════════════════════════════
+
+MAX_PAUSE_DAYS = 30
+REVIEW_REPLY_WINDOW_DAYS = 30
+REVIEW_REPLY_MIN_LEN = 3
+
+_EMAIL_RE = re.compile(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}')
+_LIEN_RE = re.compile(
+    r'(?:https?://|www\.)\S+|\b[a-z0-9-]+\.(?:com|net|org|cm|fr|io|me|co|ly|app)(?:/\S*)?\b',
+    re.IGNORECASE,
+)
+_NUMERO_RE = re.compile(r'(?:(?:\+|00)\d{1,3}[\s.\-]?)?(?:\d[\s.\-]?){7,}\d')
+
+
+def _epoch_ms(dt):
+    """Instant (communs.ts) = epoch millisecondes, pas une chaîne ISO."""
+    if dt is None:
+        return None
+    return int(dt.timestamp() * 1000)
+
+
+def _filtrer_coordonnees(texte):
+    """Même règle que le filtre client (messages.ts filtrerCoordonnees) : e-mails, liens, numéros ≥ 8 chiffres."""
+    propre = _EMAIL_RE.sub('•••', texte)
+    propre = _LIEN_RE.sub('•••', propre)
+    propre = _NUMERO_RE.sub('•••', propre)
+    return propre, propre != texte
+
+
+def _detecte_coordonnees(texte):
+    return _filtrer_coordonnees(texte)[1]
+
+
+def _vendor_emit_event(vendor_profile, event_type, payload=None):
+    """Journal d'événements minimal pour GET /events et /events/stream (§8) — pas de pub/sub réel."""
+    try:
+        VendorEvent.objects.create(vendor=vendor_profile, event_type=event_type, payload=payload or {})
+    except Exception:
+        pass
+
+
+def _get_active_vendor_or_404(user):
+    """Retourne (profile, None) ou (None, Response) — motif copié du reste du fichier (try/except VendorProfile.DoesNotExist)."""
+    try:
+        profile = VendorProfile.objects.get(user=user)
+    except VendorProfile.DoesNotExist:
+        return None, Response({'detail': 'Profil vendeur introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+    if not profile.is_active_vendor:
+        return None, Response(
+            {'detail': "Votre compte vendeur n'est pas encore approuvé."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    return profile, None
+
+
+#  BOUTIQUE — PAUSE (30 jours au plus, Q-39)
+
+@extend_schema(tags=["Vendors"], summary="Mettre la boutique en pause (jusqu'à 30 jours)")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vendor_shop_pause(request):
+    profile, err = _get_active_vendor_or_404(request.user)
+    if err:
+        return err
+
+    try:
+        jours = int(request.data.get('jours'))
+    except (TypeError, ValueError):
+        return Response({'ok': False, 'raison': 'duree'})
+    if jours < 1 or jours > MAX_PAUSE_DAYS:
+        return Response({'ok': False, 'raison': 'duree'})
+
+    now = timezone.now()
+    profile.paused_since = now
+    profile.paused_until = now + timedelta(days=jours)
+    profile.save(update_fields=['paused_since', 'paused_until'])
+    _vendor_emit_event(profile, 'shop.paused', {'jours': jours})
+    return Response({
+        'ok': True,
+        # NOTE : objet "boutique" partiel — GET/PUT /shop (Boutique complet : horaires, lieux,
+        # vitrine…) n'est pas construit par cet agent (hors scope, cf. rapport). Les écrans qui
+        # lisent mettreEnPause().boutique devront être réconciliés avec le vrai GET /shop une
+        # fois construit par l'agent qui le possède.
+        'boutique': {'pause': {'depuis': _epoch_ms(profile.paused_since), 'jusqua': _epoch_ms(profile.paused_until)}},
+    })
+
+
+@extend_schema(tags=["Vendors"], summary="Lever la pause de la boutique (reprise anticipée)")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vendor_shop_resume(request):
+    """Ajouté en plus de la liste stricte confiée à cet agent : une pause sans moyen de la lever
+    avant son terme serait un endpoint inutilisable. Même réserve que ci-dessus sur l'objet
+    "boutique" partiel."""
+    profile, err = _get_active_vendor_or_404(request.user)
+    if err:
+        return err
+
+    profile.paused_since = None
+    profile.paused_until = None
+    profile.save(update_fields=['paused_since', 'paused_until'])
+    _vendor_emit_event(profile, 'shop.resumed')
+    return Response({'pause': None})
+
+
+#  BOUTIQUE — FERMETURES PROGRAMMÉES (48h de préavis, écourtables, Q-39)
+
+def _serialize_closure(c):
+    return {
+        'id': str(c.id),
+        'du': c.start_date.isoformat(),
+        'au': c.end_date.isoformat(),
+        'motif': c.reason,
+        'annonceeLe': _epoch_ms(c.created_at),
+    }
+
+
+@extend_schema(tags=["Vendors"], summary="Lister / programmer une fermeture de la boutique")
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def vendor_shop_closures(request):
+    """GET ajouté en plus de la liste stricte confiée à cet agent (nécessaire pour que PATCH/DELETE
+    /shop/closures/{id}, demandés explicitement, aient quelque chose à lister/tester)."""
+    profile, err = _get_active_vendor_or_404(request.user)
+    if err:
+        return err
+
+    if request.method == 'GET':
+        return Response([_serialize_closure(c) for c in profile.closures.all()])
+
+    du = request.data.get('du')
+    au = request.data.get('au')
+    motif = (request.data.get('motif') or '').strip()
+    try:
+        start = date.fromisoformat(du)
+        end = date.fromisoformat(au)
+    except (TypeError, ValueError):
+        return Response({'ok': False, 'raison': 'dates'})
+    if end < start:
+        return Response({'ok': False, 'raison': 'dates'})
+    if start < (timezone.now().date() + timedelta(days=2)):
+        return Response({'ok': False, 'raison': 'preavis_48h'})
+    if profile.closures.filter(start_date__lte=end, end_date__gte=start).exists():
+        return Response({'ok': False, 'raison': 'chevauche'})
+
+    closure = ShopClosure.objects.create(vendor=profile, start_date=start, end_date=end, reason=motif)
+    _vendor_emit_event(profile, 'shop.closure_scheduled', {'id': closure.id})
+    return Response({'ok': True, 'boutique': {'fermetures': [_serialize_closure(c) for c in profile.closures.all()]}})
+
+
+@extend_schema(tags=["Vendors"], summary="Écourter ou annuler une fermeture programmée")
+@api_view(['PATCH', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def vendor_shop_closure_detail(request, closure_id):
+    profile, err = _get_active_vendor_or_404(request.user)
+    if err:
+        return err
+
+    try:
+        closure = profile.closures.get(id=closure_id)
+    except ShopClosure.DoesNotExist:
+        return Response({'detail': 'Fermeture introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'DELETE':
+        closure.delete()
+        _vendor_emit_event(profile, 'shop.closure_cancelled', {'id': closure_id})
+        return Response({'boutique': {'fermetures': [_serialize_closure(c) for c in profile.closures.all()]}})
+
+    au = request.data.get('au')
+    try:
+        end = date.fromisoformat(au)
+    except (TypeError, ValueError):
+        return Response({'ok': False, 'raison': 'dates'})
+    if end < closure.start_date or end > closure.end_date:
+        return Response({'ok': False, 'raison': 'dates'})
+    closure.end_date = end
+    closure.save(update_fields=['end_date', 'updated_at'])
+    _vendor_emit_event(profile, 'shop.closure_shortened', {'id': closure.id})
+    return Response({'ok': True, 'boutique': {'fermetures': [_serialize_closure(c) for c in profile.closures.all()]}})
+
+
+#  AVIS — RÉPONSE PRIVÉE (ex-WhatsApp → vraie messagerie privée, voir avertissement produit en tête de section)
+
+@extend_schema(
+    tags=["Vendors"],
+    summary="Répondre en privé à un avis (ouvre/réutilise la conversation de la commande)",
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vendor_review_private_reply(request, review_id):
+    from apps.catalog.models import ProductReview
+
+    profile, err = _get_active_vendor_or_404(request.user)
+    if err:
+        return err
+
+    try:
+        review = ProductReview.objects.select_related('order').get(id=review_id, product__vendor=request.user)
+    except ProductReview.DoesNotExist:
+        return Response({'detail': 'Avis introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+
+    texte = (request.data.get('texte') or '').strip()
+    if len(texte) < REVIEW_REPLY_MIN_LEN:
+        return Response({'ok': False, 'raison': 'trop_court'})
+    if timezone.now() - review.created_at > timedelta(days=REVIEW_REPLY_WINDOW_DAYS):
+        return Response({'ok': False, 'raison': 'delai_depasse'})
+    if _detecte_coordonnees(texte):
+        return Response({'ok': False, 'raison': 'coordonnees'})
+
+    thread = MessageThread.objects.filter(review=review).first()
+    if thread is None:
+        if review.order_id:
+            thread, created = MessageThread.objects.get_or_create(
+                vendor=profile, order_id=review.order_id, kind=MessageThread.Kind.ORDER,
+                defaults={'review': review},
+            )
+            if not created and thread.review_id is None:
+                thread.review = review
+                thread.save(update_fields=['review'])
+        else:
+            thread = MessageThread.objects.create(vendor=profile, kind=MessageThread.Kind.ORDER, review=review)
+
+    if thread.messages.filter(sender=ThreadMessage.Sender.VENDOR).exists():
+        return Response({'ok': False, 'raison': 'deja_repondu'})
+
+    ThreadMessage.objects.create(thread=thread, sender=ThreadMessage.Sender.VENDOR, author=request.user, text=texte)
+    thread.closed = False
+    thread.save(update_fields=['closed', 'updated_at'])
+    _vendor_emit_event(profile, 'review.private_reply', {'review_id': review.id, 'fil': str(thread.id)})
+    return Response({'ok': True, 'fil': str(thread.id)})
+
+
+#  MESSAGES — CONVERSATIONS (voir avertissement produit en tête de section)
+
+_SENDER_TO_FRONT = {
+    ThreadMessage.Sender.VENDOR: 'vendeur',
+    ThreadMessage.Sender.CLIENT: 'client',
+    ThreadMessage.Sender.SUPPORT: 'support',
+}
+
+
+def _serialize_thread_message(m):
+    auteur = None
+    if m.author_id:
+        auteur = (m.author.first_name or m.author.username)
+    return {
+        'id': str(m.id),
+        'de': _SENDER_TO_FRONT.get(m.sender, 'vendeur'),  # 'VENDOR'.lower() donnerait 'vendor' (EN), pas 'vendeur' (FR attendu)
+        'auteur': auteur,
+        'texte': m.text,
+        'a': _epoch_ms(m.created_at),
+        'filtre': m.was_filtered,
+    }
+
+
+def _serialize_thread(t):
+    dernier = t.messages.order_by('-created_at').first()
+    non_lus_qs = t.messages.exclude(sender=ThreadMessage.Sender.VENDOR)
+    if t.vendor_last_read_at:
+        non_lus_qs = non_lus_qs.filter(created_at__gt=t.vendor_last_read_at)
+    ref = f"BLV-{t.order_id:05d}" if t.order_id else None
+    sujet = "Support BelivaY" if t.kind == MessageThread.Kind.SUPPORT else (f"Client de {ref}" if ref else "Conversation")
+    return {
+        'id': str(t.id),
+        'type': 'support' if t.kind == MessageThread.Kind.SUPPORT else 'commande',
+        'ref': ref,
+        'sujet': sujet,
+        'nonLus': non_lus_qs.count(),
+        'dernier': _serialize_thread_message(dernier) if dernier else None,
+        'ferme': t.closed,
+        # Carte de commande (article, étape, échéance) : assemblée par le domaine "commandes",
+        # pas construite ici (hors scope de cet agent) — toujours null pour l'instant.
+        'commande': None,
+    }
+
+
+@extend_schema(tags=["Vendors"], summary="Lister mes conversations / ouvrir la conversation d'une commande")
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def vendor_threads(request):
+    """GET (liste) et POST .../{id}/messages ajoutés en plus de la liste stricte confiée à cet
+    agent : sans eux, ouvrirFil/threads-support/read n'ont ni fil à lister ni message à lire."""
+    profile, err = _get_active_vendor_or_404(request.user)
+    if err:
+        return err
+
+    if request.method == 'GET':
+        threads = profile.message_threads.all()
+        return Response([_serialize_thread(t) for t in threads])
+
+    order_id = request.data.get('order_id')
+    if not order_id:
+        return Response(None, status=status.HTTP_404_NOT_FOUND)
+    order = Order.objects.filter(id=order_id, items__product__vendor=request.user).distinct().first()
+    if order is None:
+        return Response(None, status=status.HTTP_404_NOT_FOUND)
+
+    thread, _created = MessageThread.objects.get_or_create(
+        vendor=profile, order=order, kind=MessageThread.Kind.ORDER,
+    )
+    return Response({'id': str(thread.id)})
+
+
+@extend_schema(tags=["Vendors"], summary="Détail d'une conversation et ses messages")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_thread_detail(request, thread_id):
+    profile, err = _get_active_vendor_or_404(request.user)
+    if err:
+        return err
+    try:
+        thread = profile.message_threads.get(id=thread_id)
+    except MessageThread.DoesNotExist:
+        return Response(None, status=status.HTTP_404_NOT_FOUND)
+    return Response({
+        'fil': _serialize_thread(thread),
+        'messages': [_serialize_thread_message(m) for m in thread.messages.all()],
+    })
+
+
+@extend_schema(tags=["Vendors"], summary="Envoyer un message dans une conversation")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vendor_thread_send_message(request, thread_id):
+    profile, err = _get_active_vendor_or_404(request.user)
+    if err:
+        return err
+    try:
+        thread = profile.message_threads.get(id=thread_id)
+    except MessageThread.DoesNotExist:
+        return Response({'error': {'code': 'introuvable', 'message': 'Conversation introuvable.'}}, status=404)
+
+    if thread.closed:
+        return Response({'error': {'code': 'ferme', 'message': 'Cette conversation est fermée.'}}, status=400)
+
+    texte = (request.data.get('texte') or '').strip()
+    if not texte:
+        return Response({'error': {'code': 'vide', 'message': 'Message vide.'}}, status=400)
+
+    propre, filtre = _filtrer_coordonnees(texte)
+    msg = ThreadMessage.objects.create(
+        thread=thread, sender=ThreadMessage.Sender.VENDOR, author=request.user, text=propre, was_filtered=filtre,
+    )
+    thread.save(update_fields=['updated_at'])
+    _vendor_emit_event(profile, 'message.sent', {'fil': str(thread.id)})
+    return Response(_serialize_thread_message(msg))
+
+
+@extend_schema(tags=["Vendors"], summary="Marquer une conversation comme lue")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vendor_thread_mark_read(request, thread_id):
+    profile, err = _get_active_vendor_or_404(request.user)
+    if err:
+        return err
+    try:
+        thread = profile.message_threads.get(id=thread_id)
+    except MessageThread.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    thread.vendor_last_read_at = timezone.now()
+    thread.save(update_fields=['vendor_last_read_at'])
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema(tags=["Vendors"], summary="Écrire au support BelivaY (conversation dédiée)")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vendor_thread_support(request):
+    profile, err = _get_active_vendor_or_404(request.user)
+    if err:
+        return err
+
+    texte = (request.data.get('texte') or '').strip()
+    if not texte:
+        return Response({'error': {'code': 'vide', 'message': 'Message vide.'}}, status=400)
+
+    ref = request.data.get('ref')
+    order = None
+    if ref:
+        import re as _re_mod
+        m = _re_mod.search(r'(\d+)', str(ref))
+        if m:
+            order = Order.objects.filter(id=int(m.group(1)), items__product__vendor=request.user).distinct().first()
+
+    thread, _created = MessageThread.objects.get_or_create(
+        vendor=profile, kind=MessageThread.Kind.SUPPORT, order=order,
+    )
+    propre, filtre = _filtrer_coordonnees(texte)
+    ThreadMessage.objects.create(
+        thread=thread, sender=ThreadMessage.Sender.VENDOR, author=request.user, text=propre, was_filtered=filtre,
+    )
+    thread.save(update_fields=['updated_at'])
+    _vendor_emit_event(profile, 'support.message', {'fil': str(thread.id)})
+    return Response({'fil': str(thread.id)})
+
+
+_QUICK_REPLIES = {
+    'commande': [
+        "Votre commande est en préparation, merci de votre patience.",
+        "Votre colis est prêt, il sera récupéré au prochain passage.",
+        "Désolé pour le délai, nous accélérons la préparation.",
+    ],
+    'litige': [
+        "Nous examinons votre dossier et revenons vers vous rapidement.",
+        "Voici les preuves demandées, merci de vérifier.",
+    ],
+    'support': [
+        "Merci, nous revenons vers vous sous peu.",
+        "Pouvez-vous préciser votre demande ?",
+    ],
+}
+
+
+@extend_schema(tags=["Vendors"], summary="Réponses rapides par type de conversation")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_quick_replies(request):
+    type_fil = request.query_params.get('type') or 'commande'
+    return Response(_QUICK_REPLIES.get(type_fil, _QUICK_REPLIES['commande']))
+
+
+#  NOTIFICATIONS — ALIAS SOUS /api/vendors/ (réutilise UserNotification, accounts app)
+#
+# Ne duplique PAS le modèle UserNotification (générique, câblé la nuit du 11-12 oct. pour
+# /api/auth/notifications/... et le portail v2 existant) : ces vues relisent/modifient les
+# mêmes lignes, seule la mise en forme de la réponse change pour coller au contrat riche
+# (TexteNotification, urgent/argent/contester) attendu par ce nouveau frontend. Le mapping
+# type-interne → type-frontend est une approximation best-effort documentée ci-dessous : les
+# déclencheurs fins (litige qui court, sanction avec "contester", rappels 24h/6h) dépendent de
+# domaines non construits par cet agent (litiges, sécurité compte, palier) et restent à câbler.
+
+_NOTIF_TYPE_TO_FRONT = {
+    UserNotification.NotificationType.ORDER: 'preparer',
+    UserNotification.NotificationType.PROMOTION: 'offre',
+    UserNotification.NotificationType.PAYMENT: 'versement',
+    UserNotification.NotificationType.SUPPORT: 'message',
+    UserNotification.NotificationType.SYSTEM: 'conseil',
+    UserNotification.NotificationType.SECURITY: 'securite',
+}
+
+
+def _serialize_vendor_notification(n):
+    return {
+        'id': str(n.id),
+        'type': _NOTIF_TYPE_TO_FRONT.get(n.notification_type, 'conseil'),
+        'canal': 'notification',
+        'titre': {'modele': n.title},
+        'texte': {'modele': n.message},
+        'a': _epoch_ms(n.created_at),
+        'lu': n.is_read,
+        'urgent': n.notification_type == UserNotification.NotificationType.ORDER and not n.is_read,
+        'argent': n.notification_type == UserNotification.NotificationType.PAYMENT,
+        'lien': n.action_url or '',
+        'contester': None,  # sanction/descente de palier : domaine "trust", pas construit ici
+    }
+
+
+@extend_schema(tags=["Vendors"], summary="Centre de notifications (alias de /api/auth/notifications/)")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_notifications_list(request):
+    qs = UserNotification.objects.filter(user=request.user)
+    filtre = request.query_params.get('filter')
+    if filtre == 'urgent':
+        qs = qs.filter(notification_type=UserNotification.NotificationType.ORDER, is_read=False)
+    elif filtre == 'argent':
+        qs = qs.filter(notification_type=UserNotification.NotificationType.PAYMENT)
+    return Response([_serialize_vendor_notification(n) for n in qs])
+
+
+@extend_schema(tags=["Vendors"], summary="Compteurs du centre de notifications")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_notifications_counts(request):
+    qs = UserNotification.objects.filter(user=request.user)
+    return Response({
+        'tout': qs.count(),
+        'urgent': qs.filter(notification_type=UserNotification.NotificationType.ORDER, is_read=False).count(),
+        'argent': qs.filter(notification_type=UserNotification.NotificationType.PAYMENT).count(),
+        'nonLues': qs.filter(is_read=False).count(),
+    })
+
+
+@extend_schema(tags=["Vendors"], summary="Nombre de notifications non lues")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_notifications_unread_count(request):
+    return Response({'nonLues': UserNotification.objects.filter(user=request.user, is_read=False).count()})
+
+
+@extend_schema(tags=["Vendors"], summary="Marquer une notification comme lue")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vendor_notification_mark_read(request, notification_id):
+    notification = get_object_or_404(UserNotification, id=notification_id, user=request.user)
+    notification.is_read = bool(request.data.get('lue', True))
+    notification.save(update_fields=['is_read', 'updated_at'])
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema(tags=["Vendors"], summary="Marquer toutes les notifications comme lues")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vendor_notifications_mark_all_read(request):
+    UserNotification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema(tags=["Vendors"], summary="Lire / modifier mes réglages de notifications")
+@api_view(['GET', 'PUT'])
+@permission_classes([IsAuthenticated])
+def vendor_notification_settings(request):
+    profile, err = _get_active_vendor_or_404(request.user)
+    if err:
+        return err
+
+    settings_obj, _created = VendorNotificationSettings.objects.get_or_create(vendor=profile)
+
+    if request.method == 'PUT':
+        mapping = (
+            ('versements', 'payouts_enabled'), ('avis', 'reviews_enabled'),
+            ('conseils', 'tips_enabled'), ('sonDistinct', 'distinct_sound'),
+        )
+        for champ, field in mapping:
+            if champ in request.data:
+                setattr(settings_obj, field, bool(request.data[champ]))
+        settings_obj.save()
+
+    return Response({
+        'commandesEtLitiges': True,
+        'versements': settings_obj.payouts_enabled,
+        'avis': settings_obj.reviews_enabled,
+        'conseils': settings_obj.tips_enabled,
+        'sonDistinct': settings_obj.distinct_sound,
+        'silence': [settings_obj.silence_start, settings_obj.silence_end],
+    })
+
+
+#  AIDE — FAQ, produits interdits, contacts, conseil
+#
+# Pas de CMS : contenu français statique côté serveur (modifiable ici au besoin) + coordonnées
+# support déjà utilisées ailleurs (SUPPORT_WHATSAPP_NUMBER côté frontend v2, format.ts).
+# GET /help/questions (et pas GET /help tel qu'écrit dans INTEGRATION-API.md) parce que c'est
+# la route que `domaineAide.questions()` appelle réellement (src/api/domaines/aide.ts) — voir
+# rapport pour ce léger écart entre le tableau de synthèse et le code déjà écrit.
+
+_SUPPORT_WHATSAPP_NUMBER = '237689002812'
+
+_HELP_QUESTIONS = [
+    {'id': 'q1', 'theme': 'commandes', 'question': "Comment préparer une commande ?",
+     'reponse': {'modele': "Ouvrez la commande dans « À préparer » et suivez le bon de préparation."},
+     'ecran': 'commandes', 'lien': "Voir mes commandes"},
+    {'id': 'q2', 'theme': 'argent', 'question': "Quand suis-je payé ?",
+     'reponse': {'modele': "L'argent est libéré après confirmation de réception, puis versé selon votre calendrier."},
+     'ecran': 'argent', 'lien': "Voir mes versements"},
+    {'id': 'q3', 'theme': 'litiges', 'question': "Un client a ouvert un litige, que faire ?",
+     'reponse': {'modele': "Répondez avec vos preuves avant l'échéance affichée sur le litige."},
+     'ecran': 'litiges', 'lien': "Voir mes litiges"},
+    {'id': 'q4', 'theme': 'retours', 'question': "Comment traiter un retour ?",
+     'reponse': {'modele': "Inspectez le colis à son arrivée et confirmez l'état rapidement."},
+     'ecran': 'retours', 'lien': "Voir mes retours"},
+    {'id': 'q5', 'theme': 'palier', 'question': "Comment monter de palier ?",
+     'reponse': {'modele': "Votre palier suit votre Trust Score : ventes, avis et ancienneté comptent."},
+     'ecran': 'palier', 'lien': "Voir mon palier"},
+    {'id': 'q6', 'theme': 'boutique', 'question': "Comment fermer ma boutique temporairement ?",
+     'reponse': {'modele': "Utilisez « Fermer aujourd'hui » pour un jour, ou une pause pour plusieurs jours."},
+     'ecran': 'boutique', 'lien': "Voir ma boutique"},
+    {'id': 'q7', 'theme': 'produits', 'question': "Quels produits sont interdits à la vente ?",
+     'reponse': {'modele': "Consultez la liste des produits interdits."}, 'ecran': None, 'lien': None},
+]
+
+_HELP_FORBIDDEN_PRODUCTS = [
+    "Armes et munitions", "Stupéfiants et substances illicites", "Médicaments sur ordonnance",
+    "Produits contrefaits", "Animaux vivants protégés", "Explosifs et produits inflammables non homologués",
+    "Monnaie et instruments financiers falsifiés", "Contenus à caractère pornographique",
+]
+
+
+@extend_schema(tags=["Vendors"], summary="Questions fréquentes (aide)")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_help_questions(request):
+    q = (request.query_params.get('q') or '').strip().lower()
+    questions = _HELP_QUESTIONS
+    if q:
+        questions = [x for x in questions if q in x['question'].lower()]
+    return Response(questions)
+
+
+@extend_schema(tags=["Vendors"], summary="Produits interdits à la vente")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_help_forbidden_products(request):
+    return Response(_HELP_FORBIDDEN_PRODUCTS)
+
+
+@extend_schema(tags=["Vendors"], summary="Coordonnées officielles du support BelivaY")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_help_contacts(request):
+    return Response({
+        'telephone': '+237 689 002 812',
+        'telephoneLien': f'tel:+{_SUPPORT_WHATSAPP_NUMBER}',
+        'email': 'support@belivay.com',
+        'whatsapp': f'https://wa.me/{_SUPPORT_WHATSAPP_NUMBER}',
+        'horaires': ['07:00', '21:00'],
+        'delaiReponseH': 2,
+        'responsablePlatine': False,
+        'reseaux': [],
+    })
+
+
+@extend_schema(tags=["Vendors"], summary="Conseil de la semaine")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_help_tip(request):
+    return Response({
+        'titre': "Répondez vite aux avis",
+        'texte': "Les vendeurs qui répondent à leurs avis sous 48 h gardent un meilleur Trust Score.",
+        'publieLe': timezone.now().date().isoformat(),
+    })
+
+
+#  ÉVÉNEMENTS TEMPS RÉEL (§8 INTEGRATION-API.md)
+
+def _serialize_vendor_event(e):
+    return {'id': e.id, 'type': e.event_type, 'payload': e.payload, 'a': _epoch_ms(e.created_at)}
+
+
+@extend_schema(tags=["Vendors"], summary="Événements depuis un horodatage (polling)")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_events_list(request):
+    profile, err = _get_active_vendor_or_404(request.user)
+    if err:
+        return err
+
+    depuis = request.query_params.get('depuis')
+    qs = profile.events.all()
+    if depuis:
+        try:
+            depuis_dt = datetime.fromtimestamp(int(depuis) / 1000, tz=timezone.utc)
+            qs = qs.filter(created_at__gt=depuis_dt)
+        except (TypeError, ValueError, OSError):
+            pass
+    return Response([_serialize_vendor_event(e) for e in qs[:200]])
+
+
+def vendor_events_stream(request):
+    """
+    SSE minimal — vue Django classique (StreamingHttpResponse), PAS @api_view DRF : DRF ne gère
+    pas le streaming nativement. LIMITE DOCUMENTÉE : pas de vraie infra pub/sub (Redis,
+    Channels…) ; un seul passage par requête, qui interroge la base toutes les 2 s pendant 25 s
+    au plus puis se termine — le client reconnecte (reprise par Last-Event-ID ou ?depuis=, comme
+    demandé). Suffisant pour une v1, à remplacer si le volume d'événements justifie mieux.
+    """
+    # Vue Django classique : AuthenticationMiddleware ne lit que la session, jamais le jeton
+    # JWT — il faut authentifier le Bearer nous-mêmes (DRF ne le fait que pour les @api_view).
+    from rest_framework_simplejwt.authentication import JWTAuthentication
+    from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+
+    try:
+        auth_result = JWTAuthentication().authenticate(request)
+    except (InvalidToken, TokenError):
+        auth_result = None
+    if auth_result is None:
+        return HttpResponse(status=401)
+    user, _validated_token = auth_result
+
+    try:
+        profile = VendorProfile.objects.get(user=user)
+    except VendorProfile.DoesNotExist:
+        return HttpResponse(status=404)
+
+    raw_cursor = request.headers.get('Last-Event-ID') or request.GET.get('depuis')
+    try:
+        cursor = int(raw_cursor) if raw_cursor else None
+    except (TypeError, ValueError):
+        cursor = None
+
+    def gen(start_cursor):
+        cur = start_cursor
+        deadline = time.monotonic() + 25
+        yield ': ok\n\n'
+        while time.monotonic() < deadline:
+            qs = profile.events.all()
+            if cur:
+                qs = qs.filter(id__gt=cur)
+            for e in qs.order_by('id')[:50]:
+                cur = e.id
+                data = _json.dumps(_serialize_vendor_event(e))
+                yield f"id: {e.id}\nevent: {e.event_type}\ndata: {data}\n\n"
+            time.sleep(2)
+
+    response = StreamingHttpResponse(gen(cursor), content_type='text/event-stream')
+    response['Cache-Control'] = 'no-cache'
+    response['X-Accel-Buffering'] = 'no'
+    return response
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ESPACE VENDEUR AUTONOME — domaines commandes / préparation / remise / journal
+# (espace-client-belivay/espace-vendeur, vague d'intégration du 12 oct.).
+#
+# PAS de slash final sur ces routes : src/api/outils.ts (ce nouveau frontend)
+# n'en ajoute pas, et APPEND_SLASH convertirait un POST en GET au premier
+# redirect. `ref` (ReferenceCommande) est simplifié ici en l'id Order brut
+# (str) plutôt que le format cosmétique "BLV-00008" du TS d'origine.
+#
+# RÔLE : pas de modèle "employé / accès Préparation" côté serveur aujourd'hui
+# (domaine "équipe" non câblé) — tout vendeur authentifié est `role:
+# 'proprietaire'`, 403 owner_only/forbidden_right jamais renvoyés ici.
+# ══════════════════════════════════════════════════════════════════════════════
+
+from . import opening_hours as _oh
+
+
+def _ev_active_vendor(request):
+    """(profile, None) si vendeur actif, sinon (None, Response 403/404)."""
+    try:
+        profile = VendorProfile.objects.get(user=request.user)
+    except VendorProfile.DoesNotExist:
+        return None, Response({'detail': 'Profil vendeur introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+    if not profile.is_active_vendor:
+        return None, Response(
+            {'detail': "Votre compte vendeur n'est pas encore approuvé."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    return profile, None
+
+
+def _ev_vendor_order(order_id, vendor_user):
+    return Order.objects.filter(
+        id=order_id, items__product__vendor=vendor_user,
+    ).prefetch_related('shipments__events', 'items').distinct().first()
+
+
+# ── Commandes ────────────────────────────────────────────────────────────────
+
+@extend_schema(
+    tags=["Vendors"],
+    summary="(Espace vendeur) Commandes par filtre — compteurs, détail, total",
+    description="GET /vendors/orders?state=prep|cours|fin|pb — VD05-R05, CMD-02 : jamais un chiffre faux (même requête que la liste).",
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def ev_orders_vue(request):
+    profile, err = _ev_active_vendor(request)
+    if err:
+        return err
+    state = request.query_params.get('state', 'prep')
+    orders = (
+        Order.objects.filter(items__product__vendor=request.user)
+        .exclude(fulfillment_status=Order.FulfillmentStatus.CREATED)
+        .prefetch_related('shipments__events', 'items')
+        .distinct()
+        .order_by('-created_at')
+    )
+    from .serializers import build_vue_commandes
+    return Response(build_vue_commandes(orders, profile, state))
+
+
+@extend_schema(tags=["Vendors"], summary="(Espace vendeur) Détail d'une commande")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def ev_order_detail(request, order_id):
+    profile, err = _ev_active_vendor(request)
+    if err:
+        return err
+    order = _ev_vendor_order(order_id, request.user)
+    if not order:
+        return Response({'detail': 'Introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+    from .serializers import build_commande
+    return Response(build_commande(order, profile))
+
+
+@extend_schema(tags=["Vendors"], summary="(Espace vendeur) Journal signé d'une commande (JRN-02)")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def ev_order_journal(request, order_id):
+    profile, err = _ev_active_vendor(request)
+    if err:
+        return err
+    order = _ev_vendor_order(order_id, request.user)
+    if not order:
+        return Response({'detail': 'Introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+    from .serializers import build_entree_journal
+    return Response(build_entree_journal(order, profile))
+
+
+# ── Préparation ──────────────────────────────────────────────────────────────
+
+@extend_schema(tags=["Vendors"], summary="(Espace vendeur) « C'est prêt »")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def ev_order_ready(request, order_id):
+    profile, err = _ev_active_vendor(request)
+    if err:
+        return err
+    order = _ev_vendor_order(order_id, request.user)
+    if not order:
+        return Response({'ok': False, 'raison': 'introuvable'})
+    FS = Order.FulfillmentStatus
+    if order.fulfillment_status == FS.READY_FOR_PICKUP:
+        return Response({'ok': False, 'raison': 'deja_prete'})
+    if order.fulfillment_status in (FS.CANCELLED, FS.REFUNDED):
+        return Response({'ok': False, 'raison': 'annulee'})
+    if order.fulfillment_status not in (FS.PAID_IN_ESCROW, FS.VENDOR_ACKNOWLEDGED, FS.PREPARING):
+        return Response({'ok': False, 'raison': 'introuvable'})
+
+    now = timezone.now()
+    if not order.vendor_acknowledged_at:
+        # Accusé de réception implicite : « C'est prêt » est la seule
+        # confirmation attendue côté vendeur sur ce frontend (PRE-01).
+        from .business_hours import add_business_hours
+        order.vendor_acknowledged_at = now
+        order.prep_deadline = add_business_hours(now, 4, profile.closed_days)
+    order.fulfillment_status = FS.READY_FOR_PICKUP
+    order.save()
+
+    from apps.orders.models import OrderHistory
+    OrderHistory.objects.create(
+        order=order, user=request.user, action="« C'est prêt » (espace vendeur)",
+        field_name='fulfillment_status', old_value='', new_value=FS.READY_FOR_PICKUP,
+    )
+    return Response({'ok': True, 'preteA': _oh.dt_to_ms(order.updated_at)})
+
+
+@extend_schema(
+    tags=["Vendors"],
+    summary="(Espace vendeur) Rupture de stock — remplace l'annulation (DP-01)",
+    description="Le stock lui-même (stockAZero) n'est pas modifié ici : domaine produits/stock, pas celui-ci.",
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def ev_order_stockout(request, order_id):
+    profile, err = _ev_active_vendor(request)
+    if err:
+        return err
+    order = _ev_vendor_order(order_id, request.user)
+    if not order:
+        return Response({'ok': False, 'raison': 'introuvable'})
+    if order.fulfillment_status == Order.FulfillmentStatus.READY_FOR_PICKUP:
+        return Response({'ok': False, 'raison': 'deja_prete'})
+
+    order.fulfillment_status = Order.FulfillmentStatus.CANCELLED
+    order.cancellation_reason = Order.CancellationReason.STOCKOUT
+    order.cancelled_at = timezone.now()
+    if order.is_paid:
+        order.escrow_status = Order.EscrowStatus.REFUNDED
+    order.save()
+
+    from apps.orders.models import OrderHistory
+    OrderHistory.objects.create(
+        order=order, user=request.user, action='Rupture de stock signalée (espace vendeur)',
+        field_name='fulfillment_status', old_value='', new_value='CANCELLED',
+    )
+    return Response({'ok': True})
+
+
+@extend_schema(
+    tags=["Vendors"],
+    summary="(Espace vendeur) « Plus de temps » : GET options, POST demande (même chemin, DEL-01)",
+    description=(
+        "Une seule route /orders/{id}/extend pour les deux méthodes (Django ne "
+        "retente pas un deuxième path() sur le même chemin si le premier répond "
+        "405) : GET = options possibles, POST {choix} = applique le choix."
+    ),
+)
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def ev_order_extend(request, order_id):
+    profile, err = _ev_active_vendor(request)
+    if err:
+        return err
+    order = _ev_vendor_order(order_id, request.user)
+
+    if request.method == 'GET':
+        if not order or not order.vendor_acknowledged_at or not order.prep_deadline:
+            return Response({'detail': 'Introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+        from .serializers import _calendrier_boutique, _ref_commande
+        cal = _calendrier_boutique(profile)
+        debut = _oh.dt_to_ms(order.vendor_acknowledged_at)
+        echeance = _oh.dt_to_ms(order.prep_deadline)
+        absolue = _oh.ajouter_ouvertes(debut, 24 * _oh.H, cal)
+        delai = _oh.options_de_delai(echeance, absolue, cal)
+        return Response({
+            'ref': _ref_commande(order),
+            'echeance': echeance,
+            'absolue': absolue,
+            'prolongee': order.prep_extended,
+            'aPreparer': order.fulfillment_status in (
+                Order.FulfillmentStatus.VENDOR_ACKNOWLEDGED, Order.FulfillmentStatus.PREPARING,
+            ),
+            'ramassage': delai['ramassage'],
+            'options': delai['options'],
+        })
+
+    # POST — applique le choix
+    if not order:
+        return Response({'ok': False, 'raison': 'introuvable'})
+    if order.fulfillment_status == Order.FulfillmentStatus.READY_FOR_PICKUP:
+        return Response({'ok': False, 'raison': 'deja_prete'})
+    if order.prep_extended:
+        return Response({'ok': False, 'raison': 'deja_prolongee'})
+    if not order.vendor_acknowledged_at or not order.prep_deadline:
+        return Response({'ok': False, 'raison': 'introuvable'})
+
+    from .serializers import _calendrier_boutique
+    cal = _calendrier_boutique(profile)
+    debut = _oh.dt_to_ms(order.vendor_acknowledged_at)
+    echeance = _oh.dt_to_ms(order.prep_deadline)
+    absolue = _oh.ajouter_ouvertes(debut, 24 * _oh.H, cal)
+
+    choix = request.data.get('choix')
+    if choix == '+1h':
+        nouvelle = _oh.ajouter_ouvertes(echeance, _oh.H, cal)
+    elif choix == '+2h':
+        nouvelle = _oh.ajouter_ouvertes(echeance, 2 * _oh.H, cal)
+    elif choix == 'demain':
+        nouvelle = _oh.ouverture_du_jour_suivant(echeance, cal)
+    else:
+        return Response({'ok': False, 'raison': 'introuvable'})
+
+    if nouvelle > absolue:
+        return Response({'ok': False, 'raison': 'au_dela_de_24h'})
+
+    order.prep_deadline = _oh.ms_to_dt(nouvelle)
+    order.prep_extended = True
+    order.save(update_fields=['prep_deadline', 'prep_extended'])
+    return Response({'ok': True, 'echeance': nouvelle})
+
+
+@extend_schema(tags=["Vendors"], summary="(Espace vendeur) Bon de préparation")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def ev_order_slip(request, order_id):
+    profile, err = _ev_active_vendor(request)
+    if err:
+        return err
+    order = _ev_vendor_order(order_id, request.user)
+    if not order:
+        return Response({'detail': 'Introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+    from .serializers import build_bon_preparation
+    return Response(build_bon_preparation(order, profile))
+
+
+@extend_schema(tags=["Vendors"], summary="(Espace vendeur) Ouvre le bon de préparation (une ligne au journal)")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def ev_order_slip_open(request, order_id):
+    profile, err = _ev_active_vendor(request)
+    if err:
+        return err
+    order = _ev_vendor_order(order_id, request.user)
+    if not order:
+        return Response({'detail': 'Introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+
+    state = order.prep_slip_state or {}
+    today = timezone.now().date().isoformat()
+    already_today = (state.get('opened_at') or '')[:10] == today and state.get('opened_by') == request.user.username
+    state['opened_at'] = timezone.now().isoformat()
+    state['opened_by'] = request.user.username
+    order.prep_slip_state = state
+    order.save(update_fields=['prep_slip_state'])
+
+    if not already_today:
+        from apps.orders.models import OrderHistory
+        OrderHistory.objects.create(
+            order=order, user=request.user, action='Bon de préparation ouvert',
+            field_name='prep_slip_state', old_value='', new_value=request.user.username,
+        )
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema(tags=["Vendors"], summary="(Espace vendeur) Coche une vérification du bon")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def ev_order_slip_check(request, order_id):
+    profile, err = _ev_active_vendor(request)
+    if err:
+        return err
+    order = _ev_vendor_order(order_id, request.user)
+    if not order:
+        return Response({'detail': 'Introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+
+    from .serializers import VERIFICATIONS
+    try:
+        cle = VERIFICATIONS[int(request.data.get('i'))]
+    except (TypeError, ValueError, IndexError):
+        return Response({'detail': 'Introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+    fait = bool(request.data.get('fait'))
+
+    state = order.prep_slip_state or {}
+    checks = state.get('checks', {})
+    checks[cle] = {'fait': fait, 'par': request.user.username if fait else None}
+    state['checks'] = checks
+    order.prep_slip_state = state
+    order.save(update_fields=['prep_slip_state'])
+
+    from .serializers import build_bon_preparation
+    return Response(build_bon_preparation(order, profile))
+
+
+@extend_schema(tags=["Vendors"], summary="(Espace vendeur) Référence scannée ou tapée")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def ev_order_slip_verify(request, order_id):
+    profile, err = _ev_active_vendor(request)
+    if err:
+        return err
+    order = _ev_vendor_order(order_id, request.user)
+    if not order:
+        return Response({'ok': False, 'raison': 'introuvable'})
+
+    lu = (request.data.get('lu') or '').strip()
+    items = list(order.items.filter(product__vendor=request.user))
+    refs = {(i.product.sku if i.product and i.product.sku else f"BLV-{i.id:05d}") for i in items}
+    if lu not in refs:
+        return Response({'ok': False, 'raison': 'autre_reference'})
+
+    state = order.prep_slip_state or {}
+    checks = state.get('checks', {})
+    checks['modele'] = {'fait': True, 'par': request.user.username}
+    state['checks'] = checks
+    state['reference_verified_at'] = timezone.now().isoformat()
+    order.prep_slip_state = state
+    order.save(update_fields=['prep_slip_state'])
+
+    from .serializers import build_bon_preparation
+    return Response({'ok': True, 'bon': build_bon_preparation(order, profile)})
+
+
+# ── Remise (handover) ────────────────────────────────────────────────────────
+
+@extend_schema(tags=["Vendors"], summary="(Espace vendeur) État de la remise d'une commande (sans le code)")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def ev_order_handover(request, order_id):
+    profile, err = _ev_active_vendor(request)
+    if err:
+        return err
+    order = _ev_vendor_order(order_id, request.user)
+    if not order:
+        return Response({'detail': 'Introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+    from .serializers import build_remise
+    return Response(build_remise(order, profile))
+
+
+@extend_schema(tags=["Vendors"], summary="(Espace vendeur) Remises à faire ou toutes")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def ev_handovers_list(request):
+    profile, err = _ev_active_vendor(request)
+    if err:
+        return err
+    orders_qs = (
+        Order.objects.filter(items__product__vendor=request.user)
+        .prefetch_related('shipments__events', 'items').distinct()
+    )
+    if request.query_params.get('state') == 'a_remettre':
+        orders_qs = orders_qs.filter(fulfillment_status__in=[
+            Order.FulfillmentStatus.READY_FOR_PICKUP, Order.FulfillmentStatus.DRIVER_ASSIGNED,
+        ])
+    orders_qs = orders_qs.order_by('-created_at')
+    from .serializers import build_remise
+    return Response([build_remise(o, profile) for o in orders_qs])
+
+
+@extend_schema(
+    tags=["Vendors"],
+    summary="(Espace vendeur) Code de remise au toucher seulement (handover_code.viewed)",
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def ev_handover_code(request, order_id):
+    profile, err = _ev_active_vendor(request)
+    if err:
+        return err
+    order = _ev_vendor_order(order_id, request.user)
+    if not order:
+        return Response({'ok': False, 'raison': 'introuvable'})
+    if order.fulfillment_status in (Order.FulfillmentStatus.CANCELLED, Order.FulfillmentStatus.REFUNDED):
+        return Response({'ok': False, 'raison': 'annulee'})
+    shipment = order.shipments.filter(vendor=request.user).first()
+    if not shipment:
+        return Response({'ok': False, 'raison': 'introuvable'})
+    if shipment.buyer_confirmed_at:
+        return Response({'ok': False, 'raison': 'remise'})
+    if order.fulfillment_status not in (Order.FulfillmentStatus.READY_FOR_PICKUP, Order.FulfillmentStatus.DRIVER_ASSIGNED) or not shipment.courier_id:
+        return Response({'ok': False, 'raison': 'pas_prete'})
+
+    code = shipment.ensure_pickup_confirmation_code()
+    from apps.orders.models import OrderHistory
+    OrderHistory.objects.create(
+        order=order, user=request.user, action='Code de remise consulté (handover_code.viewed)',
+        field_name='pickup_confirmation_code',
+    )
+    return Response({'ok': True, 'code': code})
+
+
+@extend_schema(
+    tags=["Vendors"],
+    summary="(Espace vendeur) Nouveau code de remise (DP-56, annule l'ancien)",
+    description=(
+        "Simplification signalée : la vérification du code par le livreur (3 essais, "
+        "blocage 24h) n'est pas encore câblée côté serveur (aucune app livreur ne "
+        "l'appelle ici) — ce renouvellement réussit donc toujours, jamais 'pas_bloquee'."
+    ),
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def ev_handover_code_renew(request, order_id):
+    profile, err = _ev_active_vendor(request)
+    if err:
+        return err
+    order = _ev_vendor_order(order_id, request.user)
+    if not order:
+        return Response({'ok': False, 'raison': 'introuvable'})
+    shipment = order.shipments.filter(vendor=request.user).first()
+    if not shipment:
+        return Response({'ok': False, 'raison': 'introuvable'})
+
+    shipment.pickup_confirmation_code = ''
+    shipment.ensure_pickup_confirmation_code()
+    from apps.orders.models import OrderHistory
+    OrderHistory.objects.create(
+        order=order, user=request.user, action='Nouveau code de remise demandé (DP-56)',
+        field_name='pickup_confirmation_code',
+    )
+    return Response({'ok': True, 'marcheA': _oh.now_ms()})
+
+
+@extend_schema(tags=["Vendors"], summary="(Espace vendeur) Reçu vendeur d'une commande")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def ev_order_receipt(request, order_id):
+    profile, err = _ev_active_vendor(request)
+    if err:
+        return err
+    order = _ev_vendor_order(order_id, request.user)
+    if not order:
+        return Response({'detail': 'Introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+    from .serializers import build_recu
+    return Response(build_recu(order, profile))
+
+
+@extend_schema(tags=["Vendors"], summary="(Espace vendeur) Tous les reçus, le plus récent d'abord")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def ev_receipts(request):
+    profile, err = _ev_active_vendor(request)
+    if err:
+        return err
+    orders_qs = (
+        Order.objects.filter(items__product__vendor=request.user, payment_status=Order.PaymentStatus.PAID)
+        .prefetch_related('items', 'shipments').distinct().order_by('-created_at')
+    )
+    from .serializers import build_recu_resume
+    return Response([build_recu_resume(o, profile) for o in orders_qs])
+
+
+@extend_schema(
+    tags=["Vendors"],
+    summary="(Espace vendeur) Colis pas prêt au passage du livreur",
+    description=(
+        "Normalement déclenché par le livreur au passage (événement du domaine "
+        "échanges, INTEGRATION-API.md §8) — exposé ici sous authentification "
+        "vendeur car aucune app livreur n'existe encore dans ce backend pour "
+        "porter cette action ; à déplacer quand elle existera. Le ramassage "
+        "repasse au créneau suivant disponible (P-6) — aucun délai fixe n'est "
+        "inventé ici, conformément à la consigne (pas de valeur numérique donnée)."
+    ),
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def ev_order_not_ready(request, order_id):
+    profile, err = _ev_active_vendor(request)
+    if err:
+        return err
+    order = _ev_vendor_order(order_id, request.user)
+    if not order:
+        return Response({'detail': 'Introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+
+    order.not_ready_reason = (request.data.get('raison') or '').strip()
+    order.not_ready_at = timezone.now()
+    order.save(update_fields=['not_ready_reason', 'not_ready_at'])
+
+    from apps.orders.models import OrderHistory
+    OrderHistory.objects.create(
+        order=order, user=request.user, action='Colis signalé pas prêt au passage du livreur',
+        field_name='not_ready_reason', new_value=order.not_ready_reason,
+    )
+
+    from .serializers import _ramassage_for_shipment
+    shipment = order.shipments.filter(vendor=request.user).first()
+    return Response({'ok': True, 'ramassage': _ramassage_for_shipment(shipment) if shipment else None})
+
+
+@extend_schema(
+    tags=["Vendors"],
+    summary="(Espace vendeur) Fermer/rouvrir la boutique aujourd'hui",
+    description=(
+        "POST ferme la boutique pour la date du jour (concept distinct de la "
+        "fermeture hebdomadaire récurrente et de la pause boutique, VD-11) ; "
+        "DELETE rouvre. Choix d'implémentation signalé : seul POST était "
+        "demandé dans la consigne, DELETE ajouté pour le symétrique 'rouvrir' "
+        "faute d'autre signal du côté frontend (domaine accueil, hors de ce lot)."
+    ),
+)
+@api_view(['POST', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def ev_shop_closed_today(request):
+    profile, err = _ev_active_vendor(request)
+    if err:
+        return err
+    if request.method == 'DELETE':
+        profile.closed_today_date = None
+        profile.save(update_fields=['closed_today_date'])
+        return Response({'ok': True, 'ferme': False})
+    profile.closed_today_date = timezone.localdate()
+    profile.save(update_fields=['closed_today_date'])
+    return Response({'ok': True, 'ferme': True})
+
+
+#  ═══════════════════════════════════════════════════════════════════════
+#  ESPACE VENDEUR AUTONOME — DOMAINE PRODUITS / OFFRES / CATALOGUE / STOCK /
+#  VENTES FLASH / QUESTIONS CLIENTS (12 oct., vague d'intégration)
+#
+#  Connecte espace-client-belivay/espace-vendeur/src/api/domaines/produits.ts
+#  et offres.ts au vrai backend (apps.catalog.Product/MasterProduct/
+#  ProductVariant/PromotionCampaign), + construit stock/promotions/questions
+#  (§7 de INTEGRATION-API.md) qui n'avaient pas encore de route serveur.
+#
+#  PAS de slash final sur les chemins (voir commentaire plus haut dans ce
+#  fichier, agent boutique/messages : src/api/outils.ts n'ajoute jamais de
+#  slash, et APPEND_SLASH convertirait un POST en GET au premier redirect).
+#
+#  Prix conseillé (Conseil) et reconnaissance d'image (catalog/recognize) :
+#  AUCUNE donnée de demande de recherche ni de prix concurrents n'existe nulle
+#  part dans le système (confirmé par l'audit du 12 oct.) — pas de moteur
+#  inventé ici, voir les deux vues concernées pour l'état honnête rendu.
+#
+#  VD-PRIX-ANORMAL, VD-DOUBLON, VD-CONSEIL-PRIX, VD-PRIX-AUTO (§4 du doc) :
+#  paramètres de modération de prix dont la valeur n'est donnée nulle part —
+#  non appliqués ici (voir prixAutoPct=0 dans vd_config), à confirmer par la
+#  gouvernance avant d'être câblés.
+#  ═══════════════════════════════════════════════════════════════════════
+
+def _vd_active_vendor(request):
+    """(vendor_profile, None) si vendeur actif, sinon (None, Response 403/404)."""
+    try:
+        vp = VendorProfile.objects.get(user=request.user)
+    except VendorProfile.DoesNotExist:
+        return None, Response({'detail': 'Profil vendeur introuvable.'}, status=404)
+    if not vp.is_active_vendor:
+        return None, Response({'detail': "Compte vendeur non approuvé."}, status=403)
+    return vp, None
+
+
+def _vd_offer_or_404(request, offer_id):
+    from apps.catalog.models import Product as _P
+    try:
+        return _P.objects.get(pk=offer_id, vendor=request.user), None
+    except (_P.DoesNotExist, ValueError, TypeError):
+        return None, Response(status=404)
+
+
+def _vd_category_names(category):
+    """(categorie, rayon) : categorie = famille racine du barème, rayon = catégorie affichée."""
+    if not category:
+        return '', ''
+    rayon = category.name
+    try:
+        ancestors = category.get_ancestors()
+    except Exception:
+        ancestors = []
+    categorie = ancestors[-1].name if ancestors else rayon
+    return categorie, rayon
+
+
+def _vd_commission_kept(vendor, price_xaf):
+    """Montant gardé par le vendeur à price_xaf : réutilise LE calcul réellement appliqué aux
+    commandes (apps.orders.serializers._commission_rate_for_product), jamais un barème recalculé
+    séparément — cohérence garantie avec ce que le checkout facture vraiment."""
+    from decimal import Decimal
+    if not price_xaf:
+        return 0, 0, 0.0
+    try:
+        from apps.orders.models import PlatformSettings
+        from apps.orders.serializers import _commission_rate_for_product
+        settings_ = PlatformSettings.get_settings()
+
+        class _Probe:
+            pass
+        probe = _Probe()
+        probe.price_xaf = price_xaf
+        probe.vendor = vendor
+        rate = _commission_rate_for_product(probe, settings_)
+        commission = int((Decimal(price_xaf) * rate / Decimal('100')).to_integral_value())
+        return price_xaf - commission, commission, float(rate)
+    except Exception:
+        return price_xaf, 0, 0.0
+
+
+def _vd_offer_etat(product):
+    if product is None:
+        return None
+    if product.is_deleted:
+        return 'brouillon'
+    if product.moderation_status == 'REJECTED':
+        return 'refusee'
+    if product.moderation_status == 'PENDING':
+        return 'en_verification' if product.is_active or product.price_xaf else 'brouillon'
+    if not product.is_active:
+        return 'en_pause'
+    return 'en_vente'
+
+
+def _vd_offer_month_stats(product):
+    """Ventes, gardé et litiges réels du mois en cours (OrderItem, Dispute) — gardeCeMois utilise
+    order.commission_rate_snapshot, le taux réellement appliqué à chaque commande."""
+    from django.utils import timezone
+    now = timezone.now()
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    ventes, garde, litiges = 0, None, 0
+    try:
+        from apps.orders.models import OrderItem
+        items = OrderItem.objects.filter(
+            product=product, order__created_at__gte=month_start,
+        ).select_related('order')
+        ventes = items.count()
+        garde = 0
+        for item in items:
+            rate = float(item.order.commission_rate_snapshot or 0)
+            garde += int(round(float(item.line_total_xaf) * (1 - rate / 100)))
+    except Exception:
+        ventes, garde = 0, None
+    try:
+        from apps.orders.models import Dispute
+        litiges = Dispute.objects.filter(product=product, created_at__gte=month_start).count()
+    except Exception:
+        litiges = 0
+    return ventes, garde, litiges
+
+
+def _vd_serialize_photo(img, request):
+    try:
+        url = request.build_absolute_uri(img.image.url) if img.image else ''
+    except Exception:
+        url = ''
+    return {
+        'id': str(img.id),
+        'image': url,
+        'prise': img.created_at.isoformat() if img.created_at else None,
+        # lieu/largeur/hauteur/octets* : non stockés par ProductImage (modèle existant, pas
+        # construit pour ces métadonnées) — valeurs honnêtes plutôt qu'inventées.
+        'lieu': None,
+        'largeur': 0,
+        'hauteur': 0,
+        'octetsAvant': None,
+        'octetsApres': None,
+    }
+
+
+def _vd_offer_dict(product, request):
+    try:
+        stock = product.inventory.quantity
+    except Exception:
+        stock = 0
+    seuil = product.get_effective_stock_threshold()
+    kept, _commission, _rate = _vd_commission_kept(product.vendor, product.price_xaf)
+    categorie, rayon = _vd_category_names(product.category)
+    images = list(product.images.all())
+    primary = next((i for i in images if i.is_primary), images[0] if images else None)
+    dessin = ''
+    if primary and primary.image:
+        try:
+            dessin = request.build_absolute_uri(primary.image.url)
+        except Exception:
+            dessin = ''
+    manques = []
+    if not images:
+        manques.append('photos')
+    if not product.price_xaf:
+        manques.append('prix')
+    if stock <= 0:
+        manques.append('stock')
+    ventes, garde, litiges = _vd_offer_month_stats(product)
+    attention = []
+    if stock <= seuil:
+        attention.append('stock_bas')
+    if litiges:
+        attention.append('litiges')
+    return {
+        'id': str(product.id),
+        'ficheId': str(product.master_id) if product.master_id else None,
+        'titre': product.title,
+        'marque': (product.master.brand if product.master_id else '') or '',
+        'variante': str(product.variant_id) if product.variant_id else '',
+        'categorie': categorie,
+        'rayon': rayon,
+        'dessin': dessin,
+        'etat': _vd_offer_etat(product),
+        'etatArticle': product.condition.name if product.condition_id else '',
+        'prix': product.price_xaf,
+        'garde': kept,
+        'stock': stock,
+        'seuilAlerte': seuil,
+        # Livraison/colis (délai de préparation, classe de colis, poids, dimensions, paiement au
+        # retrait, Made in Cameroon) et prix automatique/plancher privé : hors du domaine confié à
+        # cet agent (produits/offres/catalogue/stock/ventes flash/questions) — doc §7 "Livraison et
+        # colis" couvert par un autre agent. Valeurs honnêtes (null/False), jamais inventées.
+        'delaiPreparationH': None,
+        'colis': None,
+        'poidsKg': None,
+        'dimensionsCm': None,
+        'paiementAuRetrait': None,
+        'madeInCameroon': False,
+        'prixAuto': False,
+        'plancherPrive': None,
+        'photos': [_vd_serialize_photo(i, request) for i in images],
+        'envoyeeA': product.created_at.isoformat() if product.created_at else None,
+        'verificationAvant': None,
+        'verifieeA': product.moderated_at.isoformat() if product.moderated_at else None,
+        'motifRefus': product.moderation_reason or None,
+        'ficheDemandee': None,
+        'descriptionProposee': None,
+        'dupliqueDe': None,
+        'ventesCeMois': ventes,
+        'gardeCeMois': garde,
+        'litigesCeMois': litiges,
+        'geleCeMois': None,
+        'attention': attention,
+        # Aucune donnée réelle de prix concurrent n'est collectée nulle part dans le système
+        # (confirmé par l'audit du 12 oct.) : jamais de chiffre inventé ici.
+        'concurrent': None,
+        'manques': manques,
+        'prixBarre': product.compare_at_price,
+        'finPromo': product.promo_end_date.isoformat() if product.promo_end_date else None,
+        'noteVendeur': product.seller_note or '',
+        'nouveau': None,
+        'historique': [],
+        'majA': product.updated_at.isoformat() if product.updated_at else None,
+    }
+
+
+def _vd_parse_date(value):
+    from datetime import datetime
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(str(value).replace('Z', '+00:00')).date()
+    except Exception:
+        return None
+
+
+def _vd_fallback_category():
+    """Catégorie feuille active quelconque, pour amorcer un brouillon « produit nouveau » (DP-58)
+    avant que le vendeur ne précise la vraie catégorie via PATCH /offers/{id} {categorie}. Trouvée
+    dynamiquement (jamais un nom codé en dur) pour rester correct quel que soit le jeu de données."""
+    from apps.catalog.models import Category as _Cat
+    for c in _Cat.objects.filter(is_active=True, is_deprecated=False).order_by('id')[:300]:
+        if not c.children.filter(deleted_at__isnull=True, is_active=True, is_deprecated=False).exists():
+            return c
+    return None
+
+
+def _vd_fiche_dict(master, request):
+    from apps.catalog.models import ModerationStatus as _MS
+    variantes = list(master.variants.filter(is_active=True).values_list('id', flat=True))
+    offers_qs = master.offers.filter(is_active=True, moderation_status=_MS.APPROVED)
+    prices = list(offers_qs.values_list('price_xaf', flat=True))
+    fourchette = [min(prices), max(prices)] if prices else None
+    categorie, rayon = _vd_category_names(master.category)
+    deja_vendues = list(
+        Product.objects.filter(vendor=request.user, master=master).values_list('variant_id', flat=True)
+    )
+    part = None
+    if prices:
+        prix_ref = min(prices)
+        kept, _c, _r = _vd_commission_kept(request.user, prix_ref)
+        part = {'pourCent': round(kept / prix_ref * 100, 1) if prix_ref else 0, 'prixRef': prix_ref}
+    try:
+        img = master.images.filter(is_primary=True).first() or master.images.first()
+        dessin = request.build_absolute_uri(img.image.url) if img and img.image else ''
+    except Exception:
+        dessin = ''
+    return {
+        'id': str(master.id),
+        'titre': master.title,
+        'marque': master.brand or '',
+        'categorie': categorie,
+        'rayon': rayon,
+        'dessin': dessin,
+        'variantes': [str(v) for v in variantes],
+        'fourchette': fourchette,
+        'vendeurs': offers_qs.values('vendor_id').distinct().count(),
+        'part': part,
+        'dejaVendues': [str(v) for v in deja_vendues if v],
+    }
+
+
+#  ── offres : réglages, catalogue, recherche, brouillon ───────────────────
+
+@extend_schema(tags=["Vendors"], summary="Réglages de l'espace Offres (Reglages)")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vd_config(request):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    from apps.catalog.models import ProductCondition, Category
+    from apps.orders.models import PlatformSettings
+    settings_ = PlatformSettings.get_settings()
+    etats = list(
+        ProductCondition.objects.filter(is_active=True).order_by('display_order', 'name').values_list('name', flat=True)
+    )
+    categories = []
+    for c in Category.objects.filter(is_active=True, is_deprecated=False).order_by('name')[:500]:
+        categorie, rayon = _vd_category_names(c)
+        categories.append({'categorie': categorie, 'rayon': rayon})
+    return Response({
+        'etats': etats,
+        # delaisH/colis : domaine livraison/colis, pas construit par cet agent — placeholders
+        # structurellement valides (jamais des seuils métier inventés).
+        'delaisH': [24, 48, 72],
+        'delaiDefautH': 24,
+        'photosMin': 1,
+        'photosMax': MAX_IMAGES_PER_PRODUCT,
+        'photoMinPx': 0,
+        'compression': {'cote': 1600, 'qualite': 80},
+        'ficheDelaiH': 48,
+        'fichePrioDelaiH': 24,
+        'fichePrioPrix': None,
+        'moderationH': 48,
+        'colis': {'seuilKg': 0, 'seuilCm': 0, 'diviseur': 1, 'classes': []},
+        'flash': True,
+        'rappelJours': 7,
+        # VD-PRIX-AUTO : valeur non confirmée par la gouvernance (§4 du doc) — 0 = désactivé,
+        # jamais de pourcentage inventé.
+        'prixAutoPct': 0,
+        'prixMin': 500,
+        'categories': categories,
+        'nomMin': 3,
+        'promoRemiseMin': 10,
+        'promoJoursMax': 30,
+        'noteMax': 2000,
+        'rechercheMin': 3,
+        'liberation': {
+            'bronzeArgentJ': round((settings_.escrow_auto_confirm_h + settings_.escrow_release_h) / 24),
+            'orPlatineJ': round((settings_.escrow_auto_confirm_h + settings_.escrow_release_h) / 24),
+            'confirmationJ': round(settings_.escrow_auto_confirm_h / 24),
+        },
+        # versement/plafond : domaine argent, pas construit par cet agent — null, cohérent avec
+        # le contrat (déjà null pour l'accès Préparation).
+        'versement': None,
+        'plafond': None,
+    })
+
+
+@extend_schema(tags=["Vendors"], summary="Catalogue — recherche (fiches + mes produits)")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vd_catalog_search(request):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    from apps.catalog.models import MasterProduct, ModerationStatus, ProductVariant
+    from django.db.models import Q as _Q
+    q = (request.query_params.get('q') or '').strip()
+    code = (request.query_params.get('code') or '').strip()
+    exacts, proches = [], []
+    if code:
+        master_ids = ProductVariant.objects.filter(
+            _Q(sku=code) | _Q(barcode=code), is_active=True, moderation_status=ModerationStatus.APPROVED,
+        ).values_list('master_id', flat=True)
+        qs = MasterProduct.objects.filter(id__in=master_ids, moderation_status=ModerationStatus.APPROVED)
+        exacts = [_vd_fiche_dict(m, request) for m in qs.select_related('category')[:20]]
+    elif q:
+        qs = MasterProduct.objects.filter(moderation_status=ModerationStatus.APPROVED).filter(
+            _Q(title__icontains=q) | _Q(brand__icontains=q)
+        ).select_related('category').order_by('title')
+        fiches = [_vd_fiche_dict(m, request) for m in qs[:30]]
+        ql = q.lower()
+        exacts = [f for f in fiches if f['titre'].lower() == ql]
+        proches = [f for f in fiches if f['titre'].lower() != ql]
+    mes_produits = []
+    if q:
+        mes_qs = Product.objects.filter(vendor=request.user, title__icontains=q).select_related('category')[:10]
+        mes_produits = [_vd_offer_dict(p, request) for p in mes_qs]
+    # cherche : aucun compteur de recherche par zone n'est tracké nulle part — 0, honnête.
+    return Response({'q': q, 'code': code or None, 'exacts': exacts, 'proches': proches, 'mesProduits': mes_produits, 'cherche': 0})
+
+
+@extend_schema(tags=["Vendors"], summary="Catalogue — suggestion pour un produit nouveau")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vd_catalog_suggest(request):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    from apps.orders.models import PlatformSettings
+    from apps.catalog.models import MasterProduct, ModerationStatus, Brand
+    from apps.vendors.price_duplicate_checks import title_similarity_pct
+    q = (request.query_params.get('q') or '').strip()
+    if not q:
+        return Response({'categorie': None, 'marque': None, 'description': '', 'doublon': None})
+    # VD-DOUBLON (titre) : similarite reelle (normalisee), pas une simple
+    # sous-chaine — a ce stade (saisie du nom) on n'a encore ni categorie ni
+    # marque choisies, donc pas de filtre supplementaire possible.
+    reglages = PlatformSettings.get_settings()
+    seuil = float(reglages.duplicate_title_similarity_pct)
+    doublon, meilleur_score = None, 0.0
+    for candidat in MasterProduct.objects.filter(moderation_status=ModerationStatus.APPROVED).select_related('category')[:500]:
+        score = title_similarity_pct(q, candidat.title)
+        if score > meilleur_score:
+            doublon, meilleur_score = candidat, score
+    if meilleur_score < seuil:
+        doublon = None
+    brand = Brand.objects.filter(name__icontains=q).first()
+    return Response({
+        'categorie': doublon.category.name if doublon else None,
+        'marque': brand.name if brand else None,
+        # description : aucun service de génération automatique n'existe — texte vide, le
+        # vendeur complète lui-même (relu par BelivaY, Q-34).
+        'description': '',
+        'doublon': _vd_fiche_dict(doublon, request) if doublon else None,
+    })
+
+
+@extend_schema(tags=["Vendors"], summary="Catalogue — fiche par code-barres")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vd_catalog_barcode(request, code):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    from apps.catalog.models import MasterProduct, ModerationStatus, ProductVariant
+    from django.db.models import Q as _Q
+    master_ids = ProductVariant.objects.filter(
+        _Q(sku=code) | _Q(barcode=code), is_active=True, moderation_status=ModerationStatus.APPROVED,
+    ).values_list('master_id', flat=True)
+    master = MasterProduct.objects.filter(
+        id__in=master_ids, moderation_status=ModerationStatus.APPROVED,
+    ).select_related('category').first()
+    if not master:
+        return Response(status=404)
+    return Response(_vd_fiche_dict(master, request))
+
+
+@extend_schema(tags=["Vendors"], summary="Reconnaissance d'image (non disponible)")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vd_catalog_recognize(request):
+    """Aucun service de reconnaissance visuelle n'existe dans le système. Liste vide (aucune
+    fiche reconnue) plutôt que des résultats inventés — état honnête compatible avec le contrat
+    FicheCatalogue[] sans rien casser côté écran."""
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    return Response([])
+
+
+@extend_schema(tags=["Vendors"], summary="Variantes d'une fiche catalogue")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vd_catalog_variants(request, master_id):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    from apps.catalog.models import MasterProduct
+    try:
+        master = MasterProduct.objects.get(pk=master_id)
+    except (MasterProduct.DoesNotExist, ValueError, TypeError):
+        return Response([])
+    out = []
+    for v in master.variants.filter(is_active=True):
+        offer = Product.objects.filter(vendor=request.user, variant=v).first()
+        out.append({
+            'variante': str(v.id),
+            'offreId': str(offer.id) if offer else None,
+            'etat': _vd_offer_etat(offer) if offer else None,
+        })
+    return Response(out)
+
+
+#  ── offres : liste, brouillon, nouveau produit, attach ───────────────────
+
+@extend_schema(tags=["Vendors"], summary="Mes offres (liste) / commencer un brouillon depuis une fiche")
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def vd_offers_list(request):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    from django.utils import timezone
+
+    if request.method == 'GET':
+        qs = Product.objects.filter(vendor=request.user).select_related(
+            'category', 'master', 'variant', 'condition',
+        ).prefetch_related('images')
+        produits = [_vd_offer_dict(p, request) for p in qs]
+        compteurs = {'en_vente': 0, 'en_verification': 0, 'en_pause': 0, 'refusee': 0, 'brouillon': 0, 'total': 0}
+        for p in produits:
+            etat = p['etat']
+            compteurs[etat] = compteurs.get(etat, 0) + 1
+            compteurs['total'] += 1
+        return Response({'compteurs': compteurs, 'produits': produits, 'luA': timezone.now().isoformat()})
+
+    # POST — commencer() : brouillon rattaché à une fiche existante du catalogue
+    from apps.catalog.models import MasterProduct, ProductVariant, ModerationStatus, Inventory
+    fiche_id = request.data.get('ficheId')
+    variante = request.data.get('variante')
+    try:
+        master = MasterProduct.objects.get(pk=fiche_id, moderation_status=ModerationStatus.APPROVED)
+    except (MasterProduct.DoesNotExist, ValueError, TypeError):
+        return Response({'ok': False, 'raison': 'fiche'}, status=200)
+    variant_obj = None
+    if variante:
+        variant_obj = ProductVariant.objects.filter(pk=variante, master=master).first()
+    elif master.is_mono_variant:
+        variant_obj = master.get_default_variant()
+    product = Product.objects.create(
+        title=master.title, category=master.category, vendor=request.user,
+        master=master, variant=variant_obj, price_xaf=0, is_active=False,
+        moderation_status=ModerationStatus.PENDING,
+    )
+    Inventory.objects.create(product=product, quantity=0)
+    return Response({'ok': True, 'brouillonId': str(product.id)})
+
+
+@extend_schema(tags=["Vendors"], summary="Nouveau produit (absent du catalogue) — créer le brouillon")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vd_offers_new(request):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    nom = (request.data.get('nom') or '').strip()
+    code = (request.data.get('code') or '').strip() if request.data.get('code') else ''
+    if not nom:
+        return Response({'ok': False, 'raison': 'recherche'}, status=200)
+    from apps.catalog.models import Inventory, ModerationStatus
+    category = _vd_fallback_category()
+    if category is None:
+        return Response({'ok': False, 'raison': 'recherche'}, status=200)
+    product = Product.objects.create(
+        title=nom[:200], category=category, vendor=request.user,
+        price_xaf=0, is_active=False, moderation_status=ModerationStatus.PENDING,
+    )
+    Inventory.objects.create(product=product, quantity=0)
+    if code:
+        product.moderation_reason = f"[code-barres scanné : {code[:40]}]"
+        product.save(update_fields=['moderation_reason'])
+    return Response({'ok': True, 'brouillonId': str(product.id)})
+
+
+@extend_schema(tags=["Vendors"], summary="Rattacher un brouillon à une fiche existante")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vd_offer_attach(request, offer_id):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    product, err2 = _vd_offer_or_404(request, offer_id)
+    if err2:
+        return err2
+    from apps.catalog.models import MasterProduct, ModerationStatus
+    try:
+        master = MasterProduct.objects.get(pk=request.data.get('ficheId'), moderation_status=ModerationStatus.APPROVED)
+    except (MasterProduct.DoesNotExist, ValueError, TypeError):
+        return Response({'ok': False, 'raison': 'fiche'}, status=200)
+    if product.moderation_status == ModerationStatus.APPROVED and product.is_active:
+        return Response({'ok': False, 'raison': 'etat'}, status=200)
+    product.master = master
+    product.category = master.category
+    product.save(update_fields=['master', 'category', 'updated_at'])
+    return Response({'ok': True, 'brouillonId': str(product.id)})
+
+
+@extend_schema(tags=["Vendors"], summary="Brouillon en cours (le plus récent, ou par id)")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vd_offers_draft(request):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    draft_id = request.query_params.get('id')
+    qs = Product.objects.filter(vendor=request.user, moderation_status='PENDING', is_active=False)
+    product = qs.filter(pk=draft_id).first() if draft_id else qs.order_by('-created_at').first()
+    if not product:
+        return Response(status=404)
+    return Response(_vd_offer_dict(product, request))
+
+
+@extend_schema(tags=["Vendors"], summary="Export CSV de mes offres")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vd_offers_export(request):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    import csv, io
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(['id', 'produit', 'variante', 'etat', 'prix', 'stock', 'seuil'])
+    for p in Product.objects.filter(vendor=request.user).select_related('variant'):
+        try:
+            stock = p.inventory.quantity
+        except Exception:
+            stock = 0
+        writer.writerow([p.id, p.title, p.variant_id or '', _vd_offer_etat(p), p.price_xaf, stock, p.get_effective_stock_threshold()])
+    return HttpResponse(buf.getvalue(), content_type='text/csv; charset=utf-8')
+
+
+@extend_schema(tags=["Vendors"], summary="Import CSV de mes offres (prix/stock)")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vd_offers_import(request):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    csv_text = request.data.get('csv')
+    if not csv_text or not str(csv_text).strip():
+        return Response({'ok': False, 'raison': 'vide'}, status=200)
+    import csv, io
+    from apps.catalog.models import Inventory
+    try:
+        reader = csv.DictReader(io.StringIO(csv_text))
+        lignes, ignorees = 0, 0
+        for row in reader:
+            offer_id = row.get('id')
+            product = Product.objects.filter(pk=offer_id, vendor=request.user).first() if offer_id else None
+            if not product:
+                ignorees += 1
+                continue
+            prix = row.get('prix')
+            if prix:
+                try:
+                    product.price_xaf = int(prix)
+                except ValueError:
+                    pass
+            product.save()
+            stock = row.get('stock')
+            if stock is not None and str(stock) != '':
+                try:
+                    inv, _created = Inventory.objects.get_or_create(product=product)
+                    inv.quantity = int(stock)
+                    inv.save()
+                except ValueError:
+                    pass
+            lignes += 1
+        return Response({'ok': True, 'lignes': lignes, 'ignorees': ignorees})
+    except Exception:
+        return Response({'ok': False, 'raison': 'format'}, status=200)
+
+
+#  ── offres : détail, modification, suppression, actions ──────────────────
+
+@extend_schema(tags=["Vendors"], summary="Offre — détail (GET), modification (PATCH), réglages (PUT), suppression (DELETE)")
+@api_view(['GET', 'PATCH', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def vd_offer_detail(request, offer_id):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    try:
+        product = Product.all_objects.get(pk=offer_id, vendor=request.user)
+    except (Product.DoesNotExist, ValueError, TypeError):
+        return Response(status=404)
+
+    if request.method == 'GET':
+        return Response(_vd_offer_dict(product, request))
+
+    if request.method == 'DELETE':
+        if product.is_active and product.moderation_status == 'APPROVED':
+            return Response({'ok': False, 'raison': 'etat'}, status=200)
+        product.delete()
+        return Response({'ok': True})
+
+    if request.method == 'PUT':
+        # regler() : paiementAuRetrait/prixAuto/plancherPrive sont du domaine livraison/colis
+        # (hors scope, acceptés sans effet) ; seuilAlerte est mon domaine (stock_threshold).
+        data = request.data
+        if 'seuilAlerte' in data:
+            try:
+                seuil = int(data['seuilAlerte'])
+                if seuil < 0:
+                    raise ValueError
+                product.stock_threshold = seuil
+                product.save(update_fields=['stock_threshold', 'updated_at'])
+            except (TypeError, ValueError):
+                return Response({'ok': False, 'raison': 'seuil'}, status=200)
+        return Response({'ok': True, 'produit': _vd_offer_dict(product, request)})
+
+    # PATCH — modifier() : ChampsBrouillon
+    data = request.data
+    if 'titre' in data:
+        titre = (data['titre'] or '').strip()
+        if not titre:
+            return Response({'ok': False, 'raison': 'nom'}, status=200)
+        product.title = titre[:200]
+    if 'description' in data:
+        product.description = data['description'] or ''
+    if 'noteVendeur' in data:
+        product.seller_note = (data['noteVendeur'] or '')[:2000]
+    if 'prix' in data and data['prix'] is not None:
+        try:
+            prix = int(data['prix'])
+            if prix < 0:
+                raise ValueError
+        except (TypeError, ValueError):
+            return Response({'ok': False, 'raison': 'prix'}, status=200)
+        product.price_xaf = prix
+    if 'prixBarre' in data:
+        pb = data['prixBarre']
+        if pb is not None:
+            try:
+                pb = int(pb)
+            except (TypeError, ValueError):
+                return Response({'ok': False, 'raison': 'promo'}, status=200)
+            if pb <= product.price_xaf:
+                return Response({'ok': False, 'raison': 'promo'}, status=200)
+        product.compare_at_price = pb
+    if 'finPromo' in data:
+        product.promo_end_date = _vd_parse_date(data['finPromo']) if data['finPromo'] else None
+    if 'seuilAlerte' in data and data['seuilAlerte'] is not None:
+        try:
+            product.stock_threshold = int(data['seuilAlerte'])
+        except (TypeError, ValueError):
+            return Response({'ok': False, 'raison': 'seuil'}, status=200)
+    if 'stock' in data and data['stock'] is not None:
+        try:
+            qte = int(data['stock'])
+            if qte < 0:
+                raise ValueError
+        except (TypeError, ValueError):
+            return Response({'ok': False, 'raison': 'stock'}, status=200)
+        from apps.catalog.models import Inventory
+        inv, _created = Inventory.objects.get_or_create(product=product)
+        inv.quantity = qte
+        inv.save(update_fields=['quantity', 'updated_at'])
+    if data.get('etatArticle'):
+        from apps.catalog.models import ProductCondition
+        cond = ProductCondition.objects.filter(name__iexact=data['etatArticle']).first()
+        if cond is None:
+            return Response({'ok': False, 'raison': 'categorie'}, status=200)
+        product.condition = cond
+    if data.get('categorie'):
+        from apps.catalog.models import Category
+        cat = Category.objects.filter(name__iexact=data['categorie'], is_active=True).first()
+        if cat is None:
+            return Response({'ok': False, 'raison': 'categorie'}, status=200)
+        product.category = cat
+    if data.get('marque') and product.master_id:
+        product.master.brand = data['marque'][:120]
+        product.master.save(update_fields=['brand'])
+    try:
+        product.save()
+    except Exception:
+        return Response({'ok': False, 'raison': 'description'}, status=200)
+    return Response({'ok': True, 'produit': _vd_offer_dict(product, request)})
+
+
+@extend_schema(tags=["Vendors"], summary="Annuler la suppression d'un brouillon")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vd_offer_restore(request, offer_id):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    try:
+        product = Product.all_objects.get(pk=offer_id, vendor=request.user)
+    except (Product.DoesNotExist, ValueError, TypeError):
+        return Response(status=404)
+    product.restore()
+    return Response(status=204)
+
+
+@extend_schema(tags=["Vendors"], summary="Mettre en pause / reprendre une offre")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vd_offer_pause(request, offer_id):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    product, err2 = _vd_offer_or_404(request, offer_id)
+    if err2:
+        return err2
+    product.is_active = not bool(request.data.get('enPause'))
+    product.save(update_fields=['is_active', 'updated_at'])
+    return Response(_vd_offer_dict(product, request))
+
+
+@extend_schema(tags=["Vendors"], summary="Stock rapide d'une offre")
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def vd_offer_stock(request, offer_id):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    product, err2 = _vd_offer_or_404(request, offer_id)
+    if err2:
+        return err2
+    try:
+        qte = int(request.data.get('stock'))
+        if qte < 0:
+            raise ValueError
+    except (TypeError, ValueError):
+        return Response({'ok': False, 'raison': 'stock'}, status=200)
+    from apps.catalog.models import Inventory
+    inv, _created = Inventory.objects.get_or_create(product=product)
+    inv.quantity = qte
+    inv.save(update_fields=['quantity', 'updated_at'])
+    return Response({'ok': True, 'produit': _vd_offer_dict(product, request)})
+
+
+@extend_schema(tags=["Vendors"], summary="Dupliquer une offre pour une autre variante")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vd_offer_duplicate(request, offer_id):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    product, err2 = _vd_offer_or_404(request, offer_id)
+    if err2:
+        return err2
+    from apps.catalog.models import Inventory
+    copy = Product.objects.create(
+        title=f"Copie de {product.title}", description=product.description,
+        short_description=product.short_description, price_xaf=product.price_xaf,
+        compare_at_price=product.compare_at_price, stock_threshold=product.stock_threshold,
+        is_active=False, category=product.category, vendor=request.user,
+        master=product.master, condition=product.condition, moderation_status='PENDING',
+    )
+    Inventory.objects.create(product=copy, quantity=0)
+    return Response({'ok': True, 'brouillonId': str(copy.id), 'rattache': bool(product.master_id)})
+
+
+#  ── offres : photos ────────────────────────────────────────────────────────
+
+@extend_schema(tags=["Vendors"], summary="Photos d'une offre : lister (GET), ajouter (POST), ordonner (PUT)")
+@api_view(['GET', 'POST', 'PUT'])
+@permission_classes([IsAuthenticated])
+def vd_offer_photos(request, offer_id):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    product, err2 = _vd_offer_or_404(request, offer_id)
+    if err2:
+        return err2
+
+    if request.method == 'GET':
+        return Response([_vd_serialize_photo(i, request) for i in product.images.all()])
+
+    if request.method == 'PUT':
+        ids = request.data.get('ids') or []
+        for idx, pid in enumerate(ids):
+            try:
+                pid_int = int(pid)
+            except (TypeError, ValueError):
+                continue
+            product.images.filter(pk=pid_int).update(order=idx, is_primary=(idx == 0))
+        return Response(status=204)
+
+    # POST — ajouterPhoto() : PhotoPrise (image en data: URI, prise sur l'appareil)
+    image_str = request.data.get('image') or ''
+    if product.images.count() >= MAX_IMAGES_PER_PRODUCT:
+        return Response({'ok': False, 'raison': 'max'}, status=200)
+    content = None
+    if isinstance(image_str, str) and image_str.startswith('data:'):
+        try:
+            import base64
+            import time
+            from django.core.files.base import ContentFile
+            header, b64data = image_str.split(',', 1)
+            ext = 'jpg'
+            if 'png' in header:
+                ext = 'png'
+            elif 'webp' in header:
+                ext = 'webp'
+            raw = base64.b64decode(b64data)
+            if len(raw) > MAX_IMAGE_SIZE_BYTES:
+                return Response({'ok': False, 'raison': 'petite'}, status=200)
+            content = ContentFile(raw, name=f"offre-{product.id}-{int(time.time() * 1000)}.{ext}")
+        except Exception:
+            return Response({'ok': False, 'raison': 'petite'}, status=200)
+    if content is None:
+        return Response({'ok': False, 'raison': 'petite'}, status=200)
+    img = ProductImage.objects.create(product=product, image=content)
+    return Response({'ok': True, 'photo': _vd_serialize_photo(img, request), 'nombre': product.images.count()})
+
+
+@extend_schema(tags=["Vendors"], summary="Retirer une photo d'une offre")
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def vd_offer_photo_delete(request, offer_id, photo_id):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    product, err2 = _vd_offer_or_404(request, offer_id)
+    if err2:
+        return err2
+    product.images.filter(pk=photo_id).delete()
+    return Response(status=204)
+
+
+#  ── offres : prix, conseil, publication, description ──────────────────────
+
+@extend_schema(tags=["Vendors"], summary="Aperçu « vous gardez » (Apercu) à un prix donné")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vd_offers_quote(request):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    try:
+        prix = int(request.query_params.get('prix'))
+        if prix < 0:
+            raise ValueError
+    except (TypeError, ValueError):
+        return Response({'detail': 'Paramètre "prix" requis (entier).'}, status=400)
+    offre_id = request.query_params.get('offre')
+    product = Product.objects.filter(pk=offre_id, vendor=request.user).first() if offre_id else None
+    # Constantes documentées dans src/donnees/domaines/offres.ts (commentaires du contrat produit),
+    # pas inventées ici : 500 F minimum publiable, 700 F commission minimale (VD-COM-MIN), 5 000 F
+    # seuil petit prix (VD-COM-POINTS).
+    MINIMUM = 500
+    COMMISSION_MIN = 700
+    SEUIL_PETIT_PRIX = 5000
+    if prix < MINIMUM:
+        return Response({
+            'prix': prix, 'garde': None, 'partPourCent': None,
+            'petitPrix': prix < SEUIL_PETIT_PRIX, 'points': 0,
+            'minimum': MINIMUM, 'plagesMinimale': [], 'commissionMinimale': COMMISSION_MIN,
+            'seuilPetitPrix': SEUIL_PETIT_PRIX, 'plafond': None, 'refus': 'minimum',
+        })
+    vendor = product.vendor if product else request.user
+    garde, _commission, _rate = _vd_commission_kept(vendor, prix)
+    part = round(garde / prix * 100, 1) if prix else None
+    return Response({
+        'prix': prix, 'garde': garde, 'partPourCent': part,
+        'petitPrix': prix < SEUIL_PETIT_PRIX, 'points': 3 if prix < SEUIL_PETIT_PRIX else 0,
+        'minimum': MINIMUM, 'plagesMinimale': [], 'commissionMinimale': COMMISSION_MIN,
+        'seuilPetitPrix': SEUIL_PETIT_PRIX, 'plafond': None, 'refus': None,
+    })
+
+
+@extend_schema(tags=["Vendors"], summary="Prix conseillé (VD-CONSEIL-PRIX — fondé sur les autres offres BelivaY, jamais la concurrence externe)")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vd_offer_price_advice(request, offer_id):
+    """
+    Decision produit (12 oct.) : pas de conseil fonde sur la concurrence
+    exterieure (conditions d'utilisation, maintenance, fiabilite des
+    donnees) et pas de structure vide non plus. BelivaY a ses propres
+    donnees : les AUTRES offres actives sur la MEME fiche produit.
+
+    Formule (deja ecrite dans le contrat TypeScript du prototype, DP-56/Q-36) :
+    conseille = mediane - 100 F, jamais sous le 10e centile du marche, jamais
+    au-dessus du prix tape. Sous le seuil PlatformSettings.price_anomaly_min_offers
+    (3 par defaut), pas assez d'offres pour un conseil fiable -> 404, que le
+    connecteur frontend (ouNull) traduit en `null` (etat honnete deja prevu
+    par le contrat `Conseil | null`), exactement comme l'ecran se comporte
+    deja aujourd'hui.
+
+    Pas de rang affiche (« vous etes 2e ») : decision produit explicite, la
+    distance de livraison compte dans le choix de la meilleure offre, le
+    rang changerait d'un client a l'autre.
+    """
+    import statistics
+
+    from apps.orders.models import PlatformSettings
+    from apps.catalog.models import ModerationStatus
+
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    product, err2 = _vd_offer_or_404(request, offer_id)
+    if err2:
+        return err2
+    try:
+        prix_saisi = int(request.query_params.get('prix') or product.price_xaf or 0)
+    except (TypeError, ValueError):
+        prix_saisi = product.price_xaf or 0
+
+    reglages = PlatformSettings.get_settings()
+    if not product.master_id or not prix_saisi:
+        return Response(status=404)
+
+    autres_prix = list(
+        Product.objects.filter(
+            master_id=product.master_id, is_active=True,
+            moderation_status=ModerationStatus.APPROVED,
+        ).exclude(pk=product.pk).exclude(price_xaf=0)
+        .values_list('price_xaf', flat=True)
+    )
+    if len(autres_prix) < reglages.price_anomaly_min_offers:
+        return Response(status=404)
+
+    autres_prix_tries = sorted(autres_prix)
+    mediane = statistics.median(autres_prix_tries)
+    p10 = (
+        statistics.quantiles(autres_prix_tries, n=10)[0]
+        if len(autres_prix_tries) >= 2 else autres_prix_tries[0]
+    )
+    conseille = int(mediane) - 100
+    conseille = max(conseille, int(p10))
+    conseille = min(conseille, prix_saisi)
+    conseille = max(conseille, 0)
+
+    garde_conseille, _commission, _rate = _vd_commission_kept(product.vendor, conseille)
+    part_conseille = round(garde_conseille / conseille * 100, 1) if conseille else 0.0
+    moins_cher = min(autres_prix_tries)
+    economie_client = max(0, moins_cher - conseille)
+
+    return Response({
+        'prixSaisi': prix_saisi,
+        'conseille': conseille,
+        'gardeConseille': garde_conseille,
+        'partConseille': part_conseille,
+        # Pas de classement par zone : decision produit (12 oct.), la distance de
+        # livraison influence le choix du client, le rang ne serait pas stable.
+        'zones': [],
+        'marche': {'nombre': len(autres_prix_tries), 'min': autres_prix_tries[0], 'max': autres_prix_tries[-1]},
+        'economieClient': economie_client,
+        # Aucun suivi d'audience/analytics de commandes par offre n'existe dans le
+        # systeme : honnete a zero plutot qu'un chiffre d'exemple invente.
+        'clientsSemaine': 0,
+        'commandesAuxMoinsChers': [0, 0],
+        'dejaLeMoinsCher': prix_saisi <= moins_cher,
+    })
+
+
+@extend_schema(tags=["Vendors"], summary="Publier une offre")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vd_offer_publish(request, offer_id):
+    from apps.orders.models import PlatformSettings
+    from apps.vendors.price_duplicate_checks import (
+        apply_duplicate_flag, apply_price_flag, check_cross_vendor_duplicate_fiche,
+        check_price_anomaly, check_same_vendor_duplicate,
+    )
+
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    product, err2 = _vd_offer_or_404(request, offer_id)
+    if err2:
+        return err2
+    d = _vd_offer_dict(product, request)
+    if d['manques']:
+        raison = {'photos': 'photos', 'prix': 'prix', 'stock': 'stock'}.get(d['manques'][0], 'etat')
+        return Response({'ok': False, 'raison': raison}, status=200)
+
+    reglages = PlatformSettings.get_settings()
+    confirme = bool(request.data.get('confirmer'))
+
+    # VD-DOUBLON, cas (1) : le MEME vendeur publie-t-il deja un produit quasi
+    # identique ? Univoque, toujours bloquant.
+    doublon_vendeur = check_same_vendor_duplicate(product, reglages)
+    if doublon_vendeur is not None:
+        return Response({
+            'ok': False, 'raison': 'doublon_vendeur',
+            'detail': {'offreExistanteId': str(doublon_vendeur.id), 'titre': doublon_vendeur.title},
+        }, status=200)
+
+    # VD-PRIX-ANORMAL, a la publication (prix initial).
+    anomalie = None
+    if product.price_xaf:
+        anomalie = check_price_anomaly(product, product.price_xaf, reglages)
+    if anomalie and anomalie['niveau'] == 'bloque' and not confirme:
+        return Response({'ok': False, 'raison': 'prix_anormal', 'detail': anomalie}, status=200)
+
+    # VD-DOUBLON, cas (2) : fiche d'un AUTRE vendeur deja existante ?
+    # 'certain' -> rattachement silencieux (Publication.rattache, FCH-02).
+    # 'probable' -> signalement admin seulement, jamais bloquant.
+    if product.master_id is None:
+        niveau_doublon, master_trouve = check_cross_vendor_duplicate_fiche(
+            product, product.title, product.category, reglages,
+        )
+        if niveau_doublon == 'certain' and master_trouve is not None:
+            product.master = master_trouve
+            product.category = master_trouve.category
+            product.save(update_fields=['master', 'category', 'updated_at'])
+        elif niveau_doublon == 'probable' and master_trouve is not None:
+            apply_duplicate_flag(product, master_trouve)
+
+    hors_ligne = bool(request.data.get('horsLigne'))
+    product.is_active = not hors_ligne
+    deja_approuve = bool(product.master_id and product.master.moderation_status == 'APPROVED')
+    product.moderation_status = 'APPROVED' if deja_approuve else 'PENDING'
+    product.save(update_fields=['is_active', 'moderation_status', 'updated_at'])
+
+    if anomalie:
+        apply_price_flag(product, anomalie)
+
+    publication = _vd_publication_dict(product)
+    return Response({'ok': True, **publication})
+
+
+def _vd_publication_dict(product):
+    from django.utils import timezone
+    return {
+        'offreId': str(product.id), 'titre': product.title,
+        'variante': str(product.variant_id) if product.variant_id else '',
+        'prix': product.price_xaf,
+        'reponseAvant': (timezone.now() + timezone.timedelta(hours=48)).isoformat(),
+        'meilleurPrix': False, 'zonesPremier': 0, 'zones': 0, 'avantages': [],
+        'enFile': False, 'nouveau': product.master_id is None, 'rattache': bool(product.master_id),
+    }
+
+
+@extend_schema(tags=["Vendors"], summary="Changer le prix d'une offre déjà en vente")
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def vd_offer_price(request, offer_id):
+    from apps.orders.models import PlatformSettings
+    from apps.vendors.price_duplicate_checks import apply_price_flag, check_price_anomaly
+
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    product, err2 = _vd_offer_or_404(request, offer_id)
+    if err2:
+        return err2
+    try:
+        prix = int(request.data.get('prix'))
+        if prix < 0:
+            raise ValueError
+    except (TypeError, ValueError):
+        return Response({'ok': False, 'raison': 'prix'}, status=200)
+    if prix < 500:
+        return Response({'ok': False, 'raison': 'prix_minimum'}, status=200)
+
+    confirme = bool(request.data.get('confirmer'))
+    reglages = PlatformSettings.get_settings()
+    anomalie = check_price_anomaly(product, prix, reglages)
+    if anomalie and anomalie['niveau'] in ('bloque', 'confirmation') and not confirme:
+        return Response({'ok': False, 'raison': 'prix_anormal', 'detail': anomalie}, status=200)
+
+    rester = bool(request.data.get('rester'))
+    product.price_xaf = prix
+    if not rester:
+        product.is_active = True
+    product.save(update_fields=['price_xaf', 'is_active', 'updated_at'])
+    if anomalie:
+        apply_price_flag(product, anomalie)
+    return Response({'ok': True, 'produit': _vd_offer_dict(product, request)})
+
+
+@extend_schema(tags=["Vendors"], summary="Publication en cours (par offre, ou la plus récente)")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vd_offer_publication(request, offer_id=None):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    if offer_id:
+        product = Product.objects.filter(pk=offer_id, vendor=request.user).first()
+    else:
+        product = Product.objects.filter(vendor=request.user, is_active=True).order_by('-updated_at').first()
+    if not product:
+        return Response(status=404)
+    return Response(_vd_publication_dict(product))
+
+
+@extend_schema(tags=["Vendors"], summary="Proposer une correction de la fiche (relue par BelivaY)")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vd_offer_description_proposal(request, offer_id):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    product, err2 = _vd_offer_or_404(request, offer_id)
+    if err2:
+        return err2
+    texte = (request.data.get('texte') or '').strip()
+    if len(texte) < 10:
+        return Response({'ok': False, 'raison': 'court'}, status=200)
+    if len(texte) > 2000:
+        return Response({'ok': False, 'raison': 'long'}, status=200)
+    import re
+    if re.search(r'\d{8,}', texte) or '@' in texte:
+        return Response({'ok': False, 'raison': 'coordonnees'}, status=200)
+    from django.utils import timezone
+    # Pas de file de modération dédiée construite dans cette vague (VD-FICHE-DELAI non confirmé
+    # par la gouvernance) : trace minimale dans moderation_reason, en attente de relecture BelivaY.
+    product.moderation_reason = f"[Proposition de description en attente de relecture] {texte}"
+    product.save(update_fields=['moderation_reason', 'updated_at'])
+    reponse_avant = timezone.now() + timezone.timedelta(hours=48)
+    return Response({'ok': True, 'reponseAvant': reponse_avant.isoformat()})
+
+
+#  ── stock (AJ-A) ────────────────────────────────────────────────────────────
+
+@extend_schema(tags=["Vendors"], summary="Stock de mes offres")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vd_stock_list(request):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    out = []
+    for p in Product.objects.filter(vendor=request.user).select_related('category'):
+        try:
+            qty = p.inventory.quantity
+        except Exception:
+            qty = 0
+        seuil = p.get_effective_stock_threshold()
+        out.append({
+            'offreId': str(p.id), 'titre': p.title, 'sku': p.sku,
+            'stock': qty, 'seuilAlerte': seuil, 'stockBas': qty <= seuil,
+            'prix': p.price_xaf, 'etat': _vd_offer_etat(p),
+            'majA': p.updated_at.isoformat() if p.updated_at else None,
+        })
+    return Response({'produits': out, 'total': len(out)})
+
+
+@extend_schema(tags=["Vendors"], summary="Historique des mouvements de stock")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vd_stock_movements(request):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    from apps.catalog.models import StockMovement
+    offer_id = request.query_params.get('offre')
+    qs = StockMovement.objects.filter(product__vendor=request.user).select_related('product', 'created_by')
+    if offer_id:
+        qs = qs.filter(product_id=offer_id)
+    qs = qs.order_by('-created_at')[:200]
+    data = [{
+        'id': str(m.id), 'offreId': str(m.product_id), 'produit': m.product.title,
+        'delta': m.delta, 'stockApres': m.quantity_after, 'motif': m.reason,
+        'note': m.note, 'par': m.created_by.get_username() if m.created_by else None,
+        'a': m.created_at.isoformat(),
+    } for m in qs]
+    return Response({'mouvements': data, 'total': len(data)})
+
+
+@extend_schema(tags=["Vendors"], summary="Export CSV du stock")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vd_stock_export(request):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    import csv, io
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(['id', 'produit', 'sku', 'stock', 'seuil', 'prix'])
+    for p in Product.objects.filter(vendor=request.user):
+        try:
+            qty = p.inventory.quantity
+        except Exception:
+            qty = 0
+        writer.writerow([p.id, p.title, p.sku, qty, p.get_effective_stock_threshold(), p.price_xaf])
+    return HttpResponse(buf.getvalue(), content_type='text/csv; charset=utf-8')
+
+
+@extend_schema(tags=["Vendors"], summary="Ajuster le stock d'une offre (avec historique)")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vd_stock_adjust(request, offer_id):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    product, err2 = _vd_offer_or_404(request, offer_id)
+    if err2:
+        return err2
+    from apps.catalog.models import Inventory, StockMovement
+    inv, _created = Inventory.objects.get_or_create(product=product)
+    delta_raw = request.data.get('delta')
+    quantite_raw = request.data.get('quantite')
+    motif = request.data.get('motif') or StockMovement.Reason.ADJUSTMENT
+    note = (request.data.get('note') or '')[:255]
+    try:
+        if delta_raw is not None:
+            delta = int(delta_raw)
+            new_qty = inv.quantity + delta
+        elif quantite_raw is not None:
+            new_qty = int(quantite_raw)
+            delta = new_qty - inv.quantity
+        else:
+            return Response({'detail': 'Fournir "delta" ou "quantite".'}, status=400)
+    except (TypeError, ValueError):
+        return Response({'detail': 'Valeur de stock invalide.'}, status=400)
+    if new_qty < 0:
+        return Response({'ok': False, 'raison': 'negatif'}, status=200)
+    if motif not in StockMovement.Reason.values:
+        motif = StockMovement.Reason.ADJUSTMENT
+    with transaction.atomic():
+        inv.quantity = new_qty
+        inv.save(update_fields=['quantity', 'updated_at'])
+        mv = StockMovement.objects.create(
+            product=product, delta=delta, quantity_after=new_qty,
+            reason=motif, note=note, created_by=request.user,
+        )
+    return Response({'ok': True, 'stock': new_qty, 'mouvementId': str(mv.id)})
+
+
+@extend_schema(tags=["Vendors"], summary="Seuil d'alerte stock d'une offre")
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def vd_stock_threshold(request, offer_id):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    product, err2 = _vd_offer_or_404(request, offer_id)
+    if err2:
+        return err2
+    seuil = request.data.get('seuil')
+    try:
+        product.stock_threshold = int(seuil) if seuil is not None else None
+    except (TypeError, ValueError):
+        return Response({'detail': 'Seuil invalide.'}, status=400)
+    product.save(update_fields=['stock_threshold', 'updated_at'])
+    return Response({'ok': True, 'seuilAlerte': product.get_effective_stock_threshold()})
+
+
+#  ── ventes flash / promotions ───────────────────────────────────────────────
+
+@extend_schema(tags=["Vendors"], summary="Mes campagnes promo/flash (GET) / en créer une (POST)")
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def vd_promotions_list_create(request):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    from apps.catalog.models import PromotionCampaign
+    from apps.catalog.serializers import PromotionCampaignSerializer
+    if request.method == 'GET':
+        qs = PromotionCampaign.objects.filter(product__vendor=request.user).select_related('product').order_by('-created_at')
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            qs = qs.filter(status=status_filter.upper())
+        origin_filter = request.query_params.get('origin')
+        if origin_filter:
+            qs = qs.filter(origin=origin_filter)
+        return Response(PromotionCampaignSerializer(qs, many=True, context={'request': request}).data)
+    serializer = PromotionCampaignSerializer(data=request.data, context={'request': request})
+    serializer.is_valid(raise_exception=True)
+    campaign = serializer.save()  # origin par défaut = seller (modèle) : c'est bien ce qu'on veut ici
+    return Response(PromotionCampaignSerializer(campaign, context={'request': request}).data, status=201)
+
+
+@extend_schema(tags=["Vendors"], summary="Règles des ventes flash (durée, remise, stock minimum)")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vd_promotions_rules(request):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    # Reprises telles quelles de la validation déjà verrouillée (PromotionCampaign.clean() /
+    # PromotionCampaignSerializer.validate()) — jamais un nouveau barème inventé ici.
+    return Response({
+        'dureeHMin': 2, 'dureeHMax': 48,
+        'remisePctMin': 15, 'remisePctMax': 70,
+        'stockReserveMin': 5,
+        'commissionUpliftFlash': 5,
+    })
+
+
+@extend_schema(tags=["Vendors"], summary="Offres éligibles à une vente flash")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vd_promotions_offers(request):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    qs = Product.objects.filter(vendor=request.user, is_active=True, moderation_status='APPROVED')
+    return Response([{'id': str(p.id), 'titre': p.title, 'prix': p.price_xaf} for p in qs])
+
+
+@extend_schema(tags=["Vendors"], summary="Simuler une vente flash avant de la créer")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vd_promotions_quote(request):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    product_id = request.data.get('offreId') or request.data.get('product')
+    product = Product.objects.filter(pk=product_id, vendor=request.user).first()
+    if not product:
+        return Response({'detail': 'Offre introuvable.'}, status=404)
+    try:
+        promo_price = int(request.data.get('prixPromo') or request.data.get('promo_price_xaf'))
+    except (TypeError, ValueError):
+        return Response({'detail': 'Prix promo invalide.'}, status=400)
+    reference = product.price_xaf
+    if reference <= promo_price:
+        return Response({'ok': False, 'raison': 'prix'}, status=200)
+    remise_pct = round((1 - promo_price / reference) * 100, 1)
+    garde, commission, _rate = _vd_commission_kept(product.vendor, promo_price)
+    return Response({
+        'ok': True, 'prixReference': reference, 'prixPromo': promo_price,
+        'remisePourCent': remise_pct, 'garde': garde, 'commission': commission,
+        'remiseValide': 15 <= remise_pct <= 70,
+    })
+
+
+@extend_schema(tags=["Vendors"], summary="Arrêter une vente flash/promotion")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vd_promotions_stop(request, promo_id):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    from apps.catalog.models import PromotionCampaign
+    try:
+        campaign = PromotionCampaign.objects.get(pk=promo_id, product__vendor=request.user)
+    except (PromotionCampaign.DoesNotExist, ValueError, TypeError):
+        return Response(status=404)
+    if campaign.status not in (PromotionCampaign.Status.APPROVED, PromotionCampaign.Status.PENDING):
+        return Response({'ok': False, 'raison': 'etat'}, status=200)
+    campaign.status = PromotionCampaign.Status.SUSPENDED
+    campaign.save(update_fields=['status', 'updated_at'])
+    from apps.catalog.serializers import PromotionCampaignSerializer
+    return Response({'ok': True, 'campagne': PromotionCampaignSerializer(campaign, context={'request': request}).data})
+
+
+#  ── questions clients ────────────────────────────────────────────────────
+
+def _vd_question_dict(q):
+    return {
+        'id': str(q.id), 'offreId': str(q.product_id), 'produit': q.product.title,
+        'texte': q.text, 'reponse': q.answer_text or None,
+        'repondueA': q.answered_at.isoformat() if q.answered_at else None,
+        'signalee': q.is_reported, 'motifSignalement': q.report_reason or None,
+        'creeA': q.created_at.isoformat(),
+    }
+
+
+@extend_schema(tags=["Vendors"], summary="Questions clients sur mes offres")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vd_questions_list(request):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    from apps.catalog.models import ProductQuestion
+    qs = ProductQuestion.objects.filter(product__vendor=request.user).select_related('product').order_by('-created_at')[:200]
+    return Response({'questions': [_vd_question_dict(q) for q in qs], 'total': qs.count() if hasattr(qs, 'count') else len(qs)})
+
+
+@extend_schema(tags=["Vendors"], summary="Filtrer les questions clients")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vd_questions_filter(request):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    from apps.catalog.models import ProductQuestion
+    qs = ProductQuestion.objects.filter(product__vendor=request.user).select_related('product')
+    etat = request.data.get('etat')
+    if etat == 'en_attente':
+        qs = qs.filter(answered_at__isnull=True)
+    elif etat == 'repondue':
+        qs = qs.filter(answered_at__isnull=False)
+    elif etat == 'signalee':
+        qs = qs.filter(is_reported=True)
+    offre_id = request.data.get('offreId')
+    if offre_id:
+        qs = qs.filter(product_id=offre_id)
+    qs = list(qs.order_by('-created_at')[:200])
+    return Response({'questions': [_vd_question_dict(q) for q in qs], 'total': len(qs)})
+
+
+@extend_schema(tags=["Vendors"], summary="Répondre à une question client")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vd_question_answer(request, question_id):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    from apps.catalog.models import ProductQuestion
+    try:
+        q = ProductQuestion.objects.get(pk=question_id, product__vendor=request.user)
+    except (ProductQuestion.DoesNotExist, ValueError, TypeError):
+        return Response(status=404)
+    texte = (request.data.get('reponse') or request.data.get('texte') or '').strip()
+    if not texte:
+        return Response({'ok': False, 'raison': 'vide'}, status=200)
+    from django.utils import timezone
+    q.answer_text = texte[:2000]
+    q.answered_at = timezone.now()
+    q.answered_by = request.user
+    q.save(update_fields=['answer_text', 'answered_at', 'answered_by'])
+    return Response({'ok': True, 'question': _vd_question_dict(q)})
+
+
+@extend_schema(tags=["Vendors"], summary="Signaler une question client (abus)")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vd_question_report(request, question_id):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    from apps.catalog.models import ProductQuestion
+    try:
+        q = ProductQuestion.objects.get(pk=question_id, product__vendor=request.user)
+    except (ProductQuestion.DoesNotExist, ValueError, TypeError):
+        return Response(status=404)
+    from django.utils import timezone
+    q.is_reported = True
+    q.report_reason = (request.data.get('motif') or '')[:255]
+    q.reported_at = timezone.now()
+    q.save(update_fields=['is_reported', 'report_reason', 'reported_at'])
+    return Response({'ok': True, 'question': _vd_question_dict(q)})
+
+
+@extend_schema(tags=["Vendors"], summary="Modèles de réponse (questions clients) — lister / créer")
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def vd_questions_templates(request):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    from apps.catalog.models import VendorQuestionTemplate
+    if request.method == 'GET':
+        qs = VendorQuestionTemplate.objects.filter(vendor=request.user).order_by('-created_at')
+        return Response([{'id': str(t.id), 'texte': t.text, 'creeA': t.created_at.isoformat()} for t in qs])
+    texte = (request.data.get('texte') or '').strip()
+    if not texte:
+        return Response({'detail': 'Champ "texte" requis.'}, status=400)
+    t = VendorQuestionTemplate.objects.create(vendor=request.user, text=texte[:2000])
+    return Response({'id': str(t.id), 'texte': t.text, 'creeA': t.created_at.isoformat()}, status=201)
+
+
+@extend_schema(tags=["Vendors"], summary="Supprimer un modèle de réponse")
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def vd_questions_template_delete(request, template_id):
+    vp, err = _vd_active_vendor(request)
+    if err:
+        return err
+    from apps.catalog.models import VendorQuestionTemplate
+    VendorQuestionTemplate.objects.filter(pk=template_id, vendor=request.user).delete()
+    return Response(status=204)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# VAGUE D'INTÉGRATION ESPACE-VENDEUR AUTONOME (12 oct.) — DOMAINES "ARGENT",
+# "VERSEMENTS", "TRUST", "PLANS" (voir espace-vendeur/INTEGRATION-API.md §1-3).
+#
+# RÉUTILISE AU MAXIMUM L'EXISTANT (consigne de la mission) plutôt que de
+# recalculer depuis Order/Dispute/Return comme le faisait l'approximation de
+# views_money_v2.py (Lot 2) :
+#   - argent réel     : apps.payments.settlements (EscrowHold, SettlementBatch,
+#     PayoutRequest, Adjustment, amount_due()) — moteur financier construit
+#     cette nuit, DÉJÀ la source de vérité de /api/payments/v2/partner/*.
+#   - Trust Score     : apps.accounts.trust_score (trust_score_payload,
+#     ROLE_TIER_RULES, SanctionRecord) — voir rapport de mission sur V5.4/V5.5.
+#   - OTP deux codes  : apps.otp.services (envoyer/verifier) — pas réinventé.
+#
+# ⚠️ CONFLIT CONNU (signalé, pas résolu ici) : apps.payments.settlements est
+# bâti sur le principe explicite « ni solde, ni bouton de retrait » (cycle de
+# règlement automatique) — voir apps/payments/settlements/models.py, en-tête.
+# Cela contredit la règle produit mémorisée « le vendeur décide quand il
+# retire » (PULL). vendor_withdrawal_create() plus haut a déjà basculé vers ce
+# nouveau chemin et laisse l'ancien chemin (retrait à la demande) commenté
+# comme désactivé. Les vues ci-dessous EXPOSENT la réalité actuelle du moteur
+# financier (lecture seule) sans trancher ce conflit — voir le rapport de
+# mission pour la décision à prendre côté produit.
+# ══════════════════════════════════════════════════════════════════════════════
+
+from rest_framework.decorators import renderer_classes as renderer_classes
+from rest_framework.renderers import BaseRenderer as _BaseRenderer, JSONRenderer as _JSONRenderer
+
+
+def _vendor_or_error(request):
+    """(profil, None) ou (None, Response 403/404) — même convention que le reste du fichier."""
+    try:
+        profile = VendorProfile.objects.get(user=request.user)
+    except VendorProfile.DoesNotExist:
+        return None, Response({'detail': 'Profil vendeur introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+    if not profile.is_active_vendor:
+        return None, Response({'detail': "Votre compte vendeur n'est pas encore approuvé."}, status=status.HTTP_403_FORBIDDEN)
+    return profile, None
+
+
+def _vendor_payee(profile):
+    """Compte financier du vendeur, ou None s'il n'a encore aucune activité (jamais créé en lecture)."""
+    from apps.payments.bridge.actors import payee_for_vendor
+    return payee_for_vendor(profile, create=False)
+
+
+def _instant(dt):
+    """Instant (ms epoch) — None passe à travers."""
+    if dt is None:
+        return None
+    return int(dt.timestamp() * 1000)
+
+
+def _jour(dt):
+    """Jour ('AAAA-MM-JJ') — None passe à travers."""
+    if dt is None:
+        return None
+    d = dt.date() if hasattr(dt, 'date') else dt
+    return d.isoformat()
+
+
+def _momo_label(operator_code: str) -> str:
+    return {'MTN_MOMO': 'MTN', 'ORANGE_MONEY': 'Orange'}.get(operator_code or '', operator_code or '')
+
+
+def _momo_code(label: str) -> str:
+    return {'MTN': 'MTN_MOMO', 'Orange': 'ORANGE_MONEY'}.get(label or '', '')
+
+
+def _vendor_ref(order_id):
+    return f"BLV-{order_id:05d}" if order_id else None
+
+
+def _article_for_order(order_id, vendor_user):
+    """ArticleArgent{titre, variante, dessin} — premier article du vendeur sur la commande
+    (approximation : une commande peut porter plusieurs articles du même vendeur, l'écran n'en montre qu'un)."""
+    item = OrderItem.objects.filter(order_id=order_id, product__vendor=vendor_user).select_related('product').first()
+    if item is None:
+        return {'titre': f"Commande #{order_id}", 'variante': '', 'dessin': None}
+    dessin = None
+    try:
+        img = item.product.images.filter(is_primary=True).first() or item.product.images.first()
+        dessin = img.image.url if img and img.image else None
+    except Exception:
+        dessin = None
+    return {'titre': item.title_snapshot, 'variante': '', 'dessin': dessin}
+
+
+def _palier_label(tier: str) -> str:
+    from apps.accounts.trust_score import TrustScoreProfile as _TSP
+    labels = _TSP.ROLE_TIER_LABELS[_TSP.Role.VENDOR]
+    return labels.get(tier, labels['NEW'])
+
+
+def _release_days_for_role_tier(tier: str) -> int:
+    """Délai de libération (jours) par palier Trust Score V5.5 — réutilise la même grille
+    documentée que views_money_v2.RELEASE_DELAY_DAYS_BY_TIER (3j Bronze/Argent, 1j Or/Platine),
+    appliquée cette fois aux paliers NEW/CONFIRMED/GOLD/PLATINUM du moteur réel."""
+    return {'NEW': 3, 'CONFIRMED': 3, 'GOLD': 1, 'PLATINUM': 1}.get(tier, 3)
+
+
+def _add_business_hours_excluding_sunday(start, hours):
+    """Ajoute `hours` heures à `start` en ignorant les dimanches (72 h ouvrées, dimanche non
+    compté — CON-01, DP-15, Q-53, donné par le contrat frontend, pas inventé ici)."""
+    remaining = hours
+    current = start
+    while remaining > 0:
+        if current.weekday() == 6:  # dimanche
+            current = (current + timezone.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+            continue
+        current = current + timezone.timedelta(hours=1)
+        remaining -= 1
+    return current
+
+
+def _decision_payload(sanction, type_str):
+    from .models import TrustScoreAppeal
+    appeal = TrustScoreAppeal.objects.filter(sanction=sanction).first()
+    contestation = None
+    if appeal:
+        contestation = {
+            'envoyeeA': _instant(appeal.created_at),
+            'texte': appeal.text,
+            'preuves': appeal.evidence_urls or [],
+            'reponseAvant': _instant(appeal.response_due_at),
+            'reponse': (
+                {
+                    'a': _instant(appeal.responded_at),
+                    'issue': 'maintenue' if appeal.outcome == 'MAINTAINED' else 'annulee',
+                    'motif': appeal.response_reason,
+                } if appeal.responded_at else None
+            ),
+        }
+    return {
+        'id': str(sanction.id),
+        'type': type_str,
+        'niveau': sanction.level if sanction.level else None,
+        'palierVise': None,
+        'decideeA': _instant(sanction.created_at),
+        'effetA': _instant(sanction.expires_at or sanction.created_at),
+        'motif': sanction.reason,
+        'valideePar': ('Un agent BelivaY' if sanction.issued_by_id else None),
+        'contestation': contestation,
+    }
+
+
+def _controle_ramassage_resume(tsp) -> str:
+    """Résumé court — APPROXIMATION documentée : aucun compteur réel de « colis contrôlés au
+    ramassage » n'existe dans ce code (fonctionnalité logistique livreur non câblée). Calculé
+    depuis le seul signal disponible (score, volume), pas depuis un historique réel de contrôles."""
+    if tsp.volume < 5:
+        return f"{tsp.volume} sur {tsp.volume} (premières commandes)"
+    if tsp.score < 60:
+        return "1 sur 1"
+    if tsp.score < 70:
+        return "1 sur 20"
+    return "1 sur 100"
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# ARGENT — /money/releasing, /money/frozen, /money/summary, /money/earnings
+# ──────────────────────────────────────────────────────────────────────────
+
+@extend_schema(tags=["Vendors"], summary="Argent qui se libère (compte à rebours) — GET /money/releasing")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_money_releasing(request):
+    profile, err = _vendor_or_error(request)
+    if err:
+        return err
+    from apps.payments.escrow.models import EscrowHold
+    from apps.orders.models import PlatformSettings
+
+    vendor = request.user
+    compte = _vendor_payee(profile)
+    settings_ = PlatformSettings.get_settings()
+    delai_standard = max(1, round(settings_.escrow_release_h / 24))
+
+    cartes, en_cours = [], []
+    numero = {'operateur': _momo_label(profile.default_withdrawal_operator) or 'MTN', 'masque': ''}
+    if compte is not None:
+        from apps.client_core.masquage import masquer_numero
+        if compte.momo_number_masked:
+            numero = {'operateur': _momo_label(compte.momo_operator) or _momo_label(profile.default_withdrawal_operator) or 'MTN', 'masque': compte.momo_number_masked}
+        elif profile.default_withdrawal_phone:
+            numero['masque'] = masquer_numero(profile.default_withdrawal_phone)
+
+        for hold in EscrowHold.objects.filter(payee=compte, component=EscrowHold.Component.GOODS, status=EscrowHold.Status.RELEASE_SCHEDULED).order_by('release_at'):
+            cartes.append({
+                'ref': _vendor_ref(hold.order_id),
+                'article': _article_for_order(hold.order_id, vendor),
+                'fermeture': _instant(hold.triggered_at or hold.auto_confirm_at),
+                'liberation': _instant(hold.release_at),
+                'vendredi': _jour(hold.release_at),
+                'garde': hold.net_amount_xaf,
+                'carte': False,  # Order ne distingue pas le moyen de paiement (limite documentée, cf. views_money_v2.py).
+            })
+        for hold in EscrowHold.objects.filter(payee=compte, component=EscrowHold.Component.GOODS, status=EscrowHold.Status.HELD).order_by('-created_at'):
+            en_cours.append({
+                'ref': _vendor_ref(hold.order_id),
+                'article': _article_for_order(hold.order_id, vendor),
+                'garde': hold.net_amount_xaf,
+                'payeeA': _instant(hold.created_at),
+            })
+
+    data = {
+        'palier': _palier_label_or_legacy(profile),
+        'delais': {'standard': delai_standard, 'or': 1, 'carte': 14},  # 14j carte : valeur documentée (VD-09), non vérifiable sur ce modèle.
+        'fenetreRetourJours': settings_.litige_window_days,
+        'numero': numero,
+        'cartes': cartes,
+        'enCours': en_cours,
+    }
+    return Response(data)
+
+
+def _palier_label_or_legacy(profile):
+    """Palier affiché au vendeur : utilise le Trust Score V5.5 (apps.accounts.trust_score),
+    pas le cache à points VendorProfile.certification_tier (plus ancien, cf. commentaires de
+    views_money_v2.py — « obsolète, à supprimer »)."""
+    from apps.accounts.trust_score import get_trust_score_profile
+    from apps.accounts.models import TrustScoreProfile
+    tsp = get_trust_score_profile(profile.user, TrustScoreProfile.Role.VENDOR)
+    return _palier_label(tsp.tier)
+
+
+@extend_schema(tags=["Vendors"], summary="Argent gelé (litige/retour) — GET /money/frozen")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_money_frozen(request):
+    profile, err = _vendor_or_error(request)
+    if err:
+        return err
+    from apps.payments.escrow.models import EscrowHold
+    from apps.orders.models import Dispute, PlatformSettings
+
+    vendor = request.user
+    compte = _vendor_payee(profile)
+    settings_ = PlatformSettings.get_settings()
+    cartes = []
+    total = 0
+    if compte is not None:
+        for hold in EscrowHold.objects.filter(payee=compte, component=EscrowHold.Component.GOODS, status=EscrowHold.Status.FROZEN).order_by('frozen_at'):
+            total += hold.net_amount_xaf
+            dispute = Dispute.objects.filter(order_id=hold.order_id, vendor=vendor).order_by('-created_at').first() if hold.order_id else None
+            ret = Return.objects.filter(order_id=hold.order_id, vendor=vendor).order_by('-created_at').first() if hold.order_id else None
+            if dispute is not None:
+                type_gel, motif, echeance = 'litige', dispute.reason or 'Litige en cours', _instant(getattr(dispute, 'response_deadline', None))
+            elif ret is not None:
+                type_gel, motif, echeance = 'retour', ret.reason or 'Retour en cours', None
+            else:
+                type_gel, motif, echeance = 'verification', 'Vérification en cours', None
+            cartes.append({
+                'type': type_gel,
+                'ref': _vendor_ref(hold.order_id),
+                'garde': hold.net_amount_xaf,
+                'article': _article_for_order(hold.order_id, vendor),
+                'motif': motif,
+                'echeance': echeance,
+                'arrivee': _instant(getattr(ret, 'received_at', None)) if ret is not None else None,
+            })
+
+    data = {
+        'total': total,
+        'cartes': cartes,
+        'delais': {
+            'litigeHeures': settings_.litige_window_days * 24,
+            'inspectionHeures': 72,
+            'verificationHeures': 72,
+        },
+        'remboursementAuto': {'standard': 0, 'tresFiable': 0},  # pas de barème de remboursement auto distinct dans ce code — non inventé.
+    }
+    return Response(data)
+
+
+@extend_schema(tags=["Vendors"], summary="Vue d'ensemble de l'argent — GET /money/summary")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_money_summary(request):
+    profile, err = _vendor_or_error(request)
+    if err:
+        return err
+    from apps.payments.settlements.services import amount_due
+    from apps.payments.escrow.models import EscrowHold
+    from apps.client_core.masquage import masquer_numero
+
+    vendor = request.user
+    compte = _vendor_payee(profile)
+    due = amount_due(compte) if compte is not None else {
+        'due_xaf': 0, 'released_not_settled_xaf': 0, 'in_settlement_xaf': 0,
+        'not_yet_due_xaf': 0, 'frozen_xaf': 0, 'next_settlement_at': None,
+    }
+
+    verifications_count = 0
+    numero_masque = masquer_numero(profile.default_withdrawal_phone) if profile.default_withdrawal_phone else ''
+    if compte is not None and compte.momo_number_masked:
+        numero_masque = compte.momo_number_masked
+
+    a_verser = due['due_xaf']
+    # "se_libere" (compte à rebours avant déblocage) correspond à EscrowHold
+    # RELEASE_SCHEDULED ; "en_cours" à EscrowHold HELD (pas encore programmé).
+    se_libere = 0
+    en_cours = 0
+    if compte is not None:
+        agg_sched = EscrowHold.objects.filter(payee=compte, component=EscrowHold.Component.GOODS, status=EscrowHold.Status.RELEASE_SCHEDULED).aggregate(t=Sum('net_amount_xaf'))
+        se_libere = agg_sched['t'] or 0
+        agg_held = EscrowHold.objects.filter(payee=compte, component=EscrowHold.Component.GOODS, status=EscrowHold.Status.HELD).aggregate(t=Sum('net_amount_xaf'))
+        en_cours = agg_held['t'] or 0
+
+    gele = due['frozen_xaf']
+    en_circulation = a_verser + se_libere + en_cours + gele
+
+    data = {
+        'aVerser': a_verser,
+        'seLibere': se_libere,
+        'enCours': en_cours,
+        'gele': gele,
+        'enCirculation': en_circulation,
+        'verifications': {'montant': 0, 'nombre': verifications_count},
+        'prochainVersement': None,  # voir GET /payouts/next (plus précis, même source de données).
+        'passeA': None,
+        'lignes': {
+            'seLibere': None,
+            'enCours': None,
+            'gele': {'litiges': 0, 'retours': 0, 'verifications': 0},
+        },
+        'gagneDepuisInscription': a_verser + se_libere + en_cours + gele,
+        'gardeDuMois': 0,  # voir GET /money/earnings?month= (calcul détaillé).
+        'ventesDuMois': 0,
+        'exemple': None,
+        'numero': {'operateur': _momo_label(compte.momo_operator) if compte else (_momo_label(profile.default_withdrawal_operator) or 'MTN'), 'masque': numero_masque, 'enRevue': False},
+        'calculeA': _instant(timezone.now()),
+        'mouvements': [],
+    }
+    return Response(data)
+
+
+@extend_schema(tags=["Vendors"], summary="Gains — GET /money/earnings?scope=lifetime|month=AAAA-MM")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_money_earnings(request):
+    profile, err = _vendor_or_error(request)
+    if err:
+        return err
+    from .views_money_v2 import _vendor_kept_for_order
+    vendor = request.user
+    scope = request.query_params.get('scope')
+    mois_param = request.query_params.get('month')
+
+    qs = Order.objects.filter(items__product__vendor=vendor).distinct()
+    released = qs.filter(fulfillment_status__in=[
+        Order.FulfillmentStatus.BUYER_CONFIRMED, Order.FulfillmentStatus.AUTO_CONFIRMED,
+        Order.FulfillmentStatus.RELEASED_TO_VENDOR,
+    ]).order_by('updated_at').prefetch_related('items__product')
+
+    compte = _vendor_payee(profile)
+    deja_verses = 0
+    if compte is not None:
+        from apps.payments.settlements.models import PayoutRequest as _PayoutRequest
+        deja_verses = _PayoutRequest.objects.filter(payee=compte, status=_PayoutRequest.Status.PAID).aggregate(t=Sum('amount_xaf'))['t'] or 0
+
+    total_depuis_inscription = sum(_vendor_kept_for_order(o, vendor) for o in released)
+
+    if scope == 'lifetime':
+        data = {
+            'mois': timezone.now().strftime('%Y-%m'), 'total': total_depuis_inscription, 'ventes': total_depuis_inscription,
+            'parProduit': [], 'lignes': [], 'meilleurJour': None, 'historique': [],
+            'gagne': total_depuis_inscription, 'ceSoir': None, 'dejaVerses': deja_verses,
+            'aVerser': None, 'impayes': 0, 'transport': 0,
+        }
+        return Response(data)
+
+    mois = mois_param or timezone.now().strftime('%Y-%m')
+    try:
+        annee, mm = (int(x) for x in mois.split('-'))
+    except (ValueError, AttributeError):
+        annee, mm = timezone.now().year, timezone.now().month
+        mois = f"{annee:04d}-{mm:02d}"
+
+    du_mois = released.filter(updated_at__year=annee, updated_at__month=mm)
+
+    lignes, par_produit, par_jour = [], {}, {}
+    total_mois = ventes_mois = 0
+    for order in du_mois:
+        kept = _vendor_kept_for_order(order, vendor)
+        if not kept:
+            continue
+        total_mois += kept
+        items = list(order.items.filter(product__vendor=vendor))
+        prix_vente = sum(i.line_total_xaf for i in items)
+        ventes_mois += prix_vente
+        article = _article_for_order(order.id, vendor)
+        lignes.append({
+            'type': 'vente', 'ref': _vendor_ref(order.id), 'article': article,
+            'prix': prix_vente, 'garde': kept, 'liberation': _instant(order.updated_at), 'motif': None,
+        })
+        for item in items:
+            bucket = par_produit.setdefault(item.product_id, {'titre': item.title_snapshot, 'dessin': article['dessin'], 'quantite': 0, 'garde': 0})
+            bucket['quantite'] += item.qty
+            bucket['garde'] += kept  # approximation : commission au niveau commande (plancher), pas ventilée par article.
+        jour = order.updated_at.date()
+        par_jour[jour] = par_jour.get(jour, 0) + kept
+
+    meilleur_jour = max(par_jour.items(), key=lambda kv: kv[1]) if par_jour else None
+
+    historique = []
+    base = timezone.now().replace(day=1)
+    for i in range(11, -1, -1):
+        y, m = base.year, base.month - i
+        while m <= 0:
+            m += 12
+            y -= 1
+        du = released.filter(updated_at__year=y, updated_at__month=m)
+        garde = sum(_vendor_kept_for_order(o, vendor) for o in du)
+        historique.append({'mois': f"{y:04d}-{m:02d}", 'garde': garde, 'ventes': du.count()})
+
+    data = {
+        'mois': mois,
+        'total': total_mois,
+        'ventes': ventes_mois,
+        'parProduit': sorted(par_produit.values(), key=lambda p: -p['garde']),
+        'lignes': lignes,
+        'meilleurJour': ({'jour': meilleur_jour[0].isoformat(), 'garde': meilleur_jour[1]} if meilleur_jour else None),
+        'historique': historique,
+        'gagne': total_depuis_inscription,
+        'ceSoir': None,
+        'dejaVerses': deja_verses,
+        'aVerser': None,
+        'impayes': 0,
+        'transport': 0,
+    }
+    return Response(data)
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# ARGENT — documents (/documents, /documents/{type}/{period})
+# ──────────────────────────────────────────────────────────────────────────
+
+@extend_schema(tags=["Vendors"], summary="Liste des documents — GET /documents")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_documents_list(request):
+    profile, err = _vendor_or_error(request)
+    if err:
+        return err
+    vendor = request.user
+    qs = Order.objects.filter(items__product__vendor=vendor).distinct().filter(
+        fulfillment_status__in=[
+            Order.FulfillmentStatus.BUYER_CONFIRMED, Order.FulfillmentStatus.AUTO_CONFIRMED,
+            Order.FulfillmentStatus.RELEASED_TO_VENDOR,
+        ],
+    )
+    mois_set = sorted({o.updated_at.strftime('%Y-%m') for o in qs}, reverse=True)
+    maintenant = timezone.now().strftime('%Y-%m')
+
+    compte = _vendor_payee(profile)
+    mois_payes = set()
+    if compte is not None:
+        from apps.payments.settlements.models import SettlementBatch as _SB
+        for batch in _SB.objects.filter(payee=compte, status=_SB.Status.PAID):
+            mois_payes.add(batch.period_end.strftime('%Y-%m'))
+
+    releves = []
+    for m in mois_set[:24]:
+        if m == maintenant:
+            statut = 'open'
+        elif m in mois_payes:
+            statut = 'issued'
+        else:
+            statut = 'pending'
+        releves.append({'periode': m, 'statut': statut, 'emisLe': (f"{m}-28" if statut == 'issued' else None), 'formats': (['pdf', 'csv'] if statut != 'open' else [])})
+
+    recus_refs = [_vendor_ref(o.id) for o in qs.order_by('-updated_at')[:5]]
+
+    abonnement = [
+        {'periode': sub.started_at.strftime('%Y-%m') if sub.started_at else sub.created_at.strftime('%Y-%m'),
+         'emisLe': _jour(sub.confirmed_at or sub.created_at), 'libelle': sub.plan.name}
+        for sub in VendorSubscription.objects.filter(vendor=profile, amount_paid_xaf__gt=0).order_by('-created_at')[:24]
+    ]
+
+    data = {
+        'releves': releves,
+        'recus': {'nombre': qs.count(), 'refs': recus_refs},
+        'factures': {
+            'commission': [{'periode': m, 'statut': ('issued' if m in mois_payes else ('open' if m == maintenant else 'pending')), 'emisLe': (f"{m}-28" if m in mois_payes else None), 'disponibleLe': None} for m in mois_set[:24]],
+            'abonnement': abonnement,
+            # Toujours vide : aucune visibilité payante n'existe (DP-14, Q-32) — ce n'est pas une
+            # limite de données, c'est l'application de la règle produit elle-même.
+            'visibilite': [],
+        },
+        # Pas de champ RCCM/NIU sur VendorProfile aujourd'hui — toujours False, documenté (DOC-01).
+        'entreprise': {'rccm': False, 'niu': False},
+        'contrat': {'signeLe': _jour(profile.approved_at or profile.created_at)},
+    }
+    return Response(data)
+
+
+def _document_content(profile, doc_type, period):
+    """(titre, sousTitre, colonnes, lignes, totaux, mentions) pour un document donné — réutilisé
+    par la vue JSON (ContenuDocument) et par les rendus PDF/CSV."""
+    vendor = profile.user
+    if doc_type in ('releve', 'facture'):
+        try:
+            annee, mm = (int(x) for x in period.split('-'))
+        except (ValueError, AttributeError):
+            return (f"Relevé {period}", "Période invalide", ['Référence'], [], None, ["Période attendue : AAAA-MM."])
+        qs = Order.objects.filter(items__product__vendor=vendor).distinct().filter(
+            updated_at__year=annee, updated_at__month=mm,
+            fulfillment_status__in=[
+                Order.FulfillmentStatus.BUYER_CONFIRMED, Order.FulfillmentStatus.AUTO_CONFIRMED,
+                Order.FulfillmentStatus.RELEASED_TO_VENDOR,
+            ],
+        )
+        lignes = []
+        total_vente = total_commission = total_garde = 0
+        for order in qs.order_by('updated_at'):
+            items = order.items.filter(product__vendor=vendor)
+            subtotal = sum(i.line_total_xaf for i in items)
+            rate = float(order.commission_rate_snapshot)
+            commission = round(subtotal * rate / 100)
+            garde = subtotal - commission
+            total_vente += subtotal
+            total_commission += commission
+            total_garde += garde
+            lignes.append([_vendor_ref(order.id), order.updated_at.strftime('%d/%m/%Y'), subtotal, commission, garde])
+        titre = "Relevé de commission" if doc_type == 'facture' else "Relevé de ventes"
+        colonnes = ['Commande', 'Date', 'Prix de vente (FCFA)', 'Commission (FCFA)', 'Vous gardez (FCFA)']
+        totaux = ['Total', '', total_vente, total_commission, total_garde]
+        mentions = ["Ceci n'est pas une facture fiscale." if not lignes else "Montants en francs CFA (XAF)."]
+        return (f"{titre} · {period}", profile.business_name, colonnes, lignes, totaux, mentions)
+
+    if doc_type == 'versements':
+        compte = _vendor_payee(profile)
+        lignes = []
+        total = 0
+        if compte is not None:
+            from apps.payments.settlements.models import PayoutRequest as _PayoutRequest
+            payouts = _PayoutRequest.objects.filter(payee=compte, status=_PayoutRequest.Status.PAID).order_by('-settled_at')
+            if period == '3':
+                payouts = payouts.filter(settled_at__gte=timezone.now() - timezone.timedelta(days=90))
+            elif period == '12':
+                payouts = payouts.filter(settled_at__gte=timezone.now() - timezone.timedelta(days=365))
+            for payout in payouts:
+                total += payout.amount_xaf
+                lignes.append([payout.reference, _jour(payout.settled_at), payout.amount_xaf, payout.payee_operator, payout.payee_msisdn_masked])
+        colonnes = ['Référence', 'Date', 'Montant (FCFA)', 'Opérateur', 'Numéro']
+        return (f"Historique des versements · {period}", profile.business_name, colonnes, lignes, ['Total', '', total, '', ''], [])
+
+    if doc_type == 'contrat':
+        colonnes = ['Boutique', 'Signé le']
+        lignes = [[profile.business_name, _jour(profile.approved_at or profile.created_at)]]
+        return ("Contrat BelivaY", profile.business_name, colonnes, lignes, None, ["Document récapitulatif — pas le contrat signé original."])
+
+    return (f"Document inconnu", "", ['—'], [], None, [f"Type de document non reconnu : {doc_type!r}."])
+
+
+class _PDFRenderer(_BaseRenderer):
+    """Enregistré uniquement pour que la négociation de contenu DRF accepte
+    `?format=pdf` sans lever Http404 (rest_framework.negotiation.DefaultContentNegotiation.
+    filter_renderers lève Http404 si AUCUN renderer du format demandé n'est déclaré — `format`
+    est un nom de paramètre RÉSERVÉ par DRF, pas une invention à nous). La vue renvoie un
+    HttpResponse brut (reportlab) qui contourne entièrement ce renderer."""
+    media_type = 'application/pdf'
+    format = 'pdf'
+
+    def render(self, data, accepted_media_type=None, renderer_context=None):
+        return data
+
+
+class _CSVRenderer(_BaseRenderer):
+    """Même rôle que _PDFRenderer ci-dessus, pour `?format=csv`."""
+    media_type = 'text/csv'
+    format = 'csv'
+
+    def render(self, data, accepted_media_type=None, renderer_context=None):
+        return data
+
+
+@extend_schema(tags=["Vendors"], summary="Contenu d'un document — GET /documents/{type}/{period}?format=pdf|csv")
+@api_view(['GET'])
+@renderer_classes([_JSONRenderer, _PDFRenderer, _CSVRenderer])
+@permission_classes([IsAuthenticated])
+def vendor_document_detail(request, doc_type, period):
+    profile, err = _vendor_or_error(request)
+    if err:
+        return err
+    titre, sous_titre, colonnes, lignes, totaux, mentions = _document_content(profile, doc_type, period)
+    fmt = (request.query_params.get('format') or '').lower()
+
+    if fmt == 'csv':
+        import csv as _csv
+        import io as _io
+        buf = _io.StringIO()
+        writer = _csv.writer(buf)
+        writer.writerow([titre])
+        writer.writerow(colonnes)
+        for ligne in lignes:
+            writer.writerow(ligne)
+        if totaux:
+            writer.writerow(totaux)
+        response = HttpResponse(buf.getvalue(), content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="{doc_type}_{period}.csv"'
+        return response
+
+    if fmt == 'pdf':
+        import io as _io
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.units import mm as _mm
+        from reportlab.lib import colors as _colors
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+
+        styles = getSampleStyleSheet()
+        buf = _io.BytesIO()
+        doc = SimpleDocTemplate(buf, pagesize=A4, topMargin=20 * _mm, bottomMargin=18 * _mm, leftMargin=18 * _mm, rightMargin=18 * _mm)
+        elements = [
+            Paragraph(titre, ParagraphStyle('T', parent=styles['Title'], fontSize=16)),
+            Paragraph(sous_titre, styles['Normal']),
+            Spacer(1, 6 * _mm),
+        ]
+        rows = [colonnes] + [[str(c) for c in ligne] for ligne in lignes]
+        if totaux:
+            rows.append([str(c) for c in totaux])
+        table = Table(rows)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), _colors.HexColor('#F5F0E8')),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 8.5),
+            ('GRID', (0, 0), (-1, -1), 0.25, _colors.HexColor('#E0D8CE')),
+        ]))
+        elements.append(table)
+        for mention in mentions:
+            elements.append(Spacer(1, 4 * _mm))
+            elements.append(Paragraph(mention, styles['Normal']))
+        doc.build(elements)
+        buf.seek(0)
+        response = HttpResponse(buf.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{doc_type}_{period}.pdf"'
+        return response
+
+    data = {'titre': titre, 'sousTitre': sous_titre, 'colonnes': colonnes, 'lignes': lignes, 'totaux': totaux, 'mentions': mentions}
+    return Response(data)
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# VERSEMENTS — /payouts/next, /payouts, /payout-number*
+# ──────────────────────────────────────────────────────────────────────────
+
+@extend_schema(tags=["Vendors"], summary="Prochain versement — GET /payouts/next")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_payouts_next(request):
+    profile, err = _vendor_or_error(request)
+    if err:
+        return err
+    from apps.payments.settlements.services import amount_due
+    from apps.payments.settlements.models import PayoutRequest as _PayoutRequest, SettlementBatch as _SettlementBatch
+    from apps.payments.escrow.models import EscrowHold
+    from .models import PayoutNumberChangeRequest
+
+    compte = _vendor_payee(profile)
+    if compte is None:
+        return Response(None)
+
+    due = amount_due(compte)
+    if due['due_xaf'] <= 0 and due['next_settlement_at'] is None:
+        en_cours_payout = _PayoutRequest.objects.filter(payee=compte, status__in=[
+            _PayoutRequest.Status.DRAFT, _PayoutRequest.Status.PENDING_APPROVAL,
+            _PayoutRequest.Status.APPROVED, _PayoutRequest.Status.PROCESSING,
+        ]).order_by('-requested_at').first()
+        if en_cours_payout is None:
+            return Response(None)
+
+    payout_en_cours = _PayoutRequest.objects.filter(payee=compte, status__in=[
+        _PayoutRequest.Status.DRAFT, _PayoutRequest.Status.PENDING_APPROVAL,
+        _PayoutRequest.Status.APPROVED, _PayoutRequest.Status.PROCESSING, _PayoutRequest.Status.UNKNOWN,
+    ]).order_by('-requested_at').first()
+
+    statut_map = {
+        None: 'prevu',
+        _PayoutRequest.Status.DRAFT: 'prevu',
+        _PayoutRequest.Status.PENDING_APPROVAL: 'prevu',
+        _PayoutRequest.Status.APPROVED: 'prevu',
+        _PayoutRequest.Status.PROCESSING: 'envoye',
+        _PayoutRequest.Status.PAID: 'credite',
+        _PayoutRequest.Status.FAILED: 'refuse',
+        _PayoutRequest.Status.UNKNOWN: 'envoye',
+        _PayoutRequest.Status.REJECTED: 'refuse',
+    }
+
+    commandes = []
+    for hold in EscrowHold.objects.filter(payee=compte, component=EscrowHold.Component.GOODS, status=EscrowHold.Status.RELEASED, settlement_batch_ref='').order_by('-released_at')[:20]:
+        commandes.append({'ref': _vendor_ref(hold.order_id), 'liberation': _instant(hold.released_at), 'garde': hold.net_amount_xaf})
+
+    en_revue = PayoutNumberChangeRequest.objects.filter(vendor=profile, status=PayoutNumberChangeRequest.Status.IN_REVIEW).order_by('-created_at').first()
+
+    reference = payout_en_cours.reference if payout_en_cours else "(pas encore attribuée)"
+    vendredi = _jour(due['next_settlement_at']) or timezone.now().date().isoformat()
+    heure_limite_dt = (due['next_settlement_at'] or timezone.now()).replace(hour=12, minute=0, second=0, microsecond=0)
+
+    data = {
+        'reference': reference,
+        'statut': statut_map.get(payout_en_cours.status if payout_en_cours else None, 'prevu'),
+        'vendredi': vendredi,
+        'heureLimite': _instant(heure_limite_dt),
+        'aVerser': due['released_not_settled_xaf'],
+        'montant': due['due_xaf'],
+        'passeA': None,
+        'commandes': commandes,
+        'numero': compte.momo_number_masked or (profile.default_withdrawal_phone or ''),
+        'operateur': _momo_label(compte.momo_operator) or _momo_label(profile.default_withdrawal_operator) or 'MTN',
+        'titulaire': profile.business_name,
+        'incident': None,  # pas de modèle d'incident de versement distinct dans le moteur actuel.
+        'enRevueJusqua': _instant(en_revue.review_until) if en_revue else None,
+        'reporteAu': None,
+    }
+    return Response(data)
+
+
+@extend_schema(tags=["Vendors"], summary="Historique des versements — GET /payouts?period=3|12|tout")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_payouts_history(request):
+    profile, err = _vendor_or_error(request)
+    if err:
+        return err
+    from apps.payments.settlements.models import PayoutRequest as _PayoutRequest
+
+    periode_brute = (request.query_params.get('period') or 'tout').lower()
+    periode = {'3m': '3', '12m': '12', 'all': 'tout'}.get(periode_brute, periode_brute)
+    if periode not in ('3', '12', 'tout'):
+        periode = 'tout'
+
+    compte = _vendor_payee(profile)
+    versements = []
+    total = 0
+    if compte is not None:
+        qs = _PayoutRequest.objects.filter(payee=compte).exclude(status=_PayoutRequest.Status.DRAFT).order_by('-requested_at')
+        if periode == '3':
+            qs = qs.filter(requested_at__gte=timezone.now() - timezone.timedelta(days=90))
+        elif periode == '12':
+            qs = qs.filter(requested_at__gte=timezone.now() - timezone.timedelta(days=365))
+
+        statut_map = {
+            _PayoutRequest.Status.DRAFT: 'prevu', _PayoutRequest.Status.PENDING_APPROVAL: 'prevu',
+            _PayoutRequest.Status.APPROVED: 'prevu', _PayoutRequest.Status.PROCESSING: 'envoye',
+            _PayoutRequest.Status.PAID: 'credite', _PayoutRequest.Status.FAILED: 'refuse',
+            _PayoutRequest.Status.UNKNOWN: 'envoye', _PayoutRequest.Status.REJECTED: 'refuse',
+            _PayoutRequest.Status.CANCELLED: 'refuse', _PayoutRequest.Status.REVERSED: 'refuse',
+        }
+        for payout in qs:
+            commandes = []
+            if payout.batch_id:
+                for hold in payout.batch.covered_holds.all()[:50]:
+                    commandes.append({'ref': _vendor_ref(hold.order_id), 'liberation': _instant(hold.released_at), 'garde': hold.net_amount_xaf})
+            total += payout.amount_xaf
+            versements.append({
+                'reference': payout.reference,
+                'vendredi': _jour(payout.settled_at or payout.requested_at),
+                'montant': payout.amount_xaf,
+                'numero': f"{payout.payee_operator} {payout.payee_msisdn_masked}".strip(),
+                'statut': statut_map.get(payout.status, 'prevu'),
+                'essais': [],  # pas de journal multi-tentative distinct sur PayoutRequest.
+                'commandes': commandes,
+                'signale': False,  # pas de modèle "versement non reçu" distinct dans le moteur actuel.
+            })
+
+    data = {
+        'periode': periode,
+        'versements': versements,
+        'total': total,
+        'nombre': len(versements),
+        'depuis': _jour(profile.approved_at or profile.created_at),
+    }
+    return Response(data)
+
+
+@extend_schema(tags=["Vendors"], summary="Numéro de versement — GET (consulter) / PUT (confirmer les deux codes) /payout-number")
+@api_view(['GET', 'PUT'])
+@permission_classes([IsAuthenticated])
+def vendor_payout_number(request):
+    """
+    Un seul chemin, deux méthodes (`src/api/outils.ts` ne met pas de slash final, et un deuxième
+    `path()` Django sur le MÊME chemin ne serait jamais atteint — le premier gagnerait toujours,
+    quelle que soit la méthode). PUT confirme les deux codes (ancien chemin : vendor_payout_number_confirm).
+    """
+    if request.method == 'PUT':
+        return _vendor_payout_number_confirm(request)
+    return _vendor_payout_number_get(request)
+
+
+def _vendor_payout_number_get(request):
+    profile, err = _vendor_or_error(request)
+    if err:
+        return err
+    from .models import PayoutNumberChangeRequest, PAYOUT_NUMBER_REVIEW_DAYS
+    from apps.client_core.masquage import masquer_numero
+    from apps.client_core import parametres
+
+    en_revue = PayoutNumberChangeRequest.objects.filter(vendor=profile, status=PayoutNumberChangeRequest.Status.IN_REVIEW).order_by('-created_at').first()
+    if en_revue and en_revue.apply_if_due():
+        en_revue = None
+
+    attente = PayoutNumberChangeRequest.objects.filter(vendor=profile, status=PayoutNumberChangeRequest.Status.PENDING_CODES).order_by('-created_at').first()
+
+    try:
+        duree_otp = parametres.entier("OTP-DUREE")
+        longueur_otp = parametres.entier("OTP-LONG")
+        renvoi_otp = parametres.nombres("OTP-RENVOI")[0]
+    except Exception:
+        duree_otp, longueur_otp, renvoi_otp = 10, 6, 60
+
+    data = {
+        'actuel': {
+            'operateur': _momo_label(profile.default_withdrawal_operator) or 'MTN',
+            'masque': masquer_numero(profile.default_withdrawal_phone) if profile.default_withdrawal_phone else '',
+            'verifieLe': _jour(profile.approved_at or profile.created_at),
+            'titulaire': profile.business_name,
+        },
+        'enRevue': None,
+        'operateurs': [
+            {'nom': 'MTN', 'libelle': 'MTN Mobile Money', 'prefixes': ['650', '651', '652', '653', '654', '67', '680', '681', '682', '683', '684']},
+            {'nom': 'Orange', 'libelle': 'Orange Money', 'prefixes': ['655', '656', '657', '658', '659', '69', '685', '686', '687', '688', '689']},
+        ],
+        'indicatif': '+237',
+        'longueur': 9,
+        'telephonePersonnel': masquer_numero(profile.phone) if profile.phone else '',
+        'revueJours': PAYOUT_NUMBER_REVIEW_DAYS,
+        'code': {'longueur': longueur_otp, 'renvoiSecondes': renvoi_otp, 'dureeMinutes': duree_otp},
+        'attente': None,
+    }
+    if en_revue:
+        data['enRevue'] = {
+            'operateur': _momo_label(en_revue.operator),
+            'masque': masquer_numero(en_revue.new_phone_number),
+            'jusqua': _instant(en_revue.review_until),
+            'premierVersement': _jour(en_revue.review_until),
+            'ancien': {'operateur': _momo_label(en_revue.previous_operator), 'masque': masquer_numero(en_revue.previous_phone_number) if en_revue.previous_phone_number else ''},
+            'enAttente': None,
+        }
+    if attente:
+        data['attente'] = {
+            'operateur': _momo_label(attente.operator),
+            'numeroMasque': masquer_numero(attente.new_phone_number),
+            'envoyeA': _instant(attente.created_at),
+        }
+    return Response(data)
+
+
+@extend_schema(tags=["Vendors"], summary="Codes de changement — POST (demander) / DELETE (annuler) /payout-number/codes")
+@api_view(['POST', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def vendor_payout_number_codes(request):
+    """Un seul chemin, deux méthodes — même raison que vendor_payout_number ci-dessus."""
+    if request.method == 'DELETE':
+        return _vendor_payout_number_codes_cancel(request)
+    return _vendor_payout_number_codes_request(request)
+
+
+def _vendor_payout_number_codes_request(request):
+    profile, err = _vendor_or_error(request)
+    if err:
+        return err
+    from .models import PayoutNumberChangeRequest
+    from apps.client_core.masquage import operateur as _detect_operateur, numero_local as _local
+    from apps.otp.services import envoyer
+    from apps.client_core.erreurs import ErreurClient
+
+    operateur_demande = (request.data.get('operateur') or '').strip()
+    numero = (request.data.get('numero') or '').strip()
+    local = _local(numero)
+
+    if len(local) != 9:
+        return Response({'ok': False, 'raison': 'longueur'})
+    detecte = _detect_operateur(local)
+    if detecte not in ('MTN', 'Orange'):
+        return Response({'ok': False, 'raison': 'prefixe'})
+    if operateur_demande and operateur_demande != detecte:
+        return Response({'ok': False, 'raison': 'operateur'})
+    if profile.default_withdrawal_phone and local == _local(profile.default_withdrawal_phone):
+        return Response({'ok': False, 'raison': 'meme_numero'})
+    if PayoutNumberChangeRequest.objects.filter(vendor=profile, status=PayoutNumberChangeRequest.Status.IN_REVIEW).exists():
+        return Response({'ok': False, 'raison': 'trop_tot', 'detail': "Un changement est déjà en revue (7 jours)."})
+
+    PayoutNumberChangeRequest.objects.filter(vendor=profile, status=PayoutNumberChangeRequest.Status.PENDING_CODES).update(
+        status=PayoutNumberChangeRequest.Status.CANCELLED, cancelled_at=timezone.now(),
+    )
+    changement = PayoutNumberChangeRequest.objects.create(
+        vendor=profile, operator=_momo_code(detecte), new_phone_number=local,
+        previous_operator=profile.default_withdrawal_operator, previous_phone_number=profile.default_withdrawal_phone,
+    )
+
+    try:
+        envoi_nouveau = envoyer(objet='payout-nouveau', destination=local, utilisateur=request.user)
+        if profile.phone:
+            envoyer(objet='payout-personnel', destination=profile.phone, utilisateur=request.user)
+    except ErreurClient as exc:
+        changement.delete()
+        return Response({'ok': False, 'raison': 'trop_tot', 'detail': exc.message})
+
+    return Response({'ok': True, 'destination': envoi_nouveau['destination'], 'renvoiSecondes': envoi_nouveau['renvoiSecondes']})
+
+
+@extend_schema(tags=["Vendors"], summary="Renvoyer un des deux codes — POST /payout-number/codes/resend")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vendor_payout_number_codes_resend(request):
+    profile, err = _vendor_or_error(request)
+    if err:
+        return err
+    from .models import PayoutNumberChangeRequest
+    from apps.otp.services import envoyer
+    from apps.client_core.erreurs import ErreurClient
+
+    changement = PayoutNumberChangeRequest.objects.filter(vendor=profile, status=PayoutNumberChangeRequest.Status.PENDING_CODES).order_by('-created_at').first()
+    if changement is None:
+        return Response({'ok': False, 'raison': 'expire'})
+
+    quel = request.data.get('quel')
+    objet = 'payout-nouveau' if quel == 'nouveau' else 'payout-personnel'
+    destination = changement.new_phone_number if quel == 'nouveau' else profile.phone
+    try:
+        envoi = envoyer(objet=objet, destination=destination, utilisateur=request.user)
+    except ErreurClient as exc:
+        return Response({'ok': False, 'raison': 'trop_tot', 'detail': exc.message})
+    return Response({'ok': True, 'renvoiSecondes': envoi['renvoiSecondes']})
+
+
+def _vendor_payout_number_confirm(request):
+    profile, err = _vendor_or_error(request)
+    if err:
+        return err
+    from .models import PayoutNumberChangeRequest
+    from apps.otp.services import verifier
+
+    changement = PayoutNumberChangeRequest.objects.filter(vendor=profile, status=PayoutNumberChangeRequest.Status.PENDING_CODES).order_by('-created_at').first()
+    if changement is None:
+        return Response({'ok': False, 'raison': 'expire'})
+
+    code_nouveau = str(request.data.get('codeNouveau') or '')
+    code_perso = str(request.data.get('codePersonnel') or '')
+
+    r1 = verifier(objet='payout-nouveau', code=code_nouveau, destination=changement.new_phone_number, utilisateur=request.user)
+    if not r1.get('ok'):
+        if r1.get('bloqueJusqua'):
+            return Response({'ok': False, 'raison': 'bloque', 'bloqueJusqua': r1['bloqueJusqua']})
+        if r1.get('expire'):
+            return Response({'ok': False, 'raison': 'expire'})
+        return Response({'ok': False, 'raison': 'code_nouveau', 'essaisRestants': r1.get('essaisRestants')})
+
+    r2 = verifier(objet='payout-personnel', code=code_perso, destination=profile.phone, utilisateur=request.user)
+    if not r2.get('ok'):
+        if r2.get('bloqueJusqua'):
+            return Response({'ok': False, 'raison': 'bloque', 'bloqueJusqua': r2['bloqueJusqua']})
+        if r2.get('expire'):
+            return Response({'ok': False, 'raison': 'expire'})
+        return Response({'ok': False, 'raison': 'code_personnel', 'essaisRestants': r2.get('essaisRestants')})
+
+    changement.new_number_verified_at = timezone.now()
+    changement.personal_verified_at = timezone.now()
+    changement.save(update_fields=['new_number_verified_at', 'personal_verified_at', 'updated_at'])
+    changement.start_review()
+
+    return Response({'ok': True, 'revueJusqua': _instant(changement.review_until), 'premierVersement': _jour(changement.review_until)})
+
+
+def _vendor_payout_number_codes_cancel(request):
+    profile, err = _vendor_or_error(request)
+    if err:
+        return err
+    from .models import PayoutNumberChangeRequest
+    PayoutNumberChangeRequest.objects.filter(vendor=profile, status=PayoutNumberChangeRequest.Status.PENDING_CODES).update(
+        status=PayoutNumberChangeRequest.Status.CANCELLED, cancelled_at=timezone.now(),
+    )
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# TRUST — /score, /score/appeal, /account/status, /account/decisions*, /tiers
+# ──────────────────────────────────────────────────────────────────────────
+
+@extend_schema(tags=["Vendors"], summary="Trust Score détaillé — GET /score")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_trust_score_view(request):
+    profile, err = _vendor_or_error(request)
+    if err:
+        return err
+    from apps.accounts.trust_score import get_trust_score_profile, trust_score_payload, _vendor_observations
+    from apps.accounts.models import TrustScoreProfile
+
+    tsp = get_trust_score_profile(request.user, TrustScoreProfile.Role.VENDOR)
+    payload = trust_score_payload(tsp)
+
+    cle_labels = {
+        'punctuality': ('ponctualite', 'Ponctualité'), 'quality': ('qualite', 'Qualité'),
+        'satisfaction': ('satisfaction', 'Satisfaction'), 'disputes': ('litiges', 'Litiges'),
+        'documents': ('documents', 'Documents'), 'seniority': ('anciennete', 'Ancienneté'),
+    }
+    criteres = []
+    for metric, (cle, nom) in cle_labels.items():
+        bloc = (tsp.breakdown or {}).get(metric)
+        if not bloc:
+            continue
+        note = round(float(bloc.get('score', 0)), 1)
+        poids = bloc.get('weight', 0)
+        criteres.append({
+            'cle': cle, 'nom': nom, 'poids': poids, 'note': note,
+            'points': round(note * poids / 100, 1),
+            'detail': f"{bloc.get('samples', 0)} évènement(s) mesuré(s) (demi-vie 90 jours).",
+        })
+
+    evenements = []
+    try:
+        observations = _vendor_observations(request.user)
+        for obs in list(observations.get('disputes', []))[:10]:
+            evenements.append({
+                'a': _instant(obs.occurred_at), 'libelle': 'Litige enregistré' if obs.value < 50 else 'Livraison sans litige',
+                'effet': 'grave' if obs.value == 0 else 'succes', 'critere': 'litiges', 'ref': None,
+            })
+        for obs in list(observations.get('punctuality', []))[:10]:
+            evenements.append({
+                'a': _instant(obs.occurred_at), 'libelle': 'Prête dans le délai' if obs.value >= 100 else 'Prête en retard',
+                'effet': 'succes' if obs.value >= 100 else 'leger', 'critere': 'ponctualite', 'ref': None,
+            })
+    except Exception:
+        evenements = []
+    evenements = [e for e in evenements if e['a'] is not None]
+    evenements.sort(key=lambda e: e['a'], reverse=True)
+
+    sanction_obj = tsp.sanctions.filter(lifted_at__isnull=True).exclude(level=0).order_by('-created_at').first()
+    sanction_data = None
+    if sanction_obj:
+        sanction_data = {'niveau': sanction_obj.level, 'depuis': _instant(sanction_obj.created_at), 'motif': sanction_obj.reason}
+
+    data = {
+        'total': payload['score'],
+        'calculeA': _instant(tsp.calculated_at),
+        'criteres': criteres,
+        'evenements': evenements[:20],
+        'bareme': [
+            {'evenement': 'Commande prête dans le délai', 'effet': 'succes'},
+            {'evenement': 'Commande prête en retard', 'effet': 'leger'},
+            {'evenement': 'Litige ouvert', 'effet': 'moyen'},
+            {'evenement': 'Contrefaçon confirmée', 'effet': 'grave_sanction'},
+            {'evenement': 'Documents incomplets', 'effet': 'documents_zero'},
+        ],
+        'historique': [],  # pas de relevé nocturne historisé dans ce code — voir rapport de mission.
+        'gele': bool(tsp.veto_active),
+        'sanction': sanction_data,
+        'controleAuRamassage': _controle_ramassage_resume(tsp),
+    }
+    return Response(data)
+
+
+@extend_schema(tags=["Vendors"], summary="Contester une décision — POST /score/appeal")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vendor_trust_score_appeal(request):
+    profile, err = _vendor_or_error(request)
+    if err:
+        return err
+    from apps.accounts.models import SanctionRecord, TrustScoreProfile
+    from .models import TrustScoreAppeal
+
+    decision_id = request.data.get('decision')
+    texte = (request.data.get('texte') or '').strip()
+    preuves = request.data.get('preuves') or []
+
+    try:
+        sanction = SanctionRecord.objects.select_related('profile').get(
+            id=int(decision_id), profile__user=request.user, profile__role=TrustScoreProfile.Role.VENDOR,
+        )
+    except (SanctionRecord.DoesNotExist, ValueError, TypeError):
+        return Response({'ok': False, 'raison': 'introuvable'})
+
+    if TrustScoreAppeal.objects.filter(sanction=sanction).exists():
+        return Response({'ok': False, 'raison': 'deja_contestee'})
+    if len(texte) < 40:
+        return Response({'ok': False, 'raison': 'trop_court'})
+    if len(texte) > 1000:
+        return Response({'ok': False, 'raison': 'trop_long'})
+
+    reponse_avant = _add_business_hours_excluding_sunday(timezone.now(), 72)
+    appeal = TrustScoreAppeal.objects.create(
+        vendor=profile, sanction=sanction, text=texte,
+        evidence_urls=preuves if isinstance(preuves, list) else [], response_due_at=reponse_avant,
+    )
+    return Response({'ok': True, 'reponseAvant': _instant(appeal.response_due_at)})
+
+
+@extend_schema(tags=["Vendors"], summary="État du compte (sanction, contrôle) — GET /account/status")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_account_status(request):
+    profile, err = _vendor_or_error(request)
+    if err:
+        return err
+    from apps.accounts.trust_score import get_trust_score_profile, DEFAULT_SUSPENSION_DAYS
+    from apps.accounts.models import TrustScoreProfile
+
+    tsp = get_trust_score_profile(request.user, TrustScoreProfile.Role.VENDOR)
+    sanction = tsp.sanctions.filter(lifted_at__isnull=True).exclude(level=0).order_by('-created_at').first()
+
+    etat_par_niveau = {
+        TrustScoreProfile.SanctionLevel.NONE: 'aucune', TrustScoreProfile.SanctionLevel.WARNING: 'avertissement',
+        TrustScoreProfile.SanctionLevel.THROTTLING: 'visibilite_reduite', TrustScoreProfile.SanctionLevel.SUSPENSION: 'suspendu',
+        TrustScoreProfile.SanctionLevel.BAN: 'exclu',
+    }
+    type_par_niveau = {1: 'avertissement', 2: 'visibilite_reduite', 3: 'suspension', 4: 'exclusion'}
+
+    en_cours = _decision_payload(sanction, type_par_niveau.get(sanction.level, 'avertissement')) if sanction else None
+    fin_effet = tsp.throttled_until or tsp.frozen_until
+    score = float(tsp.score)
+
+    data = {
+        'etat': etat_par_niveau.get(tsp.sanction_level, 'aucune'),
+        'enCours': en_cours,
+        'controle': {
+            'sur': 1 if tsp.volume < 5 else (1 if score < 60 else (20 if score < 70 else 100)),
+            'raison': 'premieres' if tsp.volume < 5 else ('sous_seuil' if score < 60 else 'au_dessus'),
+            'seuilReduction': 70.0 if score < 70 else None,
+            'surApres': 100 if score < 70 else None,
+            'premieres': 5,
+            'ramassees': tsp.volume,
+            'renforceSous': 60,
+            'renforceBaisse': 8,
+            'probatoire': None,
+        },
+        'alerteAvantSeuil': True,
+        'regles': {
+            'visibiliteJours': 14, 'suspensionSous': 40, 'nonPreparations': 3,
+            'nonPreparationsJours': 30, 'suspensionMaxJours': DEFAULT_SUSPENSION_DAYS, 'probatoireCommandes': 20,
+        },
+        'finEffet': _instant(fin_effet),
+    }
+    return Response(data)
+
+
+@extend_schema(tags=["Vendors"], summary="Historique des décisions — GET /account/decisions")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_account_decisions(request):
+    profile, err = _vendor_or_error(request)
+    if err:
+        return err
+    from apps.accounts.trust_score import get_trust_score_profile
+    from apps.accounts.models import TrustScoreProfile
+
+    tsp = get_trust_score_profile(request.user, TrustScoreProfile.Role.VENDOR)
+    type_par_niveau = {1: 'avertissement', 2: 'visibilite_reduite', 3: 'suspension', 4: 'exclusion'}
+    decisions = [_decision_payload(s, type_par_niveau.get(s.level, 'avertissement')) for s in tsp.sanctions.exclude(level=0).order_by('-created_at')]
+    return Response(decisions)
+
+
+@extend_schema(tags=["Vendors"], summary="Détail d'une décision — GET /account/decisions/{id}")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_account_decision_detail(request, decision_id):
+    profile, err = _vendor_or_error(request)
+    if err:
+        return err
+    from apps.accounts.trust_score import get_trust_score_profile
+    from apps.accounts.models import SanctionRecord, TrustScoreProfile
+
+    tsp = get_trust_score_profile(request.user, TrustScoreProfile.Role.VENDOR)
+    type_par_niveau = {1: 'avertissement', 2: 'visibilite_reduite', 3: 'suspension', 4: 'exclusion'}
+    try:
+        sanction = tsp.sanctions.exclude(level=0).get(id=int(decision_id))
+    except (ValueError, TypeError, SanctionRecord.DoesNotExist):
+        return Response(None)
+    return Response(_decision_payload(sanction, type_par_niveau.get(sanction.level, 'avertissement')))
+
+
+@extend_schema(tags=["Vendors"], summary="Mon palier (paliers, conditions, montée/descente) — GET /tiers")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_tiers(request):
+    profile, err = _vendor_or_error(request)
+    if err:
+        return err
+    from apps.accounts.trust_score import get_trust_score_profile, trust_score_payload, HYSTERESIS_DAYS, _hysteresis_days_for
+    from apps.accounts.models import TrustScoreProfile
+
+    tsp = get_trust_score_profile(request.user, TrustScoreProfile.Role.VENDOR)
+    payload = trust_score_payload(tsp)
+    tier_rules = payload['tier_rules']  # CONFIRMED, GOLD, PLATINUM — du plus bas au plus haut (NEW/Bronze n'a pas de seuil).
+    score = payload['score']
+
+    if tsp.tier == TrustScoreProfile.Tier.NEW:
+        actuel_rule = None
+        suivant_rule = tier_rules[0] if tier_rules else None
+    else:
+        ranks = {r['tier']: i for i, r in enumerate(tier_rules)}
+        idx = ranks.get(tsp.tier, 0)
+        actuel_rule = tier_rules[idx] if idx < len(tier_rules) else None
+        suivant_rule = tier_rules[idx + 1] if idx + 1 < len(tier_rules) else None
+
+    conditions = []
+    commandes_a_faire = None
+    if suivant_rule:
+        manque_score = round(max(0, suivant_rule['min_score'] - score), 1)
+        conditions.append({
+            'cle': 'score', 'libelle': f"Trust Score {suivant_rule['min_score']} au moins",
+            'valeur': str(score), 'tenue': score >= suivant_rule['min_score'],
+            'manque': None if manque_score <= 0 else f"+ {manque_score}",
+        })
+        manque_vol = max(0, suivant_rule['min_volume'] - tsp.volume)
+        conditions.append({
+            'cle': 'livrees', 'libelle': f"{suivant_rule['min_volume']} commandes livrées",
+            'valeur': str(tsp.volume), 'tenue': tsp.volume >= suivant_rule['min_volume'],
+            'manque': None if manque_vol <= 0 else f"+ {manque_vol}",
+        })
+        if suivant_rule['audit_required']:
+            conditions.append({
+                'cle': 'audit', 'libelle': "Audit BelivaY validé", 'valeur': 'Oui' if tsp.audit_passed else 'Non',
+                'tenue': tsp.audit_passed, 'manque': None if tsp.audit_passed else "visite d'un agent",
+            })
+        commandes_a_faire = manque_vol
+
+    montee = None
+    if suivant_rule and tsp.candidate_tier == suivant_rule['tier'] and tsp.candidate_since:
+        date_montee = tsp.candidate_since + timezone.timedelta(days=_hysteresis_days_for(suivant_rule['tier']))
+        montee = {'date': _jour(date_montee)}
+
+    alerte = None
+    if suivant_rule and 0 < (suivant_rule['min_score'] - score) <= 3:
+        alerte = {'sens': 'montee', 'seuil': suivant_rule['min_score'], 'points': round(suivant_rule['min_score'] - score, 1)}
+    elif actuel_rule and 0 <= (score - actuel_rule['min_score']) <= 3:
+        alerte = {'sens': 'descente', 'seuil': actuel_rule['min_score'], 'points': round(score - actuel_rule['min_score'], 1)}
+
+    paliers = [{
+        'palier': _palier_label('NEW'), 'conditions': 'Niveau de départ', 'garde': None, 'gardeExemple': None,
+        'gainSurActuel': None, 'liberationJours': _release_days_for_role_tier('NEW'),
+        'responsableDeCompte': False, 'vous': tsp.tier == TrustScoreProfile.Tier.NEW, 'manque': None,
+    }]
+    for r in tier_rules:
+        paliers.append({
+            'palier': _palier_label(r['tier']),
+            'conditions': f"Trust Score {r['min_score']}, {r['min_volume']} commandes livrées" + (", audit validé" if r['audit_required'] else ''),
+            'garde': None, 'gardeExemple': None, 'gainSurActuel': None,
+            'liberationJours': _release_days_for_role_tier(r['tier']),
+            'responsableDeCompte': r['tier'] == TrustScoreProfile.Tier.PLATINUM,
+            'vous': r['tier'] == tsp.tier, 'manque': None,
+        })
+
+    data = {
+        'palier': _palier_label(tsp.tier),
+        'score': score,
+        'calculeA': _instant(tsp.calculated_at),
+        'suivant': _palier_label(suivant_rule['tier']) if suivant_rule else None,
+        'seuilSuivant': suivant_rule['min_score'] if suivant_rule else None,
+        'seuilActuel': actuel_rule['min_score'] if actuel_rule else None,
+        'conditions': conditions,
+        'commandesAFaire': commandes_a_faire,
+        'projection': None,  # pas de projection nocturne du service Scores dans ce code — voir rapport de mission.
+        'montee': montee,
+        'descente': None,  # descente de palier non historisée comme une Decision distincte — voir rapport de mission.
+        'alerte': alerte,
+        'reference': None,  # article de référence (catalogue) — hors du domaine argent/trust, voir rapport.
+        'exemple': None,
+        'liberationJours': {'actuel': _release_days_for_role_tier(tsp.tier), 'suivant': _release_days_for_role_tier(suivant_rule['tier']) if suivant_rule else None},
+        'supportHeures': 72,
+        'decouverte': None,
+        'lancement': None,
+        'montee14': HYSTERESIS_DAYS,
+        'descente14': HYSTERESIS_DAYS,
+        'remplacementMin': 75,
+        'paliers': paliers,
+    }
+    return Response(data)
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# PLANS — /rewards, /rewards/{id}/use, /flash-sales, /services, /stats, /demand
+# (DP-14, Q-32 : AUCUNE visibilité payante — POST /visibility n'est délibérément
+# pas construit ici, voir rapport de mission.)
+# ──────────────────────────────────────────────────────────────────────────
+
+def _reward_payload(reward):
+    return {
+        'id': str(reward.id),
+        'type': reward.reward_type.lower(),
+        'titre': reward.title,
+        'offreId': str(reward.product_id),
+        'offreTitre': reward.product.title if reward.product_id else '',
+        'jours': reward.days,
+        'disponible': reward.disponible,
+        'enCoursJusqua': _instant(reward.active_until),
+        'venteFlash': (
+            {'remisePourCent': reward.flash_campaign.discount_percent, 'etat': ('programmee' if reward.flash_campaign.status == reward.flash_campaign.Status.APPROVED else 'en_verification')}
+            if reward.reward_type == 'FLASH' and reward.flash_campaign_id else None
+        ),
+    }
+
+
+@extend_schema(tags=["Vendors"], summary="Récompenses au mérite — GET /rewards")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_rewards_list(request):
+    profile, err = _vendor_or_error(request)
+    if err:
+        return err
+    from .models import VendorReward
+    rewards = VendorReward.objects.filter(vendor=profile).select_related('product', 'flash_campaign').order_by('-granted_at')[:50]
+    return Response([_reward_payload(r) for r in rewards])
+
+
+@extend_schema(tags=["Vendors"], summary="Utiliser une récompense (vitrine) — POST /rewards/{id}/use")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vendor_reward_use(request, reward_id):
+    profile, err = _vendor_or_error(request)
+    if err:
+        return err
+    from .models import VendorReward
+    try:
+        reward = VendorReward.objects.get(id=reward_id, vendor=profile)
+    except VendorReward.DoesNotExist:
+        return Response({'ok': False, 'raison': 'deja_utilisee'})
+    if not reward.disponible:
+        return Response({'ok': False, 'raison': 'deja_utilisee'})
+
+    reward.used_at = timezone.now()
+    if reward.reward_type == VendorReward.Type.VITRINE:
+        reward.active_until = timezone.now() + timezone.timedelta(days=reward.days or 7)
+    reward.save(update_fields=['used_at', 'active_until'])
+    return Response({'ok': True, 'jusqua': _instant(reward.active_until)})
+
+
+@extend_schema(tags=["Vendors"], summary="Programmer une vente flash offerte au mérite — POST /flash-sales")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vendor_flash_sales_create(request):
+    profile, err = _vendor_or_error(request)
+    if err:
+        return err
+    from .models import VendorReward
+    from apps.catalog.models import PromotionCampaign
+
+    reward_id = request.data.get('id')
+    try:
+        remise = int(request.data.get('remisePourCent'))
+    except (TypeError, ValueError):
+        return Response({'ok': False, 'raison': 'remise_trop_basse'})
+
+    try:
+        reward = VendorReward.objects.select_related('product').get(id=reward_id, vendor=profile, reward_type=VendorReward.Type.FLASH)
+    except VendorReward.DoesNotExist:
+        return Response({'ok': False, 'raison': 'deja_utilisee'})
+    if not reward.disponible:
+        return Response({'ok': False, 'raison': 'deja_utilisee'})
+    # OFR-05, P-3 : remise réelle de 10 % au moins ; au-delà de 50 %, relue sous 24 h.
+    if remise < 10:
+        return Response({'ok': False, 'raison': 'remise_trop_basse'})
+    if remise > 90:
+        return Response({'ok': False, 'raison': 'remise_trop_haute'})
+
+    produit = reward.product
+    prix_ref = produit.price_xaf
+    prix_promo = max(1, round(prix_ref * (1 - remise / 100)))
+    maintenant = timezone.now()
+    duree_h = min(48, max(2, reward.days * 24 if reward.days else 24))
+    statut = PromotionCampaign.Status.APPROVED if remise <= 50 else PromotionCampaign.Status.PENDING
+    etat = 'programmee' if remise <= 50 else 'en_verification'
+
+    campagne = PromotionCampaign.objects.create(
+        product=produit, campaign_type=PromotionCampaign.CampaignType.FLASH, status=statut,
+        requested_by=request.user, title=f"Vente flash offerte · {produit.title}",
+        starts_at=maintenant, ends_at=maintenant + timezone.timedelta(hours=duree_h),
+        reference_price_xaf=prix_ref, promo_price_xaf=prix_promo,
+        # Product ne porte pas de quantité en stock directement (suivi par variante /
+        # StockMovement, hors domaine argent/trust) — réserve un lot fixe raisonnable
+        # plutôt que d'aller chercher une donnée d'un autre domaine. Documenté.
+        stock_reserved=10,
+        placement_fee_xaf=0, admin_note="Récompense au mérite (gratuite) — voir VendorReward.",
+    )
+    reward.used_at = maintenant
+    reward.flash_campaign = campagne
+    reward.save(update_fields=['used_at', 'flash_campaign'])
+
+    return Response({'ok': True, 'etat': etat})
+
+
+@extend_schema(tags=["Vendors"], summary="Services qui lèvent les freins — GET /services")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_services(request):
+    profile, err = _vendor_or_error(request)
+    if err:
+        return err
+    from apps.client_core.masquage import masquer_numero
+    zone = profile.zone.name if profile.zone_id else profile.city
+    data = {
+        'zone': zone,
+        'numero': {'operateur': _momo_label(profile.default_withdrawal_operator) or 'MTN', 'masque': masquer_numero(profile.default_withdrawal_phone) if profile.default_withdrawal_phone else ''},
+        'delaiVisiteHeures': 72,  # P-4, donné par le contrat frontend — pas inventé.
+        # Catalogue de services (prix, disponibilité par zone) non défini dans les
+        # paramètres fournis (VD-SERVICES, registre non peuplé) — liste vide plutôt
+        # qu'un prix inventé. Voir rapport de mission.
+        'liste': [],
+    }
+    return Response(data)
+
+
+@extend_schema(tags=["Vendors"], summary="Statistiques boutique (30 jours) — GET /stats")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_plans_stats(request):
+    profile, err = _vendor_or_error(request)
+    if err:
+        return err
+    vendor = request.user
+    depuis = timezone.now() - timezone.timedelta(days=30)
+    qs = Order.objects.filter(items__product__vendor=vendor, created_at__gte=depuis).distinct().prefetch_related('items__product')
+
+    ventes = commandes = encaissees = 0
+    par_jour = {i: 0 for i in range(7)}
+    par_produit = {}
+    for order in qs:
+        items = list(order.items.filter(product__vendor=vendor))
+        montant = sum(i.line_total_xaf for i in items)
+        commandes += 1
+        if order.escrow_status != Order.EscrowStatus.PENDING:
+            encaissees += 1
+            ventes += montant
+            jour_semaine = (order.created_at.weekday())  # lundi=0 ... dimanche=6
+            par_jour[jour_semaine] = par_jour.get(jour_semaine, 0) + montant
+            for item in items:
+                bucket = par_produit.setdefault(item.product_id, {'offreId': str(item.product_id), 'titre': item.title_snapshot, 'ventes': 0})
+                bucket['ventes'] += item.line_total_xaf
+
+    retours = Return.objects.filter(order__in=qs, vendor=vendor).count()
+    total_ventes_produits = sum(p['ventes'] for p in par_produit.values()) or 1
+    produits_tries = sorted(par_produit.values(), key=lambda p: -p['ventes'])
+    for p in produits_tries:
+        p['partPourCent'] = round(p['ventes'] * 100 / total_ventes_produits, 1)
+
+    dependance = None
+    if produits_tries and produits_tries[0]['partPourCent'] > 60:
+        dependance = {'titre': produits_tries[0]['titre'], 'partPourCent': produits_tries[0]['partPourCent']}
+
+    data = {
+        'jours': 30,
+        'ventes': ventes,
+        'commandes': commandes,
+        'encaissees': encaissees,
+        'panierMoyen': round(ventes / encaissees) if encaissees else 0,
+        'retoursPourCent': round(retours * 100 / commandes, 1) if commandes else 0,
+        'vues': 0,  # pas de suivi d'audience produit dans ce code — non inventé.
+        'conversionPourCent': 0,
+        'parJour': [{'jour': j, 'ventes': par_jour.get(j, 0)} for j in range(7)],
+        'parProduit': produits_tries[:10],
+        'meilleursJours': [],
+        'dependance': dependance,
+        'historiqueVerrouille': profile.active_plan_code == 'FREE',
+    }
+    return Response(data)
+
+
+@extend_schema(tags=["Vendors"], summary="Demande (mots cherchés, freins) — GET /demand")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_demand(request):
+    profile, err = _vendor_or_error(request)
+    if err:
+        return err
+    zone = profile.zone.name if profile.zone_id else profile.city
+    data = {
+        'zone': zone,
+        # Pas de suivi des recherches clients par zone/mot-clé dans ce code — non inventé.
+        'recherches': [],
+        'visiblesSansBoost': 3,
+        'freins': [],
+    }
+    return Response(data)

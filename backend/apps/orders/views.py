@@ -88,6 +88,12 @@ class OrderCreateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]  # Exiger authentification
 
     def create(self, request, *args, **kwargs):
+        # Tache D2 — phase vitrine : aucune commande ne doit naitre tant que
+        # les achats ne sont pas ouverts. Controle AVANT toute validation,
+        # pour ne rien ecrire ni reserver de stock au passage.
+        from apps.common.purchases import assert_purchases_open
+        assert_purchases_open(request.user)
+
         serializer = self.get_serializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
 

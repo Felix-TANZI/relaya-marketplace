@@ -133,6 +133,13 @@ class ProductViewSet(viewsets.ModelViewSet):
     ]
     ordering = ['-belivay_trust_score', '-belivay_rating_average', '-belivay_reviews_count', '-created_at']
 
+    #: Tâche D5 — demande une seule fiche par produit (voir catalog/offers.py).
+    #: Volontairement optionnel : la grille client et la recherche l'envoient,
+    #: les autres écrans (flash deals, promotions, favoris) gardent leur
+    #: comportement actuel tant qu'ils n'ont pas été migrés explicitement.
+    GROUP_BY_MASTER_PARAM = 'group_by_master'
+    _VRAI = {'1', 'true', 'yes', 'on'}
+
     def get_queryset(self):
         from .recommendation import annotate_trust_score
 
@@ -157,7 +164,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         query = self.request.query_params.get('search', '').strip()
 
         if not query:
-            return super().filter_queryset(queryset)
+            return self._une_fiche_par_produit(super().filter_queryset(queryset))
 
         # Les autres backends (filtres à facettes, tri) restent en place ; seul le
         # SearchFilter est retiré puisque smart_product_search le remplace.
@@ -168,7 +175,23 @@ class ProductViewSet(viewsets.ModelViewSet):
 
         results, meta = smart_product_search(queryset, query)
         self.search_meta = meta
-        return results
+        return self._une_fiche_par_produit(results)
+
+    def _une_fiche_par_produit(self, queryset):
+        """
+        Tâche D5 — ne garder qu'une offre par fiche, si le client le demande.
+
+        Le regroupement vient APRÈS les filtres et la recherche : l'offre
+        représentante doit être choisie parmi celles que le client voit
+        réellement, sinon filtrer par catégorie pourrait élire une offre
+        absente du résultat et faire disparaître la fiche entière.
+        """
+        demande = self.request.query_params.get(self.GROUP_BY_MASTER_PARAM, '')
+        if self.action != 'list' or demande.strip().lower() not in self._VRAI:
+            return queryset
+
+        from .offers import one_offer_per_master, regroupable
+        return one_offer_per_master(queryset) if regroupable(queryset) else queryset
 
     def list(self, request, *args, **kwargs):
         """Ajoute le contexte de recherche pour que le front puisse l'expliquer."""

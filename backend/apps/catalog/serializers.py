@@ -288,6 +288,7 @@ class PromotionCampaignSerializer(serializers.ModelSerializer):
             "product_title",
             "campaign_type",
             "status",
+            "origin",
             "title",
             "starts_at",
             "ends_at",
@@ -308,6 +309,7 @@ class PromotionCampaignSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "id",
             "status",
+            "origin",
             "stock_claimed",
             "placement_fee_xaf",
             "commission_uplift_points",

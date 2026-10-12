@@ -1,0 +1,100 @@
+/* Accueil (VD-04) et remise (VD-06) : ce que ces écrans ajoutent à la feuille du prototype, sans rien redessiner.
+   Les animations sont toutes sous html[data-mouv] (posé par les Animations du client) : coupées avec « mouvement
+   réduit » et sous navigateur piloté, comme côté client. */
+
+/* Squelette de chargement (conventions du client, Q-86) : des formes, jamais de chiffre. */
+.vd4-sq i{display:block;background:var(--sand-3);border-radius:10px}
+html[data-mouv] .vd4-sq i{background-image:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.4) 50%,transparent 70%);background-size:220% 100%;background-repeat:no-repeat;animation:vd4-scintille 1.4s linear infinite}
+html[data-mouv][data-theme=dark] .vd4-sq i{background-image:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.07) 50%,transparent 70%)}
+@keyframes vd4-scintille{from{background-position:120% 0}to{background-position:-120% 0}}
+
+/* Pastilles de l'accueil qui filtrent la liste (toucher : seulement ce type ; encore : tout). */
+button.pill.vd4-filtre{cursor:pointer;font:inherit;font-size:13px;font-weight:700;min-height:32px}
+button.pill.vd4-filtre[aria-pressed=true]{box-shadow:0 0 0 2px currentColor}
+html[data-mouv] button.pill.vd4-filtre{transition:transform var(--blv-court),box-shadow var(--blv-moyen)}
+html[data-mouv] button.pill.vd4-filtre:active{transform:scale(.95)}
+
+/* Gestes faits : la coche arrive (Premier jour, file envoyée). */
+html[data-mouv] .vd4-fait{animation:vd4-coche var(--blv-long) var(--blv-ressort) both}
+@keyframes vd4-coche{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
+
+/* Barre du palier de lancement : elle se remplit. */
+html[data-mouv] .vd4-barre i{animation:vd4-remplit var(--blv-long) var(--blv-doux) both}
+@keyframes vd4-remplit{from{width:0!important}}
+
+/* Ligne de la file hors connexion : bouton « Retirer » discret. */
+.vd4-x{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border:0;background:none;color:var(--ink-3);cursor:pointer;flex-shrink:0;border-radius:12px}
+.vd4-x:focus-visible{outline:2px solid var(--braise-1)}
+
+/* Code de remise (VD-06) : les chiffres apparaissent l'un après l'autre ; masqués, ils s'effacent. */
+html[data-mouv] .code6.vd6-vu span{animation:vd6-chiffre var(--blv-moyen) var(--blv-ressort) both}
+html[data-mouv] .code6.vd6-vu span:nth-of-type(2){animation-delay:.04s}
+html[data-mouv] .code6.vd6-vu span:nth-of-type(3){animation-delay:.08s}
+html[data-mouv] .code6.vd6-vu span:nth-of-type(4){animation-delay:.14s}
+html[data-mouv] .code6.vd6-vu span:nth-of-type(5){animation-delay:.18s}
+html[data-mouv] .code6.vd6-vu span:nth-of-type(6){animation-delay:.22s}
+@keyframes vd6-chiffre{from{transform:translateY(8px) scale(.85);opacity:0}to{transform:none;opacity:1}}
+/* Attente de la saisie du livreur : le sablier respire. */
+html[data-mouv] .vd6-attente .ic{animation:vd6-respire 1.6s ease-in-out infinite}
+@keyframes vd6-respire{50%{transform:scale(.9);opacity:.7}}
+
+/* Photos du dossier : un toucher les agrandit. */
+.vd6-photo{display:block;width:100%;padding:0;border:0;background:none;cursor:zoom-in;text-align:left;font:inherit;color:inherit}
+.vd6-grande{border-radius:16px;overflow:hidden;aspect-ratio:4/3}
+.vd6-grande svg,.vd6-grande img{width:100%;height:100%;display:block;object-fit:cover}
+
+/* Démonstration (autres interfaces) : carte en pointillés, jamais confondue avec l'écran du vendeur. */
+.vd6-demo{border:1.5px dashed var(--line-2);background:transparent;box-shadow:none}
+
+/* Reçu : liste des reçus dans la feuille, recherche. */
+.vd6-cherche{display:flex;align-items:center;gap:8px;height:48px;border-radius:12px;border:1.5px solid var(--input-line);background:var(--input-bg);padding:0 12px;margin-bottom:6px}
+.vd6-cherche input{flex:1;min-width:0;border:0;background:none;font:inherit;font-size:15px;color:var(--ink);outline:none}
+.vd6-liste{max-height:52vh;overflow:auto}
+.vx-chips{overflow-x:auto;scrollbar-width:none}
+.vx-chips::-webkit-scrollbar{display:none}
+
+/* Champ invisible posé sur les six cases (SaisieCode du client). */
+.vd6-saisie .otp span{width:42px;height:54px}
+.vd6-msg{text-align:center;font-size:13px;margin-top:10px;min-height:20px;color:var(--ink-3)}
+.vd6-msg.err{color:var(--red);font-weight:700}
+/* « Votre activité » du tableau de bord (Activite.tsx, interface vendeur réelle) : jalons, objectif, taux, revenus,
+   carte de chaleur. Jetons du thème seulement ; tailles de texte ≥ 12 px (DP-44). */
+.vd4-act .sec{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.vd4-act .sec a{font-size:14px;font-weight:800;color:var(--or-txt);min-height:24px;display:inline-flex;align-items:center}
+.vd4-act-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.vd4-act-h b{font-size:15px;font-weight:800}
+.vd4-jalons{display:flex;flex-wrap:wrap;gap:6px;list-style:none;margin:10px 0 2px;padding:0}
+.vd4-jalons .pill{height:28px;gap:5px}
+.vd4-act-g{display:grid;gap:0 10px}
+.vd4-act-mod{width:auto;min-height:32px!important;height:32px!important;padding:0 10px;font-size:13px!important;gap:5px}
+.vd4-obj{display:flex;align-items:center;gap:14px;margin-top:12px}
+.vd4-anneau{--p:0;flex-shrink:0;width:72px;height:72px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--or-txt) calc(var(--p) * 1%),var(--sand-3) 0)}
+.vd4-anneau span{width:56px;height:56px;border-radius:50%;background:var(--card);display:grid;place-items:center;font-size:15px;font-weight:800}
+.vd4-obj-f{margin-top:12px}
+.vd4-obj-f .inp{display:flex;align-items:center;gap:8px}
+.vd4-obj-f input{flex:1;min-width:0;border:0;outline:none;background:transparent;color:inherit;font:inherit}
+.vd4-obj-b{display:flex;gap:8px;margin-top:10px}
+.vd4-obj-b .btn{flex:1}
+.vd4-taux{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.vd4-taux .card{display:flex;flex-direction:column;gap:2px}
+.vd4-taux-v{font-size:24px;font-weight:800;letter-spacing:-.01em}
+.vd4-per{flex-shrink:0;margin:0}
+.vd4-per button{position:relative;height:34px;padding:0 12px;border:0;border-radius:10px;background:transparent;font:inherit;font-size:13px;font-weight:700;color:var(--ink-2);cursor:pointer}
+.vd4-per button.on{background:var(--card);color:var(--ink);box-shadow:0 2px 6px -2px rgba(60,35,15,.3);font-weight:800}
+html[data-theme=dark] .vd4-per button.on{background:#38383D;box-shadow:none}
+.vd4-barres{display:flex;align-items:flex-end;gap:4px;height:132px;margin-top:14px;padding-bottom:20px}
+.vd4-b{position:relative;flex:1;min-width:0;height:100%;display:flex;align-items:flex-end}
+.vd4-b i{display:block;width:100%;border-radius:6px 6px 2px 2px;background:var(--or-soft);box-shadow:inset 0 0 0 1px var(--or-line)}
+.vd4-b i.on{background:var(--or-txt);box-shadow:none}
+.vd4-b span{position:absolute;left:50%;bottom:-20px;transform:translateX(-50%);font-size:12px;color:var(--ink-3);white-space:nowrap}
+.vd4-barres.n30{gap:2px}
+.vd4-chaleur{margin-top:12px;display:grid;gap:3px}
+.vd4-ch-l,.vd4-ch-h{display:grid;grid-template-columns:34px repeat(24,minmax(0,1fr));gap:2px;align-items:center}
+.vd4-ch-l span,.vd4-ch-h span{font-size:12px;color:var(--ink-3)}
+.vd4-ch-l i{display:block;height:12px;border-radius:3px;background:var(--sand-3)}
+.vd4-ch-l i.on{background:var(--or-txt)}
+html[data-mouv] .vd4-b i{transition:height var(--blv-moyen) var(--blv-doux)}
+@media (min-width:768px){
+  .vd4-act-g{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
+  .vd4-ch-l i{height:16px}
+}

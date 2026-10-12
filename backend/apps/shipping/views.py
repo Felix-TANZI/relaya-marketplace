@@ -1,61 +1,68 @@
-from rest_framework import generics, status
-from rest_framework.views import APIView
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.exceptions import PermissionDenied
-from drf_spectacular.utils import extend_schema, OpenApiParameter
+import unicodedata
+from datetime import timedelta
+
+from django.db.models import Case, Count, IntegerField, Sum, When
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from django.db.models import Case, Count, IntegerField, Sum, When
-from datetime import timedelta
-import unicodedata
+from drf_spectacular.utils import OpenApiParameter, extend_schema
+from rest_framework import generics, status
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from .serializers import (
-    PARCEL_SIZE_LABELS,
-    CourierDisputeSerializer,
-    CourierDashboardSerializer,
-    CourierNetworkSerializer,
-    CourierSettingsSerializer,
-    CourierSOSAlertSerializer,
-    CourierSOSCreateSerializer,
-    CourierShipmentScanSerializer,
-    CourierShipmentActionSerializer,
-    RelayParcelPickupSerializer,
-    RelayParcelReceiveSerializer,
-    RelayParcelReturnSerializer,
-    RelayParcelSerializer,
-    RelayPickupCodeCheckSerializer,
-    RelayPointReviewSerializer,
-    ShipmentMessageCreateSerializer,
-    ShipmentMessageSerializer,
-    ShipmentSerializer,
-    ShipmentCreateSerializer,
-    ShipmentEventSerializer,
-    ShipmentEventCreateSerializer,
-    ShipmentLocationCreateSerializer,
-    ShipmentLocationSerializer,
-    ShipmentEvidenceSerializer,
+from apps.accounts.models import (
+    CourierProfile,
+    RelayPointProfile,
+    TrustScoreProfile,
+    UserNotification,
 )
+from apps.accounts.trust_score import (
+    calculate_trust_score,
+    get_trust_score_profile,
+    trust_score_payload,
+)
+from apps.orders.models import Dispute, DisputeMessage, Order, PlatformSettings, Return
+from apps.orders.serializers import ReturnSerializer
+from apps.vendors.models import VendorLocation, VendorProfile
+
+from .evidence import create_shipment_evidence
 from .models import (
     CourierSOSAlert,
     RelayParcel,
     RelayPointReview,
     Shipment,
     ShipmentEvent,
-    ShipmentLocation,
+    ShipmentEvidence,
     ShipmentMessage,
     Tournee,
 )
-from apps.accounts.models import CourierProfile
-from apps.accounts.models import UserNotification
-from apps.accounts.models import TrustScoreProfile
-from apps.accounts.models import RelayPointProfile
-from apps.accounts.trust_score import calculate_trust_score, get_trust_score_profile, trust_score_payload
-from apps.vendors.models import VendorLocation, VendorProfile
-from apps.orders.models import Dispute, DisputeMessage, Order, PlatformSettings, Return
-from apps.orders.serializers import ReturnSerializer
-from .evidence import create_shipment_evidence
-from .models import ShipmentEvidence
+from .serializers import (
+    PARCEL_SIZE_LABELS,
+    CourierDashboardSerializer,
+    CourierDisputeSerializer,
+    CourierNetworkSerializer,
+    CourierSettingsSerializer,
+    CourierShipmentActionSerializer,
+    CourierShipmentScanSerializer,
+    CourierSOSAlertSerializer,
+    CourierSOSCreateSerializer,
+    RelayParcelPickupSerializer,
+    RelayParcelReceiveSerializer,
+    RelayParcelReturnSerializer,
+    RelayParcelSerializer,
+    RelayPickupCodeCheckSerializer,
+    RelayPointReviewSerializer,
+    ShipmentCreateSerializer,
+    ShipmentEventCreateSerializer,
+    ShipmentEventSerializer,
+    ShipmentEvidenceSerializer,
+    ShipmentLocationCreateSerializer,
+    ShipmentLocationSerializer,
+    ShipmentMessageCreateSerializer,
+    ShipmentMessageSerializer,
+    ShipmentSerializer,
+)
 
 
 def _get_active_relay_point(user):
@@ -92,7 +99,7 @@ def _exiger_permission(user, permission: str) -> None:
 
 
 def _haversine_km(lat1, lng1, lat2, lng2):
-    from math import radians, sin, cos, sqrt, atan2
+    from math import atan2, cos, radians, sin, sqrt
     r = 6371.0
     phi1, phi2 = radians(float(lat1)), radians(float(lat2))
     dphi = radians(float(lat2) - float(lat1))
@@ -133,7 +140,11 @@ def _release_overdue_accepted_shipments():
     )
 
     for shipment in overdue:
-        courier_user = shipment.courier.user
+        # `courier` ne peut pas etre None ici : le queryset ci-dessus filtre
+        # sur courier__isnull=False. L'analyseur ne relie pas le filtre a
+        # l'acces, d'ou l'exception ciblee plutot qu'un garde mort a
+        # l'execution.
+        courier_user = shipment.courier.user  # pyright: ignore[reportOptionalMemberAccess]
         order = shipment.order
         UserNotification.objects.create(
             user=courier_user,
@@ -223,7 +234,14 @@ class ShipmentEventCreateView(generics.CreateAPIView):
     ],
 )
 class RelayPointNearbyView(APIView):
-    permission_classes = [IsAuthenticated]
+    # Tache D3 — acces visiteur sans compte. Reperer les points relais fait
+    # partie de la decouverte : on ne peut pas demander de creer un compte
+    # pour savoir s'il existe un relais pres de chez soi.
+    #
+    # La liste ne sort que des relais ACTIFS et APPROUVES (filtre ci-dessous),
+    # et ne contient aucune donnee du gerant. Deux champs restent toutefois
+    # reserves aux comptes connectes, voir plus bas.
+    permission_classes = [AllowAny]
 
     def get(self, request):
         city = (request.query_params.get("city") or "").strip()
@@ -257,7 +275,7 @@ class RelayPointNearbyView(APIView):
             distance_km = None
             if buyer_lat is not None and buyer_lng is not None and relay.latitude is not None and relay.longitude is not None:
                 distance_km = round(_haversine_km(buyer_lat, buyer_lng, relay.latitude, relay.longitude), 2)
-            results.append({
+            fiche = {
                 "id": relay.id,
                 "name": relay.name,
                 "address": relay.address,
@@ -267,7 +285,17 @@ class RelayPointNearbyView(APIView):
                 "occupancy": occupancy,
                 "has_space": has_space,
                 "distance_km": distance_km,
-            })
+            }
+            if not request.user.is_authenticated:
+                # `occupancy` et `storage_capacity` disent le volume d'activite
+                # de chaque relais, relais par relais : c'est une information
+                # commerciale, dont le visiteur n'a aucun besoin. Il lui faut
+                # seulement savoir s'il reste de la place — `has_space`, qui
+                # est conserve. Les comptes connectes recoivent la reponse
+                # complete, inchangee.
+                fiche.pop("storage_capacity", None)
+                fiche.pop("occupancy", None)
+            results.append(fiche)
 
         # Tri : par distance si on l'a, sinon par nom (ordre stable, arbitraire
         # mais deterministe) — la disponibilite n'entre PAS dans le tri : on
@@ -994,14 +1022,17 @@ def _estimate_shipment_distance_km(shipment: Shipment) -> float:
     address_seed = f"{order.address or ''}|{shipment.relay_point or ''}|{order.id}"
     address_score = sum(ord(ch) for ch in address_seed) % 36
     city_base = 5.2 if "YAOUNDE" in city else 6.4 if "DOUALA" in city else 4.8
+    # Cles en `.value` : `shipment.status` est une chaine une fois relu de la
+    # base. TextChoices heritant de str, l'ancienne ecriture fonctionnait, mais
+    # elle melangeait deux types dans un meme dictionnaire.
     status_extra = {
-        Shipment.Status.CREATED: 0.0,
-        Shipment.Status.ASSIGNED: 0.8,
-        Shipment.Status.PICKED_UP: 1.8,
-        Shipment.Status.OUT_FOR_DELIVERY: 3.0,
-        Shipment.Status.DELIVERED: 0.0,
-        Shipment.Status.FAILED: 0.0,
-        Shipment.Status.CANCELLED: 0.0,
+        Shipment.Status.CREATED.value: 0.0,
+        Shipment.Status.ASSIGNED.value: 0.8,
+        Shipment.Status.PICKED_UP.value: 1.8,
+        Shipment.Status.OUT_FOR_DELIVERY.value: 3.0,
+        Shipment.Status.DELIVERED.value: 0.0,
+        Shipment.Status.FAILED.value: 0.0,
+        Shipment.Status.CANCELLED.value: 0.0,
     }.get(shipment.status, 0.0)
     return round(city_base + (address_score / 10) + status_extra, 1)
 
@@ -1114,8 +1145,6 @@ class CourierDashboardView(generics.GenericAPIView):
                 .select_related("order", "courier", "courier__user")
             )
             courier_delivered = [shipment for shipment in courier_shipments if shipment.status == Shipment.Status.DELIVERED]
-            courier_failed = [shipment for shipment in courier_shipments if shipment.status == Shipment.Status.FAILED]
-            total_completed = len(courier_delivered) + len(courier_failed)
             trust = get_trust_score_profile(profile.user, TrustScoreProfile.Role.COURIER)
             score = round(float(trust.score))
             leaderboard.append(

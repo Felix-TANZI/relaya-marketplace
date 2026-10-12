@@ -177,3 +177,8 @@ export const EXIGE_COMPTE = new Set([
   // Reçus (DP-54) : ce qui a été envoyé au client se traite depuis son compte (sans compte : le lien public).
   'recus', 'recu',
 ])
+
+/** Espace vendeur (même domaine, même session) : l'arrivée depuis le compte client (« bienvenue_client » reprend la
+ * boutique demandée ici), ou l'accueil du vendeur quand la pièce est vérifiée. Hors de l'application client : un lien
+ * <a href>, pas <Link>. */
+export const espaceVendeur = (b: { piece: string } | null | undefined): string => (b?.piece === 'verifiee' ? '/vendeur/' : '/vendeur/bienvenue_client')

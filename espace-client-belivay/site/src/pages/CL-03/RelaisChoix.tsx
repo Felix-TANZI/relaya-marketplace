@@ -22,10 +22,8 @@ import { source, type Relais } from '../../donnees/source'
 import { F } from '../../i18n/format'
 import { usePreferences } from '../../preferences'
 import { useMajSession } from '../../session'
-import { GRILLE_GARDE, RENVOI_GARDE } from '../CL-09/Commun'
+import { GRILLE_GARDE } from '../CL-09/Commun'
 
-// Garde d'un gros colis (cartons C1 et C2 ; DP-08, GARDE-GROS-AJOUT) : la grille + 300 F chaque jour, dès le 1er.
-const GARDE_GROS_AJOUT = 300
 // « 350 m », « 2,4 km ».
 export const enMots = (m: number) => (m < 1000 ? `${Math.round(m / 10) * 10} m` : `${(m / 1000).toFixed(1).replace('.', ',')} km`)
 // Temps de trajet : à pied sous 1 km, en taxi au-delà.
@@ -307,8 +305,8 @@ export function RelaisChoix() {
             <p>{t('Quand tes colis arrivent, on te prévient et tu reçois ton code de retrait à 6 chiffres. Tu le montres au gérant, aux heures d’ouverture.')}</p>
             <p>{t('Tu ouvres tes colis devant le gérant. Un souci : il prend les photos, garde le colis, et ton argent reste bloqué.')}</p>
             <p>{t('Quelqu’un peut retirer à ta place : envoie-lui le code. On te prévient au moment du retrait.')}</p>
-            <p>{tf('Gros colis (cartons C1 et C2) : {g} F de plus par jour de garde, dès le jour d’arrivée.', { g: F(GARDE_GROS_AJOUT) })}</p>
-            <p>{tf('Après le 7e jour, le colis repart chez le vendeur : la garde et {r} F de renvoi sont retenus sur ton remboursement.', { r: F(RENVOI_GARDE) })}</p>
+            <p>{t('Garde : jour d’arrivée gratuit, puis 100, 100, 100, 200, 500 et 1 000 F ; 2 000 F au plus sur 7 jours, payés en espèces au gérant au retrait.')}</p>
+            <p>{t('Après le 7e jour, le colis repart chez le vendeur : commande déjà payée, 2 000 F retenus sur ton remboursement, sans autre frais ; commande à payer au comptoir, elle compte comme un refus.')}</p>
             <p>{t('Si ton relais ferme plusieurs jours, tu en choisis un autre gratuitement.')}</p>
             <p>
               <Link to={chemin('faq', { t: 'retrait' })}>{t('Questions sur le retrait')}</Link>

@@ -135,7 +135,7 @@ test.describe('coque', () => {
     const ff = INTERRUPTEURS
     await page.goto('/menu')
     await expect(page.locator('.dx-tiles a[href="/ventes-flash"]')).toHaveCount(ff['FF-FLASH'] ? 1 : 0)
-    await expect(page.locator('.wl-card')).toHaveCount(ff['FF-WALLET'] ? 1 : 0)
+    await expect(page.locator('.wl-card')).toHaveCount(0) // Wallet hors du menu (consigne du porteur) : depuis Compte seulement
     // Repères de revue du prototype (services d'après le lancement) : jamais sur le site.
     await expect(page.locator('.dx-svc')).toHaveCount(0)
   })

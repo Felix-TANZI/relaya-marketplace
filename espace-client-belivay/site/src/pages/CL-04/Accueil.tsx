@@ -3,7 +3,6 @@
 // Les données sont encore écrites dans le rendu (démonstration) ; elles passeront par la source, sous la
 // garde des tests au pixel (tests/identique.spec.ts).
 import { Link } from 'react-router-dom'
-import img_be926f70d2b8_png from '../../assets/prototype/be926f70d2b8.png'
 import { Ecran } from '../../composants/coque'
 import { Module } from '../../composants/Module'
 import { CompteARebours } from '../../composants/CompteARebours'
@@ -16,8 +15,10 @@ import { PourMesProches } from '../../composants/PourMesProches'
 import { useLieu } from '../../composants/PourQui'
 import { useCompteDiaspora } from '../../session'
 import { CibleDes, ColonneDroiteAccueil, Deplace, TeteAccueil } from './AccueilLarge'
-import { CarrouselAccueil, CategoriesAccueil, ConfianceAccueil } from './AccueilContenus'
+import { ALaUneAccueil, CarrouselAccueil, CategoriesAccueil, FlashAccueil, RangeeSponsorisee } from './AccueilContenus'
 import { useContenuAccueil } from '../../composants/contenus'
+import { FluxPourVous } from './PourVous'
+import { useCoeursFavoris } from '../../composants/CoeursFavoris'
 
 export function Accueil() {
   const { t } = usePreferences()
@@ -27,11 +28,13 @@ export function Accueil() {
   const lieu = useLieu()
   // Contenus remplaçables (carrousel, catégories, textes flash, bandeau de confiance) : donnees/contenus.ts.
   const contenu = useContenuAccueil()
+  // Cœurs « Ajouter aux favoris » sur toutes les cartes de l'accueil, sans ouvrir le produit.
+  useCoeursFavoris()
   switch (useEtat("accueil")) {
     case "accueil":
     default:
       return (
-        <Ecran route="accueil" parEtat gabarit="catalogue" droite={<ColonneDroiteAccueil />} avant={
+        <Ecran route="accueil" pied={false} parEtat gabarit="catalogue" droite={<ColonneDroiteAccueil />} avant={
           <>
             <Styles id="57f763a2e1" />
             <Styles id="1c3d953197" />
@@ -91,6 +94,7 @@ export function Accueil() {
                 <Icone nom="arrow-right" taille={13} />
               </span>
             </Link>
+            <FlashAccueil>
             <Link to="/ventes-flash?offre=cartable">
               <span className="ph">
                 <span>
@@ -101,7 +105,7 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Cartable scolaire 16″")}
+                {t("Cartable scolaire Champion 16″")}
               </b>
               <em>
                 {t("10\u00A0900\u00A0F")}
@@ -117,7 +121,7 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Porte-bébé ergonomique")}
+                {t("Porte-bébé ergonomique Ergobaby")}
               </b>
               <em>
                 {t("17\u00A0500\u00A0F")}
@@ -133,7 +137,7 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Chargeur rapide 33 W USB-C")}
+                {t("Chargeur rapide Samsung 33 W USB-C")}
               </b>
               <em>
                 {t("5\u00A0500\u00A0F")}
@@ -149,7 +153,7 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Baskets running")}
+                {t("Baskets running ASICS")}
               </b>
               <em>
                 {t("29\u00A0900\u00A0F")}
@@ -181,12 +185,13 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Montre acier bracelet cuir")}
+                {t("Montre Casio chronographe acier, bracelet cuir")}
               </b>
               <em>
                 {t("27\u00A0500\u00A0F")}
               </em>
             </Link>
+            </FlashAccueil>
           </div>
         </section>
         </Module>
@@ -209,6 +214,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <ALaUneAccueil>
             <Link to="/fiche?p=pagne" className="h0-c plain">
               <span className="im">
                 <Dessin id="adff434c44d0" />
@@ -251,7 +257,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Chargeur rapide 33 W USB-C")}
+                  {t("Chargeur rapide Samsung 33 W USB-C")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -431,7 +437,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Beurre de karité pur 500 g")}
+                  {t("Beurre de karité pur Africa’s Best 500 g")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -449,6 +455,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </ALaUneAccueil>
           </div>
         </section>
         <section className="h0-panel">
@@ -597,7 +604,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Montre acier bracelet cuir")}
+                  {t("Montre Casio chronographe acier, bracelet cuir")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -714,6 +721,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-g3">
+            <RangeeSponsorisee cat={null}>
             <Link to="/fiche?p=karite" className="h0-c">
               <span className="im">
                 <Dessin id="4d520c8a165b" />
@@ -726,7 +734,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Beurre de karité pur 500 g")}
+                  {t("Beurre de karité pur Africa’s Best 500 g")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -766,7 +774,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Chargeur rapide 33 W USB-C")}
+                  {t("Chargeur rapide Samsung 33 W USB-C")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -886,7 +894,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Huile de coco vierge 500 ml")}
+                  {t("Huile de coco vierge Vita d’Or 500 ml")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -957,6 +965,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <Module ff="FF-ABONNEMENT">
@@ -1018,7 +1027,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Tapis de yoga 6 mm")}
+                  {t("Tapis de yoga Reebok 6 mm")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -1058,7 +1067,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Tablette 8″ · 64 Go")}
+                  {t("Samsung Galaxy Tab A9 8,7″ · 64 Go")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -1098,7 +1107,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Porte-bébé ergonomique")}
+                  {t("Porte-bébé ergonomique Ergobaby")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -1138,7 +1147,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Marmite en fonte 8 L")}
+                  {t("Marmite en fonte Tefal 8 L")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -1181,7 +1190,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Montre acier bracelet cuir")}
+                  {t("Montre Casio chronographe acier, bracelet cuir")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -1234,6 +1243,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'femme'}>
             <Link to="/fiche?p=pagne" className="h0-c">
               <span className="im">
                 <Dessin id="adff434c44d0" />
@@ -1394,6 +1404,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <Link to="/selection" className="h0-ban sel">
@@ -1436,6 +1447,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'elec'}>
             <Link to="/fiche?p=ecouteurs" className="h0-c">
               <span className="im">
                 <Dessin id="8bfb5146603e" />
@@ -1528,7 +1540,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Téléviseur LED 43″")}
+                  {t("Téléviseur Samsung LED 43″")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -1557,6 +1569,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <section className="h0-panel">
@@ -1574,6 +1587,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'tel'}>
             <Link to="/fiche?p=chargeur33" className="h0-c">
               <span className="im">
                 <Dessin id="d86ad7218c7b" />
@@ -1586,7 +1600,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Chargeur rapide 33 W USB-C")}
+                  {t("Chargeur rapide Samsung 33 W USB-C")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -1669,7 +1683,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Tablette 8″ · 64 Go")}
+                  {t("Samsung Galaxy Tab A9 8,7″ · 64 Go")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -1783,6 +1797,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <section className="h0-panel">
@@ -1805,6 +1820,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'beaute'}>
             <Link to="/fiche?p=karite" className="h0-c">
               <span className="im">
                 <Dessin id="4d520c8a165b" />
@@ -1817,7 +1833,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Beurre de karité pur 500 g")}
+                  {t("Beurre de karité pur Africa’s Best 500 g")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -1857,7 +1873,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Huile de coco vierge 500 ml")}
+                  {t("Huile de coco vierge Vita d’Or 500 ml")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -1897,7 +1913,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Crème visage karité & aloe 100 ml")}
+                  {t("Crème visage karité & aloe Evoluderm 100 ml")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -1925,6 +1941,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <section className="h0-panel">
@@ -1947,6 +1964,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'maison'}>
             <Link to="/fiche?p=mixeur" className="h0-c">
               <span className="im">
                 <Dessin id="6cd10aa8c291" />
@@ -1959,7 +1977,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Mixeur-blender 2 L · 600 W")}
+                  {t("Mixeur-blender Philips 2 L · 600 W")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -1999,7 +2017,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Ventilateur sur pied 16″")}
+                  {t("Ventilateur sur pied Midea 16″")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -2079,7 +2097,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Marmite en fonte 8 L")}
+                  {t("Marmite en fonte Tefal 8 L")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -2107,6 +2125,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <Link to="/diaspora" className="h0-ban dia">
@@ -2149,6 +2168,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'marche'}>
             <Link to="/fiche?p=riz" className="h0-c">
               <span className="im">
                 <Dessin id="8a529ed55590" />
@@ -2201,7 +2221,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Huile d’arachide 5 L")}
+                  {t("Huile d’arachide Lesieur 5 L")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -2241,7 +2261,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Café arabica de l’Ouest 500 g")}
+                  {t("Café Nescafé Arabica de l’Ouest 500 g")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -2269,161 +2289,16 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         {diaspora && <PourMesProches />}
-        <ConfianceAccueil />
-        <section className="h0-mk">
-          <div className="tp">
-            <span className="bi">
-              <Icone nom="shopping-cart" taille={24} />
-            </span>
-            <div>
-              <b>
-                {t("BelivaY · Tout près de toi")}
-              </b>
-              <span>
-                {t("La marketplace de Yaoundé, retrait au relais")}
-              </span>
-            </div>
-          </div>
-          <div className="ct">
-            <div>
-              <strong>
-                {t("1\u00A0387")}
-              </strong>
-              <small>
-                {t("produits")}
-              </small>
-            </div>
-            <div>
-              <strong>
-                {t("10")}
-              </strong>
-              <small>
-                {t("univers")}
-              </small>
-            </div>
-            <div>
-              <strong>
-                {t("12")}
-              </strong>
-              <small>
-                {t("quartiers")}
-              </small>
-            </div>
-            <div>
-              <strong>
-                {t("7\u00A0j/7")}
-              </strong>
-              <small>
-                {t("aide")}
-              </small>
-            </div>
-          </div>
-          <div className="bt">
-            <Link to="/faq?t=retrait">
-              <Icone nom="info" taille={16} />
-              {t("Comment ça marche")}
-            </Link>
-            <Link to="/categories">
-              <Icone nom="layout-grid" taille={16} />
-              {t("Explorer")}
-            </Link>
-            <Link to="/aide">
-              <Icone nom="headset" taille={16} />
-              {t("Aide")}
-            </Link>
-            <Link to="/commandes">
-              <Icone nom="package" taille={16} />
-              {t("Mes commandes")}
-            </Link>
-          </div>
-        </section>
-        <footer className="h0-ft">
-          <div className="lg">
-            <img src={img_be926f70d2b8_png} alt="BelivaY" />
-          </div>
-          <p>
-            {t("Ta marketplace de confiance à Yaoundé")}
-          </p>
-          <div className="cols">
-            <div>
-              <h3>
-                {t("Liens rapides")}
-              </h3>
-              <Link to="/categories">
-                {t("Catalogue")}
-              </Link>
-              <Link to="/faq?t=retrait">
-                {t("Comment ça marche")}
-              </Link>
-              <Link to="/sauvegardes">
-                {t("Mes sauvegardés")}
-              </Link>
-              <Link to="/commandes">
-                {t("Mes commandes")}
-              </Link>
-            </div>
-            <div>
-              <h3>
-                {t("Aide")}
-              </h3>
-              <Link to="/aide">
-                {t("Centre d’aide")}
-              </Link>
-              <Link to="/faq?t=retrait">
-                {t("Retrait et code")}
-              </Link>
-              <Link to="/faq?t=retour">
-                {t("Retours")}
-              </Link>
-              <Link to="/messagerie">
-                {t("Messagerie")}
-              </Link>
-            </div>
-          </div>
-          <div className="ct" style={{ "marginTop": "14px" }}>
-            <h3>
-              {t("Nous joindre")}
-            </h3>
-            <Link to="/aide">
-              <Icone nom="map-pin" taille={16} />
-              {t("Yaoundé, Cameroun")}
-            </Link>
-            <Link to="/rappel">
-              <Icone nom="phone-call" taille={16} />
-              {t("Être rappelé · appel masqué")}
-            </Link>
-            <Link to="/fil?id=support&st=nouveau">
-              <Icone nom="mail" taille={16} />
-              {t("Écrire au support")}
-            </Link>
-            <Link to="/aide?st=wa" className="wa">
-              <Icone nom="message-circle" taille={18} />
-              {t("Parler sur WhatsApp")}
-            </Link>
-          </div>
-          <div className="cp">
-            {t("© 2026 BelivaY. Tous droits réservés.")}
-            <nav>
-              <Link to="/legal-doc?d=confidentialite">
-                {t("Confidentialité")}
-              </Link>
-              <Link to="/legal-doc?d=cgu">
-                {t("Conditions")}
-              </Link>
-              <Link to="/legal-doc?d=mentions">
-                {t("Mentions légales")}
-              </Link>
-            </nav>
-          </div>
-        </footer>
+        <FluxPourVous />
         </Ecran>
       )
     case "accueil?st=horsligne":
       return (
-        <Ecran route="accueil" parEtat gabarit="catalogue" droite={<ColonneDroiteAccueil />} avant={
+        <Ecran route="accueil" pied={false} parEtat gabarit="catalogue" droite={<ColonneDroiteAccueil />} avant={
           <>
             <Styles id="57f763a2e1" />
             <Styles id="1c3d953197" />
@@ -2590,7 +2465,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Montre acier bracelet cuir")}
+                  {t("Montre Casio chronographe acier, bracelet cuir")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -2668,7 +2543,7 @@ export function Accueil() {
       )
     case "accueil?st=ferme":
       return (
-        <Ecran route="accueil" parEtat gabarit="catalogue" droite={<ColonneDroiteAccueil />} avant={
+        <Ecran route="accueil" pied={false} parEtat gabarit="catalogue" droite={<ColonneDroiteAccueil />} avant={
           <>
             <Styles id="57f763a2e1" />
             <Styles id="1c3d953197" />
@@ -2720,6 +2595,7 @@ export function Accueil() {
                 <Icone nom="arrow-right" taille={13} />
               </span>
             </Link>
+            <FlashAccueil>
             <Link to="/ventes-flash?offre=cartable">
               <span className="ph">
                 <span>
@@ -2730,7 +2606,7 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Cartable scolaire 16″")}
+                {t("Cartable scolaire Champion 16″")}
               </b>
               <em>
                 {t("10\u00A0900\u00A0F")}
@@ -2746,7 +2622,7 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Porte-bébé ergonomique")}
+                {t("Porte-bébé ergonomique Ergobaby")}
               </b>
               <em>
                 {t("17\u00A0500\u00A0F")}
@@ -2762,7 +2638,7 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Chargeur rapide 33 W USB-C")}
+                {t("Chargeur rapide Samsung 33 W USB-C")}
               </b>
               <em>
                 {t("5\u00A0500\u00A0F")}
@@ -2778,7 +2654,7 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Baskets running")}
+                {t("Baskets running ASICS")}
               </b>
               <em>
                 {t("29\u00A0900\u00A0F")}
@@ -2810,12 +2686,13 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Montre acier bracelet cuir")}
+                {t("Montre Casio chronographe acier, bracelet cuir")}
               </b>
               <em>
                 {t("27\u00A0500\u00A0F")}
               </em>
             </Link>
+            </FlashAccueil>
           </div>
         </section>
         </Module>
@@ -2838,6 +2715,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <ALaUneAccueil>
             <Link to="/fiche?p=pagne" className="h0-c plain">
               <span className="im">
                 <Dessin id="adff434c44d0" />
@@ -2880,7 +2758,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Chargeur rapide 33 W USB-C")}
+                  {t("Chargeur rapide Samsung 33 W USB-C")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -3060,7 +2938,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Beurre de karité pur 500 g")}
+                  {t("Beurre de karité pur Africa’s Best 500 g")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -3078,6 +2956,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </ALaUneAccueil>
           </div>
         </section>
         <section className="h0-panel">
@@ -3226,7 +3105,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Montre acier bracelet cuir")}
+                  {t("Montre Casio chronographe acier, bracelet cuir")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -3343,6 +3222,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-g3">
+            <RangeeSponsorisee cat={null}>
             <Link to="/fiche?p=karite" className="h0-c">
               <span className="im">
                 <Dessin id="4d520c8a165b" />
@@ -3355,7 +3235,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Beurre de karité pur 500 g")}
+                  {t("Beurre de karité pur Africa’s Best 500 g")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -3395,7 +3275,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Chargeur rapide 33 W USB-C")}
+                  {t("Chargeur rapide Samsung 33 W USB-C")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -3515,7 +3395,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Huile de coco vierge 500 ml")}
+                  {t("Huile de coco vierge Vita d’Or 500 ml")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -3586,6 +3466,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <Module ff="FF-ABONNEMENT">
@@ -3647,7 +3528,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Tapis de yoga 6 mm")}
+                  {t("Tapis de yoga Reebok 6 mm")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -3687,7 +3568,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Tablette 8″ · 64 Go")}
+                  {t("Samsung Galaxy Tab A9 8,7″ · 64 Go")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -3727,7 +3608,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Porte-bébé ergonomique")}
+                  {t("Porte-bébé ergonomique Ergobaby")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -3767,7 +3648,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Marmite en fonte 8 L")}
+                  {t("Marmite en fonte Tefal 8 L")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -3810,7 +3691,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Montre acier bracelet cuir")}
+                  {t("Montre Casio chronographe acier, bracelet cuir")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -3863,6 +3744,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'femme'}>
             <Link to="/fiche?p=pagne" className="h0-c">
               <span className="im">
                 <Dessin id="adff434c44d0" />
@@ -4023,6 +3905,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <Link to="/selection" className="h0-ban sel">
@@ -4065,6 +3948,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'elec'}>
             <Link to="/fiche?p=ecouteurs" className="h0-c">
               <span className="im">
                 <Dessin id="8bfb5146603e" />
@@ -4157,7 +4041,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Téléviseur LED 43″")}
+                  {t("Téléviseur Samsung LED 43″")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -4186,6 +4070,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <section className="h0-panel">
@@ -4203,6 +4088,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'tel'}>
             <Link to="/fiche?p=chargeur33" className="h0-c">
               <span className="im">
                 <Dessin id="d86ad7218c7b" />
@@ -4215,7 +4101,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Chargeur rapide 33 W USB-C")}
+                  {t("Chargeur rapide Samsung 33 W USB-C")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -4298,7 +4184,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Tablette 8″ · 64 Go")}
+                  {t("Samsung Galaxy Tab A9 8,7″ · 64 Go")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -4412,6 +4298,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <section className="h0-panel">
@@ -4434,6 +4321,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'beaute'}>
             <Link to="/fiche?p=karite" className="h0-c">
               <span className="im">
                 <Dessin id="4d520c8a165b" />
@@ -4446,7 +4334,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Beurre de karité pur 500 g")}
+                  {t("Beurre de karité pur Africa’s Best 500 g")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -4486,7 +4374,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Huile de coco vierge 500 ml")}
+                  {t("Huile de coco vierge Vita d’Or 500 ml")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -4526,7 +4414,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Crème visage karité & aloe 100 ml")}
+                  {t("Crème visage karité & aloe Evoluderm 100 ml")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -4554,6 +4442,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <section className="h0-panel">
@@ -4576,6 +4465,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'maison'}>
             <Link to="/fiche?p=mixeur" className="h0-c">
               <span className="im">
                 <Dessin id="6cd10aa8c291" />
@@ -4588,7 +4478,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Mixeur-blender 2 L · 600 W")}
+                  {t("Mixeur-blender Philips 2 L · 600 W")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -4628,7 +4518,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Ventilateur sur pied 16″")}
+                  {t("Ventilateur sur pied Midea 16″")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -4708,7 +4598,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Marmite en fonte 8 L")}
+                  {t("Marmite en fonte Tefal 8 L")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -4736,6 +4626,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <Link to="/diaspora" className="h0-ban dia">
@@ -4778,6 +4669,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'marche'}>
             <Link to="/fiche?p=riz" className="h0-c">
               <span className="im">
                 <Dessin id="8a529ed55590" />
@@ -4830,7 +4722,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Huile d’arachide 5 L")}
+                  {t("Huile d’arachide Lesieur 5 L")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -4870,7 +4762,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Café arabica de l’Ouest 500 g")}
+                  {t("Café Nescafé Arabica de l’Ouest 500 g")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -4898,160 +4790,15 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
-        <ConfianceAccueil />
-        <section className="h0-mk">
-          <div className="tp">
-            <span className="bi">
-              <Icone nom="shopping-cart" taille={24} />
-            </span>
-            <div>
-              <b>
-                {t("BelivaY · Tout près de toi")}
-              </b>
-              <span>
-                {t("La marketplace de Yaoundé, retrait au relais")}
-              </span>
-            </div>
-          </div>
-          <div className="ct">
-            <div>
-              <strong>
-                {t("1\u00A0387")}
-              </strong>
-              <small>
-                {t("produits")}
-              </small>
-            </div>
-            <div>
-              <strong>
-                {t("10")}
-              </strong>
-              <small>
-                {t("univers")}
-              </small>
-            </div>
-            <div>
-              <strong>
-                {t("12")}
-              </strong>
-              <small>
-                {t("quartiers")}
-              </small>
-            </div>
-            <div>
-              <strong>
-                {t("7\u00A0j/7")}
-              </strong>
-              <small>
-                {t("aide")}
-              </small>
-            </div>
-          </div>
-          <div className="bt">
-            <Link to="/faq?t=retrait">
-              <Icone nom="info" taille={16} />
-              {t("Comment ça marche")}
-            </Link>
-            <Link to="/categories">
-              <Icone nom="layout-grid" taille={16} />
-              {t("Explorer")}
-            </Link>
-            <Link to="/aide">
-              <Icone nom="headset" taille={16} />
-              {t("Aide")}
-            </Link>
-            <Link to="/commandes">
-              <Icone nom="package" taille={16} />
-              {t("Mes commandes")}
-            </Link>
-          </div>
-        </section>
-        <footer className="h0-ft">
-          <div className="lg">
-            <img src={img_be926f70d2b8_png} alt="BelivaY" />
-          </div>
-          <p>
-            {t("Ta marketplace de confiance à Yaoundé")}
-          </p>
-          <div className="cols">
-            <div>
-              <h3>
-                {t("Liens rapides")}
-              </h3>
-              <Link to="/categories">
-                {t("Catalogue")}
-              </Link>
-              <Link to="/faq?t=retrait">
-                {t("Comment ça marche")}
-              </Link>
-              <Link to="/sauvegardes">
-                {t("Mes sauvegardés")}
-              </Link>
-              <Link to="/commandes">
-                {t("Mes commandes")}
-              </Link>
-            </div>
-            <div>
-              <h3>
-                {t("Aide")}
-              </h3>
-              <Link to="/aide">
-                {t("Centre d’aide")}
-              </Link>
-              <Link to="/faq?t=retrait">
-                {t("Retrait et code")}
-              </Link>
-              <Link to="/faq?t=retour">
-                {t("Retours")}
-              </Link>
-              <Link to="/messagerie">
-                {t("Messagerie")}
-              </Link>
-            </div>
-          </div>
-          <div className="ct" style={{ "marginTop": "14px" }}>
-            <h3>
-              {t("Nous joindre")}
-            </h3>
-            <Link to="/aide">
-              <Icone nom="map-pin" taille={16} />
-              {t("Yaoundé, Cameroun")}
-            </Link>
-            <Link to="/rappel">
-              <Icone nom="phone-call" taille={16} />
-              {t("Être rappelé · appel masqué")}
-            </Link>
-            <Link to="/fil?id=support&st=nouveau">
-              <Icone nom="mail" taille={16} />
-              {t("Écrire au support")}
-            </Link>
-            <Link to="/aide?st=wa" className="wa">
-              <Icone nom="message-circle" taille={18} />
-              {t("Parler sur WhatsApp")}
-            </Link>
-          </div>
-          <div className="cp">
-            {t("© 2026 BelivaY. Tous droits réservés.")}
-            <nav>
-              <Link to="/legal-doc?d=confidentialite">
-                {t("Confidentialité")}
-              </Link>
-              <Link to="/legal-doc?d=cgu">
-                {t("Conditions")}
-              </Link>
-              <Link to="/legal-doc?d=mentions">
-                {t("Mentions légales")}
-              </Link>
-            </nav>
-          </div>
-        </footer>
+        <FluxPourVous />
         </Ecran>
       )
     case "accueil?profil=nouveau":
       return (
-        <Ecran route="accueil" parEtat gabarit="catalogue" droite={<ColonneDroiteAccueil />} avant={
+        <Ecran route="accueil" pied={false} parEtat gabarit="catalogue" droite={<ColonneDroiteAccueil />} avant={
           <>
             <Styles id="57f763a2e1" />
             <Styles id="1c3d953197" />
@@ -5084,6 +4831,7 @@ export function Accueil() {
                 <Icone nom="arrow-right" taille={13} />
               </span>
             </Link>
+            <FlashAccueil>
             <Link to="/ventes-flash?offre=cartable">
               <span className="ph">
                 <span>
@@ -5094,7 +4842,7 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Cartable scolaire 16″")}
+                {t("Cartable scolaire Champion 16″")}
               </b>
               <em>
                 {t("10\u00A0900\u00A0F")}
@@ -5110,7 +4858,7 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Porte-bébé ergonomique")}
+                {t("Porte-bébé ergonomique Ergobaby")}
               </b>
               <em>
                 {t("17\u00A0500\u00A0F")}
@@ -5126,7 +4874,7 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Chargeur rapide 33 W USB-C")}
+                {t("Chargeur rapide Samsung 33 W USB-C")}
               </b>
               <em>
                 {t("5\u00A0500\u00A0F")}
@@ -5142,7 +4890,7 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Baskets running")}
+                {t("Baskets running ASICS")}
               </b>
               <em>
                 {t("29\u00A0900\u00A0F")}
@@ -5174,12 +4922,13 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Montre acier bracelet cuir")}
+                {t("Montre Casio chronographe acier, bracelet cuir")}
               </b>
               <em>
                 {t("27\u00A0500\u00A0F")}
               </em>
             </Link>
+            </FlashAccueil>
           </div>
         </section>
         </Module>
@@ -5202,6 +4951,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <ALaUneAccueil>
             <Link to="/fiche?p=pagne" className="h0-c plain">
               <span className="im">
                 <Dessin id="adff434c44d0" />
@@ -5244,7 +4994,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Chargeur rapide 33 W USB-C")}
+                  {t("Chargeur rapide Samsung 33 W USB-C")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -5424,7 +5174,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Beurre de karité pur 500 g")}
+                  {t("Beurre de karité pur Africa’s Best 500 g")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -5442,6 +5192,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </ALaUneAccueil>
           </div>
         </section>
         <Link to="/promotions" className="h0-ban promo">
@@ -5488,6 +5239,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-g3">
+            <RangeeSponsorisee cat={null}>
             <Link to="/fiche?p=karite" className="h0-c">
               <span className="im">
                 <Dessin id="4d520c8a165b" />
@@ -5500,7 +5252,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Beurre de karité pur 500 g")}
+                  {t("Beurre de karité pur Africa’s Best 500 g")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -5540,7 +5292,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Chargeur rapide 33 W USB-C")}
+                  {t("Chargeur rapide Samsung 33 W USB-C")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -5660,7 +5412,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Huile de coco vierge 500 ml")}
+                  {t("Huile de coco vierge Vita d’Or 500 ml")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -5731,6 +5483,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <Module ff="FF-ABONNEMENT">
@@ -5792,7 +5545,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Tapis de yoga 6 mm")}
+                  {t("Tapis de yoga Reebok 6 mm")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -5832,7 +5585,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Tablette 8″ · 64 Go")}
+                  {t("Samsung Galaxy Tab A9 8,7″ · 64 Go")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -5872,7 +5625,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Porte-bébé ergonomique")}
+                  {t("Porte-bébé ergonomique Ergobaby")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -5912,7 +5665,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Marmite en fonte 8 L")}
+                  {t("Marmite en fonte Tefal 8 L")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -5955,7 +5708,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Montre acier bracelet cuir")}
+                  {t("Montre Casio chronographe acier, bracelet cuir")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -6008,6 +5761,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'femme'}>
             <Link to="/fiche?p=pagne" className="h0-c">
               <span className="im">
                 <Dessin id="adff434c44d0" />
@@ -6168,6 +5922,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <Link to="/selection" className="h0-ban sel">
@@ -6210,6 +5965,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'elec'}>
             <Link to="/fiche?p=ecouteurs" className="h0-c">
               <span className="im">
                 <Dessin id="8bfb5146603e" />
@@ -6302,7 +6058,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Téléviseur LED 43″")}
+                  {t("Téléviseur Samsung LED 43″")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -6331,6 +6087,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <section className="h0-panel">
@@ -6348,6 +6105,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'tel'}>
             <Link to="/fiche?p=chargeur33" className="h0-c">
               <span className="im">
                 <Dessin id="d86ad7218c7b" />
@@ -6360,7 +6118,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Chargeur rapide 33 W USB-C")}
+                  {t("Chargeur rapide Samsung 33 W USB-C")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -6443,7 +6201,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Tablette 8″ · 64 Go")}
+                  {t("Samsung Galaxy Tab A9 8,7″ · 64 Go")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -6557,6 +6315,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <section className="h0-panel">
@@ -6579,6 +6338,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'beaute'}>
             <Link to="/fiche?p=karite" className="h0-c">
               <span className="im">
                 <Dessin id="4d520c8a165b" />
@@ -6591,7 +6351,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Beurre de karité pur 500 g")}
+                  {t("Beurre de karité pur Africa’s Best 500 g")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -6631,7 +6391,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Huile de coco vierge 500 ml")}
+                  {t("Huile de coco vierge Vita d’Or 500 ml")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -6671,7 +6431,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Crème visage karité & aloe 100 ml")}
+                  {t("Crème visage karité & aloe Evoluderm 100 ml")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -6699,6 +6459,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <section className="h0-panel">
@@ -6721,6 +6482,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'maison'}>
             <Link to="/fiche?p=mixeur" className="h0-c">
               <span className="im">
                 <Dessin id="6cd10aa8c291" />
@@ -6733,7 +6495,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Mixeur-blender 2 L · 600 W")}
+                  {t("Mixeur-blender Philips 2 L · 600 W")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -6773,7 +6535,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Ventilateur sur pied 16″")}
+                  {t("Ventilateur sur pied Midea 16″")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -6853,7 +6615,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Marmite en fonte 8 L")}
+                  {t("Marmite en fonte Tefal 8 L")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -6881,6 +6643,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <Link to="/diaspora" className="h0-ban dia">
@@ -6923,6 +6686,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'marche'}>
             <Link to="/fiche?p=riz" className="h0-c">
               <span className="im">
                 <Dessin id="8a529ed55590" />
@@ -6975,7 +6739,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Huile d’arachide 5 L")}
+                  {t("Huile d’arachide Lesieur 5 L")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -7015,7 +6779,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Café arabica de l’Ouest 500 g")}
+                  {t("Café Nescafé Arabica de l’Ouest 500 g")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -7043,160 +6807,15 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
-        <ConfianceAccueil />
-        <section className="h0-mk">
-          <div className="tp">
-            <span className="bi">
-              <Icone nom="shopping-cart" taille={24} />
-            </span>
-            <div>
-              <b>
-                {t("BelivaY · Tout près de toi")}
-              </b>
-              <span>
-                {t("La marketplace de Yaoundé, retrait au relais")}
-              </span>
-            </div>
-          </div>
-          <div className="ct">
-            <div>
-              <strong>
-                {t("1\u00A0387")}
-              </strong>
-              <small>
-                {t("produits")}
-              </small>
-            </div>
-            <div>
-              <strong>
-                {t("10")}
-              </strong>
-              <small>
-                {t("univers")}
-              </small>
-            </div>
-            <div>
-              <strong>
-                {t("12")}
-              </strong>
-              <small>
-                {t("quartiers")}
-              </small>
-            </div>
-            <div>
-              <strong>
-                {t("7\u00A0j/7")}
-              </strong>
-              <small>
-                {t("aide")}
-              </small>
-            </div>
-          </div>
-          <div className="bt">
-            <Link to="/faq?t=retrait">
-              <Icone nom="info" taille={16} />
-              {t("Comment ça marche")}
-            </Link>
-            <Link to="/categories">
-              <Icone nom="layout-grid" taille={16} />
-              {t("Explorer")}
-            </Link>
-            <Link to="/aide">
-              <Icone nom="headset" taille={16} />
-              {t("Aide")}
-            </Link>
-            <Link to="/commandes">
-              <Icone nom="package" taille={16} />
-              {t("Mes commandes")}
-            </Link>
-          </div>
-        </section>
-        <footer className="h0-ft">
-          <div className="lg">
-            <img src={img_be926f70d2b8_png} alt="BelivaY" />
-          </div>
-          <p>
-            {t("Ta marketplace de confiance à Yaoundé")}
-          </p>
-          <div className="cols">
-            <div>
-              <h3>
-                {t("Liens rapides")}
-              </h3>
-              <Link to="/categories">
-                {t("Catalogue")}
-              </Link>
-              <Link to="/faq?t=retrait">
-                {t("Comment ça marche")}
-              </Link>
-              <Link to="/sauvegardes">
-                {t("Mes sauvegardés")}
-              </Link>
-              <Link to="/commandes">
-                {t("Mes commandes")}
-              </Link>
-            </div>
-            <div>
-              <h3>
-                {t("Aide")}
-              </h3>
-              <Link to="/aide">
-                {t("Centre d’aide")}
-              </Link>
-              <Link to="/faq?t=retrait">
-                {t("Retrait et code")}
-              </Link>
-              <Link to="/faq?t=retour">
-                {t("Retours")}
-              </Link>
-              <Link to="/messagerie">
-                {t("Messagerie")}
-              </Link>
-            </div>
-          </div>
-          <div className="ct" style={{ "marginTop": "14px" }}>
-            <h3>
-              {t("Nous joindre")}
-            </h3>
-            <Link to="/aide">
-              <Icone nom="map-pin" taille={16} />
-              {t("Yaoundé, Cameroun")}
-            </Link>
-            <Link to="/rappel">
-              <Icone nom="phone-call" taille={16} />
-              {t("Être rappelé · appel masqué")}
-            </Link>
-            <Link to="/fil?id=support&st=nouveau">
-              <Icone nom="mail" taille={16} />
-              {t("Écrire au support")}
-            </Link>
-            <Link to="/aide?st=wa" className="wa">
-              <Icone nom="message-circle" taille={18} />
-              {t("Parler sur WhatsApp")}
-            </Link>
-          </div>
-          <div className="cp">
-            {t("© 2026 BelivaY. Tous droits réservés.")}
-            <nav>
-              <Link to="/legal-doc?d=confidentialite">
-                {t("Confidentialité")}
-              </Link>
-              <Link to="/legal-doc?d=cgu">
-                {t("Conditions")}
-              </Link>
-              <Link to="/legal-doc?d=mentions">
-                {t("Mentions légales")}
-              </Link>
-            </nav>
-          </div>
-        </footer>
+        <FluxPourVous />
         </Ecran>
       )
     case "accueil?profil=navigateur":
       return (
-        <Ecran route="accueil" parEtat gabarit="catalogue" droite={<ColonneDroiteAccueil />} avant={
+        <Ecran route="accueil" pied={false} parEtat gabarit="catalogue" droite={<ColonneDroiteAccueil />} avant={
           <>
             <Styles id="57f763a2e1" />
             <Styles id="1c3d953197" />
@@ -7229,6 +6848,7 @@ export function Accueil() {
                 <Icone nom="arrow-right" taille={13} />
               </span>
             </Link>
+            <FlashAccueil>
             <Link to="/ventes-flash?offre=cartable">
               <span className="ph">
                 <span>
@@ -7239,7 +6859,7 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Cartable scolaire 16″")}
+                {t("Cartable scolaire Champion 16″")}
               </b>
               <em>
                 {t("10\u00A0900\u00A0F")}
@@ -7255,7 +6875,7 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Porte-bébé ergonomique")}
+                {t("Porte-bébé ergonomique Ergobaby")}
               </b>
               <em>
                 {t("17\u00A0500\u00A0F")}
@@ -7271,7 +6891,7 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Chargeur rapide 33 W USB-C")}
+                {t("Chargeur rapide Samsung 33 W USB-C")}
               </b>
               <em>
                 {t("5\u00A0500\u00A0F")}
@@ -7287,7 +6907,7 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Baskets running")}
+                {t("Baskets running ASICS")}
               </b>
               <em>
                 {t("29\u00A0900\u00A0F")}
@@ -7319,12 +6939,13 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Montre acier bracelet cuir")}
+                {t("Montre Casio chronographe acier, bracelet cuir")}
               </b>
               <em>
                 {t("27\u00A0500\u00A0F")}
               </em>
             </Link>
+            </FlashAccueil>
           </div>
         </section>
         </Module>
@@ -7347,6 +6968,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <ALaUneAccueil>
             <Link to="/fiche?p=pagne" className="h0-c plain">
               <span className="im">
                 <Dessin id="adff434c44d0" />
@@ -7389,7 +7011,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Chargeur rapide 33 W USB-C")}
+                  {t("Chargeur rapide Samsung 33 W USB-C")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -7569,7 +7191,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Beurre de karité pur 500 g")}
+                  {t("Beurre de karité pur Africa’s Best 500 g")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -7587,6 +7209,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </ALaUneAccueil>
           </div>
         </section>
         <section className="h0-panel">
@@ -7612,7 +7235,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Chargeur rapide 33 W USB-C")}
+                  {t("Chargeur rapide Samsung 33 W USB-C")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -7781,7 +7404,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Tablette 8″ · 64 Go")}
+                  {t("Samsung Galaxy Tab A9 8,7″ · 64 Go")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -7821,7 +7444,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Beurre de karité pur 500 g")}
+                  {t("Beurre de karité pur Africa’s Best 500 g")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -7895,6 +7518,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-g3">
+            <RangeeSponsorisee cat={null}>
             <Link to="/fiche?p=karite" className="h0-c">
               <span className="im">
                 <Dessin id="4d520c8a165b" />
@@ -7907,7 +7531,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Beurre de karité pur 500 g")}
+                  {t("Beurre de karité pur Africa’s Best 500 g")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -7947,7 +7571,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Chargeur rapide 33 W USB-C")}
+                  {t("Chargeur rapide Samsung 33 W USB-C")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -8067,7 +7691,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Huile de coco vierge 500 ml")}
+                  {t("Huile de coco vierge Vita d’Or 500 ml")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -8138,6 +7762,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <Module ff="FF-ABONNEMENT">
@@ -8199,7 +7824,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Tapis de yoga 6 mm")}
+                  {t("Tapis de yoga Reebok 6 mm")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -8239,7 +7864,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Tablette 8″ · 64 Go")}
+                  {t("Samsung Galaxy Tab A9 8,7″ · 64 Go")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -8279,7 +7904,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Porte-bébé ergonomique")}
+                  {t("Porte-bébé ergonomique Ergobaby")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -8319,7 +7944,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Marmite en fonte 8 L")}
+                  {t("Marmite en fonte Tefal 8 L")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -8362,7 +7987,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Montre acier bracelet cuir")}
+                  {t("Montre Casio chronographe acier, bracelet cuir")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -8415,6 +8040,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'femme'}>
             <Link to="/fiche?p=pagne" className="h0-c">
               <span className="im">
                 <Dessin id="adff434c44d0" />
@@ -8575,6 +8201,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <Link to="/selection" className="h0-ban sel">
@@ -8617,6 +8244,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'elec'}>
             <Link to="/fiche?p=ecouteurs" className="h0-c">
               <span className="im">
                 <Dessin id="8bfb5146603e" />
@@ -8709,7 +8337,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Téléviseur LED 43″")}
+                  {t("Téléviseur Samsung LED 43″")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -8738,6 +8366,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <section className="h0-panel">
@@ -8755,6 +8384,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'tel'}>
             <Link to="/fiche?p=chargeur33" className="h0-c">
               <span className="im">
                 <Dessin id="d86ad7218c7b" />
@@ -8767,7 +8397,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Chargeur rapide 33 W USB-C")}
+                  {t("Chargeur rapide Samsung 33 W USB-C")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -8850,7 +8480,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Tablette 8″ · 64 Go")}
+                  {t("Samsung Galaxy Tab A9 8,7″ · 64 Go")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -8964,6 +8594,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <section className="h0-panel">
@@ -8986,6 +8617,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'beaute'}>
             <Link to="/fiche?p=karite" className="h0-c">
               <span className="im">
                 <Dessin id="4d520c8a165b" />
@@ -8998,7 +8630,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Beurre de karité pur 500 g")}
+                  {t("Beurre de karité pur Africa’s Best 500 g")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -9038,7 +8670,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Huile de coco vierge 500 ml")}
+                  {t("Huile de coco vierge Vita d’Or 500 ml")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -9078,7 +8710,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Crème visage karité & aloe 100 ml")}
+                  {t("Crème visage karité & aloe Evoluderm 100 ml")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -9106,6 +8738,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <section className="h0-panel">
@@ -9128,6 +8761,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'maison'}>
             <Link to="/fiche?p=mixeur" className="h0-c">
               <span className="im">
                 <Dessin id="6cd10aa8c291" />
@@ -9140,7 +8774,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Mixeur-blender 2 L · 600 W")}
+                  {t("Mixeur-blender Philips 2 L · 600 W")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -9180,7 +8814,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Ventilateur sur pied 16″")}
+                  {t("Ventilateur sur pied Midea 16″")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -9260,7 +8894,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Marmite en fonte 8 L")}
+                  {t("Marmite en fonte Tefal 8 L")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -9288,6 +8922,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <Link to="/diaspora" className="h0-ban dia">
@@ -9330,6 +8965,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'marche'}>
             <Link to="/fiche?p=riz" className="h0-c">
               <span className="im">
                 <Dessin id="8a529ed55590" />
@@ -9382,7 +9018,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Huile d’arachide 5 L")}
+                  {t("Huile d’arachide Lesieur 5 L")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -9422,7 +9058,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Café arabica de l’Ouest 500 g")}
+                  {t("Café Nescafé Arabica de l’Ouest 500 g")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -9450,160 +9086,15 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
-        <ConfianceAccueil />
-        <section className="h0-mk">
-          <div className="tp">
-            <span className="bi">
-              <Icone nom="shopping-cart" taille={24} />
-            </span>
-            <div>
-              <b>
-                {t("BelivaY · Tout près de toi")}
-              </b>
-              <span>
-                {t("La marketplace de Yaoundé, retrait au relais")}
-              </span>
-            </div>
-          </div>
-          <div className="ct">
-            <div>
-              <strong>
-                {t("1\u00A0387")}
-              </strong>
-              <small>
-                {t("produits")}
-              </small>
-            </div>
-            <div>
-              <strong>
-                {t("10")}
-              </strong>
-              <small>
-                {t("univers")}
-              </small>
-            </div>
-            <div>
-              <strong>
-                {t("12")}
-              </strong>
-              <small>
-                {t("quartiers")}
-              </small>
-            </div>
-            <div>
-              <strong>
-                {t("7\u00A0j/7")}
-              </strong>
-              <small>
-                {t("aide")}
-              </small>
-            </div>
-          </div>
-          <div className="bt">
-            <Link to="/faq?t=retrait">
-              <Icone nom="info" taille={16} />
-              {t("Comment ça marche")}
-            </Link>
-            <Link to="/categories">
-              <Icone nom="layout-grid" taille={16} />
-              {t("Explorer")}
-            </Link>
-            <Link to="/aide">
-              <Icone nom="headset" taille={16} />
-              {t("Aide")}
-            </Link>
-            <Link to="/commandes">
-              <Icone nom="package" taille={16} />
-              {t("Mes commandes")}
-            </Link>
-          </div>
-        </section>
-        <footer className="h0-ft">
-          <div className="lg">
-            <img src={img_be926f70d2b8_png} alt="BelivaY" />
-          </div>
-          <p>
-            {t("Ta marketplace de confiance à Yaoundé")}
-          </p>
-          <div className="cols">
-            <div>
-              <h3>
-                {t("Liens rapides")}
-              </h3>
-              <Link to="/categories">
-                {t("Catalogue")}
-              </Link>
-              <Link to="/faq?t=retrait">
-                {t("Comment ça marche")}
-              </Link>
-              <Link to="/sauvegardes">
-                {t("Mes sauvegardés")}
-              </Link>
-              <Link to="/commandes">
-                {t("Mes commandes")}
-              </Link>
-            </div>
-            <div>
-              <h3>
-                {t("Aide")}
-              </h3>
-              <Link to="/aide">
-                {t("Centre d’aide")}
-              </Link>
-              <Link to="/faq?t=retrait">
-                {t("Retrait et code")}
-              </Link>
-              <Link to="/faq?t=retour">
-                {t("Retours")}
-              </Link>
-              <Link to="/messagerie">
-                {t("Messagerie")}
-              </Link>
-            </div>
-          </div>
-          <div className="ct" style={{ "marginTop": "14px" }}>
-            <h3>
-              {t("Nous joindre")}
-            </h3>
-            <Link to="/aide">
-              <Icone nom="map-pin" taille={16} />
-              {t("Yaoundé, Cameroun")}
-            </Link>
-            <Link to="/rappel">
-              <Icone nom="phone-call" taille={16} />
-              {t("Être rappelé · appel masqué")}
-            </Link>
-            <Link to="/fil?id=support&st=nouveau">
-              <Icone nom="mail" taille={16} />
-              {t("Écrire au support")}
-            </Link>
-            <Link to="/aide?st=wa" className="wa">
-              <Icone nom="message-circle" taille={18} />
-              {t("Parler sur WhatsApp")}
-            </Link>
-          </div>
-          <div className="cp">
-            {t("© 2026 BelivaY. Tous droits réservés.")}
-            <nav>
-              <Link to="/legal-doc?d=confidentialite">
-                {t("Confidentialité")}
-              </Link>
-              <Link to="/legal-doc?d=cgu">
-                {t("Conditions")}
-              </Link>
-              <Link to="/legal-doc?d=mentions">
-                {t("Mentions légales")}
-              </Link>
-            </nav>
-          </div>
-        </footer>
+        <FluxPourVous />
         </Ecran>
       )
     case "accueil?profil=visiteur":
       return (
-        <Ecran route="accueil" parEtat gabarit="catalogue" droite={<ColonneDroiteAccueil />} avant={
+        <Ecran route="accueil" pied={false} parEtat gabarit="catalogue" droite={<ColonneDroiteAccueil />} avant={
           <>
             <Styles id="57f763a2e1" />
             <Styles id="1c3d953197" />
@@ -9652,6 +9143,7 @@ export function Accueil() {
                 <Icone nom="arrow-right" taille={13} />
               </span>
             </Link>
+            <FlashAccueil>
             <Link to="/ventes-flash?offre=cartable">
               <span className="ph">
                 <span>
@@ -9662,7 +9154,7 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Cartable scolaire 16″")}
+                {t("Cartable scolaire Champion 16″")}
               </b>
               <em>
                 {t("10\u00A0900\u00A0F")}
@@ -9678,7 +9170,7 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Porte-bébé ergonomique")}
+                {t("Porte-bébé ergonomique Ergobaby")}
               </b>
               <em>
                 {t("17\u00A0500\u00A0F")}
@@ -9694,7 +9186,7 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Chargeur rapide 33 W USB-C")}
+                {t("Chargeur rapide Samsung 33 W USB-C")}
               </b>
               <em>
                 {t("5\u00A0500\u00A0F")}
@@ -9710,7 +9202,7 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Baskets running")}
+                {t("Baskets running ASICS")}
               </b>
               <em>
                 {t("29\u00A0900\u00A0F")}
@@ -9742,12 +9234,13 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Montre acier bracelet cuir")}
+                {t("Montre Casio chronographe acier, bracelet cuir")}
               </b>
               <em>
                 {t("27\u00A0500\u00A0F")}
               </em>
             </Link>
+            </FlashAccueil>
           </div>
         </section>
         </Module>
@@ -9770,6 +9263,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <ALaUneAccueil>
             <Link to="/fiche?p=pagne" className="h0-c plain">
               <span className="im">
                 <Dessin id="adff434c44d0" />
@@ -9812,7 +9306,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Chargeur rapide 33 W USB-C")}
+                  {t("Chargeur rapide Samsung 33 W USB-C")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -9992,7 +9486,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Beurre de karité pur 500 g")}
+                  {t("Beurre de karité pur Africa’s Best 500 g")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -10010,6 +9504,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </ALaUneAccueil>
           </div>
         </section>
         <Link to="/promotions" className="h0-ban promo">
@@ -10056,6 +9551,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-g3">
+            <RangeeSponsorisee cat={null}>
             <Link to="/fiche?p=karite" className="h0-c">
               <span className="im">
                 <Dessin id="4d520c8a165b" />
@@ -10068,7 +9564,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Beurre de karité pur 500 g")}
+                  {t("Beurre de karité pur Africa’s Best 500 g")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -10108,7 +9604,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Chargeur rapide 33 W USB-C")}
+                  {t("Chargeur rapide Samsung 33 W USB-C")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -10228,7 +9724,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Huile de coco vierge 500 ml")}
+                  {t("Huile de coco vierge Vita d’Or 500 ml")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -10299,6 +9795,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <Module ff="FF-ABONNEMENT">
@@ -10360,7 +9857,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Tapis de yoga 6 mm")}
+                  {t("Tapis de yoga Reebok 6 mm")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -10400,7 +9897,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Tablette 8″ · 64 Go")}
+                  {t("Samsung Galaxy Tab A9 8,7″ · 64 Go")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -10440,7 +9937,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Porte-bébé ergonomique")}
+                  {t("Porte-bébé ergonomique Ergobaby")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -10480,7 +9977,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Marmite en fonte 8 L")}
+                  {t("Marmite en fonte Tefal 8 L")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -10523,7 +10020,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Montre acier bracelet cuir")}
+                  {t("Montre Casio chronographe acier, bracelet cuir")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -10576,6 +10073,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'femme'}>
             <Link to="/fiche?p=pagne" className="h0-c">
               <span className="im">
                 <Dessin id="adff434c44d0" />
@@ -10736,6 +10234,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <Link to="/selection" className="h0-ban sel">
@@ -10778,6 +10277,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'elec'}>
             <Link to="/fiche?p=ecouteurs" className="h0-c">
               <span className="im">
                 <Dessin id="8bfb5146603e" />
@@ -10870,7 +10370,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Téléviseur LED 43″")}
+                  {t("Téléviseur Samsung LED 43″")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -10899,6 +10399,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <section className="h0-panel">
@@ -10916,6 +10417,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'tel'}>
             <Link to="/fiche?p=chargeur33" className="h0-c">
               <span className="im">
                 <Dessin id="d86ad7218c7b" />
@@ -10928,7 +10430,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Chargeur rapide 33 W USB-C")}
+                  {t("Chargeur rapide Samsung 33 W USB-C")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -11011,7 +10513,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Tablette 8″ · 64 Go")}
+                  {t("Samsung Galaxy Tab A9 8,7″ · 64 Go")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -11125,6 +10627,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <section className="h0-panel">
@@ -11147,6 +10650,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'beaute'}>
             <Link to="/fiche?p=karite" className="h0-c">
               <span className="im">
                 <Dessin id="4d520c8a165b" />
@@ -11159,7 +10663,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Beurre de karité pur 500 g")}
+                  {t("Beurre de karité pur Africa’s Best 500 g")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -11199,7 +10703,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Huile de coco vierge 500 ml")}
+                  {t("Huile de coco vierge Vita d’Or 500 ml")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -11239,7 +10743,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Crème visage karité & aloe 100 ml")}
+                  {t("Crème visage karité & aloe Evoluderm 100 ml")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -11267,6 +10771,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <section className="h0-panel">
@@ -11289,6 +10794,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'maison'}>
             <Link to="/fiche?p=mixeur" className="h0-c">
               <span className="im">
                 <Dessin id="6cd10aa8c291" />
@@ -11301,7 +10807,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Mixeur-blender 2 L · 600 W")}
+                  {t("Mixeur-blender Philips 2 L · 600 W")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -11341,7 +10847,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Ventilateur sur pied 16″")}
+                  {t("Ventilateur sur pied Midea 16″")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -11421,7 +10927,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Marmite en fonte 8 L")}
+                  {t("Marmite en fonte Tefal 8 L")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -11449,6 +10955,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <Link to="/diaspora" className="h0-ban dia">
@@ -11491,6 +10998,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'marche'}>
             <Link to="/fiche?p=riz" className="h0-c">
               <span className="im">
                 <Dessin id="8a529ed55590" />
@@ -11543,7 +11051,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Huile d’arachide 5 L")}
+                  {t("Huile d’arachide Lesieur 5 L")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -11583,7 +11091,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Café arabica de l’Ouest 500 g")}
+                  {t("Café Nescafé Arabica de l’Ouest 500 g")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -11611,160 +11119,15 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
-        <ConfianceAccueil />
-        <section className="h0-mk">
-          <div className="tp">
-            <span className="bi">
-              <Icone nom="shopping-cart" taille={24} />
-            </span>
-            <div>
-              <b>
-                {t("BelivaY · Tout près de toi")}
-              </b>
-              <span>
-                {t("La marketplace de Yaoundé, retrait au relais")}
-              </span>
-            </div>
-          </div>
-          <div className="ct">
-            <div>
-              <strong>
-                {t("1\u00A0387")}
-              </strong>
-              <small>
-                {t("produits")}
-              </small>
-            </div>
-            <div>
-              <strong>
-                {t("10")}
-              </strong>
-              <small>
-                {t("univers")}
-              </small>
-            </div>
-            <div>
-              <strong>
-                {t("12")}
-              </strong>
-              <small>
-                {t("quartiers")}
-              </small>
-            </div>
-            <div>
-              <strong>
-                {t("7\u00A0j/7")}
-              </strong>
-              <small>
-                {t("aide")}
-              </small>
-            </div>
-          </div>
-          <div className="bt">
-            <Link to="/faq?t=retrait">
-              <Icone nom="info" taille={16} />
-              {t("Comment ça marche")}
-            </Link>
-            <Link to="/categories">
-              <Icone nom="layout-grid" taille={16} />
-              {t("Explorer")}
-            </Link>
-            <Link to="/aide">
-              <Icone nom="headset" taille={16} />
-              {t("Aide")}
-            </Link>
-            <Link to="/commandes">
-              <Icone nom="package" taille={16} />
-              {t("Mes commandes")}
-            </Link>
-          </div>
-        </section>
-        <footer className="h0-ft">
-          <div className="lg">
-            <img src={img_be926f70d2b8_png} alt="BelivaY" />
-          </div>
-          <p>
-            {t("Ta marketplace de confiance à Yaoundé")}
-          </p>
-          <div className="cols">
-            <div>
-              <h3>
-                {t("Liens rapides")}
-              </h3>
-              <Link to="/categories">
-                {t("Catalogue")}
-              </Link>
-              <Link to="/faq?t=retrait">
-                {t("Comment ça marche")}
-              </Link>
-              <Link to="/sauvegardes">
-                {t("Mes sauvegardés")}
-              </Link>
-              <Link to="/commandes">
-                {t("Mes commandes")}
-              </Link>
-            </div>
-            <div>
-              <h3>
-                {t("Aide")}
-              </h3>
-              <Link to="/aide">
-                {t("Centre d’aide")}
-              </Link>
-              <Link to="/faq?t=retrait">
-                {t("Retrait et code")}
-              </Link>
-              <Link to="/faq?t=retour">
-                {t("Retours")}
-              </Link>
-              <Link to="/messagerie">
-                {t("Messagerie")}
-              </Link>
-            </div>
-          </div>
-          <div className="ct" style={{ "marginTop": "14px" }}>
-            <h3>
-              {t("Nous joindre")}
-            </h3>
-            <Link to="/aide">
-              <Icone nom="map-pin" taille={16} />
-              {t("Yaoundé, Cameroun")}
-            </Link>
-            <Link to="/rappel">
-              <Icone nom="phone-call" taille={16} />
-              {t("Être rappelé · appel masqué")}
-            </Link>
-            <Link to="/fil?id=support&st=nouveau">
-              <Icone nom="mail" taille={16} />
-              {t("Écrire au support")}
-            </Link>
-            <Link to="/aide?st=wa" className="wa">
-              <Icone nom="message-circle" taille={18} />
-              {t("Parler sur WhatsApp")}
-            </Link>
-          </div>
-          <div className="cp">
-            {t("© 2026 BelivaY. Tous droits réservés.")}
-            <nav>
-              <Link to="/legal-doc?d=confidentialite">
-                {t("Confidentialité")}
-              </Link>
-              <Link to="/legal-doc?d=cgu">
-                {t("Conditions")}
-              </Link>
-              <Link to="/legal-doc?d=mentions">
-                {t("Mentions légales")}
-              </Link>
-            </nav>
-          </div>
-        </footer>
+        <FluxPourVous />
         </Ecran>
       )
     case "accueil?st=lent":
       return (
-        <Ecran route="accueil" parEtat gabarit="catalogue" droite={<ColonneDroiteAccueil />} avant={
+        <Ecran route="accueil" pied={false} parEtat gabarit="catalogue" droite={<ColonneDroiteAccueil />} avant={
           <>
             <Styles id="57f763a2e1" />
             <Styles id="1c3d953197" />
@@ -11831,6 +11194,7 @@ export function Accueil() {
                 <Icone nom="arrow-right" taille={13} />
               </span>
             </Link>
+            <FlashAccueil>
             <Link to="/ventes-flash?offre=cartable">
               <span className="ph">
                 <span>
@@ -11841,7 +11205,7 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Cartable scolaire 16″")}
+                {t("Cartable scolaire Champion 16″")}
               </b>
               <em>
                 {t("10\u00A0900\u00A0F")}
@@ -11857,7 +11221,7 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Porte-bébé ergonomique")}
+                {t("Porte-bébé ergonomique Ergobaby")}
               </b>
               <em>
                 {t("17\u00A0500\u00A0F")}
@@ -11873,7 +11237,7 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Chargeur rapide 33 W USB-C")}
+                {t("Chargeur rapide Samsung 33 W USB-C")}
               </b>
               <em>
                 {t("5\u00A0500\u00A0F")}
@@ -11889,7 +11253,7 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Baskets running")}
+                {t("Baskets running ASICS")}
               </b>
               <em>
                 {t("29\u00A0900\u00A0F")}
@@ -11921,12 +11285,13 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Montre acier bracelet cuir")}
+                {t("Montre Casio chronographe acier, bracelet cuir")}
               </b>
               <em>
                 {t("27\u00A0500\u00A0F")}
               </em>
             </Link>
+            </FlashAccueil>
           </div>
         </section>
         </Module>
@@ -11999,7 +11364,7 @@ export function Accueil() {
       )
     case "accueil?pop=profil":
       return (
-        <Ecran route="accueil" parEtat gabarit="catalogue" droite={<ColonneDroiteAccueil />} avant={
+        <Ecran route="accueil" pied={false} parEtat gabarit="catalogue" droite={<ColonneDroiteAccueil />} avant={
           <>
             <Styles id="57f763a2e1" />
             <Styles id="1c3d953197" />
@@ -12057,6 +11422,7 @@ export function Accueil() {
                 <Icone nom="arrow-right" taille={13} />
               </span>
             </Link>
+            <FlashAccueil>
             <Link to="/ventes-flash?offre=cartable">
               <span className="ph">
                 <span>
@@ -12067,7 +11433,7 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Cartable scolaire 16″")}
+                {t("Cartable scolaire Champion 16″")}
               </b>
               <em>
                 {t("10\u00A0900\u00A0F")}
@@ -12083,7 +11449,7 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Porte-bébé ergonomique")}
+                {t("Porte-bébé ergonomique Ergobaby")}
               </b>
               <em>
                 {t("17\u00A0500\u00A0F")}
@@ -12099,7 +11465,7 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Chargeur rapide 33 W USB-C")}
+                {t("Chargeur rapide Samsung 33 W USB-C")}
               </b>
               <em>
                 {t("5\u00A0500\u00A0F")}
@@ -12115,7 +11481,7 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Baskets running")}
+                {t("Baskets running ASICS")}
               </b>
               <em>
                 {t("29\u00A0900\u00A0F")}
@@ -12147,12 +11513,13 @@ export function Accueil() {
                 </i>
               </span>
               <b>
-                {t("Montre acier bracelet cuir")}
+                {t("Montre Casio chronographe acier, bracelet cuir")}
               </b>
               <em>
                 {t("27\u00A0500\u00A0F")}
               </em>
             </Link>
+            </FlashAccueil>
           </div>
         </section>
         </Module>
@@ -12175,6 +11542,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <ALaUneAccueil>
             <Link to="/fiche?p=pagne" className="h0-c plain">
               <span className="im">
                 <Dessin id="adff434c44d0" />
@@ -12217,7 +11585,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Chargeur rapide 33 W USB-C")}
+                  {t("Chargeur rapide Samsung 33 W USB-C")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -12397,7 +11765,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Beurre de karité pur 500 g")}
+                  {t("Beurre de karité pur Africa’s Best 500 g")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -12415,6 +11783,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </ALaUneAccueil>
           </div>
         </section>
         <section className="h0-panel">
@@ -12563,7 +11932,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Montre acier bracelet cuir")}
+                  {t("Montre Casio chronographe acier, bracelet cuir")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -12680,6 +12049,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-g3">
+            <RangeeSponsorisee cat={null}>
             <Link to="/fiche?p=karite" className="h0-c">
               <span className="im">
                 <Dessin id="4d520c8a165b" />
@@ -12692,7 +12062,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Beurre de karité pur 500 g")}
+                  {t("Beurre de karité pur Africa’s Best 500 g")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -12732,7 +12102,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Chargeur rapide 33 W USB-C")}
+                  {t("Chargeur rapide Samsung 33 W USB-C")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -12852,7 +12222,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Huile de coco vierge 500 ml")}
+                  {t("Huile de coco vierge Vita d’Or 500 ml")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -12923,6 +12293,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <Module ff="FF-ABONNEMENT">
@@ -12984,7 +12355,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Tapis de yoga 6 mm")}
+                  {t("Tapis de yoga Reebok 6 mm")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -13024,7 +12395,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Tablette 8″ · 64 Go")}
+                  {t("Samsung Galaxy Tab A9 8,7″ · 64 Go")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -13064,7 +12435,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Porte-bébé ergonomique")}
+                  {t("Porte-bébé ergonomique Ergobaby")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -13104,7 +12475,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Marmite en fonte 8 L")}
+                  {t("Marmite en fonte Tefal 8 L")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -13147,7 +12518,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Montre acier bracelet cuir")}
+                  {t("Montre Casio chronographe acier, bracelet cuir")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -13200,6 +12571,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'femme'}>
             <Link to="/fiche?p=pagne" className="h0-c">
               <span className="im">
                 <Dessin id="adff434c44d0" />
@@ -13360,6 +12732,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <Link to="/selection" className="h0-ban sel">
@@ -13402,6 +12775,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'elec'}>
             <Link to="/fiche?p=ecouteurs" className="h0-c">
               <span className="im">
                 <Dessin id="8bfb5146603e" />
@@ -13494,7 +12868,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Téléviseur LED 43″")}
+                  {t("Téléviseur Samsung LED 43″")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -13523,6 +12897,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <section className="h0-panel">
@@ -13540,6 +12915,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'tel'}>
             <Link to="/fiche?p=chargeur33" className="h0-c">
               <span className="im">
                 <Dessin id="d86ad7218c7b" />
@@ -13552,7 +12928,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Chargeur rapide 33 W USB-C")}
+                  {t("Chargeur rapide Samsung 33 W USB-C")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -13635,7 +13011,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Tablette 8″ · 64 Go")}
+                  {t("Samsung Galaxy Tab A9 8,7″ · 64 Go")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -13749,6 +13125,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <section className="h0-panel">
@@ -13771,6 +13148,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'beaute'}>
             <Link to="/fiche?p=karite" className="h0-c">
               <span className="im">
                 <Dessin id="4d520c8a165b" />
@@ -13783,7 +13161,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Beurre de karité pur 500 g")}
+                  {t("Beurre de karité pur Africa’s Best 500 g")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -13823,7 +13201,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Huile de coco vierge 500 ml")}
+                  {t("Huile de coco vierge Vita d’Or 500 ml")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -13863,7 +13241,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Crème visage karité & aloe 100 ml")}
+                  {t("Crème visage karité & aloe Evoluderm 100 ml")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -13891,6 +13269,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <section className="h0-panel">
@@ -13913,6 +13292,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'maison'}>
             <Link to="/fiche?p=mixeur" className="h0-c">
               <span className="im">
                 <Dessin id="6cd10aa8c291" />
@@ -13925,7 +13305,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Mixeur-blender 2 L · 600 W")}
+                  {t("Mixeur-blender Philips 2 L · 600 W")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -13965,7 +13345,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Ventilateur sur pied 16″")}
+                  {t("Ventilateur sur pied Midea 16″")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -14045,7 +13425,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Marmite en fonte 8 L")}
+                  {t("Marmite en fonte Tefal 8 L")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -14073,6 +13453,7 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
         <Link to="/diaspora" className="h0-ban dia">
@@ -14115,6 +13496,7 @@ export function Accueil() {
             </Link>
           </div>
           <div className="h0-row">
+            <RangeeSponsorisee cat={'marche'}>
             <Link to="/fiche?p=riz" className="h0-c">
               <span className="im">
                 <Dessin id="8a529ed55590" />
@@ -14167,7 +13549,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Huile d’arachide 5 L")}
+                  {t("Huile d’arachide Lesieur 5 L")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -14207,7 +13589,7 @@ export function Accueil() {
               </span>
               <span className="bd">
                 <span className="t">
-                  {t("Café arabica de l’Ouest 500 g")}
+                  {t("Café Nescafé Arabica de l’Ouest 500 g")}
                 </span>
                 <span className="m">
                   <Icone nom="map-pin" taille={12} />
@@ -14235,155 +13617,10 @@ export function Accueil() {
                 {t("Panier")}
               </span>
             </Link>
+            </RangeeSponsorisee>
           </div>
         </section>
-        <ConfianceAccueil />
-        <section className="h0-mk">
-          <div className="tp">
-            <span className="bi">
-              <Icone nom="shopping-cart" taille={24} />
-            </span>
-            <div>
-              <b>
-                {t("BelivaY · Tout près de toi")}
-              </b>
-              <span>
-                {t("La marketplace de Yaoundé, retrait au relais")}
-              </span>
-            </div>
-          </div>
-          <div className="ct">
-            <div>
-              <strong>
-                {t("1\u00A0387")}
-              </strong>
-              <small>
-                {t("produits")}
-              </small>
-            </div>
-            <div>
-              <strong>
-                {t("10")}
-              </strong>
-              <small>
-                {t("univers")}
-              </small>
-            </div>
-            <div>
-              <strong>
-                {t("12")}
-              </strong>
-              <small>
-                {t("quartiers")}
-              </small>
-            </div>
-            <div>
-              <strong>
-                {t("7\u00A0j/7")}
-              </strong>
-              <small>
-                {t("aide")}
-              </small>
-            </div>
-          </div>
-          <div className="bt">
-            <Link to="/faq?t=retrait">
-              <Icone nom="info" taille={16} />
-              {t("Comment ça marche")}
-            </Link>
-            <Link to="/categories">
-              <Icone nom="layout-grid" taille={16} />
-              {t("Explorer")}
-            </Link>
-            <Link to="/aide">
-              <Icone nom="headset" taille={16} />
-              {t("Aide")}
-            </Link>
-            <Link to="/commandes">
-              <Icone nom="package" taille={16} />
-              {t("Mes commandes")}
-            </Link>
-          </div>
-        </section>
-        <footer className="h0-ft">
-          <div className="lg">
-            <img src={img_be926f70d2b8_png} alt="BelivaY" />
-          </div>
-          <p>
-            {t("Ta marketplace de confiance à Yaoundé")}
-          </p>
-          <div className="cols">
-            <div>
-              <h3>
-                {t("Liens rapides")}
-              </h3>
-              <Link to="/categories">
-                {t("Catalogue")}
-              </Link>
-              <Link to="/faq?t=retrait">
-                {t("Comment ça marche")}
-              </Link>
-              <Link to="/sauvegardes">
-                {t("Mes sauvegardés")}
-              </Link>
-              <Link to="/commandes">
-                {t("Mes commandes")}
-              </Link>
-            </div>
-            <div>
-              <h3>
-                {t("Aide")}
-              </h3>
-              <Link to="/aide">
-                {t("Centre d’aide")}
-              </Link>
-              <Link to="/faq?t=retrait">
-                {t("Retrait et code")}
-              </Link>
-              <Link to="/faq?t=retour">
-                {t("Retours")}
-              </Link>
-              <Link to="/messagerie">
-                {t("Messagerie")}
-              </Link>
-            </div>
-          </div>
-          <div className="ct" style={{ "marginTop": "14px" }}>
-            <h3>
-              {t("Nous joindre")}
-            </h3>
-            <Link to="/aide">
-              <Icone nom="map-pin" taille={16} />
-              {t("Yaoundé, Cameroun")}
-            </Link>
-            <Link to="/rappel">
-              <Icone nom="phone-call" taille={16} />
-              {t("Être rappelé · appel masqué")}
-            </Link>
-            <Link to="/fil?id=support&st=nouveau">
-              <Icone nom="mail" taille={16} />
-              {t("Écrire au support")}
-            </Link>
-            <Link to="/aide?st=wa" className="wa">
-              <Icone nom="message-circle" taille={18} />
-              {t("Parler sur WhatsApp")}
-            </Link>
-          </div>
-          <div className="cp">
-            {t("© 2026 BelivaY. Tous droits réservés.")}
-            <nav>
-              <Link to="/legal-doc?d=confidentialite">
-                {t("Confidentialité")}
-              </Link>
-              <Link to="/legal-doc?d=cgu">
-                {t("Conditions")}
-              </Link>
-              <Link to="/legal-doc?d=mentions">
-                {t("Mentions légales")}
-              </Link>
-            </nav>
-          </div>
-        </footer>
+        <FluxPourVous />
         </Ecran>
       )
   }

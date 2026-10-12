@@ -21,6 +21,7 @@ import { auMoins, PALIERS, useEcran, type Palier } from '../../composants/ecran'
 import { Icone } from '../../composants/Icone'
 import { F } from '../../i18n/format'
 import { usePreferences } from '../../preferences'
+import { EncartDroite } from './AccueilContenus'
 
 // ---------- Cibles nommées ----------
 const cibles = new Map<string, HTMLElement>()
@@ -81,6 +82,8 @@ export function ColonneDroiteAccueil() {
     <div className="acc-droite">
       <Cible nom="acc-colis" />
       <Cible nom="acc-flash" />
+      <div className="acc-bas">
+      <EncartDroite />
       <section className="acc-gar" aria-label={t('Nos garanties')}>
         {garanties.map(([i, k, x, l]) => (
           <Link key={k} to={l}>
@@ -90,6 +93,7 @@ export function ColonneDroiteAccueil() {
           </Link>
         ))}
       </section>
+      </div>
     </div>
   )
 }

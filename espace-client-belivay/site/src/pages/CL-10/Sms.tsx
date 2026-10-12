@@ -17,7 +17,7 @@ import { F } from '../../i18n/format'
 import { dateHeure, jourSeul } from '../../i18n/dates'
 import { usePreferences } from '../../preferences'
 import { useSession } from '../../session'
-import { echeancier, enCours, grosColis, jeton, RENVOI_GARDE, tarifGarde } from '../CL-09/Commun'
+import { echeancier, enCours, grosColis, jeton, tarifGarde } from '../CL-09/Commun'
 
 const sansAccents = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/’/g, "'")
 
@@ -69,7 +69,7 @@ export function Sms() {
     const rappel = notifs.find((x) => x.sms && x.lien.includes(c.ref) && x.titre.startsWith('Rappel'))
     if (rappel && c.garde) {
       const e = echeancier(c, d.maintenant, r?.ferme ?? null)
-      sms.push({ le: rappel.le, texte: `${c.ref}, ${c.lieu}. Montant du : ${F(c.garde.du)} F. ${F(c.garde.demain)} F demain. Retrait avant ${jourSeul(e.dernier.le, 'fr')} au soir, sinon renvoi au vendeur (+${F(RENVOI_GARDE)} F).` })
+      sms.push({ le: rappel.le, texte: `${c.ref}, ${c.lieu}. Montant du : ${F(c.garde.du)} F. ${F(c.garde.demain)} F demain. Retrait avant ${jourSeul(e.dernier.le, 'fr')} au soir, sinon renvoi au vendeur. Garde en espèces au gérant.` })
     }
     if (c.etat === 'retiree' && c.retireeLe && c.retourJusqua && c.retourJusqua > d.maintenant)
       sms.push({

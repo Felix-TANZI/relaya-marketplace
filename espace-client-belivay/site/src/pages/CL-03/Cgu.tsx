@@ -17,7 +17,7 @@ import { source, type DonneesLegal } from '../../donnees/source'
 import { dateLongue, jourSeul } from '../../i18n/dates'
 import { F } from '../../i18n/format'
 import { usePreferences } from '../../preferences'
-import { GRILLE_GARDE, RENVOI_GARDE } from '../CL-09/Commun'
+import { GRILLE_GARDE } from '../CL-09/Commun'
 
 const BREF: [string, string][] = [
   ['shield-check', 'Ton argent reste bloqué jusqu’à ton retrait. Le vendeur est payé après.'],
@@ -116,7 +116,7 @@ export function Cgu() {
         <div className="cl03-ch">
           <Icone nom="clock" taille={18} />
           <span>
-            {tf('Garde : jour d’arrivée gratuit, puis de {min} F à {max} F par jour ; après le 7e jour, le colis repart chez le vendeur (+ {r} F).', { min: F(GRILLE_GARDE[1]), max: F(GRILLE_GARDE[6]), r: F(RENVOI_GARDE) })}
+            {tf('Garde : jour d’arrivée gratuit, puis de {min} F à {max} F par jour (2 000 F au plus), en espèces au gérant au retrait ; après le 7e jour, le colis repart chez le vendeur, sans autre frais.', { min: F(GRILLE_GARDE[1]), max: F(GRILLE_GARDE[6]) })}
           </span>
         </div>
       </div>

@@ -50,7 +50,7 @@ export const LEGAL: DocumentLegal[] = [
     "Ton argent reste bloqué jusqu’à ton retrait et la fin de la fenêtre de retour. Le vendeur est payé ensuite.",
     "Tu retires avec un code à 6 chiffres. La garde est gratuite le jour d’arrivée, puis suit la politique de garde.",
     "Annulation boutique par boutique, sans frais, tant que le colis n’est pas collecté.",
-    "Retour avec un motif, dans les 7\u00A0jours après le retrait. Remboursement sur ton Portefeuille BelivaY, ou sur la carte qui a payé."
+    "Retour avec un motif, dans les 7\u00A0jours après le retrait. Remboursement sur le moyen de paiement d’origine."
    ]
   },
   en: {
@@ -110,7 +110,7 @@ export const LEGAL: DocumentLegal[] = [
     "Retour possible si l’article est non conforme, abîmé, contrefait, ou a un défaut caché signalé dans les 48\u00A0h après le retrait.",
     "Dans les 7\u00A0jours après le retrait\u00A0; «\u00A0Tout est en ordre\u00A0» ferme ce délai plus tôt. Pas de retour pour un changement d’avis.",
     "Tu rapportes le colis à ton relais, le livreur le reprend. Retour gratuit si le problème est validé.",
-    "Remboursement quand le vendeur a reçu et vérifié l’article, sous 48\u00A0h, sur ton Portefeuille BelivaY, ou sur la carte qui a payé.",
+    "Remboursement quand le vendeur a reçu et vérifié l’article, sous 48\u00A0h, sur le moyen de paiement d’origine.",
     "Litige\u00A0: le vendeur a 48\u00A0h pour répondre. S’il se tait, une personne de BelivaY décide en partant de ta version. Toute décision contre toi a un motif écrit.",
     "Un vice caché est couvert 100\u00A0jours après le retrait."
    ]
@@ -216,7 +216,7 @@ export const LEGAL: DocumentLegal[] = [
     "Si tu refuses le colis, la livraison payée d’avance n’est pas remboursée. Après deux refus, le paiement d’avance devient obligatoire.",
     "Pas de paiement au comptoir depuis l’étranger ni pour un gros colis. Le vendeur peut le refuser pour certains produits.",
     "Carte Visa ou Mastercard, pour tous\u00A0: 3-D Secure, frais de service de 2 % affichés avant de payer, 150\u00A0000\u00A0F au plus par paiement. Jamais pour une commande payée au comptoir.",
-    "Un remboursement va sur ton Portefeuille BelivaY\u00A0; un paiement par carte est remboursé sur la même carte."
+    "Un remboursement revient toujours sur le moyen de paiement d’origine (Mobile Money, carte ou Wallet)."
    ]
   },
   en: {

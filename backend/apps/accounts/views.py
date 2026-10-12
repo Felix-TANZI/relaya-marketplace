@@ -6,6 +6,7 @@ from rest_framework import status, generics
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -45,10 +46,11 @@ from django.utils.crypto import constant_time_compare
 from django.db.models import Q
 
 from .serializers import UserSerializer, RegisterSerializer, user_with_email_exists
-from .models import AppleIdentity, AppRelease, ComplianceDocument, CourierProfile, DeliveryOrganizationProfile, DeliveryVehicle, PartnerBlacklist, RelayPointProfile, RelayTrainingCompletion, PayoutAccount, RewardAccount, TrustScoreProfile, UserCart, UserProfile, UserFavorite, UserNotification
+from .models import AppleIdentity, AppRelease, ComplianceDocument, RelayEmployee, RelayNotificationPreferences, CourierProfile, DeliveryOrganizationProfile, DeliveryVehicle, PartnerBlacklist, RelayPointProfile, RelayTrainingCompletion, PayoutAccount, RewardAccount, TrustScoreProfile, UserCart, UserProfile, UserFavorite, UserNotification
 from apps.common.phone import normalize_cameroon_phone
+from django.core.exceptions import ValidationError as DjangoValidationError
 from apps.orders.models import Dispute, DisputeEvidenceRequest, DisputeMessage
-from apps.shipping.models import Shipment, ShipmentEvent
+from apps.shipping.models import Shipment, ShipmentEvent, infer_actor_role
 
 
 logger = logging.getLogger(__name__)
@@ -1496,11 +1498,13 @@ def delivery_organization_assign_mission(request, shipment_id):
     shipment.assignment_issue_code = ""
     shipment.assignment_issue_message = ""
     shipment.save(update_fields=["courier", "courier_name", "courier_phone", "status", "assignment_issue_code", "assignment_issue_message", "updated_at"])
-    ShipmentEvent.objects.create(
+    ShipmentEvent.record(
         shipment=shipment,
         status=Shipment.Status.ASSIGNED,
         message=f"Mission affectée par {organization.company_name} à {shipment.courier_name}",
         location=shipment.order.city,
+        actor=request.user,
+        actor_role=infer_actor_role(request.user),
     )
     UserNotification.objects.create(
         user=courier.user,
@@ -1714,8 +1718,31 @@ def delivery_organization_dispute_reply(request, dispute_id):
     return Response({"id": message.id, "message": message.message, "created_at": message.created_at.isoformat()}, status=status.HTTP_201_CREATED)
 
 
+def _relay_employee_link(user):
+    """
+    Le lien d'employe d'un compte, s'il est encore actif.
+
+    Un acces retire ferme la porte immediatement : on ne garde pas une
+    session ouverte parce qu'elle l'etait avant le depart de la personne.
+    """
+    lien = getattr(user, "relay_employee_link", None)
+    if lien is None or not lien.is_active:
+        return None
+    return lien
+
+
 def _get_request_relay_point(user):
+    """
+    Le point relais d'un compte — gerant OU employe.
+
+    Un employe n'a pas de `relay_point_profile` : son compte est le sien,
+    pas celui du relais. Sans cette resolution, il se connecterait avec son
+    PIN et ne verrait aucun colis.
+    """
     relay_point = getattr(user, "relay_point_profile", None)
+    if relay_point is None:
+        lien = _relay_employee_link(user)
+        relay_point = lien.relay_point if lien else None
     if (
         not relay_point
         or not relay_point.is_active
@@ -1723,6 +1750,24 @@ def _get_request_relay_point(user):
     ):
         return None
     return relay_point
+
+
+def _employe_peut(user, permission: str) -> bool:
+    """
+    Le gerant peut tout ; un employe, seulement ce qu'on lui a ouvert.
+
+    ---------------------------------------------------------------------
+    POURQUOI LA VERIFICATION EST ICI, ET PAS DANS L'ECRAN
+
+    Un bouton grise ne protege de rien : il suffit d'appeler l'API. Tant
+    que ce controle n'existait pas, « Pas d'acces a l'argent » n'etait
+    qu'une phrase — l'employe partageait le compte du gerant, numero de
+    versement compris.
+    """
+    if getattr(user, "relay_point_profile", None) is not None:
+        return True
+    lien = _relay_employee_link(user)
+    return bool(lien and getattr(lien, permission, False))
 
 
 @extend_schema(tags=["Relay Point"], summary="Update current relay point capacity and opening hours")
@@ -1735,6 +1780,81 @@ def relay_point_profile(request):
 
     if request.method == "PATCH":
         update_fields = []
+
+        # ── L'identite du relais ────────────────────────────────────────
+        #
+        # Le nom affiche, l'adresse et la ville ne sont pas des preferences :
+        # ce sont les informations sur lesquelles un client choisit de venir
+        # et un livreur de se deplacer. On les laisse modifiables, mais sous
+        # deux verrous.
+        #
+        # Le premier : le mot de passe. Un comptoir reste ouvert sur un
+        # telephone pose entre deux clients ; sans ce rappel, n'importe qui
+        # passant derriere le guichet deplacerait le relais d'un quartier a
+        # l'autre en trois gestes. Le mot de passe est redemande ICI, dans
+        # l'ecriture elle-meme, et non par un appel separe qui laisserait une
+        # fenetre entre la verification et l'enregistrement.
+        #
+        # Le second : seul le gerant. Un employe, meme avec `can_settings`,
+        # regle l'exploitation du comptoir — pas l'adresse de l'entreprise.
+        CHAMPS_IDENTITE = {
+            "name": ("Le nom affiché", 160),
+            "manager_name": ("Le nom du gérant", 160),
+            "phone": ("Le téléphone", 32),
+            "address": ("L'adresse", 255),
+            "city": ("La ville", 120),
+        }
+        identite = [champ for champ in CHAMPS_IDENTITE if champ in request.data]
+        if identite:
+            if getattr(request.user, "relay_point_profile", None) is None:
+                return Response(
+                    {"detail": "Seul le gérant du relais peut modifier ces informations."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            mot_de_passe = str(request.data.get("current_password") or "")
+            if not mot_de_passe:
+                return Response(
+                    {"current_password": ["Entrez votre mot de passe pour confirmer."]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if not request.user.check_password(mot_de_passe):
+                return Response(
+                    {"current_password": ["Mot de passe incorrect."]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            for champ in identite:
+                libelle, taille = CHAMPS_IDENTITE[champ]
+                valeur = str(request.data[champ] or "").strip()
+                if not valeur:
+                    return Response(
+                        {champ: [f"{libelle} ne peut pas être vide."]},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                setattr(relay_point, champ, valeur[:taille])
+                update_fields.append(champ)
+
+        # ── Les encombrants ─────────────────────────────────────────────
+        #
+        # Refuser les encombrants est un choix de place, pas de tarif : un
+        # arriere-boutique de six metres carres ne prend pas un matelas, et
+        # l'accepter une fois bloque le passage pour la semaine. Le choix
+        # vivait deja dans la grille contractuelle (`is_accepted`), mais en
+        # lecture seule : le gerant devait ecrire au support pour une
+        # decision qui le regarde seul.
+        #
+        # Le reglage vit sur le profil du relais, et non dans la grille
+        # contractuelle : celle-ci est versionnee, sous controle de
+        # changement, et retombe sur la grille generale quand le relais n'a
+        # rien negocie — y ecrire basculerait la categorie pour tous.
+        if "accepts_bulky" in request.data:
+            if not _employe_peut(request.user, "can_settings"):
+                return Response(
+                    {"detail": "Réglages du relais non autorisés pour ce compte."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            relay_point.accepts_bulky = bool(request.data["accepts_bulky"])
+            update_fields.append("accepts_bulky")
+
         if "storage_capacity" in request.data:
             try:
                 capacity = int(request.data["storage_capacity"])
@@ -1759,8 +1879,14 @@ def relay_point_profile(request):
     return Response({
         "id": relay_point.id,
         "name": relay_point.name,
+        "manager_name": relay_point.manager_name,
+        "phone": relay_point.phone,
+        "address": relay_point.address,
+        "city": relay_point.city,
+        "relay_code": relay_point.relay_code,
         "storage_capacity": relay_point.storage_capacity,
         "opening_hours": relay_point.opening_hours,
+        "accepts_bulky": relay_point.accepts_bulky,
         "status": relay_point.status,
         "updated_at": relay_point.updated_at.isoformat(),
     })
@@ -1840,6 +1966,453 @@ def relay_point_open_disputes(request):
     return Response([
         {**_dispute_payload(dispute), **_avancement(dispute)} for dispute in disputes
     ])
+
+
+@extend_schema(tags=["Relay Point"], summary="Preferences de notification du point relais")
+class RelayNotificationPreferencesView(APIView):
+    """
+    Lire et modifier ce que le relais accepte de recevoir.
+
+    ---------------------------------------------------------------------
+    LA REPONSE DIT CE QUI EST APPLIQUE
+
+    `honored` liste les reglages qui changent reellement quelque chose
+    aujourd'hui. Il est vide, et c'est voulu : aucun canal push n'existe,
+    aucune tache ne compose le resume du matin, rien ne filtre les heures
+    calmes a l'emission. Le portail s'en sert pour le dire au gerant au
+    lieu de lui laisser croire que son telephone sonnera.
+
+    Le jour ou un canal arrive, il s'ajoute a cette liste, et l'ecran
+    cesse tout seul d'afficher l'avertissement.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    CHAMPS_BOOLEENS = ["push_enabled", "courier_approach", "settlements", "score_and_sanctions"]
+    CHAMPS_HEURES = ["digest_hour", "quiet_from_hour", "quiet_to_hour"]
+
+    # Aucun reglage n'est encore applique a l'emission. Cette liste grandira
+    # avec les canaux, pas avec les intentions.
+    HONORED = []
+
+    def _preferences(self, user):
+        relay_point = _get_request_relay_point(user)
+        if not relay_point:
+            raise PermissionDenied("Point relais approuvé requis.")
+        # Les reglages du relais appartiennent au gerant : un employe qui
+        # couperait les alertes de versement priverait le relais d'une
+        # information qui n'est pas la sienne.
+        if not _employe_peut(user, "can_settings"):
+            raise PermissionDenied("Cette action est reservee au gerant du relais.")
+        preferences, _ = RelayNotificationPreferences.objects.get_or_create(user=user)
+        return preferences
+
+    def _payload(self, preferences):
+        donnees = {champ: getattr(preferences, champ) for champ in self.CHAMPS_BOOLEENS}
+        donnees.update({champ: getattr(preferences, champ) for champ in self.CHAMPS_HEURES})
+        donnees["digest_earliest_hour"] = RelayNotificationPreferences.DIGEST_EARLIEST_HOUR
+        donnees["honored"] = self.HONORED
+        return donnees
+
+    def get(self, request):
+        return Response(self._payload(self._preferences(request.user)))
+
+    def patch(self, request):
+        preferences = self._preferences(request.user)
+        modifies = []
+
+        for champ in self.CHAMPS_BOOLEENS:
+            if champ in request.data:
+                setattr(preferences, champ, bool(request.data[champ]))
+                modifies.append(champ)
+
+        for champ in self.CHAMPS_HEURES:
+            if champ in request.data:
+                try:
+                    valeur = int(request.data[champ])
+                except (TypeError, ValueError):
+                    return Response(
+                        {champ: "Indiquez une heure entre 0 et 23."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                setattr(preferences, champ, valeur)
+                modifies.append(champ)
+
+        if not modifies:
+            return Response(
+                {"detail": "Aucun reglage reconnu dans la requete."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # `clean()` porte les regles : jamais de resume avant 7 h, heures
+        # valides. On les fait respecter ICI, et pas seulement en admin.
+        try:
+            preferences.full_clean()
+        except DjangoValidationError as erreur:
+            return Response(erreur.message_dict, status=status.HTTP_400_BAD_REQUEST)
+
+        preferences.save()
+        return Response(self._payload(preferences))
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  CONNEXION PAR PIN — PORTAIL POINT RELAIS
+#
+#  Au comptoir on se reconnecte dix fois par jour, debout, une main sur un
+#  colis. Un mot de passe long n'y survit pas : il finit ecrit sur le mur.
+#
+#  Le PIN est donc court, et c'est tout l'enjeu de ce qui suit : quatre
+#  chiffres ne valent que par ce qui les entoure. Il ne s'etablit qu'apres
+#  preuve de possession du numero, il est hache, et cinq echecs ferment la
+#  porte trente minutes.
+#
+#  ─────────────────────────────────────────────────────────────────────────
+#  CE QUE CES VUES NE FONT PAS
+#
+#  Elles ne lient pas le PIN a un APPAREIL. Un PIN vole fonctionne depuis
+#  n'importe quel telephone. Les portails ne doivent donc pas promettre une
+#  « premiere connexion sur ce telephone ».
+#
+#  Et le code de verification part par EMAIL : `_create_and_send_otp` est le
+#  seul canal existant. Aucun envoi SMS n'est implemente — Africa's Talking
+#  n'est qu'une ligne du catalogue `ExternalService`. La reponse porte
+#  `channel` pour que l'ecran dise la verite au gerant.
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+def _relay_user_par_telephone(telephone):
+    """
+    Retrouve le compte relais d'un numero, ou None.
+
+    On passe par `resolve_login_identifier`, deja utilise a la connexion :
+    une seule facon de resoudre un numero, donc un seul comportement en cas
+    d'ambiguite.
+    """
+    from .serializers import resolve_login_identifier
+
+    try:
+        username = resolve_login_identifier(telephone)
+    except Exception:
+        return None
+    if not username:
+        return None
+    user = User.objects.filter(username=username).first()
+    if user is None:
+        return None
+
+    # Gerant OU employe actif. Ne retenir que le gerant ferait echouer la
+    # connexion de toute l'equipe : un employe n'a pas de
+    # `relay_point_profile`, son compte est le sien.
+    if hasattr(user, "relay_point_profile"):
+        return user
+    lien = getattr(user, "relay_employee_link", None)
+    return user if (lien and lien.is_active) else None
+
+
+@extend_schema(tags=["Relay Point"], summary="Envoyer un code de verification au numero du relais")
+class RelayPinRequestCodeView(APIView):
+    """
+    Premiere etape : prouver qu'on detient le numero.
+
+    La reponse est TOUJOURS 200, que le numero existe ou non. Repondre 404
+    sur un numero inconnu transformerait cet endpoint en annuaire des points
+    relais — il suffirait de balayer les numeros pour savoir lesquels en
+    sont.
+    """
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        user = _relay_user_par_telephone(request.data.get("phone"))
+        envoye = False
+        if user is not None:
+            try:
+                _create_and_send_otp(user, "2FA_LOGIN")
+                envoye = True
+            except Exception:
+                logger.exception("Envoi du code de verification relais impossible")
+
+        return Response({
+            "sent": envoye,
+            # Le canal REEL. La maquette annonce un SMS ; aucun envoi SMS
+            # n'existe, et l'ecran doit pouvoir le dire.
+            "channel": "email",
+            "detail": "Si ce numero correspond a un point relais, un code vient de lui etre envoye.",
+        })
+
+
+@extend_schema(tags=["Relay Point"], summary="Definir ou reinitialiser le PIN du point relais")
+class RelayPinSetView(APIView):
+    """
+    Deuxieme etape : poser le PIN, contre un code valide.
+
+    Le code OTP est la SEULE porte d'entree : sans lui, n'importe qui
+    poserait un PIN sur le compte d'un relais dont il connait le numero.
+    """
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        from .models import OTPCode, RelayAccessPin
+
+        user = _relay_user_par_telephone(request.data.get("phone"))
+        code = str(request.data.get("code") or "").strip()
+        pin = str(request.data.get("pin") or "").strip()
+
+        if not RelayAccessPin.valide_format(pin):
+            return Response(
+                {"pin": "Choisissez quatre chiffres, ni identiques ni qui se suivent."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Message identique quel que soit le motif : distinguer « numero
+        # inconnu » de « code faux » dirait a un attaquant lequel des deux
+        # chercher.
+        refus = Response(
+            {"detail": "Code invalide ou expire."}, status=status.HTTP_400_BAD_REQUEST,
+        )
+        if user is None or not code:
+            return refus
+
+        otp = (
+            OTPCode.objects
+            .filter(user=user, purpose="2FA_LOGIN", is_used=False)
+            .order_by("-created_at")
+            .first()
+        )
+        if otp is None or otp.code != code or otp.expires_at <= timezone.now():
+            return refus
+
+        otp.is_used = True
+        otp.save(update_fields=["is_used"])
+
+        acces, _ = RelayAccessPin.objects.get_or_create(user=user, defaults={"pin_hash": ""})
+        acces.set_pin(pin)
+        acces.save()
+
+        return Response({"detail": "PIN enregistre."}, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["Relay Point"], summary="Se connecter au portail point relais avec un PIN")
+class RelayPinLoginView(APIView):
+    """
+    Troisieme etape : ouvrir la session.
+
+    ---------------------------------------------------------------------
+    POURQUOI LE BLOCAGE EST COMPTE COTE SERVEUR
+
+    Quatre chiffres se cassent en quelques milliers d'essais. Un compteur
+    tenu par l'ecran ne protege de rien : il suffit d'appeler l'API
+    directement. C'est donc `RelayAccessPin.check_pin` qui compte, et qui
+    ferme.
+    """
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        from rest_framework_simplejwt.tokens import RefreshToken
+
+        from .models import RelayAccessPin
+
+        user = _relay_user_par_telephone(request.data.get("phone"))
+        pin = str(request.data.get("pin") or "").strip()
+
+        acces = (
+            RelayAccessPin.objects.filter(user=user).first() if user is not None else None
+        )
+
+        # Reponse unique pour « numero inconnu », « pas de PIN » et « PIN
+        # faux » : les separer indiquerait ou insister.
+        echec = Response(
+            {"detail": "Numero ou code incorrect."}, status=status.HTTP_401_UNAUTHORIZED,
+        )
+        if acces is None or not acces.pin_hash:
+            return echec
+
+        if acces.est_bloque:
+            restant = int((acces.locked_until - timezone.now()).total_seconds() // 60) + 1
+            return Response(
+                {
+                    "detail": f"Trop d'essais. Reessayez dans {restant} minutes.",
+                    "locked_minutes": restant,
+                },
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+
+        if not acces.check_pin(pin):
+            if acces.est_bloque:
+                return Response(
+                    {
+                        "detail": f"Trop d'essais. Acces ferme {RelayAccessPin.LOCK_MINUTES} minutes.",
+                        "locked_minutes": RelayAccessPin.LOCK_MINUTES,
+                    },
+                    status=status.HTTP_429_TOO_MANY_REQUESTS,
+                )
+            return Response(
+                {"detail": "Numero ou code incorrect.", "attempts_left": acces.essais_restants()},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "first_name": user.first_name or "",
+        })
+
+
+@extend_schema(
+    tags=["Relay Point"],
+    summary="Ce numero a-t-il deja un PIN ?",
+    parameters=[OpenApiParameter("phone", str, description="Numero du relais.")],
+)
+class RelayPinStatusView(APIView):
+    """
+    Oriente l'ecran : clavier PIN, ou premiere mise en place.
+
+    On renvoie le prenom quand un PIN existe — « Bonjour Franck » le
+    rassure sur le compte qu'il ouvre. C'est une concession assumee : qui
+    connait le numero apprend le prenom. En echange, aucun autre detail ne
+    sort, et un numero inconnu rend exactement la meme forme de reponse.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        from .models import RelayAccessPin
+
+        user = _relay_user_par_telephone(request.query_params.get("phone"))
+        acces = RelayAccessPin.objects.filter(user=user).first() if user is not None else None
+        a_un_pin = bool(acces and acces.pin_hash)
+
+        return Response({
+            "has_pin": a_un_pin,
+            "first_name": (user.first_name or user.username) if (user and a_un_pin) else "",
+            "locked": bool(acces and acces.est_bloque),
+            "max_attempts": RelayAccessPin.MAX_ATTEMPTS,
+            "lock_minutes": RelayAccessPin.LOCK_MINUTES,
+        })
+
+
+@extend_schema(tags=["Relay Point"], summary="Equipe du point relais")
+class RelayTeamView(APIView):
+    """
+    Le registre des personnes autorisees au guichet.
+
+    ---------------------------------------------------------------------
+    UN REGISTRE, PAS ENCORE UN VERROU
+
+    `RelayPointProfile.user` est un OneToOne : un relais, un compte. Tant
+    qu'une authentification par personne n'existe pas, les permissions
+    renvoyees ici decrivent une CONSIGNE du gerant, pas une barriere
+    technique.
+
+    La reponse porte donc `enforced: false`. Le portail s'en sert pour le
+    dire au gerant — taire ce fait le ferait partager l'identifiant du
+    relais a la legere, numero de versement compris. Le jour ou chaque
+    employe se connecte, ce drapeau passe a vrai et l'avertissement
+    disparait tout seul.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    PERMISSIONS = ["can_receive", "can_hand_over", "can_money", "can_settings"]
+
+    def _relay_point(self, user):
+        relay_point = _get_request_relay_point(user)
+        if not relay_point:
+            raise PermissionDenied("Point relais approuve requis.")
+        # Un employe ne touche pas aux reglages du relais : c'est le gerant
+        # qui repond de ce qu'ils decident.
+        if not _employe_peut(user, "can_settings"):
+            raise PermissionDenied("Cette action est reservee au gerant du relais.")
+        return relay_point
+
+    def _payload(self, membre):
+        return {
+            "id": membre.id,
+            "display_name": membre.display_name,
+            "phone": membre.phone,
+            "role": membre.role,
+            "role_display": membre.get_role_display(),
+            "is_active": membre.is_active,
+            "last_seen_at": membre.last_seen_at.isoformat() if membre.last_seen_at else None,
+            **{champ: getattr(membre, champ) for champ in self.PERMISSIONS},
+        }
+
+    def _liste(self, relay_point):
+        membres = RelayEmployee.objects.filter(relay_point=relay_point)
+        return {
+            "members": [self._payload(membre) for membre in membres],
+            "active_count": sum(1 for membre in membres if membre.is_active),
+            "max_active": RelayEmployee.MAX_ACTIFS_PAR_RELAIS,
+            # Les permissions sont-elles appliquees a l'acces ? Pas encore.
+            "enforced": False,
+        }
+
+    def get(self, request):
+        return Response(self._liste(self._relay_point(request.user)))
+
+    def post(self, request):
+        relay_point = self._relay_point(request.user)
+
+        nom = str(request.data.get("display_name") or "").strip()
+        if not nom:
+            return Response({"display_name": "Le nom est requis."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # La limite porte sur les comptes ACTIFS : retirer quelqu'un libere
+        # une place, sans effacer son passage.
+        if RelayEmployee.actifs_pour(relay_point).count() >= RelayEmployee.MAX_ACTIFS_PAR_RELAIS:
+            return Response(
+                {"detail": f"Trois personnes au plus. Retirez un acces avant d'en ajouter un."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        membre = RelayEmployee.objects.create(
+            relay_point=relay_point,
+            display_name=nom[:120],
+            phone=str(request.data.get("phone") or "").strip()[:20],
+            role=RelayEmployee.Role.EMPLOYEE,
+            **{
+                champ: bool(request.data.get(champ, champ in ("can_receive", "can_hand_over")))
+                for champ in self.PERMISSIONS
+            },
+        )
+        return Response(self._payload(membre), status=status.HTTP_201_CREATED)
+
+    def patch(self, request):
+        relay_point = self._relay_point(request.user)
+        membre = get_object_or_404(
+            RelayEmployee, id=request.data.get("id"), relay_point=relay_point,
+        )
+
+        # Le proprietaire ne se retire pas lui-meme : un relais sans
+        # responsable n'a plus personne pour repondre de ses colis.
+        if membre.role == RelayEmployee.Role.OWNER and request.data.get("is_active") is False:
+            return Response(
+                {"detail": "Le responsable du relais ne peut pas etre desactive."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        for champ in self.PERMISSIONS:
+            if champ in request.data:
+                setattr(membre, champ, bool(request.data[champ]))
+        if "is_active" in request.data:
+            reactivation = bool(request.data["is_active"]) and not membre.is_active
+            if reactivation and RelayEmployee.actifs_pour(relay_point).count() >= RelayEmployee.MAX_ACTIFS_PAR_RELAIS:
+                return Response(
+                    {"detail": "Trois personnes au plus sont actives a la fois."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            membre.is_active = bool(request.data["is_active"])
+        if "display_name" in request.data:
+            nom = str(request.data["display_name"]).strip()
+            if not nom:
+                return Response({"display_name": "Le nom est requis."}, status=status.HTTP_400_BAD_REQUEST)
+            membre.display_name = nom[:120]
+
+        membre.save()
+        return Response(self._payload(membre))
 
 
 class ComplianceDocumentListCreateView(APIView):

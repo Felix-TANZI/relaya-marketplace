@@ -65,6 +65,7 @@ export default {
     documents_section_receipts: 'Reçus de commande',
     documents_empty_receipts: 'Aucune commande pour l’instant.',
     documents_receipt_cta: 'Imprimer / PDF',
+    documents_receipt_pdf_error: 'Impossible de générer le reçu PDF. Réessayez.',
     documents_section_invoices: 'Factures de commission',
     documents_empty_invoices: 'Aucune commission facturée pour l’instant.',
     documents_invoice_total: 'Commission du mois : {{amount}}',

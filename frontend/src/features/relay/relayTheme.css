@@ -1,0 +1,375 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Le thème du portail point relais.
+
+   La maquette ne décrit pas seulement des couleurs : elle décrit des
+   matières. Un verre qui laisse voir la page défiler dessous, un papier
+   chaud plutôt qu'un gris neutre, des cartes qui flottent de 8 px et non
+   de 1 px. Ces recettes-là ne se disent pas en utilitaires : on les nomme
+   ici une fois, et les 50 écrans les portent.
+
+   Tout est sous `.relay-shell` : la boutique acheteur et les trois autres
+   portails gardent leur apparence.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@import "./_remap.generated.css";
+
+/* ───────────────────────────────────────────────────────────────────────────
+   §1  LA PAGE
+
+   Pas un gris : un papier. Le fond chaud `#F7F3EE` porte trois lueurs —
+   orange en haut à droite, bleue à gauche, ambre en bas. Elles ne décorent
+   pas, elles donnent une profondeur au verre du bandeau et du dock, qui
+   sans elles n'aurait rien à filtrer et paraîtrait sale.
+
+   `background-attachment: fixed` cale les lueurs sur la fenêtre et non sur
+   la hauteur de page : sinon un écran long les étire et un écran court les
+   coupe en deux.
+   ─────────────────────────────────────────────────────────────────────────── */
+.relay-shell {
+  background-color: #F7F3EE;
+  background-image:
+    radial-gradient(60% 30% at 100% 8%,  rgba(239,106,0,.16) 0%, rgba(239,106,0,0) 70%),
+    radial-gradient(70% 30% at 0%  45%,  rgba(36,86,214,.14) 0%, rgba(36,86,214,0) 70%),
+    radial-gradient(60% 30% at 90% 95%,  rgba(232,161,14,.14) 0%, rgba(232,161,14,0) 70%);
+  background-attachment: fixed;
+  color: #171310;
+}
+
+.dark .relay-shell {
+  background-color: #05080F;
+  background-image:
+    radial-gradient(60% 30% at 100% 8%,  rgba(239,106,0,.10) 0%, rgba(239,106,0,0) 70%),
+    radial-gradient(70% 30% at 0%  45%,  rgba(36,86,214,.12) 0%, rgba(36,86,214,0) 70%),
+    radial-gradient(60% 30% at 90% 95%,  rgba(232,161,14,.08) 0%, rgba(232,161,14,0) 70%);
+  color: #EEF1F7;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   §2  LE VERRE  —  bandeau et dock
+
+   Trois couches font la matière, du fond vers la surface :
+     1. le flou, qui montre la page au travers ;
+     2. une lumière d'angle en haut à gauche, qui donne l'épaisseur ;
+     3. deux liserés internes — clair en haut, sombre en bas — qui sont la
+        seule chose empêchant la barre de paraître plate.
+
+   `brightness(1.26) saturate(185%)` : le verre ne se contente pas de
+   flouter, il ravive. Sans cela le fond chaud passe au travers en gris.
+   ─────────────────────────────────────────────────────────────────────────── */
+.pr-glass {
+  background-color: rgba(255,255,255,.56);
+  background-image:
+    radial-gradient(120% 160% at 18% -60%, rgba(255,255,255,.95) 0%, rgba(255,255,255,0) 58%),
+    linear-gradient(180deg, rgba(255,255,255,.55) 0%, rgba(255,255,255,.12) 100%),
+    linear-gradient(90deg,
+      rgba(210,224,255,.30) 0%, rgba(255,255,255,0) 40%,
+      rgba(255,255,255,0) 60%, rgba(255,226,196,.26) 100%);
+  -webkit-backdrop-filter: blur(24px) brightness(1.26) saturate(185%);
+  backdrop-filter: blur(24px) brightness(1.26) saturate(185%);
+  box-shadow:
+    inset 0 0  0 1px rgba(255,255,255,.62),
+    inset 0 1px 0     rgba(255,255,255,.95),
+    inset 0 -1px 0    rgba(20,40,90,.10),
+         0 1px 0      rgba(20,40,90,.08),
+         0 10px 24px -18px rgba(14,27,56,.45);
+}
+
+.dark .pr-glass {
+  background-color: rgba(16,24,42,.60);
+  background-image:
+    radial-gradient(120% 160% at 18% -60%, rgba(255,255,255,.10) 0%, rgba(255,255,255,0) 58%),
+    linear-gradient(180deg, rgba(255,255,255,.07) 0%, rgba(255,255,255,.02) 100%),
+    linear-gradient(90deg,
+      rgba(36,86,214,.14) 0%, rgba(255,255,255,0) 40%,
+      rgba(255,255,255,0) 60%, rgba(239,106,0,.10) 100%);
+  -webkit-backdrop-filter: blur(24px) brightness(.58) saturate(165%);
+  backdrop-filter: blur(24px) brightness(.58) saturate(165%);
+  box-shadow:
+    inset 0 0  0 1px rgba(255,255,255,.07),
+    inset 0 1px 0     rgba(255,255,255,.10),
+    inset 0 -1px 0    rgba(0,0,0,.30),
+         0 10px 24px -18px rgba(0,0,0,.70);
+}
+
+/* Le dock : une pastille posée au-dessus de la page, pas une barre collée
+   au bord. Les 12 px de marge latérale et les 30 px du bas sont ce qui la
+   fait flotter — collée, elle se lirait comme la fin du document. */
+.pr-dock {
+  border-radius: 999px;
+  box-shadow:
+    inset 0 0  0 1px rgba(255,255,255,.62),
+    inset 0 1px 0     rgba(255,255,255,.95),
+    inset 0 -1px 0    rgba(20,40,90,.10),
+         0 0  0 .5px  rgba(20,40,90,.16),
+         0 2px 6px    rgba(14,27,56,.08),
+         0 16px 34px -12px rgba(14,27,56,.40);
+}
+
+.dark .pr-dock {
+  box-shadow:
+    inset 0 0  0 1px rgba(255,255,255,.07),
+    inset 0 1px 0     rgba(255,255,255,.10),
+         0 0  0 .5px  rgba(0,0,0,.50),
+         0 16px 34px -12px rgba(0,0,0,.75);
+}
+
+/* L'onglet courant : une plaque de verre plus dense, et non une pastille
+   sous l'icône. Le libellé entre dedans, donc le repère de position reste
+   lisible d'un coup d'œil. */
+.pr-dock-on {
+  background-color: rgba(255,255,255,.72);
+  background-image: linear-gradient(180deg, rgba(255,255,255,.96) 0%, rgba(226,235,255,.78) 100%);
+  -webkit-backdrop-filter: brightness(1.08);
+  backdrop-filter: brightness(1.08);
+  box-shadow:
+    inset 0 0  0 1px rgba(255,255,255,.95),
+    inset 0 -1px 0    rgba(36,86,214,.18),
+         0 0  0 .5px  rgba(36,86,214,.30),
+         0 6px 16px -6px rgba(36,86,214,.50);
+}
+
+.dark .pr-dock-on {
+  background-color: rgba(40,52,84,.55);
+  background-image: linear-gradient(180deg, rgba(255,255,255,.10) 0%, rgba(36,86,214,.35) 100%);
+  box-shadow:
+    inset 0 0  0 1px rgba(255,255,255,.10),
+         0 0  0 .5px rgba(36,86,214,.35),
+         0 6px 16px -6px rgba(0,0,0,.55);
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   §3  LES CARTES
+
+   Deux ombres, pas une : un filet de contact à 1 px qui pose la carte sur
+   le papier, et une ombre large et très diffuse (`-12px` d'étalement) qui
+   la soulève. Une seule ombre donne soit un autocollant, soit un nuage.
+   ─────────────────────────────────────────────────────────────────────────── */
+.pr-card {
+  background: #FFFFFF;
+  border: 1px solid rgba(84,52,24,.10);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(60,35,15,.05), 0 8px 24px -12px rgba(60,35,15,.16);
+}
+
+.dark .pr-card {
+  background: #141C2F;
+  border-color: rgba(255,255,255,.08);
+  box-shadow: 0 1px 2px rgba(0,0,0,.30), 0 8px 24px -12px rgba(0,0,0,.60);
+}
+
+/* La carte orange : ce qui presse. Une seule par écran — deux, et plus rien
+   ne presse. La lueur d'angle en haut à droite évite l'aplat de peinture. */
+/* La surface orange, sans sa géométrie : la maquette la porte à plat sur un
+   bandeau d'écran, arrondie sur une carte, en cercle sur un avatar et en
+   bulle sur un message. C'est la même matière — un orange profond traversé
+   d'une lueur dorée au coin haut droit — donc une seule classe, et la forme
+   reste à l'endroit qui la décide. */
+.pr-sunrise {
+  background-color: #EF6A00;
+  background-image:
+    radial-gradient(90% 70% at 100% 0%, rgba(255,200,69,.45) 0%, rgba(255,200,69,0) 60%),
+    linear-gradient(135deg, #E8A10E 0%, #EF7A0A 38%, #EF6200 70%, #DD5100 100%);
+  color: #FFFFFF;
+}
+
+/* La carte orange : la surface ci-dessus, plus le relief que la maquette lui
+   donne — une arête dorée en haut, un contour ambré, et une ombre longue
+   remontée de 18 px qui la décolle du papier sans la faire flotter. */
+.pr-hero {
+  border-radius: 18px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,220,140,.60),
+    inset 0 0  0 1px rgba(255,197,69,.45),
+         0 18px 34px -18px rgba(221,81,0,.80);
+}
+
+/* Le panneau bleu nuit : l'argent, les preuves, les scellements. Le fond
+   sombre dit « ceci est consigné » sans avoir à l'écrire. */
+.pr-navy {
+  background-color: #0E1B38;
+  background-image:
+    radial-gradient(80% 60% at 100% 0%,  rgba(239,106,0,.34) 0%, rgba(239,106,0,0) 64%),
+    radial-gradient(70% 60% at 0% 100%,  rgba(36,86,214,.45) 0%, rgba(36,86,214,0) 70%),
+    linear-gradient(160deg, #1B2E5C 0%, #0E1B38 55%, #0A1429 100%);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  color: #FFFFFF;
+  box-shadow: 0 1px 2px rgba(14,27,56,.25), 0 16px 32px -18px rgba(14,27,56,.75);
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   §4  LA TYPOGRAPHIE
+
+   Une seule police, trois tailles de titre, trois gris de texte. La maquette
+   s'y tient sur 30 écrans ; c'est ce qui les fait reconnaître comme un même
+   produit.
+   ─────────────────────────────────────────────────────────────────────────── */
+.pr-h1 {
+  font-size: 23px;
+  font-weight: 800;
+  letter-spacing: -.03em;
+  line-height: 1.14;
+  text-wrap: balance;
+}
+
+.pr-h2 {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+}
+
+/* Le sur-titre en capitales : il nomme la section sans lui voler le rang
+   d'un titre. L'interlettrage ouvert est ce qui rend les capitales lisibles. */
+.pr-kicker {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  color: #6F6358;
+}
+
+.dark .pr-kicker { color: #9AA4BC; }
+
+.pr-sub {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #6F6358;
+}
+
+.dark .pr-sub { color: #9AA4BC; }
+
+/* Les chiffres s'alignent en colonne : `tabular-nums` empêche un « 1 » de
+   décaler la ligne d'en dessous. Sur un écran de comptage, c'est ce qui
+   permet de lire une colonne sans la relire. */
+.pr-num { font-variant-numeric: tabular-nums; }
+
+.pr-rule { height: 1px; background: #EFE7DE; }
+.dark .pr-rule { background: rgba(255,255,255,.08); }
+
+/* ───────────────────────────────────────────────────────────────────────────
+   §5  LA TABLETTE
+
+   La maquette ne fait pas d'un iPad un téléphone étiré. Elle la décrit comme
+   un iPad en portrait — 820 × 1180 — et y répartit le même écran sur deux
+   colonnes de 20 px d'écart, resserre le dock au centre sur 520 px, et donne
+   au contenu 28 px de marge latérale.
+
+   `columns` plutôt qu'une grille : les cartes du portail n'ont pas la même
+   hauteur — un lot de douze colis contre un rappel d'une ligne — et une
+   grille laisserait un trou sous la plus courte de chaque rangée. Le flux en
+   colonnes les tasse ; c'est la mise en page d'un journal, et c'est la bonne
+   ici. `break-inside: avoid` est ce qui empêche une carte d'être coupée en
+   deux au bas d'une colonne ; sans lui la page est inutilisable.
+
+   La règle s'applique au centre, sur l'enfant de `.pr-flow` — la racine de
+   l'écran affiché. Les vingt-quatre écrans empilent leurs blocs de la même
+   façon, par `space-y-*` : la mise en colonnes se décrit donc une fois.
+
+   Bornée à 1023 px : à partir de `lg` la barre latérale apparaît et la mise
+   en page du bureau reprend la main.
+   ─────────────────────────────────────────────────────────────────────────── */
+@media (min-width: 768px) and (max-width: 1023.98px) {
+  .relay-shell .pr-flow > * {
+    columns: 2;
+    column-gap: 20px;
+    /* Une racine en `flex` ne se met pas en colonnes : on la ramène au flux. */
+    display: block;
+  }
+
+  .relay-shell .pr-flow > * > * {
+    break-inside: avoid;
+    -webkit-column-break-inside: avoid;
+  }
+
+  /* `space-y-*` pose la marge en haut de chaque frère. En colonnes cette
+     marge tombe sur le premier bloc de la seconde colonne et en décale le
+     sommet : les deux colonnes ne commencent plus à la même hauteur. On la
+     reprend, et on la reporte en bas. */
+  .relay-shell .pr-flow > * > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0;
+  }
+
+  /* Chaque écran garde son propre rythme vertical plutôt qu'un écart
+     uniforme : la maquette reprend l'écart du mobile, et un écran qui
+     respire sur téléphone doit respirer sur tablette. */
+  .relay-shell .pr-flow > .space-y-3 > *    { margin-bottom: 12px; }
+  .relay-shell .pr-flow > .space-y-3\.5 > * { margin-bottom: 14px; }
+  .relay-shell .pr-flow > .space-y-4 > *    { margin-bottom: 16px; }
+  .relay-shell .pr-flow > .space-y-5 > *    { margin-bottom: 20px; }
+
+  /* Ce qui traverse les deux colonnes : la carte orange qui annonce une
+     arrivée, et les rangées de tuiles. La maquette ne fait pas traverser le
+     premier bloc par principe — seulement s'il porte un dégradé et reste
+     court. D'où un marquage explicite, écran par écran, et non une règle
+     sur `:first-child` qui étalerait n'importe quelle carte. */
+  .relay-shell .pr-flow > * > .pr-span {
+    column-span: all;
+    -webkit-column-span: all;
+  }
+
+  /* Une grille à deux colonnes dans une demi-largeur donnerait des tuiles de
+     180 px. Sur toute la largeur elle en tient trois. */
+  .pr-span-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+  /* Les écrans d'un seul geste — saisir un code, accepter une invitation —
+     ne se répartissent pas : deux colonnes pour un pavé numérique
+     disperseraient le regard au moment précis où il faut viser. Ils
+     reprennent la main sur le flux depuis leur propre racine. */
+  .relay-shell .pr-flow > .pr-single,
+  .relay-shell .pr-single {
+    columns: 1;
+    max-width: 540px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   §6  LE BOUTON PRIMAIRE
+
+   La maquette en pose trente-trois, tous identiques, et aucun ne s'écrit en
+   utilitaires : son dégradé descend du clair au profond en trois arrêts, et
+   il porte deux liserés internes — une arête dorée en haut, un contour ambré
+   sur tout le pourtour. Ce sont eux qui lui donnent son relief ; sans eux un
+   dégradé orange reste une surface plate.
+
+   L'ombre est courte et décalée vers le haut (`-8px` d'étalement) : le bouton
+   se soulève de la page sans flotter au-dessus d'elle.
+   ─────────────────────────────────────────────────────────────────────────── */
+.pr-btn {
+  background-color: #EF6A00;
+  background-image: linear-gradient(180deg, #F58A1F 0%, #EF6A00 55%, #D95000 100%);
+  color: #FFFFFF;
+  box-shadow:
+    inset 0 1px 0 rgba(255,214,120,.65),
+    inset 0 0 0 1px rgba(232,161,14,.35),
+    0 8px 18px -8px rgba(217,80,0,.7);
+}
+
+/* Un bouton indisponible garde sa forme et perd son relief : l'ombre et les
+   liserés disparaissent, la couleur s'éteint. Il reste reconnaissable comme
+   le bouton de l'écran — on comprend qu'il attend quelque chose, et non
+   qu'il a disparu. */
+.pr-btn:disabled,
+.pr-btn[aria-disabled="true"] {
+  background-image: none;
+  background-color: #E8DFD4;
+  color: #9A8E80;
+  box-shadow: none;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   §7  LE BANDEAU PLEINE LARGEUR, SUR TABLETTE
+
+   Sur téléphone, un bandeau d'en-tête annule la gouttière du conteneur
+   (`-mx-4`) pour toucher les deux bords : il se lit alors comme la barre de
+   l'écran, et non comme une carte. Sur deux colonnes il n'a plus de bord à
+   toucher — la maquette le rend à sa colonne, en carte arrondie à 18 px.
+   ─────────────────────────────────────────────────────────────────────────── */
+@media (min-width: 768px) and (max-width: 1023.98px) {
+  .relay-shell .pr-flow > * > .pr-bleed {
+    margin-left: 0;
+    margin-right: 0;
+    border-radius: 18px;
+    overflow: hidden;
+  }
+}

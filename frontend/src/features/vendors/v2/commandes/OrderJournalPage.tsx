@@ -2,18 +2,19 @@
 // Écran « Journal de la commande » — VD-05 §JRN-01/02.
 // Route recommandée : /seller/v2/commandes/:id/journal
 // Consultation seule, fil chronologique inversé, table en ajout seul côté
-// discours produit (JRN-02). Bridge : pas de GET /orders/{id}/journal ni de
-// champ actor_id signé — journalEventsOf() (helpers.ts) reconstitue le fil à
-// partir de la création de la commande et de shipment.timeline (déjà réel et
-// horodaté). Les valeurs "avant → après" en pastilles (spec) ne sont pas
-// disponibles : seuls label/détail/lieu/heure sont affichés.
+// discours produit (JRN-02). Bridge : pas de GET /orders/{id}/journal dédié —
+// journalEventsOf() (helpers.ts) reconstitue le fil à partir de la création
+// de la commande et de shipment.timeline, qui porte l'acteur signé
+// (actor_label) et le statut précédent (previous_label) pour chaque étape
+// réelle (ShipmentEvent.record() côté backend). La toute première étape d'un
+// shipment n'a pas de previous_label (rien à afficher avant elle).
 
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Inbox, RefreshCw } from 'lucide-react';
+import { ArrowRight, Inbox, RefreshCw, UserCheck } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { palette } from '../theme';
-import { Card, CenterState, PageHeader } from './ui';
+import { Card, CenterState, PageHeader, Pill } from './ui';
 import { fmtDateTime, journalEventsOf, orderRef, useOrder } from './helpers';
 
 export default function OrderJournalPage() {
@@ -50,8 +51,23 @@ export default function OrderJournalPage() {
               <p className="font-bold" style={{ fontSize: 13.5, color: p.text }}>{ev.label}</p>
               <span className="flex-shrink-0" style={{ fontSize: 11, color: p.textMuted }}>{fmtDateTime(ev.at)}</span>
             </div>
-            {ev.detail ? <p style={{ fontSize: 12, color: p.textMuted, marginTop: 4 }}>{ev.detail}</p> : null}
+            {ev.previousLabel ? (
+              <div className="flex items-center gap-1.5" style={{ marginTop: 6 }}>
+                <Pill label={ev.previousLabel} tone="muted" p={p} />
+                <ArrowRight size={12} color={p.textMuted} />
+                <Pill label={ev.label} tone="orange" p={p} />
+              </div>
+            ) : null}
+            {ev.detail ? <p style={{ fontSize: 12, color: p.textMuted, marginTop: 6 }}>{ev.detail}</p> : null}
             {ev.location ? <p style={{ fontSize: 11, color: p.textMuted, marginTop: 2 }}>{ev.location}</p> : null}
+            {ev.actorLabel ? (
+              <div className="flex items-center gap-1" style={{ marginTop: 6 }}>
+                <UserCheck size={12} color={p.textMuted} />
+                <span style={{ fontSize: 11, color: p.textMuted }}>
+                  {t('sl7_commandes.journal_signed_by', { actor: ev.actorLabel })}
+                </span>
+              </div>
+            ) : null}
           </Card>
         ))}
       </div>

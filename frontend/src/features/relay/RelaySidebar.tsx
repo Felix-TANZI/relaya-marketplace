@@ -72,7 +72,7 @@ function NavRow({
       aria-current={active ? "page" : undefined}
       className={`flex w-full items-center gap-3 rounded-[12px] px-3 py-2.5 text-left transition ${
         active
-          ? "bg-[#EEF3FE] dark:bg-blue-950/50"
+          ? "bg-[#EAF0FF] dark:bg-blue-950/50"
           : "hover:bg-slate-50 dark:hover:bg-slate-800/60"
       }`}
     >
@@ -80,18 +80,18 @@ function NavRow({
         size={19}
         strokeWidth={2.2}
         className={`flex-shrink-0 ${
-          active ? "text-[#1D4ED8] dark:text-blue-300" : "text-[#E8590C] dark:text-orange-400"
+          active ? "text-[#2456D6] dark:text-blue-300" : "text-[#EF6A00] dark:text-orange-400"
         }`}
       />
       <span
         className={`min-w-0 flex-1 truncate text-[14px] font-bold ${
-          active ? "text-[#1D4ED8] dark:text-blue-200" : "text-slate-700 dark:text-slate-200"
+          active ? "text-[#2456D6] dark:text-blue-200" : "text-slate-700 dark:text-slate-200"
         }`}
       >
         {label}
       </span>
       {badge ? (
-        <span className="flex h-[22px] min-w-[22px] flex-shrink-0 items-center justify-center rounded-full bg-[#FDF0DC] px-1.5 text-[11.5px] font-black text-[#D98324] dark:bg-orange-950 dark:text-orange-300">
+        <span className="flex h-[22px] min-w-[22px] flex-shrink-0 items-center justify-center rounded-full bg-[#FFF1E2] px-1.5 text-[11.5px] font-black text-[#B84A00] dark:bg-orange-950 dark:text-orange-300">
           {badge > 99 ? "99+" : badge}
         </span>
       ) : null}
@@ -126,7 +126,7 @@ export default function RelaySidebar({
           alt="BelivaY"
           className="h-9 w-auto object-contain dark:brightness-0 dark:invert"
         />
-        <p className="mt-2.5 text-[11px] font-black uppercase tracking-[0.12em] text-[#1D4ED8] dark:text-blue-300">
+        <p className="mt-2.5 text-[11px] font-black uppercase tracking-[0.12em] text-[#2456D6] dark:text-blue-300">
           {brandKicker}
         </p>
       </div>
@@ -135,9 +135,9 @@ export default function RelaySidebar({
           La seule surface pleine de la colonne, et elle dit OU l'on travaille.
           Meme carte orange que le menu du telephone. */}
       <div className="px-4 pt-4">
-        <div className="rounded-[16px] bg-gradient-to-br from-[#F79020] via-[#F07E16] to-[#E85D04] px-4 py-3.5 text-white shadow-[0_4px_14px_rgba(232,93,4,.25)]">
+        <div className="pr-sunrise rounded-[16px] px-4 py-3.5 text-white shadow-[0_4px_14px_rgba(217,80,0,.25)]">
           <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#101C3D] text-[14px] font-black text-white ring-2 ring-white/70">
+            <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#0E1B38] text-[14px] font-black text-white ring-2 ring-white/70">
               {profile.avatarUrl ? (
                 <img src={profile.avatarUrl} alt="" className="h-full w-full object-cover" />
               ) : (
@@ -153,12 +153,12 @@ export default function RelaySidebar({
           <div className="mt-3 flex items-center justify-between gap-3 border-t border-white/25 pt-3">
             <span
               className={`flex items-center rounded-full px-2.5 py-[4px] text-[12px] font-bold ${
-                ouvert ? "bg-[#E8F7EE] text-[#2E7D4F]" : "bg-white/25 text-white"
+                ouvert ? "bg-[#E6F4EC] text-[#1F7A4D]" : "bg-white/25 text-white"
               }`}
             >
               <span
                 aria-hidden
-                className={`mr-1.5 h-[6px] w-[6px] rounded-full ${ouvert ? "bg-[#2E7D4F]" : "bg-white"}`}
+                className={`mr-1.5 h-[6px] w-[6px] rounded-full ${ouvert ? "bg-[#1F7A4D]" : "bg-white"}`}
               />
               {profile.status}
             </span>
@@ -214,7 +214,7 @@ export default function RelaySidebar({
         <button
           type="button"
           onClick={onLogout}
-          className="flex w-full items-center justify-center gap-2 rounded-[12px] border border-red-100 bg-[#FDECEC] px-4 py-3 text-[14px] font-black text-[#D84B4B] transition active:scale-[.97] dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
+          className="flex w-full items-center justify-center gap-2 rounded-[12px] border border-red-100 bg-[#FDECEA] px-4 py-3 text-[14px] font-black text-[#B42318] transition active:scale-[.97] dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
         >
           <LogOut size={17} strokeWidth={2.4} /> {logoutLabel}
         </button>

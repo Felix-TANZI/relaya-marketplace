@@ -326,7 +326,7 @@ class OrderCreateSerializer(serializers.Serializer):
     def create(self, validated_data):
         """Créer une nouvelle commande"""
         from .models import PlatformSettings
-        from apps.shipping.models import Shipment, ShipmentEvent
+        from apps.shipping.models import Shipment, ShipmentEvent, infer_actor_role
         from apps.orders.models import OrderHistory
         from apps.accounts.models import UserNotification
 
@@ -487,11 +487,13 @@ class OrderCreateSerializer(serializers.Serializer):
                 order=order, vendor=vendor_user, status=Shipment.Status.CREATED,
             )
             created_shipments.append(shipment)
-            ShipmentEvent.objects.create(
+            ShipmentEvent.record(
                 shipment=shipment,
                 status=Shipment.Status.CREATED,
                 message="Commande recuee et en attente de prise en charge",
                 location=order.city,
+                actor=user,
+                actor_role=infer_actor_role(user),
             )
 
             if relay_point_obj is not None:

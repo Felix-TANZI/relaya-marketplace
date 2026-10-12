@@ -24,23 +24,23 @@
 
 /** Les paliers, tels qu'ils s'affichent. */
 const PALIERS: Array<{ jours: string; montant: string; tone: string }> = [
-  { jours: "J1", montant: "0 F", tone: "text-[#4ADE80]" },
+  { jours: "J1", montant: "0 F", tone: "text-[#5EF2B5]" },
   { jours: "J2–J3", montant: "100 F", tone: "text-white" },
   { jours: "J4–J5", montant: "200 F", tone: "text-white" },
-  { jours: "J6–J7", montant: "400 F", tone: "text-[#F0B23C]" },
+  { jours: "J6–J7", montant: "400 F", tone: "text-[#E8A10E]" },
 ];
 
 export default function RelayGardeGrid() {
   return (
     <section
-      className="overflow-hidden rounded-[18px] px-[18px] py-[18px] text-white shadow-[0_6px_18px_rgba(8,14,31,.28)]"
+      className="overflow-hidden rounded-[18px] px-[18px] py-[18px] text-white shadow-[0_6px_18px_rgba(14,27,56,.28)]"
       style={{
         backgroundImage:
-          "radial-gradient(80% 120% at 96% -4%, rgba(90,130,220,.30) 0%, rgba(90,130,220,0) 62%),"
+          "radial-gradient(80% 120% at 96% -4%, rgba(143,176,255,.30) 0%, rgba(143,176,255,0) 62%),"
           + " linear-gradient(140deg, #0A1230 0%, #101E48 48%, #17296010 100%), linear-gradient(0deg, #101C43, #101C43)",
       }}
     >
-      <p className="text-[12.5px] font-black uppercase leading-none tracking-[0.09em] text-[#F0B23C]">
+      <p className="text-[12.5px] font-black uppercase leading-none tracking-[0.09em] text-[#E8A10E]">
         La grille de garde
       </p>
 
@@ -60,7 +60,7 @@ export default function RelayGardeGrid() {
           la garde. Le colis repart. */}
       <div className="mt-2 rounded-[12px] bg-white/[.07] px-3 py-3 text-center">
         <div className="text-[11.5px] font-semibold leading-none text-white/55">J8</div>
-        <div className="mt-2 text-[17px] font-black leading-none text-[#F0B23C]">renvoi + 500 F</div>
+        <div className="mt-2 text-[17px] font-black leading-none text-[#E8A10E]">renvoi + 500 F</div>
       </div>
 
       <p className="mt-4 text-[13px] font-medium leading-[1.55] text-white/80">

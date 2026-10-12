@@ -49,6 +49,7 @@ export default function RelayCapacity({
   capacity,
   used,
   hours,
+  acceptsBulky,
   busy,
   onSave,
   onOpenClosure,
@@ -58,9 +59,15 @@ export default function RelayCapacity({
   /** Places réellement occupées, calculées sur les colis en stock. */
   used: number;
   hours: string;
+  /** Le relais prend-il les encombrants ? Question de place, pas de tarif. */
+  acceptsBulky: boolean;
   busy: boolean;
-  /** Une seule écriture pour tout l'écran : capacité et horaires partent ensemble. */
-  onSave: (payload: { storage_capacity: number; opening_hours: string }) => void;
+  /** Une seule écriture pour tout l'écran : capacité, horaires et encombrants partent ensemble. */
+  onSave: (payload: {
+    storage_capacity: number;
+    opening_hours: string;
+    accepts_bulky: boolean;
+  }) => void;
   /** Sortie vers la déclaration de fermeture exceptionnelle. */
   onOpenClosure: () => void;
 }) {
@@ -73,6 +80,13 @@ export default function RelayCapacity({
 
   // Les valeurs enregistrées peuvent changer sous nos pieds (rechargement
   // après sauvegarde) : on suit le serveur tant que le gérant n'a rien touché.
+  const [bulky, setBulky] = useState(acceptsBulky);
+  const [seenBulky, setSeenBulky] = useState(acceptsBulky);
+  if (acceptsBulky !== seenBulky) {
+    setSeenBulky(acceptsBulky);
+    setBulky(acceptsBulky);
+  }
+
   const [seenCapacity, setSeenCapacity] = useState(capacity);
   if (capacity !== seenCapacity) {
     setSeenCapacity(capacity);
@@ -104,7 +118,7 @@ export default function RelayCapacity({
   const sature = pct >= SEUIL_SATURATION;
   // Un seul drapeau pour tout l'ecran : le bouton unique doit s'allumer
   // des qu'une valeur, quelle qu'elle soit, s'ecarte du serveur.
-  const dirty = draft !== capacity || nextHours !== hours;
+  const dirty = draft !== capacity || nextHours !== hours || bulky !== acceptsBulky;
   // On ne descend pas sous ce qui est déjà rangé : la promesse serait fausse
   // dès l'instant où elle est faite.
   const plancher = Math.max(1, used);
@@ -121,7 +135,7 @@ export default function RelayCapacity({
       </header>
 
       {/* ── Places de stockage ───────────────────────────────────────────── */}
-      <section className="rounded-[18px] border border-slate-200/70 bg-white px-5 pb-5 pt-4 shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
+      <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-5 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
         <h3 className="text-[12px] font-black uppercase leading-none tracking-[0.1em] text-slate-500 dark:text-slate-400">
           Places de stockage
         </h3>
@@ -138,7 +152,7 @@ export default function RelayCapacity({
           </button>
 
           <div className="min-w-0 text-center">
-            <div className="text-[64px] font-black leading-[0.85] tracking-[-0.03em] text-[#E8590C]">
+            <div className="text-[64px] font-black leading-[0.85] tracking-[-0.03em] text-[#EF6A00]">
               {draft}
             </div>
           </div>
@@ -148,7 +162,7 @@ export default function RelayCapacity({
             onClick={() => setDraft((current) => current + 1)}
             disabled={busy}
             aria-label="Ajouter une place"
-            className="flex h-[52px] w-[52px] flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#F58A1F] to-[#E8590C] text-white shadow-[0_4px_12px_rgba(232,89,12,.35)] transition active:scale-90 disabled:opacity-50"
+            className="flex h-[52px] w-[52px] flex-shrink-0 items-center justify-center pr-sunrise rounded-full shadow-[0_4px_12px_rgba(217,80,0,.35)] transition active:scale-90 disabled:opacity-50"
           >
             <Plus size={24} strokeWidth={2.6} />
           </button>
@@ -162,8 +176,8 @@ export default function RelayCapacity({
           <div
             className={`h-full rounded-full transition-[width] duration-300 ${
               sature
-                ? "bg-gradient-to-r from-[#E8590C] to-[#C2410C]"
-                : "bg-gradient-to-r from-[#F0B23C] to-[#E8590C]"
+                ? "bg-gradient-to-r from-[#EF6A00] to-[#B84A00]"
+                : "bg-gradient-to-r from-[#E8A10E] to-[#EF6A00]"
             }`}
             style={{ width: `${Math.min(100, pct)}%` }}
           />
@@ -174,12 +188,12 @@ export default function RelayCapacity({
           {TARIF_PLACES.map(({ places, label }) => (
             <div
               key={label}
-              className="rounded-[12px] bg-[#FDEEE0] px-1 py-2.5 text-center dark:bg-orange-950/50"
+              className="rounded-[12px] bg-[#FFF1E2] px-1 py-2.5 text-center dark:bg-orange-950/50"
             >
-              <div className="text-[17px] font-black leading-none text-[#E8590C] dark:text-orange-300">
+              <div className="text-[17px] font-black leading-none text-[#EF6A00] dark:text-orange-300">
                 {places}
               </div>
-              <div className="mt-1.5 text-[11px] font-semibold leading-tight text-[#B4571A] dark:text-orange-200/80">
+              <div className="mt-1.5 text-[11px] font-semibold leading-tight text-[#B84A00] dark:text-orange-200/80">
                 {label}
               </div>
             </div>
@@ -205,7 +219,7 @@ export default function RelayCapacity({
 
         {/* ── Encombrants ────────────────────────────────────────────────── */}
         <div className="mt-5 flex items-start gap-3 border-t border-slate-100 pt-4 dark:border-slate-800">
-          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[10px] bg-[#FDEADC] text-[#E07B3C] dark:bg-orange-950 dark:text-orange-300">
+          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[10px] bg-[#FFF1E2] text-[#EF6A00] dark:bg-orange-950 dark:text-orange-300">
             <Box size={19} strokeWidth={2.2} />
           </span>
           <div className="min-w-0 flex-1">
@@ -213,22 +227,32 @@ export default function RelayCapacity({
               Accepter les encombrants
             </div>
             <p className="mt-1 text-[12.5px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">
-              Si vous les refusez, ils sont signalés dès la commande et ne vous sont jamais attribués.
-              Le refus se demande au support : il n'est pas encore réglable depuis cet écran.
+              {bulky
+                ? "Un encombrant occupe cinq places. Si votre arrière-boutique ne suit plus, refusez-les : ils seront signalés dès la commande et ne vous seront plus attribués."
+                : "Les encombrants sont refusés : ils sont signalés dès la commande et ne vous sont jamais attribués. Votre grille tarifaire, elle, ne change pas."}
             </p>
           </div>
-          {/* Interrupteur en lecture seule tant que le serveur ne porte pas le
-              reglage : un bouton qui bascule sans rien changer est pire qu'un
-              bouton absent. */}
-          <span
+          {/* Le bouton bascule tout de suite et part avec l'enregistrement
+              du bas, comme la capacite et les horaires : un ecran, une
+              ecriture. Basculer et sauver seul laisserait croire que les deux
+              autres reglages sont partis aussi. */}
+          <button
+            type="button"
             role="switch"
-            aria-checked
-            aria-disabled
+            aria-checked={bulky}
             aria-label="Accepter les encombrants"
-            className="mt-0.5 flex h-[30px] w-[52px] flex-shrink-0 items-center rounded-full bg-[#1D4ED8] px-[3px]"
+            disabled={busy}
+            onClick={() => setBulky((on) => !on)}
+            className={`mt-0.5 flex h-[30px] w-[52px] flex-shrink-0 items-center rounded-full px-[3px] transition active:scale-95 disabled:opacity-60 ${
+              bulky ? "bg-[#2456D6]" : "bg-slate-300 dark:bg-slate-700"
+            }`}
           >
-            <span className="ml-auto h-6 w-6 rounded-full bg-white shadow-sm" />
-          </span>
+            <span
+              className={`h-6 w-6 rounded-full bg-white shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] transition-transform ${
+                bulky ? "translate-x-[22px]" : "translate-x-0"
+              }`}
+            />
+          </button>
         </div>
       </section>
 
@@ -237,8 +261,8 @@ export default function RelayCapacity({
           tôt se voyait mal dans « Lun-Sam 8h-19h » ; ici il est court, et ça
           se voit sans lire. La barre est à l'échelle 6 h → 22 h, la même pour
           les sept jours : c'est la comparaison entre les lignes qui informe. */}
-      <section className="rounded-[18px] border border-slate-200/70 bg-white px-5 pb-5 pt-4 shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
-        <h3 className="text-[19px] font-black tracking-[-0.015em] text-slate-900 dark:text-white">
+      <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-5 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
+        <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
           Horaires d'ouverture
         </h3>
 
@@ -267,13 +291,13 @@ export default function RelayCapacity({
               <li
                 key={DAY_LABELS[index]}
                 className={`-mx-2 rounded-[12px] px-2 py-2 ${
-                  index === today ? "bg-[#EEF3FE] dark:bg-blue-950/40" : ""
+                  index === today ? "bg-[#EAF0FF] dark:bg-blue-950/40" : ""
                 }`}
               >
                 <div className="grid grid-cols-[46px_1fr_56px] items-center gap-2">
                   <span
                     className={`text-[15px] font-black ${
-                      index === today ? "text-[#1D4ED8] dark:text-blue-300" : "text-slate-900 dark:text-white"
+                      index === today ? "text-[#2456D6] dark:text-blue-300" : "text-slate-900 dark:text-white"
                     }`}
                   >
                     {DAY_LABELS[index]}
@@ -291,7 +315,7 @@ export default function RelayCapacity({
                   >
                     {jour.open ? (
                       <span
-                        className="absolute inset-y-[3px] flex items-center justify-center rounded-full bg-gradient-to-r from-[#3B7BF0] to-[#1E3FBF] px-2 text-[12.5px] font-black text-white"
+                        className="absolute inset-y-[3px] flex items-center justify-center rounded-full bg-gradient-to-r from-[#3A6BEA] to-[#173C9E] px-2 text-[12.5px] font-black text-white"
                         style={{ left: `calc(${left}% + 3px)`, width: `calc(${width}% - 6px)` }}
                       >
                         <span className="truncate">
@@ -312,11 +336,11 @@ export default function RelayCapacity({
                     aria-label={`Ouvrir le ${DAY_LABELS[index]}`}
                     onClick={() => setDay(index, { open: !jour.open })}
                     className={`ml-auto flex h-[30px] w-[52px] flex-shrink-0 items-center rounded-full px-[3px] transition ${
-                      jour.open ? "bg-[#1D4ED8]" : "bg-slate-300 dark:bg-slate-700"
+                      jour.open ? "bg-[#2456D6]" : "bg-slate-300 dark:bg-slate-700"
                     }`}
                   >
                     <span
-                      className={`h-6 w-6 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                      className={`h-6 w-6 rounded-full bg-white shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] transition-transform duration-200 ${
                         jour.open ? "translate-x-[22px]" : ""
                       }`}
                     />
@@ -360,13 +384,13 @@ export default function RelayCapacity({
           Ce n'est pas un confort : un livreur envoyé pendant la coupure
           trouve porte close, et c'est la Ponctualité du relais qui en paie
           le prix. Déclarée, la pause sort le créneau des tournées. */}
-      <section className="rounded-[18px] border border-slate-200/70 bg-white px-5 pb-5 pt-4 shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
-        <h3 className="text-[19px] font-black tracking-[-0.015em] text-slate-900 dark:text-white">
+      <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-5 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
+        <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
           Pause déjeuner
         </h3>
 
         <div className="mt-3 flex items-start gap-3">
-          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[10px] bg-[#FDEADC] text-[#E07B3C] dark:bg-orange-950 dark:text-orange-300">
+          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[10px] bg-[#FFF1E2] text-[#EF6A00] dark:bg-orange-950 dark:text-orange-300">
             <Clock size={19} strokeWidth={2.2} />
           </span>
 
@@ -420,11 +444,11 @@ export default function RelayCapacity({
             aria-label="Déclarer une pause déjeuner"
             onClick={() => setLunch((current) => ({ ...current, on: !current.on }))}
             className={`mt-0.5 flex h-[30px] w-[52px] flex-shrink-0 items-center rounded-full px-[3px] transition ${
-              lunch.on ? "bg-[#1D4ED8]" : "bg-slate-300 dark:bg-slate-700"
+              lunch.on ? "bg-[#2456D6]" : "bg-slate-300 dark:bg-slate-700"
             }`}
           >
             <span
-              className={`h-6 w-6 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+              className={`h-6 w-6 rounded-full bg-white shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] transition-transform duration-200 ${
                 lunch.on ? "translate-x-[22px]" : ""
               }`}
             />
@@ -437,9 +461,9 @@ export default function RelayCapacity({
           n'avait validé qu'un tiers de ses changements. */}
       <button
         type="button"
-        onClick={() => onSave({ storage_capacity: draft, opening_hours: nextHours })}
+        onClick={() => onSave({ storage_capacity: draft, opening_hours: nextHours, accepts_bulky: bulky })}
         disabled={!dirty || busy}
-        className="flex w-full items-center justify-center gap-2.5 rounded-[12px] bg-gradient-to-r from-[#F58A1F] to-[#E8590C] px-4 py-4 text-[17px] font-black text-white shadow-[0_4px_14px_rgba(232,89,12,.38)] transition active:scale-[.97] disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none dark:disabled:from-slate-700 dark:disabled:to-slate-700"
+        className="pr-btn flex w-full items-center justify-center gap-2.5 rounded-[12px] px-4 py-4 text-[17px] font-black text-white transition active:scale-[.97] disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none dark:disabled:from-slate-700 dark:disabled:to-slate-700"
       >
         <Check size={19} strokeWidth={3} /> {busy ? "Enregistrement..." : "Enregistrer"}
       </button>

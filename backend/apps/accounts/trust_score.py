@@ -670,4 +670,58 @@ def trust_score_payload(profile: TrustScoreProfile) -> dict:
         "candidate_tier_display": profile.get_role_tier_display(profile.candidate_tier) if profile.candidate_tier else "",
         "candidate_since": profile.candidate_since,
         "calculated_at": profile.calculated_at,
+        # L'echelle du role, telle que `ROLE_TIER_RULES` la fixe.
+        #
+        # Elle est renvoyee plutot que recopiee dans les portails : les seuils
+        # du point relais (65 points / 31 colis, puis 75 / 101) ne sont PAS
+        # ceux du livreur, et une constante dupliquee cote client finirait par
+        # annoncer un palier que le serveur n'accorde pas.
+        "tier_rules": [
+            {
+                "tier": tier,
+                "tier_display": profile.get_role_tier_display(tier),
+                "min_score": score_min,
+                "min_volume": volume_min,
+                "audit_required": audit,
+            }
+            # Du plus bas au plus haut : l'echelle se lit en montant.
+            for tier, score_min, volume_min, audit in reversed(
+                ROLE_TIER_RULES.get(profile.role, [])
+            )
+        ],
+        # Ce qui protege un palier acquis, et ce qui le fait perdre.
+        "hysteresis_days": HYSTERESIS_DAYS,
+        "hysteresis_points": HYSTERESIS_POINTS,
+        # La sanction en cours, telle que le portail doit l'expliquer.
+        #
+        # Un gerant suspendu ne doit pas DEVINER pourquoi il ne recoit plus
+        # de colis : le motif est ecrit, il lui revient. On expose aussi le
+        # fait qu'une PERSONNE l'a validee — une sanction automatique et une
+        # decision humaine ne se contestent pas de la meme facon.
+        "sanction": _sanction_payload(profile),
+        # Plafond du score pendant un veto : « gele sous 40 ».
+        "veto_score_cap": VETO_SCORE_CAP,
+    }
+
+
+def _sanction_payload(profile: TrustScoreProfile) -> dict | None:
+    """La sanction active la plus recente, ou None."""
+    sanction = (
+        profile.sanctions.filter(lifted_at__isnull=True)
+        .select_related("issued_by")
+        .order_by("-created_at")
+        .first()
+    )
+    if sanction is None or sanction.level == TrustScoreProfile.SanctionLevel.NONE:
+        return None
+    return {
+        "level": sanction.level,
+        "level_display": sanction.get_level_display(),
+        "max_level": int(TrustScoreProfile.SanctionLevel.BAN),
+        "reason": sanction.reason,
+        # Qui l'a prise, pas son nom : le gerant doit savoir si un humain a
+        # tranche, pas de qui il s'agit.
+        "issued_by_human": sanction.issued_by_id is not None,
+        "since": sanction.created_at.isoformat(),
+        "expires_at": sanction.expires_at.isoformat() if sanction.expires_at else None,
     }

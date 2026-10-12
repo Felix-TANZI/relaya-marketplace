@@ -145,8 +145,8 @@ function openPrintable(
 <style>
   *{box-sizing:border-box}
   body{margin:0;padding:32px 40px;font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#0f172a;background:#fff}
-  .head{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;border-bottom:3px solid #1d4ed8;padding-bottom:16px}
-  .brand{font-size:22px;font-weight:800;letter-spacing:-.02em;color:#1d4ed8}
+  .head{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;border-bottom:3px solid #2456D6;padding-bottom:16px}
+  .brand{font-size:22px;font-weight:800;letter-spacing:-.02em;color:#2456D6}
   h1{font-size:19px;margin:18px 0 4px}
   .muted{color:#64748b;font-size:12px;font-weight:600}
   table{width:100%;border-collapse:collapse;margin-top:18px;font-size:12.5px}
@@ -160,7 +160,7 @@ function openPrintable(
   .foot{margin-top:28px;border-top:1px solid #e2e8f0;padding-top:12px;font-size:10.5px;color:#64748b;line-height:1.7}
   .bar{position:fixed;top:0;left:0;right:0;background:#0f172a;color:#fff;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;font-size:12px}
   .bar button{font:inherit;font-weight:700;border:0;border-radius:8px;padding:7px 14px;margin-left:8px;cursor:pointer}
-  .bar .p{background:#2563eb;color:#fff}
+  .bar .p{background:#2456D6;color:#fff}
   .bar .c{background:#e2e8f0;color:#0f172a}
   @media print{.bar{display:none}body{padding:0}}
 </style></head>
@@ -503,7 +503,7 @@ export default function RelayReports({ onError }: { onError: (error: unknown) =>
             <button
               type="button"
               onClick={exportSynthesePdf}
-              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3.5 py-2 text-sm font-black text-white shadow-sm transition hover:bg-blue-700"
+              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3.5 py-2 text-sm font-black text-white shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] transition hover:bg-blue-700"
             >
               <FileText size={15} strokeWidth={2.6} /> {t("rl2_reports.btn_pdf")}
             </button>
@@ -512,11 +512,11 @@ export default function RelayReports({ onError }: { onError: (error: unknown) =>
       />
 
       {notice ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-900">{notice}</div>
+        <div className="rounded-[14px] border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-900">{notice}</div>
       ) : null}
 
       {/* Bascule de periode : tout l'ecran (cartes, tableau, exports) suit. */}
-      <div className="inline-flex flex-wrap gap-1 rounded-2xl border border-slate-200 bg-white p-1 dark:border-slate-800 dark:bg-slate-900">
+      <div className="inline-flex flex-wrap gap-1 rounded-[14px] border border-slate-200 bg-white p-1 dark:border-slate-800 dark:bg-slate-900">
         {PERIODS.map((item) => (
           <button
             key={item.key}
@@ -540,8 +540,8 @@ export default function RelayReports({ onError }: { onError: (error: unknown) =>
             key={label}
             className={`relative overflow-hidden rounded-2xl p-5 ${
               filled
-                ? "bg-gradient-to-br from-blue-600 to-indigo-800 text-white shadow-[0_12px_26px_-14px_rgba(29,78,216,.9)]"
-                : "border border-slate-200 bg-white text-slate-950 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                ? "bg-gradient-to-br from-blue-600 to-indigo-800 text-white shadow-[0_12px_26px_-14px_rgba(36,86,214,.9)]"
+                : "border border-slate-200 bg-white text-slate-950 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900 dark:text-white"
             }`}
           >
             <Icon
@@ -585,7 +585,7 @@ export default function RelayReports({ onError }: { onError: (error: unknown) =>
               return (
                 <article
                   key={row.sortKey}
-                  className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800"
+                  className="rounded-[14px] border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <span className="min-w-0 truncate text-[13px] font-black text-slate-950 dark:text-white">{row.label}</span>
@@ -655,7 +655,7 @@ export default function RelayReports({ onError }: { onError: (error: unknown) =>
       <Panel icon={FileSpreadsheet} title={t("rl2_reports.documents_title")}>
         <div className="grid gap-4 md:grid-cols-3">
           {exportables.map(({ icon: Icon, titre, detail, action }) => (
-            <div key={titre} className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+            <div key={titre} className="rounded-[14px] border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
               <Icon size={22} strokeWidth={2.2} className="text-blue-700 dark:text-blue-300" />
               <h3 className="mt-4 font-black text-slate-950 dark:text-white">{titre}</h3>
               <p className="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400">{detail}</p>

@@ -26,12 +26,18 @@
 # étroite : seules des chaînes entièrement en minuscules/chiffres/underscores
 # sont ignorées — un vrai secret (aléatoire, souvent avec majuscules/chiffres
 # mêlés) ne prend pas cette forme.
+#
+# Pourquoi (Podfile.lock) : repéré sur la PR #70 (versionnement du projet
+# Xcode natif). Chaque ligne de ce fichier généré par CocoaPods est un
+# checksum SHA1 public identifiant la version exacte d'une dépendance
+# (ex. "GTMAppAuth: 0ff230d..."), pas un secret — la règle generic-api-key
+# confond ce hash hexadécimal avec une clé API à cause de son entropie.
 
 [extend]
 useDefault = true
 
 [allowlist]
-description = "Identifiants factices des suites de tests backend + clés i18n frontend"
+description = "Identifiants factices des suites de tests backend + clés i18n frontend + checksums CocoaPods"
 paths = [
   # backend/apps/<app>/tests.py
   '''(^|/)tests\.py$''',
@@ -39,6 +45,8 @@ paths = [
   '''(^|/)test_[^/]+\.py$''',
   # tout le contenu du répertoire backend/tests/ (fixtures, helpers)
   '''(^|/)tests/.*\.py$''',
+  # fichier de verrouillage CocoaPods (checksums publics, pas des secrets)
+  '''(^|/)Podfile\.lock$''',
 ]
 regexes = [
   # Cle i18n "domaine_optionnellement_numerote.sous_cle[.sous_cle...]" —

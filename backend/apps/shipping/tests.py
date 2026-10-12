@@ -1335,3 +1335,176 @@ class RelayPointReturnDepositTests(APITestCase):
         # La preuve pointe l'article retourne : sans cela, le dossier de retour
         # ne sait pas laquelle des photos de la commande le concerne.
         self.assertTrue(all(p.order_item_id == retour.order_item_id for p in preuves))
+
+class RelayPointHistoryTests(APITestCase):
+    """
+    La ligne de temps du comptoir.
+
+    Ce que ces tests protegent : un historique qui ment est pire qu'un
+    historique absent. Le gerant s'en sert pour repondre « a quelle heure,
+    a qui, avec quelle preuve » — une operation d'un autre relais, ou une
+    date hors fenetre, lui ferait defendre un fait qui n'est pas le sien.
+    """
+
+    def setUp(self):
+        self.url = reverse("shipping-relay-history")
+        self.relay_user = User.objects.create_user("histo_relay", password="Relay2026")
+        self.relay_point = RelayPointProfile.objects.create(
+            user=self.relay_user,
+            name="Relais Historique",
+            phone="+237690400001",
+            city="Yaounde",
+            status=RelayPointProfile.Status.APPROVED,
+            is_active=True,
+        )
+        self.client_user = User.objects.create_user("histo_client", password="Client2026")
+
+    def _colis(self, relay_point=None, **dates):
+        order = Order.objects.create(
+            user=self.client_user,
+            customer_email="histo@example.com",
+            customer_phone="+237690400002",
+            city="YAOUNDE",
+            address="Mvan, Yaounde",
+            subtotal_xaf=5000,
+            delivery_fee_xaf=500,
+            total_xaf=5500,
+        )
+        shipment = Shipment.objects.create(order=order, status=Shipment.Status.IN_TRANSIT)
+        return RelayParcel.objects.create(
+            shipment=shipment,
+            relay_point=relay_point or self.relay_point,
+            status=RelayParcel.Status.STORED,
+            slot_code="A-01",
+            **dates,
+        )
+
+    def test_reception_et_remise_font_deux_lignes(self):
+        """Un meme colis recu puis remis a produit DEUX faits, pas un seul."""
+        maintenant = timezone.now()
+        self._colis(received_at=maintenant - timedelta(hours=5), picked_up_at=maintenant - timedelta(hours=1))
+
+        self.client.force_authenticate(self.relay_user)
+        response = self.client.get(self.url, {"days": 7})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        natures = sorted(e["kind"] for e in response.data["entries"])
+        self.assertEqual(natures, ["reception", "remise"])
+        self.assertEqual(response.data["counts"]["recus"], 1)
+        self.assertEqual(response.data["counts"]["remis"], 1)
+
+    def test_ligne_de_temps_du_plus_recent_au_plus_ancien(self):
+        maintenant = timezone.now()
+        self._colis(received_at=maintenant - timedelta(hours=9), picked_up_at=maintenant - timedelta(hours=2))
+
+        self.client.force_authenticate(self.relay_user)
+        response = self.client.get(self.url, {"days": 7})
+
+        dates = [e["at"] for e in response.data["entries"]]
+        self.assertEqual(dates, sorted(dates, reverse=True))
+
+    def test_operation_d_un_autre_relais_absente(self):
+        autre_user = User.objects.create_user("histo_autre", password="Relay2026")
+        autre = RelayPointProfile.objects.create(
+            user=autre_user,
+            name="Relais Voisin",
+            phone="+237690400003",
+            city="Yaounde",
+            status=RelayPointProfile.Status.APPROVED,
+            is_active=True,
+        )
+        self._colis(relay_point=autre, received_at=timezone.now() - timedelta(hours=2))
+
+        self.client.force_authenticate(self.relay_user)
+        response = self.client.get(self.url, {"days": 7})
+
+        self.assertEqual(response.data["entries"], [])
+
+    def test_fenetre_exclut_ce_qui_la_precede(self):
+        maintenant = timezone.now()
+        self._colis(received_at=maintenant - timedelta(days=20))
+        self._colis(received_at=maintenant - timedelta(hours=3))
+
+        self.client.force_authenticate(self.relay_user)
+        sur_sept = self.client.get(self.url, {"days": 7})
+        sur_trente = self.client.get(self.url, {"days": 30})
+
+        self.assertEqual(sur_sept.data["counts"]["recus"], 1)
+        self.assertEqual(sur_trente.data["counts"]["recus"], 2)
+
+    def test_fenetre_comptee_en_jours_calendaires(self):
+        """
+        « 7 jours » doit contenir SEPT DATES, pas sept fois vingt-quatre heures.
+
+        Un colis recu il y a six jours a 23 h tombe hors d'une fenetre
+        glissante si on regarde tot le matin — alors qu'il figure bien dans
+        la semaine que le gerant a sous les yeux.
+        """
+        debut_il_y_a_six_jours = timezone.localtime(timezone.now()).replace(
+            hour=0, minute=30, second=0, microsecond=0,
+        ) - timedelta(days=6)
+        self._colis(received_at=debut_il_y_a_six_jours)
+
+        self.client.force_authenticate(self.relay_user)
+        response = self.client.get(self.url, {"days": 7})
+
+        self.assertEqual(response.data["counts"]["recus"], 1)
+
+    def test_recherche_par_numero_de_commande(self):
+        maintenant = timezone.now()
+        cible = self._colis(received_at=maintenant - timedelta(hours=2))
+        self._colis(received_at=maintenant - timedelta(hours=3))
+
+        self.client.force_authenticate(self.relay_user)
+        response = self.client.get(self.url, {"days": 7, "q": str(cible.shipment.order_id)})
+
+        self.assertEqual(len(response.data["entries"]), 1)
+        self.assertEqual(response.data["entries"][0]["ref"], f"BV-{cible.shipment.order_id}")
+
+    def test_compteurs_insensibles_a_la_recherche(self):
+        """
+        Les chiffres sont ceux de la PERIODE, pas ceux du filtre.
+
+        Les faire bouger a la saisie donnerait l'impression que l'activite
+        du relais change pendant qu'on cherche un numero.
+        """
+        maintenant = timezone.now()
+        cible = self._colis(received_at=maintenant - timedelta(hours=2))
+        self._colis(received_at=maintenant - timedelta(hours=3))
+
+        self.client.force_authenticate(self.relay_user)
+        response = self.client.get(self.url, {"days": 7, "q": str(cible.shipment.order_id)})
+
+        self.assertEqual(len(response.data["entries"]), 1)
+        self.assertEqual(response.data["counts"]["recus"], 2)
+
+    def test_fenetre_invalide_retombe_sur_sept_jours(self):
+        self.client.force_authenticate(self.relay_user)
+        for valeur in ("365", "abc", ""):
+            response = self.client.get(self.url, {"days": valeur})
+            self.assertEqual(response.data["days"], 7, valeur)
+
+    def test_durees_de_conservation_lues_des_reglages(self):
+        """
+        Le portail annonce au gerant combien de temps ses preuves vivent.
+
+        Cette phrase l'engage : elle doit venir de `PlatformSettings`, jamais
+        d'un nombre ecrit dans l'interface.
+        """
+        from apps.orders.models import PlatformSettings
+        reglages = PlatformSettings.get_settings()
+
+        self.client.force_authenticate(self.relay_user)
+        response = self.client.get(self.url, {"days": 7})
+
+        self.assertEqual(
+            response.data["retention"]["evidence_days"], reglages.evidence_retention_days,
+        )
+        self.assertEqual(
+            response.data["retention"]["dispute_days"], reglages.dispute_evidence_retention_days,
+        )
+
+    def test_compte_non_relais_refuse(self):
+        self.client.force_authenticate(self.client_user)
+        response = self.client.get(self.url, {"days": 7})
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

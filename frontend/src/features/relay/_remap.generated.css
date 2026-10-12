@@ -1,0 +1,260 @@
+/* Repointage des utilitaires Tailwind sur la palette de la maquette.
+ *
+ * FICHIER GENERE par scratchpad/gen_theme.py — ne pas editer a la main.
+ * Portee a `.relay-shell` : la boutique acheteur et les autres portails
+ * gardent la palette generique. */
+
+/* ── Mode clair ──────────────────────────────────────────────────── */
+.relay-shell .bg-amber-50{background-color:#FFF4D6;--tw-bg-opacity:1}
+.relay-shell .bg-amber-50\/50{background-color:rgba(255,244,214,0.500);--tw-bg-opacity:1}
+.relay-shell .bg-amber-500{background-color:#E8A10E;--tw-bg-opacity:1}
+.relay-shell .bg-blue-100\/80{background-color:rgba(232,237,248,0.800);--tw-bg-opacity:1}
+.relay-shell .bg-blue-50{background-color:#EAF0FF;--tw-bg-opacity:1}
+.relay-shell .bg-blue-50\/50{background-color:rgba(234,240,255,0.500);--tw-bg-opacity:1}
+.relay-shell .bg-blue-50\/60{background-color:rgba(234,240,255,0.600);--tw-bg-opacity:1}
+.relay-shell .bg-blue-50\/70{background-color:rgba(234,240,255,0.700);--tw-bg-opacity:1}
+.relay-shell .bg-blue-600{background-color:#2456D6;--tw-bg-opacity:1}
+.relay-shell .bg-blue-700{background-color:#1E4BC4;--tw-bg-opacity:1}
+.relay-shell .bg-emerald-100{background-color:#BFE3CF;--tw-bg-opacity:1}
+.relay-shell .bg-emerald-50{background-color:#E6F4EC;--tw-bg-opacity:1}
+.relay-shell .bg-emerald-500{background-color:#1F7A4D;--tw-bg-opacity:1}
+.relay-shell .bg-emerald-600{background-color:#1F7A4D;--tw-bg-opacity:1}
+.relay-shell .bg-emerald-700{background-color:#155C39;--tw-bg-opacity:1}
+.relay-shell .bg-orange-50{background-color:#FFF1E2;--tw-bg-opacity:1}
+.relay-shell .bg-orange-600{background-color:#E05A00;--tw-bg-opacity:1}
+.relay-shell .bg-orange-700{background-color:#D95000;--tw-bg-opacity:1}
+.relay-shell .bg-red-100{background-color:#F4C3BE;--tw-bg-opacity:1}
+.relay-shell .bg-red-50{background-color:#FDECEA;--tw-bg-opacity:1}
+.relay-shell .bg-red-50\/60{background-color:rgba(253,236,234,0.600);--tw-bg-opacity:1}
+.relay-shell .bg-red-500{background-color:#B42318;--tw-bg-opacity:1}
+.relay-shell .bg-red-600{background-color:#B42318;--tw-bg-opacity:1}
+.relay-shell .bg-red-700{background-color:#8E1B12;--tw-bg-opacity:1}
+.relay-shell .bg-slate-100{background-color:#F1ECE6;--tw-bg-opacity:1}
+.relay-shell .bg-slate-200{background-color:#E4D9CE;--tw-bg-opacity:1}
+.relay-shell .bg-slate-300{background-color:#D9CFC5;--tw-bg-opacity:1}
+.relay-shell .bg-slate-50{background-color:#FBF8F4;--tw-bg-opacity:1}
+.relay-shell .bg-slate-700{background-color:#5B524A;--tw-bg-opacity:1}
+.relay-shell .bg-slate-800{background-color:#1A2A52;--tw-bg-opacity:1}
+.relay-shell .bg-slate-800\/60{background-color:rgba(26,42,82,0.600);--tw-bg-opacity:1}
+.relay-shell .bg-slate-800\/70{background-color:rgba(26,42,82,0.700);--tw-bg-opacity:1}
+.relay-shell .bg-slate-950{background-color:#0E1B38;--tw-bg-opacity:1}
+.relay-shell .bg-slate-950\/55{background-color:rgba(14,27,56,0.550);--tw-bg-opacity:1}
+.relay-shell .bg-slate-950\/60{background-color:rgba(14,27,56,0.600);--tw-bg-opacity:1}
+.relay-shell .bg-slate-950\/65{background-color:rgba(14,27,56,0.650);--tw-bg-opacity:1}
+.relay-shell .border-amber-100{border-color:#F0DA9C;--tw-border-opacity:1}
+.relay-shell .border-amber-200{border-color:#F0DA9C;--tw-border-opacity:1}
+.relay-shell .border-amber-300{border-color:#F0DA9C;--tw-border-opacity:1}
+.relay-shell .border-amber-500{border-color:#E8A10E;--tw-border-opacity:1}
+.relay-shell .border-blue-100{border-color:#C9D7FB;--tw-border-opacity:1}
+.relay-shell .border-blue-200{border-color:#C9D7FB;--tw-border-opacity:1}
+.relay-shell .border-blue-300{border-color:#C9D7FB;--tw-border-opacity:1}
+.relay-shell .border-blue-400{border-color:#2456D6;--tw-border-opacity:1}
+.relay-shell .border-blue-600{border-color:#2456D6;--tw-border-opacity:1}
+.relay-shell .border-emerald-200{border-color:#BFE3CF;--tw-border-opacity:1}
+.relay-shell .border-emerald-300{border-color:#BFE3CF;--tw-border-opacity:1}
+.relay-shell .border-emerald-400{border-color:#1F7A4D;--tw-border-opacity:1}
+.relay-shell .border-emerald-500{border-color:#1F7A4D;--tw-border-opacity:1}
+.relay-shell .border-orange-200{border-color:#F6CFA8;--tw-border-opacity:1}
+.relay-shell .border-orange-500{border-color:#EF6A00;--tw-border-opacity:1}
+.relay-shell .border-red-100{border-color:#F4C3BE;--tw-border-opacity:1}
+.relay-shell .border-red-200{border-color:#F4C3BE;--tw-border-opacity:1}
+.relay-shell .border-red-300{border-color:#F4C3BE;--tw-border-opacity:1}
+.relay-shell .border-red-400{border-color:#B42318;--tw-border-opacity:1}
+.relay-shell .border-red-500{border-color:#B42318;--tw-border-opacity:1}
+.relay-shell .border-slate-100{border-color:#EFE7DE;--tw-border-opacity:1}
+.relay-shell .border-slate-200{border-color:rgba(84,52,24,.10);--tw-border-opacity:1}
+.relay-shell .border-slate-200\/70{border-color:rgba(84,52,24,0.070);--tw-border-opacity:1}
+.relay-shell .border-slate-300{border-color:#E4D9CE;--tw-border-opacity:1}
+.relay-shell .divide-slate-100{border-color:#EFE7DE;--tw-border-opacity:1}
+.relay-shell .from-amber-400{--tw-gradient-from:#E8A10E}
+.relay-shell .from-blue-300{--tw-gradient-from:#C9D7FB}
+.relay-shell .from-blue-400{--tw-gradient-from:#2456D6}
+.relay-shell .from-blue-500{--tw-gradient-from:#3A6BEA}
+.relay-shell .from-blue-600{--tw-gradient-from:#2456D6}
+.relay-shell .from-blue-700{--tw-gradient-from:#2456D6}
+.relay-shell .from-blue-800{--tw-gradient-from:#173C9E}
+.relay-shell .from-emerald-300{--tw-gradient-from:#BFE3CF}
+.relay-shell .from-emerald-400{--tw-gradient-from:#1F7A4D}
+.relay-shell .from-indigo-400{--tw-gradient-from:#2456D6}
+.relay-shell .from-orange-400{--tw-gradient-from:#F58A1F}
+.relay-shell .from-rose-400{--tw-gradient-from:#B42318}
+.relay-shell .from-rose-500{--tw-gradient-from:#B42318}
+.relay-shell .from-sky-300{--tw-gradient-from:#C9D7FB}
+.relay-shell .from-sky-400{--tw-gradient-from:#2456D6}
+.relay-shell .from-slate-300{--tw-gradient-from:#D9CFC5}
+.relay-shell .from-slate-700{--tw-gradient-from:#6F6358}
+.relay-shell .from-teal-300{--tw-gradient-from:#BFE3CF}
+.relay-shell .from-violet-400{--tw-gradient-from:#173C9E}
+.relay-shell .from-yellow-300{--tw-gradient-from:#F0DA9C}
+.relay-shell .ring-blue-500{--tw-ring-color:#2456D6}
+.relay-shell .text-amber-500{color:#E8A10E;--tw-text-opacity:1}
+.relay-shell .text-amber-600{color:#8A5A00;--tw-text-opacity:1}
+.relay-shell .text-amber-700{color:#8A5A00;--tw-text-opacity:1}
+.relay-shell .text-amber-800{color:#6B4700;--tw-text-opacity:1}
+.relay-shell .text-amber-900{color:#6B4700;--tw-text-opacity:1}
+.relay-shell .text-amber-900\/75{color:rgba(107,71,0,0.750);--tw-text-opacity:1}
+.relay-shell .text-amber-950\/85{color:rgba(138,90,0,0.850);--tw-text-opacity:1}
+.relay-shell .text-blue-100\/80{color:rgba(234,240,255,0.800);--tw-text-opacity:1}
+.relay-shell .text-blue-100\/85{color:rgba(234,240,255,0.850);--tw-text-opacity:1}
+.relay-shell .text-blue-200\/70{color:rgba(234,240,255,0.700);--tw-text-opacity:1}
+.relay-shell .text-blue-200\/80{color:rgba(234,240,255,0.800);--tw-text-opacity:1}
+.relay-shell .text-blue-400{color:#2456D6;--tw-text-opacity:1}
+.relay-shell .text-blue-600{color:#2456D6;--tw-text-opacity:1}
+.relay-shell .text-blue-700{color:#173C9E;--tw-text-opacity:1}
+.relay-shell .text-blue-800{color:#173C9E;--tw-text-opacity:1}
+.relay-shell .text-blue-900{color:#173C9E;--tw-text-opacity:1}
+.relay-shell .text-blue-900\/70{color:rgba(23,60,158,0.700);--tw-text-opacity:1}
+.relay-shell .text-blue-950{color:#173C9E;--tw-text-opacity:1}
+.relay-shell .text-blue-950\/70{color:rgba(23,60,158,0.700);--tw-text-opacity:1}
+.relay-shell .text-blue-950\/75{color:rgba(23,60,158,0.750);--tw-text-opacity:1}
+.relay-shell .text-blue-950\/80{color:rgba(23,60,158,0.800);--tw-text-opacity:1}
+.relay-shell .text-emerald-500{color:#1F7A4D;--tw-text-opacity:1}
+.relay-shell .text-emerald-600{color:#1F7A4D;--tw-text-opacity:1}
+.relay-shell .text-emerald-700{color:#1F7A4D;--tw-text-opacity:1}
+.relay-shell .text-emerald-800{color:#155C39;--tw-text-opacity:1}
+.relay-shell .text-emerald-900{color:#155C39;--tw-text-opacity:1}
+.relay-shell .text-emerald-900\/70{color:rgba(21,92,57,0.700);--tw-text-opacity:1}
+.relay-shell .text-indigo-600{color:#2456D6;--tw-text-opacity:1}
+.relay-shell .text-orange-500{color:#EF6A00;--tw-text-opacity:1}
+.relay-shell .text-orange-600{color:#B84A00;--tw-text-opacity:1}
+.relay-shell .text-red-500{color:#B42318;--tw-text-opacity:1}
+.relay-shell .text-red-600{color:#B42318;--tw-text-opacity:1}
+.relay-shell .text-red-700{color:#B42318;--tw-text-opacity:1}
+.relay-shell .text-red-800{color:#8E1B12;--tw-text-opacity:1}
+.relay-shell .text-red-900{color:#8E1B12;--tw-text-opacity:1}
+.relay-shell .text-rose-600{color:#B42318;--tw-text-opacity:1}
+.relay-shell .text-slate-100{color:#FFFFFF;--tw-text-opacity:1}
+.relay-shell .text-slate-300{color:#B9ADA1;--tw-text-opacity:1}
+.relay-shell .text-slate-400{color:#6F6358;--tw-text-opacity:1}
+.relay-shell .text-slate-500{color:#6F6358;--tw-text-opacity:1}
+.relay-shell .text-slate-600{color:#5B524A;--tw-text-opacity:1}
+.relay-shell .text-slate-700{color:#5B524A;--tw-text-opacity:1}
+.relay-shell .text-slate-800{color:#171310;--tw-text-opacity:1}
+.relay-shell .text-slate-900{color:#171310;--tw-text-opacity:1}
+.relay-shell .text-slate-950{color:#171310;--tw-text-opacity:1}
+.relay-shell .to-amber-500{--tw-gradient-to:#E8A10E}
+.relay-shell .to-blue-600{--tw-gradient-to:#2456D6}
+.relay-shell .to-blue-700{--tw-gradient-to:#1E4BC4}
+.relay-shell .to-blue-800{--tw-gradient-to:#173C9E}
+.relay-shell .to-emerald-500{--tw-gradient-to:#1F7A4D}
+.relay-shell .to-green-600{--tw-gradient-to:#1F7A4D}
+.relay-shell .to-indigo-500{--tw-gradient-to:#2456D6}
+.relay-shell .to-indigo-600{--tw-gradient-to:#2456D6}
+.relay-shell .to-indigo-700{--tw-gradient-to:#2456D6}
+.relay-shell .to-indigo-800{--tw-gradient-to:#173C9E}
+.relay-shell .to-indigo-900{--tw-gradient-to:#173C9E}
+.relay-shell .to-orange-500{--tw-gradient-to:#EF6A00}
+.relay-shell .to-orange-600{--tw-gradient-to:#E05A00}
+.relay-shell .to-pink-600{--tw-gradient-to:#B42318}
+.relay-shell .to-purple-600{--tw-gradient-to:#173C9E}
+.relay-shell .to-red-500{--tw-gradient-to:#B42318}
+.relay-shell .to-red-600{--tw-gradient-to:#B42318}
+.relay-shell .to-rose-500{--tw-gradient-to:#B42318}
+.relay-shell .to-sky-500{--tw-gradient-to:#2456D6}
+.relay-shell .to-sky-600{--tw-gradient-to:#2456D6}
+.relay-shell .to-slate-300{--tw-gradient-to:#D9CFC5}
+.relay-shell .to-slate-500{--tw-gradient-to:#6F6358}
+.relay-shell .to-slate-700{--tw-gradient-to:#6F6358}
+.relay-shell .to-teal-500{--tw-gradient-to:#1F7A4D}
+.relay-shell .to-teal-600{--tw-gradient-to:#1F7A4D}
+.relay-shell .to-violet-600{--tw-gradient-to:#173C9E}
+.relay-shell .via-blue-300{--tw-gradient-via:#C9D7FB}
+
+/* ── Mode sombre ─────────────────────────────────────────────────── */
+.dark .relay-shell .dark\:bg-amber-950{background-color:#2B230F;--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-amber-950\/20{background-color:rgba(43,35,15,0.200);--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-amber-950\/30{background-color:rgba(43,35,15,0.300);--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-amber-950\/40{background-color:rgba(43,35,15,0.400);--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-amber-950\/50{background-color:rgba(43,35,15,0.500);--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-blue-400{background-color:#9DB8FF;--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-blue-500\/20{background-color:rgba(36,86,214,0.200);--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-blue-950{background-color:#14234A;--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-blue-950\/20{background-color:rgba(20,35,74,0.200);--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-blue-950\/30{background-color:rgba(20,35,74,0.300);--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-blue-950\/40{background-color:rgba(20,35,74,0.400);--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-blue-950\/50{background-color:rgba(20,35,74,0.500);--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-blue-950\/60{background-color:rgba(20,35,74,0.600);--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-emerald-950{background-color:#0F2A1D;--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-emerald-950\/30{background-color:rgba(15,42,29,0.300);--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-emerald-950\/40{background-color:rgba(15,42,29,0.400);--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-emerald-950\/50{background-color:rgba(15,42,29,0.500);--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-orange-950{background-color:#2B1B0C;--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-orange-950\/20{background-color:rgba(43,27,12,0.200);--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-orange-950\/30{background-color:rgba(43,27,12,0.300);--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-orange-950\/40{background-color:rgba(43,27,12,0.400);--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-orange-950\/50{background-color:rgba(43,27,12,0.500);--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-red-950{background-color:#2F1515;--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-red-950\/30{background-color:rgba(47,21,21,0.300);--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-red-950\/40{background-color:rgba(47,21,21,0.400);--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-red-950\/50{background-color:rgba(47,21,21,0.500);--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-slate-600{background-color:#9AA4BC;--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-slate-700{background-color:#27314C;--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-slate-800{background-color:#1C2540;--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-slate-800\/50{background-color:rgba(28,37,64,0.500);--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-slate-800\/60{background-color:rgba(28,37,64,0.600);--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-slate-800\/70{background-color:rgba(28,37,64,0.700);--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-slate-900{background-color:#141C2F;--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-slate-900\/90{background-color:rgba(20,28,47,0.900);--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-slate-900\/95{background-color:rgba(20,28,47,0.950);--tw-bg-opacity:1}
+.dark .relay-shell .dark\:bg-slate-950{background-color:#0B1120;--tw-bg-opacity:1}
+.dark .relay-shell .dark\:border-amber-600\/70{border-color:rgba(232,161,14,0.700);--tw-border-opacity:1}
+.dark .relay-shell .dark\:border-amber-700{border-color:#584516;--tw-border-opacity:1}
+.dark .relay-shell .dark\:border-amber-800{border-color:#584516;--tw-border-opacity:1}
+.dark .relay-shell .dark\:border-amber-900{border-color:#584516;--tw-border-opacity:1}
+.dark .relay-shell .dark\:border-amber-900\/60{border-color:rgba(88,69,22,0.600);--tw-border-opacity:1}
+.dark .relay-shell .dark\:border-blue-700{border-color:#2A3F7A;--tw-border-opacity:1}
+.dark .relay-shell .dark\:border-blue-800{border-color:#2A3F7A;--tw-border-opacity:1}
+.dark .relay-shell .dark\:border-blue-900{border-color:#2A3F7A;--tw-border-opacity:1}
+.dark .relay-shell .dark\:border-emerald-800{border-color:#1D4A33;--tw-border-opacity:1}
+.dark .relay-shell .dark\:border-emerald-900{border-color:#1D4A33;--tw-border-opacity:1}
+.dark .relay-shell .dark\:border-orange-500{border-color:#FF9A4D;--tw-border-opacity:1}
+.dark .relay-shell .dark\:border-orange-600{border-color:#FF9A4D;--tw-border-opacity:1}
+.dark .relay-shell .dark\:border-orange-700{border-color:#5A3413;--tw-border-opacity:1}
+.dark .relay-shell .dark\:border-orange-800{border-color:#5A3413;--tw-border-opacity:1}
+.dark .relay-shell .dark\:border-orange-900{border-color:#5A3413;--tw-border-opacity:1}
+.dark .relay-shell .dark\:border-red-800{border-color:#5A2623;--tw-border-opacity:1}
+.dark .relay-shell .dark\:border-red-900{border-color:#5A2623;--tw-border-opacity:1}
+.dark .relay-shell .dark\:border-red-900\/60{border-color:rgba(90,38,35,0.600);--tw-border-opacity:1}
+.dark .relay-shell .dark\:border-slate-600{border-color:#3A4666;--tw-border-opacity:1}
+.dark .relay-shell .dark\:border-slate-700{border-color:#2E3957;--tw-border-opacity:1}
+.dark .relay-shell .dark\:border-slate-800{border-color:rgba(255,255,255,.08);--tw-border-opacity:1}
+.dark .relay-shell .dark\:divide-slate-800{border-color:rgba(255,255,255,.08);--tw-border-opacity:1}
+.dark .relay-shell .dark\:from-slate-900\/85{--tw-gradient-from:rgba(20,28,47,0.850)}
+.dark .relay-shell .dark\:ring-slate-900{--tw-ring-color:rgba(255,255,255,.08)}
+.dark .relay-shell .dark\:text-amber-100{color:#F2C14E;--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-amber-100\/75{color:rgba(242,193,78,0.750);--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-amber-100\/85{color:rgba(242,193,78,0.850);--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-amber-200{color:#F2C14E;--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-amber-300{color:#F2C14E;--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-amber-300\/85{color:rgba(242,193,78,0.850);--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-amber-400{color:#F2C14E;--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-blue-100{color:#9DB8FF;--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-blue-100\/70{color:rgba(157,184,255,0.700);--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-blue-100\/80{color:rgba(157,184,255,0.800);--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-blue-200{color:#9DB8FF;--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-blue-300{color:#9DB8FF;--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-blue-400{color:#9DB8FF;--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-emerald-100{color:#86E3B5;--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-emerald-100\/65{color:rgba(134,227,181,0.650);--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-emerald-200{color:#86E3B5;--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-emerald-300{color:#52D69A;--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-emerald-300\/85{color:rgba(82,214,154,0.850);--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-emerald-400{color:#52D69A;--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-indigo-400{color:#9DB8FF;--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-orange-200{color:#FFB27A;--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-orange-200\/80{color:rgba(255,178,122,0.800);--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-orange-300{color:#FF9A4D;--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-orange-400{color:#FF9A4D;--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-red-100{color:#FF8A80;--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-red-100\/85{color:rgba(255,138,128,0.850);--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-red-200{color:#FF8A80;--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-red-300{color:#FF8A80;--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-red-400{color:#FF8A80;--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-rose-400{color:#FF8A80;--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-slate-100{color:#EEF1F7;--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-slate-200{color:#EEF1F7;--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-slate-300{color:#C0C8D8;--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-slate-400{color:#9AA4BC;--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-slate-500{color:#9AA4BC;--tw-text-opacity:1}
+.dark .relay-shell .dark\:text-slate-600{color:#9AA4BC;--tw-text-opacity:1}
+.dark .relay-shell .dark\:to-slate-900\/70{--tw-gradient-to:rgba(20,28,47,0.700)}

@@ -4,6 +4,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import check_password, make_password
+import secrets
+
 from django.utils import timezone
 from apps.catalog.models import Product
 
@@ -195,6 +197,26 @@ class RelayPointProfile(models.Model):
         verbose_name="Longitude",
     )
     storage_capacity = models.PositiveIntegerField(default=0)
+
+    # Accepter les encombrants est une question de PLACE, pas de tarif.
+    #
+    # Ce que le relais est paye pour un encombrant vit dans la grille
+    # contractuelle (`RelayCompensationRule`), qui est versionnee et sous
+    # controle de changement : elle dit ce que BelivaY doit, et elle retombe
+    # sur la grille generale quand le relais n'a pas negocie. Y ecrire depuis
+    # le portail ferait basculer la categorie pour TOUS les relais.
+    #
+    # Ici on dit autre chose : ce que CE comptoir peut physiquement prendre.
+    # Une arriere-boutique de six metres carres ne loge pas un matelas, et
+    # l'accepter une fois bloque le passage pour la semaine. C'est une
+    # decision d'exploitation, elle appartient au gerant, et elle se range
+    # avec sa capacite et ses horaires.
+    accepts_bulky = models.BooleanField(
+        default=True,
+        verbose_name="Accepte les encombrants",
+        help_text="Decoche : les colis encombrants ne sont plus attribues a ce relais.",
+    )
+
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -339,6 +361,299 @@ class UserFavorite(models.Model):
 
     def __str__(self):
         return f"{self.user.username} -> {self.product.title}"
+
+
+class RelayEmployeeInvitation(models.Model):
+    """
+    L'invitation qu'un gerant envoie a quelqu'un pour tenir son comptoir.
+
+    ---------------------------------------------------------------------
+    POURQUOI UN JETON, ET PAS UN COMPTE CREE D'AVANCE
+
+    Creer le compte a la place de l'employe obligerait le gerant a choisir
+    son PIN — donc a le connaitre. Un PIN que deux personnes connaissent ne
+    signe plus rien : la remise attribuee a l'employe pourrait etre celle du
+    gerant, et inversement.
+
+    L'invitation ne porte donc QUE ce que le gerant a le droit de decider :
+    qui, et avec quelles permissions. Le PIN, l'employe le pose lui-meme, et
+    personne d'autre ne le voit.
+
+    ---------------------------------------------------------------------
+    POURQUOI ELLE EXPIRE
+
+    Un lien d'invitation est un droit d'entree. Laisse ouvert, il reste
+    valable le jour ou la personne ne travaille plus la. Sept jours.
+    """
+
+    JOURS_VALIDITE = 7
+
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "En attente"
+        ACCEPTED = "ACCEPTED", "Acceptee"
+        REVOKED = "REVOKED", "Annulee"
+        EXPIRED = "EXPIRED", "Expiree"
+
+    relay_point = models.ForeignKey(
+        "accounts.RelayPointProfile", on_delete=models.CASCADE, related_name="invitations",
+    )
+    employee = models.OneToOneField(
+        "accounts.RelayEmployee", on_delete=models.CASCADE, related_name="invitation",
+    )
+    token = models.CharField(max_length=64, unique=True, db_index=True)
+    invited_by_name = models.CharField(max_length=120, blank=True, default="")
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.PENDING)
+    expires_at = models.DateTimeField()
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Invitation d'employe"
+        verbose_name_plural = "Invitations d'employes"
+
+    def __str__(self):
+        return f"Invitation {self.employee.display_name} · {self.relay_point.name}"
+
+    @staticmethod
+    def nouveau_jeton() -> str:
+        # `secrets` et non `random` : un jeton devinable est une porte
+        # ouverte sur le comptoir.
+        return secrets.token_urlsafe(32)
+
+    @property
+    def est_valide(self) -> bool:
+        return self.status == self.Status.PENDING and self.expires_at > timezone.now()
+
+
+class RelayAccessPin(models.Model):
+    """
+    Le code a quatre chiffres qui ouvre le portail point relais.
+
+    ---------------------------------------------------------------------
+    POURQUOI UN PIN, ET CE QU'IL EXIGE EN RETOUR
+
+    Au comptoir, on se reconnecte dix fois par jour, debout, une main sur un
+    colis. Un mot de passe long n'y survit pas : il finit ecrit sur le mur.
+    Le PIN est donc un compromis assume — court, mais adosse a trois
+    garde-fous sans lesquels il ne vaudrait rien :
+
+      1. Il ne s'etablit qu'apres preuve de possession du numero (OTP).
+      2. Il est HACHE, jamais stocke en clair ni comparable en temps
+         constant par accident — `check_password` s'en charge.
+      3. Cinq echecs ferment l'acces trente minutes. Sans cela, quatre
+         chiffres se cassent en quelques milliers d'essais.
+
+    ---------------------------------------------------------------------
+    CE QU'IL NE REMPLACE PAS
+
+    Il n'y a pas de liaison a l'appareil : un PIN vole fonctionne depuis
+    n'importe quel telephone. La maquette parle d'une « premiere connexion
+    sur ce telephone » — cette notion n'existe pas encore, et les portails
+    ne doivent pas la promettre.
+    """
+
+    MAX_ATTEMPTS = 5
+    LOCK_MINUTES = 30
+    PIN_LENGTH = 4
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="relay_access_pin")
+    pin_hash = models.CharField(max_length=160)
+    failed_attempts = models.PositiveSmallIntegerField(default=0)
+    locked_until = models.DateTimeField(null=True, blank=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Code PIN point relais"
+        verbose_name_plural = "Codes PIN point relais"
+
+    def __str__(self):
+        return f"PIN de {self.user.username}"
+
+    @classmethod
+    def valide_format(cls, code: str) -> bool:
+        code = (code or "").strip()
+        if len(code) != cls.PIN_LENGTH or not code.isdigit():
+            return False
+        # Un PIN tout en chiffres identiques ou en suite se devine avant
+        # d'etre attaque : autant le refuser a la source.
+        if len(set(code)) == 1:
+            return False
+        suite = all(int(code[i + 1]) - int(code[i]) == 1 for i in range(len(code) - 1))
+        inverse = all(int(code[i]) - int(code[i + 1]) == 1 for i in range(len(code) - 1))
+        return not (suite or inverse)
+
+    @property
+    def est_bloque(self) -> bool:
+        return bool(self.locked_until and self.locked_until > timezone.now())
+
+    def set_pin(self, code: str) -> None:
+        self.pin_hash = make_password(code)
+        self.failed_attempts = 0
+        self.locked_until = None
+
+    def check_pin(self, code: str) -> bool:
+        """
+        Verifie le code, et compte l'echec.
+
+        Le compteur ne se remet a zero QUE sur un succes : le vider a
+        l'expiration du blocage offrirait cinq essais toutes les trente
+        minutes, indefiniment. Ici, il faut finir par trouver.
+        """
+        if self.est_bloque:
+            return False
+        if check_password(code, self.pin_hash):
+            self.failed_attempts = 0
+            self.locked_until = None
+            self.last_used_at = timezone.now()
+            self.save(update_fields=["failed_attempts", "locked_until", "last_used_at", "updated_at"])
+            return True
+
+        self.failed_attempts += 1
+        if self.failed_attempts >= self.MAX_ATTEMPTS:
+            self.locked_until = timezone.now() + timezone.timedelta(minutes=self.LOCK_MINUTES)
+        self.save(update_fields=["failed_attempts", "locked_until", "updated_at"])
+        return False
+
+    def essais_restants(self) -> int:
+        return max(0, self.MAX_ATTEMPTS - self.failed_attempts)
+
+
+class RelayEmployee(models.Model):
+    """
+    Les personnes autorisees a tenir le guichet d'un point relais.
+
+    ---------------------------------------------------------------------
+    CE QUE CE MODELE EST, ET CE QU'IL N'EST PAS ENCORE
+
+    Il est un REGISTRE : qui le gerant autorise, a quoi, et depuis quand.
+    Le gerant en repond — les colis perdus ou mal remis par un employe
+    comptent dans SON Trust Score.
+
+    Il n'est pas encore un verrou technique. `RelayPointProfile.user` est un
+    OneToOne : un relais, un compte. Tant qu'une authentification par
+    personne n'existe pas, tous ceux qui tiennent le guichet partagent la
+    meme session, et les permissions ci-dessous decrivent une consigne, pas
+    une barriere. Les portails qui affichent ce registre DOIVENT le dire :
+    laisser croire a un acces cloisonne ferait partager l'identifiant du
+    relais a la legere, numero de versement compris.
+
+    ---------------------------------------------------------------------
+    POURQUOI TROIS AU PLUS
+
+    Au-dela, un comptoir n'est plus tenu, il est traverse. La limite porte
+    sur les comptes ACTIFS : retirer quelqu'un libere une place, et garde
+    la trace de son passage.
+    """
+
+    MAX_ACTIFS_PAR_RELAIS = 3
+
+    class Role(models.TextChoices):
+        OWNER = "OWNER", "Proprietaire"
+        EMPLOYEE = "EMPLOYEE", "Employe"
+
+    relay_point = models.ForeignKey(
+        "accounts.RelayPointProfile", on_delete=models.CASCADE, related_name="employees",
+    )
+    # Le compte de connexion, cree seulement quand l'invitation est acceptee.
+    # Vide tant que la personne n'a pas pose son PIN : un employe inscrit par
+    # le gerant mais jamais venu ne doit pas pouvoir se connecter.
+    user = models.OneToOneField(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="relay_employee_link",
+    )
+    display_name = models.CharField(max_length=120)
+    phone = models.CharField(max_length=20, blank=True, default="")
+    role = models.CharField(max_length=12, choices=Role.choices, default=Role.EMPLOYEE)
+
+    # Les quatre gestes du comptoir. L'argent et les reglages sont fermes par
+    # defaut : on ouvre un acces, on ne le referme pas apres coup.
+    can_receive = models.BooleanField(default=True)
+    can_hand_over = models.BooleanField(default=True)
+    can_money = models.BooleanField(default=False)
+    can_settings = models.BooleanField(default=False)
+
+    is_active = models.BooleanField(default=True)
+    # Derniere activite connue. Reste vide tant que l'authentification par
+    # personne n'existe pas : on ne devine pas une presence.
+    last_seen_at = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-role", "created_at"]
+        verbose_name = "Membre d'equipe du point relais"
+        verbose_name_plural = "Membres d'equipe des points relais"
+
+    def __str__(self):
+        return f"{self.display_name} · {self.relay_point.name}"
+
+    @classmethod
+    def actifs_pour(cls, relay_point):
+        return cls.objects.filter(relay_point=relay_point, is_active=True)
+
+
+class RelayNotificationPreferences(models.Model):
+    """
+    Ce que le point relais accepte de recevoir, et quand.
+
+    ---------------------------------------------------------------------
+    CE QUI EST ENREGISTRE N'EST PAS ENCORE APPLIQUE
+
+    Ce modele stocke un CHOIX. Il ne le fait pas respecter, parce que les
+    canaux qu'il decrit n'existent pas encore : aucune infrastructure push
+    (ni FCM, ni web push, ni jeton d'appareil), aucune tache planifiee qui
+    composerait le resume du matin, aucun filtre d'heures calmes a
+    l'emission. Les notifications vivent aujourd'hui dans l'application,
+    via `UserNotification`.
+
+    Pourquoi le stocker quand meme : le reglage est une intention du
+    gerant, et elle est vraie des maintenant. La recueillir avant d'avoir
+    le tuyau evite de la lui redemander le jour ou le tuyau existe, et
+    donne a cette fonctionnalite sa liste de destinataires des le premier
+    jour. Ce que l'ecran ne doit PAS faire, c'est laisser croire que le
+    telephone sonnera ce soir.
+    """
+
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="relay_notification_preferences",
+    )
+
+    push_enabled = models.BooleanField(default=True)
+    courier_approach = models.BooleanField(default=True)
+    settlements = models.BooleanField(default=True)
+    score_and_sanctions = models.BooleanField(default=True)
+
+    # Jamais avant 7 h : un relais ouvre rarement plus tot, et une alerte a
+    # 5 h du matin est une alerte qu'on apprend a ignorer.
+    DIGEST_EARLIEST_HOUR = 7
+    digest_hour = models.PositiveSmallIntegerField(default=7)
+
+    quiet_from_hour = models.PositiveSmallIntegerField(default=22)
+    quiet_to_hour = models.PositiveSmallIntegerField(default=7)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Preferences de notification du point relais"
+        verbose_name_plural = "Preferences de notification des points relais"
+
+    def __str__(self):
+        return f"Preferences notifications de {self.user.username}"
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.digest_hour < self.DIGEST_EARLIEST_HOUR:
+            raise ValidationError({
+                "digest_hour": f"Le resume ne part jamais avant {self.DIGEST_EARLIEST_HOUR} h.",
+            })
+        for champ in ("digest_hour", "quiet_from_hour", "quiet_to_hour"):
+            if not 0 <= getattr(self, champ) <= 23:
+                raise ValidationError({champ: "Une heure va de 0 a 23."})
 
 
 class UserNotification(models.Model):

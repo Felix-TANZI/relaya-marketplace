@@ -75,7 +75,7 @@ export default function RelayDrawer({
            l'ordre de tabulation : sans lui, les 21 destinations resteraient
            atteignables au clavier alors qu'elles sont hors de l'ecran. */
         inert={!open}
-        className={`pb-tabbar pb-tabbar-tall absolute inset-0 overflow-y-auto shadow-[8px_0_40px_rgba(2,6,23,.45)] transition-transform duration-300 ease-out ${
+        className={`pb-tabbar pb-tabbar-tall absolute inset-0 overflow-y-auto shadow-[8px_0_40px_rgba(14,27,56,.45)] transition-transform duration-300 ease-out ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >

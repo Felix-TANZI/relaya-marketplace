@@ -40,21 +40,21 @@ const ANOMALIES: Array<{ id: "reserve" | "refus" | "ecart"; icon: typeof Camera;
   {
     id: "reserve",
     icon: Camera,
-    tone: "bg-[#FDF3DC] text-[#E0A020] dark:bg-amber-950 dark:text-amber-300",
+    tone: "bg-[#FFF4D6] text-[#E8A10E] dark:bg-amber-950 dark:text-amber-300",
     title: "Réserve avec photo",
     body: "Angle enfoncé, étiquette abîmée : vous acceptez en le signalant",
   },
   {
     id: "refus",
     icon: X,
-    tone: "bg-[#FDECEC] text-[#E05B5B] dark:bg-red-950 dark:text-red-300",
+    tone: "bg-[#FDECEA] text-[#B42318] dark:bg-red-950 dark:text-red-300",
     title: "Refuser un colis",
     body: "Scellé cassé, mouillé, ouvert : 2 photos, il repart avec le livreur",
   },
   {
     id: "ecart",
     icon: TriangleAlert,
-    tone: "bg-[#F0F1F3] text-[#9AA1AC] dark:bg-slate-800 dark:text-slate-300",
+    tone: "bg-[#F1ECE6] text-[#9FAACB] dark:bg-slate-800 dark:text-slate-300",
     title: "Colis annoncé absent · colis en trop",
     body: "Signalez l'écart : le livreur en répond, pas vous",
   },
@@ -122,10 +122,10 @@ export default function RelayReceptionControl({
     <div className="space-y-4">
       {/* ── Le lot validé ────────────────────────────────────────────────── */}
       <section
-        className="-mx-4 -mt-4 px-4 pb-5 pt-4 text-white sm:-mx-6 sm:-mt-6 sm:px-6"
+        className="pr-span pr-bleed -mx-4 -mt-4 px-4 pb-5 pt-4 text-white sm:-mx-6 sm:-mt-6 sm:px-6"
         style={{
           backgroundImage:
-            "radial-gradient(75% 110% at 99% -6%, rgba(214,116,62,.42) 0%, rgba(160,80,60,.14) 40%, rgba(160,80,60,0) 68%),"
+            "radial-gradient(75% 110% at 99% -6%, rgba(239,106,0,.42) 0%, rgba(239,106,0,.14) 40%, rgba(239,106,0,0) 68%),"
             + " linear-gradient(132deg, #0B1734 0%, #12254C 46%, #1B3570 100%)",
         }}
       >
@@ -134,12 +134,12 @@ export default function RelayReceptionControl({
             <li key={label} className="flex min-w-0 items-center gap-2">
               <span
                 className={`flex h-[22px] w-[22px] flex-shrink-0 items-center justify-center rounded-full text-[11.5px] font-black ${
-                  index <= 1 ? "bg-[#E9A93A] text-[#1B2540]" : "bg-[#1E2F55] text-[#8A97B8]"
+                  index <= 1 ? "bg-[#E8A10E] text-[#1A2A52]" : "bg-[#1A2A52] text-[#9FAACB]"
                 }`}
               >
                 {index + 1}
               </span>
-              <span className={`truncate text-[13px] font-black ${index <= 1 ? "text-white" : "text-[#C3CCE2]"}`}>
+              <span className={`truncate text-[13px] font-black ${index <= 1 ? "text-white" : "text-[#C3CCE0]"}`}>
                 {label}
               </span>
             </li>
@@ -147,11 +147,11 @@ export default function RelayReceptionControl({
         </ol>
 
         <div className="mt-4 flex items-start gap-4">
-          <span className="flex h-[52px] w-[52px] flex-shrink-0 items-center justify-center rounded-[14px] bg-white/10 text-[#E9A93A]">
+          <span className="flex h-[52px] w-[52px] flex-shrink-0 items-center justify-center rounded-[14px] bg-white/10 text-[#E8A10E]">
             <Truck size={24} strokeWidth={2.2} />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[12px] font-black uppercase leading-none tracking-[0.09em] text-[#3DD68C]">
+            <p className="text-[12px] font-black uppercase leading-none tracking-[0.09em] text-[#52D69A]">
               Code de dépôt validé
             </p>
             <div className="mt-2 text-[21px] font-black leading-tight">
@@ -177,17 +177,17 @@ export default function RelayReceptionControl({
       </header>
 
       {/* ── Le lot ───────────────────────────────────────────────────────── */}
-      <section className="rounded-[18px] border border-slate-200/70 bg-white px-5 pb-5 pt-4 shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
+      <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-5 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
         <div className="flex items-baseline justify-between gap-3">
-          <h3 className="text-[19px] font-black tracking-[-0.015em] text-slate-900 dark:text-white">Le lot</h3>
-          <span className="text-[14.5px] font-black text-[#1D4ED8] dark:text-blue-400">
+          <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">Le lot</h3>
+          <span className="text-[14.5px] font-black text-[#2456D6] dark:text-blue-400">
             {checked.length} / {lot.length} contrôlés
           </span>
         </div>
 
         <div className="mt-3 h-[7px] overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-[#2F5FD8] to-[#E8590C] transition-[width] duration-300"
+            className="h-full rounded-full bg-gradient-to-r from-[#2456D6] to-[#EF6A00] transition-[width] duration-300"
             style={{ width: `${avance}%` }}
           />
         </div>
@@ -206,7 +206,7 @@ export default function RelayReceptionControl({
                   <span
                     className={`flex h-[38px] w-[38px] flex-shrink-0 items-center justify-center rounded-[12px] border-2 transition ${
                       on
-                        ? "border-[#B7E0C4] bg-[#E8F6EC] text-[#2E7D4F]"
+                        ? "border-[#BFE3CF] bg-[#E6F4EC] text-[#1F7A4D]"
                         : "border-slate-200 bg-slate-50 dark:border-slate-600 dark:bg-slate-800"
                     }`}
                   >
@@ -228,7 +228,7 @@ export default function RelayReceptionControl({
                     <span className="block text-[10.5px] font-black uppercase leading-none tracking-[0.08em] text-slate-400 dark:text-slate-500">
                       Ranger en
                     </span>
-                    <span className="mt-1 block font-mono text-[15px] font-black text-[#1D4ED8] dark:text-blue-400">
+                    <span className="mt-1 block font-mono text-[15px] font-black text-[#2456D6] dark:text-blue-400">
                       {slots[arrival.shipmentId] || "—"}
                     </span>
                   </span>
@@ -241,8 +241,8 @@ export default function RelayReceptionControl({
       </section>
 
       {/* ── Les anomalies ────────────────────────────────────────────────── */}
-      <section className="rounded-[18px] border border-slate-200/70 bg-white px-5 pb-2 pt-4 shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
-        <h3 className="text-[19px] font-black tracking-[-0.015em] text-slate-900 dark:text-white">
+      <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-2 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
+        <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
           Anomalies du lot
         </h3>
         <ul className="mt-1 divide-y divide-slate-100 dark:divide-slate-800">
@@ -287,15 +287,15 @@ export default function RelayReceptionControl({
           type="button"
           disabled={!complet || busy}
           onClick={onValidate}
-          className="flex flex-1 items-center justify-center gap-2.5 rounded-[12px] bg-gradient-to-r from-[#F58A1F] to-[#E8590C] px-4 py-4 text-[17px] font-black text-white shadow-[0_4px_14px_rgba(232,89,12,.38)] transition active:scale-[.97] disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none dark:disabled:from-slate-700 dark:disabled:to-slate-700"
+          className="pr-btn flex flex-1 items-center justify-center gap-2.5 rounded-[12px] px-4 py-4 text-[17px] font-black text-white transition active:scale-[.97] disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none dark:disabled:from-slate-700 dark:disabled:to-slate-700"
         >
           <Check size={19} strokeWidth={3} /> Valider le lot
         </button>
       </div>
 
-      <div className="flex items-start gap-3 rounded-[14px] bg-[#EEF3FE] px-4 py-3.5 dark:bg-blue-950/40">
-        <Lock size={18} strokeWidth={2.2} className="mt-0.5 flex-shrink-0 text-[#5B7FC7] dark:text-blue-300" />
-        <p className="text-[13.5px] font-medium leading-[1.55] text-[#4A5E8A] dark:text-blue-100/80">
+      <div className="flex items-start gap-3 rounded-[14px] bg-[#EAF0FF] px-4 py-3.5 dark:bg-blue-950/40">
+        <Lock size={18} strokeWidth={2.2} className="mt-0.5 flex-shrink-0 text-[#8FB0FF] dark:text-blue-300" />
+        <p className="text-[13.5px] font-medium leading-[1.55] text-[#9FAACB] dark:text-blue-100/80">
           Vous ne voyez jamais le vendeur ni le client : uniquement la référence BelivaY, la taille et
           l'emplacement.
         </p>
@@ -374,7 +374,7 @@ function ReserveSheet({
         />
       </label>
 
-      <label className="mt-4 flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-3.5 text-sm font-black text-slate-600 transition active:scale-[.98] dark:border-slate-600 dark:bg-slate-950 dark:text-slate-200">
+      <label className="mt-4 flex cursor-pointer items-center justify-center gap-2 rounded-[14px] border border-dashed border-slate-300 bg-white px-4 py-3.5 text-sm font-black text-slate-600 transition active:scale-[.98] dark:border-slate-600 dark:bg-slate-950 dark:text-slate-200">
         <Camera size={17} /> {photo ? "Photo prête — reprendre" : "Photo de la réserve (obligatoire)"}
         <input
           type="file"
@@ -391,7 +391,7 @@ function ReserveSheet({
           type="button"
           onClick={onCancel}
           disabled={busy}
-          className="rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-black text-slate-600 transition disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+          className="rounded-[14px] border border-slate-200 bg-white px-5 py-2.5 text-sm font-black text-slate-600 transition disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
         >
           Annuler
         </button>
@@ -401,7 +401,7 @@ function ReserveSheet({
           onClick={() =>
             photo && void onConfirm({ parcelId, photo: photo.file, note: note.trim() }).then((ok) => ok && onCancel())
           }
-          className="rounded-2xl bg-gradient-to-r from-[#F58A1F] to-[#E8590C] px-5 py-2.5 text-sm font-black text-white transition disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300"
+          className="pr-btn rounded-2xl px-5 py-2.5 text-sm font-black text-white transition disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300"
         >
           {busy ? "Envoi..." : "Enregistrer la réserve"}
         </button>
@@ -453,7 +453,7 @@ function GapSheet({
           type="button"
           onClick={onCancel}
           disabled={busy}
-          className="rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-black text-slate-600 transition disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+          className="rounded-[14px] border border-slate-200 bg-white px-5 py-2.5 text-sm font-black text-slate-600 transition disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
         >
           Annuler
         </button>
@@ -461,7 +461,7 @@ function GapSheet({
           type="button"
           disabled={note.trim().length < 5 || busy}
           onClick={() => void onConfirm(note.trim()).then((ok) => ok && onCancel())}
-          className="rounded-2xl bg-[#1D4ED8] px-5 py-2.5 text-sm font-black text-white transition disabled:cursor-not-allowed disabled:bg-slate-300"
+          className="rounded-2xl bg-[#2456D6] px-5 py-2.5 text-sm font-black text-white transition disabled:cursor-not-allowed disabled:bg-slate-300"
         >
           {busy ? "Envoi..." : "Signaler l'écart"}
         </button>

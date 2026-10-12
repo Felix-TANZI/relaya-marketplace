@@ -157,7 +157,7 @@ export default function ParcelSizeDisplay({ shipmentId, onResolved }: Props) {
         background: refuse ? "#FEF2F2" : "#EFF6FF",
         borderRadius: 14, padding: "16px 18px",
       }}>
-        {cat.icone(refuse ? "#B91C1C" : "#1D4ED8")}
+        {cat.icone(refuse ? "#B91C1C" : "#2456D6")}
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{
@@ -179,7 +179,7 @@ export default function ParcelSizeDisplay({ shipmentId, onResolved }: Props) {
         {!refuse && tarif && (
           <div style={{ textAlign: "right" }}>
             <p style={{
-              fontSize: 19, margin: 0, fontWeight: 800, color: "#1D4ED8",
+              fontSize: 19, margin: 0, fontWeight: 800, color: "#2456D6",
             }}>
               {tarif.amount_xaf.toLocaleString("fr-FR")}
             </p>
@@ -201,7 +201,7 @@ export default function ParcelSizeDisplay({ shipmentId, onResolved }: Props) {
           display: "flex", alignItems: "flex-start", gap: 9, marginTop: 10,
           padding: "11px 14px", background: "#FFF7ED", borderRadius: 11,
         }}>
-          <Info size={15} color="#C2410C" style={{ flexShrink: 0, marginTop: 1 }} />
+          <Info size={15} color="#B84A00" style={{ flexShrink: 0, marginTop: 1 }} />
           <p style={{ fontSize: 12.5, color: "#9A3412", margin: 0, lineHeight: 1.55 }}>
             {t("rl2_parcel_size.uncertain_deduction_notice")}
           </p>

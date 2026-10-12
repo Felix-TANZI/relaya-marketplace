@@ -492,8 +492,17 @@ export default {
     change_language: 'Changer de langue',
     back: 'Retour',
     places_count: '{{used}}/{{max}} places',
-    interface_compliance_notice: "Interface point relais conforme a la vision BelivaY : anonymat vendeur, preuves de transfert, stockage par slot, code de retrait, litiges J+7, Trust Score public et finances MoMo. Les niveaux PR restent volontairement en developpement.",
+    interface_compliance_notice: "Interface point relais conforme a la vision BelivaY : anonymat vendeur, preuves de transfert, stockage par slot, code de retrait, litiges J+7, Trust Score public, paliers Starter/Confirme/Premium et finances MoMo.",
     avatar_updated: 'Photo de profil mise à jour.',
     precision_score: 'Précision {{score}}/100',
+  },
+
+  rl1_pickup_lock: {
+    checking: 'Vérification du code...',
+    attempts_remaining: 'Aucun colis en stock ne porte ce code. Encore {{count}} essai avant blocage 24 h.',
+    attempts_remaining_plural: 'Aucun colis en stock ne porte ce code. Encore {{count}} essais avant blocage 24 h.',
+    locked_title: 'Colis bloqué 24 h',
+    locked_body: 'Trop de codes faux pour ce numéro. BelivaY est prévenu : le client doit passer par le support. Débloqué le {{until}}.',
+    locked_action: 'Écrire au support',
   },
 };

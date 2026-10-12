@@ -492,8 +492,17 @@ export default {
     change_language: 'Change language',
     back: 'Back',
     places_count: '{{used}}/{{max}} slots',
-    interface_compliance_notice: "Relay point interface aligned with BelivaY's vision: seller anonymity, transfer proof, slot-based storage, pickup code, D+7 disputes, public Trust Score and MoMo finances. Relay levels remain intentionally in development.",
+    interface_compliance_notice: "Relay point interface aligned with BelivaY's vision: seller anonymity, transfer proof, slot-based storage, pickup code, D+7 disputes, public Trust Score, Starter/Confirmed/Premium tiers and MoMo finances.",
     avatar_updated: 'Profile photo updated.',
     precision_score: 'Precision {{score}}/100',
+  },
+
+  rl1_pickup_lock: {
+    checking: 'Checking code...',
+    attempts_remaining: 'No parcel in stock has this code. {{count}} attempt left before 24h lock.',
+    attempts_remaining_plural: 'No parcel in stock has this code. {{count}} attempts left before 24h lock.',
+    locked_title: 'Parcel locked 24h',
+    locked_body: 'Too many wrong codes for this number. BelivaY has been notified: the customer must contact support. Unlocked on {{until}}.',
+    locked_action: 'Write to support',
   },
 };

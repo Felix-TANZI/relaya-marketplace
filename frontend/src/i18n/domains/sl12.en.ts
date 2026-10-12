@@ -62,6 +62,7 @@ export default {
     documents_section_receipts: 'Order receipts',
     documents_empty_receipts: 'No order yet.',
     documents_receipt_cta: 'Print / PDF',
+    documents_receipt_pdf_error: 'Could not generate the PDF receipt. Please try again.',
     documents_section_invoices: 'Commission invoices',
     documents_empty_invoices: 'No commission charged yet.',
     documents_invoice_total: 'Commission this month: {{amount}}',

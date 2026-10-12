@@ -62,6 +62,9 @@ urlpatterns = [
     # Note interne vendeur sur une commande
     path('orders/<int:order_id>/note/', views.vendor_order_note, name='vendor-order-note'),
 
+    # Reçu PDF d'une commande
+    path('orders/<int:order_id>/receipt-pdf/', views.vendor_order_receipt_pdf, name='vendor-order-receipt-pdf'),
+
     # Résumé financier (KPIs, escrow, projection, graphique 30j)
     path('payments/summary/', views.vendor_payment_summary, name='vendor-payment-summary'),
  
@@ -85,6 +88,9 @@ urlpatterns = [
     # RETOURS VENDEUR
     path('returns/',                                views.vendor_return_list,   name='vendor-return-list'),
     path('returns/<int:return_id>/review/',         views.vendor_return_review, name='vendor-return-review'),
+
+    # AVIS VENDEUR
+    path('reviews/',                                views.vendor_reviews,       name='vendor-reviews'),
 
     #  ADMINISTRATION
     path('admin/vendors/',                           views.admin_list_vendors,       name='admin-list-vendors'),

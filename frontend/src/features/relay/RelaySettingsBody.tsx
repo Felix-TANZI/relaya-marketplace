@@ -66,8 +66,8 @@ function Pastille({ icon: Icon, tone }: { icon: LucideIcon; tone: "amber" | "blu
     <span
       className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[12px] ${
         tone === "amber"
-          ? "bg-[#FDEADC] text-[#E07B3C] dark:bg-orange-950 dark:text-orange-300"
-          : "bg-[#EAF1FE] text-[#4F7DF3] dark:bg-blue-950 dark:text-blue-300"
+          ? "bg-[#FFF1E2] text-[#EF6A00] dark:bg-orange-950 dark:text-orange-300"
+          : "bg-[#EAF0FF] text-[#3A6BEA] dark:bg-blue-950 dark:text-blue-300"
       }`}
     >
       <Icon size={19} strokeWidth={2.2} />
@@ -140,11 +140,11 @@ function Bascule({
       disabled={disabled}
       onClick={onToggle}
       className={`mt-0.5 flex h-[30px] w-[52px] flex-shrink-0 items-center rounded-full px-[3px] transition ${
-        on ? "bg-[#1D4ED8]" : "bg-slate-300 dark:bg-slate-700"
+        on ? "bg-[#2456D6]" : "bg-slate-300 dark:bg-slate-700"
       } ${disabled ? "opacity-45" : ""}`}
     >
       <span
-        className={`h-6 w-6 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+        className={`h-6 w-6 rounded-full bg-white shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] transition-transform duration-200 ${
           on ? "translate-x-[22px]" : ""
         }`}
       />
@@ -253,8 +253,8 @@ export default function RelaySettingsBody({
   return (
     <>
       {/* ── Sécurité ─────────────────────────────────────────────────────── */}
-      <section className="rounded-[18px] border border-slate-200/70 bg-white px-5 pb-2 pt-4 shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
-        <h3 className="text-[19px] font-black tracking-[-0.015em] text-slate-900 dark:text-white">Sécurité</h3>
+      <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-2 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
+        <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">Sécurité</h3>
         <div className="mt-1 divide-y divide-slate-100 dark:divide-slate-800">
           <Ligne
             icon={Lock}
@@ -292,8 +292,8 @@ export default function RelaySettingsBody({
       </section>
 
       {/* ── Affichage et application ─────────────────────────────────────── */}
-      <section className="rounded-[18px] border border-slate-200/70 bg-white px-5 pb-2 pt-4 shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
-        <h3 className="text-[19px] font-black tracking-[-0.015em] text-slate-900 dark:text-white">
+      <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-2 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
+        <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
           Affichage et application
         </h3>
         <div className="mt-1 divide-y divide-slate-100 dark:divide-slate-800">
@@ -314,7 +314,7 @@ export default function RelaySettingsBody({
             body="Normale, Grande (115 %) ou Très grande (130 %)"
             onClick={() => setTailleOpen((current) => !current)}
             right={
-              <span className="mt-0.5 flex-shrink-0 rounded-full bg-[#EEF3FE] px-3.5 py-[6px] text-[13px] font-bold text-[#2A5BD7] dark:bg-blue-950 dark:text-blue-200">
+              <span className="mt-0.5 flex-shrink-0 rounded-full bg-[#EAF0FF] px-3.5 py-[6px] text-[13px] font-bold text-[#2456D6] dark:bg-blue-950 dark:text-blue-200">
                 {tailleLabel}
               </span>
             }
@@ -328,7 +328,7 @@ export default function RelaySettingsBody({
                   onClick={() => setTaille(item.key)}
                   className={`flex-1 rounded-[10px] px-2 py-2 text-[13px] font-bold transition active:scale-95 ${
                     taille === item.key
-                      ? "bg-white text-slate-900 shadow-[0_2px_8px_rgba(15,23,42,.12)] dark:bg-slate-700 dark:text-white"
+                      ? "bg-white text-slate-900 shadow-[0_2px_8px_rgba(60,35,15,.12)] dark:bg-slate-700 dark:text-white"
                       : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
                   }`}
                 >
@@ -357,7 +357,7 @@ export default function RelaySettingsBody({
                       onClick={() => dispo && onChangeLanguage(code)}
                       className={`rounded-[8px] px-2.5 py-1.5 text-[13px] font-bold transition ${
                         on
-                          ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white"
+                          ? "bg-white text-slate-900 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:bg-slate-700 dark:text-white"
                           : "text-slate-500 dark:text-slate-400"
                       } ${dispo ? "" : "opacity-40"}`}
                     >
@@ -375,7 +375,7 @@ export default function RelaySettingsBody({
             title="Hors connexion"
             body="Consultation seule : les réceptions et remises exigent le réseau"
             right={
-              <span className="mt-0.5 flex-shrink-0 rounded-full border border-[#F2D79B] bg-[#FDF6E3] px-3 py-[5px] text-[12.5px] font-bold text-[#B4791A] dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300">
+              <span className="mt-0.5 flex-shrink-0 rounded-full border border-[#F0DA9C] bg-[#FFF4D6] px-3 py-[5px] text-[12.5px] font-bold text-[#8A5A00] dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300">
                 Partiel
               </span>
             }
@@ -427,7 +427,7 @@ export default function RelaySettingsBody({
       <button
         type="button"
         onClick={onLogout}
-        className="flex w-full items-center justify-center gap-2.5 rounded-[14px] border border-red-100 bg-[#FDECEC] px-4 py-4 text-[16px] font-black text-[#D84B4B] transition active:scale-[.97] dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
+        className="flex w-full items-center justify-center gap-2.5 rounded-[14px] border border-red-100 bg-[#FDECEA] px-4 py-4 text-[16px] font-black text-[#B42318] transition active:scale-[.97] dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
       >
         <LogOut size={18} strokeWidth={2.4} /> Se déconnecter
       </button>

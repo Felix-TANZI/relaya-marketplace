@@ -1,104 +1,22 @@
 // Domaine « Listes d'envies » (CL-14 ; FF-LISTE-ENVIES) : toutes les occasions (anniversaire, mariage avec sa
 // cagnotte, dot, naissance…), le statut WhatsApp, la page publique l/{code} et « offrir » depuis n'importe où.
-// Routes du kit : backend-kit/apps/wishlists (réponses au format de src/donnees/source.ts : adaptateur identité).
-import type { CanalStatut, CarteJeton, ControleDiaspora, EnvoiCode, ListeEnvies, ListePublique, OccasionListe, Source, SuiviCadeau } from '../../donnees/source'
-import type { PaieFrais } from '../../donnees/echanges'
+//
+// Vérifié (14 oct. 2026) contre le vrai backend, pas seulement contre CONNECTEURS.md (daté du 3 oct., écrit avant
+// l'arrêt du rollout) : apps.wishlists, prévu par le kit backend-kit/apps/wishlists, n'existe PAS dans
+// backend/apps/ (seuls apps.client_core, apps.otp, apps.client_accounts et apps.notifications_client du kit sont
+// réellement dans INSTALLED_APPS — voir backend/relaya/settings/base.py). Aucune route /api/me/wishlists ni
+// /api/wishlists/{code} n'existe côté serveur.
+//
+// Ce domaine ne définit donc AUCUNE des 14 méthodes « listes » : elles tombent sur le repli générique de
+// src/api/source-api.ts, qui lève NonDisponible (route attendue lue dans src/api/routes.ts, toutes passées à
+// l'état 'serveur'). L'écran affiche alors le message prévu pour ce cas (AvisErreurs.tsx, genre non_disponible :
+// « Cette fonction arrive bientôt ») au lieu d'un 404 brut. Construire tout le sous-système (listes, cagnotte
+// publique, cadeau payé par carte avec contrôle de cohérence diaspora, liens publics) est un gros morceau
+// métier — pas une extension mécanique de serializer — donc pas improvisé ici ; voir le rapport de session pour
+// la question à trancher avant de le construire.
+import type { Source } from '../../donnees/source'
 import type { ClientApi } from '../client'
-import { ErreurConflit, ErreurIntrouvable } from '../erreurs'
-import { ou, refusAttendu, seg, suivreRedirection } from './refus'
 
-const nullSi404 = async <T>(appel: Promise<T>): Promise<T | null> => {
-  try {
-    return await appel
-  } catch (e) {
-    if (e instanceof ErreurIntrouvable) return null
-    throw e
-  }
-}
-
-export function domaineListes(api: ClientApi) {
-  return {
-    // GET /api/me/wishlists → { listes, relais, maintenant }
-    listes: async () => api.get<{ listes: ListeEnvies[]; relais: string | null; maintenant: number }>('/me/wishlists'),
-
-    // POST /api/me/wishlists {nom, mode, remiseLe, surprise, occasion?, hotes?, cagnotte?} → 201 ListeEnvies
-    creerListe: async (l: { nom: string; mode: 'fil' | 'groupe'; remiseLe: number | null; surprise: boolean; occasion?: OccasionListe | null; hotes?: string[]; cagnotte?: { titre: string; objectif: number } | null }) =>
-      api.post<ListeEnvies>('/me/wishlists', l),
-
-    // POST /api/me/wishlists/{id}/items {produit} → 204
-    ajouterArticleListe: async (id: string, p: string) => {
-      await api.post(`/me/wishlists/${seg(id)}/items`, { produit: p })
-    },
-
-    // DELETE /api/me/wishlists/{id}/items/{produit} → { ok } (ok: false pour un article déjà offert)
-    retirerArticleListe: async (id: string, p: string) => api.supprimer<{ ok: boolean }>(`/me/wishlists/${seg(id)}/items/${seg(p)}`),
-
-    // PATCH /api/me/wishlists/{id} {destination?, tiers?, surprise?, domicile?} → 204 ; 422 relais
-    reglerListe: async (id: string, r: Partial<Pick<ListeEnvies, 'destination' | 'tiers' | 'surprise' | 'domicile'>>) => {
-      await api.patch(`/me/wishlists/${seg(id)}`, r)
-    },
-
-    // POST /api/me/wishlists/{id}/share → ListeEnvies (code du lien public) · DELETE → 204
-    partagerListe: async (id: string) => api.post<ListeEnvies>(`/me/wishlists/${seg(id)}/share`),
-    arreterPartage: async (id: string) => {
-      await api.supprimer(`/me/wishlists/${seg(id)}/share`)
-    },
-
-    // POST /api/me/wishlists/{id}/start → 204
-    demarrerListe: async (id: string) => {
-      await api.post(`/me/wishlists/${seg(id)}/start`)
-    },
-
-    // GET /api/wishlists/{code} (public, CAP-11) → ListePublique ; 404 → null
-    listePublique: async (code: string) => nullSi404(api.get<ListePublique>(`/wishlists/${seg(code)}`)),
-
-    // POST /api/wishlists/{code}/gifts (Idempotency-Key, public) → { ok, ref } ou { ok: false, raison } ;
-    // 409 price_changed {prix} → raison « prix » ; 422 plafond, domicile ; 422 coherence, verification {controle}.
-    // Carte : le jeton du prestataire seul (CAP-24), avec le BIN et le pays déclaré pour le contrôle de cohérence.
-    offrirArticleListe: async (
-      code: string,
-      p: string,
-      o: { prenom: string; email: string; moyen: string; prixVu: number; qui?: PaieFrais; livraison?: 'relais' | 'domicile'; devise?: 'EUR' | 'USD'; carte?: { jeton: CarteJeton; paysCarte: string; pays: string; codeEmail?: string } },
-    ) => {
-      type R = Awaited<ReturnType<Source['offrirArticleListe']>>
-      try {
-        const r = await api.post<R>(
-          `/wishlists/${seg(code)}/gifts`,
-          {
-            produit: p,
-            prenom: o.prenom,
-            email: o.email,
-            moyen: o.moyen,
-            jeton: o.carte?.jeton.jeton ?? '',
-            prix_vu: o.prixVu,
-            qui: o.qui ?? 'payeur',
-            livraison: o.livraison ?? 'relais',
-            devise: o.devise ?? null,
-            carte: o.carte ? { bin: o.carte.jeton.bin, pays_carte: o.carte.paysCarte, pays: o.carte.pays, code_email: o.carte.codeEmail ?? '' } : null,
-          },
-          { idempotence: true },
-        )
-        return suivreRedirection(r)
-      } catch (e) {
-        if (e instanceof ErreurConflit && e.code === 'price_changed') return { ok: false, raison: 'prix', prix: Number((e.data as { prix?: number } | undefined)?.prix ?? o.prixVu) } satisfies R
-        const x = refusAttendu(e, ['plafond', 'domicile', 'coherence', 'verification', 'offert', 'ferme', 'garantie'] as const)
-        if (x.raison === 'coherence' || x.raison === 'verification') return { ok: false, raison: x.raison, controle: x.data.controle as ControleDiaspora } satisfies R
-        return { ok: false, raison: x.raison } satisfies R
-      }
-    },
-
-    // POST /api/wishlists/{code}/gifts/otp {email} → EnvoiCode (vérification renforcée d'un cadeau par carte)
-    envoyerCodeCadeau: async (code: string, email: string) => api.post<EnvoiCode>(`/wishlists/${seg(code)}/gifts/otp`, { email }),
-
-    // GET /api/wishlists/{code}/gifts/{ref} (public, lien de l'e-mail de suivi) → SuiviCadeau ; 404 → null
-    suiviCadeau: async (code: string, ref: string) => nullSi404(api.get<SuiviCadeau>(`/wishlists/${seg(code)}/gifts/${seg(ref)}`)),
-
-    // POST /api/me/wishlists/{id}/status-shares {canal} → { code, jusqua } (crée le lien au besoin)
-    partagerStatutListe: async (id: string, canal: CanalStatut) => api.post<{ code: string; jusqua: number }>(`/me/wishlists/${seg(id)}/status-shares`, { canal }),
-
-    // POST /api/wishlists/{code}/fund {prenom, montant, moyen, mot, discret} (Idempotency-Key, public) → { ok, reuni } ;
-    // refus ferme, montant (200 ou 422)
-    participerCagnotteListe: async (code: string, p: { prenom: string; montant: number; moyen: string; mot: string; discret: boolean }) =>
-      ou(api.post<{ ok: true; reuni: number } | { ok: false; raison: 'ferme' | 'montant' }>(`/wishlists/${seg(code)}/fund`, p, { idempotence: true }).then(suivreRedirection), ['ferme', 'montant'] as const),
-  } satisfies Partial<Source>
+export function domaineListes(_api: ClientApi) {
+  return {} satisfies Partial<Source>
 }

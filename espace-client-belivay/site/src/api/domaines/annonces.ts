@@ -1,31 +1,32 @@
 // Domaine « Annonces sponsorisées » (DP-59) : annonces d'une recherche ou d'une catégorie, emplacements de
 // l'accueil, clic enregistré. Le placement parmi les résultats et le Boost sont calculés par le site
 // (donnees/annonces.ts) avec les règles renvoyées par le serveur.
-import type { AnnoncesListe, EmplacementsAccueil, EmplacementVu, MotifSignalement, Source } from '../../donnees/source'
+//
+// RÉALITÉ VÉRIFIÉE (14 oct. 2026, contre backend/ réel) : AUCUNE trace de « sponsored » dans backend/apps (grep
+// vide). DP-59 (enchère, budget, Boost, éligibilité VD-PUB-*) n'existe pas même en ébauche côté serveur réel —
+// contrairement à CONNECTEURS.md (3 oct.), qui avait été vérifié contre le serveur d'essai du kit, pas ce dépôt.
+// Ce domaine est donc intégralement « à créer côté serveur » : rien n'est inventé ici (pas de fausse mécanique de
+// placement ni de règles de densité par défaut qui donneraient l'illusion que le serveur en décide).
+import type { AnnoncesListe, EmplacementsAccueil, Source } from '../../donnees/source'
 import type { ClientApi } from '../client'
+import { NonDisponible } from '../erreurs'
 
-export function domaineAnnonces(api: ClientApi) {
+export function domaineAnnonces(_api: ClientApi) {
   return {
-    // GET /api/sponsored/placements?ou=&q=&cat= → {annonces, boosts, regles} (publique)
-    annoncesListe: async (ou: 'recherche' | 'categorie', q: string | null, cat: string | null) =>
-      api.get<AnnoncesListe>('/sponsored/placements', { query: { ou, q, cat }, anonyme: !api.jetons.lire() }),
-
-    // GET /api/sponsored/home → {aLaUne, carrousel, flash} (publique)
-    emplacementsAccueil: async () => api.get<EmplacementsAccueil>('/sponsored/home', { anonyme: !api.jetons.lire() }),
-
-    // POST /api/sponsored/clicks {annonce} → 204 (un clic facturé une fois par client et par jour)
-    cliquerAnnonce: async (id: string) => {
-      await api.post<void>('/sponsored/clicks', { annonce: id }, { anonyme: !api.jetons.lire() })
+    annoncesListe: async (): Promise<AnnoncesListe> => {
+      throw new NonDisponible('annoncesListe', 'GET /api/sponsored/placements (aucune app « sponsored » dans backend/apps)')
     },
-
-    // POST /api/sponsored/impressions {annonce, emplacement, visite} → 204 (une par client, emplacement et visite)
-    voirAnnonce: async (id: string, emplacement: EmplacementVu, visite: string) => {
-      await api.post<void>('/sponsored/impressions', { annonce: id, emplacement, visite }, { anonyme: !api.jetons.lire() })
+    emplacementsAccueil: async (): Promise<EmplacementsAccueil> => {
+      throw new NonDisponible('emplacementsAccueil', 'GET /api/sponsored/home (aucune app « sponsored » dans backend/apps)')
     },
-
-    // POST /api/sponsored/reports {annonce, motif} → 204 (relu par la console)
-    signalerAnnonce: async (id: string, motif: MotifSignalement) => {
-      await api.post<void>('/sponsored/reports', { annonce: id, motif }, { anonyme: !api.jetons.lire() })
+    cliquerAnnonce: async (): Promise<void> => {
+      throw new NonDisponible('cliquerAnnonce', 'POST /api/sponsored/clicks (aucune app « sponsored » dans backend/apps)')
+    },
+    voirAnnonce: async (): Promise<void> => {
+      throw new NonDisponible('voirAnnonce', 'POST /api/sponsored/impressions (aucune app « sponsored » dans backend/apps)')
+    },
+    signalerAnnonce: async (): Promise<void> => {
+      throw new NonDisponible('signalerAnnonce', 'POST /api/sponsored/reports (aucune app « sponsored » dans backend/apps)')
     },
   } satisfies Partial<Source>
 }

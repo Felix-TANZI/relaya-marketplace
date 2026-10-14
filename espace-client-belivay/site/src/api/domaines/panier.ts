@@ -1,93 +1,50 @@
 // Domaine « Panier et panier partagé » (CL-07, CL-12 ; CAL-08, CAL-11, CAP-11, CAP-24).
-// Routes du kit : backend-kit/apps/cart (panier recalculé par le serveur : lignes, boutiques, frais du moteur,
-// éligibilité au comptoir, changements de prix) ; remplacement : apps/aftersales. Réponses au format du site.
-// Les favoris montrés sous le panier viennent de la route de relaya (le kit rend une liste vide).
-import type { CarteJeton, ChangementPanier, DonneesPanier, LignePanier, PanierPartage } from '../../donnees/source'
-import { versFavori, type RFavori, type RPage } from '../adaptateurs'
+//
+// RÉALITÉ VÉRIFIÉE (14 oct. 2026, contre backend/ réel — pas le kit) : il n'existe AUCUNE application panier côté
+// serveur. `apps.client_core.urls_api` prévoit bien une ligne pour `apps.cart`, mais cette application n'est pas
+// dans INSTALLED_APPS (backend/relaya/settings/base.py) ni même présente sous backend/apps/ : /api/cart,
+// /api/cart/lines/*, /api/carts/*, /api/gift-links/*, /api/gift-payments et /api/orders/{id}/replacement
+// n'existent pas et renvoient 404. CONNECTEURS.md (3 oct.) les marquait « branché » parce qu'il avait été vérifié
+// contre le serveur d'essai du kit (backend-kit/_essai), pas contre ce dépôt — c'est une lecture obsolète.
+//
+// Le vrai parcours d'achat (apps/orders/serializers.py::OrderCreateSerializer) prend tout le panier EN UNE SEULE
+// fois à la commande : `POST /api/orders/ {cart_items: [{product_id, qty}], city, district, address,
+// customer_phone, ...}`. Il n'y a jamais de panier persistant côté serveur à lire, modifier ligne à ligne ou
+// recalculer : jusqu'au paiement, le panier ne peut vivre que côté site (état local), puis être envoyé en bloc.
+//
+// Conséquence : toutes les méthodes ci-dessous lèvent NonDisponible — aucune ne doit être inventée (pas de panier
+// fictif, pas de mini-backend local maquillé en appel serveur). Voir le rapport de session pour la question
+// bloquante (construire apps.cart et/ou changer la forme de passerCommande, ou garder le panier 100 % côté site
+// jusqu'à /api/orders/).
+import type { Source } from '../../donnees/source'
 import type { ClientApi } from '../client'
-import { ErreurIntrouvable } from '../erreurs'
-import { jetonCarte, seg, suivreRedirection } from './refus'
-import { liste } from './session'
+import { NonDisponible } from '../erreurs'
 
-// Le kit ajoute au panier ce que l'écran n'affiche pas (frais détaillés, comptoir, changements) : retiré ici.
-type PanierServeur = DonneesPanier & { changements?: ChangementPanier[]; frais?: unknown; comptoir?: unknown }
-
-export function domainePanier(api: ClientApi) {
-  const lire = () => api.get<PanierServeur>('/cart')
+export function domainePanier(_api: ClientApi) {
+  const indisponible = (methode: string, attendu: string) => (): never => {
+    throw new NonDisponible(methode, attendu)
+  }
 
   return {
-    // GET /api/cart → panier recalculé depuis zéro
-    panier: async (): Promise<DonneesPanier> => {
-      const [p, favoris] = await Promise.all([lire(), api.get<RFavori[] | RPage<RFavori>>('/auth/favorites/').catch(() => [] as RFavori[])])
-      const { changements: _c, frais: _f, comptoir: _k, ...panier } = p
-      return { ...panier, favoris: panier.favoris?.length ? panier.favoris : liste(favoris).map(versFavori) }
-    },
-    // GET /api/cart → changements[] (baisses déjà appliquées par le serveur ; hausses, retraits et pris à accepter)
-    verifierPanier: async () => (await lire()).changements ?? [],
-    // POST /api/checkout/confirm → 204
-    accepterChangements: async () => {
-      await api.post('/checkout/confirm')
-    },
-    // PATCH /api/cart/lines/{id} {qte} → 204 ; 422 stock
-    changerQuantite: async (id: string, qte: number) => {
-      await api.patch(`/cart/lines/${seg(id)}`, { qte })
-    },
-    // DELETE /api/cart/lines/{id} (retrait annulable) → 204
-    retirerLigne: async (id: string) => {
-      await api.supprimer(`/cart/lines/${seg(id)}`)
-    },
-    // POST /api/cart/lines {ligne, position} : annuler un retrait
-    remettreLigne: async (l: LignePanier, index: number) => {
-      await api.post('/cart/lines', { ligne: l.id, position: index })
-    },
-    // POST /api/cart/lines/{id}/save : la ligne quitte le panier pour les favoris
-    mettreEnFavori: async (id: string) => {
-      await api.post(`/cart/lines/${seg(id)}/save`)
-    },
-    // POST /api/cart/lines {produit, boutique} (suggestion d'une boutique du panier)
-    ajouterAuPanier: async (boutique: string, p: string) => {
-      await api.post('/cart/lines', { produit: p, boutique })
-    },
-    // PATCH /api/cart/lines/{id} {nom, valeur}
-    changerOption: async (id: string, nom: string, valeur: string) => {
-      await api.patch(`/cart/lines/${seg(id)}`, { nom, valeur })
-    },
-    // POST /api/cart/lines/{id}/swap-offer {boutique} → 204 ; 409 no_gain (le gain n'est plus positif, CAL-08)
-    choisirVendeur: async (id: string, boutique: string) => {
-      await api.post(`/cart/lines/${seg(id)}/swap-offer`, { boutique })
-    },
-    // PATCH /api/cart {mode} → 204
-    choisirModePanier: async (mode: 'relais' | 'domicile') => {
-      await api.patch('/cart', { mode })
-    },
+    panier: async () => indisponible('panier', 'GET /api/cart (apps.cart non installée)')(),
+    verifierPanier: async () => indisponible('verifierPanier', 'GET /api/cart (apps.cart non installée)')(),
+    accepterChangements: async () => indisponible('accepterChangements', 'POST /api/checkout/confirm (apps.cart non installée)')(),
+    changerQuantite: async () => indisponible('changerQuantite', 'PATCH /api/cart/lines/{id} (apps.cart non installée)')(),
+    retirerLigne: async () => indisponible('retirerLigne', 'DELETE /api/cart/lines/{id} (apps.cart non installée)')(),
+    remettreLigne: async () => indisponible('remettreLigne', 'POST /api/cart/lines (apps.cart non installée)')(),
+    mettreEnFavori: async () => indisponible('mettreEnFavori', 'POST /api/cart/lines/{id}/save (apps.cart non installée)')(),
+    ajouterAuPanier: async () => indisponible('ajouterAuPanier', 'POST /api/cart/lines (apps.cart non installée)')(),
+    changerOption: async () => indisponible('changerOption', 'PATCH /api/cart/lines/{id} (apps.cart non installée)')(),
+    choisirVendeur: async () => indisponible('choisirVendeur', 'POST /api/cart/lines/{id}/swap-offer (apps.cart non installée)')(),
+    choisirModePanier: async () => indisponible('choisirModePanier', 'PATCH /api/cart (apps.cart non installée)')(),
 
-    // ——— Panier partagé (payé par un proche, CAP-11) ———
-    // POST /api/carts/me/share {lignes?} → PanierPartage
-    partagerPanier: async (lignes?: string[]) => api.post<PanierPartage>('/carts/me/share', lignes ? { lignes } : {}),
-    // GET /api/gift-links/{token} (public : sans adresse ni numéro) ; 404 → null
-    panierPartage: async (id: string) => {
-      try {
-        return await api.get<PanierPartage>(`/gift-links/${seg(id)}`, { anonyme: true })
-      } catch (e) {
-        if (e instanceof ErreurIntrouvable) return null
-        throw e
-      }
-    },
-    paniersPartages: async () => api.get<PanierPartage[]>('/me/gift-links'),
-    // POST /api/gift-payments {token, prenom, email, carte (jeton), devise} (Idempotency-Key) → PanierPartage ;
-    // 3-D Secure si le serveur renvoie une adresse ; 402 card_declined, 422 over_cap
-    payerPanierPartage: async (id: string, p: { prenom: string; email: string; carte: CarteJeton; devise: 'EUR' | 'USD' }) =>
-      suivreRedirection(
-        await api.post<PanierPartage>(
-          '/gift-payments',
-          { token: id, prenom: p.prenom, email: p.email, carte: jetonCarte(p.carte), devise: p.devise },
-          { anonyme: true, idempotence: `panier-partage-${id}-${jetonCarte(p.carte)}` },
-        ),
-      ),
+    // ——— Panier partagé (payé par un proche) : rien côté serveur (ni apps.cart, ni gift-links/gift-payments) ———
+    partagerPanier: async () => indisponible('partagerPanier', 'POST /api/carts/me/share (inexistant)')(),
+    panierPartage: async () => indisponible('panierPartage', 'GET /api/gift-links/{token} (inexistant)')(),
+    paniersPartages: async () => indisponible('paniersPartages', 'GET /api/me/gift-links (inexistant)')(),
+    payerPanierPartage: async () => indisponible('payerPanierPartage', 'POST /api/gift-payments (inexistant)')(),
 
-    // POST /api/orders/{id}/replacement {autre_vendeur} : le vendeur n'a plus l'article
-    choisirRemplacement: async (id: string, autreVendeur: boolean) => {
-      await api.post(`/orders/${seg(id)}/replacement`, { autre_vendeur: autreVendeur })
-    },
-  }
+    // POST /api/orders/{id}/replacement : absent de backend/apps/orders/urls.py.
+    choisirRemplacement: async () => indisponible('choisirRemplacement', 'POST /api/orders/{id}/replacement (inexistant)')(),
+  } satisfies Partial<Source>
 }

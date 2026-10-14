@@ -15,6 +15,7 @@ import type { Source } from '../donnees/source'
 import type { ClientApi } from './client'
 import { NonDisponible } from './erreurs'
 import { CONNECTEURS, type MethodeSource } from './routes'
+import { domaineAnnonces } from './domaines/annonces'
 import { domaineArgent } from './domaines/argent'
 import { domaineCatalogue } from './domaines/catalogue'
 import { domaineCommandes } from './domaines/commandes'
@@ -61,6 +62,7 @@ export function domainesApi(api: ClientApi, o: OptionsSourceApi) {
     notifications: domaineNotifications(api),
     prime: domainePrime(api),
     flash: domaineFlash(api),
+    annonces: domaineAnnonces(api),
     listes: domaineListes(api),
     echanges: domaineEchanges(api),
     cotisations: domaineCotisations(api),
@@ -89,6 +91,7 @@ export function creerSourceApi(api: ClientApi, o: OptionsSourceApi): Source {
     ...d.notifications,
     ...d.prime,
     ...d.flash,
+    ...d.annonces,
     ...d.listes,
     ...d.echanges,
     ...d.cotisations,

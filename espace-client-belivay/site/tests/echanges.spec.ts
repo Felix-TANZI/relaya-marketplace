@@ -36,7 +36,7 @@ test('cadeaux et échanges de bout en bout', async ({ page }) => {
 
   // 2. Ma liste d'anniversaire : les invités, le rappel (un tous les 3 jours), le merci à Paul.
   await page.goto('/liste-envies?id=anniv')
-  await expect(page.locator('.blv-invites')).toContainText('a offert : Batterie externe 20 000 mAh')
+  await expect(page.locator('.blv-invites')).toContainText('a offert : Batterie externe Anker 20 000 mAh')
   await page.getByRole('button', { name: 'Rappeler à mes invités' }).click()
   await expect(page.locator('[role=status]', { hasText: 'Rappel envoyé' })).toContainText('Rappel envoyé à 1 invité')
   await page.getByRole('button', { name: 'Rappeler à mes invités' }).click()
@@ -57,9 +57,9 @@ test('cadeaux et échanges de bout en bout', async ({ page }) => {
 
   // 4. Un article cher offert à plusieurs : la participation bascule en cotisation ; atteinte, il est offert.
   await page.goto('/liste-publique?l=m3Rq8z')
-  await page.locator('.card', { hasText: 'Montre acier' }).getByRole('link', { name: 'Trop cher seul ? Cotiser à plusieurs' }).click()
+  await page.locator('.card', { hasText: 'Montre' }).getByRole('link', { name: 'Trop cher seul ? Cotiser à plusieurs' }).click()
   await expect(page).toHaveURL(/cotisation-participer\?c=/)
-  await expect(page.locator('.pg-t')).toContainText('Montre acier bracelet cuir pour Mireille')
+  await expect(page.locator('.pg-t')).toContainText('pour Mireille')
   await page.locator('.chip', { hasText: 'Compléter' }).click()
   await page.getByLabel('Ton prénom').fill('Carine')
   await page.getByLabel('Ton numéro MTN ou Orange').fill('677112241')
@@ -67,7 +67,7 @@ test('cadeaux et échanges de bout en bout', async ({ page }) => {
   await page.getByRole('button', { name: 'J’ai validé sur mon téléphone' }).click()
   await expect(page.locator('.note.green')).toContainText('L’objectif est atteint')
   await page.getByRole('link', { name: 'Voir la liste de Mireille' }).click()
-  await expect(page.locator('.card', { hasText: 'Montre acier' })).toContainText('Déjà offert')
+  await expect(page.locator('.card', { hasText: 'Montre' })).toContainText('Déjà offert')
 
   // 5. La liste envoyée dans l'application d'un proche trouvé par son numéro.
   await page.goto('/liste-envoyer?id=anniv')

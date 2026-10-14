@@ -71,7 +71,7 @@ manque un SDK ou un réglage de l'appareil) ; **démonstration seulement** (simu
 
 <!-- connecteurs:debut -->
 
-222 méthodes : **207 branchées**, **11 branchées en partie** (champs manquants côté serveur), **0 à créer côté serveur**, 4 à finir côté site, 0 propre à la démonstration.
+227 méthodes : **212 branchées**, **11 branchées en partie** (champs manquants côté serveur), **0 à créer côté serveur**, 4 à finir côté site, 0 propre à la démonstration.
 
 ### Session, menu et compte (4/4 branchées)
 
@@ -402,6 +402,16 @@ manque un SDK ou un réglage de l'appareil) ; **démonstration seulement** (simu
 | `ventesFlash` | branché | GET /api/flash-deals | → offres, alerte, relais | relaya : GET /api/catalog/promotions/active/ et is_flash_deal sur le produit existent ; stock et fin de l’offre à exposer. |
 | `ajouterFlash` | branché | POST /api/cart/lines {produit, flash: true} | → ok si l’offre court et qu’il reste du stock |  |
 | `alerteFlash` | branché | PUT /api/me/notification-settings {flash} |  |  |
+
+### Annonces sponsorisées (5/5 branchées)
+
+| Méthode | État | Route | Corps → réponse | Note |
+|---|---|---|---|---|
+| `annoncesListe` | branché | GET /api/sponsored/placements?ou=&q=&cat= | → annonces (rangées par l’enchère), boosts, règles | DP-59 : le serveur ne renvoie que les annonces éligibles (VD-PUB-ELIGIBILITE : stock, Trust Score, aucun litige) dont le budget du jour et le solde le permettent ; le site les mêle aux résultats (donnees/annonces.ts, VD-PUB-DENSITE) et applique le Boost (VD-PUB-BOOST) au tri « pertinence ». |
+| `emplacementsAccueil` | branché | GET /api/sponsored/home | → aLaUne, carrousel, flash (sélection en cours) | DP-59 : emplacements de la semaine (VD-PUB-A-LA-UNE, VD-PUB-CARROUSEL) ; sans emplacement acheté, l’accueil garde ses contenus. |
+| `cliquerAnnonce` | branché | POST /api/sponsored/clicks {annonce} | → 204 | DP-59 : un clic facturé une fois par client et par jour (VD-PUB-CLIC) ; envoyé sans bloquer la navigation. |
+| `voirAnnonce` | branché | POST /api/sponsored/impressions {annonce, emplacement, visite} | → 204 | DP-59 : une impression quand l’annonce est à moitié visible, une par client, campagne, emplacement et visite (statistiques du vendeur, AJ-P) ; une campagne arrêtée n’est pas comptée. |
+| `signalerAnnonce` | branché | POST /api/sponsored/reports {annonce, motif} | → 204 | DP-59 : « Signaler cette annonce » (trompeuse, inappropriée, interdit, répétitive, autre), relu par la console ; l’annonce est aussitôt masquée pour ce client. |
 
 ### Rentrée scolaire (4/4 branchées)
 

@@ -10,12 +10,13 @@ import { useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { CarteProduit, filtrer, filtresDe, horsRelais, lePlusProche, marqueDe, retirableAujourdhui, UNIVERS, type Contexte, type Filtres } from '../../composants/Catalogue'
+import { melerAnnonces, useAnnoncesListe, useTelephone } from '../../composants/Annonces'
 import { useDes } from '../../composants/ecran'
 import { Feuille, useFeuille } from '../../composants/Feuille'
 import { useLieu, useVersPourQui } from '../../composants/PourQui'
 import { Icone } from '../../composants/Icone'
 import { chemin } from '../../config/pages'
-import type { Produit } from '../../donnees/source'
+import type { AnnonceSponsorisee, Produit } from '../../donnees/source'
 import { F } from '../../i18n/format'
 import { usePreferences } from '../../preferences'
 import { useChargement, VoirPlus } from './Chargement'
@@ -40,6 +41,9 @@ export function VueListe(p: { route: string; c: Contexte; avant?: ReactNode }) {
   const [message, setMessage] = useState<string | null>(null)
   const { c } = p
   const { f, auj, liste } = listeDe(c, params)
+  // Annonces sponsorisées et Boost de la catégorie (DP-59) : au tri « pertinence » seulement, parmi les produits filtrés.
+  const annonces = useAnnoncesListe('categorie', null, f.u ?? null)
+  const affiches = melerAnnonces(liste, annonces, f.tri ?? 'pertinence', useTelephone())
   // Chargement en défilant ; dès 768 px, « Voir plus » après 3 chargements (Chargement.tsx).
   const { vus, suite, reste, enAttente, plus } = useChargement(liste.length, PAGE, params.toString())
   // Dès 1024 px, le panneau des filtres est en place (colonne gauche) : il remplace les feuilles Filtres et Marque,
@@ -89,7 +93,7 @@ export function VueListe(p: { route: string; c: Contexte; avant?: ReactNode }) {
       {t(x)}
     </a>
   )
-  const carte = (x: Produit) => <CarteProduit key={x.p} p={x} favori={c.favoris.includes(x.p)} proche={x.p === proche} auChange={setMessage} />
+  const carte = ({ p: x, annonce, boost }: { p: Produit; annonce: AnnonceSponsorisee | null; boost?: string | null }) => <CarteProduit key={x.p} p={x} favori={c.favoris.includes(x.p)} proche={x.p === proche} annonce={annonce} boost={boost} ou="categorie" auChange={setMessage} />
   return (
     <>
       {p.avant}
@@ -190,7 +194,7 @@ export function VueListe(p: { route: string; c: Contexte; avant?: ReactNode }) {
         </div>
       )}
       {liste.length ? (
-        <div className="pgrid cl04-k">{liste.slice(0, vus).map(carte)}</div>
+        <div className="pgrid cl04-k">{affiches.slice(0, vus).map(carte)}</div>
       ) : (
         <div className="card">
           <div className="empty">
@@ -275,7 +279,7 @@ export function VueListe(p: { route: string; c: Contexte; avant?: ReactNode }) {
                   <Icone nom="chevron-right" taille={15} />
                 </Link>
               </div>
-              <div className="pgrid cl04-k">{v.l.slice(0, 2).map(carte)}</div>
+              <div className="pgrid cl04-k">{v.l.slice(0, 2).map((x) => carte({ p: x, annonce: null }))}</div>
             </div>
           ))}
         </>

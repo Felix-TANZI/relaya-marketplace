@@ -56,6 +56,7 @@ const D = {
   cotisations: 'Cotisations',
   cote: 'Mises de côté',
   flash: 'Ventes flash',
+  annonces: 'Annonces sponsorisées',
   rentree: 'Rentrée scolaire',
   famille: 'Panier famille',
   troc: 'Troc',
@@ -342,6 +343,13 @@ export const CONNECTEURS: Record<MethodeSource, Connecteur> = {
   ventesFlash: c(D.flash, 'branche', 'GET /api/flash-deals', '→ offres, alerte, relais', 'relaya : GET /api/catalog/promotions/active/ et is_flash_deal sur le produit existent ; stock et fin de l’offre à exposer.'),
   ajouterFlash: c(D.flash, 'branche', 'POST /api/cart/lines {produit, flash: true}', '→ ok si l’offre court et qu’il reste du stock'),
   alerteFlash: c(D.flash, 'branche', 'PUT /api/me/notification-settings {flash}'),
+
+  // ——— Annonces sponsorisées (DP-59) ———
+  annoncesListe: c(D.annonces, 'branche', 'GET /api/sponsored/placements?ou=&q=&cat=', '→ annonces (rangées par l’enchère), boosts, règles', 'DP-59 : le serveur ne renvoie que les annonces éligibles (VD-PUB-ELIGIBILITE : stock, Trust Score, aucun litige) dont le budget du jour et le solde le permettent ; le site les mêle aux résultats (donnees/annonces.ts, VD-PUB-DENSITE) et applique le Boost (VD-PUB-BOOST) au tri « pertinence ».'),
+  emplacementsAccueil: c(D.annonces, 'branche', 'GET /api/sponsored/home', '→ aLaUne, carrousel, flash (sélection en cours)', 'DP-59 : emplacements de la semaine (VD-PUB-A-LA-UNE, VD-PUB-CARROUSEL) ; sans emplacement acheté, l’accueil garde ses contenus.'),
+  cliquerAnnonce: c(D.annonces, 'branche', 'POST /api/sponsored/clicks {annonce}', '→ 204', 'DP-59 : un clic facturé une fois par client et par jour (VD-PUB-CLIC) ; envoyé sans bloquer la navigation.'),
+  voirAnnonce: c(D.annonces, 'branche', 'POST /api/sponsored/impressions {annonce, emplacement, visite}', '→ 204', 'DP-59 : une impression quand l’annonce est à moitié visible, une par client, campagne, emplacement et visite (statistiques du vendeur, AJ-P) ; une campagne arrêtée n’est pas comptée.'),
+  signalerAnnonce: c(D.annonces, 'branche', 'POST /api/sponsored/reports {annonce, motif}', '→ 204', 'DP-59 : « Signaler cette annonce » (trompeuse, inappropriée, interdit, répétitive, autre), relu par la console ; l’annonce est aussitôt masquée pour ce client.'),
 
   // ——— Rentrée scolaire ———
   rentree: c(D.rentree, 'branche', 'GET /api/school-lists'),

@@ -183,7 +183,7 @@ export const ETAT_INITIAL: EtatDemo = {
     { id: 'mtn', operateur: 'MTN', numeroMasque: '6 77 ·· ·· 41', duCompte: true, parDefaut: true },
     { id: 'orange', operateur: 'Orange', numeroMasque: '6 55 ·· ·· 08', duCompte: false, parDefaut: false },
   ],
-  // 45 000 F : 3 740 F remboursés (LIT-2987, cagnotte) + 23 600 F de la recharge du 18 sept. (elle a payé
+  // 45 000 F : 3 740 F remboursés (LIT-2987, commande BLV-51206 payée par Wallet : remboursée au moyen d'origine ; cagnotte) + 23 600 F de la recharge du 18 sept. (elle a payé
   // BLV-51940) + 17 660 F de celle du 22 sept.
   portefeuille: {
     cagnotteEnAttente: 3918,
@@ -195,7 +195,7 @@ export const ETAT_INITIAL: EtatDemo = {
     retraits: [],
     historique: [
       { id: 'h6', type: 'recharge', libelle: 'Recharge MTN MoMo', le: Date.UTC(2026, 8, 22, 17, 5), montant: 20000 },
-      { id: 'h5', type: 'remboursement', libelle: 'Remboursement LIT-2987 · fer à repasser', le: Date.UTC(2026, 8, 21, 10, 40), montant: 3000 },
+      { id: 'h5', type: 'remboursement', libelle: 'Remboursement LIT-2987 · payée par Wallet', le: Date.UTC(2026, 8, 21, 10, 40), montant: 3000 },
       { id: 'h4', type: 'paiement', libelle: 'Paiement BLV-51940 · Relais Mvog-Ada', le: Date.UTC(2026, 8, 20, 15, 12), montant: -6400 },
       { id: 'h3', type: 'cagnotte', libelle: 'Cagnotte créditée · BLV-51702', le: Date.UTC(2026, 8, 19, 8, 30), montant: 740 },
       { id: 'h2', type: 'recharge', libelle: 'Recharge Orange Money', le: Date.UTC(2026, 8, 18, 19, 15), montant: 30000 },
@@ -219,8 +219,8 @@ export const ETAT_INITIAL: EtatDemo = {
   boutique: null,
   cartes: [],
   favoris: [
-    { id: 'f1', p: 'montre', titre: 'Montre acier bracelet cuir', variante: null, dessin: '465a7de86fd7', prix: 27500, prixAvant: 29900, retrait: 900, stock: 'ok', alertes: { prix: true, stock: true }, ajouteLe: Date.UTC(2026, 8, 12, 18, 0) },
-    { id: 'f2', p: 'baskets', titre: 'Baskets running', variante: 'Pointure 42', dessin: '032cafed79c8', prix: 29900, prixAvant: null, retrait: 900, stock: 'retour', alertes: { prix: true, stock: true }, ajouteLe: Date.UTC(2026, 8, 20, 9, 30) },
+    { id: 'f1', p: 'montre', titre: 'Montre Casio chronographe acier, bracelet cuir', variante: null, dessin: '465a7de86fd7', prix: 27500, prixAvant: 29900, retrait: 900, stock: 'ok', alertes: { prix: true, stock: true }, ajouteLe: Date.UTC(2026, 8, 12, 18, 0) },
+    { id: 'f2', p: 'baskets', titre: 'Baskets running ASICS', variante: 'Pointure 42', dessin: '032cafed79c8', prix: 29900, prixAvant: null, retrait: 900, stock: 'retour', alertes: { prix: true, stock: true }, ajouteLe: Date.UTC(2026, 8, 20, 9, 30) },
   ],
   passees: [],
   // Prime pris ce matin avec le premier mois à 1 500 F (jeu. 24 sept., 9 h) ; prochain prélèvement le 24 oct.
@@ -317,7 +317,7 @@ export const ETAT_INITIAL: EtatDemo = {
       nom: 'Les 30 ans de Junior',
       occasion: 'Anniversaire',
       p: 'montre',
-      titre: 'Montre acier bracelet cuir',
+      titre: 'Montre Casio chronographe acier, bracelet cuir',
       dessin: '',
       prixLivre: 28400,
       objectif: 28968,
@@ -343,7 +343,7 @@ export const ETAT_INITIAL: EtatDemo = {
     {
       id: 'MC-118',
       p: 'ventilo',
-      titre: 'Ventilateur sur pied 16″',
+      titre: 'Ventilateur sur pied Midea 16″',
       dessin: '',
       prix: 24500,
       livraison: 1100,
@@ -376,10 +376,10 @@ export const ETAT_INITIAL: EtatDemo = {
       partage: { code: 'k7Q2mX', le: Date.UTC(2026, 8, 21, 9, 0), jusqua: Date.UTC(2026, 9, 21, 22, 59), prix: { batterie: 14900, cafe: 6500, tapisyoga: 9500, cremevisage: 7500 } },
       demarree: false,
       articles: [
-        { p: 'batterie', titre: 'Batterie externe 20 000 mAh', dessin: '', prix: 14900, livraison: 900, prixPartage: null, offert: { par: 'Paul', le: Date.UTC(2026, 8, 22, 18, 0), ref: 'BLV-52061' } },
-        { p: 'cafe', titre: 'Café arabica de l’Ouest 500 g', dessin: '', prix: 6500, livraison: 900, prixPartage: null, offert: { par: 'Mireille', le: Date.UTC(2026, 8, 23, 11, 0), ref: 'BLV-52088' } },
-        { p: 'tapisyoga', titre: 'Tapis de yoga 6 mm', dessin: '', prix: 9900, livraison: 900, prixPartage: null, offert: null },
-        { p: 'cremevisage', titre: 'Crème visage karité & aloe 100 ml', dessin: '', prix: 7500, livraison: 900, prixPartage: null, offert: null },
+        { p: 'batterie', titre: 'Batterie externe Anker 20 000 mAh', dessin: '', prix: 14900, livraison: 900, prixPartage: null, offert: { par: 'Paul', le: Date.UTC(2026, 8, 22, 18, 0), ref: 'BLV-52061' } },
+        { p: 'cafe', titre: 'Café Nescafé Arabica de l’Ouest 500 g', dessin: '', prix: 6500, livraison: 900, prixPartage: null, offert: { par: 'Mireille', le: Date.UTC(2026, 8, 23, 11, 0), ref: 'BLV-52088' } },
+        { p: 'tapisyoga', titre: 'Tapis de yoga Reebok 6 mm', dessin: '', prix: 9900, livraison: 900, prixPartage: null, offert: null },
+        { p: 'cremevisage', titre: 'Crème visage karité & aloe Evoluderm 100 ml', dessin: '', prix: 7500, livraison: 900, prixPartage: null, offert: null },
       ],
     },
     {
@@ -395,8 +395,8 @@ export const ETAT_INITIAL: EtatDemo = {
       partage: null,
       demarree: false,
       articles: [
-        { p: 'ventilo', titre: 'Ventilateur sur pied 16″', dessin: '', prix: 24500, livraison: 1100, prixPartage: null, offert: null },
-        { p: 'marmite', titre: 'Marmite en fonte 8 L', dessin: '', prix: 22000, livraison: 1100, prixPartage: null, offert: null },
+        { p: 'ventilo', titre: 'Ventilateur sur pied Midea 16″', dessin: '', prix: 24500, livraison: 1100, prixPartage: null, offert: null },
+        { p: 'marmite', titre: 'Marmite en fonte Tefal 8 L', dessin: '', prix: 22000, livraison: 1100, prixPartage: null, offert: null },
       ],
     },
   ],
@@ -447,7 +447,7 @@ export const ETAT_INITIAL: EtatDemo = {
         options: [{ nom: 'Couleur', valeurs: ['Marron', 'Noir', 'Cognac'], indispo: ['Cognac'], choisi: 'Marron' }],
       },
       {
-        id: 'l4', p: 'mixeur', titre: 'Mixeur-blender 2 L · 600 W', variante: null, dessin: '1bf387ebd71e', prix: 37000, qte: 1, stock: 4, classe: 'M', boutique: 'Boutique C',
+        id: 'l4', p: 'mixeur', titre: 'Mixeur-blender Philips 2 L · 600 W', variante: null, dessin: '1bf387ebd71e', prix: 37000, qte: 1, stock: 4, classe: 'M', boutique: 'Boutique C',
         offres: [{ boutique: 'Boutique D', zone: 'Mvog-Ada', prix: 37000, km: 0.4, score: 80, ventes: 96 }],
       },
     ],
@@ -497,7 +497,7 @@ export const ETAT_INITIAL: EtatDemo = {
       id: 'LIT-3041',
       ref: 'BLV-51655',
       colis: 1,
-      produit: 'Mixeur-blender 2 L · 600 W',
+      produit: 'Mixeur-blender Philips 2 L · 600 W',
       dessin: '1bf387ebd71e',
       pb: 'abime',
       probleme: 'Ne démarre pas',
@@ -680,7 +680,7 @@ export const ETAT_INITIAL: EtatDemo = {
         resume: 'Écouteurs sans fil, chargeur rapide 33 W',
         lignes: [
           { libelle: 'Écouteurs sans fil', montant: 16500 },
-          { libelle: 'Chargeur rapide 33 W USB-C', montant: 6500 },
+          { libelle: 'Chargeur rapide Samsung 33 W USB-C', montant: 6500 },
           { libelle: 'Livraison au relais', montant: 900 },
         ],
         retrait: { relais: 'Relais Mvog-Ada', quand: ' · sam. 19 sept. à 11\u00A0h\u00A032' },
@@ -695,7 +695,7 @@ export const ETAT_INITIAL: EtatDemo = {
         resume: 'Beurre de karité ×2, huile de coco',
         lignes: [
           { libelle: 'Beurre de karité pur 500 g × 2', montant: 7000 },
-          { libelle: 'Huile de coco vierge 500 ml', montant: 4800 },
+          { libelle: 'Huile de coco vierge Vita d’Or 500 ml', montant: 4800 },
           { libelle: 'Livraison au relais', montant: 900 },
         ],
         retrait: { relais: 'Relais Mvog-Ada', quand: ' · ven. 28 août' },

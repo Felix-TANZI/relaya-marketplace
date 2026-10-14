@@ -68,3 +68,11 @@ export function calculer(mode: ModeLivraison, sousCommandes: SousCommandeFrais[]
     interditRelais,
   }
 }
+
+// Frais de paiement (v6 « Frais : qui paie », D16) : Mobile Money (MTN, Orange, via CamPay) 2 % payés par le client,
+// inclus dans le total affiché avant de payer ; carte 2 % de frais de service ; Wallet : 0 (recharge gratuite, paiement
+// sans frais). Arrondi au franc.
+export type FamillePaiement = 'mobile' | 'carte' | 'wallet'
+export const FRAIS_PAIEMENT: Record<FamillePaiement, number> = { mobile: 0.02, carte: 0.02, wallet: 0 }
+export const fraisPaiement = (famille: FamillePaiement, montant: number) => Math.round(montant * FRAIS_PAIEMENT[famille])
+export const libelleFraisPaiement = (famille: FamillePaiement) => (famille === 'mobile' ? 'Frais CamPay 2 %' : 'Frais de service carte (2 %)')

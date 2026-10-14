@@ -934,6 +934,17 @@
   #app .acc-droite .h0-flash .cir>a:not(.lbl) .ph>span{width:52px;height:52px}
   #app .acc-droite .h0-flash .cir>a:not(.lbl) b{margin:0;align-self:end;font-size:13px}
   #app .acc-droite .h0-flash .cir>a:not(.lbl) em{align-self:start;font-size:13.5px}
+  /* Colonne droite de l'accueil : UN SEUL panneau continu, séparé du centre et FIXE (collant sous l'en-tête, hauteur de
+     l'écran), qui défile d'un seul tenant avec sa propre barre discrète. Dedans, le bloc Ventes flash (toutes les actives)
+     a son défilement interne, sans propagation ; dessous, dans le même panneau, les 2 produits À la une et les garanties. */
+  #app .gab-droite.long:has(>.acc-droite){position:sticky}
+  #app .gab-droite:has(>.acc-droite){top:var(--colle);height:calc(100dvh - var(--sb) - var(--hd-h) - 24px);overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--sand-4) transparent}
+  #app .gab-droite:has(>.acc-droite)::-webkit-scrollbar{width:6px}
+  #app .gab-droite:has(>.acc-droite)::-webkit-scrollbar-thumb{background:var(--sand-4);border-radius:6px}
+  #app .acc-droite .h0-flash .cir{height:clamp(300px,calc(100dvh - var(--sb) - var(--hd-h) - 305px),640px);max-height:none;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--sand-4) transparent}
+  #app .acc-droite .h0-flash .cir::-webkit-scrollbar{width:6px}
+  #app .acc-droite .h0-flash .cir::-webkit-scrollbar-thumb{background:var(--sand-4);border-radius:6px}
+  #app .acc-droite .acc-gar a{min-height:64px;padding:8px 10px}
   /* Garanties en 2 × 2. */
   #app .acc-gar{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   #app .acc-gar a{display:flex;flex-direction:column;gap:4px;min-height:96px;padding:12px;border-radius:16px;background:var(--card);box-shadow:var(--shadow-card);color:var(--ink)}

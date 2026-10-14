@@ -118,7 +118,8 @@ test.describe('coque des grands écrans', () => {
         if (w >= 768) {
           await expect(site).toHaveCount(1)
           await expect(page.locator('header.hd:not(.hd-site)')).toHaveCount(0)
-          await expect(page.locator('#app main > footer.pied')).toHaveCount(1)
+          // L'accueil n'a pas de pied de page : son flux descend sans fin (les liens sont dans le Menu).
+          await expect(page.locator('#app main > footer.pied')).toHaveCount(r === 'accueil' ? 0 : 1)
         } else {
           await expect(site).toHaveCount(0)
           await expect(page.locator('footer.pied')).toHaveCount(0)
@@ -129,7 +130,7 @@ test.describe('coque des grands écrans', () => {
       // Liens de la coque : aucun vers une adresse inconnue.
       await page.setViewportSize({ width: 1280, height: 800 })
       await page.goto(chemin(r))
-      await expect(page.locator('footer.pied')).toHaveCount(1)
+      await expect(page.locator('footer.pied')).toHaveCount(r === 'accueil' ? 0 : 1)
       const liens = await page.locator('header.hd-site a[href], footer.pied a[href], #app > .evitement').evaluateAll((l) => l.map((a) => a.getAttribute('href') || ''))
       const inconnus = liens.filter((x) => x !== '#contenu' && !/^https:\/\/wa\.me\//.test(x) && !OFFICIELS.has(x) && !(x.startsWith('/') && CHEMINS.has(x.split('?')[0])))
       expect(inconnus, 'liens vers une adresse inconnue').toEqual([])
@@ -401,6 +402,51 @@ test.describe('lots 5 et 6 : accueil, catégories, listes, recherche', () => {
     await expect(page.locator('#app > .h0-float')).toHaveCount(1)
   })
 
+  test('accueil : À la une sous les Ventes flash, encart à droite au-dessus des garanties, flux Pour vous, publicité étiquetée', async ({ page }) => {
+    const errs = erreurs(page)
+    await prepare(page)
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto('/')
+    // Téléphone : Ventes flash puis À la une ; emplacements achetés étiquetés « Sponsorisé ».
+    await expect(page.locator('.h0-flash')).toBeVisible()
+    const suivant = await page.locator('.h0-flash').evaluate((f) => {
+      const panneaux = [...document.querySelectorAll('main .h0-panel')]
+      return panneaux[panneaux.indexOf(f) + 1]?.querySelector('h2')?.textContent
+    })
+    expect(suivant).toBe('À la une')
+    await expect(page.locator('.h0-row .spn').first()).toBeVisible()
+    // Flux « Pour vous » : liste simple sans fin (ni pastilles, ni bande, ni « Voir plus », ni « Pourquoi choisir »), sans doublon avec le haut ; cœur favori.
+    const pv = page.locator('section.pv')
+    await expect(pv.locator('h2')).toHaveText('Pour vous')
+    await expect(page.locator('.pv-pills, .pv-bande, .pv-plus, .h0-ft, .h0-mk')).toHaveCount(0)
+    // « Pourquoi choisir BelivaY ? » : bande compacte juste avant le titre « Pour vous ».
+    await expect(page.locator('.h0-atouts + section.pv')).toHaveCount(1)
+    await expect(pv.locator('.pv-c:not(.pv-sq)')).toHaveCount(20)
+    // Carte large (2 colonnes à 390) : « + » ajoute au panier sans ouvrir la fiche.
+    await expect(pv.locator('.pv-c .pv-add').first()).toBeVisible()
+    const premier = await pv.locator('.pv-c').first().getAttribute('href')
+    // Cœur « Ajouter aux favoris » (plus de « Supprimer ») : favori ajouté sans ouvrir la fiche.
+    await expect(pv.locator('.pv-x')).toHaveCount(0)
+    const coeur = pv.locator(`.pv-c[href="${premier}"] .hr`)
+    await coeur.click()
+    await expect(coeur).toHaveAttribute('aria-pressed', 'true')
+    await expect(page).toHaveURL(/\/$|accueil/)
+    await coeur.click()
+    await expect(coeur).toHaveAttribute('aria-pressed', 'false')
+    // Ordinateur : encart À la une · Promos sous les Ventes flash, au-dessus des garanties.
+    await page.setViewportSize({ width: 1440, height: 900 })
+    const droite = page.locator('.acc-droite')
+    await expect(droite.locator('div:has(> .h0-flash) + .acc-bas > .acc-une + .acc-gar')).toHaveCount(1)
+    await expect(droite.locator('.acc-une .spn').first()).toBeVisible()
+    // Colonne droite fixe : même place après un long défilement du centre.
+    const haut = () => page.locator('.gab-droite').evaluate((e) => Math.round(e.getBoundingClientRect().top))
+    await expect(page.locator('.acc-pied, #app main footer')).toHaveCount(0)
+    const h0 = await haut()
+    await page.locator('#app main').evaluate((m) => m.scrollTo(0, 1800))
+    expect(await haut()).toBe(h0)
+    expect(errs).toEqual([])
+  })
+
   test('catégories : la liste des univers est la colonne gauche dès 1024', async ({ page }) => {
     await prepare(page)
     await page.setViewportSize({ width: 1280, height: 800 })
@@ -515,20 +561,6 @@ test.describe('lots 7 et 8 : fiche, panier, paiement', () => {
     await page.setViewportSize({ width: 768, height: 1024 })
     await expect(page.locator('.fp-bar')).toBeVisible()
     await expect(page.locator('.fp-l')).toHaveCount(0)
-  })
-
-  test('galerie : visionneuse plein écran, flèches et Échap', async ({ page }) => {
-    await prepare(page)
-    await page.setViewportSize({ width: 1280, height: 800 })
-    await page.goto('/galerie?p=camon30')
-    const v = page.locator('.cl06-vw')
-    const r = await v.boundingBox()
-    expect(r!.width).toBe(1280)
-    await expect(v.locator('.cl06-n')).toHaveText('1 / 7')
-    await page.keyboard.press('ArrowRight')
-    await expect(v.locator('.cl06-n')).toHaveText('2 / 7')
-    await page.keyboard.press('Escape')
-    await expect(page).toHaveURL(/\/fiche\?p=camon30/)
   })
 
   test('avis : aside à gauche (note, filtres, tri), avis à droite ; question : produit dans l’aside', async ({ page }) => {

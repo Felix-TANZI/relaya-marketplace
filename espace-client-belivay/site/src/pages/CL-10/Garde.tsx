@@ -18,7 +18,7 @@ import { F } from '../../i18n/format'
 import { dateA, jourSeul } from '../../i18n/dates'
 import { usePreferences } from '../../preferences'
 import { CommandeIntrouvable } from '../CL-08/Confirmee'
-import { echeancier, fermeLe, GARDE_GROS_AJOUT, GRILLE_GARDE, plafondGarde, RENVOI_GARDE, tarifGarde, useRelais, type JourGarde } from '../CL-09/Commun'
+import { echeancier, fermeLe, GARDE_GROS_AJOUT, GRILLE_GARDE, plafondGarde, tarifGarde, useRelais, type JourGarde } from '../CL-09/Commun'
 
 export function Garde() {
   const { t, tf, langue } = usePreferences()
@@ -135,7 +135,7 @@ export function Garde() {
               {jourSeul(ech.renvoi, langue)}
               <small>{t('Renvoi au vendeur')}</small>
             </td>
-            <td>{'+ ' + F(RENVOI_GARDE) + ' F'}</td>
+            <td>{t('sans frais')}</td>
             <td className="r">
               {F(ech.retenue) + ' F'}
               <small>{t('retenus')}</small>
@@ -159,7 +159,7 @@ export function Garde() {
           )
         })}
       </div>
-      {ech.gros && <p className="t12 c3">{tf('Ta commande contient un gros colis (carton C1 ou C2) : + {m} F chaque jour, dès le 1er jour.', { m: F(GARDE_GROS_AJOUT) })}</p>}
+      {ech.gros && GARDE_GROS_AJOUT > 0 && <p className="t12 c3">{tf('Ta commande contient un gros colis (carton C1 ou C2) : + {m} F chaque jour, dès le 1er jour.', { m: F(GARDE_GROS_AJOUT) })}</p>}
       <p className="t12 c3">{t('Un jour de fermeture du relais n’est jamais compté. Pendant un litige, la garde s’arrête.')}</p>
     </div>
   )
@@ -179,7 +179,7 @@ export function Garde() {
             {F(Math.max(0, c.total - ech.retenue))}
             <small>{t('F')}</small>
           </div>
-          <div className="hs">{tf('Sur ton Mobile Money, le {d}.', { d: jourSeul(ech.renvoi, langue) })}</div>
+          <div className="hs">{tf('Sur le moyen de paiement d’origine, le {d}.', { d: jourSeul(ech.renvoi, langue) })}</div>
           <div className="hline"></div>
           <div className="cl10-hrow">
             <span>{t('Total payé')}</span>
@@ -191,7 +191,7 @@ export function Garde() {
           </div>
           <div className="cl10-hrow">
             <span>{t('Renvoi au vendeur')}</span>
-            <b>{'− ' + F(RENVOI_GARDE) + ' F'}</b>
+            <b>{t('sans frais')}</b>
           </div>
           <div className="cl10-cons">
             <Icone nom="info" taille={16} />
@@ -240,7 +240,7 @@ export function Garde() {
               : dernierJour
                 ? t(lendemain?.ferme ? 'Dernier jour pour retirer tes colis. Relais fermé demain.' : 'Dernier jour pour retirer tes colis.')
                 : garde.du
-                  ? t('À payer au retrait en Mobile Money, sur ton téléphone. Jamais en espèces.')
+                  ? t('À payer en espèces au gérant, en une fois, au retrait.')
                   : tf('Gratuit aujourd’hui, {m} F par jour dès demain.', { m: F(garde.demain) })}
         </div>
         <div className="cl10-bar" role="img" aria-label={litige ? t('Litige en cours') : tf('Jour {j} sur 7', { j: jour })}>
@@ -278,8 +278,8 @@ export function Garde() {
             <Icone nom={jour === 7 ? 'truck' : 'undo-2'} taille={16} />
             <span>
               {jour === 7
-                ? tf('Demain, {d} : tes colis repartent chez le vendeur. Frais retenus : {m} F (garde {g} F + renvoi {r} F) ; le reste, {s} F, t’est remboursé.', { d: jourSeul(ech.renvoi, langue), m: F(ech.retenue), g: F(ech.jours[6].cumul), r: F(RENVOI_GARDE), s: F(Math.max(0, c.total - ech.retenue)) })
-                : tf('Sinon, {d} : tes colis repartent chez le vendeur, avec {r} F de frais de renvoi. {m} F seraient retenus sur ton remboursement.', { d: jourSeul(ech.renvoi, langue), r: F(RENVOI_GARDE), m: F(ech.retenue) })}
+                ? tf('Demain, {d} : tes colis repartent chez le vendeur. Garde retenue : {m} F, sans autre frais ; le reste, {s} F, revient sur le moyen de paiement d’origine.', { d: jourSeul(ech.renvoi, langue), m: F(ech.retenue), s: F(Math.max(0, c.total - ech.retenue)) })
+                  : tf('Sinon, {d} : tes colis repartent chez le vendeur, sans frais de renvoi. {m} F de garde seraient retenus sur ton remboursement.', { d: jourSeul(ech.renvoi, langue), m: F(ech.retenue) })}
             </span>
           </div>
         )}
@@ -373,15 +373,15 @@ export function Garde() {
           </p>
           <p>
             <b>{t('Jamais plus')}</b>
-            {tf(' que la valeur de tes colis ; au plus {g} F de garde, {r} F avec le renvoi.', { g: F(plafondGarde(ech.gros)), r: F(plafondGarde(ech.gros) + RENVOI_GARDE) })}
+            {tf(' que la valeur de tes colis ; au plus {g} F de garde sur 7 jours, sans frais de renvoi.', { g: F(plafondGarde(ech.gros)) })}
           </p>
           <p>
             <b>{t('Pendant un litige')}</b>
             {t(', rien ne court et tes colis ne repartent pas.')}
           </p>
           <p>
-            <b>{t('Zéro espèce')}</b>
-            {tf(' : tu paies en Mobile Money au retrait, sur ton téléphone. {g} n’encaisse rien. Le même montant s’affiche ici, dans tes SMS et sur son écran.', { g: gerant })}
+            <b>{t('En espèces au gérant')}</b>
+            {tf(' : tu paies la garde en une fois, au retrait. {g} confirme l’encaissement ; le même montant s’affiche ici, dans tes SMS et sur son écran.', { g: gerant })}
           </p>
           <p>
             <b>{tf(n > 1 ? 'Tes {n} colis' : 'Ton colis', { n })}</b>

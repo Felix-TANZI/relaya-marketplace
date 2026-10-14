@@ -61,11 +61,8 @@ export function Promotions() {
   const now = flash.maintenant
   const offres = flash.offres.filter((o) => o.debut <= now && o.fin > now)
   const tri = (['remise', 'prix', 'proche'] as const).find((x) => x === params.get('tri')) ?? 'remise'
+  // Promotions = baisses de prix seulement ; les Flash Deals (durée limitée) restent sur leur page, par le lien ci-dessus.
   const liste: Promo[] = [
-    ...offres.map((o) => {
-      const pr = produits.find((x) => x.p === o.p)
-      return { p: o.p, titre: o.titre, dessin: o.dessin, image: o.image ?? pr?.images?.[0], univers: o.univers, prix: o.prix, avant: o.avant, km: km(pr ?? ({} as Produit)), distance: pr?.distance ?? null, note: pr?.note ?? null, avis: pr?.avis ?? 0, stock: o.stock, flash: o }
-    }),
     ...produits.filter((p) => (p.prixBarre ?? 0) > p.prix && !offres.some((o) => o.p === p.p)).map((p) => ({ p: p.p, titre: p.titre, dessin: p.dessins[0] ?? '', image: p.images?.[0], univers: p.univers, prix: p.prix, avant: p.prixBarre!, km: km(p), distance: p.distance ?? null, note: p.note ?? null, avis: p.avis, stock: p.stock, flash: null })),
   ]
   const remise = (x: Promo) => Math.round((1 - x.prix / x.avant) * 100)

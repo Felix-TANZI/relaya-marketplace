@@ -773,6 +773,7 @@ export default function OrderDetailPage() {
                       destinationPrecision={order.address_precision}
                       destinationLabel={t("cl2_order_detail.delivery_address_label", { address: order.address })}
                       originLabel={tracking?.courier_name ? t("cl2_order_detail.courier_origin_label", { name: tracking.courier_name }) : t("cl2_order_detail.courier_origin_pending")}
+                      vehicleType={tracking?.courier?.vehicle_type}
                       currentLocation={tracking?.latest_location
                         ? [Number(tracking.latest_location.latitude), Number(tracking.latest_location.longitude)]
                         : undefined}

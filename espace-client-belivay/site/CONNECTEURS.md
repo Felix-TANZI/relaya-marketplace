@@ -45,7 +45,7 @@ connecteur ne compile pas.
 | Sujet | Le site (`src/api/client.ts`) | relaya-marketplace aujourd'hui | À faire côté serveur |
 |---|---|---|---|
 | Connexion | `POST /api/auth/login/ {username, password}` (e-mail, nom ou numéro) | `TwoFactorTokenObtainPairView` ; `{access, refresh}` ou `{2fa_required}` | Essais restants et blocage de 15 min (CIN, CAP-16) ; limite actuelle 5/min par IP |
-| Jetons | `Authorization: Bearer <accès>` ; sur un 401, **un seul** `POST /api/auth/refresh/ {refresh}` à la fois, puis la requête est rejouée une fois ; refus → jetons effacés, événement `blv:session-perdue` | simplejwt : accès 1 h, rafraîchissement 7 j, rotation (`ROTATE_REFRESH_TOKENS`) ; la route est `/api/auth/refresh/`, pas `/api/token/refresh/` | `rest_framework_simplejwt.token_blacklist` n'est pas dans `INSTALLED_APPS` alors que `logout_view`, `revoke_session` et `revoke_all_sessions` l'utilisent : **à vérifier** (risque de 500 ; le site ignore l'erreur à la déconnexion) |
+| Jetons | `Authorization: Bearer <accès>` ; sur un 401, **un seul** `POST /api/auth/refresh/ {refresh}` à la fois, puis la requête est rejouée une fois ; refus → jetons effacés, événement `blv:session-perdue` | simplejwt : accès 1 h, rafraîchissement 7 j, rotation (`ROTATE_REFRESH_TOKENS`) ; la route est `/api/auth/refresh/`, pas `/api/token/refresh/` | **Vérifié le 14 oct. 2026** : `rest_framework_simplejwt.token_blacklist` **est bien** dans `INSTALLED_APPS` (`relaya/settings/base.py`) ; `logout_view`, `revoke_session` et `revoke_all_sessions` l'utilisent sans erreur. Le risque de 500 signalé le 3 oct. est résolu ; rien à faire côté serveur. |
 | Stockage des jetons | `localStorage` avec « Se souvenir de moi », sinon `sessionStorage` | — | Décision 1 (section 5) |
 | Idempotence | `Idempotency-Key` sur les paiements et actions d'argent (option `idempotence`), jamais de nouvelle tentative automatique sur une écriture | en-tête non lu (seul Campay reçoit `external_reference`) | Middleware : même clé → même réponse (CAP-03) |
 | Nouvelles tentatives | GET seulement : panne réseau, délai, 502/503/504, 429 avec `Retry-After` ≤ 5 s ; `VITE_API_TENTATIVES` (2) | — | — |
@@ -53,7 +53,7 @@ connecteur ne compile pas.
 | Erreurs | Classes typées : `ErreurReseau`, `ErreurDelai`, `ErreurNonAuthentifie` (401), `ErreurInterdit` (403), `ErreurIntrouvable` (404), `ErreurConflit` (409), `ErreurValidation` (400/422, erreurs **par champ**), `ErreurTropDeRequetes` (429), `ErreurServeur` (5xx), `NonDisponible` | format DRF : `{"detail": …}` ou `{"champ": [...]}` en 400 ; transitions refusées en 400 | `{error: {code, message, data}}` et 409 pour les conflits (CAP-04) ; le site comprend déjà les deux formats |
 | Langue | `Accept-Language` : `fr`, ou `en, fr;q=0.8` (langue de la page) | `LANGUAGE_CODE = "fr"` ; notifications traduites selon `Accept-Language` | Traduire tous les textes renvoyés (CAP-08) |
 | Appareil | `X-Device-Id` (identifiant tiré une fois, gardé sur l'appareil), envoyé seulement quand le site et l'API ont la même origine | non lu | Panier d'un visiteur (CAP-02) |
-| CORS | — | `django-cors-headers`, origines : `FRONTEND_URL`, belivay.com, localhost:5173-5179 ; en-têtes permis (relevé le 4 oct. 2026) : `accept, authorization, content-type, user-agent, x-csrftoken, x-requested-with` ; une autre origine (ex. la démo sur Vercel) n'est pas permise | Si le site n'est pas servi depuis belivay.com : ajouter son origine **et** `idempotency-key`, `x-device-id` à `CORS_ALLOW_HEADERS`, sinon le navigateur bloque la requête (décision 2) |
+| CORS | — | `django-cors-headers`, origines : `FRONTEND_URL`, belivay.com, `localhost`/`127.0.0.1`:5173-5179 (Vite), `https://localhost` et `capacitor://localhost` (apps natives), **+ `CORS_EXTRA_ORIGINS`** (liste séparée par des virgules, lue par `os.getenv`, pour ce site déployé à part) ; en-têtes permis : `accept, authorization, content-type, user-agent, x-csrftoken, x-requested-with, idempotency-key, x-device-id` (vérifié le 14 oct. 2026 dans `relaya/settings/base.py` : `idempotency-key` et `x-device-id` sont **déjà** dans `CORS_ALLOW_HEADERS`, contrairement à ce que disait l'instantané du 3 oct.) | Rien à coder : en dev, lancer le site sur un port 5173-5179 suffit (déjà autorisé). En production sur un domaine distinct de belivay.com, poser la variable serveur `CORS_EXTRA_ORIGINS=https://mondomaine.example` (pas de modification de code, décision 2 déjà résolue côté en-têtes) |
 | Pagination | lit une liste ou une page DRF (`results`) | numéros de page (catalogue : 20, `page_size` ≤ 100) ; la plupart des listes ne sont pas paginées | Curseur (CAP-05) |
 | Préfixe | `VITE_API_URL` contient `/api` | `/api/…`, sans version (sauf `payments/v2`) | `/api/v1` recommandé (CAP-01), à trancher |
 | Journal | hors production : `[api] GET /auth/me/ → 200 (84 ms)` (jamais les corps ni les jetons) | — | — |
@@ -71,7 +71,7 @@ manque un SDK ou un réglage de l'appareil) ; **démonstration seulement** (simu
 
 <!-- connecteurs:debut -->
 
-222 méthodes : **207 branchées**, **11 branchées en partie** (champs manquants côté serveur), **0 à créer côté serveur**, 4 à finir côté site, 0 propre à la démonstration.
+227 méthodes : **105 branchées**, **11 branchées en partie** (champs manquants côté serveur), **108 à créer côté serveur**, 3 à finir côté site, 0 propre à la démonstration.
 
 ### Session, menu et compte (4/4 branchées)
 
@@ -115,7 +115,7 @@ manque un SDK ou un réglage de l'appareil) ; **démonstration seulement** (simu
 
 | Méthode | État | Route | Corps → réponse | Note |
 |---|---|---|---|---|
-| `securite` | branché, partiel | GET /api/auth/me/ · GET /api/auth/sessions/ · GET /api/me | → DonneesSecurite | Numéro vérifié : GET /api/me (kit). Manquent : date de vérification, comptes Google/Apple liés, historique des connexions, lieu, biométrie, seuil CODE-BIO, alerte de connexion (écrite par PATCH /api/me/security, pas encore relue). |
+| `securite` | branché, partiel | GET /api/auth/me/ · GET /api/auth/sessions/ · GET /api/me · GET /api/me/security · GET /api/me/identities | → DonneesSecurite | Numéro vérifié : GET /api/me (kit). Date de vérification et alerte de connexion : GET /api/me/security (ajouté, lisait seulement PATCH jusqu’ici) ; comptes Google/Apple liés : GET /api/me/identities (ajouté). Manquent encore : historique des connexions (méthode, lieu), biométrie, seuil CODE-BIO. |
 | `lierMethode` | à finir côté site | POST /api/me/identities {provider: google\|apple, jeton} | → 200 \| 409 pris | Route du kit écrite (apps/client_accounts) ; manquent côté site les SDK Google Identity Services (VITE_GOOGLE_CLIENT_ID) et Sign in with Apple JS (VITE_APPLE_CLIENT_ID) pour obtenir le jeton. |
 | `delierMethode` | branché | DELETE /api/me/identities/{provider} | → 200 \| 409 derniere |  |
 | `changerMotDePasse` | branché | POST /api/auth/change-password/ {old_password, new_password, new_password2} | → 200 \| 400 old_password → ancien \| 400 new_password → regle | Premier mot de passe (compte Google ou Apple, ancien = null) : route à créer POST /api/auth/password/set. Fermer les autres sessions (CAP-17). |
@@ -145,7 +145,7 @@ manque un SDK ou un réglage de l'appareil) ; **démonstration seulement** (simu
 
 | Méthode | État | Route | Corps → réponse | Note |
 |---|---|---|---|---|
-| `relaisListe` | branché, partiel | GET /api/shipping/relay-points/nearby/?city=&lat=&lng= · GET /api/me | → [{id, name, address, city, opening_hours, has_space, distance_km}] ; relais habituel : nom lu dans le compte du kit | Route authentifiée (un visiteur ne voit pas les relais). Manquent : gérant, horaire du jour en mots, jour de fermeture ; filtres open_today et not_full (spécification : GET /api/relais?near=). |
+| `relaisListe` | branché, partiel | GET /api/shipping/relay-points/nearby/?city=&lat=&lng= · GET /api/me | → [{id, name, address, city, opening_hours, has_space, distance_km}] ; relais habituel : nom lu dans le compte du kit | Route désormais AllowAny (accès visiteur, Tâche D3 : apps/shipping/views.py RelayPointNearbyView) — un visiteur sans compte voit déjà les relais, has_space seulement ; un compte connecté reçoit aussi storage_capacity/occupancy. Manquent toujours : gérant, horaire du jour en mots, jour de fermeture ; filtres open_today et not_full (spécification : GET /api/relais?near=). |
 | `choisirRelais` | branché | PUT /api/me/relais-habituel {relais} |  |  |
 | `adresses` | branché | GET /api/me/adresses | → DonneesAdresses |  |
 | `enregistrerAdresse` | branché | POST /api/me/adresses {a} · PUT /api/me/adresses/{id} {a} | → {ok, adresse} \| 422 zone_non_servie {ville} | Adresse chiffrée au repos (CAP-21) ; zone : geo.zone_exploitee. relaya garde aussi l’adresse saisie à chaque commande. |
@@ -154,23 +154,23 @@ manque un SDK ou un réglage de l'appareil) ; **démonstration seulement** (simu
 | `interets` | branché | GET /api/me/interets | → univers choisis |  |
 | `choisirInterets` | branché | PUT /api/me/interets {univers} |  |  |
 
-### Catalogue, fiche et avis produit (5/5 branchées)
+### Catalogue, fiche et avis produit (3/5 branchées)
 
 | Méthode | État | Route | Corps → réponse | Note |
 |---|---|---|---|---|
-| `produits` | branché, partiel | GET /api/catalog/products/?page_size=100 | → {results: [ProductSerializer]} | Manquent : classe de colis, variantes et options, vendeur (palier, Trust Score, km), autres offres, distance au relais, caractéristiques, univers. Spécification : GET /api/listing/{cat} et GET /api/search (curseur). |
+| `produits` | branché, partiel | GET /api/catalog/products/?page_size=100&group_by_master=1 | → {results: [ProductSerializer]} | group_by_master=1 (Tâche D5, apps/catalog/offers.py) : une seule offre par MasterProduct dans la grille (le prix le plus bas, puis le Trust Score le plus haut) — résout le doublon « un vendeur = une carte ». Manquent encore : classe de colis, variantes et options, vendeur (palier, Trust Score, km), autres offres, distance au relais, caractéristiques, univers (ces derniers seraient servis par /api/catalog/master-products/{slug}/, pas encore branché ici). Spécification : GET /api/listing/{cat} et GET /api/search (curseur). |
 | `produit` | branché, partiel | GET /api/catalog/products/{id}/ | → ProductSerializer | Mêmes manques ; spécification : GET /api/products/{maitre}?relais=&variante= (offre attribuée, prix livré). relaya a aussi /api/catalog/master-products/{id\|slug}/. |
 | `avisProduit` | branché, partiel | GET /api/catalog/products/{id}/reviews/ | → [{id, rating, comment, created_at, is_verified_purchase}] | Manquent : répartition des notes (GET /reviews/summary), variante, photo, votes « utile », réponse du vendeur. |
-| `voterAvis` | branché | POST /api/reviews/{id}/vote {action: utile\|signaler} |  |  |
-| `ajouterProduit` | branché | POST /api/cart/lines {produit, options, qte, boutique?} | → {ok, id} ; le serveur recalcule le panier (offre, frais) |  |
+| `voterAvis` | à créer côté serveur | POST /api/reviews/{id}/vote {action: utile\|signaler} |  | Aucune action « vote » sur ProductReviewViewSet/ProductViewSet côté relaya : la route n’existe pas (vérifié dans apps/catalog/views.py). À créer. |
+| `ajouterProduit` | à créer côté serveur | POST /api/cart/lines {produit, options, qte, boutique?} | → {ok, id} ; le serveur recalcule le panier (offre, frais) | apps.cart (kit) n’est pas installé (seuls apps.client_core/otp/client_accounts/notifications_client le sont) : /api/cart/lines n’existe pas. relaya n’a que GET/PUT /api/auth/cart/ (UserCart : tableau JSON remplacé en bloc, sans recalcul serveur par ligne) — modèle très différent, à trancher avec le domaine panier avant de brancher. |
 
-### Contenus et photos (1/1 branchées)
+### Contenus et photos (0/1 branchées)
 
 | Méthode | État | Route | Corps → réponse | Note |
 |---|---|---|---|---|
-| `contenuAccueil` | branché | GET /api/content/home | → ContenuAccueil (carrousel, catégories, textes flash, bandeau de confiance, fond d’arrivée) | Kit : apps/contenus (éditable dans l’admin, photos téléversées par POST /api/admin/media). Route en échec → contenu par défaut (donnees/contenus.ts). |
+| `contenuAccueil` | à créer côté serveur | GET /api/content/home | → ContenuAccueil (carrousel, catégories, textes flash, bandeau de confiance, fond d’arrivée) | apps.contenus (kit) n’est pas installé côté relaya : la route n’existe pas. Le site garde un repli gracieux (contenu par défaut de donnees/contenus.ts), donc l’accueil ne casse pas, mais ce n’est pas du contenu éditorial réel tant que la route n’est pas créée. |
 
-### Favoris (7/7 branchées)
+### Favoris (6/7 branchées)
 
 | Méthode | État | Route | Corps → réponse | Note |
 |---|---|---|---|---|
@@ -179,7 +179,7 @@ manque un SDK ou un réglage de l'appareil) ; **démonstration seulement** (simu
 | `retirerFavori` | branché | DELETE /api/auth/favorites/{id}/ |  |  |
 | `remettreFavori` | branché | POST /api/auth/favorites/ {product_id} |  |  |
 | `reglerAlerteFavori` | branché | PATCH /api/me/favorites/{id} {alertes: {prix?, stock?}} |  |  |
-| `favoriAuPanier` | branché | POST /api/cart/lines {favori} |  |  |
+| `favoriAuPanier` | à créer côté serveur | POST /api/cart/lines {favori} |  | apps.cart (kit) n’est pas installé : /api/cart/lines n’existe pas côté relaya. Voir la note de ajouterProduit (même gap, à trancher avec le domaine panier). |
 | `mettreEnFavori` | branché | POST /api/cart/lines/{id}/save |  |  |
 
 ### Panier et panier partagé (15/15 branchées)
@@ -249,21 +249,21 @@ manque un SDK ou un réglage de l'appareil) ; **démonstration seulement** (simu
 | `avis` | branché | GET /api/orders/{id}/reviews | → commande à noter, fenêtre (7 jours) |  |
 | `envoyerAvis` | branché | POST · PUT /api/orders/{id}/reviews {notes[], commentaire, photo} | → 403 non_eligible \| 410 fenetre_fermee | relaya : POST /api/catalog/products/{id}/add_review/ note un produit, pas le vendeur et le relais. |
 
-### Messagerie, aide et rappel (11/11 branchées)
+### Messagerie, aide et rappel (2/11 branchées)
 
 | Méthode | État | Route | Corps → réponse | Note |
 |---|---|---|---|---|
-| `conversations` | branché | GET /api/me/threads | → conversations | relaya : GET /api/shipping/orders/{id}/messages/ par commande seulement. |
-| `conversation` | branché | GET /api/me/threads/{id} | → la marque lue |  |
-| `envoyerMessage` | branché | POST /api/me/threads/{id}/messages {texte?, photo?} | → {masked[]} (numéros, e-mails, liens retirés côté serveur) |  |
-| `marquerToutLu` | branché | POST /api/me/threads/read |  |  |
-| `poserQuestion` | branché | POST /api/messages/threads {produit, texte} | → {id, masked[]} |  |
+| `conversations` | à créer côté serveur | GET /api/me/threads | → conversations | Aucune messagerie acheteur↔vendeur générique dans backend/ (choix délibéré, Addendum Décisions v1.0 : Product.faq compense). Un système MessageThread/ThreadMessage existe (backend/apps/vendors/models.py, oct.) mais strictement côté vendeur (auth vendeur, apps/vendors/views.py « boutique/messages »), avec sa propre note de code demandant validation du porteur avant mise en production : ne pas l’étendre côté client sans décision produit. backend-kit/apps/messaging reste un prototype non installé (INSTALLED_APPS). |
+| `conversation` | à créer côté serveur | GET /api/me/threads/{id} | → la marque lue | Même constat que `conversations`. |
+| `envoyerMessage` | à créer côté serveur | POST /api/me/threads/{id}/messages {texte?, photo?} | → {masked[]} (numéros, e-mails, liens retirés côté serveur) | Même constat que `conversations`. |
+| `marquerToutLu` | à créer côté serveur | POST /api/me/threads/read |  | Même constat que `conversations`. |
+| `poserQuestion` | branché | POST /api/catalog/products/{id}/ask_question/ {text} | → {id, masked[]} | Branché pour de vrai (14 oct.) sur ProductQuestion, qui existait déjà côté vendeur (réponse publique, apps/catalog/models.py ; réponse/signalement : apps/vendors/views.py) mais sans route pour poser la question côté acheteur — route ajoutée, pas une nouvelle messagerie : question et réponse publiques sur la fiche, comme un avis (différent du fil privé `conversations`, absent). |
 | `ecrireSupport` | branché, partiel | POST /api/contact/ {name, email, phone, subject, message} | → {id} | Formulaire de contact de relaya : pas de fil de conversation, ni photo, ni commande liée, ni masquage. Spécification : POST /api/support/threads. |
-| `faq` | branché | GET /api/help/faq?lang=&q= |  |  |
-| `aide` | branché | GET /api/help | → dossier en cours, conversations, changement des conditions |  |
-| `rappel` | branché | GET /api/support/callback |  |  |
-| `demanderRappel` | branché | POST /api/support/callback {sujet, commande, creneau, precision} | → Rappel (aujourd’hui ou demain) |  |
-| `annulerRappel` | branché | DELETE /api/support/callback |  |  |
+| `faq` | à créer côté serveur | GET /api/help/faq?lang=&q= |  | Aucun centre d’aide générique côté serveur. Seuls Product.faq (par produit) et une FAQ statique codée en dur côté vendeur (_HELP_QUESTIONS, apps/vendors/views.py) existent comme précédent ; backend-kit/apps/messaging propose /api/help/faq en prototype, non porté. Décision produit : contenu statique côté site, ou petite route calquée sur le précédent vendeur. |
+| `aide` | à créer côté serveur | GET /api/help | → dossier en cours, conversations, changement des conditions | Agrège un dossier en cours, les conversations (absentes) et les changements de CGU : dépend de la messagerie, absente côté serveur. |
+| `rappel` | à créer côté serveur | GET /api/support/callback |  | Aucun rappel programmé côté serveur ; backend-kit/apps/messaging le propose en prototype, non porté. |
+| `demanderRappel` | à créer côté serveur | POST /api/support/callback {sujet, commande, creneau, precision} | → Rappel (aujourd’hui ou demain) | Même constat que `rappel`. |
+| `annulerRappel` | à créer côté serveur | DELETE /api/support/callback |  | Même constat que `rappel`. |
 
 ### Légal (2/2 branchées)
 
@@ -272,37 +272,37 @@ manque un SDK ou un réglage de l'appareil) ; **démonstration seulement** (simu
 | `legal` | branché | GET /api/legal/{doc}?lang= · GET /api/me/legal | → version, date, essentiel, PDF ; versions acceptées |  |
 | `accepterConditions` | branché | POST /api/me/legal/accept {doc, version} |  |  |
 
-### Portefeuille, moyens de paiement, factures (14/14 branchées)
+### Portefeuille, moyens de paiement, factures (0/14 branchées)
 
 | Méthode | État | Route | Corps → réponse | Note |
 |---|---|---|---|---|
-| `factures` | branché | GET /api/me/factures · GET /api/orders/{id}/invoice.pdf | → factures (toutes les pages du curseur) et commandes annulées ; PDF généré par le serveur, montants figés |  |
-| `portefeuille` | branché | GET /api/me/wallet | → solde, mouvements, plafonds (FF-WALLET) | Kit : apps/wallet, derrière FF-WALLET (404 si fermé). relaya : GET /api/payments/v2/me/refunds/ liste les remboursements. |
-| `recharger` | branché | POST /api/me/wallet/topups {montant, moyen} (Idempotency-Key) |  |  |
-| `fraisRetrait` | branché | GET /api/me/wallet/withdrawal-fee?montant= |  |  |
-| `retirer` | branché | POST /api/me/wallet/withdrawals {montant, moyen} (Idempotency-Key) |  |  |
-| `moyensPaiement` | branché | GET /api/me/moyens-paiement | → numéros Mobile Money | relaya : /api/auth/payout-accounts/ sert aux versements des partenaires, pas aux paiements du client. |
-| `ajouterMoyen` | branché | POST /api/me/moyens-paiement {numero} | → {ok, envoi: EnvoiCode} (le code part avec la réponse) \| 409 deja ; 422 numero_invalide, operateur_non_accepte | Un seul envoi : le site n’appelle pas envoyerCode après ; « Renvoyer le code » le fait (envoyerCode(moyen, numéro)), après renvoiSecondes (sinon 429 trop_tot). |
-| `confirmerMoyen` | branché | POST /api/me/moyens-paiement/{id}/verify {code} | → ResultatCode ; {id} : le numéro saisi (ou l’identifiant du moyen) |  |
-| `moyenParDefaut` | branché | PATCH /api/me/moyens-paiement/{id} {par_defaut: true} |  |  |
-| `retirerMoyen` | branché | DELETE /api/me/moyens-paiement/{id} |  |  |
-| `cartes` | branché | GET /api/me/cartes | → cartes enregistrées chez le prestataire (jamais le numéro) |  |
-| `ajouterCarte` | branché | POST /api/me/cartes {jeton, titulaire} | → carte (marque, 4 derniers chiffres, expiration lus chez le prestataire) \| 409 deja | Le numéro et le CVC sont tokenisés dans le navigateur (src/connecteurs/paiementCarte.ts), jamais envoyés à BelivaY (CAP-24). |
-| `retirerCarte` | branché | DELETE /api/me/cartes/{id} |  |  |
-| `carteParDefaut` | branché | PATCH /api/me/cartes/{id} {par_defaut: true} |  |  |
+| `factures` | à créer côté serveur | GET /api/me/factures · GET /api/orders/{id}/invoice.pdf | → factures (toutes les pages du curseur) et commandes annulées ; PDF généré par le serveur, montants figés | Portefeuille client (apps.wallet) absent de backend/ : voir argent.ts. relaya : aucune bibliothèque PDF. |
+| `portefeuille` | à créer côté serveur | GET /api/me/wallet | → solde, mouvements, plafonds (FF-WALLET) | apps.wallet absent de backend/ (exclu par décision CEO, référentiel verrouillé : pas de solde/jeton stocké). relaya : GET /api/payments/v2/me/refunds/ liste les remboursements, sans solde. |
+| `recharger` | à créer côté serveur | POST /api/me/wallet/topups {montant, moyen} (Idempotency-Key) |  | apps.wallet absent de backend/ (décision CEO en attente). |
+| `fraisRetrait` | à créer côté serveur | GET /api/me/wallet/withdrawal-fee?montant= |  | apps.wallet absent de backend/ (décision CEO en attente). |
+| `retirer` | à créer côté serveur | POST /api/me/wallet/withdrawals {montant, moyen} (Idempotency-Key) |  | apps.wallet absent de backend/ (décision CEO en attente). |
+| `moyensPaiement` | à créer côté serveur | GET /api/me/moyens-paiement | → numéros Mobile Money | apps.wallet absent de backend/. relaya : /api/auth/payout-accounts/ sert aux versements des partenaires, pas aux paiements du client. |
+| `ajouterMoyen` | à créer côté serveur | POST /api/me/moyens-paiement {numero} | → {ok, envoi: EnvoiCode} (le code part avec la réponse) \| 409 deja ; 422 numero_invalide, operateur_non_accepte | apps.wallet absent de backend/ (décision CEO en attente). |
+| `confirmerMoyen` | à créer côté serveur | POST /api/me/moyens-paiement/{id}/verify {code} | → ResultatCode ; {id} : le numéro saisi (ou l’identifiant du moyen) | apps.wallet absent de backend/ (décision CEO en attente). |
+| `moyenParDefaut` | à créer côté serveur | PATCH /api/me/moyens-paiement/{id} {par_defaut: true} |  | apps.wallet absent de backend/ (décision CEO en attente). |
+| `retirerMoyen` | à créer côté serveur | DELETE /api/me/moyens-paiement/{id} |  | apps.wallet absent de backend/ (décision CEO en attente). |
+| `cartes` | à créer côté serveur | GET /api/me/cartes | → cartes enregistrées chez le prestataire (jamais le numéro) | apps.wallet absent de backend/ (décision CEO en attente). |
+| `ajouterCarte` | à créer côté serveur | POST /api/me/cartes {jeton, titulaire} | → carte (marque, 4 derniers chiffres, expiration lus chez le prestataire) \| 409 deja | apps.wallet absent de backend/ (décision CEO en attente). |
+| `retirerCarte` | à créer côté serveur | DELETE /api/me/cartes/{id} |  | apps.wallet absent de backend/ (décision CEO en attente). |
+| `carteParDefaut` | à créer côté serveur | PATCH /api/me/cartes/{id} {par_defaut: true} |  | apps.wallet absent de backend/ (décision CEO en attente). |
 
-### Abonnement et cagnotte (8/8 branchées)
+### Abonnement et cagnotte (0/8 branchées)
 
 | Méthode | État | Route | Corps → réponse | Note |
 |---|---|---|---|---|
-| `prime` | branché | GET /api/me/subscription | → palier, formule, prélèvements, cagnotte, parrainage (FF-ABONNEMENT) | relaya : abonnements des vendeurs seulement (/api/vendors/plans/). |
-| `payerAbonnement` | branché | POST /api/me/subscription/pay {moyen} (Idempotency-Key) |  |  |
-| `changerMoyenAbonnement` | branché | PATCH /api/me/subscription {moyen} |  |  |
-| `souscrire` | branché | POST /api/me/subscription {palier, formule, moyen} (Idempotency-Key) | → 409 trial_used |  |
-| `resilierAbonnement` | branché | POST /api/me/subscription/cancel |  |  |
-| `reprendreAbonnement` | branché | POST /api/me/subscription/resume |  |  |
-| `offrirAbonnement` | branché | POST /api/subscription-gifts {numero, prenom, palier, mois, message, carte} (Idempotency-Key) | → {ok, …} \| {ok: false, raison: inconnu} ; 422 action_requise (3-D Secure), carte_refusee, plafond_carte | Carte : jeton du prestataire (src/connecteurs/paiementCarte.ts), jamais le numéro ni le CVC (CAP-24). |
-| `verserCagnotte` | branché | POST /api/me/cagnotte/payout | → montant versé |  |
+| `prime` | à créer côté serveur | GET /api/me/subscription | → palier, formule, prélèvements, cagnotte, parrainage (FF-ABONNEMENT) | apps.subscriptions (client) absent de backend/. relaya : abonnements des vendeurs seulement (/api/vendors/plans/), concept différent. |
+| `payerAbonnement` | à créer côté serveur | POST /api/me/subscription/pay {moyen} (Idempotency-Key) |  | apps.subscriptions absent de backend/. |
+| `changerMoyenAbonnement` | à créer côté serveur | PATCH /api/me/subscription {moyen} |  | apps.subscriptions absent de backend/. |
+| `souscrire` | à créer côté serveur | POST /api/me/subscription {palier, formule, moyen} (Idempotency-Key) | → 409 trial_used | apps.subscriptions absent de backend/. |
+| `resilierAbonnement` | à créer côté serveur | POST /api/me/subscription/cancel |  | apps.subscriptions absent de backend/. |
+| `reprendreAbonnement` | à créer côté serveur | POST /api/me/subscription/resume |  | apps.subscriptions absent de backend/. |
+| `offrirAbonnement` | à créer côté serveur | POST /api/subscription-gifts {numero, prenom, palier, mois, message, carte} (Idempotency-Key) | → {ok, …} \| {ok: false, raison: inconnu} ; 422 action_requise (3-D Secure), carte_refusee, plafond_carte | apps.subscriptions absent de backend/. |
+| `verserCagnotte` | à créer côté serveur | POST /api/me/cagnotte/payout | → montant versé | apps.subscriptions absent de backend/. |
 
 ### Devenir vendeur (3/3 branchées)
 
@@ -312,88 +312,88 @@ manque un SDK ou un réglage de l'appareil) ; **démonstration seulement** (simu
 | `ouvrirBoutique` | branché | POST /api/me/shop {nom, categorie, type} | → boutique \| 409 nom_pris | Route du kit (client_accounts : VendorProfile EN ATTENTE par le pont). relaya : POST /api/vendors/apply/ existe ; champs à aligner. |
 | `demanderBusiness` | branché | POST /api/me/business {piece} |  |  |
 
-### Diaspora et proches (19/20 branchées)
+### Diaspora et proches (0/20 branchées)
 
 | Méthode | État | Route | Corps → réponse | Note |
 |---|---|---|---|---|
-| `envoyerCodeDiaspora` | branché | POST /api/auth/otp/send {purpose: diaspora \| diaspora-renforce, canal: sms\|email, destination?} |  | Inscription : sans compte, à la destination donnée. Vérification renforcée d’une commande pour un proche (numéro masqué du compte) : diaspora-renforce, au numéro étranger vérifié du compte. |
-| `verifierCodeDiaspora` | branché | POST /api/auth/otp/verify {purpose: diaspora, destination, code} | → 200 \| 422 code |  |
-| `identiteFournisseur` | à finir côté site | POST /api/auth/social/lookup {provider: google\|apple, credential \| identity_token} | → {jeton, prenom, nom, email, compte: null\|standard\|diaspora} | Jeton obtenu par Google Identity Services (VITE_GOOGLE_CLIENT_ID) ou Sign in with Apple JS (VITE_APPLE_CLIENT_ID) ; le serveur le vérifie et ne crée rien. |
-| `inscrireDiaspora` | branché | POST /api/auth/diaspora/register {prenom, nom, email, motDePasse, codeEmail, naissance, pays, ville, indicatif, numero, code} · POST /api/auth/social/diaspora {fournisseur: google\|apple\|numero, jeton?, convertir?, prenom, nom, email, naissance, pays, ville, indicatif, numero, code} | → session \| 409 existe \| 422 code, codeEmail, age, pays, numero, jeton | Communs : prénom, nom, naissance (18 ans), pays accepté et son indicatif, numéro de ce pays (jamais +237) vérifié par code SMS. Google/Apple : e-mail repris du jeton (déjà vérifié), ni mot de passe ni code e-mail ; convertir=true passe le compte existant en diaspora. Numéro : e-mail facultatif. |
-| `liensFamille` | branché | GET /api/me/family-links |  |  |
-| `creerCodeFamille` | branché | POST /api/me/family-links/code |  |  |
-| `lierParCode` | branché | POST /api/me/family-links {code} |  |  |
-| `inviterProche` | branché | POST /api/me/family-links/invite {prenom, numero} |  |  |
-| `repondreLien` | branché | POST /api/me/family-links/{id}/answer {accepte, relais?} |  |  |
-| `retirerLien` | branché | DELETE /api/me/family-links/{id} |  |  |
-| `commanderPour` | branché | POST /api/family-links/{id}/orders {carte, bin, paysCarte, devise, mot, titulaire, codeSms?, livraison, moyen, demande?, supplementPar?} (Idempotency-Key) | → 3-D Secure ou Apple Pay / Google Pay ; contrôle de cohérence pays/BIN côté serveur ; 422 domicile, demande, garantie | Règle donnees/echanges.ts (totalDiaspora, supplementAuProche) refaite côté serveur ; l’adresse du proche ne sort jamais. Carte : jeton du prestataire (src/connecteurs/paiementCarte.ts), jamais le numéro ni le CVC (CAP-24). Le BIN (6 à 8 chiffres, permis par PCI DSS) sert au contrôle de cohérence. |
-| `reglerDevise` | branché | PATCH /api/me/preferences {devise: XAF\|EUR\|USD} | → 403 hors compte diaspora | Taux du dollar : celui du prestataire, figé au paiement ; euro : parité fixe 655,957. |
-| `choisirProche` | branché | PUT /api/me/active-relative {lien} | → 403 hors compte diaspora, 404 lien non actif | La session porte ensuite proche {id, prenom, quartier, ville, domicile, autres} ; les distances, délais et « retirable aujourd’hui » du catalogue partent du relais de ce proche (jamais son adresse ni son code). |
-| `lienInvitation` | branché | POST /api/me/family-links/invitation | → {type: famille\|invitation, code, jusqua} (lien partageable, QR) |  |
-| `accepterInvitation` | branché | POST /api/me/family-links/invitation/{code}/accept {relais} | → lien \| 404 code, 409 deja, 422 max, 403 type |  |
-| `reglerLivraisonLien` | branché | PATCH /api/me/family-links/{id}/delivery {relais, domicile, prefere} | côté proche au Cameroun ; l’adresse reste dans son compte |  |
-| `demandesProches` | branché | GET /api/me/family-requests | → paniers envoyés et reçus entre proches reliés |  |
-| `envoyerPanierAuProche` | branché | POST /api/me/family-links/{id}/requests {mot, livraison, lignes?} | → demande \| 409 deja, 422 vide, plafond, domicile |  |
-| `refuserDemande` | branché | POST /api/me/family-requests/{id}/decline {mot} |  |  |
-| `annulerDemande` | branché | DELETE /api/me/family-requests/{id} |  |  |
+| `envoyerCodeDiaspora` | à créer côté serveur | POST /api/auth/otp/send {purpose: diaspora \| diaspora-renforce, canal: sms\|email, destination?} |  | apps.diaspora absent de backend/. Nuance : purpose=diaspora répond réellement (apps.otp, générique) mais ne mène nulle part sans inscrireDiaspora ; purpose=diaspora-renforce plante (ImportError) côté serveur car apps/otp/views.py importe apps.diaspora.services, absent — bug latent à signaler, hors du périmètre de ce connecteur. |
+| `verifierCodeDiaspora` | à créer côté serveur | POST /api/auth/otp/verify {purpose: diaspora, destination, code} | → 200 \| 422 code | apps.diaspora absent de backend/ ; le code vérifié ne sert à rien sans inscrireDiaspora. |
+| `identiteFournisseur` | à créer côté serveur | POST /api/auth/social/lookup {provider: google\|apple, credential \| identity_token} | → {jeton, prenom, nom, email, compte: null\|standard\|diaspora} | apps.diaspora absent de backend/ : la route n’existe pas, SDK ou non côté site. |
+| `inscrireDiaspora` | à créer côté serveur | POST /api/auth/diaspora/register {prenom, nom, email, motDePasse, codeEmail, naissance, pays, ville, indicatif, numero, code} · POST /api/auth/social/diaspora {fournisseur: google\|apple\|numero, jeton?, convertir?, prenom, nom, email, naissance, pays, ville, indicatif, numero, code} | → session \| 409 existe \| 422 code, codeEmail, age, pays, numero, jeton | apps.diaspora absent de backend/ : aucun modèle de compte diaspora, point d’entrée du domaine entier. |
+| `liensFamille` | à créer côté serveur | GET /api/me/family-links |  | apps.diaspora absent de backend/. |
+| `creerCodeFamille` | à créer côté serveur | POST /api/me/family-links/code |  | apps.diaspora absent de backend/. |
+| `lierParCode` | à créer côté serveur | POST /api/me/family-links {code} |  | apps.diaspora absent de backend/. |
+| `inviterProche` | à créer côté serveur | POST /api/me/family-links/invite {prenom, numero} |  | apps.diaspora absent de backend/. |
+| `repondreLien` | à créer côté serveur | POST /api/me/family-links/{id}/answer {accepte, relais?} |  | apps.diaspora absent de backend/. |
+| `retirerLien` | à créer côté serveur | DELETE /api/me/family-links/{id} |  | apps.diaspora absent de backend/. |
+| `commanderPour` | à créer côté serveur | POST /api/family-links/{id}/orders {carte, bin, paysCarte, devise, mot, titulaire, codeSms?, livraison, moyen, demande?, supplementPar?} (Idempotency-Key) | → 3-D Secure ou Apple Pay / Google Pay ; contrôle de cohérence pays/BIN côté serveur ; 422 domicile, demande, garantie | apps.diaspora absent de backend/. |
+| `reglerDevise` | à créer côté serveur | PATCH /api/me/preferences {devise: XAF\|EUR\|USD} | → 403 hors compte diaspora | Route réelle (apps.client_accounts.Preferences, installée) mais toujours 403 : rien ne met jamais type_compte=DIASPORA sans apps.diaspora.inscrireDiaspora, absent. |
+| `choisirProche` | à créer côté serveur | PUT /api/me/active-relative {lien} | → 403 hors compte diaspora, 404 lien non actif | apps.diaspora absent de backend/ : /api/me/active-relative n’existe pas. |
+| `lienInvitation` | à créer côté serveur | POST /api/me/family-links/invitation | → {type: famille\|invitation, code, jusqua} (lien partageable, QR) | apps.diaspora absent de backend/. |
+| `accepterInvitation` | à créer côté serveur | POST /api/me/family-links/invitation/{code}/accept {relais} | → lien \| 404 code, 409 deja, 422 max, 403 type | apps.diaspora absent de backend/. |
+| `reglerLivraisonLien` | à créer côté serveur | PATCH /api/me/family-links/{id}/delivery {relais, domicile, prefere} | côté proche au Cameroun ; l’adresse reste dans son compte | apps.diaspora absent de backend/. |
+| `demandesProches` | à créer côté serveur | GET /api/me/family-requests | → paniers envoyés et reçus entre proches reliés | apps.diaspora absent de backend/. |
+| `envoyerPanierAuProche` | à créer côté serveur | POST /api/me/family-links/{id}/requests {mot, livraison, lignes?} | → demande \| 409 deja, 422 vide, plafond, domicile | apps.diaspora absent de backend/. |
+| `refuserDemande` | à créer côté serveur | POST /api/me/family-requests/{id}/decline {mot} |  | apps.diaspora absent de backend/. |
+| `annulerDemande` | à créer côté serveur | DELETE /api/me/family-requests/{id} |  | apps.diaspora absent de backend/. |
 
-### Listes d'envies (14/14 branchées)
-
-| Méthode | État | Route | Corps → réponse | Note |
-|---|---|---|---|---|
-| `listes` | branché | GET /api/me/wishlists |  |  |
-| `creerListe` | branché | POST /api/me/wishlists {nom, mode, remiseLe, surprise, occasion?, hotes?, cagnotte?} | → 201 ListeEnvies |  |
-| `ajouterArticleListe` | branché | POST /api/me/wishlists/{id}/items {produit} |  |  |
-| `retirerArticleListe` | branché | DELETE /api/me/wishlists/{id}/items/{produit} | → refusé pour un article offert |  |
-| `reglerListe` | branché | PATCH /api/me/wishlists/{id} |  |  |
-| `partagerListe` | branché | POST /api/me/wishlists/{id}/share |  |  |
-| `arreterPartage` | branché | DELETE /api/me/wishlists/{id}/share |  |  |
-| `demarrerListe` | branché | POST /api/me/wishlists/{id}/start |  |  |
-| `listePublique` | branché | GET /api/wishlists/{code} | lien public l/ (CAP-11) |  |
-| `offrirArticleListe` | branché | POST /api/wishlists/{code}/gifts {produit, prenom, email, moyen, jeton, prix_vu, qui, livraison, devise, carte: {bin, pays_carte, pays, code_email}} (Idempotency-Key) | → 409 price_changed (CLE-39) ; 422 plafond, domicile, coherence (avec le contrôle), verification | À créer. Sans compte, depuis n’importe où : relais du destinataire ou chez lui (adresse jamais renvoyée) ; carte : plafonds et contrôle de cohérence du compte diaspora, historique par e-mail. |
-| `envoyerCodeCadeau` | branché | POST /api/wishlists/{code}/gifts/otp {email} | → destination masquée, validité | À créer. Vérification renforcée d’un cadeau payé par carte (contrôle de cohérence « renforcé »). |
-| `suiviCadeau` | branché | GET /api/wishlists/{code}/gifts/{ref} | → étapes, preuve de remise, merci | À créer. Public pour qui a offert (lien de l’e-mail de suivi) : jamais l’adresse, le code ni le numéro du destinataire. |
-| `partagerStatutListe` | branché | POST /api/me/wishlists/{id}/status-shares {canal} | → code et validité du lien | À créer. Crée le lien au besoin (comme /share) et compte les mises en statut par canal. |
-| `participerCagnotteListe` | branché | POST /api/wishlists/{code}/fund {prenom, montant, moyen, mot, discret} (Idempotency-Key) | → montant réuni ; refus ferme, montant | À créer. Cagnotte d’une liste (mariage : voyage de noces) : dès 1 000 F, bloquée chez BelivaY puis versée au portefeuille des hôtes à la date de l’événement. |
-
-### Échanges entre clients (14/14 branchées)
+### Listes d'envies (0/14 branchées)
 
 | Méthode | État | Route | Corps → réponse | Note |
 |---|---|---|---|---|
-| `echanges` | branché | GET /api/me/exchanges | → proches, listes suivies, envois, remerciements, colis payés par l’un pour l’autre | À créer. Proches : comptes BelivaY trouvés par numéro ou liés (family-links) ; jamais l’adresse ni le numéro complet. |
-| `chercherProche` | branché | POST /api/me/contacts/lookup {numero} | → prénom et quartier du relais, ou inconnu | À créer. Limiter les recherches (anti-annuaire) : 20 par jour. |
-| `envoyerAuxProches` | branché | POST /api/me/exchanges/send {type, id, proches[]} | → nombre de notifications envoyées | À créer. Une notification dans l’application du proche, une fois par objet. |
-| `rappelerInvites` | branché | POST /api/me/wishlists/{id}/remind | → 429 too_early {prochain} ; un rappel tous les 3 jours au plus | À créer. Seulement les invités BelivaY qui n’ont rien offert ; BelivaY ne relance jamais de lui-même. |
-| `suivreListe` | branché | PUT /api/me/followed-wishlists/{code} {suivre, rappel} |  | À créer. Rappel push N jours avant la date de remise, à qui l’a demandé. |
-| `remercier` | branché | POST /api/me/thanks {ref, texte} |  | À créer. Message à qui a offert (e-mail pour un invité sans compte). |
-| `repondreColis` | branché | POST /api/me/incoming-parcels/{id}/answer {accepte} | → colis ; refus : retenue (retenueRefus) et remboursement du payeur | À créer. Sans frais avant l’expédition (règle 6). |
-| `cotiserArticleListe` | branché | POST /api/wishlists/{code}/items/{produit}/pool | → code de la cotisation (créée au besoin) | À créer. Articles de 15 000 F et plus. |
-| `envoyerPanierA` | branché | POST /api/cart/send-to {prenom, proche?, relais, qui_paie_livraison, moyen, mot} (Idempotency-Key) | → référence ; refus « garantie » si le destinataire ne peut pas payer la livraison | À créer. Contrôle destinatairePeutPayer refait côté serveur. |
-| `recus` | branché | GET /api/me/inbox | → envois reçus (à traiter d’abord) et envoyés, avec les réponses ; nombre à traiter | À créer. Un envoi par destinataire (compte trouvé par numéro vérifié ou e-mail) ; sans compte, seul le lien public existe. Jamais l’adresse ni le numéro complet de l’autre. |
-| `recu` | branché | GET /api/me/inbox/{id} | → envoi, sens (reçu, envoyé), moyens du compte (Mobile Money, cartes, portefeuille ; diaspora : cartes) | À créer. Lu seulement par l’envoyeur et le destinataire. |
-| `executerRecu` | branché | POST /api/me/inbox/{id}/actions {action, p?, montant?, moyen, qui?, mot?, discret?, relais?} (Idempotency-Key) | → envoi mis à jour, commande née, montant payé ; 409 traite, 410 expire, 422 garantie, montant, solde, moyen, diaspora | À créer. Règle donnees/echanges.ts refaite côté serveur : articles payés et bloqués avant l’envoi au vendeur ; « destinataire paie » seulement si la garantie couvre le pire cas ; refus sans frais avant l’expédition ; compte diaspora : carte seulement. |
-| `remercierRecu` | branché | POST /api/me/inbox/{id}/thanks {texte} |  | À créer. Le bénéficiaire remercie qui a payé (e-mail pour un invité sans compte). |
-| `envoyerRecu` | branché | POST /api/me/outbox {type, a, prenom, titre, …} | → envoi ; dansLApplication si le destinataire a un compte ; refus numero, moi, vide | À créer. Anti-annuaire : on ne dit pas si un numéro a un compte avant l’envoi (20 recherches par jour). |
+| `listes` | à créer côté serveur | GET /api/me/wishlists |  |  |
+| `creerListe` | à créer côté serveur | POST /api/me/wishlists {nom, mode, remiseLe, surprise, occasion?, hotes?, cagnotte?} | → 201 ListeEnvies |  |
+| `ajouterArticleListe` | à créer côté serveur | POST /api/me/wishlists/{id}/items {produit} |  |  |
+| `retirerArticleListe` | à créer côté serveur | DELETE /api/me/wishlists/{id}/items/{produit} | → refusé pour un article offert |  |
+| `reglerListe` | à créer côté serveur | PATCH /api/me/wishlists/{id} |  |  |
+| `partagerListe` | à créer côté serveur | POST /api/me/wishlists/{id}/share |  |  |
+| `arreterPartage` | à créer côté serveur | DELETE /api/me/wishlists/{id}/share |  |  |
+| `demarrerListe` | à créer côté serveur | POST /api/me/wishlists/{id}/start |  |  |
+| `listePublique` | à créer côté serveur | GET /api/wishlists/{code} | lien public l/ (CAP-11) |  |
+| `offrirArticleListe` | à créer côté serveur | POST /api/wishlists/{code}/gifts {produit, prenom, email, moyen, jeton, prix_vu, qui, livraison, devise, carte: {bin, pays_carte, pays, code_email}} (Idempotency-Key) | → 409 price_changed (CLE-39) ; 422 plafond, domicile, coherence (avec le contrôle), verification | À créer. Sans compte, depuis n’importe où : relais du destinataire ou chez lui (adresse jamais renvoyée) ; carte : plafonds et contrôle de cohérence du compte diaspora, historique par e-mail. |
+| `envoyerCodeCadeau` | à créer côté serveur | POST /api/wishlists/{code}/gifts/otp {email} | → destination masquée, validité | À créer. Vérification renforcée d’un cadeau payé par carte (contrôle de cohérence « renforcé »). |
+| `suiviCadeau` | à créer côté serveur | GET /api/wishlists/{code}/gifts/{ref} | → étapes, preuve de remise, merci | À créer. Public pour qui a offert (lien de l’e-mail de suivi) : jamais l’adresse, le code ni le numéro du destinataire. |
+| `partagerStatutListe` | à créer côté serveur | POST /api/me/wishlists/{id}/status-shares {canal} | → code et validité du lien | À créer. Crée le lien au besoin (comme /share) et compte les mises en statut par canal. |
+| `participerCagnotteListe` | à créer côté serveur | POST /api/wishlists/{code}/fund {prenom, montant, moyen, mot, discret} (Idempotency-Key) | → montant réuni ; refus ferme, montant | apps.wishlists n’existe pas côté relaya (voir la note en tête de la section Listes d’envies). Cagnotte d’une liste (mariage : voyage de noces) : dès 1 000 F, bloquée chez BelivaY puis versée au portefeuille des hôtes à la date de l’événement — à créer. |
 
-### Cotisations (5/5 branchées)
-
-| Méthode | État | Route | Corps → réponse | Note |
-|---|---|---|---|---|
-| `cotisations` | branché | GET /api/me/pools |  |  |
-| `creerCotisation` | branché | POST /api/me/pools |  |  |
-| `cotisationPublique` | branché | GET /api/pools/{code} | lien public c/ ; noms discrets masqués |  |
-| `participer` | branché | POST /api/pools/{code}/contributions {prenom, montant, discret, mot, moyen, jeton?, carte} (Idempotency-Key) |  | Carte : jeton du prestataire (src/connecteurs/paiementCarte.ts), jamais le numéro ni le CVC (CAP-24). |
-| `deciderHausse` | branché | POST /api/me/pools/{id}/price-rise {choix, moyen?} |  |  |
-
-### Mises de côté (5/5 branchées)
+### Échanges entre clients (0/14 branchées)
 
 | Méthode | État | Route | Corps → réponse | Note |
 |---|---|---|---|---|
-| `misesDeCote` | branché | GET /api/me/layaways |  |  |
-| `creerMiseDeCote` | branché | POST /api/me/layaways {produit, rythme, moyen} (Idempotency-Key) | → acompte payé |  |
-| `creerMiseDeCoteListe` | branché | POST /api/me/layaways {liste, exclus, equivalents, rythme, moyen} (Idempotency-Key) |  |  |
-| `payerVersement` | branché | POST /api/me/layaways/{id}/installments {moyen} (Idempotency-Key) |  |  |
-| `annulerMiseDeCote` | branché | POST /api/me/layaways/{id}/cancel |  |  |
+| `echanges` | à créer côté serveur | GET /api/me/exchanges | → proches, listes suivies, envois, remerciements, colis payés par l’un pour l’autre | À créer. Proches : comptes BelivaY trouvés par numéro ou liés (family-links) ; jamais l’adresse ni le numéro complet. Aucune app backend-kit (wishlists/recus) n’est installée dans backend/relaya/settings/base.py : système entier absent de backend/, pas un champ manquant — décision produit requise. |
+| `chercherProche` | à créer côté serveur | POST /api/me/contacts/lookup {numero} | → prénom et quartier du relais, ou inconnu | À créer. Limiter les recherches (anti-annuaire) : 20 par jour. Aucune app backend-kit (wishlists/recus) n’est installée dans backend/relaya/settings/base.py : système entier absent de backend/, pas un champ manquant — décision produit requise. |
+| `envoyerAuxProches` | à créer côté serveur | POST /api/me/exchanges/send {type, id, proches[]} | → nombre de notifications envoyées | À créer. Une notification dans l’application du proche, une fois par objet. Aucune app backend-kit (wishlists/recus) n’est installée dans backend/relaya/settings/base.py : système entier absent de backend/, pas un champ manquant — décision produit requise. |
+| `rappelerInvites` | à créer côté serveur | POST /api/me/wishlists/{id}/remind | → 429 too_early {prochain} ; un rappel tous les 3 jours au plus | À créer. Seulement les invités BelivaY qui n’ont rien offert ; BelivaY ne relance jamais de lui-même. Aucune app backend-kit (wishlists/recus) n’est installée dans backend/relaya/settings/base.py : système entier absent de backend/, pas un champ manquant — décision produit requise. |
+| `suivreListe` | à créer côté serveur | PUT /api/me/followed-wishlists/{code} {suivre, rappel} |  | À créer. Rappel push N jours avant la date de remise, à qui l’a demandé. Aucune app backend-kit (wishlists/recus) n’est installée dans backend/relaya/settings/base.py : système entier absent de backend/, pas un champ manquant — décision produit requise. |
+| `remercier` | à créer côté serveur | POST /api/me/thanks {ref, texte} |  | À créer. Message à qui a offert (e-mail pour un invité sans compte). Aucune app backend-kit (wishlists/recus) n’est installée dans backend/relaya/settings/base.py : système entier absent de backend/, pas un champ manquant — décision produit requise. |
+| `repondreColis` | à créer côté serveur | POST /api/me/incoming-parcels/{id}/answer {accepte} | → colis ; refus : retenue (retenueRefus) et remboursement du payeur | À créer. Sans frais avant l’expédition (règle 6). Aucune app backend-kit (wishlists/recus) n’est installée dans backend/relaya/settings/base.py : système entier absent de backend/, pas un champ manquant — décision produit requise. |
+| `cotiserArticleListe` | à créer côté serveur | POST /api/wishlists/{code}/items/{produit}/pool | → code de la cotisation (créée au besoin) | À créer. Articles de 15 000 F et plus. Aucune app backend-kit (wishlists/recus) n’est installée dans backend/relaya/settings/base.py : système entier absent de backend/, pas un champ manquant — décision produit requise. |
+| `envoyerPanierA` | à créer côté serveur | POST /api/cart/send-to {prenom, proche?, relais, qui_paie_livraison, moyen, mot} (Idempotency-Key) | → référence ; refus « garantie » si le destinataire ne peut pas payer la livraison | À créer. Contrôle destinatairePeutPayer refait côté serveur. Aucune app backend-kit (wishlists/recus) n’est installée dans backend/relaya/settings/base.py : système entier absent de backend/, pas un champ manquant — décision produit requise. |
+| `recus` | à créer côté serveur | GET /api/me/inbox | → envois reçus (à traiter d’abord) et envoyés, avec les réponses ; nombre à traiter | À créer. Un envoi par destinataire (compte trouvé par numéro vérifié ou e-mail) ; sans compte, seul le lien public existe. Jamais l’adresse ni le numéro complet de l’autre. Aucune app backend-kit (wishlists/recus) n’est installée dans backend/relaya/settings/base.py : système entier absent de backend/, pas un champ manquant — décision produit requise. |
+| `recu` | à créer côté serveur | GET /api/me/inbox/{id} | → envoi, sens (reçu, envoyé), moyens du compte (Mobile Money, cartes, portefeuille ; diaspora : cartes) | À créer. Lu seulement par l’envoyeur et le destinataire. Aucune app backend-kit (wishlists/recus) n’est installée dans backend/relaya/settings/base.py : système entier absent de backend/, pas un champ manquant — décision produit requise. |
+| `executerRecu` | à créer côté serveur | POST /api/me/inbox/{id}/actions {action, p?, montant?, moyen, qui?, mot?, discret?, relais?} (Idempotency-Key) | → envoi mis à jour, commande née, montant payé ; 409 traite, 410 expire, 422 garantie, montant, solde, moyen, diaspora | À créer. Règle donnees/echanges.ts refaite côté serveur : articles payés et bloqués avant l’envoi au vendeur ; « destinataire paie » seulement si la garantie couvre le pire cas ; refus sans frais avant l’expédition ; compte diaspora : carte seulement. Aucune app backend-kit (wishlists/recus) n’est installée dans backend/relaya/settings/base.py : système entier absent de backend/, pas un champ manquant — décision produit requise. |
+| `remercierRecu` | à créer côté serveur | POST /api/me/inbox/{id}/thanks {texte} |  | À créer. Le bénéficiaire remercie qui a payé (e-mail pour un invité sans compte). Aucune app backend-kit (wishlists/recus) n’est installée dans backend/relaya/settings/base.py : système entier absent de backend/, pas un champ manquant — décision produit requise. |
+| `envoyerRecu` | à créer côté serveur | POST /api/me/outbox {type, a, prenom, titre, …} | → envoi ; dansLApplication si le destinataire a un compte ; refus numero, moi, vide | À créer. Anti-annuaire : on ne dit pas si un numéro a un compte avant l’envoi (20 recherches par jour). Aucune app backend-kit (wishlists/recus) n’est installée dans backend/relaya/settings/base.py : système entier absent de backend/, pas un champ manquant — décision produit requise. |
+
+### Cotisations (0/5 branchées)
+
+| Méthode | État | Route | Corps → réponse | Note |
+|---|---|---|---|---|
+| `cotisations` | à créer côté serveur | GET /api/me/pools |  | apps.extras absent de backend/ : aucun modèle de cotisation côté serveur. |
+| `creerCotisation` | à créer côté serveur | POST /api/me/pools |  | apps.extras absent de backend/. |
+| `cotisationPublique` | à créer côté serveur | GET /api/pools/{code} | lien public c/ ; noms discrets masqués | apps.extras absent de backend/. |
+| `participer` | à créer côté serveur | POST /api/pools/{code}/contributions {prenom, montant, discret, mot, moyen, jeton?, carte} (Idempotency-Key) |  | apps.extras absent de backend/. |
+| `deciderHausse` | à créer côté serveur | POST /api/me/pools/{id}/price-rise {choix, moyen?} |  | apps.extras absent de backend/. |
+
+### Mises de côté (0/5 branchées)
+
+| Méthode | État | Route | Corps → réponse | Note |
+|---|---|---|---|---|
+| `misesDeCote` | à créer côté serveur | GET /api/me/layaways |  | apps.extras absent de backend/ : aucun modèle de mise de côté côté serveur. |
+| `creerMiseDeCote` | à créer côté serveur | POST /api/me/layaways {produit, rythme, moyen} (Idempotency-Key) | → acompte payé | apps.extras absent de backend/. |
+| `creerMiseDeCoteListe` | à créer côté serveur | POST /api/me/layaways {liste, exclus, equivalents, rythme, moyen} (Idempotency-Key) |  | apps.extras absent de backend/. |
+| `payerVersement` | à créer côté serveur | POST /api/me/layaways/{id}/installments {moyen} (Idempotency-Key) |  | apps.extras absent de backend/. |
+| `annulerMiseDeCote` | à créer côté serveur | POST /api/me/layaways/{id}/cancel |  | apps.extras absent de backend/. |
 
 ### Ventes flash (3/3 branchées)
 
@@ -403,41 +403,51 @@ manque un SDK ou un réglage de l'appareil) ; **démonstration seulement** (simu
 | `ajouterFlash` | branché | POST /api/cart/lines {produit, flash: true} | → ok si l’offre court et qu’il reste du stock |  |
 | `alerteFlash` | branché | PUT /api/me/notification-settings {flash} |  |  |
 
-### Rentrée scolaire (4/4 branchées)
+### Annonces sponsorisées (5/5 branchées)
 
 | Méthode | État | Route | Corps → réponse | Note |
 |---|---|---|---|---|
-| `rentree` | branché | GET /api/school-lists |  |  |
-| `commanderRentree` | branché | POST /api/school-lists/{id}/order {exclus, equivalents, moyen} (Idempotency-Key) | → référence de commande |  |
-| `envoyerListePapier` | branché | POST /api/school-lists/photo (multipart) {classe, photo} |  |  |
-| `publierListe` | branché | POST /api/school-lists/{id}/publish |  |  |
+| `annoncesListe` | branché | GET /api/sponsored/placements?ou=&q=&cat= | → annonces (rangées par l’enchère), boosts, règles | DP-59 : le serveur ne renvoie que les annonces éligibles (VD-PUB-ELIGIBILITE : stock, Trust Score, aucun litige) dont le budget du jour et le solde le permettent ; le site les mêle aux résultats (donnees/annonces.ts, VD-PUB-DENSITE) et applique le Boost (VD-PUB-BOOST) au tri « pertinence ». |
+| `emplacementsAccueil` | branché | GET /api/sponsored/home | → aLaUne, carrousel, flash (sélection en cours) | DP-59 : emplacements de la semaine (VD-PUB-A-LA-UNE, VD-PUB-CARROUSEL) ; sans emplacement acheté, l’accueil garde ses contenus. |
+| `cliquerAnnonce` | branché | POST /api/sponsored/clicks {annonce} | → 204 | DP-59 : un clic facturé une fois par client et par jour (VD-PUB-CLIC) ; envoyé sans bloquer la navigation. |
+| `voirAnnonce` | branché | POST /api/sponsored/impressions {annonce, emplacement, visite} | → 204 | DP-59 : une impression quand l’annonce est à moitié visible, une par client, campagne, emplacement et visite (statistiques du vendeur, AJ-P) ; une campagne arrêtée n’est pas comptée. |
+| `signalerAnnonce` | branché | POST /api/sponsored/reports {annonce, motif} | → 204 | DP-59 : « Signaler cette annonce » (trompeuse, inappropriée, interdit, répétitive, autre), relu par la console ; l’annonce est aussitôt masquée pour ce client. |
 
-### Panier famille (5/5 branchées)
-
-| Méthode | État | Route | Corps → réponse | Note |
-|---|---|---|---|---|
-| `famille` | branché | GET /api/me/family-baskets |  |  |
-| `enregistrerPanierFamille` | branché | POST /api/me/family-baskets · PUT /api/me/family-baskets/{id} |  |  |
-| `lierDestinataire` | branché | POST /api/me/family-baskets/recipient {prenom, numero, relais} |  |  |
-| `payerPanierFamille` | branché | POST /api/me/family-baskets/{id}/pay {carte_jeton, email, mensuel, jour} (Idempotency-Key) |  | Carte : jeton du prestataire (src/connecteurs/paiementCarte.ts), jamais le numéro ni le CVC (CAP-24). |
-| `suspendrePanierFamille` | branché | PATCH /api/me/family-baskets/{id} {suspendu} |  |  |
-
-### Troc (6/6 branchées)
+### Rentrée scolaire (0/4 branchées)
 
 | Méthode | État | Route | Corps → réponse | Note |
 |---|---|---|---|---|
-| `trocs` | branché | GET /api/me/trades |  |  |
-| `creerTroc` | branché | POST /api/me/trades {produit, modele, declare} |  |  |
-| `repondreTroc` | branché | POST /api/me/trades/{id}/answer {accepte} |  |  |
-| `contesterTroc` | branché | POST /api/me/trades/{id}/contest {texte} |  |  |
-| `payerTroc` | branché | POST /api/me/trades/{id}/pay {moyen} (Idempotency-Key) |  |  |
-| `annulerTroc` | branché | DELETE /api/me/trades/{id} |  |  |
+| `rentree` | à créer côté serveur | GET /api/school-lists |  | Aucune route "school-lists" dans backend/ ; backend-kit/apps/extras en a un prototype complet (modèles, règles, tests), jamais installé (INSTALLED_APPS, backend/relaya/settings/base.py). PromotionCampaign (apps/catalog) est une remise sur un produit d’un vendeur, pas une liste multi-articles multi-vendeurs construite par un parent : pas réutilisable tel quel. Système entier absent de backend/, pas un champ manquant — décision produit requise avant de porter l’app ou de redéfinir la fonctionnalité. |
+| `commanderRentree` | à créer côté serveur | POST /api/school-lists/{id}/order {exclus, equivalents, moyen} (Idempotency-Key) | → référence de commande | Même constat que `rentree`. |
+| `envoyerListePapier` | à créer côté serveur | POST /api/school-lists/photo (multipart) {classe, photo} |  | Même constat que `rentree`. |
+| `publierListe` | à créer côté serveur | POST /api/school-lists/{id}/publish |  | Même constat que `rentree`. |
+
+### Panier famille (0/5 branchées)
+
+| Méthode | État | Route | Corps → réponse | Note |
+|---|---|---|---|---|
+| `famille` | à créer côté serveur | GET /api/me/family-baskets |  | apps.extras absent de backend/ : aucun modèle de panier famille côté serveur. |
+| `enregistrerPanierFamille` | à créer côté serveur | POST /api/me/family-baskets · PUT /api/me/family-baskets/{id} |  | apps.extras absent de backend/. |
+| `lierDestinataire` | à créer côté serveur | POST /api/me/family-baskets/recipient {prenom, numero, relais} |  | apps.extras absent de backend/. |
+| `payerPanierFamille` | à créer côté serveur | POST /api/me/family-baskets/{id}/pay {carte_jeton, email, mensuel, jour} (Idempotency-Key) |  | apps.extras absent de backend/. |
+| `suspendrePanierFamille` | à créer côté serveur | PATCH /api/me/family-baskets/{id} {suspendu} |  | apps.extras absent de backend/. |
+
+### Troc (0/6 branchées)
+
+| Méthode | État | Route | Corps → réponse | Note |
+|---|---|---|---|---|
+| `trocs` | à créer côté serveur | GET /api/me/trades |  | apps.extras absent de backend/ : aucun modèle de troc côté serveur. |
+| `creerTroc` | à créer côté serveur | POST /api/me/trades {produit, modele, declare} |  | apps.extras absent de backend/. |
+| `repondreTroc` | à créer côté serveur | POST /api/me/trades/{id}/answer {accepte} |  | apps.extras absent de backend/. |
+| `contesterTroc` | à créer côté serveur | POST /api/me/trades/{id}/contest {texte} |  | apps.extras absent de backend/. |
+| `payerTroc` | à créer côté serveur | POST /api/me/trades/{id}/pay {moyen} (Idempotency-Key) |  | apps.extras absent de backend/. |
+| `annulerTroc` | à créer côté serveur | DELETE /api/me/trades/{id} |  | apps.extras absent de backend/. |
 
 ### WhatsApp (2/2 branchées)
 
 | Méthode | État | Route | Corps → réponse | Note |
 |---|---|---|---|---|
-| `whatsapp` | branché | GET /api/whatsapp/conversation |  | Appel écrit côté site ; le kit répond 501 a_finir tant que l’API WhatsApp Business n’est pas en service (FF-EX06). relaya : module whatsapp_assistant (webhook entrant seulement). |
+| `whatsapp` | branché | GET /api/whatsapp/conversation |  | Appel écrit côté site ; route absente aujourd’hui (apps.extras pas créé) : 404 brut tant que le module n’existe pas, FF-EX06 fermé. relaya : module whatsapp_assistant (webhook entrant seulement). |
 | `repondreWhatsapp` | branché | POST /api/whatsapp/conversation/messages {texte} |  |  |
 
 <!-- connecteurs:fin -->

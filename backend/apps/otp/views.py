@@ -100,13 +100,10 @@ class EnvoyerCode(VuePublique):
             # Vérification renforcée d'une commande pour un proche (diaspora.services.commander_pour la contrôle).
             if user is None:
                 raise exceptions.NotAuthenticated()
-            from apps.client_core.chiffrement import dechiffrer
-            from apps.diaspora.services import compte as compte_diaspora
-
-            c = compte_diaspora(user)
-            if c is None:
-                raise ErreurClient(status.HTTP_403_FORBIDDEN, "type", "Ce code est réservé aux comptes diaspora.")
-            destination, canal = dechiffrer(c.numero_chiffre), "sms"
+            # apps.diaspora n'existe pas dans ce backend (module du kit jamais fusionné,
+            # confirmé par l'audit du 14 oct.) : aucun compte diaspora ne peut exister,
+            # donc ce code est toujours refusé — sans l'import qui plantait en 500 brut.
+            raise ErreurClient(status.HTTP_403_FORBIDDEN, "type", "Ce code est réservé aux comptes diaspora.")
         elif objet == Objet.DIASPORA:
             if not destination:
                 raise _invalide("Destination manquante.")

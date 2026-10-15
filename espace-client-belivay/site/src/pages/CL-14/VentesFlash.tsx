@@ -62,7 +62,7 @@ export function VentesFlash() {
   const enCours = d.offres.filter((o) => o.debut <= now && o.fin > now).sort((a, b) => a.fin - b.fin)
   const finies = d.offres.filter((o) => o.fin <= now)
   const aVenir = d.offres.filter((o) => o.debut > now)
-  const promos = produits.filter((p) => (p.prixBarre ?? 0) > p.prix && !enCours.some((o) => o.p === p.p)).length + enCours.length
+  const promos = produits.filter((p) => (p.prixBarre ?? 0) > p.prix && !enCours.some((o) => o.p === p.p)).length // les Flash Deals n'en font pas partie
   const remise = (o: OffreFlash) => Math.round((1 - o.prix / o.avant) * 100)
   const sel = enCours.find((o) => o.p === params.get('offre')) ?? null
   const variante = (p: string) => produits.find((x) => x.p === p)?.variante ?? null
@@ -224,7 +224,7 @@ export function VentesFlash() {
           <Icone nom="zap" taille={110} style={{ fill: 'currentColor' }} />
         </span>
         <div className="k">{tf('OFFRES LIMITÉES · {r}', { r: t(relais).toUpperCase() })}</div>
-        <h1>{t('Promotions du moment')}</h1>
+        <h1>{t('Flash Deals du moment')}</h1>
         <div className="fd-cd blv-tuiles" data-s={prochaine} data-urgence={urgenceDe(prochaine)} role="timer">
           <span className="b">
             <b className="h"><Chiffres texte={deux(Math.floor(prochaine / 3600))} /></b>

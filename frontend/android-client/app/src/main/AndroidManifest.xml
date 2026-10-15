@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -27,9 +28,50 @@
             android:grantUriPermissions="true">
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
         </provider>
+
+        <!--
+          @capacitor-community/background-geolocation est une dependance npm
+          partagee par tous les portails (un seul node_modules), mais seul le
+          portail livreur demarre reellement un service de localisation en
+          arriere-plan (suivi de course). Le client ne fait que des releves
+          ponctuels (getCurrentPosition) pour la proximite boutique/checkout —
+          jamais de service continu. Sans ce retrait, le manifest merger
+          d'Android injecte quand meme le service et les permissions
+          FOREGROUND_SERVICE* du plugin dans l'APK/AAB client.
+        -->
+        <service
+            android:name="com.equimaps.capacitor_background_geolocation.BackgroundGeolocationService"
+            tools:node="remove" />
     </application>
 
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Retires : injectes par le plugin background-geolocation, non utilises par le client (cf. commentaire ci-dessus). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" tools:node="remove" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" tools:node="remove" />
+
+    <!--
+      POST_NOTIFICATIONS N'EST PAS retire, volontairement : meme si le plugin
+      background-geolocation la declare pour sa notification de service
+      permanent (qu'on vient de retirer ci-dessus), c'est aussi la permission
+      generale exigee par Android 13+ pour TOUTE notification applicative —
+      y compris les notifications push du client (D21). La retirer casserait
+      ces notifications, pas seulement celles du plugin.
+    -->
+
+    <!--
+      Meme plugin : il declare <uses-feature android.hardware.location.gps />
+      SANS required="false", ce qui rend le GPS physique obligatoire pour
+      installer l'appli — Google Play exclut alors silencieusement tout
+      appareil sans puce GPS dediee (beaucoup de tablettes, TV, voitures, et
+      certains telephones d'entree de gamme geolocalises par Wi-Fi/reseau
+      seulement). Le client n'exige jamais de GPS precis : surcharge en
+      "non obligatoire" pour ne pas restreindre le catalogue d'appareils.
+    -->
+    <uses-feature
+        android:name="android.hardware.location.gps"
+        android:required="false"
+        tools:replace="android:required" />
 </manifest>

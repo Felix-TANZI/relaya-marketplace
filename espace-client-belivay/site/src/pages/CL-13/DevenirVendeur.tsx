@@ -17,7 +17,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import img_32eb64e58d50_jpg from '../../assets/prototype/32eb64e58d50.jpg'
 import { Icone } from '../../composants/Icone'
 import { Styles } from '../../composants/Styles'
-import { chemin } from '../../config/pages'
+import { chemin, espaceVendeur } from '../../config/pages'
 import { source, type Boutique, type EtatPiece, type ResultatBoutique } from '../../donnees/source'
 import { usePreferences } from '../../preferences'
 import { useSession } from '../../session'
@@ -361,18 +361,19 @@ function MaBoutique({ b }: { b: Boutique }) {
         </div>
       </div>
       <div className="btns mt14">
-        <Link to={chemin('devenir-vendeur', { st: 'ouvrir' })} className="btn primary">
+        {/* L'espace vendeur (même domaine, même session) reprend la boutique demandée ici (bienvenue_client). */}
+        <a href={espaceVendeur(b)} className="btn primary">
           <Icone nom="store" taille={18} />
           <span>{t('Ouvrir mon espace vendeur')}</span>
-        </Link>
+        </a>
       </div>
       {(p === 'aucune' || p === 'refusee') && (
         <div className="btns">
           {/* La pièce se donne dans l'espace vendeur (recto, verso, selfie vidéo). */}
-          <Link to={chemin('devenir-vendeur', { st: 'ouvrir' })} className="btn secondary">
+          <a href="/vendeur/kyc" className="btn secondary">
             <Icone nom="id-card" taille={18} />
             <span>{t(p === 'refusee' ? 'Renvoyer la photo de ma pièce' : 'Vérifier ma pièce maintenant')}</span>
-          </Link>
+          </a>
         </div>
       )}
       <div className="hint-l">

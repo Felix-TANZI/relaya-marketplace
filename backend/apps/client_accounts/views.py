@@ -191,6 +191,10 @@ class DernierChangementNumero(VueClient):
 
 
 class Securite(VueClient):
+    @extend_schema(tags=T_SECU, summary="Alerte de connexion et date de vérification du numéro")
+    def get(self, request):
+        return Response(services.donnees_securite(request.user))
+
     @extend_schema(tags=T_SECU, summary="Alerte de connexion sur un nouvel appareil")
     def patch(self, request):
         p = services.profil(request.user)
@@ -200,6 +204,10 @@ class Securite(VueClient):
 
 
 class Identites(VueClient):
+    @extend_schema(tags=T_SECU, summary="Comptes Google/Apple liés (adresse masquée, ou aucun)")
+    def get(self, request):
+        return Response(services.identites_liees(request.user))
+
     @extend_schema(tags=T_SECU, summary="Lier un compte Google ou Apple")
     def post(self, request):
         d = _lire(s.IdentiteSerializer, request)

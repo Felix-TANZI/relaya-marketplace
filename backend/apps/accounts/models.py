@@ -666,6 +666,7 @@ class UserNotification(models.Model):
         PAYMENT = "PAYMENT", "Paiement"
         SUPPORT = "SUPPORT", "Support"
         SYSTEM = "SYSTEM", "Système"
+        SECURITY = "SECURITY", "Sécurité"
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
     title = models.CharField(max_length=160)

@@ -19,7 +19,7 @@ import { Glisser } from '../../composants/Glisser'
 import { useLieu } from '../../composants/PourQui'
 import { Icone } from '../../composants/Icone'
 import { chemin } from '../../config/pages'
-import { calculer, type SousCommandeFrais } from '../../donnees/frais'
+import { calculer, fraisPaiement, type SousCommandeFrais } from '../../donnees/frais'
 import { source, type DonneesPanier, type LienFamille, type LignePanier } from '../../donnees/source'
 import { F } from '../../i18n/format'
 import { usePreferences } from '../../preferences'
@@ -484,13 +484,23 @@ export function Panier() {
           </span>
         </div>
       ))}
+      {!diaspora && (
+        <div className="cl07-r">
+          <span className="lb">
+            {t('Frais CamPay 2 %')}
+            <small>{t('Mobile Money (MTN, Orange) ; Wallet : sans frais')}</small>
+          </span>
+          <span className="v">{F(fraisPaiement('mobile', f.total))} F</span>
+        </div>
+      )}
       <div className="cl07-tot">
-        <span className="l">{t('Total à payer')}</span>
+        <span className="l">{t(diaspora ? 'Total à payer' : 'Total à payer en Mobile Money')}</span>
         <span className="price">
-          {F(f.total)}
+          {F(diaspora ? f.total : f.total + fraisPaiement('mobile', f.total))}
           <small>{t(' F')}</small>
         </span>
       </div>
+      {!diaspora && <div className="t12 c3" style={{ textAlign: 'right' }}>{tf('Avec le Wallet : {m} F, sans frais', { m: F(f.total) })}</div>}
       {f.offert > 0 && <div className="cl07-eco">{tf('tu économises {m} F de livraison', { m: F(f.offert) })}</div>}
       <div className="cl07-pmx">
         <div className="cl07-lab">{t('Moyens acceptés')}</div>

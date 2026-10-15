@@ -162,11 +162,11 @@ export function PanierRetrait() {
             </div>
             <div className="cl07-mc">
               <div>
-                <Link to="/fiche?p=tablette8" className="ph" aria-label={t("Tablette 8″ · 64 Go")}>
+                <Link to="/fiche?p=tablette8" className="ph" aria-label={t("Samsung Galaxy Tab A9 8,7″ · 64 Go")}>
                   <Dessin id="6d95c1664bef" />
                 </Link>
                 <span className="t">
-                  {t("Tablette 8″ · 64 Go")}
+                  {t("Samsung Galaxy Tab A9 8,7″ · 64 Go")}
                 </span>
                 <span className="p">
                   {t("64\u00A0000\u00A0F")}
@@ -347,7 +347,7 @@ export function PanierRetrait() {
           </div>
           <div className="blk">
             <div className="cl07-ln">
-              <Link to="/fiche?p=mixeur" className="im" aria-label={t("Mixeur-blender 2 L · 600 W")}>
+              <Link to="/fiche?p=mixeur" className="im" aria-label={t("Mixeur-blender Philips 2 L · 600 W")}>
                 <span className="thumb" style={{ "width": "64px", "height": "64px", "borderRadius": "16px" }}>
                   <Dessin id="1bf387ebd71e" />
                 </span>
@@ -356,7 +356,7 @@ export function PanierRetrait() {
                 <div className="row" style={{ "alignItems": "flex-start", "gap": "4px" }}>
                   <div className="grow">
                     <Link to="/fiche?p=mixeur" className="cn">
-                      {t("Mixeur-blender 2 L · 600 W")}
+                      {t("Mixeur-blender Philips 2 L · 600 W")}
                     </Link>
                   </div>
                   <span className="ic2">
@@ -577,14 +577,14 @@ export function PanierRetrait() {
         </div>
         <div className="cl07-svc">
           <div className="cl07-sv">
-            <Link to="/fiche?p=montre" aria-label={t("Montre acier bracelet cuir")}>
+            <Link to="/fiche?p=montre" aria-label={t("Montre Casio chronographe acier, bracelet cuir")}>
               <span className="thumb" style={{ "width": "52px", "height": "52px", "borderRadius": "13px" }}>
                 <Dessin id="465a7de86fd7" />
               </span>
             </Link>
             <div className="grow">
               <Link to="/fiche?p=montre" className="cn">
-                {t("Montre acier bracelet cuir")}
+                {t("Montre Casio chronographe acier, bracelet cuir")}
               </Link>
               <div className="pz">
                 <b>
@@ -607,7 +607,7 @@ export function PanierRetrait() {
             </button>
           </div>
           <div className="cl07-sv">
-            <Link to="/fiche?p=baskets" aria-label={t("Baskets running")}>
+            <Link to="/fiche?p=baskets" aria-label={t("Baskets running ASICS")}>
               <span className="thumb" style={{ "width": "52px", "height": "52px", "borderRadius": "13px" }}>
                 <Dessin id="032cafed79c8" />
               </span>

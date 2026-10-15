@@ -15,7 +15,7 @@ import { Feuille, useFeuille } from '../../composants/Feuille'
 import { Icone } from '../../composants/Icone'
 import { Bouton } from '../../composants/socle'
 import { Styles } from '../../composants/Styles'
-import { chemin } from '../../config/pages'
+import { chemin, espaceVendeur } from '../../config/pages'
 import { useEtat } from '../../config/etats'
 import { source, type DonneesCompte } from '../../donnees/source'
 import { F } from '../../i18n/format'
@@ -279,6 +279,7 @@ export function Compte() {
         {!diaspora && (<>
         <BanniereVendeur
           ouverte={!!d.boutique}
+          vers={d.boutique ? espaceVendeur(d.boutique) : undefined}
           titre={d.boutique ? tf('Ma boutique «\u00A0{nom}\u00A0»', { nom: d.boutique.nom }) : t("Deviens vendeur")}
           sous={t(
                 !d.boutique

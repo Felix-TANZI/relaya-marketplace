@@ -6,6 +6,7 @@
 # flash deal a 100 000 F perdrait face a une offre affichee 150 699 F, et la
 # grille montrerait la mauvaise offre.
 
+import secrets
 from datetime import timedelta
 
 import pytest
@@ -30,7 +31,7 @@ def categorie():
 @pytest.fixture
 def vendeur(django_user_model):
     return django_user_model.objects.create_user(
-        username="vendeur_d5", email="vendeur.d5@example.com", password="Fiche-2026",
+        username="vendeur_d5", email="vendeur.d5@example.com", password=secrets.token_urlsafe(16),
     )
 
 

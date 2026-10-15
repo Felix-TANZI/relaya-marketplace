@@ -1186,6 +1186,7 @@ export default function CourierDashboardPage() {
                 destinationCity={mapShipment?.city}
                 destinationPrecision={mapShipment?.delivery_location_precision}
                 destinationLabel={t("cr1_dashboard.map.destination_label")}
+                vehicleType={currentCourierVehicle}
                 currentLocation={mapShipment?.latest_location
                   ? [Number(mapShipment.latest_location.latitude), Number(mapShipment.latest_location.longitude)]
                   : undefined}
@@ -1845,6 +1846,7 @@ export default function CourierDashboardPage() {
               destinationCity={mapShipment?.city}
               destinationPrecision={mapShipment?.delivery_location_precision}
               destinationLabel={t("cr1_dashboard.map.destination_label")}
+              vehicleType={currentCourierVehicle}
               currentLocation={mapShipment?.latest_location
                 ? [Number(mapShipment.latest_location.latitude), Number(mapShipment.latest_location.longitude)]
                 : undefined}

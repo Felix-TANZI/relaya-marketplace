@@ -1,47 +1,17 @@
 // Domaine « Cotisations » (CL-15 ; FF-EX02) : un cadeau payé à plusieurs, lien public c/{code}, noms discrets
-// masqués, hausse de prix à compléter ou rembourser. Routes du kit : backend-kit/apps/extras (réponses au format de
-// src/donnees/source.ts : adaptateur identité).
-import type { CarteJeton, Cotisation, Source } from '../../donnees/source'
-import type { PaieFrais } from '../../donnees/echanges'
+// masqués, hausse de prix à compléter ou rembourser.
+//
+// NON DISPONIBLE EN PRODUCTION — décision produit requise avant de construire quoi que ce soit ici : ces routes ne
+// visent que `backend-kit/apps/extras` (POST /api/me/pools, etc.), qui N'EST PAS dans `backend/apps/`
+// (relaya-marketplace) ni dans `INSTALLED_APPS` (voir `backend/relaya/settings/base.py`). Aucun modèle backend
+// (cotisation, contribution, hausse de prix) n'existe nulle part dans le dépôt de production : ce n'est pas une
+// route à corriger, c'est un système entier (modèle de données, paiement partagé, lien public, règle de hausse) à
+// concevoir avant de pouvoir l'écrire.
+// Toutes les méthodes sont donc volontairement absentes d'ici : `source-api.ts` les fait lever NonDisponible (voir
+// src/api/routes.ts, état « serveur »), l'écran le sait et dit quoi créer plutôt que d'appeler une route qui
+// n'existera jamais tant que la décision produit n'est pas prise.
 import type { ClientApi } from '../client'
-import { ErreurIntrouvable } from '../erreurs'
-import { jetonCarte, ou, seg, suivreRedirection } from './refus'
 
-export function domaineCotisations(api: ClientApi) {
-  return {
-    // GET /api/me/pools → { liste, maintenant }
-    cotisations: async () => api.get<{ liste: Cotisation[]; maintenant: number }>('/me/pools'),
-
-    // POST /api/me/pools {nom, occasion, p, beneficiaire, relais, jusqua, qui?} → 201 Cotisation ; 422 relais, date
-    creerCotisation: async (c: { nom: string; occasion: string; p: string; beneficiaire: string; relais: string; jusqua: number; qui?: PaieFrais }) =>
-      api.post<Cotisation>('/me/pools', c),
-
-    // GET /api/pools/{code} (public) → Cotisation (noms discrets masqués) ; 404 → null
-    cotisationPublique: async (code: string) => {
-      try {
-        return await api.get<Cotisation>(`/pools/${seg(code)}`)
-      } catch (e) {
-        if (e instanceof ErreurIntrouvable) return null
-        throw e
-      }
-    },
-
-    // POST /api/pools/{code}/contributions {prenom, montant, discret, mot, moyen, jeton?, carte} (Idempotency-Key)
-    // → { ok, cotisation } | { ok: false, raison: fermee | montant }. Carte : le jeton du prestataire seul (CAP-24).
-    participer: async (code: string, p: { prenom: string; montant: number; discret: boolean; mot: string; moyen: string; carte: CarteJeton | null }) =>
-      ou(
-        api
-          .post<{ ok: true; cotisation: Cotisation } | { ok: false; raison: 'fermee' | 'montant' }>(
-            `/pools/${seg(code)}/contributions`,
-            { prenom: p.prenom, montant: p.montant, discret: p.discret, mot: p.mot, moyen: p.moyen, jeton: jetonCarte(p.carte), carte: p.carte !== null },
-            { idempotence: true },
-          )
-          .then(suivreRedirection),
-        ['fermee', 'montant'] as const,
-      ),
-
-    // POST /api/me/pools/{id}/price-rise {choix, moyen?} → Cotisation ; 409 state_changed, 422 moyen
-    deciderHausse: async (id: string, choix: 'completer' | 'rembourser', moyen?: string) =>
-      api.post<Cotisation>(`/me/pools/${seg(id)}/price-rise`, { choix, moyen: moyen ?? null }, { idempotence: true }),
-  } satisfies Partial<Source>
+export function domaineCotisations(_api: ClientApi) {
+  return {}
 }

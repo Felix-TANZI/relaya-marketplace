@@ -718,6 +718,16 @@ def etat_business(user) -> str:
 etat_demande_business = etat_business
 
 
+# ── Sécurité (lecture) ──────────────────────────────────────────────────────────────────────────────────
+
+
+def donnees_securite(user) -> dict:
+    """Ce que GET /api/me/security ajoute à GET /api/auth/me/ et GET /api/auth/sessions/ (relaya) : alerte de
+    connexion (déjà réglée par PATCH, jusqu'ici jamais relue) et date de vérification du numéro (CIN-31)."""
+    p = profil(user)
+    return {"alerteConnexion": p.alerte_connexion, "numeroVerifieLe": ms(p.numero_verifie_le)}
+
+
 # ── Identités Google et Apple (CIN-46) ──────────────────────────────────────────────────────────────────
 
 
@@ -770,6 +780,12 @@ def verifier_jeton_identite(fournisseur: str, jeton: str) -> dict:
         "prenom": str(claims.get("given_name", "") or "").strip(),
         "nom": str(claims.get("family_name", "") or "").strip(),
     }
+
+
+def identites_liees(user) -> dict:
+    """GET /api/me/identities : adresse masquée du compte Google/Apple lié, ou None (DonneesSecurite.methodes)."""
+    liees = {i.fournisseur: i.email_masque or None for i in IdentiteLiee.objects.filter(user=user)}
+    return {"google": liees.get("google"), "apple": liees.get("apple")}
 
 
 def lier_methode(user, fournisseur: str, jeton: str) -> dict:

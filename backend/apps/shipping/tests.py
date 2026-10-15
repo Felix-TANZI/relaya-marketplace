@@ -1,3 +1,5 @@
+import secrets
+
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
@@ -15,11 +17,16 @@ from .models import RelayParcel, Shipment, ShipmentEvent, ShipmentEvidence, Ship
 from .serializers import RelayParcelPickupSerializer, RelayParcelReceiveSerializer, ShipmentSerializer
 from .tournees import bourse_tournees_for_organization, claim_tournee_for_organization, compose_tournees_for_zone
 
+# Mot de passe de fixture : jamais relu, juste exige par create_user()/create_superuser().
+# Genere plutot qu'ecrit en dur pour ne pas faire remonter de faux positifs sur les
+# scanners de secrets (GitGuardian/Gitleaks).
+TEST_PASSWORD = secrets.token_urlsafe(16)
+
 
 class ShipmentTrackingTests(APITestCase):
     def setUp(self):
-        self.client_user = User.objects.create_user("tracking_client", password="Client2026")
-        self.organization_user = User.objects.create_user("tracking_org", password="Org2026")
+        self.client_user = User.objects.create_user("tracking_client", password=TEST_PASSWORD)
+        self.organization_user = User.objects.create_user("tracking_org", password=TEST_PASSWORD)
         self.organization = DeliveryOrganizationProfile.objects.create(
             user=self.organization_user,
             company_name="BelivaY Tracking Logistics",
@@ -28,7 +35,7 @@ class ShipmentTrackingTests(APITestCase):
             zones=["Mvan", "Bastos"],
             status=DeliveryOrganizationProfile.Status.APPROVED,
         )
-        self.courier_user = User.objects.create_user("tracking_courier", password="Courier2026")
+        self.courier_user = User.objects.create_user("tracking_courier", password=TEST_PASSWORD)
         self.courier = CourierProfile.objects.create(
             user=self.courier_user,
             delivery_organization=self.organization,
@@ -40,7 +47,7 @@ class ShipmentTrackingTests(APITestCase):
             is_approved=True,
             is_online=True,
         )
-        self.other_courier_user = User.objects.create_user("other_courier", password="Courier2026")
+        self.other_courier_user = User.objects.create_user("other_courier", password=TEST_PASSWORD)
         CourierProfile.objects.create(
             user=self.other_courier_user,
             phone="+237690000003",
@@ -67,7 +74,7 @@ class ShipmentTrackingTests(APITestCase):
             status=Shipment.Status.OUT_FOR_DELIVERY,
         )
         self.location_url = reverse("shipping-my-shipments-location", args=[self.shipment.id])
-        self.relay_user = User.objects.create_user("tracking_relay", password="Relay2026")
+        self.relay_user = User.objects.create_user("tracking_relay", password=TEST_PASSWORD)
         self.relay_point = RelayPointProfile.objects.create(
             user=self.relay_user,
             name="Relais Tracking Mvan",
@@ -142,7 +149,7 @@ class ShipmentTrackingTests(APITestCase):
         self.assertEqual(len(response.data[0]["location_history"]), 1)
 
     def test_unrelated_user_cannot_read_legacy_tracking_endpoint(self):
-        unrelated_user = User.objects.create_user("tracking_outsider", password="Client2026")
+        unrelated_user = User.objects.create_user("tracking_outsider", password=TEST_PASSWORD)
         self.client.force_authenticate(unrelated_user)
 
         response = self.client.get(reverse("shipping-track"), {"order_id": self.order.id})
@@ -568,10 +575,10 @@ class TourneeCompositionTests(APITestCase):
     """
 
     def setUp(self):
-        self.client_user = User.objects.create_user("tournee_client", password="Client2026")
+        self.client_user = User.objects.create_user("tournee_client", password=TEST_PASSWORD)
         self.zone = Zone.objects.create(name="Zone Tournée", city="Yaounde", tier=Zone.Tier.STANDARD)
 
-        self.org_user = User.objects.create_user("tournee_org", password="Org2026")
+        self.org_user = User.objects.create_user("tournee_org", password=TEST_PASSWORD)
         self.organization = DeliveryOrganizationProfile.objects.create(
             user=self.org_user,
             company_name="BelivaY Tournée Logistics",
@@ -581,7 +588,7 @@ class TourneeCompositionTests(APITestCase):
             status=DeliveryOrganizationProfile.Status.APPROVED,
             transport_insurance_verified=True,
         )
-        self.courier_user = User.objects.create_user("tournee_courier", password="Courier2026")
+        self.courier_user = User.objects.create_user("tournee_courier", password=TEST_PASSWORD)
         self.courier = CourierProfile.objects.create(
             user=self.courier_user,
             delivery_organization=self.organization,
@@ -595,7 +602,7 @@ class TourneeCompositionTests(APITestCase):
         )
 
     def _make_shipment(self, *, vendor_suffix, parcel_size="STANDARD", created_at=None):
-        vendor_user = User.objects.create_user(f"tournee_vendor_{vendor_suffix}", password="Vendor2026")
+        vendor_user = User.objects.create_user(f"tournee_vendor_{vendor_suffix}", password=TEST_PASSWORD)
         order = Order.objects.create(
             user=self.client_user,
             customer_phone="+237690100003",
@@ -671,13 +678,13 @@ class BourseAuxCoursesTests(APITestCase):
     """
 
     def setUp(self):
-        self.client_user = User.objects.create_user("bourse_client", password="Client2026")
+        self.client_user = User.objects.create_user("bourse_client", password=TEST_PASSWORD)
         # Zone sans aucune entreprise de livraison a la composition : le
         # composeur ne peut assigner personne -> publication sur la bourse.
         self.zone = Zone.objects.create(name="Zone Bourse", city="Douala", tier=Zone.Tier.STANDARD)
 
     def _make_shipment(self, *, vendor_suffix):
-        vendor_user = User.objects.create_user(f"bourse_vendor_{vendor_suffix}", password="Vendor2026")
+        vendor_user = User.objects.create_user(f"bourse_vendor_{vendor_suffix}", password=TEST_PASSWORD)
         order = Order.objects.create(
             user=self.client_user, customer_phone="+237690500001", city="Douala",
             address="Akwa", zone=self.zone, total_xaf=10000,
@@ -685,7 +692,7 @@ class BourseAuxCoursesTests(APITestCase):
         return Shipment.objects.create(order=order, vendor=vendor_user, status=Shipment.Status.CREATED)
 
     def _make_organization(self, username, *, city="Douala", zones=None):
-        org_user = User.objects.create_user(username, password="Org2026")
+        org_user = User.objects.create_user(username, password=TEST_PASSWORD)
         return DeliveryOrganizationProfile.objects.create(
             user=org_user, company_name=f"Livraison {username}", phone="+237690500002",
             city=city, zones=zones or [], status=DeliveryOrganizationProfile.Status.APPROVED,
@@ -693,7 +700,7 @@ class BourseAuxCoursesTests(APITestCase):
         )
 
     def _make_courier(self, username, organization):
-        user = User.objects.create_user(username, password="Courier2026")
+        user = User.objects.create_user(username, password=TEST_PASSWORD)
         return CourierProfile.objects.create(
             user=user, delivery_organization=organization, phone="+237690500003",
             city=organization.city, zones=[self.zone.name], id_card=f"CNI-{username}",
@@ -781,13 +788,13 @@ class AdminSupervisionDashboardTests(APITestCase):
     """Console de supervision minimale : deux listes + subvention par zone."""
 
     def setUp(self):
-        self.admin = User.objects.create_superuser("supervision_admin", "supervision_admin@test.local", "pass")
-        self.buyer = User.objects.create_user("supervision_buyer", password="pass")
+        self.admin = User.objects.create_superuser("supervision_admin", "supervision_admin@test.local", TEST_PASSWORD)
+        self.buyer = User.objects.create_user("supervision_buyer", password=TEST_PASSWORD)
         self.zone = Zone.objects.create(name="Zone Supervision", city="Yaounde", tier=Zone.Tier.STANDARD)
         self.url = reverse("shipping-admin-supervision")
 
     def _make_order_and_shipment(self, *, created_at, status=Shipment.Status.CREATED):
-        vendor_user = User.objects.create_user(f"supervision_vendor_{Order.objects.count()}", password="pass")
+        vendor_user = User.objects.create_user(f"supervision_vendor_{Order.objects.count()}", password=TEST_PASSWORD)
         order = Order.objects.create(
             user=self.buyer, customer_phone="+237690600001", city="Yaounde",
             address="Mvan", zone=self.zone, total_xaf=8000,
@@ -870,9 +877,9 @@ class SanctionThrottlingDispatchTests(APITestCase):
         from apps.accounts.trust_score import apply_sanction
 
         self.apply_sanction = apply_sanction
-        self.client_user = User.objects.create_user("throttle_client", password="Client2026")
+        self.client_user = User.objects.create_user("throttle_client", password=TEST_PASSWORD)
         self.zone = Zone.objects.create(name="Zone Throttle", city="Yaounde", tier=Zone.Tier.STANDARD)
-        org_user = User.objects.create_user("throttle_org", password="Org2026")
+        org_user = User.objects.create_user("throttle_org", password=TEST_PASSWORD)
         self.organization = DeliveryOrganizationProfile.objects.create(
             user=org_user, company_name="Throttle Logistics", phone="+237690600001",
             city="Yaounde", zones=["Zone Throttle"],
@@ -880,7 +887,7 @@ class SanctionThrottlingDispatchTests(APITestCase):
         )
 
     def _courier(self, suffix):
-        user = User.objects.create_user(f"throttle_courier_{suffix}", password="Courier2026")
+        user = User.objects.create_user(f"throttle_courier_{suffix}", password=TEST_PASSWORD)
         return CourierProfile.objects.create(
             user=user, delivery_organization=self.organization, phone=f"+23769060{suffix}",
             city="Yaounde", zones=["Zone Throttle"], id_card=f"THROTTLE-CNI-{suffix}",
@@ -927,7 +934,7 @@ class RelayPointCollectionScheduleTests(APITestCase):
         self.url = reverse("shipping-relay-collections")
         self.zone = Zone.objects.create(name="Zone Collecte", city="Yaounde", tier=Zone.Tier.STANDARD)
 
-        self.org_user = User.objects.create_user("collecte_org", password="Org2026")
+        self.org_user = User.objects.create_user("collecte_org", password=TEST_PASSWORD)
         self.organization = DeliveryOrganizationProfile.objects.create(
             user=self.org_user,
             company_name="Wink Express",
@@ -937,7 +944,7 @@ class RelayPointCollectionScheduleTests(APITestCase):
             status=DeliveryOrganizationProfile.Status.APPROVED,
         )
 
-        self.relay_user = User.objects.create_user("collecte_relay", password="Relay2026")
+        self.relay_user = User.objects.create_user("collecte_relay", password=TEST_PASSWORD)
         self.relay_point = RelayPointProfile.objects.create(
             user=self.relay_user,
             name="Relais Collecte Mvan",
@@ -947,7 +954,7 @@ class RelayPointCollectionScheduleTests(APITestCase):
             is_active=True,
         )
 
-        self.client_user = User.objects.create_user("collecte_client", password="Client2026")
+        self.client_user = User.objects.create_user("collecte_client", password=TEST_PASSWORD)
 
     def _order(self):
         return Order.objects.create(
@@ -1004,7 +1011,7 @@ class RelayPointCollectionScheduleTests(APITestCase):
         self.assertEqual(passage["slot_end"], self.zone.afternoon_slot()[1])
 
     def test_tournee_d_un_autre_relais_invisible(self):
-        autre_user = User.objects.create_user("collecte_autre", password="Relay2026")
+        autre_user = User.objects.create_user("collecte_autre", password=TEST_PASSWORD)
         autre_relais = RelayPointProfile.objects.create(
             user=autre_user,
             name="Relais Voisin",
@@ -1023,7 +1030,7 @@ class RelayPointCollectionScheduleTests(APITestCase):
 
     def test_colis_destines_ailleurs_non_comptes(self):
         """Une tournee desservant deux relais ne gonfle pas le compteur du notre."""
-        autre_user = User.objects.create_user("collecte_autre2", password="Relay2026")
+        autre_user = User.objects.create_user("collecte_autre2", password=TEST_PASSWORD)
         autre_relais = RelayPointProfile.objects.create(
             user=autre_user,
             name="Relais Voisin 2",
@@ -1144,7 +1151,7 @@ class RelayPointReturnDepositTests(APITestCase):
         self.lookup_url = reverse("shipping-relay-return-lookup")
         self.receive_url = reverse("shipping-relay-return-receive")
 
-        self.relay_user = User.objects.create_user("depot_relay", password="Relay2026")
+        self.relay_user = User.objects.create_user("depot_relay", password=TEST_PASSWORD)
         self.relay_point = RelayPointProfile.objects.create(
             user=self.relay_user,
             name="Relais Depot Mvan",
@@ -1153,8 +1160,8 @@ class RelayPointReturnDepositTests(APITestCase):
             status=RelayPointProfile.Status.APPROVED,
             is_active=True,
         )
-        self.client_user = User.objects.create_user("depot_client", password="Client2026")
-        self.vendor_user = User.objects.create_user("depot_vendeur", password="Vendor2026")
+        self.client_user = User.objects.create_user("depot_client", password=TEST_PASSWORD)
+        self.vendor_user = User.objects.create_user("depot_vendeur", password=TEST_PASSWORD)
 
         self.order = Order.objects.create(
             user=self.client_user,
@@ -1261,7 +1268,7 @@ class RelayPointReturnDepositTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_retour_oriente_vers_un_autre_relais_signale(self):
-        autre_user = User.objects.create_user("depot_autre", password="Relay2026")
+        autre_user = User.objects.create_user("depot_autre", password=TEST_PASSWORD)
         autre = RelayPointProfile.objects.create(
             user=autre_user,
             name="Relais Nkolbisson",
@@ -1348,7 +1355,7 @@ class RelayPointHistoryTests(APITestCase):
 
     def setUp(self):
         self.url = reverse("shipping-relay-history")
-        self.relay_user = User.objects.create_user("histo_relay", password="Relay2026")
+        self.relay_user = User.objects.create_user("histo_relay", password=TEST_PASSWORD)
         self.relay_point = RelayPointProfile.objects.create(
             user=self.relay_user,
             name="Relais Historique",
@@ -1357,7 +1364,7 @@ class RelayPointHistoryTests(APITestCase):
             status=RelayPointProfile.Status.APPROVED,
             is_active=True,
         )
-        self.client_user = User.objects.create_user("histo_client", password="Client2026")
+        self.client_user = User.objects.create_user("histo_client", password=TEST_PASSWORD)
 
     def _colis(self, relay_point=None, **dates):
         order = Order.objects.create(
@@ -1404,7 +1411,7 @@ class RelayPointHistoryTests(APITestCase):
         self.assertEqual(dates, sorted(dates, reverse=True))
 
     def test_operation_d_un_autre_relais_absente(self):
-        autre_user = User.objects.create_user("histo_autre", password="Relay2026")
+        autre_user = User.objects.create_user("histo_autre", password=TEST_PASSWORD)
         autre = RelayPointProfile.objects.create(
             user=autre_user,
             name="Relais Voisin",

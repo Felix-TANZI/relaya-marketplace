@@ -583,8 +583,8 @@ class PromotionCampaignAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display        = ('id', 'title', 'vendor_name', 'category', 'price_xaf_fmt', 'stock', 'is_active', 'created_at', 'variant_display')
-    list_filter         = ('is_active', 'category')
+    list_display        = ('id', 'title', 'vendor_name', 'category', 'price_xaf_fmt', 'stock', 'is_active', 'price_flag_reason', 'duplicate_flag_master', 'created_at', 'variant_display')
+    list_filter         = ('is_active', 'category', 'price_flag_reason')
     search_fields       = ('title', 'slug', 'sku', 'vendor__username')
     prepopulated_fields = {'slug': ('title',)}
     readonly_fields     = ('sku', 'discount_percent', 'created_at', 'updated_at')

@@ -584,8 +584,9 @@ function observer(liste: MutationRecord[]) {
 // ---------- Pastille des sélecteurs .seg (styles/animations.css : .seg.blv-pill::before) ----------
 function placerPastille(seg: HTMLElement, anime: boolean) {
   const on = seg.querySelector<HTMLElement>(':scope > .on')
+  // Retirer une classe absente écrit quand même l'attribut : l'observateur des classes se relancerait sans fin.
   if (!on) {
-    seg.classList.remove('blv-pill')
+    if (seg.classList.contains('blv-pill')) seg.classList.remove('blv-pill')
     return
   }
   if (!anime) seg.classList.add('blv-pill-fixe')

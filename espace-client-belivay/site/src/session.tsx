@@ -13,8 +13,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let vivant = true
     source.session().then((s) => vivant && setSession(s))
+    // Un favori ajouté ou retiré, de n'importe quel écran : la pastille de l'onglet suit tout de suite.
+    const favori = () => void source.session().then((s) => vivant && setSession(s))
+    window.addEventListener('blv:favori', favori)
     return () => {
       vivant = false
+      window.removeEventListener('blv:favori', favori)
     }
   }, [])
   if (!session) return null

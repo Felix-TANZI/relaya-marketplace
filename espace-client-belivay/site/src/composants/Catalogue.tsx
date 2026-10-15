@@ -2,14 +2,16 @@
 // les univers, le filtrage et le tri, les règles du retrait (prix du retrait par la formule du panier, colis trop
 // volumineux pour un relais, retirable aujourd'hui), la correction d'une faute de frappe, la carte produit (cœur et
 // « + » qui marchent vraiment), et le chargement commun (produits, favoris, relais, boutiques, panier, heure).
+import { noterPanier } from '../donnees/pourVous'
 import { useEffect, useState, type MouseEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { chemin } from '../config/pages'
 import { calculer, type Classe } from '../donnees/frais'
-import { source, type DonneesPanier, type Produit, type Relais } from '../donnees/source'
+import { source, type AnnonceSponsorisee, type DonneesPanier, type Produit, type Relais } from '../donnees/source'
 import { F } from '../i18n/format'
 import { usePreferences } from '../preferences'
 import { useMajSession, useSession } from '../session'
+import { cliquerAnnonce, Sponsorise, VuAnnonce } from './Annonces'
 import { Dessin } from './Dessin'
 import { Icone } from './Icone'
 
@@ -232,7 +234,7 @@ export function Retrait({ p }: { p: Produit }) {
   )
 }
 
-export function CarteProduit({ p, favori, tag, proche, selection, auChange }: { p: Produit; favori?: boolean; tag?: string; proche?: boolean; selection?: boolean; auChange?: (texte: string) => void }) {
+export function CarteProduit({ p, favori, tag, proche, selection, annonce, boost, ou = 'recherche', auChange }: { p: Produit; favori?: boolean; tag?: string; proche?: boolean; selection?: boolean; annonce?: AnnonceSponsorisee | null; boost?: string | null; ou?: 'recherche' | 'categorie' | 'accueil'; auChange?: (texte: string) => void }) {
   const { t, tf } = usePreferences()
   const majSession = useMajSession()
   const [fav, setFav] = useState(!!favori)
@@ -248,15 +250,18 @@ export function CarteProduit({ p, favori, tag, proche, selection, auChange }: { 
     e.preventDefault()
     e.stopPropagation()
     await source.ajouterProduit(p.p, {}, 1)
+    noterPanier(p.univers)
     auChange?.(tf('« {p} » ajouté au panier.', { p: t(p.titre) }))
     majSession(await source.session())
   }
   const etiquette = proche ? 'Le plus proche' : (tag ?? p.tags[0])
   const remise = p.prixBarre && p.prixBarre > p.prix ? Math.round((1 - p.prix / p.prixBarre) * 100) : 0
   return (
-    <Link to={chemin('fiche', { p: p.p })} className={'pcard' + (proche ? ' cl04-near' : '')}>
+    <Link to={chemin('fiche', { p: p.p })} className={'pcard' + (proche ? ' cl04-near' : '')} onClick={() => cliquerAnnonce(annonce ?? boost)}>
       <span className="pc-img">
         {(p.dessins[0] || p.images?.[0]) && <Dessin id={p.dessins[0] ?? ''} image={p.images?.[0]} alt={p.titre} />}
+        {annonce && <Sponsorise classe="sur" annonce={annonce} ou={ou} />}
+        {boost && <VuAnnonce jeton={boost} campagne={'boost:' + p.p} ou="boost" />}
         {etiquette &&
           (selection ? (
             <span className="pc-tag">{t(etiquette)}</span>

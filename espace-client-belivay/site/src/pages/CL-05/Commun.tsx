@@ -10,6 +10,7 @@
 // - « rien trouvé » : ce qui s'en approche, l'alerte (créer, annuler), la catégorie, les conseils pour mieux
 //   chercher (et l'aide), les recherches populaires.
 // L'accueil montre aussi les marques du catalogue, comptées.
+import { noterRecherche } from '../../donnees/pourVous'
 import { useEffect, useRef, useState, type FormEvent, type MouseEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
@@ -20,7 +21,8 @@ import { Icone } from '../../composants/Icone'
 import { chemin } from '../../config/pages'
 import { PARAMETRES } from '../../donnees/frais'
 import { oublierRecherches, POPULAIRES, recentes, retenirRecherche } from '../../donnees/recherches'
-import { source, type Produit } from '../../donnees/source'
+import { source, type AnnonceSponsorisee, type Produit } from '../../donnees/source'
+import { melerAnnonces, Sponsorise, cliquerAnnonce, useAnnoncesListe, useTelephone, VuAnnonce } from '../../composants/Annonces'
 import { F } from '../../i18n/format'
 import { usePreferences } from '../../preferences'
 import { useMajSession } from '../../session'
@@ -442,7 +444,7 @@ export function Suggestions({ s, q, chercher }: { s: ReturnType<typeof suggestio
 
 // Une ligne produit des résultats (cl05-row) : retrait calculé, colis trop volumineux, déjà sur le trajet du panier,
 // stock ; cœur (favori) et « + » (panier).
-export function LigneProduit({ p, c, auChange }: { p: Produit; c: Contexte; auChange: (texte: string) => void }) {
+export function LigneProduit({ p, c, annonce, boost, auChange }: { p: Produit; c: Contexte; annonce?: AnnonceSponsorisee | null; boost?: string | null; auChange: (texte: string) => void }) {
   const { t, tf } = usePreferences()
   const lieuR = useLieu()
   const majSession = useMajSession()
@@ -472,9 +474,11 @@ export function LigneProduit({ p, c, auChange }: { p: Produit; c: Contexte; auCh
     majSession(await source.session())
   }
   return (
-    <Link to={chemin('fiche', { p: p.p })} className={'cl05-row' + (p.stock > 0 ? '' : ' out')}>
+    <Link to={chemin('fiche', { p: p.p })} className={'cl05-row' + (p.stock > 0 ? '' : ' out')} onClick={() => cliquerAnnonce(annonce ?? boost)}>
       <span className="th">{(p.dessins[0] || p.images?.[0]) && <Dessin id={p.dessins[0] ?? ''} image={p.images?.[0]} alt={p.titre} tailles="64px" />}</span>
       <span className="bd">
+        {annonce && <Sponsorise annonce={annonce} ou="recherche" />}
+        {boost && <VuAnnonce jeton={boost} campagne={'boost:' + p.p} ou="boost" />}
         {trajet && frais !== null && <span className="mk">{t('Déjà sur le trajet de ton panier — sans ramassage en plus')}</span>}
         <span className="tt">{t(p.titre)}</span>
         <span className="xs">{qui}</span>
@@ -570,6 +574,11 @@ export function CorpsResultats({ c }: { c: Contexte }) {
   const [message, setMessage] = useState<string | null>(null)
   const qSaisi = params.get('q') ?? ''
   const { q, corrigeDepuis, f, liste } = resultatsDe(c, params)
+  // Flux « Pour vous » de l'accueil : recherches faites (donnees/pourVous.ts).
+  useEffect(() => void (q && noterRecherche(q)), [q])
+  // Annonces sponsorisées et Boost (DP-59) : au tri « pertinence » seulement, parmi les résultats filtrés.
+  const annonces = useAnnoncesListe('recherche', q || null, f.u ?? null)
+  const affiches = melerAnnonces(liste, annonces, f.tri ?? 'pertinence', useTelephone())
   // Chargement en défilant ; dès 768 px, « Voir plus » après 3 chargements (CL-04/Chargement.tsx).
   const { vus, suite, reste, enAttente, plus, large } = useChargement(liste.length, PAGE, params.toString())
   // Dès 1024 px : panneau des filtres en place (colonne gauche), tri en menu, résultats en grille de cartes, ou en
@@ -719,12 +728,12 @@ export function CorpsResultats({ c }: { c: Contexte }) {
       )}
       {enGrille ? (
         <div className="pgrid l-res">
-          {liste.slice(0, vus).map((p) => (
-            <CarteProduit key={p.p} p={p} favori={c.favoris.includes(p.p)} auChange={setMessage} />
+          {affiches.slice(0, vus).map(({ p, annonce, boost }) => (
+            <CarteProduit key={p.p} p={p} favori={c.favoris.includes(p.p)} annonce={annonce} boost={boost} ou="recherche" auChange={setMessage} />
           ))}
         </div>
       ) : (
-        liste.slice(0, vus).map((p) => <LigneProduit key={p.p} p={p} c={c} auChange={setMessage} />)
+        affiches.slice(0, vus).map(({ p, annonce, boost }) => <LigneProduit key={p.p} p={p} c={c} annonce={annonce} boost={boost} auChange={setMessage} />)
       )}
       {!liste.length && (
         <div className="cl05-blk">

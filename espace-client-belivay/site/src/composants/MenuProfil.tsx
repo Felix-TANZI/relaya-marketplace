@@ -78,20 +78,12 @@ export function MenuProfil() {
           </Module>
           <Entree vers={chemin('messagerie')} icone="messages-square" texte="Messages" droite={bd(m.messagesNonLus)} />
           <Entree vers={chemin('recus')} icone="inbox" texte="Reçus" droite={bd(m.recusATraiter ?? 0)} />
-          {diaspora ? (
+          {diaspora && (
             <>
               <Entree vers={chemin('espace-diaspora')} icone="globe" texte="Espace diaspora" />
               <Entree vers={chemin('paniers-proches')} icone="inbox" texte="À payer pour mes proches" />
               <Entree vers={chemin('proches')} icone="users" texte="Mes proches" />
             </>
-          ) : (
-          <Module ff="FF-WALLET">
-            <Link to={chemin('wallet')} className="it wl" role="menuitem">
-              <Icone nom="wallet" taille={20} />
-              <span className="grow">{t('Wallet BelivaY')}</span>
-              <span className="v">{t(F(m.portefeuille.solde) + ' F')}</span>
-            </Link>
-          </Module>
           )}
           <div className="kk">{t('Mon activité')}</div>
           <Entree vers={chemin('notifications')} icone="bell" texte="Notifications" droite={bd(m.notificationsNouvelles)} />

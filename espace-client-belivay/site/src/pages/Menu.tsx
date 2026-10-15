@@ -13,14 +13,14 @@ import { useDes } from '../composants/ecran'
 import { Bloc } from './CL-13/Larges'
 import { Icone } from '../composants/Icone'
 import { Illustration, Interrupteur, Ligne } from '../composants/socle'
-import { chemin } from '../config/pages'
+import { chemin, espaceVendeur } from '../config/pages'
 import { useDonnees } from '../donnees/useDonnees'
 import { source } from '../donnees/source'
 import { F, N, badge } from '../i18n/format'
 import { usePreferences } from '../preferences'
 import { PastillePourQui } from '../composants/PourQui'
 import { useCompteDiaspora, useSession } from '../session'
-import { Montant, OeilSolde, Portrait } from '../composants/Profil'
+import { Portrait } from '../composants/Profil'
 
 const pluriel = (n: number, un: string, plusieurs: string) => n + ' ' + (n > 1 ? plusieurs : un)
 
@@ -140,38 +140,7 @@ export function Menu() {
           </div>
 
           </Bloc>
-          <Bloc classe="mn-b">
-          {ff['FF-WALLET'] && !diaspora && (
-            <>
-              <div className="dx-h">
-                <b>{t('Mon Wallet')}</b>
-                <Link to={chemin('wallet')}>{t('Détails')}</Link>
-              </div>
-              <section className="wl-card">
-                <span className="ring" />
-                <div className="wl-h">
-                  <Icone nom="wallet" taille={16} />
-                  <span className="grow">{t('Wallet BelivaY')}</span>
-                  <OeilSolde />
-                </div>
-                <div className="wl-bal">
-                  <Montant solde>{t(F(m.portefeuille.solde))}</Montant>
-                  <small>{t('F')}</small>
-                </div>
-                <div className="wl-sub">
-                  <Montant>{t(`Disponible · cagnotte en attente ${F(m.portefeuille.cagnotteEnAttente)} F`)}</Montant>
-                </div>
-                <div className="wl-act">
-                  <ActionPortefeuille vers={chemin('wallet', { st: 'recharger' })} icone="plus" taille={20} texte="Recharger" />
-                  <ActionPortefeuille vers={chemin('panier')} icone="shopping-cart" taille={19} texte="Payer" />
-                  <ActionPortefeuille vers={chemin('wallet', { st: 'retirer' })} icone="arrow-up-right" taille={19} texte="Retirer" />
-                  <ActionPortefeuille vers={chemin('wallet')} icone="list" taille={19} texte="Historique" />
-                </div>
-              </section>
-            </>
-          )}
-
-          </Bloc>
+          {/* Wallet : plus dans le menu (consigne du porteur) ; il reste accessible depuis Compte. */}
           <Bloc classe="mn-b">
           <div className="dx-h">
             <b>{t('Mes achats')}</b>
@@ -204,6 +173,7 @@ export function Menu() {
           <Bloc classe="mn-b">
           <BanniereVendeur
             ouverte={!!compte?.boutique}
+            vers={compte?.boutique ? espaceVendeur(compte.boutique) : undefined}
             titre={compte?.boutique ? tf('Ma boutique «\u00A0{nom}\u00A0»', { nom: compte.boutique.nom }) : t('Deviens vendeur')}
             sous={t(compte?.boutique ? 'Ton espace vendeur : produits, commandes, versements.' : 'Ouvre ta boutique en 1 minute, ajoute tes produits tout de suite. Pièce d’identité avant de vendre.')}
             action={t(compte?.boutique ? 'Voir' : 'Commencer')}
@@ -339,11 +309,28 @@ export function Menu() {
           </div>
           </Bloc>
           </Bloc>
-          <div className="mn-foot">
-            <Link to={chemin('legal')}>{t('Pages légales')}</Link>
-            <Link to={chemin('legal-doc', { d: 'mentions' })}>{t('À propos de BelivaY')}</Link>
-            <Link to={chemin('faq', { t: 'retrait' })}>{t('Comment ça marche')}</Link>
-          </div>
+          <section className="mn-pied" aria-label={t('BelivaY')}>
+            <div className="dx-h">
+              <b>{t('BelivaY')}</b>
+            </div>
+            <div className="mn-foot">
+              <Link to={chemin('categories')}>{t('Catalogue')}</Link>
+              <Link to={chemin('faq', { t: 'retrait' })}>{t('Comment ça marche')}</Link>
+              <Link to={chemin('faq', { t: 'retrait' })}>{t('Retrait et code')}</Link>
+              <Link to={chemin('faq', { t: 'retour' })}>{t('Retours')}</Link>
+              <Link to={chemin('aide')}>{t('Centre d’aide')}</Link>
+              <Link to="/fil?id=support&st=nouveau">{t('Écrire au support')}</Link>
+              <Link to={chemin('legal')}>{t('Pages légales')}</Link>
+              <Link to={chemin('legal-doc', { d: 'confidentialite' })}>{t('Confidentialité')}</Link>
+              <Link to={chemin('legal-doc', { d: 'cgu' })}>{t('Conditions')}</Link>
+              <Link to={chemin('legal-doc', { d: 'mentions' })}>{t('Mentions légales')}</Link>
+            </div>
+            <div className="mn-suivre-pied">
+              <Reseaux />
+              <Contacts />
+            </div>
+            <p className="mn-cp">{t('© 2026 BelivaY. Tous droits réservés.')}</p>
+          </section>
         </>
       )}
     </Ecran>
@@ -378,18 +365,6 @@ function Tuile(p: { classe: string; vers: string; icone: string; plein?: boolean
         <b>{t(p.titre)}</b>
         <small>{t(p.sous)}</small>
       </span>
-    </Link>
-  )
-}
-
-function ActionPortefeuille(p: { vers: string; icone: string; taille: number; texte: string }) {
-  const { t } = usePreferences()
-  return (
-    <Link to={p.vers}>
-      <span className="i">
-        <Icone nom={p.icone} taille={p.taille} />
-      </span>
-      {t(p.texte)}
     </Link>
   )
 }

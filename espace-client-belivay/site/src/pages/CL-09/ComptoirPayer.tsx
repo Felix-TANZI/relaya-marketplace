@@ -16,7 +16,8 @@ import { F } from '../../i18n/format'
 import { jourSeul, quand } from '../../i18n/dates'
 import { usePreferences } from '../../preferences'
 import { CommandeIntrouvable } from '../CL-08/Confirmee'
-import { distance, echeancier, GARDE_GROS_AJOUT, grosColis, minutesAPied, ouvertureDuJour, RENVOI_GARDE, useEnLigne, useRelais } from './Commun'
+import { fraisPaiement } from '../../donnees/frais'
+import { distance, echeancier, GARDE_GROS_AJOUT, grosColis, minutesAPied, ouvertureDuJour, useEnLigne, useRelais } from './Commun'
 
 const DEMANDE_MIN = 15 // une demande Mobile Money expire sans validation
 
@@ -50,7 +51,9 @@ export function ComptoirPayer() {
   const gerant = relais ? t(relais.gerant) : t('le gérant')
   const resteCommande = c.comptoir?.du ?? 0
   const garde = c.garde?.du ?? 0
-  const du = resteCommande + garde
+  // v6 : la garde se paie en espèces au gérant, à part ; le Mobile Money porte les frais CamPay (2 %).
+  const campay = fraisPaiement('mobile', resteCommande)
+  const du = resteCommande + campay
   const m = moyens.find((x) => x.id === moyen)
   const momo = m ? `${t(nomMoMo(m.operateur))} ${m.numeroMasque}` : t('Mobile Money')
   const gros = grosColis(c)
@@ -228,7 +231,7 @@ export function ComptoirPayer() {
             </div>
             <div className="hs">
               {c.garde
-                ? tf('Rien à payer : tes {n} colis sont au relais. Gratuit aujourd’hui, {m} F dès demain.', { n, m: F(c.garde.demain) })
+                ? garde ? tf('Rien à payer en Mobile Money. Garde du jour : {g} F, à payer en espèces au gérant au retrait.', { g: F(garde) }) : tf('Rien à payer : tes {n} colis sont au relais. Gratuit aujourd’hui, {m} F dès demain.', { n, m: F(c.garde.demain) })
                 : t('Rien à payer : tout est réglé. Montre ton code au gérant.')}
             </div>
           </div>
@@ -299,10 +302,16 @@ export function ComptoirPayer() {
                 {c.garde && (
                   <div className="kv">
                     <span className="k">{resteCommande > 0 ? (c.garde.jour === 1 ? t('Frais de garde · arrivée aujourd’hui') : tf('Frais de garde · jour {j}', { j: c.garde.jour })) : tf('Frais de garde · {n} colis', { n })}</span>
-                    <span className="v ">{garde ? F(garde) + ' F' : <span className="free">{t('gratuit')}</span>}</span>
+                    <span className="v ">{garde ? F(garde) + ' F ' + t('en espèces au gérant') : <span className="free">{t('gratuit')}</span>}</span>
                   </div>
                 )}
-                {c.garde && gros && <div className="t12 c3">{tf('Gros colis : + {m} F par jour de garde.', { m: F(GARDE_GROS_AJOUT) })}</div>}
+                {c.garde && gros && GARDE_GROS_AJOUT > 0 && <div className="t12 c3">{tf('Gros colis : + {m} F par jour de garde.', { m: F(GARDE_GROS_AJOUT) })}</div>}
+                {campay > 0 && (
+                  <div className="kv">
+                    <span className="k">{t('Frais CamPay 2 %')}</span>
+                    <span className="v ">{F(campay)}&nbsp;F</span>
+                  </div>
+                )}
                 {!resteCommande && (
                   <div className="kv">
                     <span className="k">{t('Reste de commande')}</span>
@@ -395,7 +404,7 @@ export function ComptoirPayer() {
             {ech && (
               <div className="hint-l">
                 <Icone nom="undo-2" taille={15} style={{ flexShrink: '0', marginTop: '1px' }} />
-                <span>{tf('Pas retiré avant {d} au soir ? Tes colis repartent chez le vendeur : garde et {r} F de renvoi retenus, jamais plus que ce que tu as payé.', { d: jourSeul(ech.dernier.le, langue), r: F(RENVOI_GARDE) })}</span>
+                <span>{tf('Pas retiré avant {d} au soir ? Tes colis repartent chez le vendeur et la commande compte comme un refus.', { d: jourSeul(ech.dernier.le, langue) })}</span>
               </div>
             )}
           </>

@@ -4,7 +4,7 @@
 from rest_framework import serializers
 from django.db.models import Avg
 import re
-from .models import Product, Category, ProductMedia, ProductImage, ProductReview, MasterProduct, ProductCondition, PromotionCampaign, Brand, ColorDictionary, ProductAttribute, MasterProduct, AttributeRole, ProductVariant, ColorFamily
+from .models import Product, Category, ProductMedia, ProductImage, ProductReview, MasterProduct, ProductCondition, PromotionCampaign, Brand, ColorDictionary, ProductAttribute, MasterProduct, AttributeRole, ProductVariant, ColorFamily, ProductQuestion
 from apps.common.translation import translate_fields, request_language
 
 
@@ -360,6 +360,76 @@ class PromotionCampaignSerializer(serializers.ModelSerializer):
         campaign.full_clean()
         campaign.save()
         return campaign
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# QUESTIONS CLIENTS SUR UNE FICHE (côté acheteur) — connecteur « poserQuestion »
+# (espace-client-belivay/site, domaine messagerie, CONNECTEURS.md).
+#
+# Le modèle ProductQuestion (plus haut dans models.py) existait déjà : construit
+# pour l'espace vendeur (réponse publique, signalement, modèles de réponse —
+# voir apps/vendors/views.py "questions clients"), mais sans route côté client
+# pour POSER la question. Complète ce côté manquant du même système, sans en
+# créer un nouveau. DIFFÉRENT de la messagerie directe acheteur-vendeur, qui
+# n'existe pas côté serveur (choix délibéré, Addendum Décisions v1.0) : ici la
+# question et la réponse sont publiques sur la fiche produit, comme un avis.
+#
+# Même règle de masquage que le filtre vendeur (apps/vendors/views.py
+# _filtrer_coordonnees) : numéros, e-mails et liens retirés avant stockage,
+# pour qu'aucun échange de coordonnées ne passe par une question produit.
+# ─────────────────────────────────────────────────────────────────────────────
+
+_QUESTION_EMAIL_RE = re.compile(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}')
+_QUESTION_LIEN_RE = re.compile(r'(?:https?://|www\.)\S+', re.IGNORECASE)
+_QUESTION_NUMERO_RE = re.compile(r'(?:(?:\+|00)\d{1,3}[\s.\-]?)?(?:\d[\s.\-]?){7,}\d')
+
+
+def _filtrer_coordonnees_question(texte: str) -> tuple[str, bool]:
+    propre = _QUESTION_EMAIL_RE.sub('•••', texte)
+    propre = _QUESTION_LIEN_RE.sub('•••', propre)
+    propre = _QUESTION_NUMERO_RE.sub('•••', propre)
+    return propre, propre != texte
+
+
+class ProductQuestionSerializer(serializers.ModelSerializer):
+    """Lecture publique (fiche produit) : la question et sa réponse, sans l'identité de qui demande."""
+
+    class Meta:
+        model = ProductQuestion
+        fields = ["id", "product", "text", "answer_text", "answered_at", "created_at"]
+        read_only_fields = fields
+
+
+class ProductQuestionCreateSerializer(serializers.ModelSerializer):
+    """Écriture (acheteur authentifié) : POST /api/catalog/products/{id}/questions/."""
+
+    class Meta:
+        model = ProductQuestion
+        fields = ["id", "product", "text", "masked"]
+        read_only_fields = ["id", "masked"]
+
+    masked = serializers.SerializerMethodField()
+
+    def get_masked(self, obj):
+        return getattr(obj, "_masked", [])
+
+    def validate_text(self, value):
+        value = (value or "").strip()
+        if not value:
+            raise serializers.ValidationError("La question est vide.")
+        if len(value) > 500:
+            raise serializers.ValidationError("500 caractères au plus.")
+        return value
+
+    def create(self, validated_data):
+        request = self.context.get("request")
+        texte = validated_data["text"]
+        propre, filtre = _filtrer_coordonnees_question(texte)
+        question = ProductQuestion.objects.create(
+            product=validated_data["product"], asker=request.user, text=propre,
+        )
+        question._masked = ["texte"] if filtre else []
+        return question
 
 
 class ProductSerializer(serializers.ModelSerializer):

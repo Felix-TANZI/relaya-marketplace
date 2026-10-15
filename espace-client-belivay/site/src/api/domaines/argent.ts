@@ -1,62 +1,22 @@
 // Domaine « Portefeuille, moyens de paiement, factures » (CL-13 ; CWL-01 à CWL-12, CCO-07, CCO-14, CCO-15, CCO-20 ;
-// DP-23, DP-48 ; CAP-21, CAP-24). Routes du kit : backend-kit/apps/wallet, réponses au format du site.
-// Portefeuille derrière FF-WALLET (404 si le module est fermé). Cartes : seul le jeton du prestataire part
-// (src/connecteurs/paiementCarte.ts), jamais le numéro ni le CVC.
-import type { Carte, DonneesFactures, DonneesPortefeuille, EnvoiCode, MoyenPaiement, NouvelleCarte, ResultatCode, ResultatPortefeuille } from '../../donnees/source'
+// DP-23, DP-48 ; CAP-21, CAP-24).
+//
+// NON DISPONIBLE EN PRODUCTION — décision produit requise avant de construire quoi que ce soit ici :
+// - Ces routes ne visent que `backend-kit/apps/wallet`, qui N'EST PAS dans `backend/apps/` (relaya-marketplace) :
+//   voir `backend/relaya/settings/base.py`, commentaire d'INSTALLED_APPS : « wallet volontairement exclu (en
+//   attente de confirmation CEO : le référentiel verrouillé interdit tout solde/jeton stocké côté client) ».
+//   C'est un désaccord direct avec le Référentiel unique verrouillé (pas de dépôt, pas de jeton, plafond 3,5 % GMV).
+// - relaya a un système de paiement réel (apps.payments : EscrowHold, SettlementBatch, PayoutRequest), mais il ne
+//   sert aujourd'hui que l'acheteur en lecture (historique : GET /api/payments/v2/me/payments/,
+//   GET /api/payments/v2/me/refunds/) et le partenaire (relais/vendeur) côté versement. Aucun solde, aucune
+//   recharge, aucun retrait, aucun numéro Mobile Money ni carte enregistrés côté client n'existe.
+// - PDF des factures : aucune bibliothèque PDF côté serveur (CONNECTEURS.md § 4) ; `GET /api/orders/{id}/invoice.pdf`
+//   n'existe pas non plus.
+// Toutes les méthodes sont donc volontairement absentes d'ici : `source-api.ts` les fait lever NonDisponible (voir
+// src/api/routes.ts, état « serveur »), l'écran le sait et dit quoi créer plutôt que d'appeler une route qui
+// n'existera jamais tant que la décision CEO n'est pas prise.
 import type { ClientApi } from '../client'
-import { avecIntention } from './paiement'
-import { jetonCarte, ou, seg } from './refus'
 
-type PageFactures = DonneesFactures & { maintenant: number; next_cursor?: string | null }
-
-export function domaineArgent(api: ClientApi) {
-  return {
-    // GET /api/me/factures (curseur, CAP-05) → toutes les pages ; le PDF : GET /api/orders/{id}/invoice.pdf
-    factures: async () => {
-      const premiere = await api.get<PageFactures>('/me/factures', { query: { limit: 50 } })
-      const factures = [...premiere.factures]
-      let curseur = premiere.next_cursor ?? null
-      for (let n = 0; curseur && n < 20; n++) {
-        const p = await api.get<PageFactures>('/me/factures', { query: { limit: 50, cursor: curseur } })
-        factures.push(...p.factures)
-        curseur = p.next_cursor ?? null
-      }
-      return { factures, annulees: premiere.annulees, maintenant: premiere.maintenant }
-    },
-
-    // ——— Portefeuille ———
-    portefeuille: async () => api.get<DonneesPortefeuille>('/me/wallet'),
-    // POST /api/me/wallet/topups {montant, moyen} (Idempotency-Key) → ResultatPortefeuille (crédit à la confirmation)
-    recharger: async (montant: number, moyenId: string) =>
-      avecIntention('recharge', { montant, moyenId }, (cle) => api.post<ResultatPortefeuille>('/me/wallet/topups', { montant, moyen: moyenId }, { idempotence: cle })),
-    // GET /api/me/wallet/withdrawal-fee?montant= → frais (0 si le retrait serait refusé)
-    fraisRetrait: async (montant: number) => api.get<number>('/me/wallet/withdrawal-fee', { query: { montant } }),
-    // POST /api/me/wallet/withdrawals {montant, moyen} (Idempotency-Key) → ResultatPortefeuille
-    retirer: async (montant: number, moyenId: string) =>
-      avecIntention('retrait', { montant, moyenId }, (cle) => api.post<ResultatPortefeuille>('/me/wallet/withdrawals', { montant, moyen: moyenId }, { idempotence: cle })),
-
-    // ——— Numéros Mobile Money ———
-    moyensPaiement: async () => api.get<MoyenPaiement[]>('/me/moyens-paiement'),
-    // POST /api/me/moyens-paiement {numero} → {ok, envoi} (le code part avec la réponse) ; 409 deja
-    ajouterMoyen: async (numero: string) => ou(api.post<{ ok: true; envoi: EnvoiCode }>('/me/moyens-paiement', { numero }), ['deja'] as const),
-    // POST /api/me/moyens-paiement/{numero ou id}/verify {code} → ResultatCode
-    confirmerMoyen: async (numero: string, code: string) => api.post<ResultatCode>(`/me/moyens-paiement/${seg(numero.replace(/\s/g, ''))}/verify`, { code }),
-    moyenParDefaut: async (id: string) => {
-      await api.patch(`/me/moyens-paiement/${seg(id)}`, { par_defaut: true })
-    },
-    retirerMoyen: async (id: string) => {
-      await api.supprimer(`/me/moyens-paiement/${seg(id)}`)
-    },
-
-    // ——— Cartes ———
-    cartes: async () => api.get<Carte[]>('/me/cartes'),
-    // POST /api/me/cartes {jeton, titulaire} → {ok, carte} (marque, 4 derniers chiffres, expiration lus chez le prestataire) ; 409 deja
-    ajouterCarte: async (c: NouvelleCarte) => ou(api.post<{ ok: true; carte: Carte }>('/me/cartes', { jeton: jetonCarte(c.carte), titulaire: c.titulaire }), ['deja'] as const),
-    retirerCarte: async (id: string) => {
-      await api.supprimer(`/me/cartes/${seg(id)}`)
-    },
-    carteParDefaut: async (id: string) => {
-      await api.patch(`/me/cartes/${seg(id)}`, { par_defaut: true })
-    },
-  }
+export function domaineArgent(_api: ClientApi) {
+  return {}
 }

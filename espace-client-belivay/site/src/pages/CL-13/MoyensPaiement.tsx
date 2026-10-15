@@ -252,7 +252,7 @@ export function MoyensPaiement() {
             {t('Retirer le ') + choisi.numeroMasque + ' ?'}
           </h3>
           <p className="t13 c3" style={{ margin: '6px 0 0', lineHeight: '1.45' }}>
-            {t('Il ne sera plus proposé au paiement. Les commandes déjà payées avec lui ne changent pas ; leurs remboursements arrivent sur ton Portefeuille BelivaY.')}
+            {t('Il ne sera plus proposé au paiement. Les commandes déjà payées avec lui ne changent pas ; leurs remboursements reviennent sur le moyen de paiement d’origine.')}
           </p>
           <div className="mt16">
             <Bouton genre="danger" icone="trash-2" onClick={() => source.retirerMoyen(choisi.id).then(() => (recharger(), fermerChoix()))}>
@@ -311,7 +311,7 @@ export function MoyensPaiement() {
         <Icone nom="shield-check" taille={18} />
         <div>
           {/* DP-06, DP-23 : remboursement sur le Portefeuille, ou sur la carte qui a payé. */}
-          <b>{t('Remboursement\u00A0: sur ton Portefeuille BelivaY, ou sur la carte qui a payé.')}</b>
+          <b>{t('Remboursement\u00A0: sur le moyen de paiement d’origine (le numéro, la carte ou le Wallet qui a payé).')}</b>
           {t(' Jamais d’espèces, ni au relais ni au livreur.')}
         </div>
       </div>

@@ -1,11 +1,21 @@
 // Domaine « Commandes, retrait et modification » (CL-09, CL-12) : racheter, déléguer le retrait, aperçu et
 // annulation d'une boutique (sous-commande), changement de relais, d'adresse ou transfert d'un colis arrivé.
-// Routes du kit : backend-kit/apps/pickup (réponses au format de src/donnees/source.ts, adaptateur identité).
-// La liste et le détail des commandes restent sur les routes de relaya (état « partiel »).
+//
+// RÉALITÉ VÉRIFIÉE (14 oct. 2026, contre backend/ réel) : `commandes`, `commandeClient` et `confirmerRetrait`
+// restent sur les vraies routes de relaya (apps/orders/urls.py), inchangées. En revanche OrderDetailSerializer n'a
+// PAS de champ « espace_client » dans ce dépôt (le kit ne l'a jamais branché ici) : adaptateurs.ts::versCommande
+// le sait déjà et calcule un repli honnête (un « colis » par OrderItem, sans boutique). Shipment EST pourtant déjà
+// « un colis par vendeur et par commande » (règle mère, apps/shipping/models.py) — exposé par
+// GET /api/orders/{id}/tracking/ (colis principal + other_shipments), mais pas encore relié ici : voir le rapport
+// de session pour la question sous-commandes (non résolue, conforme à la consigne de ne pas deviner).
+//
+// racheter, deleguerRetrait, apercuAnnulation, annulerColis, changerLieu n'ont aucune route réelle côté relaya
+// (routes du kit : /rebuy, /delegation, /manage, /suborders/*, /relais, /address) : NonDisponible, sans inventer
+// de substitut (notamment pas d'annulation globale déguisée en annulation « par boutique »).
 import type { ApercuAnnulation, Source } from '../../donnees/source'
 import { idCommande, versCommande, type RCommande, type RPage } from '../adaptateurs'
 import type { ClientApi } from '../client'
-import { ErreurIntrouvable } from '../erreurs'
+import { ErreurIntrouvable, NonDisponible } from '../erreurs'
 
 import { liste } from './session'
 
@@ -25,40 +35,40 @@ export function domaineCommandes(api: ClientApi) {
         throw e
       }
     },
-    // POST /api/orders/{id}/confirm-receipt/ (relaya)
+    // POST /api/orders/{id}/confirm-receipt/ (relaya) : ConfirmReceiptView exige un `code` dans le corps dès que la
+    // commande est au statut DELIVERED (code du livreur/relais) ; Source.confirmerRetrait(ref) n'a pas ce paramètre
+    // (signature partagée par tout le site, non changée ici — voir routes.ts et le rapport de session). L'appel
+    // réussit quand même tel quel pour reconfirmer une commande déjà au-delà de DELIVERED (idempotent côté serveur).
     confirmerRetrait: async (ref: string) => {
       await api.post(`/orders/${idCommande(ref)}/confirm-receipt/`)
     },
 
-    // POST /api/orders/{id}/rebuy → nombre d'articles remis au panier
-    racheter: async (ref: string) => api.post<number>(`/orders/${idCommande(ref)}/rebuy`),
-
-    // PUT /api/orders/{id}/delegation {prenom, numero | null} → 204 ; numero null : délégation retirée
-    deleguerRetrait: async (ref: string, prenom: string, numero: string | null) => {
-      await api.put(`/orders/${idCommande(ref)}/delegation`, { prenom, numero })
+    // Route absente de apps/orders/urls.py (pas de /rebuy).
+    racheter: async (): Promise<number> => {
+      throw new NonDisponible('racheter', 'POST /api/orders/{id}/rebuy (inexistant)')
     },
 
-    // GET /api/orders/{id}/manage?n= → ApercuAnnulation ; 404 → null
-    apercuAnnulation: async (ref: string, n: number) => {
-      try {
-        return await api.get<ApercuAnnulation>(`/orders/${idCommande(ref)}/manage`, { query: { n } })
-      } catch (e) {
-        if (e instanceof ErreurIntrouvable) return null
-        throw e
-      }
+    // Aucune route pour modifier authorized_pickup_name/phone après la création de la commande.
+    deleguerRetrait: async (): Promise<void> => {
+      throw new NonDisponible('deleguerRetrait', 'PUT /api/orders/{id}/delegation (inexistant)')
     },
 
-    // POST /api/suborders/{commande}-{n}/cancel {motif} (Idempotency-Key) → montant remboursé ; 409 state_changed
-    annulerColis: async (ref: string, n: number, motif: string) =>
-      api.post<number>(`/suborders/${idCommande(ref)}-${n}/cancel`, { motif }, { idempotence: `annuler-${idCommande(ref)}-${n}` }),
+    // Aucun aperçu d'annulation côté serveur.
+    apercuAnnulation: async (): Promise<ApercuAnnulation | null> => {
+      throw new NonDisponible('apercuAnnulation', 'GET /api/orders/{id}/manage (inexistant)')
+    },
 
-    // Relais : PUT /api/orders/{id}/relais {lieu, frais} (les colis déjà arrivés sont transférés par le serveur, transfert
-    // et garde due compris ; 409 price_changed si le montant dû dépasse `frais`). Adresse : PUT /api/orders/{id}/address
-    // {lieu, frais} (409 collected). L'écran donne le libellé « Nom · Quartier » de l'adresse : le serveur le reconnaît.
-    changerLieu: async (ref: string, lieu: string, frais: number) => {
-      const id = idCommande(ref)
-      const mode = versCommande(await api.get<RCommande>(`/orders/${id}/`)).mode
-      await api.put(`/orders/${id}/${mode === 'domicile' ? 'address' : 'relais'}`, { lieu, frais })
+    // relaya n'a pas de sous-commande : seul POST /api/orders/{id}/cancel/ existe, et annule TOUTE la commande
+    // (bloqué dès qu'un colis a été ramassé chez un vendeur). Le brancher ici reviendrait à annuler les articles
+    // d'AUTRES boutiques que celle que le client a choisie — comportement incorrect, pas une simplification
+    // acceptable. Signalé comme décision bloquante plutôt que deviné.
+    annulerColis: async (): Promise<number> => {
+      throw new NonDisponible('annulerColis', 'POST /api/suborders/{id}/cancel (inexistant ; seul POST /api/orders/{id}/cancel/ annule TOUTE la commande)')
+    },
+
+    // Aucune route pour changer le relais ou l'adresse d'une commande déjà passée.
+    changerLieu: async (): Promise<void> => {
+      throw new NonDisponible('changerLieu', 'PUT /api/orders/{id}/relais ou /address (inexistant)')
     },
   } satisfies Partial<Source>
 }

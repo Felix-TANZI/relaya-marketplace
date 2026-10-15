@@ -69,6 +69,7 @@ export interface Shipment {
   status: string;
   courier_name: string;
   courier_phone: string;
+  courier: { id: number; user_id: number; phone: string; city: string; vehicle_type: string; is_online: boolean } | null;
   relay_point: string;
   relay_parcel: RelayParcel | null;
   delivery_evidences: ShipmentEvidence[];

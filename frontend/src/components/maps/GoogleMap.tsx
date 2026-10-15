@@ -7,6 +7,8 @@ export interface GoogleMapMarker {
   title: string;
   subtitle?: string;
   color?: string;
+  /** Emoji affiché au centre du repère (ex. "🏪" boutique, "🚗"/"🏍️" livreur, "📦" client). */
+  emoji?: string;
 }
 
 interface DraggableGoogleMarker {
@@ -26,11 +28,14 @@ function escapeHtml(value: string) {
     .replace(/'/g, "&#039;");
 }
 
-function markerSvg(color: string) {
+function markerSvg(color: string, emoji?: string) {
+  const inner = emoji
+    ? `<text x="21" y="21" font-size="20" text-anchor="middle" dominant-baseline="central">${emoji}</text>`
+    : `<circle cx="21" cy="21" r="6" fill="white"/>`;
   const encoded = encodeURIComponent(`
     <svg width="42" height="42" viewBox="0 0 42 42" xmlns="http://www.w3.org/2000/svg">
       <circle cx="21" cy="21" r="18" fill="${color}" stroke="white" stroke-width="4"/>
-      <circle cx="21" cy="21" r="6" fill="white"/>
+      ${inner}
     </svg>
   `);
   return `data:image/svg+xml;charset=UTF-8,${encoded}`;
@@ -123,7 +128,7 @@ export function GoogleMap({
             position: toGooglePosition(marker.position),
             title: marker.title,
             icon: {
-              url: markerSvg(marker.color || "#F47920"),
+              url: markerSvg(marker.color || "#F47920", marker.emoji),
               scaledSize: { width: 42, height: 42 },
               anchor: { x: 21, y: 21 },
             },

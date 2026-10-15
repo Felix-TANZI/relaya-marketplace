@@ -344,7 +344,13 @@ BELIVAY_PARAMETRES_JSON = BASE_DIR / "apps" / "client_core" / "donnees" / "param
 BELIVAY_INTERRUPTEURS_JSON = BASE_DIR / "apps" / "client_core" / "donnees" / "interrupteurs.json"
 BELIVAY_SITE_URL = os.getenv("BELIVAY_SITE_URL", "https://belivay.com")
 BELIVAY_SMS = "apps.otp.prestataires.SmsConsole"
-BELIVAY_PUSH = "apps.notifications_client.prestataires.PushConsole"
+# BELIVAY_PUSH et FCM_CREDENTIALS_PATH : console par defaut (journal seulement,
+# aucun compte Firebase requis). Pour activer un vrai envoi (D21) une fois le
+# projet Firebase cree : poser FCM_CREDENTIALS_PATH vers le fichier JSON du
+# compte de service, et BELIVAY_PUSH=apps.notifications_client.prestataires.FCMPush
+# dans l'environnement — aucun changement de code necessaire.
+BELIVAY_PUSH = os.getenv("BELIVAY_PUSH", "apps.notifications_client.prestataires.PushConsole")
+FCM_CREDENTIALS_PATH = os.getenv("FCM_CREDENTIALS_PATH", "")
 
 from datetime import timedelta
 

@@ -1,3 +1,4 @@
+import logging
 import secrets
 from datetime import time
 
@@ -324,6 +325,51 @@ class Shipment(models.Model):
         return f"Shipment(order={self.order_id}, vendor={self.vendor_id}, status={self.status})"
 
 
+# ── Notification client a chaque etape de commande (D21) ────────────────────
+#
+# (type, critique, titre, texte) par statut de Shipment. "critique" declenche
+# le repli SMS/WhatsApp existant (apps.notifications_client.services) si
+# aucun appareil n'a recu le push. "type" respecte les choix du client :
+# commande/incident restent toujours actifs (422 category_locked cote
+# ReglagesNotifications), suivi est desactivable. Seuls les statuts que le
+# CLIENT comprend sont notifies ici — les statuts d'exception internes
+# (ZONE_UNCOVERED, CAPACITY_BLOCKED, VEHICLE_INCOMPATIBLE,
+# VALUE_LIMIT_EXCEEDED, WAITING_MANUAL_ASSIGNMENT) relevent des outils
+# d'exploitation, pas d'une notification client.
+def _client_status_notifications():
+    S = Shipment.Status
+    return {
+        S.ASSIGNED: ("commande", False, "Livreur affecté", "Un livreur a été affecté à votre commande {ref}."),
+        S.PICKED_UP: ("suivi", False, "Colis récupéré", "Votre colis de la commande {ref} a été récupéré chez le vendeur."),
+        S.IN_TRANSIT: ("suivi", False, "Colis en route", "Votre colis de la commande {ref} est en route."),
+        S.OUT_FOR_DELIVERY: ("suivi", False, "Livraison en cours", "Le livreur arrive bientôt pour votre commande {ref}."),
+        S.DELIVERED: ("commande", True, "Colis livré", "Votre commande {ref} a été livrée."),
+        S.INCIDENT: ("incident", True, "Incident signalé", "Un incident est survenu sur la livraison de votre commande {ref}."),
+        S.FAILED: ("commande", True, "Livraison échouée", "La livraison de votre commande {ref} a échoué."),
+        S.CANCELLED: ("commande", True, "Livraison annulée", "La livraison de votre commande {ref} a été annulée."),
+    }
+
+
+def _notify_client_of_status(shipment, status):
+    """Jamais bloquant : un prestataire en panne ou un module absent ne doit
+    jamais casser un changement de statut de livraison (meme logique que
+    envoyer_notification elle-meme, qui avale deja les echecs de push)."""
+    entry = _client_status_notifications().get(status)
+    if entry is None:
+        return
+    user = getattr(shipment.order, "user", None)
+    if user is None:
+        return  # commande invite (D3, sans compte) : pas d'appareil a notifier
+    type_, critique, titre, texte = entry
+    try:
+        from apps.notifications_client.services import envoyer_notification
+        envoyer_notification(user, type_, titre, texte.format(ref=f"BLV-{shipment.order_id:05d}"), critique=critique)
+    except Exception:
+        logging.getLogger("apps.shipping").exception(
+            "Notification client echouee (shipment=%s, status=%s)", shipment.pk, status,
+        )
+
+
 class ShipmentEvent(models.Model):
     """
     Timeline d'un shipment : chaque event est un statut + message + localisation.
@@ -375,7 +421,7 @@ class ShipmentEvent(models.Model):
             .first()
             or ""
         )
-        return cls.objects.create(
+        event = cls.objects.create(
             shipment=shipment,
             status=status,
             previous_status=previous_status,
@@ -384,6 +430,8 @@ class ShipmentEvent(models.Model):
             actor=actor,
             actor_role=actor_role,
         )
+        _notify_client_of_status(shipment, status)
+        return event
 
 
 class ShipmentLocation(models.Model):

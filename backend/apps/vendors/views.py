@@ -782,6 +782,31 @@ def vendor_order_note(request, order_id):
         )
 
 
+def lignes_totaux_recu(*, paye_par_client, taux_commission, commission, net):
+    """
+    Les trois lignes du pied du recu vendeur — tache D20.
+
+    « Afficher la ligne "Paye par le client" sur le recu. » Le recu montrait
+    « Prix de vente » puis « Vous gardez », sans dire d'ou venait l'ecart : la
+    commission etait invisible, le vendeur subissait une retenue qu'aucune
+    ligne n'expliquait.
+
+    « Paye par le client » porte sur SES articles, jamais sur le total de la
+    commande : sur une commande multi-vendeurs ce total comprend les articles
+    des autres et la livraison, et la regle de confidentialite dit que le
+    vendeur ne voit jamais le total paye par le client.
+
+    Rendu a part du PDF pour etre verifiable : le flux d'un PDF reportlab est
+    compresse, on ne peut pas relire son texte depuis les octets produits.
+    Sortie : [(libelle, montant, est_negatif), ...]
+    """
+    return [
+        ("Paye par le client", paye_par_client, False),
+        (f"Commission BelivaY ({taux_commission} %)", commission, True),
+        ("Vous gardez", net, False),
+    ]
+
+
 @extend_schema(
     tags=["Vendors"],
     summary="Download order receipt PDF",
@@ -904,8 +929,13 @@ def vendor_order_receipt_pdf(request, order_id):
 
     totals_table = Table(
         [
-            ['Prix de vente', fmt_xaf(vendor_subtotal)],
-            ['Vous gardez', fmt_xaf(vendor_net_amount)],
+            [libelle, (f'- {fmt_xaf(montant)}' if negatif else fmt_xaf(montant))]
+            for libelle, montant, negatif in lignes_totaux_recu(
+                paye_par_client=vendor_subtotal,
+                taux_commission=order.commission_rate_snapshot,
+                commission=commission_amount,
+                net=vendor_net_amount,
+            )
         ],
         colWidths=[135 * mm, 35 * mm],
     )

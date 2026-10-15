@@ -1166,6 +1166,24 @@ def vendor_withdrawal_create(request):
             status=status.HTTP_403_FORBIDDEN,
         )
 
+    # ── Tache D19 ────────────────────────────────────────────────────────
+    # « Exiger les documents complets avant le premier versement. »
+    #
+    # Le controle porte sur CHAQUE demande, pas seulement la premiere : si
+    # une piece est rejetee ou expire apres un premier versement, verser a
+    # nouveau reviendrait a payer un compte dont l'identite n'est plus
+    # etablie. Un vendeur en regle ne voit jamais ce message.
+    from apps.vendors.kyc import etat_verification, identite_verifiee
+    if not identite_verifiee(request.user):
+        return Response(
+            {
+                'detail': "Vos pieces d'identite doivent etre validees avant "
+                          "tout versement.",
+                'piece_identite': etat_verification(request.user),
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
     compte = payee_for_vendor(profil, create=True)
     if compte is None:
         return Response(
@@ -7419,6 +7437,21 @@ def admin_approve_product(request, product_id):
     except Product.DoesNotExist:
         return Response({'detail': 'Produit introuvable.'}, status=status.HTTP_404_NOT_FOUND)
 
+    # Tache D19 — seconde porte vers la publication. Verrouiller seulement le
+    # bouton du vendeur ne suffirait pas : approuver ici rendrait l'offre
+    # visible tout autant. Le moderateur est prevenu de ce qui manque plutot
+    # que de se voir opposer un refus muet.
+    from apps.vendors.kyc import etat_verification, identite_verifiee
+    if product.vendor and not identite_verifiee(product.vendor):
+        etat = etat_verification(product.vendor)
+        return Response(
+            {
+                'detail': "Identite du vendeur non verifiee : publication impossible.",
+                'piece_identite': etat,
+            },
+            status=status.HTTP_409_CONFLICT,
+        )
+
     product.moderation_status = ModerationStatus.APPROVED
     product.moderation_reason = ''            # efface un éventuel motif de rejet précédent
     product.moderated_at = timezone.now()
@@ -9997,6 +10030,23 @@ def vd_offer_publish(request, offer_id):
     vp, err = _vd_active_vendor(request)
     if err:
         return err
+
+    # ── Tache D19 ────────────────────────────────────────────────────────
+    # « Refuser la publication cote serveur tant que la piece n'est pas
+    # verifiee. » Cote serveur, et pas seulement dans l'ecran : masquer le
+    # bouton ne protege de rien, un appel direct publierait quand meme.
+    #
+    # Meme forme de reponse que les autres refus metier de cet endpoint
+    # (ok/raison/detail) : l'ecran sait deja l'afficher, et le detail dit au
+    # vendeur quelles pieces fournir ou refaire.
+    from apps.vendors.kyc import etat_verification, identite_verifiee
+    if not identite_verifiee(request.user):
+        return Response({
+            'ok': False,
+            'raison': 'identite_non_verifiee',
+            'detail': etat_verification(request.user),
+        }, status=200)
+
     product, err2 = _vd_offer_or_404(request, offer_id)
     if err2:
         return err2

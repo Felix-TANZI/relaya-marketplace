@@ -64,11 +64,27 @@ class DeliveryVehicleAdmin(admin.ModelAdmin):
 
 @admin.register(ComplianceDocument)
 class ComplianceDocumentAdmin(admin.ModelAdmin):
-    list_display = ('document_type', 'owner_role', 'user', 'status', 'updated_at')
+    list_display = ('document_type', 'owner_role', 'user', 'status', 'delai', 'updated_at')
     list_filter = ('owner_role', 'status', 'document_type')
     search_fields = ('user__username', 'user__email', 'document_type')
     readonly_fields = ('user', 'owner_role', 'document_type', 'file', 'created_at', 'updated_at')
     fields = ('user', 'owner_role', 'document_type', 'file', 'status', 'review_note', 'created_at', 'updated_at')
+
+    @admin.display(description="Délai")
+    def delai(self, obj):
+        """
+        Tâche D19 : « Répondre en 48 h ouvrées au plus. »
+
+        Une promesse de délai sans moyen de voir ce qui la dépasse ne se tient
+        pas. Cette colonne montre ce qui attend encore, et ce qui a débordé.
+        """
+        from apps.vendors.kyc import echeance_examen, examen_en_retard
+
+        if obj.status != ComplianceDocument.Status.PENDING:
+            return "—"
+        if examen_en_retard(obj):
+            return "EN RETARD"
+        return f"avant le {echeance_examen(obj.created_at):%d/%m %H:%M}"
 
     actions = ('approve_documents', 'reject_documents')
 

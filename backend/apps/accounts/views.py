@@ -2463,44 +2463,96 @@ class ComplianceDocumentListCreateView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
 
-    def _owner_role(self, user):
+    #: Un selfie video ne tient pas dans les formats d'une piece scannee, ni
+    #: dans 10 Mo (tache D19). On garde donc deux jeux de regles plutot que
+    #: d'elargir la limite pour tout le monde.
+    FORMATS_IMAGE = {".pdf", ".jpg", ".jpeg", ".png", ".webp"}
+    FORMATS_VIDEO = {".mp4", ".mov", ".webm", ".m4v", ".3gp"}
+    TAILLE_MAX_IMAGE = 10 * 1024 * 1024
+    TAILLE_MAX_VIDEO = 50 * 1024 * 1024
+
+    def _roles_possibles(self, user):
+        """Tous les roles sous lesquels ce compte peut deposer une piece."""
+        roles = []
         if _get_request_delivery_organization(user):
-            return ComplianceDocument.OwnerRole.DELIVERY_ORGANIZATION
+            roles.append(ComplianceDocument.OwnerRole.DELIVERY_ORGANIZATION)
         if _get_request_relay_point(user):
-            return ComplianceDocument.OwnerRole.RELAY_POINT
-        return None
+            roles.append(ComplianceDocument.OwnerRole.RELAY_POINT)
+        # Tache D19 : un vendeur depose sa CNI et son selfie video ici, par le
+        # meme chemin que les autres partenaires.
+        from apps.vendors.models import VendorProfile
+        if VendorProfile.objects.filter(user=user).exists():
+            roles.append(ComplianceDocument.OwnerRole.VENDOR)
+        return roles
+
+    def _owner_role(self, user, demande=""):
+        """
+        Role sous lequel classer la piece.
+
+        Un meme compte peut etre vendeur ET point relais. Sans precision, on
+        garde l'ordre historique ; avec `owner_role`, l'appelant choisit —
+        mais seulement parmi les roles qu'il detient reellement.
+        """
+        roles = self._roles_possibles(user)
+        if not roles:
+            return None
+        demande = (demande or "").strip().upper()
+        if demande:
+            return demande if demande in roles else None
+        return roles[0]
 
     def _payload(self, document, request):
+        from apps.vendors.kyc import echeance_examen
+
+        # Tache D19 : « Repondre en 48 h ouvrees au plus. » On rend
+        # l'echeance visible plutot que de la laisser implicite — le
+        # deposant sait quand attendre une reponse, et l'administration voit
+        # ce qui a depasse le delai.
+        echeance = echeance_examen(document.created_at)
         return {
             "id": document.id,
             "owner_role": document.owner_role,
             "document_type": document.document_type,
-            "file_url": request.build_absolute_uri(document.file.url) if document.file else None,
+            # Jamais l'URL brute du fichier : nginx refuse /media/compliance/.
+            # On rend le chemin qui controle le demandeur (tache D19).
+            "file_url": request.build_absolute_uri(
+                f"/api/auth/compliance-documents/{document.id}/file/"
+            ) if document.file else None,
             "status": document.status,
             "review_note": document.review_note,
             "updated_at": document.updated_at.isoformat(),
+            "reponse_attendue_avant": echeance.isoformat(),
         }
 
     def get(self, request):
-        owner_role = self._owner_role(request.user)
+        owner_role = self._owner_role(request.user, request.query_params.get("owner_role", ""))
         if not owner_role:
             return Response({"detail": "Compte partenaire approuvé requis."}, status=status.HTTP_403_FORBIDDEN)
         documents = ComplianceDocument.objects.filter(user=request.user, owner_role=owner_role)
         return Response([self._payload(document, request) for document in documents])
 
     def post(self, request):
-        owner_role = self._owner_role(request.user)
+        owner_role = self._owner_role(request.user, request.data.get("owner_role", ""))
         if not owner_role:
             return Response({"detail": "Compte partenaire approuvé requis."}, status=status.HTTP_403_FORBIDDEN)
         document_type = str(request.data.get("document_type", "")).strip().upper()
         uploaded_file = request.FILES.get("file")
         if not document_type or not uploaded_file:
             return Response({"detail": "Le type de document et le fichier sont obligatoires."}, status=status.HTTP_400_BAD_REQUEST)
-        if uploaded_file.size > 10 * 1024 * 1024:
-            return Response({"file": ["Le fichier ne doit pas dépasser 10 Mo."]}, status=status.HTTP_400_BAD_REQUEST)
+
         extension = os.path.splitext(uploaded_file.name)[1].lower()
-        if extension not in {".pdf", ".jpg", ".jpeg", ".png", ".webp"}:
-            return Response({"file": ["Formats acceptés : PDF, JPG, PNG ou WEBP."]}, status=status.HTTP_400_BAD_REQUEST)
+        est_video = extension in self.FORMATS_VIDEO
+        if extension not in self.FORMATS_IMAGE and not est_video:
+            return Response(
+                {"file": ["Formats acceptés : PDF, JPG, PNG, WEBP, ou MP4, MOV, WEBM, 3GP pour un selfie vidéo."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        taille_max = self.TAILLE_MAX_VIDEO if est_video else self.TAILLE_MAX_IMAGE
+        if uploaded_file.size > taille_max:
+            return Response(
+                {"file": [f"Le fichier ne doit pas dépasser {taille_max // (1024 * 1024)} Mo."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         document, created = ComplianceDocument.objects.get_or_create(
             user=request.user,
@@ -2517,6 +2569,36 @@ class ComplianceDocumentListCreateView(APIView):
             if old_file and old_file.name != document.file.name:
                 old_file.delete(save=False)
         return Response(self._payload(document, request), status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
+@extend_schema(tags=["Auth"], summary="Telecharger une piece justificative")
+class ComplianceDocumentFileView(APIView):
+    """
+    Sert une piece justificative APRES avoir verifie qui la demande.
+
+    Tache D19 : « les stocker en acces restreint ». Les fichiers vivent dans
+    le dossier media, que nginx exposait entierement — une CNI ou un selfie
+    video etait donc lisible par toute personne connaissant l'URL. nginx
+    refuse desormais /media/compliance/ ; ce chemin-ci est le seul acces.
+
+    Un demandeur qui n'a pas le droit recoit 404, pas 403 : repondre
+    « interdit » confirmerait que la piece existe, et pour qui.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        from django.http import FileResponse, Http404
+
+        document = ComplianceDocument.objects.filter(pk=pk).first()
+        if document is None:
+            raise Http404
+
+        autorise = document.user_id == request.user.id or request.user.is_staff
+        if not autorise or not document.file:
+            raise Http404
+
+        return FileResponse(document.file.open("rb"), filename=os.path.basename(document.file.name))
 
 
 @extend_schema(tags=["Auth"], summary="Get current user profile / delete account")

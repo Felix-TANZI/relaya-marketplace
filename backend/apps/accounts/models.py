@@ -143,6 +143,11 @@ class ComplianceDocument(models.Model):
     class OwnerRole(models.TextChoices):
         DELIVERY_ORGANIZATION = "DELIVERY_ORGANIZATION", "Organisation livraison"
         RELAY_POINT = "RELAY_POINT", "Point relais"
+        # Tache D19 : « Recevoir la CNI recto et verso et le selfie video, les
+        # stocker en acces restreint, donner un motif de refus par piece. »
+        # Les vendeurs passent par le meme mecanisme que les autres
+        # partenaires — un second systeme de pieces divergerait tot ou tard.
+        VENDOR = "VENDOR", "Vendeur"
 
     class Status(models.TextChoices):
         PENDING = "PENDING", "En cours de vérification"

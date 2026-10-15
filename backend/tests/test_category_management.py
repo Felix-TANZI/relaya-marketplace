@@ -322,7 +322,27 @@ def _approved_vendor(username="vendeur-parcours"):
         description="Entrée principale, à côté de la pharmacie.",
         is_active=True, is_main=True,
     )
+    # Tâche D19 : un produit n'est plus publiable tant que l'identité du
+    # vendeur n'est pas vérifiée. Ce test porte sur les catégories, pas sur
+    # le KYC — on met donc le vendeur en règle pour qu'il atteigne ce qu'il
+    # vérifie vraiment.
+    _identite_vendeur_verifiee(user)
     return user
+
+
+def _identite_vendeur_verifiee(user):
+    """Dépose les trois pièces exigées par D19, déjà validées."""
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    from apps.accounts.models import ComplianceDocument
+    from apps.vendors.kyc import PIECES_EXIGEES
+
+    for piece in PIECES_EXIGEES:
+        ComplianceDocument.objects.create(
+            user=user, owner_role=ComplianceDocument.OwnerRole.VENDOR,
+            document_type=piece, file=SimpleUploadedFile(f"{piece}.jpg", b"x"),
+            status=ComplianceDocument.Status.APPROVED,
+        )
 
 
 def _public_titles(api_client, **params):

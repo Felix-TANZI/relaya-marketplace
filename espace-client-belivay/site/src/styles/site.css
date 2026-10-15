@@ -232,3 +232,121 @@ html[data-anim=reduites] #app .vd-ban.vd3,html[data-anim=reduites] #app .vd-ban.
 .cl04-ban2 .im .h0-ph{position:absolute;inset:0;opacity:0;transition:opacity .45s ease}
 .cl04-ban2 .im .h0-ph.on{opacity:1}
 .cl04-ban2 .im .h0-ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:62% 45%;display:block}
+/* Annonces sponsorisées (DP-59, composants/Annonces.tsx) : étiquette « Sponsorisé » discrète, toujours visible, qui
+   ouvre « Pourquoi je vois ceci ? ». Dans une ligne : pastille dans le texte ; sur une image (.sur) : pastille claire
+   posée en bas à gauche d'une carte produit, en haut à gauche d'une vignette « À la une » ou d'une diapo. */
+.spn{display:inline-flex;align-items:center;gap:4px;align-self:flex-start;height:22px;padding:0 7px;border-radius:6px;border:1px solid var(--line-2);background:var(--sand-2);color:var(--ink-2);font-size:12px;font-weight:700;line-height:1;white-space:nowrap;cursor:pointer;flex-shrink:0}
+.spn svg,.h0-c .im .spn svg,.h0-band .spn svg{position:static;flex-shrink:0;width:12px;height:12px;margin:0;opacity:.85}
+.spn:focus-visible{outline:2px solid var(--or-txt);outline-offset:2px}
+.spn.sur{position:absolute;z-index:2;border:0;background:rgba(255,255,255,.94);color:#16131A;box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.pc-img .spn.sur{left:8px;bottom:8px}
+.h0-c .spn.sur{left:5px;top:5px;height:20px;padding:0 5px;font-size:11.5px}
+.h0-band .spn.sur{right:12px;top:12px}
+.spn-band .im{background:var(--prod-bg)}
+.spn-band .im svg,.spn-band .im img{object-fit:contain}
+.spn-f h2{margin:6px 0 8px;font-size:19px;font-weight:800}
+.spn-f p{margin:0 0 10px;color:var(--ink-2);font-size:14.5px;line-height:1.5}
+.spn-f .btn{margin-top:8px;width:100%}
+
+/* ── Publicité (DP-59) : signalement, repère d'impression ───────────────────────────────────────────────── */
+.spn-vu{position:absolute;width:1px;height:1px;overflow:hidden;pointer-events:none;opacity:0}
+.spn-f .spn-sg{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:6px;height:44px;border:0;background:none;color:var(--ink-3);font:inherit;font-size:14px;font-weight:700;cursor:pointer}
+.spn-f .spn-sg:hover{color:var(--ink)}
+.spn-m{display:flex;flex-direction:column;margin:6px 0 4px;border-radius:14px;box-shadow:0 0 0 1px var(--line);overflow:hidden}
+.spn-m button{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:50px;padding:0 14px;border:0;border-top:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:15px;font-weight:600;text-align:left;cursor:pointer}
+.spn-m button:first-child{border-top:0}
+.spn-m button svg{color:var(--ink-4);flex-shrink:0}
+
+/* ── Accueil, colonne droite (dès 1200) : encart « À la une » sous les Ventes flash ───────────────────────── */
+#app .acc-une{padding:12px;border-radius:20px;background:var(--card);box-shadow:var(--shadow-card)}
+#app .acc-une-h{display:flex;align-items:center;gap:6px;margin:0 2px 10px;color:var(--or-txt)}
+#app .acc-une-h b{font-size:15px;font-weight:800;color:var(--ink)}
+#app .acc-une-h a{margin-left:auto;display:inline-flex;align-items:center;gap:3px;font-size:12.5px;font-weight:700;color:var(--or-txt)}
+#app .acc-une-g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#app .acc-une-g>a{display:flex;flex-direction:column;gap:3px;min-width:0;border-radius:12px;color:inherit}
+#app .acc-une-g .im{position:relative;display:block;aspect-ratio:1/1;border-radius:12px;overflow:hidden;background:var(--prod-bg)}
+#app .acc-une-g .im :is(svg,img){width:100%;height:100%;display:block;object-fit:cover}
+#app .acc-une-g .im .spn.sur{left:5px;top:5px;height:20px;padding:0 5px;font-size:11px}
+#app .acc-une-g .im .spn.sur svg{width:11px;height:11px;object-fit:initial}
+#app .acc-une-g .acc-promo{position:absolute;left:5px;top:5px;z-index:2;height:20px;padding:0 6px;border-radius:6px;background:rgba(255,255,255,.94);color:#16131A;box-shadow:0 1px 3px rgba(0,0,0,.18);font-size:11px;font-weight:700;display:flex;align-items:center}
+#app .acc-une-g .acc-rm{position:absolute;left:6px;bottom:6px;height:20px;padding:0 6px;border-radius:6px;background:var(--red);color:#fff;font-size:11.5px;font-weight:800;font-style:normal;display:flex;align-items:center}
+#app .acc-une-g .t{font-size:12.5px;font-weight:700;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:31px}
+#app .acc-une-g .p{font-size:14px;font-weight:800;color:var(--or-txt);white-space:nowrap}
+#app .acc-une-g .p s{margin-left:5px;font-size:11.5px;font-weight:600;color:var(--ink-4)}
+#app .acc-une-g>a:hover .im{box-shadow:0 0 0 2px var(--or-line)}
+
+/* ── Accueil : flux « Pour vous » (pages/CL-04/PourVous.tsx) ─────────────────────────────────────────────── */
+.pv-vide{display:block;height:0}
+.pv-msg{margin:10px 2px 0;font-size:13px;color:var(--ink-3)}
+.pv-g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 10px;margin-top:12px}
+@media (min-width:768px){.pv-g{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (min-width:1024px){.pv-g{grid-template-columns:repeat(5,minmax(0,1fr));gap:16px 12px}}
+.pv-c{display:flex;flex-direction:column;gap:3px;min-width:0;color:inherit}
+.pv-c .im{container-type:inline-size;position:relative;display:block;aspect-ratio:1/1;border-radius:12px;overflow:hidden;background:var(--prod-bg)}
+.pv-c .im>:is(svg,img){width:100%;height:100%;display:block;object-fit:cover;transition:transform .18s ease}
+.pv-c:hover .im>:is(svg,img){transform:scale(1.03)}
+.pv-c .im .spn.sur{left:6px;top:6px;height:20px;padding:0 5px;font-size:11px}
+.pv-c .im .spn.sur svg{width:11px;height:11px}
+.pv-c .pv-x{position:absolute;right:6px;top:6px;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.88);color:var(--ink-2);opacity:.85;cursor:pointer}
+.pv-c .pv-x svg{width:14px;height:14px}
+.pv-c .pv-x:hover,.pv-c .pv-x:focus-visible{opacity:1;color:var(--ink)}
+.pv-c .pv-rm{position:absolute;left:6px;bottom:6px;height:20px;padding:0 6px;border-radius:6px;background:var(--red);color:#fff;font-size:11.5px;font-weight:800;font-style:normal;display:flex;align-items:center}
+.pv-c .t{margin-top:4px;font-size:13px;font-weight:700;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:32px}
+.pv-c .p{font-size:15px;font-weight:800;color:var(--or-txt);white-space:nowrap}
+.pv-c .p small{font-size:11px}
+.pv-c .p s{margin-left:6px;font-size:12px;font-weight:600;color:var(--ink-4)}
+.pv-c .r{display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-3)}
+.pv-c .r svg{color:#F5A524}
+.pv-c .r b{color:var(--ink);font-weight:700}
+.pv-sq{aspect-ratio:1/1.42;border-radius:12px;background:linear-gradient(90deg,var(--sand-2) 0,var(--sand-3) 40%,var(--sand-2) 80%) 0 0/200% 100%;animation:pv-sq 1.2s linear infinite}
+@keyframes pv-sq{to{background-position:-200% 0}}
+html[data-anim=reduites] .pv-sq{animation:none}
+.pv-sent{height:1px}
+.pv-c .p,.pv-c .r{min-height:18px}
+
+/* « Pourquoi choisir BelivaY ? » : en nuit, comme le carrousel. */
+#app .h0-why.nuit{background:linear-gradient(160deg,#211C24 0,#16131A 70%);color:#F4F3F5;box-shadow:none}
+#app .h0-why.nuit h2 span.q{color:#F4F3F5}
+#app .h0-why.nuit h2 span{color:#F79B5C}
+#app .h0-why.nuit a{box-shadow:0 0 0 1px rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#F4F3F5}
+#app .h0-why.nuit p,#app .h0-why.nuit em{color:#C9C4CE}
+#app .h0-why.nuit .wi{background:rgba(52,168,83,.18);color:#7FD99A}
+#app .h0-why.nuit .wi.o{background:rgba(234,108,31,.2);color:#F79B5C}
+/* Ajout direct au panier : seulement sur une carte « grande » (160 px de large au moins, mesurée sur la carte et non
+   sur l'appareil) ; sur une petite carte, toucher ouvre la fiche. Stock 0 : bouton désactivé. */
+.pv-add{display:none;position:absolute;right:6px;bottom:6px;z-index:2;width:34px;height:34px;border-radius:11px;align-items:center;justify-content:center;background:linear-gradient(180deg,var(--braise-1),var(--braise-2));color:#fff;cursor:pointer;box-shadow:0 4px 10px -4px rgba(0,0,0,.45)}
+.pv-add.off{background:var(--sand-3);color:var(--ink-4);box-shadow:none;cursor:not-allowed}
+@container (min-width:160px){.pv-add{display:flex}}
+.pv-voile{position:fixed;inset:0;z-index:300;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.45)}
+.pv-feuille{width:100%;max-width:480px;display:flex;flex-direction:column;gap:12px;padding:18px 18px 28px;border-radius:24px 24px 0 0;background:var(--card);color:var(--ink)}
+@media (min-width:768px){.pv-voile{align-items:center}.pv-feuille{border-radius:24px}}
+.pv-opt{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--ink-3)}
+.pv-opt>div{display:flex;flex-wrap:wrap;gap:8px}
+.pv-opt button{min-width:44px;height:38px;padding:0 12px;border-radius:999px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);font-weight:700}
+.pv-opt button.on{border-color:var(--or);background:var(--sand-2)}
+.pv-opt button:disabled{opacity:.4;text-decoration:line-through}
+/* Bande des atouts de l'accueil, avant « Pour vous » : une rangée compacte, style nuit. */
+#app .h0-atouts{margin:16px 0 4px;padding:12px 12px 12px}
+#app .h0-atouts h2{margin:0 0 8px;text-align:left;font-size:15px}
+#app .h0-atouts .at-rang{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -2px;padding:0 2px}
+#app .h0-atouts .at-rang::-webkit-scrollbar{display:none}
+#app .h0-atouts .at-rang a{flex:0 0 min(78%,260px);display:flex;align-items:center;gap:10px;margin:0;padding:10px 12px}
+#app .h0-atouts .wi{width:36px;height:36px;border-radius:10px;flex:none}
+#app .h0-atouts .at-tx{min-width:0}
+#app .h0-atouts .at-tx b{margin:0;font-size:13px;line-height:1.25}
+#app .h0-atouts .at-tx p{margin:2px 0 0;font-size:11.5px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+@media (min-width:768px){#app .h0-atouts .at-rang a{flex:1 1 0}#app .gab-contenu .h0-why.h0-atouts{display:block;padding:12px 14px}#app .gab-contenu .h0-why.h0-atouts h2{margin:0 0 10px;grid-column:auto;text-align:center}#app .h0-atouts .at-rang{justify-content:center}#app .h0-atouts .at-rang a{justify-content:center;text-align:left}}
+/* Pied du Menu (téléphone et tablette) : mêmes liens, coordonnées, réseaux et mentions que l'ancien pied de l'accueil. */
+.mn-pied{margin:18px 0 8px}
+.mn-pied .mn-foot{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:13px;font-weight:600}
+.mn-pied .mn-foot a{color:var(--ink-3)}
+.mn-pied .mn-suivre-pied{display:flex;flex-direction:column;gap:12px;margin-top:14px}
+.mn-pied .mn-cp{margin:14px 0 0;font-size:12px;color:var(--ink-4)}
+
+/* Cœur « Ajouter aux favoris » des cartes de l'accueil (composants/CoeursFavoris.tsx) : petit, cible de 42 px. */
+.pv-c .hr.pv-hr{position:absolute;right:6px;top:6px;width:28px;height:28px;margin:0;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.9);z-index:2}
+.h0-c .hr,.pv-c .hr.pv-hr{color:#4A4038;cursor:pointer}
+.h0-c .hr::after,.pv-c .hr.pv-hr::after{content:'';position:absolute;inset:-8px}
+.h0-c .hr.on,.pv-c .hr.pv-hr.on{color:var(--braise-1)}
+.h0-c .hr.on svg,.pv-c .hr.pv-hr.on svg{fill:currentColor}
+.h0-c .hr:focus-visible,.pv-c .hr.pv-hr:focus-visible{outline:2px solid var(--braise-1);outline-offset:2px}

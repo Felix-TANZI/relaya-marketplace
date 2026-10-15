@@ -25,16 +25,18 @@ from rest_framework.permissions import AllowAny
 from django.utils.text import slugify
 from django.utils import timezone
 
-from .models import Product, Category, ProductReview, MasterProduct, ModerationStatus, PromotionCampaign, Brand, ColorDictionary, ColorFamily, ProductAttribute, MasterProduct, AttributeRole, ProductVariant
+from .models import Product, Category, ProductReview, MasterProduct, ModerationStatus, PromotionCampaign, Brand, ColorDictionary, ColorFamily, ProductAttribute, MasterProduct, AttributeRole, ProductVariant, ProductQuestion
 from .search import smart_product_search
 from .serializers import (
-    ProductSerializer, 
+    ProductSerializer,
     CategorySerializer,
     ProductReviewSerializer,
     ProductReviewCreateSerializer,
     MasterProductListSerializer,
     MasterProductDetailSerializer,
     PromotionCampaignSerializer,
+    ProductQuestionSerializer,
+    ProductQuestionCreateSerializer,
     CategoryTreeSerializer, 
     CategoryFlatSerializer,
     BrandSerializer, 
@@ -236,6 +238,36 @@ class ProductViewSet(viewsets.ModelViewSet):
             ProductReviewSerializer(review).data,
             status=status.HTTP_201_CREATED
         )
+
+    @extend_schema(
+        tags=["Questions"],
+        summary="Questions clients sur cette fiche (publiques, avant achat)",
+        description="Liste les questions déjà répondues sur ce produit (connecteur `poserQuestion`, lecture).",
+    )
+    @action(detail=True, methods=['get'], permission_classes=[])
+    def questions(self, request, pk=None):
+        product = self.get_object()
+        qs = ProductQuestion.objects.filter(product=product, is_reported=False).order_by('-created_at')
+        return Response(ProductQuestionSerializer(qs, many=True).data)
+
+    @extend_schema(
+        tags=["Questions"],
+        summary="Poser une question sur cette fiche (avant achat)",
+        description="Question publique à laquelle le vendeur répond (espace vendeur, pas une messagerie privée). "
+                     "Coordonnées (numéro, e-mail, lien) retirées avant stockage.",
+        request=ProductQuestionCreateSerializer,
+        responses={201: ProductQuestionCreateSerializer},
+    )
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def ask_question(self, request, pk=None):
+        product = self.get_object()
+        serializer = ProductQuestionCreateSerializer(
+            data={**request.data, 'product': product.id},
+            context={'request': request},
+        )
+        serializer.is_valid(raise_exception=True)
+        question = serializer.save()
+        return Response(ProductQuestionCreateSerializer(question, context={'request': request}).data, status=status.HTTP_201_CREATED)
 
     @extend_schema(
         tags=["Promotions"],

@@ -103,7 +103,7 @@ export const FAQ: ThemeFaq[] = [
   questions: [
    {
     q: "Combien coûte la garde au relais ?",
-    r: "Le jour d’arrivée est gratuit. Ensuite, 100 F par jour les 2e, 3e et 4e jours, 200 F le 5e, 500 F le 6e, 1 000 F le 7e. Au plus 2 000 F. Un gros colis (carton C1 ou C2) coûte 300 F de plus chaque jour, dès le premier : au plus 4 100 F.",
+    r: "Le jour d’arrivée est gratuit. Ensuite, 100 F par jour les 2e, 3e et 4e jours, 200 F le 5e, 500 F le 6e, 1 000 F le 7e. Au plus 2 000 F sur 7 jours.",
     lien: null
    },
    {
@@ -126,7 +126,7 @@ export const FAQ: ThemeFaq[] = [
    },
    {
     q: "Comment je paie la garde ?",
-    r: "Au retrait, en Mobile Money, sur ton téléphone. Le gérant ne touche jamais d’argent.",
+    r: "En espèces, au gérant, en une fois, au moment du retrait. BelivaY calcule le montant : le même s’affiche dans ton application, tes SMS et sur l’écran du gérant.",
     lien: null
    }
   ]
@@ -242,7 +242,7 @@ export const FAQ: ThemeFaq[] = [
    },
    {
     q: "Quand arrive mon remboursement ?",
-    r: "Dès que BelivaY a décidé, en général quand le vendeur a reçu et vérifié l’article, sous 48 h. L’argent arrive sur ton Portefeuille BelivaY : paie une commande avec, ou retire-le vers ton Mobile Money, sans frais pour un remboursement. Payé par carte : remboursé sur la même carte.",
+    r: "Dès que BelivaY a décidé, en général quand le vendeur a reçu et vérifié l’article, sous 48 h. Il est remboursé sur le moyen de paiement d’origine : le numéro Mobile Money qui a payé, dans l’heure ; la même carte ; ou ton Wallet si tu as payé avec.",
     lien: {
      texte: "Mon portefeuille",
      vers: "/wallet"

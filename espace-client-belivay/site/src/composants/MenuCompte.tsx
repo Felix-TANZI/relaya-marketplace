@@ -6,7 +6,7 @@
 // En tablette portrait, pas de menu latéral : la page Mon compte joue ce rôle, comme sur le téléphone.
 import type { ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { NAVIGATION, PAGES, chemin } from '../config/pages'
+import { NAVIGATION, PAGES, chemin, espaceVendeur } from '../config/pages'
 import { source } from '../donnees/source'
 import { F } from '../i18n/format'
 import { ChercherCompte } from '../pages/CL-13/ChercherCompte'
@@ -26,7 +26,7 @@ function useOuverte() {
   }
 }
 
-type Entree = { route: string; texte: string; icone: string; params?: Record<string, string>; droite?: ReactNode; seul?: 'diaspora' | 'standard' }
+type Entree = { route: string; texte: string; icone: string; params?: Record<string, string>; droite?: ReactNode; seul?: 'diaspora' | 'standard'; href?: string }
 
 export function MenuCompte() {
   const { t, langue, setLangue, choixTheme, setTheme, echelle, setEchelle } = usePreferences()
@@ -100,11 +100,12 @@ export function MenuCompte() {
       'Aide',
       [
         { route: 'aide', texte: 'Aide et support', icone: 'life-buoy' },
+        { route: 'faq', texte: 'Comment ça marche', icone: 'info' },
         { route: 'rappel', texte: 'Être rappelé', icone: 'phone-call' },
         { route: 'legal', texte: 'Pages légales', icone: 'scroll-text' },
       ],
     ],
-    [null, [{ route: 'devenir-vendeur', texte: compte?.boutique ? 'Espace vendeur' : 'Devenir vendeur', icone: 'store', seul: 'standard' }]],
+    [null, [{ route: 'devenir-vendeur', texte: compte?.boutique ? 'Espace vendeur' : 'Devenir vendeur', icone: 'store', seul: 'standard', href: compte?.boutique ? espaceVendeur(compte.boutique) : undefined }]],
   ]
   const garde = (e: Entree) => ouverte(e.route) && !(e.seul === 'diaspora' && !diaspora) && !(e.seul === 'standard' && diaspora)
   const actif = (r: string) => r === route
@@ -121,11 +122,20 @@ export function MenuCompte() {
             <ul>
               {vues.map((e) => (
                 <li key={e.route}>
-                  <Link to={chemin(e.route, e.params)} className={actif(e.route) ? 'on' : undefined} aria-current={actif(e.route) ? 'page' : undefined}>
-                    <Icone nom={e.icone} taille={19} />
-                    <span className="grow">{t(e.texte)}</span>
-                    {e.droite}
-                  </Link>
+                  {e.href ? (
+                    // Espace vendeur : autre application du même domaine (rechargement complet, même session).
+                    <a href={e.href}>
+                      <Icone nom={e.icone} taille={19} />
+                      <span className="grow">{t(e.texte)}</span>
+                      {e.droite}
+                    </a>
+                  ) : (
+                    <Link to={chemin(e.route, e.params)} className={actif(e.route) ? 'on' : undefined} aria-current={actif(e.route) ? 'page' : undefined}>
+                      <Icone nom={e.icone} taille={19} />
+                      <span className="grow">{t(e.texte)}</span>
+                      {e.droite}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>

@@ -26,7 +26,7 @@ const CE1: ArticleRentree[] = [
   art('stylos', 'Lot de 4 stylos à bille', 'Cahiers et fournitures', 1, 600, B),
   art('regle', 'Règle 30 cm et équerre', 'Cahiers et fournitures', 1, 700, B),
   art('hb', '3 crayons HB, gomme et taille-crayon', 'Cahiers et fournitures', 1, 800, B),
-  art('cartable', 'Cartable scolaire 16″', 'Sac', 1, 12500, C),
+  art('cartable', 'Cartable scolaire Champion 16″', 'Sac', 1, 12500, C),
 ]
 // Les autres classes : la même trame, adaptée (livres de la classe, fournitures en plus ou en moins).
 function liste(ecole: string, classe: string, section: 'fr' | 'en', n: number, publieeLe: number | null): ListeRentree {

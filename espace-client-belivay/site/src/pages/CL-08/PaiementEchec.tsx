@@ -15,7 +15,7 @@ import { NOMS } from './Confirmee'
 const QUOI: Record<'expire' | 'solde' | 'carte', string[]> = {
   expire: ['Réessayer — ton panier est intact', 'Vérifier ton solde MoMo (*126#), puis relancer', 'Payer avec un autre numéro ou une carte'],
   solde: ['Vérifier ton solde MoMo (*126#), puis relancer', 'Réessayer — ton panier est intact', 'Payer avec un autre numéro ou une carte'],
-  carte: ['Réessayer — ta banque te demandera de confirmer', 'Payer en Mobile Money, sans frais de service', 'Essayer une autre carte Visa ou Mastercard'],
+  carte: ['Réessayer — ta banque te demandera de confirmer', 'Payer avec le Wallet, sans frais, ou en Mobile Money (frais CamPay 2 %)', 'Essayer une autre carte Visa ou Mastercard'],
 }
 
 export function PaiementEchec() {

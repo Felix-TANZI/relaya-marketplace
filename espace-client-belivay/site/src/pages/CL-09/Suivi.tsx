@@ -2,7 +2,8 @@
 // aller ? » (retirable maintenant, heure prévue, en attente du dernier colis, livraison à domicile), plan indicatif
 // et étape de la commande (boutique, emballé et scellé, au relais, retiré), colis par colis (boutique, état côté
 // vendeur, jauge, livreur qui l'apporte), montant dû et ses paliers, les étapes datées, code de retrait, reçu,
-// modifier (selon l'état), signaler un problème. Jamais la position du livreur ni son numéro.
+// modifier (selon l'état), signaler un problème. À domicile, suivi simple (v6 D10) : livreur en route, heure d'arrivée
+// estimée, bouton « Appeler » par numéro masqué ; jamais la position exacte ni le vrai numéro.
 // Écran repris à la main : outils/ecran.mjs ne le réécrit plus.
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -32,6 +33,7 @@ export function Suivi() {
   const [params] = useSearchParams()
   const ref = params.get('ref') ?? 'BLV-52107'
   const [d, setD] = useState<{ commande: CommandeClient; maintenant: number } | null | undefined>(undefined)
+  const [appel, setAppel] = useState(false)
   const relais = useRelais(d?.commande.mode === 'relais' ? d.commande.lieu : null)
   const colonnes = useDes('tab-l')
   useEffect(() => {
@@ -71,6 +73,9 @@ export function Suivi() {
   const echTout = c.garde && (c.etat === 'retirable' || c.etat === 'comptoir') ? echeancier(c, maintenant, relais?.ferme ?? null) : null
   const gros = grosColis(c)
   const enRoute = c.etat === 'preparation' || c.etat === 'route'
+  // Suivi simple à domicile : le livreur a pris le colis ; heure estimée = heure prévue, sinon dans 40 min.
+  const livreurEnRoute = c.etat === 'route' || colis.some((x) => x.statut === 'recupere')
+  const arrivee = c.pretLe && c.pretLe > maintenant ? c.pretLe : maintenant + 40 * 60e3
 
   const grand = domicile
     ? enRoute
@@ -127,6 +132,22 @@ export function Suivi() {
         )}
         <div className="hs">{sous}</div>
       </div>
+      {domicile && livreurEnRoute && (
+        <div className="card mt10" data-suivi-livreur>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Icone nom="truck" taille={20} />
+            <div className="grow">
+              <div className="b7">{t('Ton livreur est en route')}</div>
+              <div className="t13 c3">{tf('Arrivée estimée vers {h}', { h: heureSeule(arrivee, langue) })}</div>
+            </div>
+            <button type="button" className="btn secondary" style={{ width: 'auto' }} onClick={() => setAppel(true)}>
+              <Icone nom="phone" taille={17} />
+              <span>{t('Appeler')}</span>
+            </button>
+          </div>
+          <div className="t12 c3 mt8">{t(appel ? 'Mise en relation par numéro masqué : ni toi ni le livreur ne voyez le vrai numéro.' : 'Appel par numéro masqué : ton numéro et le sien restent cachés.')}</div>
+        </div>
+      )}
     </>
   )
   const bPlan = (
@@ -395,7 +416,7 @@ export function Suivi() {
         <span>
           {t(
             domicile
-              ? 'Son numéro n’est jamais affiché et il n’y a pas de carte en direct : si besoin, il t’appelle par un numéro masqué.'
+              ? 'Suivi simple : livreur en route, heure d’arrivée estimée et bouton « Appeler » par numéro masqué. Son vrai numéro n’est jamais affiché.'
               : 'Le plan montre ton trajet jusqu’au relais. La position du livreur et son numéro ne sont jamais affichés : une heure estimée suffit.',
           )}
         </span>

@@ -4,8 +4,9 @@
 # handler de logs base de données. La base de test est créée/détruite
 # automatiquement par pytest-django (préfixe test_) — la prod n'est JAMAIS touchée.
 
-from .base import *  # noqa: F401,F403
 import os
+
+from .base import *
 
 DEBUG = False
 R2_STORAGE_ENABLED = False
@@ -38,6 +39,10 @@ PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
 # Pas d'envoi réel d'e-mail pendant les tests
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+# Les deux niveaux pointent sur la boîte en mémoire : les tests ne doivent ni
+# passer par Celery, ni toucher un serveur SMTP. Les tests qui visent le
+# backend Celery lui-même l'activent explicitement (test_mail_asynchrone.py).
+EMAIL_BACKEND_REEL = "django.core.mail.backends.locmem.EmailBackend"
 PAYMENTS_ENCRYPTION_KEY = "belivay-test-encryption-key"
 
 # Logging minimal : on évite le handler base de données (apps.vendors.log_handler)

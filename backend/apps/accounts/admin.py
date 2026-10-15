@@ -3,23 +3,22 @@
 # Remplace le fichier vide existant.
 
 from django.contrib import admin
-from django.utils.html import format_html
-from django.contrib.auth.models import User
+
 from .models import (
     AppRelease,
     ComplianceDocument,
     DeliveryVehicle,
+    OTPCode,
     PartnerBlacklist,
+    RewardAccount,
+    RewardTransaction,
     SanctionRecord,
-    UserProfile,
+    TrustScoreProfile,
     UserActivityLog,
     UserFavorite,
     UserNotification,
-    RewardAccount,
-    RewardTransaction,
-    TrustScoreProfile,
+    UserProfile,
     UserSession,
-    OTPCode,
 )
 
 
@@ -233,14 +232,38 @@ class UserSessionAdmin(admin.ModelAdmin):
 
 @admin.register(OTPCode)
 class OTPCodeAdmin(admin.ModelAdmin):
-    list_display  = ('user', 'purpose', 'code', 'is_used', 'expires_at', 'created_at')
+    """
+    Le code lui-même n'est JAMAIS montré ici.
+
+    Il l'était : en colonne de liste et dans la recherche. Un membre du staff
+    ayant le simple droit de lecture pouvait donc lire le code 2FA actif d'un
+    compte — ou retrouver à qui appartenait un code — et terminer la connexion
+    à sa place. La double authentification ne protégeait plus de rien vis-à-vis
+    de l'interne.
+
+    On garde l'écran, utile au support pour voir qu'un code a bien été émis et
+    s'il est encore valable ; on retire seulement ce qui permet de s'en servir.
+    """
+
+    list_display  = ('user', 'purpose', 'etat', 'expires_at', 'created_at')
     list_filter   = ('purpose', 'is_used')
-    search_fields = ('user__username', 'code')
-    readonly_fields = ('created_at',)
+    search_fields = ('user__username', 'user__email')
+    readonly_fields = ('user', 'purpose', 'is_used', 'expires_at', 'created_at')
+    exclude       = ('code',)
     ordering      = ('-created_at',)
+
+    @admin.display(description="État")
+    def etat(self, obj):
+        if obj.is_used:
+            return "utilisé"
+        return "valable" if obj.is_valid else "expiré"
 
     def has_add_permission(self, request):
         # Les codes OTP se génèrent via le système
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        # Lecture seule : rien à modifier à la main sur un code.
         return False
 
 

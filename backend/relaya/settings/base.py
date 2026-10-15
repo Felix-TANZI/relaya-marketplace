@@ -411,10 +411,22 @@ LOGGING = {
 
 # EMAIL CONFIGURATION 
 
-EMAIL_BACKEND = os.getenv(
-    "EMAIL_BACKEND", 
-    "django.core.mail.backends.console.EmailBackend"  # Console par défaut
+# Deux niveaux, volontairement :
+#
+#   EMAIL_BACKEND       ce que traverse TOUT envoi du projet. Par défaut, il met
+#                       le message en file Celery et rend la main : aucun
+#                       aller-retour SMTP dans la requête de l'utilisateur.
+#   EMAIL_BACKEND_REEL  celui qui parle vraiment au serveur de mail. C'est lui
+#                       qu'utilise la tâche Celery. Sans cette séparation, la
+#                       tâche se remettrait elle-même en file, indéfiniment.
+#
+# Mettre EMAIL_BACKEND en variable d'environnement court-circuite la file (par
+# exemple en développement, pour voir les mails dans la console tout de suite).
+EMAIL_BACKEND_REEL = os.getenv(
+    "EMAIL_BACKEND_REEL",
+    "django.core.mail.backends.console.EmailBackend",  # Console par défaut
 )
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "apps.common.mail.CeleryEmailBackend")
 EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
 EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"

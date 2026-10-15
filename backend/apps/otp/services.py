@@ -23,7 +23,12 @@ from rest_framework import status
 
 from apps.client_core import parametres
 from apps.client_core.erreurs import ErreurClient
-from apps.client_core.masquage import masquer_email, masquer_numero, numero_local, operateur
+from apps.client_core.masquage import (
+    masquer_email,
+    masquer_numero,
+    numero_local,
+    operateur,
+)
 from apps.client_core.temps import ms
 
 from .models import CodeOtp
@@ -54,7 +59,10 @@ def _regles():
     return duree, essais, attente, entre, par_heure, longueur
 
 
-def envoyer(*, objet: str, destination: str, utilisateur=None, canal: str = "sms") -> dict:
+def envoyer(
+    *, objet: str, destination: str, utilisateur=None, canal: str = "sms",
+    exiger_utilisateur: bool = False,
+) -> dict:
     """Crée et envoie un code ; 429 trop_tot / trop_d_envois selon OTP-RENVOI."""
     dest = _normaliser(destination)
     if not dest:
@@ -77,7 +85,15 @@ def envoyer(*, objet: str, destination: str, utilisateur=None, canal: str = "sms
     code = f"{secrets.randbelow(10**longueur):0{longueur}d}"
     with transaction.atomic():
         # Un nouveau code annule les précédents du même objet (un seul code valable à la fois).
-        CodeOtp.objects.filter(objet=objet, destination_empreinte=empreinte_dest, utilise_le__isnull=True).update(expire_le=maintenant)
+        # `exiger_utilisateur` limite cette annulation au compte concerné : sans
+        # ça, sur une adresse partagée par deux comptes, demander un code
+        # annulerait celui de l'autre (voir la note de `verifier`).
+        precedents = CodeOtp.objects.filter(
+            objet=objet, destination_empreinte=empreinte_dest, utilise_le__isnull=True,
+        )
+        if exiger_utilisateur:
+            precedents = precedents.filter(utilisateur=utilisateur)
+        precedents.update(expire_le=maintenant)
         CodeOtp.objects.create(
             utilisateur=utilisateur if utilisateur is not None and utilisateur.is_authenticated else None,
             objet=objet,
@@ -95,16 +111,38 @@ def envoyer(*, objet: str, destination: str, utilisateur=None, canal: str = "sms
     return {"destination": _masquer(dest), "valideMinutes": duree, "renvoiSecondes": entre}
 
 
-def verifier(*, objet: str, code: str, destination: str, utilisateur=None, consommer: bool = True) -> dict:
+def verifier(
+    *, objet: str, code: str, destination: str, utilisateur=None,
+    consommer: bool = True, exiger_utilisateur: bool = False,
+) -> dict:
     """Vérifie et consomme le code (consommer=False : le code juste reste valable, pour un contrôle refait plus tard,
-    ex. l'inscription diaspora). Ne lève pas pour un code faux : le résultat le dit (ResultatCode du site)."""
+    ex. l'inscription diaspora). Ne lève pas pour un code faux : le résultat le dit (ResultatCode du site).
+
+    `exiger_utilisateur=True` restreint la recherche au compte passé en
+    `utilisateur`. Par défaut le code n'est retrouvé que par (objet,
+    destination), ce qui suffit aux parcours du kit : ils portent sur un
+    numéro ou une adresse, uniques par nature.
+
+    Ce n'est PAS vrai pour la double authentification de connexion : le modèle
+    utilisateur de Django n'impose pas l'unicité de `email` (seuls les
+    sérialiseurs la vérifient). Deux comptes partageant une adresse
+    partageraient alors l'espace des codes, et le code de l'un validerait la
+    connexion de l'autre. Le drapeau reste à False par défaut pour ne rien
+    changer aux parcours anonymes du kit, où le code est créé sans compte."""
     dest = _normaliser(destination)
     _, essais_max, attente_min, _, _, _ = _regles()
     maintenant = timezone.now()
     with transaction.atomic():
+        filtres = {
+            "objet": objet,
+            "destination_empreinte": _empreinte(dest),
+            "utilise_le__isnull": True,
+        }
+        if exiger_utilisateur:
+            filtres["utilisateur"] = utilisateur
         c = (
             CodeOtp.objects.select_for_update()
-            .filter(objet=objet, destination_empreinte=_empreinte(dest), utilise_le__isnull=True)
+            .filter(**filtres)
             .order_by("-cree_le")
             .first()
         )

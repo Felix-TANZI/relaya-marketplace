@@ -23,8 +23,13 @@ TEST_PASSWORD = secrets.token_urlsafe(16)
 @override_settings(GOOGLE_CLIENT_ID="belivay-test.apps.googleusercontent.com")
 class GoogleLoginTests(APITestCase):
     endpoint = "/api/auth/google/"
+    # `aud` manquait : la vue verifie que le jeton a bien ete emis POUR BelivaY
+    # et non pour une autre application, et renvoyait donc 401. Un vrai jeton
+    # Google porte toujours ce champ. Ces tests n'etant jamais collectes par
+    # pytest (nom de fichier `tests.py`), l'ecart n'avait jamais ete vu.
     identity = {
         "sub": "google-subject-123",
+        "aud": "belivay-test.apps.googleusercontent.com",
         "email": "client.google@example.com",
         "email_verified": True,
         "given_name": "Client",
@@ -67,6 +72,20 @@ class GoogleLoginTests(APITestCase):
     def test_invalid_google_token_is_rejected(self, _verify):
         response = self.client.post(self.endpoint, {"credential": "invalid-token"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    @patch("google.oauth2.id_token.verify_oauth2_token")
+    def test_un_jeton_emis_pour_une_autre_application_est_refuse(self, verify):
+        """
+        Un jeton Google valide mais emis pour une AUTRE application ne doit pas
+        ouvrir de session BelivaY. Sans ce controle, n'importe quel site
+        utilisant Google pourrait faire entrer ses utilisateurs chez nous.
+        """
+        verify.return_value = {**self.identity, "aud": "autre-site.apps.googleusercontent.com"}
+
+        response = self.client.post(self.endpoint, {"credential": "valid-token"}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertFalse(User.objects.filter(email=self.identity["email"]).exists())
 
 
 class ClientRegistrationUniquenessTests(APITestCase):

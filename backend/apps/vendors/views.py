@@ -3733,6 +3733,12 @@ def admin_finances_stats(request):
         order__payment_status='PAID'
     ).select_related('order', 'product__vendor', 'product__vendor__vendor_profile'):
         vendor = item.product.vendor
+        # `Product.vendor` est nullable (null=True) : un produit cree sans
+        # vendeur — import, saisie admin — remonte ici avec vendor a None et
+        # faisait tomber tout le rapport sur un AttributeError. Un article
+        # sans vendeur n'a de toute facon aucune commission a attribuer.
+        if vendor is None:
+            continue
         commission = round(item.line_total_xaf * float(item.order.commission_rate_snapshot) / 100)
         key = vendor.id
         if key not in vendor_commissions:
@@ -4023,7 +4029,9 @@ def admin_list_reviews(request):
             'product_id':           r.product.id,
             'product_title':        r.product.title,
             'product_slug':         r.product.slug,
-            'vendor_name':          r.product.vendor.username,
+            # `Product.vendor` est nullable : sans ce garde-fou, un avis sur
+            # un produit sans vendeur fait tomber toute la liste.
+            'vendor_name':          r.product.vendor.username if r.product.vendor else '',
             'user_id':              r.user.id,
             'user_name':            r.user.username,
             'rating':               r.rating,
@@ -5526,10 +5534,14 @@ def admin_list_disputes(request):
 @permission_classes([IsAdminUser])
 def admin_dispute_detail(request, dispute_id):
     """Détail complet d'un litige"""
+    # Imports hors du `try` : la clause `except Dispute.DoesNotExist` ci-dessous
+    # s'en sert. Importes dedans, un echec d'import laisserait `Dispute` non
+    # defini et Python leverait `NameError` en evaluant le `except` — masquant
+    # l'erreur reelle derriere un 500 incomprehensible.
+    from apps.orders.models import Dispute
+    from apps.vendors.serializers import AdminDisputeDetailSerializer
+
     try:
-        from apps.orders.models import Dispute
-        from apps.vendors.serializers import AdminDisputeDetailSerializer
-        
         dispute = Dispute.objects.select_related(
             'order',
             'order__user',
@@ -5625,10 +5637,11 @@ def admin_request_dispute_evidence(request, dispute_id):
 @permission_classes([IsAdminUser])
 def admin_update_dispute(request, dispute_id):
     """Modifier un litige"""
+    # Imports hors du `try` : voir `admin_dispute_detail`.
+    from apps.orders.models import Dispute, DisputeMessage
+    from apps.vendors.serializers import AdminDisputeDetailSerializer, AdminDisputeUpdateSerializer
+
     try:
-        from apps.orders.models import Dispute, DisputeMessage
-        from apps.vendors.serializers import AdminDisputeUpdateSerializer, AdminDisputeDetailSerializer
-        
         dispute = Dispute.objects.get(id=dispute_id)
     except Dispute.DoesNotExist:
         return Response(
@@ -5680,10 +5693,11 @@ def admin_update_dispute(request, dispute_id):
 @permission_classes([IsAdminUser])
 def admin_add_dispute_message(request, dispute_id):
     """Ajouter un message au litige"""
+    # Imports hors du `try` : voir `admin_dispute_detail`.
+    from apps.orders.models import Dispute, DisputeMessage
+    from apps.vendors.serializers import AdminDisputeDetailSerializer, DisputeMessageCreateSerializer
+
     try:
-        from apps.orders.models import Dispute, DisputeMessage
-        from apps.vendors.serializers import DisputeMessageCreateSerializer, AdminDisputeDetailSerializer
-        
         dispute = Dispute.objects.get(id=dispute_id)
     except Dispute.DoesNotExist:
         return Response(
@@ -5716,10 +5730,11 @@ def admin_add_dispute_message(request, dispute_id):
 @permission_classes([IsAdminUser])
 def admin_resolve_dispute(request, dispute_id):
     """Résoudre un litige"""
+    # Imports hors du `try` : voir `admin_dispute_detail`.
+    from apps.orders.models import Dispute, DisputeMessage
+    from apps.vendors.serializers import AdminDisputeDetailSerializer
+
     try:
-        from apps.orders.models import Dispute, DisputeMessage
-        from apps.vendors.serializers import AdminDisputeDetailSerializer
-        
         dispute = Dispute.objects.get(id=dispute_id)
     except Dispute.DoesNotExist:
         return Response(
@@ -7507,14 +7522,32 @@ def _vendor_emit_event(vendor_profile, event_type, payload=None):
         pass
 
 
-def _get_active_vendor_or_404(user):
-    """Retourne (profile, None) ou (None, Response) — motif copié du reste du fichier (try/except VendorProfile.DoesNotExist)."""
+def _get_active_vendor_or_404(user) -> tuple[VendorProfile, Response | None]:
+    """
+    Retourne (profile, None) ou (None, Response) — motif copié du reste du
+    fichier (try/except VendorProfile.DoesNotExist).
+
+    Sur le type de retour : le premier élément est annoncé non optionnel alors
+    que la branche d'erreur renvoie None. C'est volontaire. Le contrat, que
+    tous les appelants respectent, est « si l'erreur est vide, le profil est
+    là », et il se lit toujours ainsi :
+
+        profile, err = _get_active_vendor_or_404(request.user)
+        if err:
+            return err
+
+    Un vérificateur de types ne sait pas relier deux variables issues d'un même
+    tuple : il croyait donc `profile` optionnel dans tout le corps des 68 vues
+    qui appellent ces trois assistants, et signalait une centaine de fausses
+    erreurs. Les annoter ici corrige la cause en un seul endroit, sans toucher
+    aux appelants. L'annotation ne change rien à l'exécution.
+    """
     try:
         profile = VendorProfile.objects.get(user=user)
     except VendorProfile.DoesNotExist:
-        return None, Response({'detail': 'Profil vendeur introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+        return None, Response({'detail': 'Profil vendeur introuvable.'}, status=status.HTTP_404_NOT_FOUND)  # type: ignore[return-value]
     if not profile.is_active_vendor:
-        return None, Response(
+        return None, Response(  # type: ignore[return-value]
             {'detail': "Votre compte vendeur n'est pas encore approuvé."},
             status=status.HTTP_403_FORBIDDEN,
         )
@@ -8149,7 +8182,10 @@ def vendor_events_stream(request):
     def gen(start_cursor):
         cur = start_cursor
         deadline = time.monotonic() + 25
-        yield ': ok\n\n'
+        # On produit des octets, pas du texte. Django encoderait lui-meme avec
+        # le charset de la reponse ; l'ecrire ici donne exactement les memes
+        # octets sans dependre de ce reglage, ce qui vaut mieux pour un flux.
+        yield b': ok\n\n'
         while time.monotonic() < deadline:
             qs = profile.events.all()
             if cur:
@@ -8157,7 +8193,7 @@ def vendor_events_stream(request):
             for e in qs.order_by('id')[:50]:
                 cur = e.id
                 data = _json.dumps(_serialize_vendor_event(e))
-                yield f"id: {e.id}\nevent: {e.event_type}\ndata: {data}\n\n"
+                yield f"id: {e.id}\nevent: {e.event_type}\ndata: {data}\n\n".encode()
             time.sleep(2)
 
     response = StreamingHttpResponse(gen(cursor), content_type='text/event-stream')
@@ -8183,14 +8219,19 @@ def vendor_events_stream(request):
 from . import opening_hours as _oh
 
 
-def _ev_active_vendor(request):
-    """(profile, None) si vendeur actif, sinon (None, Response 403/404)."""
+def _ev_active_vendor(request) -> tuple[VendorProfile, Response | None]:
+    """
+    (profile, None) si vendeur actif, sinon (None, Response 403/404).
+
+    Premier élément annoncé non optionnel : voir l'explication détaillée sur
+    `_get_active_vendor_or_404`.
+    """
     try:
         profile = VendorProfile.objects.get(user=request.user)
     except VendorProfile.DoesNotExist:
-        return None, Response({'detail': 'Profil vendeur introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+        return None, Response({'detail': 'Profil vendeur introuvable.'}, status=status.HTTP_404_NOT_FOUND)  # type: ignore[return-value]
     if not profile.is_active_vendor:
-        return None, Response(
+        return None, Response(  # type: ignore[return-value]
             {'detail': "Votre compte vendeur n'est pas encore approuvé."},
             status=status.HTTP_403_FORBIDDEN,
         )
@@ -8715,23 +8756,34 @@ def ev_shop_closed_today(request):
 #  gouvernance avant d'être câblés.
 #  ═══════════════════════════════════════════════════════════════════════
 
-def _vd_active_vendor(request):
-    """(vendor_profile, None) si vendeur actif, sinon (None, Response 403/404)."""
+def _vd_active_vendor(request) -> tuple[VendorProfile, Response | None]:
+    """
+    (vendor_profile, None) si vendeur actif, sinon (None, Response 403/404).
+
+    Premier élément annoncé non optionnel : voir l'explication détaillée sur
+    `_get_active_vendor_or_404`.
+    """
     try:
         vp = VendorProfile.objects.get(user=request.user)
     except VendorProfile.DoesNotExist:
-        return None, Response({'detail': 'Profil vendeur introuvable.'}, status=404)
+        return None, Response({'detail': 'Profil vendeur introuvable.'}, status=404)  # type: ignore[return-value]
     if not vp.is_active_vendor:
-        return None, Response({'detail': "Compte vendeur non approuvé."}, status=403)
+        return None, Response({'detail': "Compte vendeur non approuvé."}, status=403)  # type: ignore[return-value]
     return vp, None
 
 
-def _vd_offer_or_404(request, offer_id):
+def _vd_offer_or_404(request, offer_id) -> tuple[Product, Response | None]:
+    """
+    (offre, None) si elle appartient au vendeur, sinon (None, Response 404).
+
+    Premier élément annoncé non optionnel : voir l'explication détaillée sur
+    `_get_active_vendor_or_404`.
+    """
     from apps.catalog.models import Product as _P
     try:
         return _P.objects.get(pk=offer_id, vendor=request.user), None
     except (_P.DoesNotExist, ValueError, TypeError):
-        return None, Response(status=404)
+        return None, Response(status=404)  # type: ignore[return-value]
 
 
 def _vd_category_names(category):
@@ -10255,14 +10307,20 @@ from rest_framework.decorators import renderer_classes as renderer_classes
 from rest_framework.renderers import BaseRenderer as _BaseRenderer, JSONRenderer as _JSONRenderer
 
 
-def _vendor_or_error(request):
-    """(profil, None) ou (None, Response 403/404) — même convention que le reste du fichier."""
+def _vendor_or_error(request) -> tuple[VendorProfile, Response | None]:
+    """
+    (profil, None) ou (None, Response 403/404) — même convention que le reste
+    du fichier.
+
+    Premier élément annoncé non optionnel : voir l'explication détaillée sur
+    `_get_active_vendor_or_404`.
+    """
     try:
         profile = VendorProfile.objects.get(user=request.user)
     except VendorProfile.DoesNotExist:
-        return None, Response({'detail': 'Profil vendeur introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+        return None, Response({'detail': 'Profil vendeur introuvable.'}, status=status.HTTP_404_NOT_FOUND)  # type: ignore[return-value]
     if not profile.is_active_vendor:
-        return None, Response({'detail': "Votre compte vendeur n'est pas encore approuvé."}, status=status.HTTP_403_FORBIDDEN)
+        return None, Response({'detail': "Votre compte vendeur n'est pas encore approuvé."}, status=status.HTTP_403_FORBIDDEN)  # type: ignore[return-value]
     return profile, None
 
 
@@ -10969,7 +11027,10 @@ def vendor_payouts_history(request):
         elif periode == '12':
             qs = qs.filter(requested_at__gte=timezone.now() - timezone.timedelta(days=365))
 
-        statut_map = {
+        # dict[str, str] : `Status` est un TextChoices, ses membres sont des
+        # chaines et `payout.status` en est une. Meme raison que
+        # `etat_par_niveau` plus bas.
+        statut_map: dict[str, str] = {
             _PayoutRequest.Status.DRAFT: 'prevu', _PayoutRequest.Status.PENDING_APPROVAL: 'prevu',
             _PayoutRequest.Status.APPROVED: 'prevu', _PayoutRequest.Status.PROCESSING: 'envoye',
             _PayoutRequest.Status.PAID: 'credite', _PayoutRequest.Status.FAILED: 'refuse',
@@ -10979,7 +11040,9 @@ def vendor_payouts_history(request):
         for payout in qs:
             commandes = []
             if payout.batch_id:
-                for hold in payout.batch.covered_holds.all()[:50]:
+                # `batch_id` renseigne garantit `batch` non nul ; le
+                # verificateur ne sait pas relier les deux.
+                for hold in payout.batch.covered_holds.all()[:50]:  # type: ignore[union-attr]
                     commandes.append({'ref': _vendor_ref(hold.order_id), 'liberation': _instant(hold.released_at), 'garde': hold.net_amount_xaf})
             total += payout.amount_xaf
             versements.append({
@@ -11330,7 +11393,11 @@ def vendor_account_status(request):
     tsp = get_trust_score_profile(request.user, TrustScoreProfile.Role.VENDOR)
     sanction = tsp.sanctions.filter(lifted_at__isnull=True).exclude(level=0).order_by('-created_at').first()
 
-    etat_par_niveau = {
+    # dict[int, str] : les membres de `SanctionLevel` sont des entiers
+    # (IntegerChoices) et `sanction_level` est un PositiveSmallIntegerField.
+    # Sans l'annotation, l'analyseur restreint les cles aux seuls membres de
+    # l'enumeration et refuse la recherche par entier, qui marche pourtant.
+    etat_par_niveau: dict[int, str] = {
         TrustScoreProfile.SanctionLevel.NONE: 'aucune', TrustScoreProfile.SanctionLevel.WARNING: 'avertissement',
         TrustScoreProfile.SanctionLevel.THROTTLING: 'visibilite_reduite', TrustScoreProfile.SanctionLevel.SUSPENSION: 'suspendu',
         TrustScoreProfile.SanctionLevel.BAN: 'exclu',

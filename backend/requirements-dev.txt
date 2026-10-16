@@ -16,3 +16,8 @@ factory-boy>=3.3,<4.0
 # 32 avec — et les 63 ecartees etaient toutes fausses.
 django-types>=0.19
 djangorestframework-types>=0.8
+
+# Celery : `@shared_task` renvoie un objet dont `.delay()` est invisible sans
+# stubs. Les appels `send_plain_email.delay(...)` d'apps/vendors/views.py
+# etaient signales « list[str] n'est pas appelant » — trois fausses erreurs.
+celery-types>=0.22

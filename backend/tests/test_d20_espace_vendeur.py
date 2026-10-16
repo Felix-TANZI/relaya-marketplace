@@ -6,9 +6,21 @@
 #   « Donner au role Preparation un acces sans l'argent. »
 #
 # Les deux autres ne sont pas de notre ressort :
-#   - « Verser chaque vendredi, avec 1 % de frais de retrait » contredit une
-#     decision produit confirmee le 12 octobre (« retrait a la demande
-#     confirme », commit c6b73cc) — arbitrage necessaire.
+#   - « Verser chaque vendredi, avec 1 % de frais de retrait ».
+#
+#     Le vendredi est caduc : la decision produit du 12 octobre (commit
+#     c6b73cc) a retenu le retrait a la demande, et le document n'a pas suivi.
+#
+#     Le 1 %, lui, est tranche depuis la feuille de route V2 Elite du
+#     16 octobre, qui le dit trois fois : tableau des frais (« Versement au
+#     vendeur · 1 % CamPay · Le vendeur »), D17 (« Retenir le 1 % CamPay sur
+#     le versement du vendeur ») et D20 (« a la charge du vendeur »). Le code
+#     applique encore l'inverse — `PayoutRequest.psp_fee_xaf` porte « Charge
+#     PLATEFORME [...] referentiel § 7.1 » — et toute la comptabilite est
+#     batie dessus : la tresorerie sort `montant + frais`, la depense va dans
+#     EXPENSE_PSP_PAYOUT. Basculer la charge sur le vendeur suppose donc de
+#     reprendre les ecritures, pas seulement le montant verse. C'est D17,
+#     priorite 3.
 #   - « Livrer les sous-ecrans encore "Bientot disponible" » est du frontend,
 #     sur la branche espace-vendeur-belivay.
 

@@ -1172,7 +1172,21 @@ def vendor_withdrawal_create(request):
     # LE RETRAIT PASSE PAR LE MODULE FINANCIER
     #
     # Decision produit confirmee : le vendeur retire quand il veut (PULL),
-    # pas de versement automatique par cycle. Cette vue emprunte le meme
+    # pas de versement automatique par cycle.
+    #
+    # A NOTER, pour qui relirait le cahier des charges : la feuille de route
+    # « Reste a faire de l'equipe tech & produit » (V2 Elite, 16 octobre,
+    # tache D20) demande encore « Verser chaque vendredi ». C'etait la regle
+    # INITIALE ; elle a ete abandonnee au profit du retrait a la demande,
+    # confirme le 12 octobre, et le document n'a pas suivi sur ce point.
+    # Ne pas rouvrir ce chantier en le lisant : l'ecart est signale, il
+    # attend une confirmation.
+    #
+    # Les versements du vendredi, eux, restent bien en vigueur pour les points
+    # relais (D13) et les entreprises de livraison (D11) : ce sont des cycles
+    # differents, que cette decision ne touche pas.
+    #
+    # Cette vue emprunte le meme
     # circuit comptable qu'un reglement par cycle (lot, confirmation,
     # approbation par un tiers, execution) mais le DECLENCHEUR reste le
     # vendeur, pas un calendrier — request_withdrawal() ne verse jamais
@@ -6020,220 +6034,14 @@ def _reschedule_pending_shipment_evidence(retention_days):
 # MA BOUTIQUE
 
  
-@extend_schema(
-    tags=["Vendors"],
-    summary="Update shop info",
-    description="Met a jour les informations de la boutique (nom, description, WhatsApp, ville, delai, retours).",
-)
-@api_view(['PATCH'])
-@permission_classes([IsAuthenticated])
-def vendor_update_shop(request):
-    """Met a jour les informations modifiables de la boutique."""
-    try:
-        profile = VendorProfile.objects.get(user=request.user)
-        if not profile.is_active_vendor:
-            return Response({'detail': "Compte vendeur non approuve."}, status=403)
- 
-        ALLOWED_FIELDS = [
-            'business_name', 'business_description', 'whatsapp_phone',
-            'city', 'address', 'preparation_delay', 'return_policy', 'is_online',
-        ]
-        for field in ALLOWED_FIELDS:
-            if field in request.data:
-                setattr(profile, field, request.data[field])
- 
-        profile.save()
- 
-        from apps.vendors.serializers import VendorProfileSerializer
-        return Response(VendorProfileSerializer(profile).data)
- 
-    except VendorProfile.DoesNotExist:
-        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
  
  
-@extend_schema(
-    tags=["Vendors"],
-    summary="Upload shop profile photo",
-    description="Upload la photo de profil de la boutique. Champ : 'photo'. Max 5 Mo.",
-)
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def vendor_upload_shop_photo(request):
-    """Upload la photo de profil de la boutique."""
-    try:
-        profile = VendorProfile.objects.get(user=request.user)
-        if not profile.is_active_vendor:
-            return Response({'detail': "Compte vendeur non approuve."}, status=403)
- 
-        photo = request.FILES.get('photo')
-        if not photo:
-            return Response({'detail': 'Champ "photo" requis.'}, status=400)
- 
-        allowed = ['image/jpeg', 'image/png', 'image/webp']
-        if photo.content_type not in allowed:
-            return Response({'detail': 'Format non supporte. Utilisez JPG, PNG ou WEBP.'}, status=400)
-        if photo.size > 5 * 1024 * 1024:
-            return Response({'detail': 'Fichier trop volumineux. Maximum 5 Mo.'}, status=400)
- 
-        # Supprimer l'ancienne photo si elle existe
-        from apps.common.images import ImageOptimizationError, optimize_uploaded_image
-        try:
-            optimized_photo = optimize_uploaded_image(
-                photo, max_input_bytes=5 * 1024 * 1024, max_dimension=768,
-                quality=80, filename_prefix='shop',
-            )
-        except ImageOptimizationError as error:
-            return Response({'detail': str(error)}, status=400)
-
-        if profile.profile_photo:
-            try:
-                profile.profile_photo.delete(save=False)
-            except Exception:
-                pass
- 
-        profile.profile_photo = optimized_photo
-        profile.save(update_fields=['profile_photo', 'updated_at'])
- 
-        request_obj = request
-        photo_url = request_obj.build_absolute_uri(profile.profile_photo.url) if profile.profile_photo else None
-        return Response({'photo_url': photo_url}, status=201)
- 
-    except VendorProfile.DoesNotExist:
-        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
  
  
-@extend_schema(
-    tags=["Vendors"],
-    summary="Upload shop banner",
-    description="Upload la banniere de la boutique. Champ : 'banner'. Max 8 Mo. 1200x300px recommande.",
-)
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def vendor_upload_shop_banner(request):
-    """Upload la banniere de la boutique."""
-    try:
-        profile = VendorProfile.objects.get(user=request.user)
-        if not profile.is_active_vendor:
-            return Response({'detail': "Compte vendeur non approuve."}, status=403)
- 
-        banner = request.FILES.get('banner')
-        if not banner:
-            return Response({'detail': 'Champ "banner" requis.'}, status=400)
- 
-        allowed = ['image/jpeg', 'image/png', 'image/webp']
-        if banner.content_type not in allowed:
-            return Response({'detail': 'Format non supporte. JPG, PNG ou WEBP uniquement.'}, status=400)
-        if banner.size > 8 * 1024 * 1024:
-            return Response({'detail': 'Fichier trop volumineux. Maximum 8 Mo.'}, status=400)
- 
-        from apps.common.images import ImageOptimizationError, optimize_uploaded_image
-        try:
-            optimized_banner = optimize_uploaded_image(
-                banner, max_input_bytes=8 * 1024 * 1024, max_dimension=1920,
-                quality=80, filename_prefix='banner',
-            )
-        except ImageOptimizationError as error:
-            return Response({'detail': str(error)}, status=400)
-
-        if profile.banner_image:
-            try:
-                profile.banner_image.delete(save=False)
-            except Exception:
-                pass
- 
-        profile.banner_image = optimized_banner
-        profile.save(update_fields=['banner_image', 'updated_at'])
- 
-        request_obj = request
-        banner_url = request_obj.build_absolute_uri(profile.banner_image.url) if profile.banner_image else None
-        return Response({'banner_url': banner_url}, status=201)
- 
-    except VendorProfile.DoesNotExist:
-        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
  
  
-@extend_schema(
-    tags=["Vendors"],
-    summary="Get shop QR data",
-    description="Retourne l'URL publique et le slug de la boutique pour generer le QR code cote frontend.",
-)
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def vendor_shop_qr(request):
-    """Retourne les donnees pour le QR code de la boutique."""
-    try:
-        profile = VendorProfile.objects.get(user=request.user)
-        return Response({
-            'slug':       profile.shop_slug,
-            'public_url': profile.public_url or f"https://belivay.com/boutique/{profile.shop_slug}",
-            'shop_name':  profile.business_name,
-        })
-    except VendorProfile.DoesNotExist:
-        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
  
  
-@extend_schema(
-    tags=["Public"],
-    summary="Get public shop page",
-    description="Page publique d'une boutique vendeur. Accessible sans authentification.",
-)
-@api_view(['GET'])
-@permission_classes([])  # Public — pas d'auth requise
-def public_shop(request, slug):
-    """
-    Page publique d'une boutique.
-    Retourne : infos boutique + produits actifs + stats.
-    """
-    try:
-        profile = VendorProfile.objects.select_related('user', 'current_plan').get(
-            shop_slug=slug,
-            status='APPROVED',
-            is_online=True,
-        )
-    except VendorProfile.DoesNotExist:
-        return Response({'detail': 'Boutique introuvable ou hors ligne.'}, status=404)
- 
-    from apps.catalog.models import Product
-    from apps.catalog.serializers import ProductSerializer
-    from apps.catalog.models import ProductReview
-    from django.db.models import Avg, Count
- 
-    products = Product.objects.filter(
-        vendor=profile.user, is_active=True,
-    ).select_related('category').prefetch_related('images', 'inventory').order_by('-created_at')
- 
-    stats = products.aggregate(
-        total    = Count('id'),
-        avg_rating = Avg('reviews__rating'),
-    )
-    reviews_count = ProductReview.objects.filter(
-        product__vendor=profile.user, is_approved=True,
-    ).count()
- 
-    banner_url = request.build_absolute_uri(profile.banner_image.url) if profile.banner_image else None
-    photo_url  = request.build_absolute_uri(profile.profile_photo.url) if profile.profile_photo else None
- 
-    data = {
-        'slug':               profile.shop_slug,
-        'business_name':      profile.business_name,
-        'business_description': profile.business_description,
-        'city':               profile.city,
-        'whatsapp_phone':     profile.whatsapp_phone,
-        'preparation_delay':  profile.preparation_delay,
-        'return_policy':      profile.return_policy,
-        'banner_url':         banner_url,
-        'photo_url':          photo_url,
-        'certification_tier': profile.certification_tier,
-        'is_online':          profile.is_online,
-        'member_since':       profile.approved_at.isoformat() if profile.approved_at else profile.created_at.isoformat(),
-        'stats': {
-            'total_products': stats['total'] or 0,
-            'avg_rating':     round(stats['avg_rating'], 1) if stats['avg_rating'] else None,
-            'reviews_count':  reviews_count,
-        },
-        'products': ProductSerializer(products[:20], many=True, context={'request': request}).data,
-    }
-    return Response(data)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -6801,169 +6609,10 @@ def vendor_certifications(request):
  
 # PLANS & ABONNEMENTS
 
-@extend_schema(
-    tags=["Vendors"],
-    summary="List subscription plans",
-    description="Retourne les plans actifs et le plan courant du vendeur.",
-)
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def vendor_list_plans(request):
-    """Liste les plans disponibles + infos plan courant du vendeur."""
-    try:
-        profile = VendorProfile.objects.select_related('current_plan').get(user=request.user)
-    except VendorProfile.DoesNotExist:
-        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
- 
-    from apps.vendors.models import SubscriptionPlan
- 
-    plans = SubscriptionPlan.objects.filter(is_active=True).order_by('display_order')
- 
-    plans_data = []
-    for p in plans:
-        plans_data.append({
-            'id':               p.id,
-            'code':             p.code,
-            'name':             p.name,
-            'description':      p.description,
-            'price_monthly_xaf': p.price_monthly_xaf,
-            'price_annual_xaf': p.price_annual_xaf,
-            'commission_rate':  float(p.commission_rate),
-            'max_products':     p.max_products,
-            'max_boosts_month': p.max_boosts_month,
-            'features':         p.features,
-            'is_current':       profile.current_plan_id == p.id,
-            'is_popular':       p.code == 'PRO',
-        })
- 
-    # Plan courant
-    current_plan_data = None
-    if profile.current_plan:
-        current_plan_data = {
-            'code':         profile.current_plan.code,
-            'name':         profile.current_plan.name,
-            'expires_at':   profile.plan_expires_at.isoformat() if profile.plan_expires_at else None,
-        }
- 
-    return Response({
-        'plans':        plans_data,
-        'current_plan': current_plan_data or {'code': 'FREE', 'name': 'Gratuit', 'expires_at': None},
-        'active_plan_code': profile.active_plan_code,
-    })
  
  
-@extend_schema(
-    tags=["Vendors"],
-    summary="Subscribe to a plan",
-    description=(
-        "Initie une souscription a un plan. "
-        "Le vendeur declare son paiement MoMo. "
-        "L'admin valide manuellement et active le plan. "
-        "Body : { plan_code, billing_cycle, operator, phone_number }"
-    ),
-)
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def vendor_subscribe_plan(request):
-    """
-    Initie une souscription a un plan.
-    Cree un VendorSubscription en statut PENDING.
-    L'admin confirme et active le plan depuis son espace.
-    """
-    try:
-        profile = VendorProfile.objects.get(user=request.user)
-        if not profile.is_active_vendor:
-            return Response({'detail': "Compte vendeur non approuve."}, status=403)
- 
-        from apps.vendors.models import SubscriptionPlan, VendorSubscription
- 
-        plan_code     = request.data.get('plan_code')
-        billing_cycle = request.data.get('billing_cycle', 'MONTHLY')
-        operator      = request.data.get('operator')
-        phone_number  = request.data.get('phone_number', '')
- 
-        if not plan_code:
-            return Response({'detail': '"plan_code" est requis.'}, status=400)
-        if operator not in ['ORANGE_MONEY', 'MTN_MOMO']:
-            return Response({'detail': '"operator" doit etre ORANGE_MONEY ou MTN_MOMO.'}, status=400)
-        if billing_cycle not in ['MONTHLY', 'ANNUAL']:
-            return Response({'detail': '"billing_cycle" doit etre MONTHLY ou ANNUAL.'}, status=400)
- 
-        try:
-            plan = SubscriptionPlan.objects.get(code=plan_code, is_active=True)
-        except SubscriptionPlan.DoesNotExist:
-            return Response({'detail': f'Plan "{plan_code}" introuvable ou inactif.'}, status=404)
- 
-        if plan.code == 'FREE':
-            return Response({'detail': 'Le plan gratuit ne necessite pas de souscription.'}, status=400)
- 
-        # Verifier qu'il n'y a pas deja un PENDING en attente
-        pending = VendorSubscription.objects.filter(
-            vendor=profile, sub_status='PENDING',
-        ).first()
-        if pending:
-            return Response({
-                'detail': f'Vous avez deja une souscription en attente ({pending.payment_reference}). Attendez la confirmation admin ou annulez-la.',
-            }, status=400)
- 
-        amount = plan.price_annual_xaf if billing_cycle == 'ANNUAL' else plan.price_monthly_xaf
- 
-        sub = VendorSubscription.objects.create(
-            vendor        = profile,
-            plan          = plan,
-            billing_cycle = billing_cycle,
-            amount_paid_xaf = amount,
-            operator      = operator,
-            phone_number  = phone_number,
-            sub_status    = 'PENDING',
-        )
- 
-        return Response({
-            'message':   'Souscription initiee. Un admin BelivaY va confirmer votre paiement sous 24h.',
-            'reference': sub.payment_reference,
-            'plan':      plan.name,
-            'amount':    amount,
-            'operator':  operator,
-            'status':    'PENDING',
-        }, status=201)
- 
-    except VendorProfile.DoesNotExist:
-        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
  
  
-@extend_schema(
-    tags=["Vendors"],
-    summary="Get subscription history",
-    description="Historique des abonnements du vendeur.",
-)
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def vendor_subscription_history(request):
-    """Historique des abonnements du vendeur."""
-    try:
-        profile = VendorProfile.objects.get(user=request.user)
-        from apps.vendors.models import VendorSubscription
- 
-        subs = VendorSubscription.objects.filter(vendor=profile).select_related('plan').order_by('-created_at')[:20]
- 
-        data = [{
-            'id':               s.id,
-            'reference':        s.payment_reference,
-            'plan_name':        s.plan.name,
-            'plan_code':        s.plan.code,
-            'billing_cycle':    s.billing_cycle,
-            'amount_paid_xaf':  s.amount_paid_xaf,
-            'operator':         s.operator,
-            'sub_status':       s.sub_status,
-            'started_at':       s.started_at.isoformat() if s.started_at else None,
-            'expires_at':       s.expires_at.isoformat() if s.expires_at else None,
-            'created_at':       s.created_at.isoformat(),
-        } for s in subs]
- 
-        return Response(data)
- 
-    except VendorProfile.DoesNotExist:
-        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
     
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -7228,6 +6877,11 @@ def vendor_subscription_history(request):
 # PAGE PUBLIQUE BOUTIQUE
 # ══════════════════════════════════════════════════════════════════════════════
  
+@extend_schema(
+    tags=["Public"],
+    summary="Get public shop page",
+    description="Page publique d'une boutique vendeur. Accessible sans authentification.",
+)
 @api_view(['GET'])
 @permission_classes([])
 def public_shop(request, slug):

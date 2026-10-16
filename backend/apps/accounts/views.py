@@ -521,7 +521,12 @@ class PayoutAccountVerifyView(APIView):
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def bootstrap_admin(request):
-    expected_token = django_settings.__dict__.get("BOOTSTRAP_ADMIN_TOKEN") or os.getenv("BOOTSTRAP_ADMIN_TOKEN")
+    # `getattr` et non `__dict__.get` : sur l'objet de reglages paresseux de
+    # Django, `__dict__` ne contient une cle que si quelqu'un l'a deja lue
+    # normalement avant. Un jeton pose dans les reglages plutot que dans
+    # l'environnement passait donc inapercu, et l'amorcage repondait 404 sans
+    # qu'on comprenne pourquoi.
+    expected_token = getattr(django_settings, "BOOTSTRAP_ADMIN_TOKEN", None) or os.getenv("BOOTSTRAP_ADMIN_TOKEN")
     provided_token = request.headers.get("X-Bootstrap-Token", "")
 
     if not expected_token or not constant_time_compare(provided_token, expected_token):
@@ -570,7 +575,20 @@ def bootstrap_admin(request):
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def bootstrap_demo_accounts(request):
-    expected_token = django_settings.__dict__.get("BOOTSTRAP_ADMIN_TOKEN") or os.getenv("BOOTSTRAP_ADMIN_TOKEN")
+    # Tache D27 — « Retirer toutes les simulations de connexion de la version
+    # en ligne ». Cette vue cree admin_demo / vendeur_demo / livreur_demo avec
+    # un mot de passe par defaut : elle n'a rien a faire sur le site public.
+    #
+    # Le jeton seul ne protegeait pas : deploy.yml le transmet a la
+    # production. Il faut maintenant AUSSI l'interrupteur, ferme par defaut
+    # (voir COMPTES_DEMO_AUTORISES dans relaya/settings/base.py). On repond
+    # 404 et non 403 : confirmer l'existence de l'endpoint n'apporterait rien
+    # a un appelant legitime et renseignerait les autres.
+    if not getattr(django_settings, "COMPTES_DEMO_AUTORISES", False):
+        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    # `getattr` et non `__dict__.get` : voir `bootstrap_admin`.
+    expected_token = getattr(django_settings, "BOOTSTRAP_ADMIN_TOKEN", None) or os.getenv("BOOTSTRAP_ADMIN_TOKEN")
     provided_token = request.headers.get("X-Bootstrap-Token", "")
 
     if not expected_token or not constant_time_compare(provided_token, expected_token):

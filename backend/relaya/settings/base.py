@@ -485,6 +485,28 @@ PURCHASES_TEST_USERNAMES = [
     if u.strip()
 ]
 
+# ── Comptes de demonstration (tache D27) ────────────────────────────────────
+# `POST /api/auth/bootstrap-demo-accounts/` fabrique admin_demo, vendeur_demo
+# et livreur_demo avec un mot de passe par defaut. C'est commode sur un
+# serveur de developpement, et c'est precisement ce que D27 demande de retirer
+# de la version en ligne : « Retirer toutes les simulations de connexion ».
+#
+# Le jeton X-Bootstrap-Token ne suffisait pas comme garde-fou : il est fourni
+# a la production par .github/workflows/deploy.yml, donc l'endpoint y etait
+# bel et bien joignable. Un compte superutilisateur au mot de passe connu sur
+# le site public n'est pas un risque qu'on prend a l'ouverture.
+#
+# Desormais il faut DEUX conditions : le jeton ET cet interrupteur. Vide par
+# defaut, donc ferme partout tant qu'on ne l'ouvre pas — le serveur de test
+# de D23 posera COMPTES_DEMO_AUTORISES=1, la production ne le posera jamais.
+#
+# `bootstrap_admin`, lui, reste joignable : il cree le PREMIER administrateur
+# reel d'un serveur neuf, avec un mot de passe choisi par l'appelant. Ce n'est
+# pas une simulation de connexion, c'est l'amorcage.
+COMPTES_DEMO_AUTORISES = os.getenv("COMPTES_DEMO_AUTORISES", "0").strip().lower() in {
+    "1", "true", "yes", "on",
+}
+
 
 # ========================================
 # PRODUCTION HTTPS & CSRF CONFIGURATION

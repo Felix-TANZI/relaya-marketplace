@@ -2,7 +2,7 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 
-from . import essai, views
+from . import essai, essai_vendeur, views
 
 urlpatterns = [
     # relaya : apps/accounts
@@ -40,4 +40,19 @@ urlpatterns = [
     path("_essai/3ds/<str:reference>", essai.banque_3ds),
     path("_essai/produits/<int:pk>/prix", essai.Prix.as_view()),
     path("_essai/limites", essai.Limites.as_view()),
+    # Réservé à l'essai : espace vendeur (relaya_essai/essai_vendeur.py)
+    path("_essai/horloge", essai_vendeur.Horloge.as_view()),
+    path("_essai/vendeur/kyc/<str:ref>", essai_vendeur.Kyc.as_view()),
+    path("_essai/vendeur/lien-mdp", essai_vendeur.LienMotDePasse.as_view()),
+    path("_essai/vendeur/offres/<int:pk>/moderer", essai_vendeur.Moderer.as_view()),
+    path("_essai/vendeur/commandes/<str:ref>/livreur", essai_vendeur.Livreur.as_view()),
+    path("_essai/vendeur/commandes/<str:ref>/simuler", essai_vendeur.Simuler.as_view()),
+    path("_essai/vendeur/litiges/<str:ref>/decider", essai_vendeur.DeciderLitige.as_view()),
+    path("_essai/vendeur/litiges/<str:ref>/retour", essai_vendeur.AccepterRetour.as_view()),
+    path("_essai/vendeur/retours/<str:ref>/avancer", essai_vendeur.AvancerRetour.as_view()),
+    path("_essai/vendeur/versements/executer", essai_vendeur.ExecuterVersements.as_view()),
+    path("_essai/vendeur/versements/<str:reference>/refuser", essai_vendeur.RefuserVersement.as_view()),
+    path("_essai/vendeur/paiements/<int:pk>/confirmer", essai_vendeur.ConfirmerPaiementVendeur.as_view()),
+    path("_essai/vendeur/boutiques/<str:identifiant>/support", essai_vendeur.RepondreSupport.as_view()),
+    path("_essai/vendeur/boutiques/<str:identifiant>/point", essai_vendeur.ValiderPoint.as_view()),
 ]

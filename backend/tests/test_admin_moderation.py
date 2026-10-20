@@ -9,10 +9,14 @@ def _cat():
     return Category.objects.create(name="Tel", slug="tel")
 
 
+# Fiche publiable selon la spécification v2.1 : univers (R16.1), poids et dimensions (R63.1).
+FICHE_COMPLETE = dict(univers="TEL", poids_kg="0.3", dim_l1_cm="15", dim_l2_cm="8", dim_l3_cm="2")
+
+
 def test_admin_approuve_produit_et_cascade_fiche(api_client, django_user_model):
     admin = django_user_model.objects.create_superuser("admin", "a@a.co", "p")
     cat = _cat()
-    master = MasterProduct.objects.create(title="iPhone", category=cat, moderation_status="PENDING")
+    master = MasterProduct.objects.create(title="iPhone", category=cat, moderation_status="PENDING", **FICHE_COMPLETE)
     product = Product.objects.create(title="A", category=cat, price_xaf=450000, master=master,
                                      is_active=True, moderation_status="PENDING")
     api_client.force_authenticate(user=admin)

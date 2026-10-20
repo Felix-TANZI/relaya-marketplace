@@ -1,6 +1,8 @@
 # backend/apps/catalog/models.py
 # Modèles du catalogue produits BelivaY.
 
+from decimal import Decimal
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -622,6 +624,40 @@ class MasterProduct(SoftDeleteModel):
         related_name='moderated_masterproducts',
     )
 
+    # ─── Spécification v2.1 : remplis par l'équipe catalogue (apps/catalog/regles_catalogue.py) ───
+    univers = models.CharField(
+        max_length=3, blank=True, default="", db_index=True,
+        verbose_name="Univers",
+        help_text="Code de t_univers (TEL, MOD, SUP…) ; un seul par fiche, obligatoire pour publier (R16.1).",
+    )
+    poids_kg = models.DecimalField(
+        max_digits=7, decimal_places=3, null=True, blank=True,
+        validators=[MinValueValidator(Decimal("0.001"))],
+        verbose_name="Poids (kg)", help_text="poids_i, poids réel de l'article (R62.1, R63.1).",
+    )
+    dim_l1_cm = models.DecimalField(
+        max_digits=6, decimal_places=1, null=True, blank=True,
+        validators=[MinValueValidator(Decimal("0.1"))], verbose_name="Dimension 1 (cm)",
+    )
+    dim_l2_cm = models.DecimalField(
+        max_digits=6, decimal_places=1, null=True, blank=True,
+        validators=[MinValueValidator(Decimal("0.1"))], verbose_name="Dimension 2 (cm)",
+    )
+    dim_l3_cm = models.DecimalField(
+        max_digits=6, decimal_places=1, null=True, blank=True,
+        validators=[MinValueValidator(Decimal("0.1"))], verbose_name="Dimension 3 (cm)",
+        help_text="Les trois dimensions dans n'importe quel ordre : le calcul les trie (R62.1).",
+    )
+    carton = models.BooleanField(
+        default=False, verbose_name="Exige un carton",
+        help_text="carton_i : verre, céramique, tablette, ordinateur, écran de plus de 7 pouces, "
+                  "liquide en bouteille de verre (R87.1).",
+    )
+    made_in_cameroon = models.BooleanField(
+        default=False, verbose_name="Made in Cameroon (contrôlé)",
+        help_text="mic_i : déclaré et contrôlé par l'équipe catalogue (R17.1).",
+    )
+
     class Meta:
         ordering            = ["-created_at"]
         verbose_name        = "Fiche produit maître"
@@ -680,7 +716,12 @@ class MasterProduct(SoftDeleteModel):
         """
         from django.core.exceptions import ValidationError
         super().clean() if hasattr(super(), 'clean') else None
- 
+
+        if self.univers:
+            from apps.catalog.regles_catalogue import univers_connus
+            if self.univers not in univers_connus():
+                raise ValidationError({"univers": f"Univers « {self.univers} » inconnu de t_univers (R16.1)."})
+
         if not isinstance(self.variant_axes, list):
             raise ValidationError({
                 "variant_axes": "Doit être une liste JSON."

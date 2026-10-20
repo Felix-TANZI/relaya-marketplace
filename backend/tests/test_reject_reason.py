@@ -28,12 +28,17 @@ def _identite_vendeur_verifiee(user):
         )
 
 
+# Fiche publiable selon la spécification v2.1 : univers (R16.1), poids et dimensions (R63.1).
+FICHE_COMPLETE = dict(univers="TEL", poids_kg="0.3", dim_l1_cm="15", dim_l2_cm="8", dim_l3_cm="2")
+
+
 def _setup(django_user_model, status="PENDING"):
     vendor = django_user_model.objects.create_user("vendeurx", password="p")
     _identite_vendeur_verifiee(vendor)
     cat = Category.objects.create(name="Tel", slug="tel")
-    master = MasterProduct.objects.create(title="iPhone", category=cat, moderation_status="APPROVED")
-    product = Product.objects.create(title="A", category=cat, price_xaf=1, master=master,
+    master = MasterProduct.objects.create(title="iPhone", category=cat, moderation_status="APPROVED", **FICHE_COMPLETE)
+    # 1 000 F : prix minimum publiable au lancement (R19.1)
+    product = Product.objects.create(title="A", category=cat, price_xaf=1000, master=master,
                                      vendor=vendor, is_active=True, moderation_status=status)
     return vendor, product
 

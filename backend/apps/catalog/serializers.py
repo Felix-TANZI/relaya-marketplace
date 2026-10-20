@@ -344,6 +344,12 @@ class PromotionCampaignSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({
                 "promo_price_xaf": "Le prix promo doit être inférieur au prix de référence."
             })
+        if promo_price:
+            from apps.catalog.regles_catalogue import PrixNonPubliable, verifier_prix_publiable
+            try:
+                verifier_prix_publiable(promo_price)  # R19.1 : le prix promotionnel est le prix payé (prix_i)
+            except PrixNonPubliable as exc:
+                raise serializers.ValidationError({"promo_price_xaf": exc.messages[0]})
         if campaign_type == PromotionCampaign.CampaignType.FLASH:
             stock_reserved = data.get("stock_reserved") or getattr(self.instance, "stock_reserved", 0)
             if stock_reserved < 5:
@@ -632,6 +638,14 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("Chaque entrée de FAQ doit avoir une question et une réponse.")
             cleaned.append({"question": question[:300], "answer": answer[:2000]})
         return cleaned
+
+    def validate_price_xaf(self, value):
+        from apps.catalog.regles_catalogue import PrixNonPubliable, verifier_prix_publiable
+        try:
+            verifier_prix_publiable(value)  # R19.1
+        except PrixNonPubliable as exc:
+            raise serializers.ValidationError(exc.messages[0], code=exc.code_refus)
+        return value
 
     def validate(self, attrs):
         attrs = super().validate(attrs)

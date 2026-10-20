@@ -851,7 +851,27 @@ def _resolve_variant_axes(variant_axes_slugs):
     return resolved
 
 
-class AdminMasterListSerializer(serializers.ModelSerializer):
+class _FicheSpecV21Mixin(serializers.Serializer):
+    """Champs de la spécification v2.1 remplis par l'équipe catalogue (apps/catalog/regles_catalogue.py)."""
+
+    manques_publication = serializers.SerializerMethodField()
+    colis = serializers.SerializerMethodField()
+
+    CHAMPS_V21 = [
+        "univers", "poids_kg", "dim_l1_cm", "dim_l2_cm", "dim_l3_cm", "carton", "made_in_cameroon",
+        "manques_publication", "colis",
+    ]
+
+    def get_manques_publication(self, obj):
+        from apps.catalog.regles_catalogue import manques_fiche
+        return manques_fiche(obj)
+
+    def get_colis(self, obj):
+        from apps.catalog.regles_catalogue import colis_fiche
+        return colis_fiche(obj)
+
+
+class AdminMasterListSerializer(_FicheSpecV21Mixin, serializers.ModelSerializer):
     """Vue tableau — infos essentielles + variant_axes + brand_fk."""
  
     primary_image = serializers.SerializerMethodField()
@@ -895,7 +915,7 @@ class AdminMasterListSerializer(serializers.ModelSerializer):
             "offers_count", "active_offers_count",
             "moderation_status", "moderated_at",
             "created_at", "updated_at",
-        ]
+        ] + _FicheSpecV21Mixin.CHAMPS_V21
  
     def get_primary_image(self, obj):
         request = self.context.get("request")
@@ -956,7 +976,7 @@ class AdminMasterVariantBriefSerializer(serializers.ModelSerializer):
         return obj.offers.filter(is_active=True).count()    
 
 
-class AdminMasterDetailSerializer(serializers.ModelSerializer):
+class AdminMasterDetailSerializer(_FicheSpecV21Mixin, serializers.ModelSerializer):
     """
     Vue modale — master complet avec variants attachés, brand_fk complet,
     axes résolus. Note : les 'offers' et 'images' restent gérés comme
@@ -1010,7 +1030,7 @@ class AdminMasterDetailSerializer(serializers.ModelSerializer):
             "moderation_status", "moderated_at",
             "moderated_by_username",
             "created_at", "updated_at",
-        ]
+        ] + _FicheSpecV21Mixin.CHAMPS_V21
  
     def get_primary_image(self, obj):
         request = self.context.get("request")
@@ -1360,6 +1380,14 @@ class AdminProductUpdateSerializer(serializers.ModelSerializer):
         from apps.catalog.models import Product
         model  = Product
         fields = ['title', 'description', 'price_xaf', 'is_active', 'category']
+
+    def validate_price_xaf(self, value):
+        from apps.catalog.regles_catalogue import PrixNonPubliable, verifier_prix_publiable
+        try:
+            verifier_prix_publiable(value)  # R19.1
+        except PrixNonPubliable as exc:
+            raise serializers.ValidationError(exc.messages[0], code=exc.code_refus)
+        return value
 
 
 # ─────────────────────────────────────────────────────────────────────────────

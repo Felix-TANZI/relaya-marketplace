@@ -7151,6 +7151,17 @@ def admin_approve_product(request, product_id):
             status=status.HTTP_409_CONFLICT,
         )
 
+    # Une offre est publiée avec sa fiche maître : univers, poids et dimensions (R16.1, R63.1),
+    # et jamais sous le prix minimum publiable (R19.1).
+    from apps.catalog.regles_catalogue import manques_fiche, prix_minimum
+    manques = manques_fiche(product.master) if product.master else ['fiche maître (R16.1, R63.1)']
+    if manques:
+        return Response({'detail': 'Fiche incomplète, publication impossible : ' + ' ; '.join(manques) + '.',
+                         'manques': manques}, status=status.HTTP_409_CONFLICT)
+    if product.price_xaf < prix_minimum():
+        return Response({'detail': f'Prix inférieur au prix minimum publiable ({prix_minimum()} F).',
+                         'raison': 'prix_minimum'}, status=status.HTTP_409_CONFLICT)
+
     product.moderation_status = ModerationStatus.APPROVED
     product.moderation_reason = ''            # efface un éventuel motif de rejet précédent
     product.moderated_at = timezone.now()
@@ -7409,7 +7420,28 @@ def admin_update_master(request, master_id):
                 )
  
         master.variant_axes = new_axes
- 
+
+    # ── Spécification v2.1 : univers, poids, dimensions, carton, Made in Cameroon (R16.1, R63.1, R87.1, R17.1)
+    champs_v21 = ["univers", "poids_kg", "dim_l1_cm", "dim_l2_cm", "dim_l3_cm", "carton", "made_in_cameroon"]
+    for f in champs_v21:
+        if f in request.data:
+            val = request.data[f]
+            if f in ("carton", "made_in_cameroon"):
+                val = val in (True, "true", "1", 1)
+            elif f == "univers":
+                val = (val or "").strip().upper()
+            elif val in ("", None):
+                val = None
+            setattr(master, f, val)
+    if any(f in request.data for f in champs_v21):
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        try:
+            master.clean_fields(exclude=[f.name for f in master._meta.fields if f.name not in champs_v21])
+            master.clean()
+        except DjangoValidationError as exc:
+            return Response({"detail": " ".join(exc.messages), "erreurs": exc.message_dict if hasattr(exc, "error_dict") else exc.messages},
+                            status=status.HTTP_400_BAD_REQUEST)
+
     master.save()
  
     return Response(
@@ -7423,10 +7455,16 @@ def admin_update_master(request, master_id):
 def admin_approve_master(request, master_id):
     from apps.catalog.models import MasterProduct, ModerationStatus
     from django.utils import timezone
+    from apps.catalog.regles_catalogue import manques_fiche
     try:
         master = MasterProduct.objects.get(id=master_id)
     except MasterProduct.DoesNotExist:
         return Response({'detail': 'Fiche introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+    # R16.1, R63.1 : une fiche sans univers, poids ou dimensions ne peut pas être publiée.
+    manques = manques_fiche(master)
+    if manques:
+        return Response({'detail': 'Fiche incomplète, publication impossible : ' + ' ; '.join(manques) + '.',
+                         'manques': manques}, status=status.HTTP_409_CONFLICT)
     master.moderation_status = ModerationStatus.APPROVED
     master.moderated_at = timezone.now()
     master.moderated_by = request.user
@@ -9358,9 +9396,15 @@ def vd_offers_import(request):
             prix = row.get('prix')
             if prix:
                 try:
-                    product.price_xaf = int(prix)
+                    prix = int(prix)
                 except ValueError:
-                    pass
+                    prix = None
+                if prix is not None:
+                    from apps.catalog.regles_catalogue import prix_minimum
+                    if prix < prix_minimum():  # R19.1 : la ligne n'est pas appliquée
+                        ignorees += 1
+                        continue
+                    product.price_xaf = prix
             product.save()
             stock = row.get('stock')
             if stock is not None and str(stock) != '':
@@ -9432,6 +9476,9 @@ def vd_offer_detail(request, offer_id):
                 raise ValueError
         except (TypeError, ValueError):
             return Response({'ok': False, 'raison': 'prix'}, status=200)
+        from apps.catalog.regles_catalogue import prix_minimum
+        if prix < prix_minimum():  # R19.1
+            return Response({'ok': False, 'raison': 'prix_minimum'}, status=200)
         product.price_xaf = prix
     if 'prixBarre' in data:
         pb = data['prixBarre']
@@ -9643,12 +9690,13 @@ def vd_offers_quote(request):
         return Response({'detail': 'Paramètre "prix" requis (entier).'}, status=400)
     offre_id = request.query_params.get('offre')
     product = Product.objects.filter(pk=offre_id, vendor=request.user).first() if offre_id else None
-    # Constantes documentées dans src/donnees/domaines/offres.ts (commentaires du contrat produit),
-    # pas inventées ici : 500 F minimum publiable, 700 F commission minimale (VD-COM-MIN), 5 000 F
-    # seuil petit prix (VD-COM-POINTS).
-    MINIMUM = 500
-    COMMISSION_MIN = 700
-    SEUIL_PETIT_PRIX = 5000
+    # Réglages de l'admin (spécification v2.1) : prix minimum publiable (R19.1), commission minimale
+    # (R19.2), seuil et points « petit prix » (R17.1).
+    from apps.regles import services as regles
+    MINIMUM = regles.reglage('r_prix_min_publiable')
+    COMMISSION_MIN = regles.reglage('r_com_min')
+    SEUIL_PETIT_PRIX = regles.reglage('r_petit_prix')
+    POINTS_PETIT_PRIX = regles.reglage('r_pts_petit_prix')
     if prix < MINIMUM:
         return Response({
             'prix': prix, 'garde': None, 'partPourCent': None,
@@ -9661,7 +9709,7 @@ def vd_offers_quote(request):
     part = round(garde / prix * 100, 1) if prix else None
     return Response({
         'prix': prix, 'garde': garde, 'partPourCent': part,
-        'petitPrix': prix < SEUIL_PETIT_PRIX, 'points': 3 if prix < SEUIL_PETIT_PRIX else 0,
+        'petitPrix': prix < SEUIL_PETIT_PRIX, 'points': POINTS_PETIT_PRIX if prix < SEUIL_PETIT_PRIX else 0,
         'minimum': MINIMUM, 'plagesMinimale': [], 'commissionMinimale': COMMISSION_MIN,
         'seuilPetitPrix': SEUIL_PETIT_PRIX, 'plafond': None, 'refus': None,
     })
@@ -9868,7 +9916,8 @@ def vd_offer_price(request, offer_id):
             raise ValueError
     except (TypeError, ValueError):
         return Response({'ok': False, 'raison': 'prix'}, status=200)
-    if prix < 500:
+    from apps.catalog.regles_catalogue import prix_minimum
+    if prix < prix_minimum():  # R19.1
         return Response({'ok': False, 'raison': 'prix_minimum'}, status=200)
 
     confirme = bool(request.data.get('confirmer'))
@@ -11654,6 +11703,9 @@ def vendor_flash_sales_create(request):
     produit = reward.product
     prix_ref = produit.price_xaf
     prix_promo = max(1, round(prix_ref * (1 - remise / 100)))
+    from apps.catalog.regles_catalogue import prix_minimum
+    if prix_promo < prix_minimum():  # R19.1 : le prix flash est le prix payé (prix_i)
+        return Response({'ok': False, 'raison': 'prix_minimum'})
     maintenant = timezone.now()
     duree_h = min(48, max(2, reward.days * 24 if reward.days else 24))
     statut = PromotionCampaign.Status.APPROVED if remise <= 50 else PromotionCampaign.Status.PENDING

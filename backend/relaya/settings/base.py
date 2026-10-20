@@ -81,6 +81,7 @@ INSTALLED_APPS = [
     "apps.contact",
     # Module détachable : voir apps/whatsapp_assistant/README.md (activation, retrait).
     "apps.whatsapp_assistant",
+    "apps.regles",
 
     # Espace client (kit espace-client-belivay/backend-kit, socle uniquement pour
     # l'instant : client_core/otp/client_accounts/notifications_client — voir

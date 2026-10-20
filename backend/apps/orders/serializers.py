@@ -62,53 +62,6 @@ def _weighted_commission_rate(order_items_data, settings):
     return (weighted / Decimal(total)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
-def _compute_delivery_price(order_items_data, delivery_mode, destination_zone,
-                            subtotal_xaf=0):
-    """
-    Grille de prix reelle (BelivaY_Regles_Systeme_DEV v2.0 §3.1), calculee
-    cote serveur et figee au paiement (regle en dur #4) — remplace l'ancien
-    forfait plat par ville.
-
-    Base : 500F (retrait relais) / 1000F (livraison domicile) — couvre 1
-    ramassage. +500F par vendeur supplementaire dans la MEME zone que les
-    precedents, +1000F par vendeur supplementaire dans une zone DIFFERENTE.
-    + majoration si la destination est en zone Vague 3.
-    """
-    seen_vendor_ids = set()
-    vendors_in_order = []
-    for item in order_items_data:
-        vendor = item['product'].vendor
-        vid = vendor.id if vendor else None
-        if vid in seen_vendor_ids:
-            continue
-        seen_vendor_ids.add(vid)
-        vendors_in_order.append(vendor)
-
-    if not vendors_in_order:
-        return 0
-
-    # ─────────────────────────────────────────────────────────────────────
-    # LE BAREME VIENT DU MODULE FINANCIER
-    #
-    # Les montants vivaient ici en dur : 500 pour un retrait, 1000 pour une
-    # livraison, plus les supplements par vendeur. Un changement tarifaire
-    # exigeait un developpeur, et personne ne pouvait verifier ce qui etait
-    # applique.
-    #
-    # Ils sont desormais portes par DeliveryPricingRule, editable depuis
-    # l'administration.
-    # ─────────────────────────────────────────────────────────────────────
-    from apps.payments.bridge import queries
-
-    return queries.delivery_fee_xaf(
-        delivery_mode=delivery_mode,
-        vendors=vendors_in_order,
-        destination_zone=destination_zone,
-        # Sert au seuil de gratuite (tache D10) : « offerte des 50 000 F ».
-        subtotal_xaf=subtotal_xaf,
-    )
-
-
 class OrderItemSerializer(serializers.ModelSerializer):
     """Serializer pour les articles d'une commande"""
     
@@ -255,6 +208,10 @@ class OrderCreateSerializer(serializers.Serializer):
         allow_blank=True,
         help_text="Téléphone du tiers autorisé au retrait (optionnel)",
     )
+    moyen = serializers.ChoiceField(
+        choices=['momo', 'wallet'], required=False, default='momo',
+        help_text="Moyen de paiement (R01.1) ; le Wallet seulement s'il est ouvert (R03).",
+    )
 
     def validate_cart_items(self, value):
         """Valider les articles du panier"""
@@ -336,40 +293,37 @@ class OrderCreateSerializer(serializers.Serializer):
         cart_items = validated_data.pop('cart_items')
         user = self.context['request'].user if self.context['request'].user.is_authenticated else None
         
-        # Calculer le sous-total
-        subtotal = 0
-        order_items_data = []
-        
+        from . import frais as frais_v21
+
+        # Sous-total au prix payé : flash, sinon promotion, sinon normal (R27.2) — le st du moteur.
+        lignes = []
         for item in cart_items:
             try:
-                product = Product.objects.get(id=item['product_id'])
+                product = Product.objects.select_related('master', 'vendor').get(id=item['product_id'])
             except Product.DoesNotExist:
                 product = self._get_or_create_demo_product(item)
-            
-            qty = item['qty']
-            line_total = product.price_xaf * qty
+            lignes.append((product, item['qty']))
+        prix_payes = frais_v21._prix_payes([p for p, _ in lignes])
+
+        subtotal = 0
+        order_items_data = []
+        for product, qty in lignes:
+            prix = int(prix_payes.get(product.pk, product.price_xaf))
+            line_total = prix * qty
             subtotal += line_total
-            
             order_items_data.append({
                 'product': product,
                 'title_snapshot': product.title,
-                'price_xaf_snapshot': product.price_xaf,
+                'price_xaf_snapshot': prix,
                 'qty': qty,
                 'line_total_xaf': line_total
             })
-        
-        delivery_mode = validated_data.get('delivery_mode', 'DELIVERY')
 
-        # Calculer les frais de livraison — grille reelle §3.1, jamais un
-        # forfait plat par ville (regle en dur #4 : calcul cote serveur,
-        # fige au paiement).
+        delivery_mode = validated_data.get('delivery_mode', 'DELIVERY')
         settings = PlatformSettings.get_settings()
         from apps.shipping.models import Zone as _Zone
 
         destination_zone = _Zone.match(validated_data['city'], validated_data.get('district', ''))
-        delivery_fee = _compute_delivery_price(
-            order_items_data, delivery_mode, destination_zone, subtotal_xaf=subtotal,
-        )
         commission_rate_snapshot = _weighted_commission_rate(order_items_data, settings)
 
         address = validated_data.get('address', '').strip()
@@ -402,8 +356,25 @@ class OrderCreateSerializer(serializers.Serializer):
 
             address = f"{relay_point_obj.name} - {relay_point_obj.address}"
 
-        if delivery_mode == 'PICKUP' and not address:
-            address = f"Retrait en boutique - {validated_data['city']}"
+        if delivery_mode == 'PICKUP' and relay_point_obj is None:
+            raise serializers.ValidationError({'relay_point_id': "Choisissez un point relais."})
+
+        # Frais de livraison et total à payer : A1 et A2 (BV-DEV-01), calculés une seule fois ici et figés (R12.3).
+        try:
+            if delivery_mode == 'PICKUP':
+                destination = frais_v21.destination_relais(relay_point_obj)
+            else:
+                destination = frais_v21.destination_domicile(
+                    validated_data.get('district', ''),
+                    validated_data.get('delivery_latitude'), validated_data.get('delivery_longitude'),
+                )
+            devis = frais_v21.calculer(lignes, destination, validated_data.get('moyen', 'momo'))
+        except frais_v21.FraisImpossibles as exc:
+            raise serializers.ValidationError({'frais': {'refus': exc.code, 'messages': [exc.message]}})
+        if not devis.ok:
+            raise serializers.ValidationError({'frais': {**devis.refus, 'messages': devis.messages}})
+        if destination.zone_dest:
+            destination_zone = _Zone.objects.filter(code=destination.zone_dest).first() or destination_zone
 
         address_precision = validated_data.get('address_precision') or {}
         if not isinstance(address_precision, dict):
@@ -435,8 +406,12 @@ class OrderCreateSerializer(serializers.Serializer):
             authorized_pickup_name=validated_data.get('authorized_pickup_name', '').strip(),
             authorized_pickup_phone=validated_data.get('authorized_pickup_phone', '').strip(),
             subtotal_xaf=subtotal,
-            delivery_fee_xaf=delivery_fee,
-            total_xaf=subtotal + delivery_fee,
+            delivery_fee_xaf=devis.frais_client,
+            total_xaf=devis.detail['base_paiement'],
+            couverture_xaf=devis.detail['couverture'],
+            frais_momo_xaf=devis.detail['frais_momo'],
+            total_a_payer_xaf=devis.detail['total_a_payer'],
+            frais_detail=devis.detail,
             commission_rate_snapshot=commission_rate_snapshot,
             payment_status=Order.PaymentStatus.PENDING,
             fulfillment_status=Order.FulfillmentStatus.CREATED,

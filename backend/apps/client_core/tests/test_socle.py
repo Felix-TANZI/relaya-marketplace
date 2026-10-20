@@ -127,9 +127,23 @@ def test_module_ferme_repond_404(api_client):
 
 def test_config_flags_lit_les_defauts_du_site_puis_la_base(api_client):
     e = api_client.get("/api/config/flags").json()
-    assert e["FF-WALLET"] is True and len(e) == 12
-    Interrupteur.objects.create(code="FF-WALLET", ouvert=False)
+    assert e["FF-IA"] is True and len(e) == 12
+    Interrupteur.objects.create(code="FF-IA", ouvert=False)
+    assert api_client.get("/api/config/flags").json()["FF-IA"] is False
+
+
+def test_le_wallet_suit_r_wallet_ouvert(api_client):
+    # R03.1 : fermé au lancement, même si la table l'ouvre ; il s'ouvre par le réglage de l'admin.
+    from apps.regles.models import Reglage
+    from apps.regles.reference import donnees_reference
+
+    Interrupteur.objects.create(code="FF-WALLET", ouvert=True)
     assert api_client.get("/api/config/flags").json()["FF-WALLET"] is False
+    ref = donnees_reference()["reglages"]["r_wallet_ouvert"]
+    r, _ = Reglage.objects.get_or_create(nom="r_wallet_ouvert", defaults={"valeur": 0, "unite": ref["unite"], "libelle": ref["libelle"]})
+    r.valeur = 1
+    r.save()
+    assert api_client.get("/api/config/flags").json()["FF-WALLET"] is True
 
 
 # ── Pagination par curseur (CAP-05) ─────────────────────────────────────────────────────────────────────

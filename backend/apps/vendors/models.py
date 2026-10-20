@@ -421,6 +421,11 @@ class VendorLocation(models.Model):
         verbose_name="Longitude",
         help_text="Ex: 11.502 (Yaoundé)"
     )
+    # Spécification v2.1 : quartier de t_quartiers, d'où zone_b et niv_b de la boutique (R06.1, R73.1).
+    quartier             = models.CharField(
+        max_length=120, blank=True, default="",
+        verbose_name="Quartier", help_text="Quartier de Yaoundé (t_quartiers) où se trouve la boutique.",
+    )
     is_active            = models.BooleanField(default=True)
     is_main              = models.BooleanField(
         default=False,
@@ -429,6 +434,18 @@ class VendorLocation(models.Model):
     )
     created_at           = models.DateTimeField(auto_now_add=True)
     updated_at           = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # La zone de tarification du vendeur suit le quartier de son emplacement principal.
+        if self.is_main and self.quartier:
+            from apps.shipping.models import Zone
+            from apps.shipping.zones import quartier as ligne_quartier
+
+            q = ligne_quartier(self.quartier)
+            zone = Zone.objects.filter(code=q["zone"]).first() if q else None
+            if zone is not None and self.vendor.zone_id != zone.id:
+                VendorProfile.objects.filter(pk=self.vendor_id).update(zone=zone)
 
     class Meta:
         ordering = ['-is_main', 'name']

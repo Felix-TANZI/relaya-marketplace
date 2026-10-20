@@ -188,9 +188,17 @@ class Order(TimeStampedModel):
     )
 
     # Montants
+    # Spécification v2.1 (A1, A2) : subtotal_xaf = st ; delivery_fee_xaf = frais_client ; total_xaf = base_paiement.
     subtotal_xaf     = models.PositiveIntegerField(default=0)
     delivery_fee_xaf = models.PositiveIntegerField(default=0)
     total_xaf        = models.PositiveIntegerField(default=0)
+    couverture_xaf   = models.PositiveIntegerField(default=0, help_text="Livraison offerte prise par BelivaY (R07.3)")
+    frais_momo_xaf   = models.PositiveIntegerField(default=0, help_text="Frais Mobile Money payés par le client (R02.3)")
+    total_a_payer_xaf = models.PositiveIntegerField(default=0, help_text="total_momo (R02.2), ou base_paiement par le Wallet (R02.5)")
+    frais_detail     = models.JSONField(
+        default=dict, blank=True,
+        help_text="Calcul des frais figé au paiement (R12.3, R83.3) : boutiques, colis, distances, empreinte des réglages.",
+    )
 
     # Snapshot du taux de commission au moment de la commande.
     # Garantit qu'une modification de PlatformSettings n'affecte pas le passé.

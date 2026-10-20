@@ -866,3 +866,39 @@ class DisputeEvidenceRequestRespondView(APIView):
         evidence_request.responded_at = timezone.now()
         evidence_request.save(update_fields=["status", "responded_at", "updated_at"])
         return Response(DisputeEvidenceRequestSerializer(evidence_request, context={"request": request}).data)
+
+
+@extend_schema(tags=["Orders"], summary="Frais et total d'un panier avant le paiement (A1, A2)")
+class DevisPanierView(APIView):
+    """Frais de livraison, livraison offerte, frais Mobile Money et total, ou les refus et messages de R84.2 qui
+    bloquent « Payer ». Recalculé à chaque changement du panier (R84.3) ; le montant figé l'est à la commande."""
+
+    permission_classes = []
+
+    def post(self, request):
+        from apps.accounts.models import RelayPointProfile
+        from apps.catalog.models import Product
+
+        from . import frais
+
+        d = request.data
+        try:
+            lignes = []
+            for item in d.get("cart_items") or []:
+                produit = Product.objects.select_related("master", "vendor").filter(pk=item.get("product_id")).first()
+                if produit is None or int(item.get("qty") or 0) < 1:
+                    return Response({"detail": "Article introuvable."}, status=status.HTTP_400_BAD_REQUEST)
+                lignes.append((produit, int(item["qty"])))
+            if not lignes:
+                return Response({"detail": "Panier vide."}, status=status.HTTP_400_BAD_REQUEST)
+            if d.get("delivery_mode") == "PICKUP":
+                relais = RelayPointProfile.objects.filter(pk=d.get("relay_point_id"), is_active=True).first()
+                if relais is None:
+                    return Response({"detail": "Choisissez un point relais."}, status=status.HTTP_400_BAD_REQUEST)
+                destination = frais.destination_relais(relais)
+            else:
+                destination = frais.destination_domicile(d.get("district", ""), d.get("delivery_latitude"), d.get("delivery_longitude"))
+            devis = frais.calculer(lignes, destination, d.get("moyen") or "momo")
+        except frais.FraisImpossibles as exc:
+            return Response({"ok": False, "refus": {"refus": exc.code}, "messages": [exc.message]})
+        return Response({"ok": devis.ok, "refus": devis.refus or None, "messages": devis.messages, "frais": devis.detail or None})

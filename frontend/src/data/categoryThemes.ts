@@ -116,7 +116,7 @@ const THEME_SEEDS: Omit<CategoryTheme, "thumb">[] = [
     accent: "#2563EB",
     label: "Électronique",
     title: "Ordinateurs, TV & Accessoires",
-    subtitle: "Livraison gratuite dès 30 000 FCFA · Vendeurs certifiés Or",
+    subtitle: "Livraison au relais offerte dès 30 000 F · Vendeurs certifiés Or",
     description:
       "Laptops, téléviseurs, audio, gaming, sécurité et petits accessoires. Produits neufs sous garantie constructeur, importés par des revendeurs certifiés Or dont l'identité et la licence commerciale ont été vérifiées par BelivaY.",
     image: `https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?${IMG}`,

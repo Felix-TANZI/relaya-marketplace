@@ -1830,9 +1830,23 @@ class VendorLocationSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'address', 'description', 'phone', 'email',
             'representative_name', 'representative_phone',
-            'latitude', 'longitude', 'is_active', 'is_main', 'created_at',
+            'latitude', 'longitude', 'quartier', 'is_active', 'is_main', 'created_at',
         ]
         read_only_fields = ['id', 'created_at']
+
+    def validate_quartier(self, value):
+        """Un quartier de t_quartiers (recherche R76.2), rendu sous son nom officiel."""
+        value = (value or '').strip()
+        if not value:
+            return ''
+        from apps.shipping.zones import chercher_quartiers
+        trouves = chercher_quartiers(value)
+        if len(trouves) == 1:
+            return trouves[0]['quartier']
+        if trouves:
+            raise serializers.ValidationError(
+                "Plusieurs quartiers portent ce nom : " + ", ".join(q['quartier'] for q in trouves) + ".")
+        raise serializers.ValidationError("Quartier inconnu de la liste de Yaoundé.")
 
     def validate(self, attrs):
         data = {}

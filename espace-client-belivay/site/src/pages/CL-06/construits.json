@@ -1,0 +1,15 @@
+{
+ "routes": [
+  "fiche",
+  "galerie",
+  "avis",
+  "question"
+ ],
+ "exclus": {},
+ "repris": {
+  "question": "DP-54 : repris (vraie question, conversation créée dans la messagerie).",
+  "fiche": "DP-54 : fiche d'après la photo du porteur (catalogue en données, variantes, autres vendeurs, favori, panier).",
+  "galerie": "DP-54 : galerie du catalogue (précédente, suivante, glisser, zoom).",
+  "avis": "DP-54 : avis en données (répartition, filtres, tri, utile, signaler)."
+ }
+}

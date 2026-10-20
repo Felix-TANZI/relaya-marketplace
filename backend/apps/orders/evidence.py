@@ -2,7 +2,7 @@ import hashlib
 
 from rest_framework.exceptions import ValidationError
 
-from .models import DisputeEvidence, DisputeEvidenceRequest
+from .models import DisputeEvidence, DisputeEvidenceRequest, ReturnPhoto
 
 
 ALLOWED_EVIDENCE_TYPES = {
@@ -69,6 +69,51 @@ def create_evidence(*, dispute, user, upload, uploader_role, description="", evi
         description=(description or "")[:255],
         retain_until=_evidence_retention_deadline(dispute),
     )
+
+
+def create_return_photo(*, return_obj, user, upload):
+    """Enregistre une photo d'inspection de retour (espace vendeur VD-07).
+
+    Même validation de format/taille que les preuves de litige (DisputeEvidence) : pas de
+    duplication de règles, un seul endroit qui dit ce qu'on accepte."""
+    validate_evidence_file(upload)
+    digest = hashlib.sha256()
+    for chunk in upload.chunks():
+        digest.update(chunk)
+    upload.seek(0)
+    return ReturnPhoto.objects.create(
+        return_obj=return_obj,
+        uploaded_by=user,
+        file=upload,
+        content_type=upload.content_type,
+        size_bytes=upload.size,
+        sha256=digest.hexdigest(),
+    )
+
+
+def decode_data_uri(data_uri: str, *, filename: str):
+    """Décode un data: URI (photo envoyée en base64 par l'écran VD-07) en fichier Django.
+
+    Renvoie un SimpleUploadedFile (content_type + size + chunks(), compatible avec
+    create_evidence()/create_return_photo()) ou None si `data_uri` n'est pas un data: URI."""
+    import base64
+    import re as _re
+
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    if not isinstance(data_uri, str) or not data_uri.startswith("data:"):
+        return None
+    m = _re.match(r"^data:([^;,]+)(;[^,]*)?,(.*)$", data_uri, _re.DOTALL)
+    if not m:
+        return None
+    content_type = m.group(1) or "application/octet-stream"
+    is_base64 = ";base64" in (m.group(2) or "")
+    payload = m.group(3)
+    try:
+        content = base64.b64decode(payload) if is_base64 else payload.encode("utf-8")
+    except Exception:
+        return None
+    return SimpleUploadedFile(filename, content, content_type=content_type)
 
 
 def resolve_dispute_actor(dispute, role):

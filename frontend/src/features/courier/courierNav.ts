@@ -35,18 +35,18 @@ export type IconComponent = typeof Gauge;
 
 export interface CourierNavItem {
   id: CourierTab;
-  label: string;
+  labelKey: string;
   icon: IconComponent;
   /** Degrade de la pastille de badge : chaque metier garde sa couleur. */
   accent: string;
   group: CourierNavGroup;
 }
 
-export const COURIER_GROUP_LABELS: Record<CourierNavGroup, string> = {
-  pilotage: "Pilotage",
-  operations: "Operations",
-  qualite: "Qualite & preuves",
-  compte: "Compte",
+export const COURIER_GROUP_LABEL_KEYS: Record<CourierNavGroup, string> = {
+  pilotage: "courier_nav.group_pilotage",
+  operations: "courier_nav.group_operations",
+  qualite: "courier_nav.group_qualite",
+  compte: "courier_nav.group_compte",
 };
 
 /**
@@ -56,29 +56,29 @@ export const COURIER_GROUP_LABELS: Record<CourierNavGroup, string> = {
  */
 export const COURIER_NAV_ITEMS: CourierNavItem[] = [
   // ── Pilotage ───────────────────────────────────────────────────────────────
-  { id: "dashboard", label: "Vue d'ensemble", icon: Gauge, accent: "from-emerald-400 to-green-600", group: "pilotage" },
+  { id: "dashboard", labelKey: "courier_nav.tab_dashboard", icon: Gauge, accent: "from-emerald-400 to-green-600", group: "pilotage" },
   // ── Operations ─────────────────────────────────────────────────────────────
-  { id: "tournee", label: "Ma Tournee", icon: Route, accent: "from-emerald-400 to-teal-600", group: "operations" },
-  { id: "courses", label: "Courses", icon: Package, accent: "from-lime-400 to-green-600", group: "operations" },
-  { id: "scanner", label: "Scanner QR", icon: ScanLine, accent: "from-green-300 to-emerald-500", group: "operations" },
-  { id: "map", label: "Carte & Navigation", icon: Map, accent: "from-sky-400 to-cyan-600", group: "operations" },
-  { id: "reseau", label: "Boutiques & Points Relais", icon: Store, accent: "from-teal-300 to-emerald-500", group: "operations" },
+  { id: "tournee", labelKey: "courier_nav.tab_tournee", icon: Route, accent: "from-emerald-400 to-teal-600", group: "operations" },
+  { id: "courses", labelKey: "courier_nav.tab_courses", icon: Package, accent: "from-lime-400 to-green-600", group: "operations" },
+  { id: "scanner", labelKey: "courier_nav.tab_scanner", icon: ScanLine, accent: "from-green-300 to-emerald-500", group: "operations" },
+  { id: "map", labelKey: "courier_nav.tab_map", icon: Map, accent: "from-sky-400 to-cyan-600", group: "operations" },
+  { id: "reseau", labelKey: "courier_nav.tab_reseau", icon: Store, accent: "from-teal-300 to-emerald-500", group: "operations" },
   // ── Qualite & preuves ──────────────────────────────────────────────────────
-  { id: "preuves", label: "Preuves & Relais", icon: FileBadge2, accent: "from-green-400 to-emerald-600", group: "qualite" },
-  { id: "incidents", label: "Incidents", icon: AlertTriangle, accent: "from-amber-400 to-orange-500", group: "qualite" },
-  { id: "litiges", label: "Litiges", icon: ShieldCheck, accent: "from-orange-400 to-red-500", group: "qualite" },
-  { id: "formation", label: "Formation", icon: BookOpen, accent: "from-emerald-300 to-teal-500", group: "qualite" },
+  { id: "preuves", labelKey: "courier_nav.tab_preuves", icon: FileBadge2, accent: "from-green-400 to-emerald-600", group: "qualite" },
+  { id: "incidents", labelKey: "courier_nav.tab_incidents", icon: AlertTriangle, accent: "from-amber-400 to-orange-500", group: "qualite" },
+  { id: "litiges", labelKey: "courier_nav.tab_litiges", icon: ShieldCheck, accent: "from-orange-400 to-red-500", group: "qualite" },
+  { id: "formation", labelKey: "courier_nav.tab_formation", icon: BookOpen, accent: "from-emerald-300 to-teal-500", group: "qualite" },
   // ── Compte ─────────────────────────────────────────────────────────────────
-  { id: "profil", label: "Mon Profil", icon: User, accent: "from-emerald-400 to-green-600", group: "compte" },
-  { id: "notifications", label: "Notifications", icon: Bell, accent: "from-rose-400 to-red-500", group: "compte" },
-  { id: "parametres", label: "Parametres", icon: Settings2, accent: "from-slate-300 to-slate-500", group: "compte" },
+  { id: "profil", labelKey: "courier_nav.tab_profil", icon: User, accent: "from-emerald-400 to-green-600", group: "compte" },
+  { id: "notifications", labelKey: "courier_nav.tab_notifications", icon: Bell, accent: "from-rose-400 to-red-500", group: "compte" },
+  { id: "parametres", labelKey: "courier_nav.tab_parametres", icon: Settings2, accent: "from-slate-300 to-slate-500", group: "compte" },
 ];
 
 export const COURIER_TABS: CourierTab[] = COURIER_NAV_ITEMS.map((item) => item.id);
 
 export const COURIER_GROUP_ORDER: CourierNavGroup[] = ["pilotage", "operations", "qualite", "compte"];
 
-export const TAB_LABELS: Record<CourierTab, string> = COURIER_NAV_ITEMS.reduce(
-  (labels, item) => ({ ...labels, [item.id]: item.label }),
+export const TAB_LABEL_KEYS: Record<CourierTab, string> = COURIER_NAV_ITEMS.reduce(
+  (labels, item) => ({ ...labels, [item.id]: item.labelKey }),
   {} as Record<CourierTab, string>,
 );

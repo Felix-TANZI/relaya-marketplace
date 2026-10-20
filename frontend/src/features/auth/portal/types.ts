@@ -27,15 +27,18 @@ export interface PortalLoginTheme {
 
 export interface PortalLoginFeature {
   icon: LucideIcon;
-  label: string;
-  /** Sous-titre sous le libelle (maquettes client). */
-  hint?: string;
+  /** Cle i18n du libelle. */
+  labelKey: string;
+  /** Cle i18n du sous-titre sous le libelle (maquettes client). */
+  hintKey?: string;
 }
 
 export interface PortalLoginStat {
   icon: LucideIcon;
-  value: string;
-  label: string;
+  /** Cle i18n de la valeur. */
+  valueKey: string;
+  /** Cle i18n du libelle. */
+  labelKey: string;
 }
 
 export interface PortalLoginHero {
@@ -47,45 +50,46 @@ export interface PortalLoginHero {
   nightPortrait: string;
   /** Cadrage CSS de la photo portrait (object-position), defaut « center 40% ». */
   portraitFocus?: string;
-  /** Texte alternatif de la photo. */
-  alt: string;
+  /** Cle i18n du texte alternatif de la photo. */
+  altKey: string;
 }
 
 export interface PortalLoginContent {
   role: PortalRole;
   theme: PortalLoginTheme;
   hero: PortalLoginHero;
-  /** Liens de la barre superieure (decoratifs : le portail n'est pas encore ouvert). */
-  nav: string[];
-  /** Sur-titre : « Espace vendeur ». */
-  kicker: string;
+  /** Cles i18n des liens de la barre superieure (decoratifs : le portail n'est pas encore ouvert). */
+  navKeys: string[];
+  /** Cle i18n du sur-titre : « Espace vendeur ». */
+  kickerKey: string;
   /**
-   * Titre en trois lignes. Les `accentFrom` dernieres lignes passent en accent
-   * (sur fond sombre) ; en theme clair la derniere ligne seule est accentuee.
+   * Cles i18n du titre en trois lignes. Les `accentFrom` dernieres lignes passent
+   * en accent (sur fond sombre) ; en theme clair la derniere ligne seule est
+   * accentuee.
    */
-  title: [string, string, string];
+  titleKeys: [string, string, string];
   accentFrom: number;
-  /** Paragraphe desktop, une entree par ligne (les retours sont voulus). */
-  intro: string[];
-  /** Paragraphe mobile, plus court. */
-  introMobile: string;
+  /** Cles i18n du paragraphe desktop, une entree par ligne (les retours sont voulus). */
+  introKeys: string[];
+  /** Cle i18n du paragraphe mobile, plus court. */
+  introMobileKey: string;
   features: PortalLoginFeature[];
   /** Barre de statistiques en pied de page ; absente sur certaines maquettes. */
   stats?: PortalLoginStat[];
-  /** Bouton d'appel a l'action sous le paragraphe (desktop). */
-  cta?: string;
-  /** Pastille « S'inscrire » a droite de la barre de navigation. */
-  navCta?: string;
-  /** Mention manuscrite en bas a gauche, deux lignes. */
-  signature: [string, string];
-  /** Mention manuscrite a droite de la barre de statistiques (desktop). */
-  signatureEnd?: [string, string];
+  /** Cle i18n du bouton d'appel a l'action sous le paragraphe (desktop). */
+  ctaKey?: string;
+  /** Cle i18n de la pastille « S'inscrire » a droite de la barre de navigation. */
+  navCtaKey?: string;
+  /** Cles i18n de la mention manuscrite en bas a gauche, deux lignes. */
+  signatureKeys: [string, string];
+  /** Cles i18n de la mention manuscrite a droite de la barre de statistiques (desktop). */
+  signatureEndKeys?: [string, string];
   card: {
-    title: string;
-    subtitle: string;
+    titleKey: string;
+    subtitleKey: string;
     /** Pied de carte : propose l'inscription, ou rappelle que le compte est fourni. */
     registerPath?: string;
-    registerLabel?: string;
-    registerHint?: string;
+    registerLabelKey?: string;
+    registerHintKey?: string;
   };
 }

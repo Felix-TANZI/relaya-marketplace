@@ -23,7 +23,7 @@ export const portalRole: PortalRole = allowedPortalRoles.includes(rawPortalRole 
 
 export const portalHomePathByRole: Record<PortalRole, string> = {
   client: '/',
-  seller: '/seller/dashboard',
+  seller: '/seller/v2/accueil',
   courier: '/courier',
   admin: '/admin/dashboard',
   delivery_organization: '/delivery-organization',

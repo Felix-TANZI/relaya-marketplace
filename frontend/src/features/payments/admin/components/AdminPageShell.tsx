@@ -6,6 +6,7 @@
 
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { FT } from '../../shared/tokens';
 
@@ -20,10 +21,12 @@ interface AdminPageShellProps {
 }
 
 export default function AdminPageShell({
-  title, subtitle, backTo, backLabel = 'Centre financier',
+  title, subtitle, backTo, backLabel,
   actions, children, maxWidth = 900,
 }: AdminPageShellProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const resolvedBackLabel = backLabel ?? t('pm1_admin_shell.back_label');
 
   return (
     <div style={{ maxWidth }}>
@@ -37,7 +40,7 @@ export default function AdminPageShell({
           aria-hidden="true"
           style={{ fontSize: 14, verticalAlign: -2, marginRight: 6 }}
         />
-        {backLabel}
+        {resolvedBackLabel}
       </button>
 
       <div style={{

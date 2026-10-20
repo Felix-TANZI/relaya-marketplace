@@ -20,6 +20,7 @@ django-cors-headers>=4.3,<5.0
 djangorestframework-simplejwt>=5.3,<6.0
 google-auth>=2.38,<3.0
 requests>=2.31,<3.0
+PyJWT>=2.8,<3.0
 
 # Filtering
 django-filter>=24.0,<25.0
@@ -43,3 +44,10 @@ cryptography>=42.0,<47.0
 
 # Taches asynchrones (emails, etc.) hors du cycle requete/reponse
 celery>=5.3,<6.0
+
+# Generation de PDF (recus vendeur)
+reportlab>=4.0,<5.0
+
+# Notifications push mobiles (D21) — console par defaut tant que FCM_CREDENTIALS_PATH
+# n'est pas configure, voir apps/notifications_client/prestataires.py
+firebase-admin>=7.0,<8.0

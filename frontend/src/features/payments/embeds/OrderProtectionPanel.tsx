@@ -17,6 +17,8 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 import { useOrderProtection } from '../hooks/useOrderProtection';
 import FinancialTimeline from '../shared/FinancialTimeline';
@@ -39,7 +41,7 @@ const LIVRE = [
 ];
 
 function etapes(
-  hold: BuyerEscrowHold, fulfillmentStatus?: string,
+  hold: BuyerEscrowHold, fulfillmentStatus: string | undefined, t: TFunction,
 ): TimelineStep[] {
   const livre = LIVRE.includes(fulfillmentStatus ?? '')
     || hold.status === 'RELEASE_SCHEDULED'
@@ -48,16 +50,21 @@ function etapes(
   const aConfirmer = livre && !libere;
 
   return [
-    { label: 'Payé', done: true },
-    { label: 'Livré', done: livre },
-    { label: 'À vous de confirmer', done: libere, current: aConfirmer },
-    { label: 'Vendeur payé', done: libere },
+    { label: t('pm2_embed_protection.step_paid'), done: true },
+    { label: t('pm2_embed_protection.step_delivered'), done: livre },
+    {
+      label: t('pm2_embed_protection.step_to_confirm'),
+      done: libere,
+      current: aConfirmer,
+    },
+    { label: t('pm2_embed_protection.step_vendor_paid'), done: libere },
   ];
 }
 
 export default function OrderProtectionPanel({
   orderId, fulfillmentStatus, onConfirmReceipt, onOpenDispute,
 }: OrderProtectionPanelProps) {
+  const { t } = useTranslation();
   const { data, loading } = useOrderProtection(orderId);
 
   const marchandise = useMemo(
@@ -102,15 +109,14 @@ export default function OrderProtectionPanel({
                 fontSize: 14, margin: '0 0 4px',
                 color: 'var(--text-primary, #1A1209)',
               }}>
-                Votre argent reste bloqué
+                {t('pm2_embed_protection.blocked_title')}
               </p>
               {/* Le fil disparait : il n'a plus de sens quand le parcours
                   est suspendu. */}
               <p style={{
                 fontSize: 12.5, margin: 0, lineHeight: 1.55, color: FT.muted,
               }}>
-                Tant que votre litige n’est pas tranché, BelivaY ne verse
-                rien au vendeur.
+                {t('pm2_embed_protection.blocked_detail')}
               </p>
               {marchandise.status === 'FROZEN' && (
                 <p style={{
@@ -135,16 +141,16 @@ export default function OrderProtectionPanel({
                 fontSize: 14, margin: '0 0 4px',
                 color: 'var(--text-primary, #1A1209)',
               }}>
-                Votre argent est conservé par BelivaY
+                {t('pm2_embed_protection.held_title')}
               </p>
               <p style={{ fontSize: 12.5, margin: 0, color: FT.muted }}>
-                Il ne sera versé au vendeur qu’après votre confirmation.
+                {t('pm2_embed_protection.held_detail')}
               </p>
             </div>
             <Money value={marchandise.gross_amount_xaf} size={24} showCurrency />
           </div>
 
-          <FinancialTimeline steps={etapes(marchandise, fulfillmentStatus)} />
+          <FinancialTimeline steps={etapes(marchandise, fulfillmentStatus, t)} />
 
           <div style={{
             borderTop: `0.5px solid ${FT.border}`, paddingTop: '1rem',
@@ -159,8 +165,7 @@ export default function OrderProtectionPanel({
                 fontSize: 12.5, margin: 0, flex: 1, minWidth: 210,
                 lineHeight: 1.55, color: FT.muted,
               }}>
-                Sans action de votre part, la commande sera confirmée
-                automatiquement le{' '}
+                {t('pm2_embed_protection.auto_confirm_lead')}{' '}
                 <span style={{ color: 'var(--text-primary, #1A1209)' }}>
                   {formatShortDate(marchandise.auto_confirm_at)}
                 </span>
@@ -176,7 +181,7 @@ export default function OrderProtectionPanel({
                     onClick={onOpenDispute}
                     style={{ fontSize: 12.5, padding: '7px 14px' }}
                   >
-                    Signaler un problème
+                    {t('pm2_embed_protection.report_problem')}
                   </button>
                 )}
                 {onConfirmReceipt && (
@@ -188,7 +193,7 @@ export default function OrderProtectionPanel({
                       borderColor: FT.coral, color: '#993C1D',
                     }}
                   >
-                    J’ai bien reçu
+                    {t('pm2_embed_protection.confirm_receipt')}
                   </button>
                 )}
               </div>

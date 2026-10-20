@@ -9,13 +9,18 @@ import { PfShellStyles } from "@/styles/pfShell";
 import { OperatorLogo } from "@/features/payments/OperatorLogo";
 import PaymentSheet from "@/features/payments/PaymentSheet";
 
+function MapUnavailable() {
+  const { t } = useTranslation();
+  return (
+    <div style={{ height: "100%", minHeight: 200, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 18, background: "var(--pf-s3)", fontSize: 13, color: "var(--pf-muted)" }}>
+      {t("cl2_orders_history.map_unavailable")}
+    </div>
+  );
+}
+
 const TrackingMap = lazy(() =>
   import("@/components/TrackingMap").catch(() => ({
-    default: (() => (
-      <div style={{ height: "100%", minHeight: 200, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 18, background: "var(--pf-s3)", fontSize: 13, color: "var(--pf-muted)" }}>
-        Carte indisponible
-      </div>
-    )) as (typeof import("@/components/TrackingMap"))["default"],
+    default: MapUnavailable as (typeof import("@/components/TrackingMap"))["default"],
   }))
 );
 
@@ -27,65 +32,65 @@ const SHIPPING: FulfillmentStatus[] = ["OUT_FOR_DELIVERY", "SHIPPED"];
 const CLOSED: FulfillmentStatus[] = ["CANCELLED", "REFUNDED"];
 const LIVE: FulfillmentStatus[] = ["OUT_FOR_DELIVERY", "SHIPPED", "PICKED_UP", "DRIVER_ASSIGNED"];
 
-const TABS: { key: TabKey; label: string }[] = [
-  { key: "all", label: "Toutes" },
-  { key: "to_pay", label: "À payer" },
-  { key: "in_delivery", label: "En livraison" },
-  { key: "preparing", label: "En cours" },
-  { key: "delivered", label: "Livrées" },
-  { key: "cancelled", label: "Annulées" },
+const TABS: { key: TabKey; labelKey: string }[] = [
+  { key: "all", labelKey: "cl2_orders_history.tab_all" },
+  { key: "to_pay", labelKey: "cl2_orders_history.tab_to_pay" },
+  { key: "in_delivery", labelKey: "cl2_orders_history.tab_in_delivery" },
+  { key: "preparing", labelKey: "cl2_orders_history.tab_preparing" },
+  { key: "delivered", labelKey: "cl2_orders_history.tab_delivered" },
+  { key: "cancelled", labelKey: "cl2_orders_history.tab_cancelled" },
 ];
 
-const FULFILLMENT_LABELS: Record<string, string> = {
-  OUT_FOR_DELIVERY: "En livraison", SHIPPED: "En livraison",
-  READY_FOR_PICKUP: "Prête au retrait", DRIVER_ASSIGNED: "Prise en charge", PICKED_UP: "Prise en charge",
-  DELIVERED: "Livrée", BUYER_CONFIRMED: "Livrée", AUTO_CONFIRMED: "Livrée",
-  RELEASED_TO_VENDOR: "Terminée", DISPUTED: "Litige", CANCELLED: "Annulée", REFUNDED: "Remboursée",
+const FULFILLMENT_LABEL_KEYS: Record<string, string> = {
+  OUT_FOR_DELIVERY: "cl2_orders_history.fulfillment_in_delivery", SHIPPED: "cl2_orders_history.fulfillment_in_delivery",
+  READY_FOR_PICKUP: "cl2_orders_history.fulfillment_ready_pickup", DRIVER_ASSIGNED: "cl2_orders_history.fulfillment_picked_up", PICKED_UP: "cl2_orders_history.fulfillment_picked_up",
+  DELIVERED: "cl2_orders_history.fulfillment_delivered", BUYER_CONFIRMED: "cl2_orders_history.fulfillment_delivered", AUTO_CONFIRMED: "cl2_orders_history.fulfillment_delivered",
+  RELEASED_TO_VENDOR: "cl2_orders_history.fulfillment_completed", DISPUTED: "cl2_orders_history.fulfillment_disputed", CANCELLED: "cl2_orders_history.fulfillment_cancelled", REFUNDED: "cl2_orders_history.fulfillment_refunded",
 };
 
-const PAYMENT_LABELS: Record<PaymentStatus, { label: string; tone: "ok" | "wait" | "err" | "mut" }> = {
-  PAID: { label: "Payé", tone: "ok" },
-  PENDING: { label: "À payer", tone: "wait" },
-  FAILED: { label: "Paiement échoué", tone: "err" },
-  REFUNDED: { label: "Remboursé", tone: "mut" },
+const PAYMENT_LABELS: Record<PaymentStatus, { labelKey: string; tone: "ok" | "wait" | "err" | "mut" }> = {
+  PAID: { labelKey: "cl2_orders_history.payment_paid", tone: "ok" },
+  PENDING: { labelKey: "cl2_orders_history.payment_to_pay", tone: "wait" },
+  FAILED: { labelKey: "cl2_orders_history.payment_failed", tone: "err" },
+  REFUNDED: { labelKey: "cl2_orders_history.payment_refunded", tone: "mut" },
 };
 
 // Flux de retention a l'annulation — Addendum Decisions v1.0 §5.1
 type CancelReasonCode = "CHEAPER_ELSEWHERE" | "CHANGED_MIND" | "TOO_SLOW" | "ORDER_MISTAKE" | "PAYMENT_ISSUE" | "OTHER";
 type CancelStep = "reason" | "alternative" | "confirm";
 
-const CANCEL_REASONS: { key: CancelReasonCode; label: string }[] = [
-  { key: "CHEAPER_ELSEWHERE", label: "Trouvé moins cher ailleurs" },
-  { key: "CHANGED_MIND", label: "Changement d'avis" },
-  { key: "TOO_SLOW", label: "Délai trop long" },
-  { key: "ORDER_MISTAKE", label: "Erreur de commande" },
-  { key: "PAYMENT_ISSUE", label: "Problème de paiement" },
-  { key: "OTHER", label: "Autre raison" },
+const CANCEL_REASONS: { key: CancelReasonCode; labelKey: string }[] = [
+  { key: "CHEAPER_ELSEWHERE", labelKey: "cl2_orders_history.cancel_reason_cheaper" },
+  { key: "CHANGED_MIND", labelKey: "cl2_orders_history.cancel_reason_changed_mind" },
+  { key: "TOO_SLOW", labelKey: "cl2_orders_history.cancel_reason_too_slow" },
+  { key: "ORDER_MISTAKE", labelKey: "cl2_orders_history.cancel_reason_mistake" },
+  { key: "PAYMENT_ISSUE", labelKey: "cl2_orders_history.cancel_reason_payment_issue" },
+  { key: "OTHER", labelKey: "cl2_orders_history.cancel_reason_other" },
 ];
 
-const CANCEL_ALTERNATIVES: Record<CancelReasonCode, { title: string; body: string; cta?: string } | null> = {
+const CANCEL_ALTERNATIVES: Record<CancelReasonCode, { titleKey: string; bodyKey: string; ctaKey?: string } | null> = {
   CHEAPER_ELSEWHERE: {
-    title: "Votre argent est protégé",
-    body: "Le paiement reste bloqué en séquestre et n'est jamais versé au vendeur avant que vous ayez confirmé la réception. Rien ne presse à annuler pour ce motif.",
+    titleKey: "cl2_orders_history.alt_cheaper_title",
+    bodyKey: "cl2_orders_history.alt_cheaper_body",
   },
   CHANGED_MIND: {
-    title: "Votre argent est protégé",
-    body: "Le montant reste sous séquestre jusqu'à confirmation de réception : vous ne risquez rien à laisser la commande suivre son cours si vous hésitez encore.",
+    titleKey: "cl2_orders_history.alt_changed_mind_title",
+    bodyKey: "cl2_orders_history.alt_changed_mind_body",
   },
   TOO_SLOW: {
-    title: "Vérifiez le délai réel",
-    body: "Consultez le suivi détaillé pour voir l'heure estimée d'arrivée actuelle. Vous pouvez aussi basculer vers un retrait en point relais, souvent plus rapide.",
-    cta: "Voir le suivi détaillé",
+    titleKey: "cl2_orders_history.alt_too_slow_title",
+    bodyKey: "cl2_orders_history.alt_too_slow_body",
+    ctaKey: "cl2_orders_history.alt_too_slow_cta",
   },
   ORDER_MISTAKE: {
-    title: "Une erreur sur la commande ?",
-    body: "Contactez le support avant d'annuler : une correction (adresse, article, quantité) est souvent possible sans perdre votre place dans le circuit de préparation.",
-    cta: "Contacter le support",
+    titleKey: "cl2_orders_history.alt_mistake_title",
+    bodyKey: "cl2_orders_history.alt_mistake_body",
+    ctaKey: "cl2_orders_history.alt_mistake_cta",
   },
   PAYMENT_ISSUE: {
-    title: "Un souci de paiement ?",
-    body: "Le support peut vérifier votre transaction et régulariser sans qu'il soit nécessaire d'annuler la commande.",
-    cta: "Contacter le support",
+    titleKey: "cl2_orders_history.alt_payment_issue_title",
+    bodyKey: "cl2_orders_history.alt_payment_issue_body",
+    ctaKey: "cl2_orders_history.alt_payment_issue_cta",
   },
   OTHER: null,
 };
@@ -108,7 +113,7 @@ export default function OrdersHistoryPage() {
       .then((data) => setOrders(getResilientOrders(data)))
       .catch(() => {
         setOrders([]);
-        setError("Nous n'arrivons pas à charger vos commandes pour le moment. Réessayez dans un instant.");
+        setError(t("cl2_orders_history.load_error"));
       })
       .finally(() => setLoading(false));
   };
@@ -162,10 +167,10 @@ export default function OrdersHistoryPage() {
     try {
       const cancelled = await ordersApi.cancel(order.id, cancelReason);
       setOrders((cur) => cur.map((i) => (i.id === order.id ? cancelled : i)));
-      setCancelFeedback(`Commande #${order.id} annulée. Remboursement intégral en cours.`);
+      setCancelFeedback(t("cl2_orders_history.cancel_success", { id: order.id }));
       window.dispatchEvent(new Event("belivay-new-notification"));
     } catch {
-      setCancelFeedback("Impossible d'annuler cette commande pour le moment.");
+      setCancelFeedback(t("cl2_orders_history.cancel_error"));
     } finally {
       setCancelStep("reason");
       setCancelReason("OTHER");
@@ -198,7 +203,7 @@ export default function OrdersHistoryPage() {
             </span>
             <div className="pf-panel-title">{t("orders.error")}</div>
             <p className="pf-panel-sub">{error}</p>
-            <button className="pf-btn-accent" style={{ marginTop: 18 }} onClick={() => window.location.reload()}>Réessayer</button>
+            <button className="pf-btn-accent" style={{ marginTop: 18 }} onClick={() => window.location.reload()}>{t("cl2_orders_history.retry")}</button>
           </div>
         </div>
       </>
@@ -215,12 +220,12 @@ export default function OrdersHistoryPage() {
           <div className="pf-ident pf-anim">
             <span className="pf-notif-ic"><Package size={20} /></span>
             <div style={{ flex: 1, minWidth: 200 }}>
-              <div className="pf-k">Espace client</div>
-              <div className="pf-name" style={{ fontSize: 21, marginTop: 2 }}>Mes commandes</div>
+              <div className="pf-k">{t("cl2_orders_history.space_label")}</div>
+              <div className="pf-name" style={{ fontSize: 21, marginTop: 2 }}>{t("cl2_orders_history.title")}</div>
               <div className="pf-meta">
-                <span>{orders.length} commande{orders.length > 1 ? "s" : ""}</span>
-                {counts.to_pay > 0 && <span style={{ color: "var(--pf-accent)", fontWeight: 700 }}>{counts.to_pay} à payer</span>}
-                {escrowTotal > 0 && <span>{fmt(escrowTotal)} sous séquestre</span>}
+                <span>{t(orders.length > 1 ? "cl2_orders_history.order_count_plural" : "cl2_orders_history.order_count", { count: orders.length })}</span>
+                {counts.to_pay > 0 && <span style={{ color: "var(--pf-accent)", fontWeight: 700 }}>{t("cl2_orders_history.to_pay_count", { count: counts.to_pay })}</span>}
+                {escrowTotal > 0 && <span>{t("cl2_orders_history.escrow_total", { amount: fmt(escrowTotal) })}</span>}
               </div>
             </div>
           </div>
@@ -229,7 +234,7 @@ export default function OrdersHistoryPage() {
             <div className="pf-info-note" style={{ marginTop: 14 }}>
               <span className="pf-info-ic"><AlertCircle size={15} /></span>
               <div className="pf-muted-sm" style={{ flex: 1 }}>{cancelFeedback}</div>
-              <button className="pf-x" style={{ width: 28, height: 28 }} onClick={() => setCancelFeedback("")} aria-label="Fermer"><X size={14} /></button>
+              <button className="pf-x" style={{ width: 28, height: 28 }} onClick={() => setCancelFeedback("")} aria-label={t("cl2_orders_history.close")}><X size={14} /></button>
             </div>
           )}
 
@@ -238,7 +243,7 @@ export default function OrdersHistoryPage() {
               <span className="pf-notif-ic" style={{ margin: "0 auto 16px", width: 60, height: 60, borderRadius: 20 }}><Package size={26} /></span>
               <div className="pf-panel-title">{t("orders.no_orders")}</div>
               <p className="pf-panel-sub" style={{ maxWidth: 380, margin: "8px auto 0" }}>{t("orders.no_orders_desc")}</p>
-              <Link to="/catalog"><button className="pf-btn-accent" style={{ marginTop: 20 }}><Package size={15} />Explorer le catalogue</button></Link>
+              <Link to="/catalog"><button className="pf-btn-accent" style={{ marginTop: 20 }}><Package size={15} />{t("cl2_orders_history.explore_catalog")}</button></Link>
             </div>
           ) : (
             <>
@@ -246,17 +251,17 @@ export default function OrdersHistoryPage() {
               {counts.to_pay > 0 && (
                 <div className="pf-hero pf-anim" style={{ marginTop: 16 }}>
                   <i />
-                  <div className="pf-hero-k">Paiement en attente</div>
+                  <div className="pf-hero-k">{t("cl2_orders_history.pay_banner_title")}</div>
                   <div className="pf-hero-v" style={{ fontSize: 28 }}>
-                    {counts.to_pay} commande{counts.to_pay > 1 ? "s" : ""}<span>à régler</span>
+                    {t(counts.to_pay > 1 ? "cl2_orders_history.pay_banner_count_plural" : "cl2_orders_history.pay_banner_count", { count: counts.to_pay })}<span>{t("cl2_orders_history.pay_banner_due")}</span>
                   </div>
                   <div style={{ position: "relative", marginTop: 12, fontSize: 12, lineHeight: 1.6, opacity: .9 }}>
-                    Les articles restent réservés une heure. Aucun montant n'a été débité.
+                    {t("cl2_orders_history.pay_banner_note")}
                   </div>
                   <button
                     onClick={() => setActiveTab("to_pay")}
                     style={{ position: "relative", marginTop: 16, display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.22)", border: "1px solid rgba(255,255,255,.35)", color: "#fff", padding: "9px 16px", borderRadius: 999, fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                    <Lock size={14} />Voir les commandes à payer
+                    <Lock size={14} />{t("cl2_orders_history.pay_banner_cta")}
                   </button>
                 </div>
               )}
@@ -266,7 +271,7 @@ export default function OrdersHistoryPage() {
                 <section className="pf-card pf-anim" style={{ marginTop: 16, padding: 0, overflow: "hidden" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "14px 18px", borderBottom: "1px solid var(--pf-border)" }}>
                     <span className="pf-order-ic"><Truck size={16} /></span>
-                    <div className="pf-card-title">Livraisons en cours</div>
+                    <div className="pf-card-title">{t("cl2_orders_history.active_deliveries_title")}</div>
                     <span className="pf-badge-soft" style={{ marginLeft: "auto" }}>{activeDeliveries.length}</span>
                   </div>
 
@@ -295,17 +300,17 @@ export default function OrdersHistoryPage() {
                             style={{ textAlign: "left", cursor: "pointer", fontFamily: "inherit" }}>
                             <div className="pf-addr-label">
                               <span className="pf-addr-ic"><Truck size={14} /></span>
-                              Commande #{o.id}
-                              <span className="pf-badge-soft">{FULFILLMENT_LABELS[o.fulfillment_status] ?? "En préparation"}</span>
+                              {t("cl2_orders_history.order_hash", { id: o.id })}
+                              <span className="pf-badge-soft">{t(FULFILLMENT_LABEL_KEYS[o.fulfillment_status] ?? "cl2_orders_history.fulfillment_preparing_fallback")}</span>
                             </div>
                             <div className="pf-addr-line">
-                              {o.items.length} article{o.items.length > 1 ? "s" : ""} · {fmt(o.total_xaf)} · {o.city}
+                              {t(o.items.length > 1 ? "cl2_orders_history.delivery_item_summary_plural" : "cl2_orders_history.delivery_item_summary", { count: o.items.length, price: fmt(o.total_xaf), city: o.city })}
                             </div>
                           </button>
                         );
                       })}
                       <Link to={`/orders/${selectedOrderId ?? activeDeliveries[0]?.id}`}>
-                        <button className="pf-btn-ghost pf-btn-block" style={{ marginTop: 0 }}><MapPin size={14} />Suivre en détail</button>
+                        <button className="pf-btn-ghost pf-btn-block" style={{ marginTop: 0 }}><MapPin size={14} />{t("cl2_orders_history.track_details")}</button>
                       </Link>
                     </div>
                   </div>
@@ -318,7 +323,7 @@ export default function OrdersHistoryPage() {
                   <button key={tab.key} type="button"
                     className={`pf-type-btn${activeTab === tab.key ? " on" : ""}`}
                     onClick={() => setActiveTab(tab.key)}>
-                    {tab.label}
+                    {t(tab.labelKey)}
                     <span style={{ marginLeft: 7, opacity: .7, fontVariantNumeric: "tabular-nums" }}>{counts[tab.key]}</span>
                   </button>
                 ))}
@@ -328,7 +333,7 @@ export default function OrdersHistoryPage() {
               {filtered.length === 0 ? (
                 <div className="pf-glass-panel" style={{ marginTop: 16, padding: 34, textAlign: "center" }}>
                   <Package size={28} style={{ margin: "0 auto 10px", color: "var(--pf-muted)" }} />
-                  <div className="pf-muted-sm">Aucune commande dans cette catégorie</div>
+                  <div className="pf-muted-sm">{t("cl2_orders_history.empty_category")}</div>
                 </div>
               ) : (
                 <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 14 }}>
@@ -343,15 +348,15 @@ export default function OrdersHistoryPage() {
                           <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
                             <span className="pf-order-ic"><Package size={16} /></span>
                             <div style={{ minWidth: 0 }}>
-                              <div className="pf-order-id">Commande #{order.id}</div>
+                              <div className="pf-order-id">{t("cl2_orders_history.order_hash", { id: order.id })}</div>
                               <div className="pf-muted-sm">{fmtDate(order.created_at)}</div>
                             </div>
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                            <span className={`pf-badge-state ${pb.tone}`}>{pb.label}</span>
+                            <span className={`pf-badge-state ${pb.tone}`}>{t(pb.labelKey)}</span>
                             <span className="pf-chip">
                               {live && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--pf-accent)" }} />}
-                              {FULFILLMENT_LABELS[order.fulfillment_status] ?? "En préparation"}
+                              {t(FULFILLMENT_LABEL_KEYS[order.fulfillment_status] ?? "cl2_orders_history.fulfillment_preparing_fallback")}
                             </span>
                           </div>
                         </div>
@@ -359,12 +364,12 @@ export default function OrdersHistoryPage() {
                         <div className="pf-meta" style={{ marginTop: 12 }}>
                           <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
                             {order.delivery_mode === "PICKUP" ? <Store size={12} /> : <Truck size={12} />}
-                            {order.delivery_mode === "PICKUP" ? "Retrait" : "Livraison"}
+                            {order.delivery_mode === "PICKUP" ? t("cl2_orders_history.delivery_mode_pickup") : t("cl2_orders_history.delivery_mode_delivery")}
                           </span>
                           <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><MapPin size={12} />{order.city}</span>
                           {order.payment_status === "PAID" && (
                             <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                              <OperatorLogo provider="MTN_MOMO" size={18} />Mobile Money
+                              <OperatorLogo provider="MTN_MOMO" size={18} />{t("cl2_orders_history.mobile_money")}
                             </span>
                           )}
                         </div>
@@ -377,26 +382,26 @@ export default function OrdersHistoryPage() {
                             </div>
                           ))}
                           {extra > 0 && (
-                            <div className="pf-k" style={{ marginTop: 6 }}>+ {extra} autre{extra > 1 ? "s" : ""} article{extra > 1 ? "s" : ""}</div>
+                            <div className="pf-k" style={{ marginTop: 6 }}>{t(extra > 1 ? "cl2_orders_history.extra_items_plural" : "cl2_orders_history.extra_items", { count: extra })}</div>
                           )}
                         </div>
 
                         <div className="pf-row-between" style={{ marginTop: 14, flexWrap: "wrap", gap: 12 }}>
                           <div>
-                            <div className="pf-k">{unpaid ? "Reste à payer" : "Total"}</div>
+                            <div className="pf-k">{unpaid ? t("cl2_orders_history.remaining_due") : t("cl2_orders_history.total")}</div>
                             <div className="pf-total-row"><b style={{ fontSize: 20 }}>{fmt(order.total_xaf)}</b></div>
                           </div>
                           <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
                             {canCancel(order) && (
-                              <button className="pf-btn-danger" onClick={() => { setCancelStep("reason"); setCancelReason("OTHER"); setCancelCandidate(order); }}>Annuler</button>
+                              <button className="pf-btn-danger" onClick={() => { setCancelStep("reason"); setCancelReason("OTHER"); setCancelCandidate(order); }}>{t("cl2_orders_history.cancel_btn")}</button>
                             )}
                             {unpaid && (
                               <button className="pf-btn-accent" onClick={() => setPayTarget(order)}>
-                                <Lock size={14} />Reprendre le paiement
+                                <Lock size={14} />{t("cl2_orders_history.resume_payment")}
                               </button>
                             )}
                             <Link to={`/orders/${order.id}`}>
-                              <button className={unpaid ? "pf-btn-ghost" : "pf-btn-accent"}>Détails</button>
+                              <button className={unpaid ? "pf-btn-ghost" : "pf-btn-accent"}>{t("cl2_orders_history.details_btn")}</button>
                             </Link>
                           </div>
                         </div>
@@ -418,12 +423,12 @@ export default function OrdersHistoryPage() {
               <div style={{ display: "flex", gap: 14, marginBottom: 4 }}>
                 <span className="pf-notif-ic" style={{ background: "rgba(217,45,32,.12)", color: "#d92d20" }}><XCircle size={22} /></span>
                 <div style={{ minWidth: 0 }}>
-                  <div className="pf-k" style={{ color: "#d92d20" }}>Annulation</div>
-                  <div className="pf-panel-title" style={{ fontSize: 19, marginTop: 3 }}>Commande #{cancelCandidate.id}</div>
+                  <div className="pf-k" style={{ color: "#d92d20" }}>{t("cl2_orders_history.cancel_modal_label")}</div>
+                  <div className="pf-panel-title" style={{ fontSize: 19, marginTop: 3 }}>{t("cl2_orders_history.order_hash", { id: cancelCandidate.id })}</div>
                   <p className="pf-panel-sub">
-                    {cancelStep === "reason" && "Pourquoi souhaitez-vous annuler cette commande ?"}
-                    {cancelStep === "alternative" && "Avant de confirmer, voici une piste qui pourrait vous éviter d'annuler."}
-                    {cancelStep === "confirm" && "Cette commande passera dans la rubrique annulée. Les articles ne seront plus traités pour la livraison."}
+                    {cancelStep === "reason" && t("cl2_orders_history.cancel_reason_prompt")}
+                    {cancelStep === "alternative" && t("cl2_orders_history.cancel_alternative_prompt")}
+                    {cancelStep === "confirm" && t("cl2_orders_history.cancel_confirm_prompt")}
                   </p>
                 </div>
               </div>
@@ -436,10 +441,10 @@ export default function OrdersHistoryPage() {
                         setCancelReason(r.key);
                         setCancelStep(CANCEL_ALTERNATIVES[r.key] ? "alternative" : "confirm");
                       }}>
-                      <div className="pf-addr-label">{r.label}</div>
+                      <div className="pf-addr-label">{t(r.labelKey)}</div>
                     </button>
                   ))}
-                  <button className="pf-btn-ghost pf-btn-block" style={{ marginTop: 6 }} onClick={() => setCancelCandidate(null)}>Garder la commande</button>
+                  <button className="pf-btn-ghost pf-btn-block" style={{ marginTop: 6 }} onClick={() => setCancelCandidate(null)}>{t("cl2_orders_history.keep_order")}</button>
                 </div>
               )}
 
@@ -448,24 +453,24 @@ export default function OrdersHistoryPage() {
                   <div className="pf-card" style={{ display: "flex", gap: 12 }}>
                     <span className="pf-notif-ic" style={{ background: "rgba(16,185,129,.12)", color: "#10b981", flexShrink: 0 }}><ShieldCheck size={18} /></span>
                     <div>
-                      <div className="pf-support-t">{CANCEL_ALTERNATIVES[cancelReason]!.title}</div>
-                      <p className="pf-panel-sub" style={{ marginTop: 4 }}>{CANCEL_ALTERNATIVES[cancelReason]!.body}</p>
+                      <div className="pf-support-t">{t(CANCEL_ALTERNATIVES[cancelReason]!.titleKey)}</div>
+                      <p className="pf-panel-sub" style={{ marginTop: 4 }}>{t(CANCEL_ALTERNATIVES[cancelReason]!.bodyKey)}</p>
                     </div>
                   </div>
 
                   <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 14 }}>
-                    {CANCEL_ALTERNATIVES[cancelReason]!.cta && (
+                    {CANCEL_ALTERNATIVES[cancelReason]!.ctaKey && (
                       <Link to={`/orders/${cancelCandidate.id}`}>
                         <button className="pf-btn-accent pf-btn-block" onClick={() => setCancelCandidate(null)}>
-                          {CANCEL_ALTERNATIVES[cancelReason]!.cta}
+                          {t(CANCEL_ALTERNATIVES[cancelReason]!.ctaKey!)}
                         </button>
                       </Link>
                     )}
-                    <button className="pf-btn-ghost pf-btn-block" onClick={() => setCancelCandidate(null)}>Garder la commande</button>
-                    <button className="pf-btn-danger pf-btn-block" onClick={() => setCancelStep("confirm")}>Continuer l'annulation</button>
+                    <button className="pf-btn-ghost pf-btn-block" onClick={() => setCancelCandidate(null)}>{t("cl2_orders_history.keep_order")}</button>
+                    <button className="pf-btn-danger pf-btn-block" onClick={() => setCancelStep("confirm")}>{t("cl2_orders_history.continue_cancel")}</button>
                     <button type="button" onClick={() => setCancelStep("reason")}
                       style={{ display: "inline-flex", alignItems: "center", gap: 6, justifyContent: "center", background: "none", border: "none", color: "var(--pf-muted)", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", padding: 4 }}>
-                      <ArrowLeft size={13} />Changer de motif
+                      <ArrowLeft size={13} />{t("cl2_orders_history.change_reason")}
                     </button>
                   </div>
                 </div>
@@ -474,18 +479,18 @@ export default function OrdersHistoryPage() {
               {cancelStep === "confirm" && (
                 <>
                   <div className="pf-card" style={{ marginTop: 16 }}>
-                    <div className="pf-support-t">{cancelCandidate.items[0]?.title_snapshot ?? "Commande"}</div>
+                    <div className="pf-support-t">{cancelCandidate.items[0]?.title_snapshot ?? t("cl2_orders_history.order_fallback_title")}</div>
                     <div className="pf-total-row" style={{ marginTop: 6 }}><b>{fmt(cancelCandidate.total_xaf)}</b></div>
                   </div>
                   <p className="pf-panel-sub" style={{ marginTop: 10 }}>
-                    L'annulation est définitive. Remboursement intégral vers votre moyen de paiement d'origine.
+                    {t("cl2_orders_history.cancel_final_note")}
                   </p>
-                  <button className="pf-btn-ghost pf-btn-block" style={{ marginTop: 8 }} onClick={() => setCancelCandidate(null)}>Garder la commande</button>
-                  <button className="pf-btn-danger pf-btn-block" onClick={() => void confirmCancel()}>Confirmer l'annulation</button>
+                  <button className="pf-btn-ghost pf-btn-block" style={{ marginTop: 8 }} onClick={() => setCancelCandidate(null)}>{t("cl2_orders_history.keep_order")}</button>
+                  <button className="pf-btn-danger pf-btn-block" onClick={() => void confirmCancel()}>{t("cl2_orders_history.confirm_cancel_btn")}</button>
                   {CANCEL_ALTERNATIVES[cancelReason] && (
                     <button type="button" onClick={() => setCancelStep("alternative")}
                       style={{ display: "inline-flex", alignItems: "center", gap: 6, justifyContent: "center", background: "none", border: "none", color: "var(--pf-muted)", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", padding: 4, marginTop: 4, width: "100%" }}>
-                      <ArrowLeft size={13} />Retour
+                      <ArrowLeft size={13} />{t("cl2_orders_history.back")}
                     </button>
                   )}
                 </>

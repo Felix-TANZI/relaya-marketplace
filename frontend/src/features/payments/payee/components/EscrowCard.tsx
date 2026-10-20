@@ -1,6 +1,7 @@
 // frontend/src/features/payments/payee/components/EscrowCard.tsx
 // Un sequestre, vu par le partenaire.
 
+import { useTranslation } from 'react-i18next';
 import Money from '../../shared/Money';
 import StatusBadge from '../../shared/StatusBadge';
 import { FT } from '../../shared/tokens';
@@ -15,6 +16,7 @@ interface EscrowCardProps {
 export default function EscrowCard({
   hold, showBorder = true,
 }: EscrowCardProps) {
+  const { t } = useTranslation();
   /**
    * L'echeance qui compte depend de l'etat.
    *
@@ -37,7 +39,7 @@ export default function EscrowCard({
           fontSize: 13.5, margin: 0, color: 'var(--text-primary, #1A1209)',
         }}>
           {hold.order_id
-            ? `Commande #${hold.order_id}`
+            ? t('sl2_payee_escrow.order_hash', { id: hold.order_id })
             : hold.component_label}
         </p>
 
@@ -60,7 +62,7 @@ export default function EscrowCard({
 
         {echeance && !hold.frozen_reason && (
           <p style={{ fontSize: 11.5, margin: '4px 0 0', color: FT.faint }}>
-            {hold.status === 'RELEASE_SCHEDULED' ? 'Libération' : 'Confirmation'}
+            {hold.status === 'RELEASE_SCHEDULED' ? t('sl2_payee_escrow.release_label') : t('sl2_payee_escrow.confirmation_label')}
             {' '}{relativeDays(echeance)} · {formatShortDate(echeance)}
           </p>
         )}
@@ -70,7 +72,7 @@ export default function EscrowCard({
         <Money value={hold.payable_xaf} size={15} />
         {hold.commission_xaf > 0 && (
           <p style={{ fontSize: 11, margin: '2px 0 0', color: FT.faint }}>
-            après {hold.commission_xaf.toLocaleString('fr-FR')} de commission
+            {t('sl2_payee_escrow.after_commission', { amount: hold.commission_xaf.toLocaleString('fr-FR') })}
           </p>
         )}
       </div>

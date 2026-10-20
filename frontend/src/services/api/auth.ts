@@ -33,6 +33,8 @@ export interface User {
   // Fidélité client
   loyalty_points?:        number;
   loyalty_tier?:          string;
+  // false pour les comptes créés via Google/Apple (sans mot de passe)
+  has_usable_password?:   boolean;
 }
 
 export interface CourierProfile {
@@ -157,6 +159,25 @@ export const authApi = {
     });
   },
 
+  appleLogin: async (payload: {
+    identityToken: string;
+    authorizationCode?: string | null;
+    email?: string | null;
+    givenName?: string | null;
+    familyName?: string | null;
+  }): Promise<LoginResult> => {
+    return http<LoginResult>('/api/auth/apple/', {
+      method: 'POST',
+      body: JSON.stringify({
+        identity_token: payload.identityToken,
+        authorization_code: payload.authorizationCode || undefined,
+        email: payload.email || undefined,
+        given_name: payload.givenName || undefined,
+        family_name: payload.familyName || undefined,
+      }),
+    });
+  },
+
   /**
    * Vérifie le code OTP de connexion (2FA) et renvoie les tokens.
    * Fetch direct pour remonter le message d'erreur exact du backend.
@@ -188,6 +209,17 @@ export const authApi = {
    */
   me: async (): Promise<User> => {
     return http<User>('/api/auth/me/');
+  },
+
+  /**
+   * Supprimer définitivement son compte (anonymisation côté serveur).
+   * Mot de passe requis pour les comptes email ; "SUPPRIMER" sinon.
+   */
+  deleteAccount: async (payload: { password?: string; confirm?: string }): Promise<void> => {
+    return http<void>('/api/auth/me/', {
+      method: 'DELETE',
+      body: JSON.stringify(payload),
+    });
   },
 
   /**

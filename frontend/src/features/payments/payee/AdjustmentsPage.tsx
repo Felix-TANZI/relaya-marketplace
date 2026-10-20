@@ -13,6 +13,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { useAdjustments } from '../hooks/useSettlements';
 import EmptyState from '../shared/EmptyState';
@@ -24,6 +25,7 @@ import type { Adjustment } from '../model/adjustment.types';
 function Ligne({ adjustment, showBorder }: {
   adjustment: Adjustment; showBorder: boolean;
 }) {
+  const { t } = useTranslation();
   const estRetenue = adjustment.direction === 'CREDIT';
   const solde = adjustment.remaining_xaf === 0;
 
@@ -51,7 +53,7 @@ function Ligne({ adjustment, showBorder }: {
         </p>
         <p style={{ fontSize: 11.5, margin: '3px 0 0', color: FT.faint }}>
           {adjustment.category_label} · {formatDay(adjustment.created_at)}
-          {solde && ' · soldé'}
+          {solde && ` · ${t('sl2_payee_adjustments.settled_suffix')}`}
         </p>
       </div>
 
@@ -62,7 +64,7 @@ function Ligne({ adjustment, showBorder }: {
         />
         {!solde && adjustment.remaining_xaf !== adjustment.amount_xaf && (
           <p style={{ fontSize: 11, margin: '2px 0 0', color: FT.faint }}>
-            reste {adjustment.remaining_xaf.toLocaleString('fr-FR')}
+            {t('sl2_payee_adjustments.remaining', { amount: adjustment.remaining_xaf.toLocaleString('fr-FR') })}
           </p>
         )}
       </div>
@@ -71,6 +73,7 @@ function Ligne({ adjustment, showBorder }: {
 }
 
 export default function AdjustmentsPage() {
+  const { t } = useTranslation();
   const { data, loading, error } = useAdjustments();
 
   const { enCours, soldes } = useMemo(() => {
@@ -86,22 +89,22 @@ export default function AdjustmentsPage() {
       <p style={{
         fontSize: 19, margin: '0 0 4px', color: 'var(--text-primary, #1A1209)',
       }}>
-        Mes ajustements
+        {t('sl2_payee_adjustments.page_title')}
       </p>
       <p style={{ fontSize: 12.5, margin: '0 0 1.25rem', color: FT.muted }}>
-        Retenues et compensations appliquées à vos règlements.
+        {t('sl2_payee_adjustments.page_subtitle')}
       </p>
 
       {loading && (
         <div style={{ padding: '2.5rem', textAlign: 'center' }}>
-          <span style={{ fontSize: 13, color: FT.faint }}>Chargement…</span>
+          <span style={{ fontSize: 13, color: FT.faint }}>{t('sl2_payee_adjustments.loading')}</span>
         </div>
       )}
 
       {!loading && error && (
         <EmptyState
           icon="alert-circle"
-          title="Impossible d'afficher vos ajustements"
+          title={t('sl2_payee_adjustments.error_title')}
           description={error}
         />
       )}
@@ -113,8 +116,8 @@ export default function AdjustmentsPage() {
         }}>
           <EmptyState
             icon="check"
-            title="Aucun ajustement"
-            description="Aucune retenue ni compensation sur votre compte."
+            title={t('sl2_payee_adjustments.empty_title')}
+            description={t('sl2_payee_adjustments.empty_description')}
           />
         </div>
       )}
@@ -125,7 +128,7 @@ export default function AdjustmentsPage() {
             fontSize: 11, margin: '0 0 10px', letterSpacing: '0.08em',
             textTransform: 'uppercase', color: FT.faint,
           }}>
-            En cours
+            {t('sl2_payee_adjustments.in_progress')}
           </p>
           <div style={{
             background: 'var(--surface-2, #FFFFFF)',
@@ -149,7 +152,7 @@ export default function AdjustmentsPage() {
             fontSize: 11, margin: '0 0 10px', letterSpacing: '0.08em',
             textTransform: 'uppercase', color: FT.faint,
           }}>
-            Soldés
+            {t('sl2_payee_adjustments.settled')}
           </p>
           <div style={{
             background: 'var(--surface-2, #FFFFFF)',

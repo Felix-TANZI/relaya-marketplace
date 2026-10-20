@@ -7,6 +7,8 @@ export interface GoogleMapMarker {
   title: string;
   subtitle?: string;
   color?: string;
+  /** Emoji affiché au centre du repère (ex. "🏪" boutique, "🚗"/"🏍️" livreur, "📦" client). */
+  emoji?: string;
 }
 
 interface DraggableGoogleMarker {
@@ -26,11 +28,14 @@ function escapeHtml(value: string) {
     .replace(/'/g, "&#039;");
 }
 
-function markerSvg(color: string) {
+function markerSvg(color: string, emoji?: string) {
+  const inner = emoji
+    ? `<text x="21" y="21" font-size="20" text-anchor="middle" dominant-baseline="central">${emoji}</text>`
+    : `<circle cx="21" cy="21" r="6" fill="white"/>`;
   const encoded = encodeURIComponent(`
     <svg width="42" height="42" viewBox="0 0 42 42" xmlns="http://www.w3.org/2000/svg">
       <circle cx="21" cy="21" r="18" fill="${color}" stroke="white" stroke-width="4"/>
-      <circle cx="21" cy="21" r="6" fill="white"/>
+      ${inner}
     </svg>
   `);
   return `data:image/svg+xml;charset=UTF-8,${encoded}`;
@@ -55,6 +60,9 @@ export function GoogleMap({
   polylines = [],
   onMapClick,
   draggableMarker,
+  minZoom,
+  mapTypeId = "roadmap",
+  showMapTypeToggle = false,
 }: {
   markers: GoogleMapMarker[];
   height?: number;
@@ -65,7 +73,14 @@ export function GoogleMap({
   polylines?: Array<{ positions: GoogleMapPosition[]; color: string; weight?: number; opacity?: number }>;
   onMapClick?: (lat: number, lng: number) => void;
   draggableMarker?: DraggableGoogleMarker | null;
+  /** Empêche de dézoomer au-delà de ce niveau (17 ≈ vue d'environ 200-300 m). */
+  minZoom?: number;
+  /** "roadmap" (défaut) ou "satellite". */
+  mapTypeId?: "roadmap" | "satellite";
+  /** Affiche un bouton Plan/Satellite en overlay (coin haut-droit). */
+  showMapTypeToggle?: boolean;
 }) {
+  const [currentMapType, setCurrentMapType] = useState<"roadmap" | "satellite">(mapTypeId);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<unknown | null>(null);
   const [loadError, setLoadError] = useState(false);
@@ -84,6 +99,8 @@ export function GoogleMap({
         const map = new maps.Map(containerRef.current, {
           center: toGooglePosition(center),
           zoom,
+          minZoom,
+          mapTypeId: currentMapType,
           disableDefaultUI: false,
           streetViewControl: false,
           mapTypeControl: false,
@@ -111,7 +128,7 @@ export function GoogleMap({
             position: toGooglePosition(marker.position),
             title: marker.title,
             icon: {
-              url: markerSvg(marker.color || "#F47920"),
+              url: markerSvg(marker.color || "#F47920", marker.emoji),
               scaledSize: { width: 42, height: 42 },
               anchor: { x: 21, y: 21 },
             },
@@ -161,9 +178,18 @@ export function GoogleMap({
 
         if (allPositions.length === 1) {
           (map as { setCenter: (position: unknown) => void; setZoom: (zoom: number) => void }).setCenter(toGooglePosition(allPositions[0]));
-          (map as { setZoom: (zoom: number) => void }).setZoom(Math.max(zoom, 14));
+          (map as { setZoom: (zoom: number) => void }).setZoom(Math.max(zoom, 14, minZoom ?? 0));
         } else if (allPositions.length > 1) {
           (map as { fitBounds: (bounds: unknown, padding?: number) => void }).fitBounds(bounds, 46);
+          // fitBounds respecte normalement minZoom, mais au cas où (bug navigateur /
+          // très peu de marqueurs très proches), on reclamp une fois le cadrage posé.
+          if (minZoom != null) {
+            maps.event.addListenerOnce(map, "idle", () => {
+              const m = map as { getZoom: () => number | undefined; setZoom: (zoom: number) => void };
+              const current = m.getZoom();
+              if (current != null && current < minZoom) m.setZoom(minZoom);
+            });
+          }
         }
       })
       .catch(() => {
@@ -174,11 +200,41 @@ export function GoogleMap({
       cancelled = true;
       cleanup.forEach((fn) => fn());
     };
-  }, [markerKey, onMapClick, scrollWheelZoom]);
+  }, [markerKey, onMapClick, scrollWheelZoom, minZoom]);
+
+  useEffect(() => {
+    (mapRef.current as { setMapTypeId?: (id: string) => void } | null)?.setMapTypeId?.(currentMapType);
+  }, [currentMapType]);
 
   return (
     <div className={`relative overflow-hidden rounded-2xl ${className}`}>
       <div ref={containerRef} style={{ height, width: "100%" }} />
+      {showMapTypeToggle ? (
+        <div className="absolute top-3 right-3 z-10 flex overflow-hidden rounded-lg shadow-md" style={{ fontSize: 12 }}>
+          <button
+            type="button"
+            onClick={() => setCurrentMapType("roadmap")}
+            className="px-3 py-1.5 font-bold"
+            style={{
+              background: currentMapType === "roadmap" ? "#111827" : "#FFFFFF",
+              color: currentMapType === "roadmap" ? "#FFFFFF" : "#111827",
+            }}
+          >
+            Plan
+          </button>
+          <button
+            type="button"
+            onClick={() => setCurrentMapType("satellite")}
+            className="px-3 py-1.5 font-bold"
+            style={{
+              background: currentMapType === "satellite" ? "#111827" : "#FFFFFF",
+              color: currentMapType === "satellite" ? "#FFFFFF" : "#111827",
+            }}
+          >
+            Satellite
+          </button>
+        </div>
+      ) : null}
       {loadError ? (
         <div className="absolute inset-0 flex items-center justify-center bg-white/95 px-4 text-center text-sm font-bold text-slate-700">
           Google Maps est indisponible. Verifiez la cle API et les APIs activees.

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ShoppingBag, ChevronsLeft, ChevronsRight } from "lucide-react";
 import useStorefrontCategories from "@/hooks/useStorefrontCategories";
 import type { StorefrontCategory } from "@/data/storefrontCategories";
@@ -42,6 +43,7 @@ export default function CategorySidebar({
   topOffset,
   categories: categoriesProp,
 }: CategorySidebarProps) {
+  const { t } = useTranslation();
   const { categories: storefront } = useStorefrontCategories();
   const categories = categoriesProp ?? storefront;
   const panelRef = useRef<HTMLElement | null>(null);
@@ -101,14 +103,14 @@ export default function CategorySidebar({
             {!collapsed ? (
               <span className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.14em] text-gray-400 dark:text-gray-500">
                 <ShoppingBag size={15} className="text-primary" />
-                Catégories
+                {t("home.categories")}
               </span>
             ) : null}
 
             <button
               onClick={onToggle}
               className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-400 shadow-sm transition-all hover:border-primary hover:bg-primary hover:text-white dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
-              aria-label={collapsed ? "Déplier les catégories" : "Replier les catégories"}
+              aria-label={collapsed ? t("home.expand_categories") : t("home.collapse_categories")}
             >
               {collapsed ? <ChevronsRight size={14} /> : <ChevronsLeft size={14} />}
             </button>
@@ -118,7 +120,7 @@ export default function CategorySidebar({
             <>
               <div className="mb-1 flex items-center gap-2 text-[13px] font-extrabold text-gray-900 dark:text-white">
                 <ShoppingBag size={14} className="text-primary" />
-                Catégories
+                {t("home.categories")}
               </div>
               <div className="flex flex-col gap-0.5">
                 {categories.map((cat) => {

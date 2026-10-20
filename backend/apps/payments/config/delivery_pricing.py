@@ -90,6 +90,47 @@ class DeliveryPricingRule(VersionedConfig):
                   "quand elle est eloignee.",
     )
 
+    # ─────────────────────────────────────────────────────────────────────
+    # PLANCHER ET GRATUITE (tache D10, et D12 pour le relais)
+    #
+    # Le document fixe trois montants que le bareme ne savait pas exprimer :
+    #   « Calculer les frais : 1 500 F minimum, selon la commande et la
+    #     distance, sans plafond. »
+    #   « Appliquer la livraison offerte des 50 000 F : elle couvre 1 500 F,
+    #     le client paie le surplus. »
+    #   « Facturer la livraison en relais 900 F, offerte des 30 000 F. »
+    #
+    # La gratuite est un ABATTEMENT, pas une remise a zero : au-dela du
+    # seuil, BelivaY prend `free_covers_xaf` a sa charge et l'acheteur paie
+    # ce qui depasse. C'est la lettre du document — « elle couvre 1 500 F,
+    # le client paie le surplus » — et c'est ce qui evite qu'un panier
+    # disperse entre vendeurs eloignes coute d'autant plus cher a BelivaY
+    # que la livraison est chere.
+    #
+    # La part « selon la distance » n'est PAS ici : elle releve du document
+    # d'appui annonce par D10, qui n'a pas encore ete transmis.
+    #
+    # Les trois champs valent 0 par defaut : un bareme deja configure garde
+    # exactement le comportement qu'il avait.
+    # ─────────────────────────────────────────────────────────────────────
+    minimum_xaf = models.PositiveIntegerField(
+        default=0,
+        help_text="Plancher facture, quel que soit le calcul. 0 = aucun "
+                  "plancher.",
+    )
+
+    free_from_subtotal_xaf = models.PositiveIntegerField(
+        default=0,
+        help_text="A partir de ce sous-total de commande, BelivaY prend une "
+                  "part des frais a sa charge. 0 = jamais.",
+    )
+
+    free_covers_xaf = models.PositiveIntegerField(
+        default=0,
+        help_text="Montant pris en charge par BelivaY au-dela du seuil. "
+                  "L'acheteur paie le surplus eventuel.",
+    )
+
     filter_city = models.CharField(
         max_length=80, blank=True, default="",
         help_text="Ne s'applique qu'a cette ville. Vide = toutes.",

@@ -13,6 +13,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { useIsFinanceStaff } from '../hooks/useIsFinanceStaff';
 import EmptyState from '../shared/EmptyState';
@@ -22,13 +23,14 @@ interface FinanceRouteProps {
 }
 
 export default function FinanceRoute({ children }: FinanceRouteProps) {
+  const { t } = useTranslation();
   const { allowed, loading } = useIsFinanceStaff();
 
   if (loading) {
     return (
       <div style={{ padding: '3rem', textAlign: 'center' }}>
         <span style={{ fontSize: 13, color: 'var(--text-muted, #B4B2A9)' }}>
-          Vérification des habilitations…
+          {t('pm2_finance_route.checking')}
         </span>
       </div>
     );
@@ -38,11 +40,8 @@ export default function FinanceRoute({ children }: FinanceRouteProps) {
     return (
       <EmptyState
         icon="lock"
-        title="Espace réservé"
-        description={
-          "L'espace financier est réservé aux membres habilités. "
-          + 'Demandez votre rattachement au groupe « finance ».'
-        }
+        title={t('pm2_finance_route.restricted_title')}
+        description={t('pm2_finance_route.restricted_description')}
       />
     );
   }

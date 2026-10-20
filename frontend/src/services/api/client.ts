@@ -1,6 +1,8 @@
 // frontend/src/services/api/client.ts
 // Client API pour interagir avec le backend Relaya Marketplace
 
+import i18n from "@/i18n";
+
 // Configuration du client API
 const API_BASE_URL = (import.meta.env.VITE_API_URL || "http://localhost:8000")
   .replace(/\/api\/?$/, "")
@@ -148,6 +150,10 @@ if (fetchOptions.headers) {
 
 if (!isFormData && !headers['Content-Type']) {
   headers['Content-Type'] = 'application/json';
+}
+
+if (!headers['Accept-Language']) {
+  headers['Accept-Language'] = i18n.language || 'fr';
 }
 
 const token = localStorage.getItem('access_token');

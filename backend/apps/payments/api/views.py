@@ -84,7 +84,14 @@ class InitiatePaymentView(APIView):
     serializer_class = InitiatePaymentSerializer
 
     def post(self, request, reference):
+        from apps.common.purchases import assert_purchases_open
         from apps.payments.application.collect import CollectError, initiate_collect
+
+        # Tache D2 — deuxieme verrou. Il ne fait pas double emploi avec celui
+        # de la creation de commande : des intentions de paiement creees AVANT
+        # la fermeture restent en base, et sans ce controle elles pourraient
+        # encore etre emises aupres du prestataire.
+        assert_purchases_open(request.user)
 
         intent = get_object_or_404(
             PaymentIntent, reference=reference, buyer=request.user)

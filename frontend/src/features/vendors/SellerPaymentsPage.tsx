@@ -4,6 +4,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowRight, BarChart2, CircleCheckBig, Download, FileText, Lock,
   RefreshCw, Scale, Smartphone, TrendingUp, TriangleAlert, Wallet,
@@ -25,9 +26,9 @@ import {
 
 type Tab = 'all' | 'RELEASED' | 'BLOCKED' | 'REFUNDED';
 
-function exportCSV(orders: VendorOrder[], shopName: string) {
+function exportCSV(orders: VendorOrder[], shopName: string, header: string) {
   const rows = [
-    'Référence,Date,CA Brut (FCFA),Commission (FCFA),Net Vendeur (FCFA),Statut Escrow',
+    header,
     ...orders.map(o => [
       orderRef(o.id), fmtDate(o.created_at), o.vendor_subtotal,
       o.commission_amount, o.vendor_net_amount, o.escrow_status_display,
@@ -45,6 +46,7 @@ function exportCSV(orders: VendorOrder[], shopName: string) {
 }
 
 function Bars({ data }: { data: { date: string; released: number; blocked: number }[] }) {
+  const { t } = useTranslation();
   const max = Math.max(...data.map(d => d.released + d.blocked), 1);
   return (
     <>
@@ -55,7 +57,7 @@ function Bars({ data }: { data: { date: string; released: number; blocked: numbe
           const empty = rel === 0 && blk === 0;
           return (
             <div key={d.date} className="flex-1 flex flex-col justify-end gap-px"
-              title={`${d.date} · libéré ${nf(d.released)} · escrow ${nf(d.blocked)}`}>
+              title={t('sl4_payments.chart_bar_tooltip', { date: d.date, released: nf(d.released), blocked: nf(d.blocked) })}>
               {blk > 0 && <span style={{ display: 'block', height: Math.max(2, blk), background: T.amber, borderRadius: '3px 3px 0 0' }} />}
               {rel > 0 && <span style={{ display: 'block', height: Math.max(2, rel), background: T.green, borderRadius: blk > 0 ? 0 : '3px 3px 0 0' }} />}
               {empty && <span style={{ display: 'block', height: 2, background: T.border, borderRadius: 2 }} />}
@@ -66,13 +68,14 @@ function Bars({ data }: { data: { date: string; released: number; blocked: numbe
       <div className="flex justify-between mt-2.5" style={{ fontSize: 9.5, color: T.mutedL }}>
         <span>{data[0]?.date.slice(5)}</span>
         <span>{data[Math.floor(data.length / 2)]?.date.slice(5)}</span>
-        <span>Aujourd'hui</span>
+        <span>{t('sl4_payments.chart_today')}</span>
       </div>
     </>
   );
 }
 
 export default function SellerPaymentsPage() {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const [summary, setSummary] = useState<VendorPaymentSummary | null>(null);
   const [orders, setOrders] = useState<VendorOrder[]>([]);
@@ -95,11 +98,11 @@ export default function SellerPaymentsPage() {
       setWithdrawals(wds);
       setShopName(profile.business_name);
     } catch {
-      showToast('Erreur de chargement', 'error');
+      showToast(t('sl4_payments.toast_load_error'), 'error');
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, [showToast, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -138,10 +141,10 @@ export default function SellerPaymentsPage() {
     : summary.projection_monthly_xaf;
 
   const legs: Leg[] = [
-    { label: 'Payé, bloqué',        amount: blocked,    meta: `${summary.blocked_orders_count} commande${summary.blocked_orders_count > 1 ? 's' : ''} en escrow`, color: T.amber, pct: pct(blocked) },
-    { label: 'Libération en cours', amount: relPending, meta: 'Versement sous 24 h',                          color: T.blue,  pct: pct(relPending) },
-    { label: 'Disponible',          amount: released,   meta: 'Prêt à retirer',                               color: T.green, pct: pct(released) },
-    { label: 'Gelé (litige)',       amount: frozen,     meta: frozen > 0 ? 'En arbitrage BelivaY' : 'Aucun litige', color: T.red, pct: pct(frozen) },
+    { label: t('sl4_payments.leg_blocked_label'),        amount: blocked,    meta: t(summary.blocked_orders_count > 1 ? 'sl4_payments.leg_blocked_meta_plural' : 'sl4_payments.leg_blocked_meta', { count: summary.blocked_orders_count }), color: T.amber, pct: pct(blocked) },
+    { label: t('sl4_payments.leg_pending_label'), amount: relPending, meta: t('sl4_payments.leg_pending_meta'),                          color: T.blue,  pct: pct(relPending) },
+    { label: t('sl4_payments.leg_available_label'),          amount: released,   meta: t('sl4_payments.leg_available_meta'),                               color: T.green, pct: pct(released) },
+    { label: t('sl4_payments.leg_frozen_label'),       amount: frozen,     meta: frozen > 0 ? t('sl4_payments.leg_frozen_meta_active') : t('sl4_payments.leg_frozen_meta_none'), color: T.red, pct: pct(frozen) },
   ];
 
   return (
@@ -149,12 +152,12 @@ export default function SellerPaymentsPage() {
       <VendorStyles />
 
       <PageHead
-        kicker="Finances" title="Paiements & Escrow"
-        subtitle="Où en est chaque franc que vous avez gagné"
+        kicker={t('sl4_payments.kicker')} title={t('sl4_payments.title')}
+        subtitle={t('sl4_payments.subtitle')}
         actions={
           <>
-            <GhostBtn icon={<Download size={13} />} onClick={() => exportCSV(orders, shopName)}>Relevé CSV</GhostBtn>
-            <GhostBtn icon={<RefreshCw size={13} />} onClick={load}>Actualiser</GhostBtn>
+            <GhostBtn icon={<Download size={13} />} onClick={() => exportCSV(orders, shopName, t('sl4_payments.csv_header'))}>{t('sl4_payments.export_csv_button')}</GhostBtn>
+            <GhostBtn icon={<RefreshCw size={13} />} onClick={load}>{t('sl4_payments.refresh')}</GhostBtn>
           </>
         }
       />
@@ -166,14 +169,14 @@ export default function SellerPaymentsPage() {
             background: 'radial-gradient(circle,rgba(22,163,74,.42),transparent 70%)' }} />
         <div className="relative flex items-end justify-between gap-5 flex-wrap">
           <HeroAmount
-            kicker="Disponible au retrait" value={nf(released)}
+            kicker={t('sl4_payments.available_kicker')} value={nf(released)}
             note={
               <>
                 <span className="inline-flex items-center gap-1.5 align-middle">
                   <span className="rounded-full" style={{ width: 6, height: 6, background: '#34d399', boxShadow: '0 0 8px #34d399' }} />
                 </span>{' '}
-                {summary.released_orders_count} commande{summary.released_orders_count > 1 ? 's' : ''} libérée{summary.released_orders_count > 1 ? 's' : ''}
-                {lastSettled ? ` · dernier versement le ${fmtDate(lastSettled.created_at)}` : ''}
+                {t(summary.released_orders_count > 1 ? 'sl4_payments.released_orders_count_plural' : 'sl4_payments.released_orders_count', { count: summary.released_orders_count })}
+                {lastSettled ? t('sl4_payments.last_settlement_note', { date: fmtDate(lastSettled.created_at) }) : ''}
               </>
             }
           />
@@ -185,7 +188,7 @@ export default function SellerPaymentsPage() {
                   style={{ background: T.amberL, color: T.amber }}><TriangleAlert size={18} /></span>
                 <span>
                   <span className="block font-bold uppercase" style={{ fontSize: 9.5, letterSpacing: '.14em', color: 'rgba(255,255,255,.42)' }}>
-                    Retrait en attente
+                    {t('sl4_payments.pending_withdrawal_label')}
                   </span>
                   <span className="block font-bold mt-0.5" style={{ fontSize: 13, color: '#fff' }}>
                     {summary.pending_withdrawal.reference} · {nf(summary.pending_withdrawal.net_xaf)} FCFA
@@ -197,10 +200,10 @@ export default function SellerPaymentsPage() {
                 <OperatorLogo provider={(summary.default_withdrawal_operator ?? 'MTN_MOMO') as 'MTN_MOMO'} size={38} />
                 <span>
                   <span className="block font-bold uppercase" style={{ fontSize: 9.5, letterSpacing: '.14em', color: 'rgba(255,255,255,.42)' }}>
-                    Versement vers
+                    {t('sl4_payments.withdrawal_target_label')}
                   </span>
                   <span className="block font-bold mt-0.5" style={{ fontSize: 13, color: '#fff' }}>
-                    {summary.default_withdrawal_phone || 'Numéro à renseigner'}
+                    {summary.default_withdrawal_phone || t('sl4_payments.number_missing')}
                   </span>
                 </span>
               </>
@@ -210,7 +213,7 @@ export default function SellerPaymentsPage() {
               <button type="button"
                 className="flex items-center gap-2 rounded-xl font-bold text-white transition-all hover:-translate-y-px"
                 style={{ padding: '11px 18px', fontSize: 13, background: HERO.orange, boxShadow: '0 10px 24px -8px rgba(244,121,32,.85)' }}>
-                <Smartphone size={15} />Retirer
+                <Smartphone size={15} />{t('sl4_payments.withdraw_button')}
               </button>
             </Link>
           </div>
@@ -222,28 +225,28 @@ export default function SellerPaymentsPage() {
       {/* ═══ KPIs ═══ */}
       <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(196px,1fr))' }}>
         <StatCard icon={<CircleCheckBig size={17} />} value={String(summary.released_orders_count)}
-          label="Commandes libérées" sub="Fonds déjà versés"
+          label={t('sl4_payments.kpi_released_label')} sub={t('sl4_payments.kpi_released_sub')}
           color={T.green} bg={T.greenL} trend={`${nf(released)}`} />
         <StatCard icon={<Lock size={17} />} value={`${nf(blocked)}`}
-          label="En escrow" sub="Libération 24–48 h"
+          label={t('sl4_payments.kpi_escrow_label')} sub={t('sl4_payments.kpi_escrow_sub')}
           color={T.amber} bg={T.amberL} trend={String(summary.blocked_orders_count)} />
         <StatCard icon={<Scale size={17} />} value={fmtRate(summary.commission_rate)}
-          label="Commission BelivaY" sub="Figée sur chaque commande"
-          color={T.violet} bg={T.violetL} trend="Plan" />
+          label={t('sl4_payments.kpi_commission_label')} sub={t('sl4_payments.kpi_commission_sub')}
+          color={T.violet} bg={T.violetL} trend={t('sl4_payments.kpi_commission_trend')} />
         <StatCard icon={<Download size={17} />} value={fmtRate(summary.withdrawal_fee_percent)}
-          label="Frais de retrait" sub={`Min. ${nf(summary.minimum_withdrawal_xaf)} FCFA`}
-          color={T.blue} bg={T.blueL} trend="MoMo" />
+          label={t('sl4_payments.kpi_fee_label')} sub={t('sl4_payments.kpi_fee_sub', { amount: nf(summary.minimum_withdrawal_xaf) })}
+          color={T.blue} bg={T.blueL} trend={t('sl4_payments.kpi_fee_trend')} />
       </div>
 
       {/* ═══ GRAPHIQUE + PROJECTION ═══ */}
       <div className="flex gap-3.5 flex-wrap">
         <div className="flex-1" style={{ minWidth: 320 }}>
           <Panel
-            title="Activité financière" sub="30 derniers jours · libéré contre bloqué"
+            title={t('sl4_payments.chart_panel_title')} sub={t('sl4_payments.chart_panel_sub')}
             right={
               <div className="flex items-center gap-3.5" style={{ fontSize: 10.5, color: T.muted }}>
-                <span className="flex items-center gap-1.5"><span className="rounded-sm" style={{ width: 9, height: 9, background: T.green }} />Libéré</span>
-                <span className="flex items-center gap-1.5"><span className="rounded-sm" style={{ width: 9, height: 9, background: T.amber }} />Escrow</span>
+                <span className="flex items-center gap-1.5"><span className="rounded-sm" style={{ width: 9, height: 9, background: T.green }} />{t('sl4_payments.chart_legend_released')}</span>
+                <span className="flex items-center gap-1.5"><span className="rounded-sm" style={{ width: 9, height: 9, background: T.amber }} />{t('sl4_payments.chart_legend_escrow')}</span>
                 <BarChart2 size={14} style={{ color: T.orange }} />
               </div>
             }
@@ -254,25 +257,25 @@ export default function SellerPaymentsPage() {
 
         <div className="flex-1" style={{ minWidth: 280, maxWidth: 380 }}>
           <Panel
-            title="Projection du mois" sub="Moyenne des 3 derniers mois"
+            title={t('sl4_payments.projection_panel_title')} sub={t('sl4_payments.projection_panel_sub')}
             right={<TrendingUp size={15} style={{ color: T.violet }} />}
           >
             <div className="flex flex-col gap-2.5">
               <div className="flex items-center justify-between rounded-2xl"
                 style={{ padding: '13px 15px', background: T.cream, border: `1px solid ${T.border}` }}>
-                <span className="font-semibold" style={{ fontSize: 11.5, color: T.muted }}>CA brut estimé</span>
+                <span className="font-semibold" style={{ fontSize: 11.5, color: T.muted }}>{t('sl4_payments.projection_gross_label')}</span>
                 <span className="font-black" style={{ fontSize: 15, color: T.text }}>{nf(grossProjection)}</span>
               </div>
               <div className="flex items-center justify-between rounded-2xl"
                 style={{ padding: '13px 15px', background: T.redL, border: `1px solid ${T.redB}` }}>
-                <span className="font-semibold" style={{ fontSize: 11.5, color: T.red }}>Commission {fmtRate(summary.commission_rate)}</span>
+                <span className="font-semibold" style={{ fontSize: 11.5, color: T.red }}>{t('sl4_payments.projection_commission_label', { rate: fmtRate(summary.commission_rate) })}</span>
                 <span className="font-black" style={{ fontSize: 15, color: T.red }}>
                   − {nf(grossProjection - summary.projection_monthly_xaf)}
                 </span>
               </div>
               <div className="flex items-center justify-between rounded-2xl"
                 style={{ padding: 15, background: T.greenL, border: `1px solid ${T.greenB}` }}>
-                <span className="font-bold" style={{ fontSize: 11.5, color: T.green }}>Vous recevrez</span>
+                <span className="font-bold" style={{ fontSize: 11.5, color: T.green }}>{t('sl4_payments.projection_receive_label')}</span>
                 <span className="font-black" style={{ fontSize: 21, color: T.green, letterSpacing: '-.02em' }}>
                   {nf(summary.projection_monthly_xaf)}
                 </span>
@@ -280,7 +283,7 @@ export default function SellerPaymentsPage() {
             </div>
             <div className="mt-3.5">
               <Note icon={<Scale size={15} />}>
-                Le taux de commission est adossé à votre plan et figé sur chaque commande au moment du paiement.
+                {t('sl4_payments.projection_note')}
               </Note>
             </div>
           </Panel>
@@ -290,9 +293,9 @@ export default function SellerPaymentsPage() {
       {/* ═══ ACCÈS AUX TROIS VUES DÉTAILLÉES ═══ */}
       <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))' }}>
         {[
-          { to: '/seller/settlements',   ic: <CircleCheckBig size={17} />, t: 'Mes règlements',      d: 'Ce que BelivaY vous a versé',        c: T.green,  bg: T.greenL },
-          { to: '/seller/pending-funds', ic: <Lock size={17} />,           t: 'Mes fonds en attente', d: 'Quand chaque montant arrive',        c: T.amber,  bg: T.amberL },
-          { to: '/seller/adjustments',   ic: <Scale size={17} />,          t: 'Mes ajustements',      d: 'Commissions, frais, remboursements', c: T.violet, bg: T.violetL },
+          { to: '/seller/settlements',   ic: <CircleCheckBig size={17} />, t: t('sl4_payments.link_settlements_title'),      d: t('sl4_payments.link_settlements_desc'),        c: T.green,  bg: T.greenL },
+          { to: '/seller/pending-funds', ic: <Lock size={17} />,           t: t('sl4_payments.link_pending_title'), d: t('sl4_payments.link_pending_desc'),        c: T.amber,  bg: T.amberL },
+          { to: '/seller/adjustments',   ic: <Scale size={17} />,          t: t('sl4_payments.link_adjustments_title'),      d: t('sl4_payments.link_adjustments_desc'), c: T.violet, bg: T.violetL },
         ].map(x => (
           <Link key={x.to} to={x.to}>
             <div className="rounded-2xl p-4 flex items-center gap-3 transition-all hover:-translate-y-px" style={card}>
@@ -311,22 +314,22 @@ export default function SellerPaymentsPage() {
       {/* ═══ HISTORIQUE PAR COMMANDE ═══ */}
       <Panel
         pad={false}
-        title="Historique des paiements" sub="Une ligne par commande, avec la commission retenue"
+        title={t('sl4_payments.history_panel_title')} sub={t('sl4_payments.history_panel_sub')}
         right={
           <Tabs<Tab>
             value={tab} onChange={setTab}
             items={[
-              { key: 'all',      label: 'Tous',      n: orders.length },
-              { key: 'RELEASED', label: 'Libérés',   n: orders.filter(o => o.escrow_status === 'RELEASED').length },
-              { key: 'BLOCKED',  label: 'En escrow', n: orders.filter(o => o.escrow_status === 'BLOCKED').length },
-              { key: 'REFUNDED', label: 'Remboursés', n: orders.filter(o => o.escrow_status === 'REFUNDED' || o.escrow_status === 'PARTIAL_REFUNDED').length },
+              { key: 'all',      label: t('sl4_payments.tab_all'),      n: orders.length },
+              { key: 'RELEASED', label: t('sl4_payments.tab_released'),   n: orders.filter(o => o.escrow_status === 'RELEASED').length },
+              { key: 'BLOCKED',  label: t('sl4_payments.tab_escrow'), n: orders.filter(o => o.escrow_status === 'BLOCKED').length },
+              { key: 'REFUNDED', label: t('sl4_payments.tab_refunded'), n: orders.filter(o => o.escrow_status === 'REFUNDED' || o.escrow_status === 'PARTIAL_REFUNDED').length },
             ]}
           />
         }
       >
         {filtered.length === 0 ? (
           <p className="text-center" style={{ padding: '40px 0', fontSize: 13, color: T.muted }}>
-            Aucune transaction dans cette catégorie.
+            {t('sl4_payments.empty_category')}
           </p>
         ) : filtered.map(o => {
           const cfg = ESCROW[o.escrow_status as EscrowKey] ?? ESCROW.PENDING;
@@ -339,26 +342,26 @@ export default function SellerPaymentsPage() {
               </Link>
 
               <div className="text-right flex-shrink-0" style={{ minWidth: 100 }}>
-                <p className="font-bold uppercase" style={{ fontSize: 9.5, letterSpacing: '.1em', color: T.mutedL }}>Brut</p>
+                <p className="font-bold uppercase" style={{ fontSize: 9.5, letterSpacing: '.1em', color: T.mutedL }}>{t('sl4_payments.column_gross')}</p>
                 <p className="font-semibold" style={{ fontSize: 12.5, color: T.muted, marginTop: 2 }}>{nf(o.vendor_subtotal)}</p>
               </div>
               <div className="text-right flex-shrink-0" style={{ minWidth: 108 }}>
                 <p className="font-bold uppercase" style={{ fontSize: 9.5, letterSpacing: '.1em', color: 'rgba(220,38,38,.7)' }}>
-                  Commission {o.commission_rate.toFixed(1)} %
+                  {t('sl4_payments.column_commission', { rate: o.commission_rate.toFixed(1) })}
                 </p>
                 <p className="font-semibold" style={{ fontSize: 12.5, color: T.red, marginTop: 2 }}>− {nf(o.commission_amount)}</p>
               </div>
               <div className="text-right flex-shrink-0" style={{ minWidth: 112 }}>
-                <p className="font-bold uppercase" style={{ fontSize: 9.5, letterSpacing: '.1em', color: T.mutedL }}>Net vendeur</p>
+                <p className="font-bold uppercase" style={{ fontSize: 9.5, letterSpacing: '.1em', color: T.mutedL }}>{t('sl4_payments.column_net')}</p>
                 <p className="font-black" style={{ fontSize: 14.5, color: T.text, marginTop: 2 }}>{nf(o.vendor_net_amount)}</p>
               </div>
 
-              <Badge label={cfg.label} color={cfg.color} bg={cfg.bg} minWidth={104} />
+              <Badge label={t(cfg.labelKey)} color={cfg.color} bg={cfg.bg} minWidth={104} />
 
-              <button type="button" onClick={() => openInvoice([o], shopName)}
+              <button type="button" onClick={() => openInvoice([o], shopName, t)}
                 className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all"
                 style={{ background: T.cream, border: `1px solid ${T.border}`, color: T.muted }}
-                title="Facture">
+                title={t('sl4_payments.invoice_title')}>
                 <FileText size={14} />
               </button>
             </div>
@@ -367,8 +370,7 @@ export default function SellerPaymentsPage() {
       </Panel>
 
       <Note icon={<Wallet size={15} />} tone="green">
-        Le formulaire de retrait a déménagé dans <Link to="/seller/wallet" style={{ fontWeight: 700 }}>Compte BelivaY</Link>,
-        avec votre numéro de versement enregistré — plus de double saisie.
+        {t('sl4_payments.wallet_moved_note_before')} <Link to="/seller/wallet" style={{ fontWeight: 700 }}>{t('sl4_payments.wallet_moved_note_link')}</Link>{t('sl4_payments.wallet_moved_note_after')}
       </Note>
     </div>
   );

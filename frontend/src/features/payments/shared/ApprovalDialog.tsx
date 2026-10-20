@@ -18,6 +18,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import Money from './Money';
 import { FT } from './tokens';
@@ -70,6 +71,7 @@ function ApprovalDialogBody({
   warning, danger = false, running = false, error,
   onConfirm, onCancel,
 }: ApprovalDialogProps) {
+  const { t } = useTranslation();
   const [motif, setMotif] = useState('');
 
   const bloque = running || (reasonRequired && motif.trim().length === 0);
@@ -109,7 +111,7 @@ function ApprovalDialogBody({
             borderBottom: `0.5px solid ${FT.border}`,
           }}>
             <span style={{ fontSize: 12.5, color: 'var(--text-secondary, #7C6E5A)' }}>
-              Montant
+              {t('pm2_shared_approval_dialog.amount_label')}
             </span>
             <Money value={amountXaf} size={20} />
           </div>
@@ -136,7 +138,9 @@ function ApprovalDialogBody({
             fontSize: 12, margin: '16px 0 7px',
             color: 'var(--text-secondary, #7C6E5A)',
           }}>
-            {reasonRequired ? 'Motif' : 'Commentaire'}
+            {reasonRequired
+              ? t('pm2_shared_approval_dialog.reason_label')
+              : t('pm2_shared_approval_dialog.comment_label')}
             {reasonRequired && <span style={{ color: FT.redD }}> ·</span>}
           </p>
           <textarea
@@ -192,7 +196,7 @@ function ApprovalDialogBody({
             disabled={running}
             style={{ fontSize: 13, padding: '8px 16px' }}
           >
-            Annuler
+            {t('pm2_shared_approval_dialog.cancel')}
           </button>
           <button
             type="button"
@@ -205,7 +209,7 @@ function ApprovalDialogBody({
               opacity: bloque ? 0.55 : 1,
             }}
           >
-            {running ? 'En cours…' : confirmLabel}
+            {running ? t('pm2_shared_approval_dialog.in_progress') : confirmLabel}
           </button>
         </div>
       </div>

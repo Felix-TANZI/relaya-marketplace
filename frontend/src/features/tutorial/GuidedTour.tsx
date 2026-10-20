@@ -201,8 +201,8 @@ export default function GuidedTour() {
       {celebrating && (
         <div className="pointer-events-none fixed inset-0 z-[4] flex items-center justify-center bg-black/35">
           <div className="relative rounded-[28px] bg-white px-8 py-7 text-center shadow-2xl dark:bg-gray-900">
-            <div className="text-[11px] font-black uppercase tracking-[0.2em] text-primary">Let's start</div>
-            <div className="mt-2 text-2xl font-black text-gray-900 dark:text-white">Bienvenue sur BelivaY</div>
+            <div className="text-[11px] font-black uppercase tracking-[0.2em] text-primary">{t("misc1_tutorial.lets_start")}</div>
+            <div className="mt-2 text-2xl font-black text-gray-900 dark:text-white">{t("misc1_tutorial.welcome_title")}</div>
           </div>
           {Array.from({ length: 34 }).map((_, index) => (
             <span
@@ -238,12 +238,12 @@ export default function GuidedTour() {
                 <Compass size={13} />
                 {t("tour.step_of", { current: stepIndex + 1, total })}
               </div>
-              <h2 className="mt-3 text-xl font-bold text-gray-900 dark:text-white">{step.title}</h2>
-              {step.routeLabel && <p className="mt-1 text-xs font-medium text-gray-400">{step.routeLabel}</p>}
+              <h2 className="mt-3 text-xl font-bold text-gray-900 dark:text-white">{t(step.titleKey)}</h2>
+              {step.routeLabelKey && <p className="mt-1 text-xs font-medium text-gray-400">{t(step.routeLabelKey)}</p>}
             </div>
             {isLastStep ? (
               <button onClick={finishTour} className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-primary/20 hover:bg-primary-dark">
-                Continuer
+                {t("misc1_tutorial.continue")}
               </button>
             ) : (
               <button onClick={closeTour} className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800" aria-label={t("common.close")}>
@@ -253,12 +253,12 @@ export default function GuidedTour() {
           </div>
 
           {/* Content */}
-          <p className="text-sm leading-relaxed text-gray-500 dark:text-gray-400">{step.description}</p>
+          <p className="text-sm leading-relaxed text-gray-500 dark:text-gray-400">{t(step.descriptionKey)}</p>
 
-          {step.helper && (
+          {step.helperKey && (
             <div className="mt-3 flex items-start gap-2 rounded-xl bg-orange-50 px-3 py-2.5 text-xs text-primary dark:bg-primary/10">
               <Sparkles size={14} className="mt-0.5 shrink-0" />
-              <span>{step.helper}</span>
+              <span>{t(step.helperKey)}</span>
             </div>
           )}
 
@@ -284,7 +284,7 @@ export default function GuidedTour() {
                 onClick={() => isLastStep ? finishTour() : setStepIndex(s => s + 1)}
                 className="inline-flex items-center gap-1 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-primary-dark"
               >
-                {isLastStep ? (<><Check size={16} /> Continuer</>) : (<>{t("tour.next")} <ArrowRight size={16} /></>)}
+                {isLastStep ? (<><Check size={16} /> {t("misc1_tutorial.continue")}</>) : (<>{t("tour.next")} <ArrowRight size={16} /></>)}
               </button>
             </div>
           </div>

@@ -19,6 +19,7 @@
 // =============================================================================
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { CalendarCheck, Clock, Lock, TriangleAlert } from "lucide-react";
 
 import {
@@ -52,6 +53,7 @@ interface Props {
 }
 
 export default function NextSettlementCard({ refreshKey, onOpenProfile }: Props) {
+  const { t } = useTranslation();
   // Le resultat est memorise AVEC la cle qui l'a produit. `chargement` en est
   // deduit, au lieu d'etre pose par un setState synchrone dans l'effet — ce
   // qui declenchait un rendu en cascade a chaque montage et rafraichissement.
@@ -75,17 +77,17 @@ export default function NextSettlementCard({ refreshKey, onOpenProfile }: Props)
         if (!monte) return;
         setInstantane({
           cle, due: null,
-          erreur: exc instanceof Error ? exc.message : "Chargement impossible.",
+          erreur: exc instanceof Error ? exc.message : t('sl4_next_settlement_card.load_error'),
         });
       });
 
     return () => { monte = false; };
-  }, [cle]);
+  }, [cle, t]);
 
   if (chargement) {
     return (
       <div style={carte}>
-        <span style={{ fontSize: 13, color: T.faint }}>Chargement…</span>
+        <span style={{ fontSize: 13, color: T.faint }}>{t('sl4_next_settlement_card.loading')}</span>
       </div>
     );
   }
@@ -100,22 +102,22 @@ export default function NextSettlementCard({ refreshKey, onOpenProfile }: Props)
 
   const segments = [
     {
-      label: "Sous séquestre",
-      hint: "encore remboursable",
+      label: t('sl4_next_settlement_card.segment_escrow_label'),
+      hint: t('sl4_next_settlement_card.segment_escrow_hint'),
       amount: due.not_yet_due_xaf,
       color: T.held,
     },
     {
-      label: "En règlement",
-      hint: "lot en préparation",
+      label: t('sl4_next_settlement_card.segment_settling_label'),
+      hint: t('sl4_next_settlement_card.segment_settling_hint'),
       amount: due.in_settlement_xaf,
       color: "#F0997B",
     },
     {
-      label: "Acquis",
+      label: t('sl4_next_settlement_card.segment_acquired_label'),
       hint: due.outstanding_debt_xaf > 0
-        ? `dont ${nf(due.outstanding_debt_xaf)} retenus`
-        : "à verser au prochain cycle",
+        ? t('sl4_next_settlement_card.segment_acquired_hint_retained', { amount: nf(due.outstanding_debt_xaf) })
+        : t('sl4_next_settlement_card.segment_acquired_hint_next_cycle'),
       amount: due.released_not_settled_xaf + due.pending_bonus_xaf,
       color: T.greenL,
     },
@@ -131,7 +133,7 @@ export default function NextSettlementCard({ refreshKey, onOpenProfile }: Props)
         marginBottom: 22,
       }}>
         <div>
-          <p style={etiquette}>BelivaY vous doit</p>
+          <p style={etiquette}>{t('sl4_next_settlement_card.belivay_owes_you')}</p>
           <p style={{
             fontSize: 38, fontWeight: 700, color: T.text, margin: 0,
             lineHeight: 1, fontVariantNumeric: "tabular-nums",
@@ -139,7 +141,7 @@ export default function NextSettlementCard({ refreshKey, onOpenProfile }: Props)
             {nf(due.due_xaf)}
           </p>
           <p style={{ fontSize: 12.5, color: T.muted, margin: "7px 0 0" }}>
-            FCFA · net de toute retenue
+            {t('sl4_next_settlement_card.net_of_deductions')}
           </p>
         </div>
 
@@ -149,7 +151,7 @@ export default function NextSettlementCard({ refreshKey, onOpenProfile }: Props)
           // est incomplet est une promesse fausse — et c'est ce qui detruit
           // la confiance quand le vendredi arrive sans virement.
           <div style={{ textAlign: "right", maxWidth: 280 }}>
-            <p style={{ ...etiquette, color: T.amberD }}>Versement suspendu</p>
+            <p style={{ ...etiquette, color: T.amberD }}>{t('sl4_next_settlement_card.settlement_suspended')}</p>
             {due.blockers.map((b) => (
               <div key={b} style={{
                 display: "flex", alignItems: "flex-start", gap: 8,
@@ -160,7 +162,7 @@ export default function NextSettlementCard({ refreshKey, onOpenProfile }: Props)
                   fontSize: 13, color: T.text, margin: 0,
                   textAlign: "left", lineHeight: 1.5,
                 }}>
-                  {humanizeBlocker(b)}
+                  {humanizeBlocker(b, t)}
                 </p>
               </div>
             ))}
@@ -174,13 +176,13 @@ export default function NextSettlementCard({ refreshKey, onOpenProfile }: Props)
                   background: "#fff", color: T.text, cursor: "pointer",
                 }}
               >
-                Compléter mon dossier
+                {t('sl4_next_settlement_card.complete_my_file')}
               </button>
             )}
           </div>
         ) : due.next_settlement_at ? (
           <div style={{ textAlign: "right" }}>
-            <p style={etiquette}>Prochain versement</p>
+            <p style={etiquette}>{t('sl4_next_settlement_card.next_settlement')}</p>
             <div style={{
               display: "flex", alignItems: "center", gap: 8,
               justifyContent: "flex-end",
@@ -194,14 +196,14 @@ export default function NextSettlementCard({ refreshKey, onOpenProfile }: Props)
             <p style={{
               fontSize: 13, color: T.coral, margin: "5px 0 0", fontWeight: 600,
             }}>
-              {countdownLabel(due.next_settlement_at)}
+              {countdownLabel(due.next_settlement_at, t)}
             </p>
           </div>
         ) : (
           <div style={{ textAlign: "right", maxWidth: 240 }}>
-            <p style={etiquette}>Prochain versement</p>
+            <p style={etiquette}>{t('sl4_next_settlement_card.next_settlement')}</p>
             <p style={{ fontSize: 13, color: T.muted, margin: 0, lineHeight: 1.5 }}>
-              Dès que le montant minimum sera atteint.
+              {t('sl4_next_settlement_card.minimum_amount_pending')}
             </p>
           </div>
         )}
@@ -260,8 +262,7 @@ export default function NextSettlementCard({ refreshKey, onOpenProfile }: Props)
         }}>
           <Lock size={16} color={T.redD} style={{ flexShrink: 0, marginTop: 2 }} />
           <p style={{ fontSize: 12.5, color: T.muted, margin: 0, lineHeight: 1.55 }}>
-            <b style={{ color: T.redD }}>{nf(due.frozen_xaf)} FCFA</b> sont gelés
-            par un litige en cours. Ils seront libérés dès son arbitrage.
+            <b style={{ color: T.redD }}>{t('sl4_next_settlement_card.frozen_amount_strong', { amount: nf(due.frozen_xaf) })}</b>{t('sl4_next_settlement_card.frozen_amount_note')}
           </p>
         </div>
       )}
@@ -273,9 +274,7 @@ export default function NextSettlementCard({ refreshKey, onOpenProfile }: Props)
       }}>
         <Clock size={16} color={T.faint} style={{ flexShrink: 0, marginTop: 2 }} />
         <p style={{ fontSize: 12.5, color: T.muted, margin: 0, lineHeight: 1.55 }}>
-          Les fonds sous séquestre correspondent à des commandes en cours.
-          Ils deviennent disponibles après confirmation de réception par
-          l'acheteur.
+          {t('sl4_next_settlement_card.escrow_explanation')}
         </p>
       </div>
     </div>

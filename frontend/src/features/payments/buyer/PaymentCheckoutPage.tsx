@@ -21,6 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import { paymentsApi } from '../api/payments.api';
@@ -65,6 +66,7 @@ function numeroValide(numero: string): boolean {
 export default function PaymentCheckoutPage({
   ordersPath = '/orders',
 }: PaymentCheckoutPageProps) {
+  const { t } = useTranslation();
   const { reference = '' } = useParams<{ reference: string }>();
   const [params] = useSearchParams();
   const navigate = useNavigate();
@@ -100,7 +102,7 @@ export default function PaymentCheckoutPage({
       .catch((exc: unknown) => {
         if (!monte.current) return;
         setErreur(exc instanceof Error
-          ? exc.message : 'Ce paiement est introuvable.');
+          ? exc.message : t('cl1_payment_checkout.payment_not_found'));
       })
       .finally(() => { if (monte.current) setChargement(false); });
 
@@ -120,7 +122,7 @@ export default function PaymentCheckoutPage({
         setPhase('failed');
         // Le message du prestataire, TEL QUEL : « solde insuffisant » vaut
         // mieux que « une erreur est survenue ».
-        setErreur(issue.message || 'Le paiement n’a pas abouti.');
+        setErreur(issue.message || t('cl1_payment_checkout.payment_failed'));
       }
     } catch {
       // Un échec de sondage n'est pas un échec de paiement : le réseau peut
@@ -155,7 +157,7 @@ export default function PaymentCheckoutPage({
   const payer = async () => {
     const msisdn = normaliserNumero(numero);
     if (!numeroValide(msisdn)) {
-      setErreur('Numéro invalide. Format attendu : 237 6XX XX XX XX.');
+      setErreur(t('cl1_payment_checkout.invalid_number_format'));
       return;
     }
 
@@ -169,7 +171,7 @@ export default function PaymentCheckoutPage({
 
       if (ECHOUE.includes(issue.status)) {
         setPhase('failed');
-        setErreur(issue.message || 'Le paiement n’a pas abouti.');
+        setErreur(issue.message || t('cl1_payment_checkout.payment_failed'));
       } else if (ABOUTI.includes(issue.status)) {
         setPhase('done');
       } else {
@@ -179,7 +181,7 @@ export default function PaymentCheckoutPage({
     } catch (exc: unknown) {
       if (!monte.current) return;
       setErreur(exc instanceof Error
-        ? exc.message : 'La demande n’a pas pu être émise.');
+        ? exc.message : t('cl1_payment_checkout.request_could_not_be_sent'));
     } finally {
       if (monte.current) setEnvoi(false);
     }
@@ -190,7 +192,7 @@ export default function PaymentCheckoutPage({
   if (chargement) {
     return (
       <div style={{ padding: '3rem', textAlign: 'center' }}>
-        <span style={{ fontSize: 13, color: FT.faint }}>Chargement…</span>
+        <span style={{ fontSize: 13, color: FT.faint }}>{t('cl1_payment_checkout.loading')}</span>
       </div>
     );
   }
@@ -199,7 +201,7 @@ export default function PaymentCheckoutPage({
     return (
       <EmptyState
         icon="file-off"
-        title="Paiement introuvable"
+        title={t('cl1_payment_checkout.payment_not_found')}
         description={erreur ?? undefined}
       />
     );
@@ -221,14 +223,14 @@ export default function PaymentCheckoutPage({
             fontSize: 11, margin: '0 0 8px', letterSpacing: '0.08em',
             textTransform: 'uppercase', color: FT.faint,
           }}>
-            Montant à payer
+            {t('cl1_payment_checkout.amount_to_pay')}
           </p>
           <div style={{ marginBottom: 4 }}>
             <Money value={intention.amount_xaf} size={38} />
           </div>
           <p style={{ fontSize: 13, margin: '0 0 1.5rem', color: FT.muted }}>
             FCFA
-            {orderId && ` · commande #${orderId}`}
+            {orderId && ` · ${t('cl1_payment_checkout.order_hash', { orderId })}`}
           </p>
 
           {/* La promesse s'affiche AVANT le paiement : c'est le moment où
@@ -244,13 +246,12 @@ export default function PaymentCheckoutPage({
               style={{ fontSize: 17, color: FT.greenD, flexShrink: 0, marginTop: 1 }}
             />
             <p style={{ fontSize: 12.5, margin: 0, lineHeight: 1.55, color: FT.muted }}>
-              BelivaY conserve votre argent jusqu’à confirmation de réception.
-              Le vendeur n’est payé qu’après.
+              {t('cl1_payment_checkout.escrow_notice')}
             </p>
           </div>
 
           <p style={{ fontSize: 12, margin: '0 0 10px', color: FT.muted }}>
-            Votre opérateur
+            {t('cl1_payment_checkout.your_operator')}
           </p>
           <div style={{ display: 'flex', gap: 10, marginBottom: '1.25rem' }}>
             {OPERATEURS.map((choix) => (
@@ -270,7 +271,7 @@ export default function PaymentCheckoutPage({
           </div>
 
           <p style={{ fontSize: 12, margin: '0 0 7px', color: FT.muted }}>
-            Numéro à débiter
+            {t('cl1_payment_checkout.number_to_debit')}
           </p>
           <input
             type="tel"
@@ -298,8 +299,8 @@ export default function PaymentCheckoutPage({
             }}
           >
             {envoi
-              ? 'Envoi de la demande…'
-              : `Payer ${intention.amount_xaf.toLocaleString('fr-FR')} FCFA`}
+              ? t('cl1_payment_checkout.sending_request')
+              : t('cl1_payment_checkout.pay_amount', { amount: intention.amount_xaf.toLocaleString('fr-FR') })}
           </button>
         </div>
       )}
@@ -320,14 +321,13 @@ export default function PaymentCheckoutPage({
             fontSize: 17, margin: '0 0 8px',
             color: 'var(--text-primary, #1A1209)',
           }}>
-            Composez votre code secret
+            {t('cl1_payment_checkout.enter_secret_code')}
           </p>
           <p style={{
             fontSize: 13, margin: '0 auto 1.5rem', maxWidth: 340,
             lineHeight: 1.6, color: FT.muted,
           }}>
-            Une invite vient d’être envoyée sur votre téléphone. Validez-la
-            pour finaliser le paiement.
+            {t('cl1_payment_checkout.prompt_sent_notice')}
           </p>
 
           <div style={{
@@ -341,9 +341,11 @@ export default function PaymentCheckoutPage({
             }} />
             <span style={{ fontSize: 12, color: FT.muted }}>
               {restant > 0
-                ? `Vérification automatique · ${Math.floor(restant / 60)} min ${
-                  String(restant % 60).padStart(2, '0')} restantes`
-                : 'Dernière vérification en cours…'}
+                ? t('cl1_payment_checkout.auto_check_countdown', {
+                  minutes: Math.floor(restant / 60),
+                  seconds: String(restant % 60).padStart(2, '0'),
+                })
+                : t('cl1_payment_checkout.final_check_in_progress')}
             </span>
           </div>
 
@@ -356,7 +358,7 @@ export default function PaymentCheckoutPage({
               onClick={() => navigate(orderId ? `${ordersPath}/${orderId}` : ordersPath)}
               style={{ fontSize: 12.5, padding: '8px 16px' }}
             >
-              Payer plus tard
+              {t('cl1_payment_checkout.pay_later')}
             </button>
             <button
               type="button"
@@ -366,7 +368,7 @@ export default function PaymentCheckoutPage({
                 borderColor: FT.coral, color: '#993C1D',
               }}
             >
-              J’ai composé mon code
+              {t('cl1_payment_checkout.i_entered_my_code')}
             </button>
           </div>
         </div>
@@ -390,13 +392,12 @@ export default function PaymentCheckoutPage({
             fontSize: 17, margin: '0 0 8px',
             color: 'var(--text-primary, #1A1209)',
           }}>
-            Paiement reçu
+            {t('cl1_payment_checkout.payment_received')}
           </p>
           <p style={{
             fontSize: 13, margin: '0 0 1.25rem', lineHeight: 1.6, color: FT.muted,
           }}>
-            {intention.amount_xaf.toLocaleString('fr-FR')} FCFA sont conservés
-            par BelivaY.
+            {t('cl1_payment_checkout.amount_held_by_belivay', { amount: intention.amount_xaf.toLocaleString('fr-FR') })}
           </p>
 
           <div style={{
@@ -410,8 +411,7 @@ export default function PaymentCheckoutPage({
                 style={{ fontSize: 16, color: FT.faint, flexShrink: 0, marginTop: 1 }}
               />
               <p style={{ fontSize: 12.5, margin: 0, lineHeight: 1.55, color: FT.muted }}>
-                Le vendeur sera payé après votre confirmation de réception. En
-                cas de problème, vous pouvez ouvrir un litige.
+                {t('cl1_payment_checkout.seller_paid_after_confirmation')}
               </p>
             </div>
           </div>
@@ -424,7 +424,7 @@ export default function PaymentCheckoutPage({
               borderColor: FT.coral, color: '#993C1D',
             }}
           >
-            Suivre ma commande
+            {t('cl1_payment_checkout.track_my_order')}
           </button>
         </div>
       )}
@@ -444,12 +444,12 @@ export default function PaymentCheckoutPage({
                 fontSize: 15, margin: '0 0 5px',
                 color: 'var(--text-primary, #1A1209)',
               }}>
-                Le paiement n’a pas abouti
+                {t('cl1_payment_checkout.payment_failed')}
               </p>
               {/* Le message de l'opérateur, sans reformulation. */}
               <p style={{ fontSize: 13, margin: 0, lineHeight: 1.6, color: FT.muted }}>
                 {erreur || intention.failure_reason
-                  || 'Aucun détail n’a été fourni par l’opérateur.'}
+                  || t('cl1_payment_checkout.no_operator_detail')}
               </p>
             </div>
           </div>
@@ -460,12 +460,11 @@ export default function PaymentCheckoutPage({
           }}>
             <p style={{ fontSize: 12, margin: 0, lineHeight: 1.55, color: FT.muted }}>
               {/* C'est ce qui justifie l'écran dédié. */}
-              Votre commande{orderId && (
+              {t('cl1_payment_checkout.order_kept_prefix')}{orderId && (
                 <span style={{ color: 'var(--text-primary, #1A1209)' }}>
                   {' '}#{orderId}
                 </span>
-              )} est conservée. Vous pouvez réessayer avec un autre numéro sans
-              refaire votre panier.
+              )} {t('cl1_payment_checkout.order_kept_suffix')}
             </p>
           </div>
 
@@ -475,7 +474,7 @@ export default function PaymentCheckoutPage({
               onClick={() => navigate(orderId ? `${ordersPath}/${orderId}` : ordersPath)}
               style={{ flex: 1, padding: 12, fontSize: 13 }}
             >
-              Voir ma commande
+              {t('cl1_payment_checkout.view_my_order')}
             </button>
             {intention.can_retry !== false && (
               <button
@@ -486,7 +485,7 @@ export default function PaymentCheckoutPage({
                   borderColor: FT.coral, color: '#993C1D',
                 }}
               >
-                Réessayer
+                {t('cl1_payment_checkout.retry')}
               </button>
             )}
           </div>

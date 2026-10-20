@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Plus, Search, Download, Upload, RefreshCw, AlertTriangle,
   Package, CheckCircle, Copy, Pencil, FileText, Trash2,
@@ -62,6 +63,8 @@ function usePromoTimer(end: string | null | undefined) {
 function PromoTimer({ end }: { end: string }) {
   const r = usePromoTimer(end);
   if (!r) return null;
+  // Note: "j/h/m" (jours/heures/minutes) countdown units left as compact abbreviations —
+  // not extracted, same treatment as similarly-styled timers elsewhere in the app.
   return (
     <span className="inline-flex items-center gap-1 text-[10.5px] font-bold px-2 py-0.5 rounded-full"
       style={{ background: T.amberL, color: T.amber }}>
@@ -71,28 +74,30 @@ function PromoTimer({ end }: { end: string }) {
 }
 
 function StockBadge({ qty, threshold }: { qty: number; threshold: number }) {
+  const { t } = useTranslation();
   if (qty === 0) return (
     <span className="inline-flex items-center gap-1 text-[10.5px] font-bold px-2 py-0.5 rounded-full"
       style={{ background: T.redL, color: T.red }}>
-      <X size={9}/> Rupture
+      <X size={9}/> {t('sl3_products.badge_out_of_stock')}
     </span>
   );
   if (qty <= threshold) return (
     <span className="inline-flex items-center gap-1 text-[10.5px] font-bold px-2 py-0.5 rounded-full"
       style={{ background: T.amberL, color: T.amber }}>
-      <AlertTriangle size={9}/> Faible ({qty})
+      <AlertTriangle size={9}/> {t('sl3_products.badge_low_stock', { qty })}
     </span>
   );
   return (
     <span className="inline-flex items-center gap-1 text-[10.5px] font-bold px-2 py-0.5 rounded-full"
       style={{ background: T.greenL, color: T.green }}>
-      <CheckCircle size={9}/> {qty} en stock
+      <CheckCircle size={9}/> {t('sl3_products.badge_in_stock', { qty })}
     </span>
   );
 }
 
 // Input stock inline
 function StockInput({ product, onUpdate }: { product: ProductListItem; onUpdate: (id: number, qty: number) => void }) {
+  const { t } = useTranslation();
   const [val, setVal]    = useState(String(product.stock_quantity));
   const [saving, setSav] = useState(false);
   const commit = async () => {
@@ -102,12 +107,12 @@ function StockInput({ product, onUpdate }: { product: ProductListItem; onUpdate:
     catch { setVal(String(product.stock_quantity)); }
     finally { setSav(false); }
   };
-  const t = product.stock_threshold ?? 5;
+  const threshold = product.stock_threshold ?? 5;
   const n = parseInt(val, 10) || 0;
-  const c = n === 0 ? T.red : n <= t ? T.amber : T.green;
+  const c = n === 0 ? T.red : n <= threshold ? T.amber : T.green;
   return (
     <div className="flex items-center gap-1.5">
-      <label className="text-[10.5px] font-semibold" style={{ color: T.muted }}>Stock</label>
+      <label className="text-[10.5px] font-semibold" style={{ color: T.muted }}>{t('sl3_products.stock_label')}</label>
       <input type="number" min={0} value={val}
         onChange={e => setVal(e.target.value)}
         onBlur={commit} onKeyDown={e => e.key==='Enter' && commit()}
@@ -121,6 +126,7 @@ function StockInput({ product, onUpdate }: { product: ProductListItem; onUpdate:
 // ─── PAGE PRINCIPALE ──────────────────────────────────────────────────────────
 
 export default function SellerProductsPage() {
+  const { t } = useTranslation();
   const { showToast } = useToast();
 
   const [products,    setProducts]    = useState<ProductListItem[]>([]);
@@ -154,9 +160,9 @@ export default function SellerProductsPage() {
       ]);
       setProducts(prods);
       setAllCats(catsResp.results || []);
-    } catch { showToast('Erreur de chargement','error'); }
+    } catch { showToast(t('sl3_products.toast_load_error'),'error'); }
     finally { setLoading(false); }
-  }, [showToast]);
+  }, [showToast, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -225,14 +231,14 @@ export default function SellerProductsPage() {
   const handleStockUpdate = (id: number, qty: number) => setProducts(prev => prev.map(p => p.id === id ? { ...p, stock_quantity: qty } : p));
 
   const handleDuplicate = async (id: number) => {
-    try { setDuplicating(id); await vendorsApi.duplicateProduct(id); showToast('Produit dupliqué — inactif par défaut','success'); await load(); }
-    catch { showToast('Erreur lors de la duplication','error'); } finally { setDuplicating(null); }
+    try { setDuplicating(id); await vendorsApi.duplicateProduct(id); showToast(t('sl3_products.toast_duplicated'),'success'); await load(); }
+    catch { showToast(t('sl3_products.toast_duplicate_error'),'error'); } finally { setDuplicating(null); }
   };
 
   const handleDelete = async (id: number, title: string) => {
-    if (!window.confirm(`Supprimer "${title}" définitivement ?`)) return;
-    try { setDeleting(id); await vendorsApi.deleteProduct(id); showToast('Produit supprimé','success'); setProducts(prev => prev.filter(p => p.id !== id)); }
-    catch { showToast('Erreur lors de la suppression','error'); } finally { setDeleting(null); }
+    if (!window.confirm(t('sl3_products.confirm_delete_one', { title }))) return;
+    try { setDeleting(id); await vendorsApi.deleteProduct(id); showToast(t('sl3_products.toast_deleted'),'success'); setProducts(prev => prev.filter(p => p.id !== id)); }
+    catch { showToast(t('sl3_products.toast_delete_error'),'error'); } finally { setDeleting(null); }
   };
 
   const handleBulkPause = async () => {
@@ -242,19 +248,19 @@ export default function SellerProductsPage() {
       try { await vendorsApi.updateProduct(id, { is_active: false }); }
       catch { failures += 1; }
     }
-    if (failures > 0) showToast(`${failures} produit(s) non mis en pause`,'error');
-    showToast(`${selected.size} produit(s) mis en pause`,'success'); clearSel(); await load();
+    if (failures > 0) showToast(t('sl3_products.toast_bulk_pause_fail', { count: failures }),'error');
+    showToast(t('sl3_products.toast_bulk_pause_success', { count: selected.size }),'success'); clearSel(); await load();
   };
 
   const handleBulkDelete = async () => {
-    if (!selected.size || !window.confirm(`Supprimer ${selected.size} produit(s) ?`)) return;
+    if (!selected.size || !window.confirm(t('sl3_products.confirm_delete_bulk', { count: selected.size }))) return;
     let failures = 0;
     for (const id of selected) {
       try { await vendorsApi.deleteProduct(id); }
       catch { failures += 1; }
     }
-    if (failures > 0) showToast(`${failures} produit(s) non supprime(s)`,'error');
-    showToast(`${selected.size} produit(s) supprimé(s)`,'success'); clearSel(); await load();
+    if (failures > 0) showToast(t('sl3_products.toast_bulk_delete_fail', { count: failures }),'error');
+    showToast(t('sl3_products.toast_bulk_delete_success', { count: selected.size }),'success'); clearSel(); await load();
   };
 
   const handleExportCSV = async () => {
@@ -263,8 +269,8 @@ export default function SellerProductsPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url;
       a.download = `belivay_produits_${new Date().toISOString().slice(0,10)}.csv`; a.click();
-      URL.revokeObjectURL(url); showToast('Export CSV téléchargé','success');
-    } catch { showToast('Erreur export CSV','error'); }
+      URL.revokeObjectURL(url); showToast(t('sl3_products.toast_export_success'),'success');
+    } catch { showToast(t('sl3_products.toast_export_error'),'error'); }
   };
 
   const handleImportCSV = async (file: File) => {
@@ -272,7 +278,7 @@ export default function SellerProductsPage() {
       setImporting(true);
       const result = await vendorsApi.importProductsCSV(file);
       showToast(result.message, result.created > 0 ? 'success' : 'error'); await load();
-    } catch { showToast("Erreur lors de l'import",'error'); } finally { setImporting(false); }
+    } catch { showToast(t("sl3_products.toast_import_error"),'error'); } finally { setImporting(false); }
   };
 
   if (loading) return (
@@ -289,10 +295,10 @@ export default function SellerProductsPage() {
         <div>
           <h1 className="flex items-center gap-2 font-black text-[22px]"
             style={{ color: T.text }}>
-            <Package size={20} style={{ color: T.orange }}/> Mes Produits
+            <Package size={20} style={{ color: T.orange }}/> {t('sl3_products.title')}
           </h1>
           <p className="text-[13px] mt-0.5" style={{ color: T.muted }}>
-            {total} produit{total > 1 ? 's' : ''} · {ruptures} en rupture
+            {t(total > 1 ? 'sl3_products.count_summary_plural' : 'sl3_products.count_summary', { count: total, ruptures })}
           </p>
         </div>
         <div className="flex gap-2 flex-wrap items-center">
@@ -301,17 +307,17 @@ export default function SellerProductsPage() {
           <button type="button" onClick={() => fileRef.current?.click()} disabled={importing}
             className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12.5px] font-semibold transition-all hover:opacity-80"
             style={{ background: T.cream, border: `1px solid ${T.border}`, color: T.muted }}>
-            {importing ? <RefreshCw size={13} className="animate-spin"/> : <Upload size={13}/>} Importer
+            {importing ? <RefreshCw size={13} className="animate-spin"/> : <Upload size={13}/>} {t('sl3_products.import')}
           </button>
           <button type="button" onClick={handleExportCSV}
             className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12.5px] font-semibold transition-all hover:opacity-80"
             style={{ background: T.cream, border: `1px solid ${T.border}`, color: T.muted }}>
-            <Download size={13}/> Exporter
+            <Download size={13}/> {t('sl3_products.export')}
           </button>
           <Link to="/seller/products/new"
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-bold text-white transition-all hover:opacity-90"
             style={{ background: T.orange, boxShadow: '0 4px 12px rgba(244,121,32,0.35)' }}>
-            <Plus size={14}/> Nouveau produit
+            <Plus size={14}/> {t('sl3_products.new_product')}
           </Link>
         </div>
       </div>
@@ -319,10 +325,10 @@ export default function SellerProductsPage() {
       {/* ═══ KPIs ═══ */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { ico: <Layers size={16}/>,       color: T.orange, bg: T.orangeL,   val: String(total),              label: 'Total produits',       sub: `${actifs} actifs` },
-          { ico: <CheckCircle size={16}/>,   color: T.green,  bg: T.greenL,    val: String(actifs),             label: 'Actifs',                sub: `${total-actifs} inactifs` },
-          { ico: <TrendingDown size={16}/>,  color: ruptures>0?T.red:T.muted,  bg: ruptures>0?T.redL:T.creamAlt, val: String(ruptures), label: 'En rupture',   sub: 'Stock = 0' },
-          { ico: <AlertTriangle size={16}/>, color: T.amber,  bg: T.amberL,    val: String(stockFaible.length), label: 'Stock faible',          sub: 'Sous le seuil' },
+          { ico: <Layers size={16}/>,       color: T.orange, bg: T.orangeL,   val: String(total),              label: t('sl3_products.kpi_total_label'),  sub: t('sl3_products.kpi_total_sub', { count: actifs }) },
+          { ico: <CheckCircle size={16}/>,   color: T.green,  bg: T.greenL,    val: String(actifs),             label: t('sl3_products.kpi_active_label'), sub: t('sl3_products.kpi_active_sub', { count: total-actifs }) },
+          { ico: <TrendingDown size={16}/>,  color: ruptures>0?T.red:T.muted,  bg: ruptures>0?T.redL:T.creamAlt, val: String(ruptures), label: t('sl3_products.kpi_out_label'), sub: t('sl3_products.kpi_out_sub') },
+          { ico: <AlertTriangle size={16}/>, color: T.amber,  bg: T.amberL,    val: String(stockFaible.length), label: t('sl3_products.kpi_low_label'),    sub: t('sl3_products.kpi_low_sub') },
         ].map((k,i) => (
           <div key={i} className="rounded-2xl p-4 space-y-2"
             style={{ background: T.white, border: `1px solid ${T.border}`, boxShadow: '0 1px 6px rgba(28,18,9,0.06)' }}>
@@ -342,7 +348,7 @@ export default function SellerProductsPage() {
       {stockFaible.length > 0 && (
         <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(135deg,#FFFBEB,#FFF8E7)', border: `1px solid rgba(217,119,6,0.25)` }}>
           <p className="flex items-center gap-2 font-bold text-[13px] mb-3" style={{ color: T.amber }}>
-            <AlertTriangle size={14}/> {stockFaible.length} produit{stockFaible.length>1?'s':''} sous le seuil d'alerte
+            <AlertTriangle size={14}/> {t(stockFaible.length > 1 ? 'sl3_products.low_stock_alert_plural' : 'sl3_products.low_stock_alert', { count: stockFaible.length })}
           </p>
           <div className="flex flex-wrap gap-2">
             {stockFaible.slice(0, 8).map(p => (
@@ -352,7 +358,7 @@ export default function SellerProductsPage() {
                 {p.title.slice(0,22)}{p.title.length>22?'…':''} · <strong>{p.stock_quantity}</strong>
               </Link>
             ))}
-            {stockFaible.length > 8 && <span className="text-[11px] self-center" style={{ color: T.amber }}>+{stockFaible.length-8} autres</span>}
+            {stockFaible.length > 8 && <span className="text-[11px] self-center" style={{ color: T.amber }}>{t('sl3_products.low_stock_more', { count: stockFaible.length-8 })}</span>}
           </div>
         </div>
       )}
@@ -360,13 +366,13 @@ export default function SellerProductsPage() {
       {/* ═══ FILTRES ═══ */}
       <div className="rounded-2xl p-4 space-y-3" style={{ background: T.white, border: `1px solid ${T.border}` }}>
         <p className="flex items-center gap-1.5 text-[12px] font-bold" style={{ color: T.muted }}>
-          <Filter size={12}/> Filtres & Tri
+          <Filter size={12}/> {t('sl3_products.filters_title')}
         </p>
         <div className="flex flex-wrap gap-2">
           {/* Recherche */}
           <div className="relative flex-1 min-w-[160px] max-w-[240px]">
             <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: T.mutedL }}/>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher…"
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('sl3_products.search_placeholder')}
               className="w-full pl-8 pr-3 py-2 rounded-xl text-[12.5px] outline-none"
               style={{ background: T.cream, border: `1px solid ${T.border}`, color: T.text }}/>
           </div>
@@ -375,7 +381,7 @@ export default function SellerProductsPage() {
           <select value={catId} onChange={e => setCatId(e.target.value)}
             className="rounded-xl px-3 py-2 text-[12.5px] outline-none"
             style={{ background: T.cream, border: `1px solid ${catId ? T.orange : T.border}`, color: catId ? T.text : T.muted }}>
-            <option value="">Toutes catégories</option>
+            <option value="">{t('sl3_products.all_categories')}</option>
             {parentCats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
 
@@ -384,7 +390,7 @@ export default function SellerProductsPage() {
             <select value={subCatId} onChange={e => setSubCatId(e.target.value)}
               className="rounded-xl px-3 py-2 text-[12.5px] outline-none"
               style={{ background: subCatId ? T.orangeL : T.cream, border: `1px solid ${subCatId ? T.orange : T.border}`, color: subCatId ? T.orange : T.muted }}>
-              <option value="">Toutes sous-catégories</option>
+              <option value="">{t('sl3_products.all_subcategories')}</option>
               {subCats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           )}
@@ -393,21 +399,21 @@ export default function SellerProductsPage() {
           <select value={stockFilter} onChange={e => setStockFilter(e.target.value as StockFilter)}
             className="rounded-xl px-3 py-2 text-[12.5px] outline-none"
             style={{ background: T.cream, border: `1px solid ${T.border}`, color: stockFilter ? T.text : T.muted }}>
-            <option value="">Tous stocks</option>
-            <option value="ok">En stock</option>
-            <option value="low">Faible</option>
-            <option value="out">Rupture</option>
+            <option value="">{t('sl3_products.all_stocks')}</option>
+            <option value="ok">{t('sl3_products.stock_ok')}</option>
+            <option value="low">{t('sl3_products.stock_low')}</option>
+            <option value="out">{t('sl3_products.stock_out')}</option>
           </select>
 
           {/* Tri */}
           <select value={sortKey} onChange={e => setSortKey(e.target.value as SortKey)}
             className="rounded-xl px-3 py-2 text-[12.5px] outline-none"
             style={{ background: T.cream, border: `1px solid ${T.border}`, color: T.muted }}>
-            <option value="name">Nom A→Z</option>
-            <option value="price_desc">Prix ↓</option>
-            <option value="price_asc">Prix ↑</option>
-            <option value="stock">Stock ↑</option>
-            <option value="created">Plus récents</option>
+            <option value="name">{t('sl3_products.sort_name')}</option>
+            <option value="price_desc">{t('sl3_products.sort_price_desc')}</option>
+            <option value="price_asc">{t('sl3_products.sort_price_asc')}</option>
+            <option value="stock">{t('sl3_products.sort_stock')}</option>
+            <option value="created">{t('sl3_products.sort_created')}</option>
           </select>
 
           <button type="button" onClick={load}
@@ -426,7 +432,7 @@ export default function SellerProductsPage() {
               <ChevronRight size={11} className="inline mx-1"/>
               {activeSubCat.name}
               <span className="ml-1.5 text-[11px] font-normal" style={{ color: T.muted }}>
-                ({filtered.length} produit{filtered.length>1?'s':''})
+                {t(filtered.length > 1 ? 'sl3_products.breadcrumb_count_plural' : 'sl3_products.breadcrumb_count', { count: filtered.length })}
               </span>
             </p>
             <button type="button" onClick={() => { setSubCatId(''); setCatId(''); }}
@@ -442,22 +448,22 @@ export default function SellerProductsPage() {
         <div className="rounded-2xl px-5 py-3 flex items-center gap-3 flex-wrap"
           style={{ background: T.sidebar }}>
           <p className="text-[12.5px] font-bold text-white">
-            {selected.size} produit{selected.size>1?'s':''} sélectionné{selected.size>1?'s':''}
+            {t(selected.size > 1 ? 'sl3_products.bulk_selected_plural' : 'sl3_products.bulk_selected', { count: selected.size })}
           </p>
           <div className="flex gap-2 ml-auto flex-wrap">
             <button type="button" onClick={handleBulkPause}
               className="px-3 py-1.5 rounded-xl text-[12px] font-semibold"
               style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.8)' }}>
-              Mettre en pause
+              {t('sl3_products.bulk_pause')}
             </button>
             <button type="button" onClick={handleBulkDelete}
               className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-[12px] font-semibold"
               style={{ background: T.redL, color: T.red }}>
-              <Trash2 size={11}/> Supprimer
+              <Trash2 size={11}/> {t('sl3_products.bulk_delete')}
             </button>
             <button type="button" onClick={clearSel} className="px-3 py-1.5 rounded-xl text-[12px]"
               style={{ color: 'rgba(255,255,255,0.5)' }}>
-              Annuler
+              {t('sl3_products.bulk_cancel')}
             </button>
           </div>
         </div>
@@ -468,16 +474,16 @@ export default function SellerProductsPage() {
         <div className="rounded-2xl py-16 text-center" style={{ background: T.white, border: `1px solid ${T.border}` }}>
           <Package size={44} className="mx-auto mb-4" style={{ color: T.mutedL }}/>
           <p className="font-bold text-[16px] mb-1" style={{ color: T.text }}>
-            {products.length === 0 ? 'Aucun produit' : 'Aucun résultat'}
+            {products.length === 0 ? t('sl3_products.empty_none_title') : t('sl3_products.empty_filtered_title')}
           </p>
           <p className="text-[13px] mb-5" style={{ color: T.muted }}>
-            {products.length === 0 ? 'Ajoutez votre premier produit pour commencer à vendre.' : 'Modifiez les filtres.'}
+            {products.length === 0 ? t('sl3_products.empty_none_desc') : t('sl3_products.empty_filtered_desc')}
           </p>
           {products.length === 0 && (
             <Link to="/seller/products/new"
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-white text-[13px]"
               style={{ background: T.orange }}>
-              <Plus size={14}/> Ajouter un produit
+              <Plus size={14}/> {t('sl3_products.empty_add_product')}
             </Link>
           )}
         </div>
@@ -488,8 +494,8 @@ export default function SellerProductsPage() {
             <input type="checkbox" checked={allSel} onChange={allSel ? clearSel : selectAll}
               className="w-4 h-4 rounded" style={{ accentColor: T.orange }}/>
             <p className="text-[12px] font-semibold flex-1" style={{ color: T.muted }}>
-              {filtered.length} produit{filtered.length>1?'s':''}
-              {search || catId || subCatId || stockFilter ? ` · filtrés sur ${total}` : ''}
+              {t(filtered.length > 1 ? 'sl3_products.list_count_plural' : 'sl3_products.list_count', { count: filtered.length })}
+              {search || catId || subCatId || stockFilter ? t('sl3_products.list_filtered_of', { total }) : ''}
             </p>
           </div>
 
@@ -535,8 +541,8 @@ export default function SellerProductsPage() {
                       {p.title}
                     </p>
                     {p.is_active
-                      ? <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full" style={{ background: T.greenL, color: T.green }}>Actif</span>
-                      : <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full" style={{ background: T.amberL, color: T.amber }}>Modération</span>
+                      ? <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full" style={{ background: T.greenL, color: T.green }}>{t('sl3_products.status_active')}</span>
+                      : <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full" style={{ background: T.amberL, color: T.amber }}>{t('sl3_products.status_moderation')}</span>
                     }
                   </div>
 
@@ -579,22 +585,22 @@ export default function SellerProductsPage() {
                   </div>
 
                   <div className="flex gap-1.5">
-                    <button type="button" onClick={() => vendorsApi.openProductSheet(p.id)} title="Fiche produit"
+                    <button type="button" onClick={() => vendorsApi.openProductSheet(p.id)} title={t('sl3_products.action_sheet')}
                       className="w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-105"
                       style={{ background: T.creamAlt, border: `1px solid ${T.border}` }}>
                       <FileText size={13} style={{ color: T.muted }}/>
                     </button>
-                    <button type="button" onClick={() => handleDuplicate(p.id)} title="Dupliquer" disabled={duplicating===p.id}
+                    <button type="button" onClick={() => handleDuplicate(p.id)} title={t('sl3_products.action_duplicate')} disabled={duplicating===p.id}
                       className="w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-105"
                       style={{ background: T.creamAlt, border: `1px solid ${T.border}` }}>
                       {duplicating===p.id ? <RefreshCw size={12} className="animate-spin" style={{color:T.muted}}/> : <Copy size={13} style={{color:T.muted}}/>}
                     </button>
-                    <Link to={`/seller/products/${p.id}/edit`} title="Modifier"
+                    <Link to={`/seller/products/${p.id}/edit`} title={t('sl3_products.action_edit')}
                       className="w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-105"
                       style={{ background: T.blueL, border: `1px solid rgba(37,99,235,0.2)` }}>
                       <Pencil size={13} style={{ color: T.blue }}/>
                     </Link>
-                    <button type="button" onClick={() => handleDelete(p.id, p.title)} disabled={deleting===p.id} title="Supprimer"
+                    <button type="button" onClick={() => handleDelete(p.id, p.title)} disabled={deleting===p.id} title={t('sl3_products.action_delete')}
                       className="w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-105"
                       style={{ background: T.redL, border: `1px solid rgba(220,38,38,0.2)` }}>
                       {deleting===p.id ? <RefreshCw size={12} className="animate-spin" style={{color:T.red}}/> : <Trash2 size={13} style={{color:T.red}}/>}

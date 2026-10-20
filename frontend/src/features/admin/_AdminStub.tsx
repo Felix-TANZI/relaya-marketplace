@@ -4,6 +4,7 @@
 
 import { Link } from 'react-router-dom';
 import { Construction, ArrowLeft } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 
 interface AdminStubProps {
@@ -18,12 +19,15 @@ interface AdminStubProps {
 export default function AdminStub({
   title: titleProp,
   titleKey,
-  description = 'Cette fonctionnalité est en cours de développement.',
+  description,
   icon: Icon  = Construction,
   backHref    = '/admin/dashboard',
-  backLabel   = 'Retour au dashboard',
+  backLabel,
 }: AdminStubProps) {
-  const title = titleProp || titleKey || 'Page';
+  const { t } = useTranslation();
+  const title = titleProp || titleKey || t('ad1_stub.default_title');
+  const resolvedDescription = description ?? t('ad1_stub.default_description');
+  const resolvedBackLabel = backLabel ?? t('ad1_stub.default_back_label');
   const T = useAdminTheme();
 
   return (
@@ -51,7 +55,7 @@ export default function AdminStub({
           letterSpacing: '.1em',
         }}
       >
-        Bientôt
+        {t('ad1_stub.soon_badge')}
       </span>
 
       {/* Titre */}
@@ -68,7 +72,7 @@ export default function AdminStub({
         fontSize: 14, color: T.muted, maxWidth: 420,
         lineHeight: 1.7, marginBottom: 32,
       }}>
-        {description}
+        {resolvedDescription}
       </p>
 
       {/* Bouton retour */}
@@ -90,7 +94,7 @@ export default function AdminStub({
         }}
       >
         <ArrowLeft size={15} />
-        {backLabel}
+        {resolvedBackLabel}
       </Link>
     </div>
   );

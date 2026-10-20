@@ -2,6 +2,7 @@
 // Zones & Couverture géographique des livreurs
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MapPin, RefreshCw, Bike, Wifi, Users, Map } from 'lucide-react';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import { useToast } from '@/context/ToastContext';
@@ -36,6 +37,7 @@ const authH = () => ({
 
 export default function DeliveriesZonesPage() {
   const T             = useAdminTheme();
+  const { t }          = useTranslation();
   const { showToast } = useToast();
   const toastRef      = useRef(showToast);
   useEffect(() => { toastRef.current = showToast; });
@@ -49,7 +51,7 @@ export default function DeliveriesZonesPage() {
       const data = await http<CourierZone[]>('/api/auth/admin/couriers/', { headers: authH() });
       setCouriers(Array.isArray(data) ? data : []);
     } catch {
-      toastRef.current('Erreur chargement zones', 'error');
+      toastRef.current(t('ad6_del_zones.toast_error_load'), 'error');
     } finally {
       setLoading(false);
     }
@@ -80,16 +82,16 @@ export default function DeliveriesZonesPage() {
       id: courier.id,
       position,
       title: courier.full_name || courier.username,
-      subtitle: `${courier.city || 'Ville a definir'} · ${courier.vehicle_type}`,
+      subtitle: `${courier.city || t('ad6_del_zones.city_to_define')} · ${courier.vehicle_type}`,
       color,
       iconHtml: `<span style="font-size:12px;font-weight:900">${(courier.full_name[0] || courier.username[0] || 'L').toUpperCase()}</span>`,
       popup: (
         <div className="min-w-[220px]">
           <div className="text-sm font-black text-slate-950">@{courier.username}</div>
           <div className="mt-1 text-xs font-semibold text-slate-600">{courier.phone}</div>
-          <div className="mt-2 text-xs text-slate-600">{courier.zones?.slice(0, 4).join(', ') || courier.city || 'Zone a definir'}</div>
+          <div className="mt-2 text-xs text-slate-600">{courier.zones?.slice(0, 4).join(', ') || courier.city || t('ad6_del_zones.zone_to_define')}</div>
           <div className="mt-2 inline-flex rounded-full px-2 py-1 text-xs font-black" style={{ background: `${color}18`, color }}>
-            {courier.is_online ? 'En ligne' : 'Hors ligne'}
+            {courier.is_online ? t('ad6_del_zones.online') : t('ad6_del_zones.offline')}
           </div>
         </div>
       ),
@@ -103,25 +105,25 @@ export default function DeliveriesZonesPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: T.text, marginBottom: 4 }}>
-            Zones & Couverture
+            {t('ad6_del_zones.title')}
           </h1>
           <p style={{ fontSize: 13, color: T.muted }}>
-            {cities.length} ville{cities.length !== 1 ? 's' : ''} couvertes · {sortedZones.length} zones actives · {couriers.length} livreurs
+            {t('ad6_del_zones.subtitle', { cities: cities.length, zones: sortedZones.length, couriers: couriers.length })}
           </p>
         </div>
         <button onClick={() => load()}
           style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', borderRadius: 10, fontSize: 12, fontWeight: 600, background: 'rgba(220,38,38,0.1)', color: T.red, border: '1px solid rgba(220,38,38,0.25)', cursor: 'pointer' }}>
-          <RefreshCw size={12} className={loading ? 'animate-spin' : ''} /> Actualiser
+          <RefreshCw size={12} className={loading ? 'animate-spin' : ''} /> {t('ad6_del_zones.refresh')}
         </button>
       </div>
 
       {/* KPIs rapides */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'Villes couvertes',   value: cities.length,                             accent: '#3B82F6',  icon: Map   },
-          { label: 'Zones actives',      value: sortedZones.length,                        accent: '#10B981',  icon: MapPin },
-          { label: 'En ligne',           value: couriers.filter(c => c.is_online).length,  accent: '#F47920',  icon: Wifi  },
-          { label: 'Livreurs actifs',    value: couriers.filter(c => c.is_active).length,  accent: T.text,     icon: Users },
+          { label: t('ad6_del_zones.kpi_covered_cities'),   value: cities.length,                             accent: '#3B82F6',  icon: Map   },
+          { label: t('ad6_del_zones.kpi_active_zones'),      value: sortedZones.length,                        accent: '#10B981',  icon: MapPin },
+          { label: t('ad6_del_zones.kpi_online'),           value: couriers.filter(c => c.is_online).length,  accent: '#F47920',  icon: Wifi  },
+          { label: t('ad6_del_zones.kpi_active_couriers'),    value: couriers.filter(c => c.is_active).length,  accent: T.text,     icon: Users },
         ].map((k, i) => {
           const Icon = k.icon;
           return (
@@ -145,15 +147,15 @@ export default function DeliveriesZonesPage() {
         <div className="lg:col-span-2 rounded-2xl overflow-hidden relative" style={{ background: T.card, border: `1px solid ${T.border}`, minHeight: 520 }}>
           <div className="flex items-center gap-2 px-5 py-3.5" style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
             <Map size={14} style={{ color: T.red }} />
-            <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Carte de couverture — Cameroun</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad6_del_zones.coverage_map_title')}</span>
             <div className="flex items-center gap-4 ml-auto">
               <div className="flex items-center gap-1.5">
                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981' }} />
-                <span style={{ fontSize: 11, color: T.muted }}>En ligne</span>
+                <span style={{ fontSize: 11, color: T.muted }}>{t('ad6_del_zones.online')}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: T.red }} />
-                <span style={{ fontSize: 11, color: T.muted }}>Hors ligne</span>
+                <span style={{ fontSize: 11, color: T.muted }}>{t('ad6_del_zones.offline')}</span>
               </div>
             </div>
           </div>
@@ -174,13 +176,13 @@ export default function DeliveriesZonesPage() {
           <div className="rounded-2xl overflow-hidden" style={{ background: T.card, border: `1px solid ${T.border}` }}>
             <div className="flex items-center gap-2 px-5 py-3.5" style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
               <MapPin size={14} style={{ color: T.red }} />
-              <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Zones par ville</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad6_del_zones.zones_by_city')}</span>
             </div>
             <div className="p-4 max-h-60 overflow-y-auto space-y-3" style={{ scrollbarWidth: 'thin' }}>
               {loading ? (
-                <p style={{ fontSize: 12.5, color: T.muted }}>Chargement…</p>
+                <p style={{ fontSize: 12.5, color: T.muted }}>{t('ad6_del_zones.loading')}</p>
               ) : cities.length === 0 ? (
-                <p style={{ fontSize: 12.5, color: T.muted }}>Aucun livreur actif.</p>
+                <p style={{ fontSize: 12.5, color: T.muted }}>{t('ad6_del_zones.no_active_courier')}</p>
               ) : cities.map(city => {
                 const cityCouriers = byCity[city] ?? [];
                 const zones = Array.from(new Set(cityCouriers.flatMap(c => c.zones ?? [])));
@@ -193,12 +195,12 @@ export default function DeliveriesZonesPage() {
                         <span style={{ fontSize: 10.5, color: '#10B981', display: 'flex', alignItems: 'center', gap: 3 }}>
                           <Wifi size={9} /> {onlineCount}
                         </span>
-                        <span style={{ fontSize: 10.5, color: T.muted }}>{cityCouriers.length} livreur{cityCouriers.length !== 1 ? 's' : ''}</span>
+                        <span style={{ fontSize: 10.5, color: T.muted }}>{cityCouriers.length} {t(cityCouriers.length !== 1 ? 'ad6_del_zones.courier_plural' : 'ad6_del_zones.courier')}</span>
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {zones.length === 0 ? (
-                        <span style={{ fontSize: 10.5, color: T.muted }}>Aucune zone définie</span>
+                        <span style={{ fontSize: 10.5, color: T.muted }}>{t('ad6_del_zones.no_zone_defined')}</span>
                       ) : zones.map(zone => (
                         <span key={zone} style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, color: T.red, background: T.red + '14' }}>
                           {zone}
@@ -215,7 +217,7 @@ export default function DeliveriesZonesPage() {
           <div className="rounded-2xl overflow-hidden" style={{ background: T.card, border: `1px solid ${T.border}` }}>
             <div className="flex items-center gap-2 px-5 py-3.5" style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
               <Bike size={14} style={{ color: T.red }} />
-              <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Zones les mieux couvertes</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad6_del_zones.best_covered_zones')}</span>
             </div>
             <div className="p-4 space-y-2.5">
               {sortedZones.slice(0, 8).map(([zone, count], i) => {
@@ -224,7 +226,7 @@ export default function DeliveriesZonesPage() {
                   <div key={zone}>
                     <div className="flex items-center justify-between mb-1">
                       <span style={{ fontSize: 12.5, color: T.text }}>{zone}</span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: T.red }}>{count} livreur{count !== 1 ? 's' : ''}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: T.red }}>{count} {t(count !== 1 ? 'ad6_del_zones.courier_plural' : 'ad6_del_zones.courier')}</span>
                     </div>
                     <div style={{ height: 4, background: T.border, borderRadius: 2, overflow: 'hidden' }}>
                       <div style={{ height: '100%', width: `${Math.round(count / max * 100)}%`, background: i === 0 ? T.red : T.red + '80', borderRadius: 2 }} />
@@ -233,7 +235,7 @@ export default function DeliveriesZonesPage() {
                 );
               })}
               {sortedZones.length === 0 && (
-                <p style={{ fontSize: 12.5, color: T.muted }}>Aucune zone configurée.</p>
+                <p style={{ fontSize: 12.5, color: T.muted }}>{t('ad6_del_zones.no_zone_configured')}</p>
               )}
             </div>
           </div>

@@ -3,6 +3,7 @@
 // Utilisé comme placeholder pendant la construction des pages.
 
 import { Construction } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   title: string;
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function SellerPageComingSoon({ title, description }: Props) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
       <div
@@ -24,7 +26,7 @@ export default function SellerPageComingSoon({ title, description }: Props) {
       <p className="text-[13px] text-vendor-n500 max-w-xs leading-relaxed">
         {description}
         <span className="block mt-1 text-vendor-orange font-semibold">
-          En cours d'implémentation…
+          {t('sl2_coming_soon.in_progress')}
         </span>
       </p>
     </div>

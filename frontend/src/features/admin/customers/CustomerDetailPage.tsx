@@ -4,6 +4,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft, RefreshCw, Shield, Store,
   ShoppingCart, DollarSign, Mail, Phone, MapPin,
@@ -25,13 +26,13 @@ const fmtDate = (d: string | null) =>
   d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) : '—';
 const fmtDateTime = (d: string | null) =>
   d ? new Date(d).toLocaleString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
-const fmtRelative = (d: string | null) => {
+const fmtRelative = (d: string | null, t: (key: string, opts?: Record<string, unknown>) => string) => {
   if (!d) return '—';
   const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
-  if (s < 60)     return "à l'instant";
-  if (s < 3600)   return `il y a ${Math.floor(s / 60)} min`;
-  if (s < 86400)  return `il y a ${Math.floor(s / 3600)} h`;
-  if (s < 604800) return `il y a ${Math.floor(s / 86400)} j`;
+  if (s < 60)     return t('ad2_customer_detail.relative_now');
+  if (s < 3600)   return t('ad2_customer_detail.relative_minutes', { count: Math.floor(s / 60) });
+  if (s < 86400)  return t('ad2_customer_detail.relative_hours', { count: Math.floor(s / 3600) });
+  if (s < 604800) return t('ad2_customer_detail.relative_days', { count: Math.floor(s / 86400) });
   return fmtDate(d);
 };
 
@@ -60,32 +61,32 @@ interface EnrichedUserDetail extends AdminUserDetail {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const TIER_CONFIG = {
-  BRONZE:  { label: 'Bronze',  color: '#CD7F32', next: 'Argent',  pts: 500  },
-  SILVER:  { label: 'Argent',  color: '#A8A9AD', next: 'Or',      pts: 1000 },
-  GOLD:    { label: 'Or',      color: '#FFD700', next: 'Diamant', pts: 2000 },
-  DIAMOND: { label: 'Diamant', color: '#60A5FA', next: null,      pts: 9999 },
+  BRONZE:  { labelKey: 'ad2_customer_detail.tier_bronze',  color: '#CD7F32', nextKey: 'ad2_customer_detail.tier_silver',  pts: 500  },
+  SILVER:  { labelKey: 'ad2_customer_detail.tier_silver',  color: '#A8A9AD', nextKey: 'ad2_customer_detail.tier_gold',      pts: 1000 },
+  GOLD:    { labelKey: 'ad2_customer_detail.tier_gold',    color: '#FFD700', nextKey: 'ad2_customer_detail.tier_diamond', pts: 2000 },
+  DIAMOND: { labelKey: 'ad2_customer_detail.tier_diamond', color: '#60A5FA', nextKey: null as string | null,      pts: 9999 },
 };
 
-const PAYMENT_STATUS: Record<string, { label: string; color: string; bg: string }> = {
-  PAID:    { label: 'Payée',    color: '#10B981', bg: 'rgba(16,185,129,0.12)' },
-  PENDING: { label: 'En attente', color: '#F59E0B', bg: 'rgba(245,158,11,0.12)' },
-  FAILED:  { label: 'Échouée', color: '#EF4444', bg: 'rgba(239,68,68,0.12)'  },
-  REFUNDED:{ label: 'Remboursée', color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)' },
+const PAYMENT_STATUS: Record<string, { labelKey: string; color: string; bg: string }> = {
+  PAID:    { labelKey: 'ad2_customer_detail.payment_paid',    color: '#10B981', bg: 'rgba(16,185,129,0.12)' },
+  PENDING: { labelKey: 'ad2_customer_detail.payment_pending', color: '#F59E0B', bg: 'rgba(245,158,11,0.12)' },
+  FAILED:  { labelKey: 'ad2_customer_detail.payment_failed', color: '#EF4444', bg: 'rgba(239,68,68,0.12)'  },
+  REFUNDED:{ labelKey: 'ad2_customer_detail.payment_refunded', color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)' },
 };
 
-const FULFILLMENT_STATUS: Record<string, { label: string; color: string }> = {
-  PENDING:    { label: 'En attente',   color: '#F59E0B' },
-  PROCESSING: { label: 'En cours',     color: '#3B82F6' },
-  SHIPPED:    { label: 'Expédiée',     color: '#8B5CF6' },
-  DELIVERED:  { label: 'Livrée',       color: '#10B981' },
-  CANCELLED:  { label: 'Annulée',      color: '#EF4444' },
+const FULFILLMENT_STATUS: Record<string, { labelKey: string; color: string }> = {
+  PENDING:    { labelKey: 'ad2_customer_detail.fulfillment_pending',   color: '#F59E0B' },
+  PROCESSING: { labelKey: 'ad2_customer_detail.fulfillment_processing', color: '#3B82F6' },
+  SHIPPED:    { labelKey: 'ad2_customer_detail.fulfillment_shipped',     color: '#8B5CF6' },
+  DELIVERED:  { labelKey: 'ad2_customer_detail.fulfillment_delivered',       color: '#10B981' },
+  CANCELLED:  { labelKey: 'ad2_customer_detail.fulfillment_cancelled',      color: '#EF4444' },
 };
 
-const VENDOR_STATUS: Record<string, { label: string; color: string; bg: string }> = {
-  PENDING:   { label: 'En attente',  color: '#F59E0B', bg: 'rgba(245,158,11,0.12)' },
-  APPROVED:  { label: 'Approuvé',   color: '#10B981', bg: 'rgba(16,185,129,0.12)' },
-  REJECTED:  { label: 'Rejeté',     color: '#EF4444', bg: 'rgba(239,68,68,0.12)'  },
-  SUSPENDED: { label: 'Suspendu',   color: '#9CA3AF', bg: 'rgba(156,163,175,0.12)' },
+const VENDOR_STATUS: Record<string, { labelKey: string; color: string; bg: string }> = {
+  PENDING:   { labelKey: 'ad2_customer_detail.vendor_status_pending',  color: '#F59E0B', bg: 'rgba(245,158,11,0.12)' },
+  APPROVED:  { labelKey: 'ad2_customer_detail.vendor_status_approved',   color: '#10B981', bg: 'rgba(16,185,129,0.12)' },
+  REJECTED:  { labelKey: 'ad2_customer_detail.vendor_status_rejected',     color: '#EF4444', bg: 'rgba(239,68,68,0.12)'  },
+  SUSPENDED: { labelKey: 'ad2_customer_detail.vendor_status_suspended',   color: '#9CA3AF', bg: 'rgba(156,163,175,0.12)' },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -134,6 +135,7 @@ function InfoRow({ label, value, T }: { label: string; value: React.ReactNode; T
 export default function CustomerDetailPage() {
   const { id }        = useParams<{ id: string }>();
   const T             = useAdminTheme();
+  const { t }          = useTranslation();
   const navigate      = useNavigate();
   const { showToast } = useToast();
   const { confirm }   = useConfirm();
@@ -149,12 +151,12 @@ export default function CustomerDetailPage() {
       const data = await adminApi.getUserDetail(Number(id));
       setUser(data as EnrichedUserDetail);
     } catch {
-      showToast('Utilisateur introuvable', 'error');
+      showToast(t('ad2_customer_detail.toast_not_found'), 'error');
       navigate('/admin/customers');
     } finally {
       setLoading(false);
     }
-  }, [id, showToast, navigate]);
+  }, [id, showToast, navigate, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -163,21 +165,21 @@ export default function CustomerDetailPage() {
     if (!user) return;
     const name = user.first_name || user.username;
     const cfgs = {
-      ban:        { title: `Bannir ${name} ?`,       message: "L'utilisateur ne pourra plus se connecter.",   type: 'danger'  as const, confirmText: 'Bannir'      },
-      unban:      { title: `Débannir ${name} ?`,     message: "L'utilisateur pourra à nouveau se connecter.", type: 'warning' as const, confirmText: 'Débannir'    },
-      deactivate: { title: `Désactiver ${name} ?`,   message: 'Le compte sera temporairement suspendu.',      type: 'warning' as const, confirmText: 'Désactiver'  },
-      activate:   { title: `Réactiver ${name} ?`,    message: 'Le compte sera à nouveau accessible.',         type: 'warning' as const, confirmText: 'Réactiver'   },
+      ban:        { title: t('ad2_customer_detail.confirm_ban_title', { name }),       message: t('ad2_customer_detail.confirm_ban_message'),   type: 'danger'  as const, confirmText: t('ad2_customer_detail.confirm_ban_confirm')      },
+      unban:      { title: t('ad2_customer_detail.confirm_unban_title', { name }),     message: t('ad2_customer_detail.confirm_unban_message'), type: 'warning' as const, confirmText: t('ad2_customer_detail.confirm_unban_confirm')    },
+      deactivate: { title: t('ad2_customer_detail.confirm_deactivate_title', { name }),   message: t('ad2_customer_detail.confirm_deactivate_message'),      type: 'warning' as const, confirmText: t('ad2_customer_detail.confirm_deactivate_confirm')  },
+      activate:   { title: t('ad2_customer_detail.confirm_activate_title', { name }),    message: t('ad2_customer_detail.confirm_activate_message'),         type: 'warning' as const, confirmText: t('ad2_customer_detail.confirm_activate_confirm')   },
     };
-    const ok = await confirm({ ...cfgs[action], cancelText: 'Annuler' });
+    const ok = await confirm({ ...cfgs[action], cancelText: t('ad2_customer_detail.confirm_cancel') });
     if (!ok) return;
     setActing(true);
     try {
       if (action === 'ban')        await adminApi.banUser(user.id, 'Décision admin');
       else if (action === 'unban') await adminApi.unbanUser(user.id);
       else                         await adminApi.updateUser(user.id, { is_active: action === 'activate' });
-      showToast('Action effectuée', 'success');
+      showToast(t('ad2_customer_detail.toast_action_done'), 'success');
       await load();
-    } catch { showToast('Erreur', 'error'); }
+    } catch { showToast(t('ad2_customer_detail.toast_error'), 'error'); }
     finally  { setActing(false); }
   };
 
@@ -223,7 +225,7 @@ export default function CustomerDetailPage() {
             onMouseEnter={e => (e.currentTarget.style.color = T.text)}
             onMouseLeave={e => (e.currentTarget.style.color = T.muted)}
           >
-            <ArrowLeft size={14} /> Clients
+            <ArrowLeft size={14} /> {t('ad2_customer_detail.breadcrumb_customers')}
           </Link>
           <ChevronRight size={12} style={{ color: T.muted }} />
           <span style={{ fontSize: 12.5, fontWeight: 600, color: T.text }}>{fullName}</span>
@@ -248,7 +250,7 @@ export default function CustomerDetailPage() {
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold transition-all"
                   style={{ background: 'rgba(16,185,129,0.1)', color: '#10B981', border: '1px solid rgba(16,185,129,0.3)' }}
                 >
-                  <UserCheck size={13} /> Débannir
+                  <UserCheck size={13} /> {t('ad2_customer_detail.action_unban')}
                 </button>
               ) : (
                 <button
@@ -257,7 +259,7 @@ export default function CustomerDetailPage() {
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold transition-all"
                   style={{ background: 'rgba(239,68,68,0.08)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.2)' }}
                 >
-                  <UserX size={13} /> Bannir
+                  <UserX size={13} /> {t('ad2_customer_detail.action_ban')}
                 </button>
               )}
 
@@ -268,7 +270,7 @@ export default function CustomerDetailPage() {
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold transition-all"
                   style={{ background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}` }}
                 >
-                  <ToggleLeft size={13} /> Désactiver
+                  <ToggleLeft size={13} /> {t('ad2_customer_detail.action_deactivate')}
                 </button>
               ) : (
                 <button
@@ -277,7 +279,7 @@ export default function CustomerDetailPage() {
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold transition-all"
                   style={{ background: 'rgba(16,185,129,0.08)', color: '#10B981', border: '1px solid rgba(16,185,129,0.2)' }}
                 >
-                  <ToggleRight size={13} /> Réactiver
+                  <ToggleRight size={13} /> {t('ad2_customer_detail.action_activate')}
                 </button>
               )}
             </>
@@ -315,16 +317,16 @@ export default function CustomerDetailPage() {
               </h1>
               {/* Badges rôles */}
               <div className="flex items-center gap-1.5 flex-wrap">
-                {user.is_superuser && <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: 'rgba(220,38,38,0.2)', color: '#FCA5A5', border: '1px solid rgba(220,38,38,0.4)' }}>Super Admin</span>}
-                {user.is_staff && !user.is_superuser && <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: 'rgba(139,92,246,0.2)', color: '#C4B5FD', border: '1px solid rgba(139,92,246,0.4)' }}>Staff</span>}
-                {user.is_vendor && <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: 'rgba(244,121,32,0.2)', color: '#FED7AA', border: '1px solid rgba(244,121,32,0.4)' }}>Vendeur</span>}
-                {!user.is_staff && !user.is_superuser && <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: 'rgba(59,130,246,0.2)', color: '#BAE6FD', border: '1px solid rgba(59,130,246,0.4)' }}>Acheteur</span>}
+                {user.is_superuser && <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: 'rgba(220,38,38,0.2)', color: '#FCA5A5', border: '1px solid rgba(220,38,38,0.4)' }}>{t('ad2_customer_detail.badge_super_admin')}</span>}
+                {user.is_staff && !user.is_superuser && <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: 'rgba(139,92,246,0.2)', color: '#C4B5FD', border: '1px solid rgba(139,92,246,0.4)' }}>{t('ad2_customer_detail.badge_staff')}</span>}
+                {user.is_vendor && <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: 'rgba(244,121,32,0.2)', color: '#FED7AA', border: '1px solid rgba(244,121,32,0.4)' }}>{t('ad2_customer_detail.badge_vendor')}</span>}
+                {!user.is_staff && !user.is_superuser && <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: 'rgba(59,130,246,0.2)', color: '#BAE6FD', border: '1px solid rgba(59,130,246,0.4)' }}>{t('ad2_customer_detail.badge_buyer')}</span>}
                 {/* Statut */}
                 {isBanned
-                  ? <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: 'rgba(239,68,68,0.2)', color: '#FCA5A5', border: '1px solid rgba(239,68,68,0.4)' }}>Banni</span>
+                  ? <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: 'rgba(239,68,68,0.2)', color: '#FCA5A5', border: '1px solid rgba(239,68,68,0.4)' }}>{t('ad2_customer_detail.badge_banned')}</span>
                   : !user.is_active
-                    ? <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: 'rgba(107,114,128,0.2)', color: '#D1D5DB', border: '1px solid rgba(107,114,128,0.3)' }}>Inactif</span>
-                    : <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: 'rgba(16,185,129,0.2)', color: '#6EE7B7', border: '1px solid rgba(16,185,129,0.4)' }}>Actif</span>
+                    ? <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: 'rgba(107,114,128,0.2)', color: '#D1D5DB', border: '1px solid rgba(107,114,128,0.3)' }}>{t('ad2_customer_detail.badge_inactive')}</span>
+                    : <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: 'rgba(16,185,129,0.2)', color: '#6EE7B7', border: '1px solid rgba(16,185,129,0.4)' }}>{t('ad2_customer_detail.badge_active')}</span>
                 }
               </div>
             </div>
@@ -349,10 +351,10 @@ export default function CustomerDetailPage() {
                 </span>
               )}
               <span className="flex items-center gap-1.5" style={{ fontSize: 12, color: 'rgba(249,250,251,0.45)' }}>
-                <Calendar size={12} /> Inscrit le {fmtDate(user.date_joined)}
+                <Calendar size={12} /> {t('ad2_customer_detail.joined_on', { date: fmtDate(user.date_joined) })}
               </span>
               <span className="flex items-center gap-1.5" style={{ fontSize: 12, color: 'rgba(249,250,251,0.45)' }}>
-                <Clock size={12} /> {fmtRelative(user.last_login)}
+                <Clock size={12} /> {fmtRelative(user.last_login, t)}
               </span>
             </div>
           </div>
@@ -365,7 +367,7 @@ export default function CustomerDetailPage() {
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.14)'; (e.currentTarget as HTMLElement).style.color = '#F9FAFB'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLElement).style.color = 'rgba(249,250,251,0.6)'; }}
           >
-            <ShoppingCart size={13} /> Voir ses commandes <ExternalLink size={11} />
+            <ShoppingCart size={13} /> {t('ad2_customer_detail.view_orders')} <ExternalLink size={11} />
           </Link>
         </div>
       </div>
@@ -374,36 +376,38 @@ export default function CustomerDetailPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           {
-            label: 'Commandes totales',
+            label: t('ad2_customer_detail.kpi_total_orders'),
             value: user.stats.total_orders,
-            sub: `${user.stats.paid_orders} payées`,
+            sub: t('ad2_customer_detail.kpi_total_orders_sub', { count: user.stats.paid_orders }),
             icon: ShoppingCart, accent: '#3B82F6',
             display: user.stats.total_orders.toString(),
           },
           {
-            label: 'Total dépensé',
+            label: t('ad2_customer_detail.kpi_total_spent'),
             value: user.stats.total_spent,
-            sub: `Moy. ${fmtXaf(user.stats.average_order_value)}`,
+            sub: t('ad2_customer_detail.kpi_total_spent_sub', { value: fmtXaf(user.stats.average_order_value) }),
             icon: DollarSign, accent: '#10B981',
             display: fmtXaf(user.stats.total_spent),
           },
           {
-            label: 'Fidélité',
+            label: t('ad2_customer_detail.kpi_loyalty'),
             value: user.loyalty_points ?? 0,
-            sub: tier.next ? `${tier.pts - (user.loyalty_points ?? 0)} pts pour ${tier.next}` : 'Niveau maximum',
+            sub: tier.nextKey
+              ? t('ad2_customer_detail.kpi_loyalty_sub_next', { count: tier.pts - (user.loyalty_points ?? 0), tier: t(tier.nextKey) })
+              : t('ad2_customer_detail.kpi_loyalty_sub_max'),
             icon: Award, accent: tierColor,
             display: `${(user.loyalty_points ?? 0).toLocaleString('fr-FR')} pts`,
           },
           {
-            label: user.is_vendor ? 'Plan vendeur' : 'Produits vendus',
+            label: user.is_vendor ? t('ad2_customer_detail.kpi_vendor_plan') : t('ad2_customer_detail.kpi_products_sold'),
             value: 0,
             sub: user.is_vendor
               ? (user.vendor_profile?.status ?? 'N/A')
-              : 'Non vendeur',
+              : t('ad2_customer_detail.kpi_not_vendor'),
             icon: user.is_vendor ? Store : Package,
             accent: '#F47920',
             display: user.is_vendor
-              ? (user.stats.total_products !== undefined ? `${user.stats.total_products} produits` : '—')
+              ? (user.stats.total_products !== undefined ? t('ad2_customer_detail.kpi_products_count', { count: user.stats.total_products }) : '—')
               : '—',
           },
         ].map((kpi, i) => {
@@ -433,12 +437,12 @@ export default function CustomerDetailPage() {
           <div className="flex items-center gap-2">
             <Award size={14} style={{ color: tierColor }} />
             <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>
-              Niveau <span style={{ color: tierColor }}>{tier.label}</span>
+              {t('ad2_customer_detail.tier_level_label')} <span style={{ color: tierColor }}>{t(tier.labelKey)}</span>
             </span>
           </div>
           <span style={{ fontSize: 12, color: T.muted }}>
             {(user.loyalty_points ?? 0).toLocaleString('fr-FR')} pts
-            {tier.next && ` / ${tier.pts.toLocaleString('fr-FR')} pts`}
+            {tier.nextKey && t('ad2_customer_detail.tier_pts_of', { max: tier.pts.toLocaleString('fr-FR') })}
           </span>
         </div>
         <div style={{ height: 6, background: T.border, borderRadius: 3, overflow: 'hidden' }}>
@@ -448,9 +452,9 @@ export default function CustomerDetailPage() {
             transition: 'width 0.6s ease',
           }} />
         </div>
-        {tier.next && (
+        {tier.nextKey && (
           <p style={{ fontSize: 11, color: T.muted, marginTop: 6 }}>
-            {Math.max(0, tier.pts - (user.loyalty_points ?? 0)).toLocaleString('fr-FR')} pts pour atteindre le niveau {tier.next}
+            {t('ad2_customer_detail.tier_pts_to_next', { count: Math.max(0, tier.pts - (user.loyalty_points ?? 0)), tier: t(tier.nextKey) })}
           </p>
         )}
       </div>
@@ -462,29 +466,29 @@ export default function CustomerDetailPage() {
         <div className="space-y-5">
 
           {/* Informations compte */}
-          <Section title="Informations du compte" icon={Shield} T={T}>
+          <Section title={t('ad2_customer_detail.section_account_info')} icon={Shield} T={T}>
             <div style={{ marginBottom: -10 }}>
-              <InfoRow label="Username" value={`@${user.username}`} T={T} />
-              <InfoRow label="Email" value={user.email} T={T} />
-              <InfoRow label="Téléphone" value={user.profile?.phone ?? '—'} T={T} />
-              <InfoRow label="Ville" value={user.city ?? '—'} T={T} />
-              <InfoRow label="Date d'inscription" value={fmtDate(user.date_joined)} T={T} />
-              <InfoRow label="Dernière connexion" value={fmtDateTime(user.last_login)} T={T} />
+              <InfoRow label={t('ad2_customer_detail.info_username')} value={`@${user.username}`} T={T} />
+              <InfoRow label={t('ad2_customer_detail.info_email')} value={user.email} T={T} />
+              <InfoRow label={t('ad2_customer_detail.info_phone')} value={user.profile?.phone ?? t('ad2_customer_detail.empty_value')} T={T} />
+              <InfoRow label={t('ad2_customer_detail.info_city')} value={user.city ?? t('ad2_customer_detail.empty_value')} T={T} />
+              <InfoRow label={t('ad2_customer_detail.info_joined_date')} value={fmtDate(user.date_joined)} T={T} />
+              <InfoRow label={t('ad2_customer_detail.info_last_login')} value={fmtDateTime(user.last_login)} T={T} />
               <InfoRow
-                label="Newsletter"
+                label={t('ad2_customer_detail.info_newsletter')}
                 value={
                   user.profile?.newsletter_subscribed
-                    ? <span style={{ color: '#10B981', display: 'flex', alignItems: 'center', gap: 4 }}><CheckCircle size={13} /> Activée</span>
-                    : <span style={{ color: T.muted,   display: 'flex', alignItems: 'center', gap: 4 }}><XCircle size={13} /> Non activée</span>
+                    ? <span style={{ color: '#10B981', display: 'flex', alignItems: 'center', gap: 4 }}><CheckCircle size={13} /> {t('ad2_customer_detail.newsletter_active')}</span>
+                    : <span style={{ color: T.muted,   display: 'flex', alignItems: 'center', gap: 4 }}><XCircle size={13} /> {t('ad2_customer_detail.newsletter_inactive')}</span>
                 }
                 T={T}
               />
               <InfoRow
-                label="Statut compte"
+                label={t('ad2_customer_detail.info_account_status')}
                 value={
-                  isBanned ? <span style={{ color: '#EF4444' }}>Banni</span> :
-                  !user.is_active ? <span style={{ color: '#9CA3AF' }}>Inactif</span> :
-                  <span style={{ color: '#10B981' }}>Actif</span>
+                  isBanned ? <span style={{ color: '#EF4444' }}>{t('ad2_customer_detail.status_banned')}</span> :
+                  !user.is_active ? <span style={{ color: '#9CA3AF' }}>{t('ad2_customer_detail.status_inactive')}</span> :
+                  <span style={{ color: '#10B981' }}>{t('ad2_customer_detail.status_active')}</span>
                 }
                 T={T}
               />
@@ -499,17 +503,17 @@ export default function CustomerDetailPage() {
             >
               <div className="flex items-center gap-2 mb-3">
                 <Bell size={14} style={{ color: '#EF4444' }} />
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#EF4444' }}>Compte banni</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#EF4444' }}>{t('ad2_customer_detail.banned_account')}</span>
               </div>
               <div className="space-y-2">
                 <p style={{ fontSize: 12.5, color: T.text }}>
-                  <span style={{ color: T.muted }}>Raison : </span>
-                  {user.profile.ban_reason ?? 'Aucune raison spécifiée'}
+                  <span style={{ color: T.muted }}>{t('ad2_customer_detail.banned_reason_label')}</span>
+                  {user.profile.ban_reason ?? t('ad2_customer_detail.banned_reason_none')}
                 </p>
                 {user.profile.banned_at && (
                   <p style={{ fontSize: 12, color: T.muted }}>
-                    Le {fmtDateTime(user.profile.banned_at)}
-                    {user.profile.banned_by && ` par ${user.profile.banned_by}`}
+                    {t('ad2_customer_detail.banned_on', { date: fmtDateTime(user.profile.banned_at) })}
+                    {user.profile.banned_by && t('ad2_customer_detail.banned_by', { name: user.profile.banned_by })}
                   </p>
                 )}
               </div>
@@ -518,7 +522,7 @@ export default function CustomerDetailPage() {
 
           {/* Bio */}
           {user.profile?.bio && (
-            <Section title="Bio" icon={Mail} T={T}>
+            <Section title={t('ad2_customer_detail.section_bio')} icon={Mail} T={T}>
               <p style={{ fontSize: 13, color: T.muted, lineHeight: 1.7 }}>{user.profile.bio}</p>
             </Section>
           )}
@@ -530,7 +534,7 @@ export default function CustomerDetailPage() {
           {/* Section vendeur (si applicable) */}
           {user.is_vendor && user.vendor_profile && (
             <Section
-              title="Profil Vendeur"
+              title={t('ad2_customer_detail.section_vendor_profile')}
               icon={Store}
               T={T}
               action={
@@ -539,35 +543,35 @@ export default function CustomerDetailPage() {
                   className="flex items-center gap-1 text-[11px] font-semibold"
                   style={{ color: T.red }}
                 >
-                  Voir la fiche <ExternalLink size={10} />
+                  {t('ad2_customer_detail.view_vendor_sheet')} <ExternalLink size={10} />
                 </Link>
               }
             >
               <div style={{ marginBottom: -10 }}>
                 <InfoRow
-                  label="Boutique"
+                  label={t('ad2_customer_detail.vendor_shop')}
                   value={<span style={{ fontWeight: 700 }}>{user.vendor_profile.business_name}</span>}
                   T={T}
                 />
                 <InfoRow
-                  label="Statut"
+                  label={t('ad2_customer_detail.vendor_status_label')}
                   value={
                     <span style={{
                       fontSize: 10.5, fontWeight: 800, padding: '2px 8px', borderRadius: 6,
                       background: VENDOR_STATUS[user.vendor_profile.status]?.bg ?? T.border,
                       color:      VENDOR_STATUS[user.vendor_profile.status]?.color ?? T.muted,
                     }}>
-                      {VENDOR_STATUS[user.vendor_profile.status]?.label ?? user.vendor_profile.status}
+                      {VENDOR_STATUS[user.vendor_profile.status] ? t(VENDOR_STATUS[user.vendor_profile.status].labelKey) : user.vendor_profile.status}
                     </span>
                   }
                   T={T}
                 />
-                <InfoRow label="Inscrit le" value={fmtDate(user.vendor_profile.created_at)} T={T} />
+                <InfoRow label={t('ad2_customer_detail.vendor_joined_on')} value={fmtDate(user.vendor_profile.created_at)} T={T} />
                 {user.vendor_profile.approved_at && (
-                  <InfoRow label="Approuvé le" value={fmtDate(user.vendor_profile.approved_at)} T={T} />
+                  <InfoRow label={t('ad2_customer_detail.vendor_approved_on')} value={fmtDate(user.vendor_profile.approved_at)} T={T} />
                 )}
                 {user.stats.total_products !== undefined && (
-                  <InfoRow label="Produits" value={`${user.stats.active_products ?? 0} actifs / ${user.stats.total_products} total`} T={T} />
+                  <InfoRow label={t('ad2_customer_detail.vendor_products')} value={t('ad2_customer_detail.vendor_products_detail', { active: user.stats.active_products ?? 0, total: user.stats.total_products })} T={T} />
                 )}
               </div>
             </Section>
@@ -575,19 +579,19 @@ export default function CustomerDetailPage() {
 
           {/* Commandes récentes */}
           <Section
-            title="Commandes récentes"
+            title={t('ad2_customer_detail.section_recent_orders')}
             icon={ShoppingCart}
             T={T}
             action={
               <Link to={`/admin/orders?user=${user.id}`} className="flex items-center gap-1 text-[11px] font-semibold" style={{ color: T.red }}>
-                Voir tout <ExternalLink size={10} />
+                {t('ad2_customer_detail.view_all')} <ExternalLink size={10} />
               </Link>
             }
           >
             {(!user.recent_orders || user.recent_orders.length === 0) ? (
               <div className="flex flex-col items-center justify-center py-8 gap-2">
                 <ShoppingCart size={24} style={{ color: T.muted }} />
-                <p style={{ fontSize: 13, color: T.muted }}>Aucune commande</p>
+                <p style={{ fontSize: 13, color: T.muted }}>{t('ad2_customer_detail.no_orders')}</p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -614,7 +618,7 @@ export default function CustomerDetailPage() {
                             #{order.id}
                           </p>
                           <span style={{ fontSize: 10.5, color: T.muted }}>
-                            {order.items_count} article{order.items_count > 1 ? 's' : ''}
+                            {t(order.items_count > 1 ? 'ad2_customer_detail.order_items_plural' : 'ad2_customer_detail.order_items', { count: order.items_count })}
                           </span>
                         </div>
                         <p style={{ fontSize: 11, color: T.muted }}>{fmtDate(order.created_at)}</p>
@@ -626,10 +630,10 @@ export default function CustomerDetailPage() {
                       {/* Statuts */}
                       <div className="flex flex-col gap-1 items-end flex-shrink-0">
                         <span style={{ fontSize: 9.5, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: ps?.bg, color: ps?.color }}>
-                          {ps?.label ?? order.payment_status}
+                          {ps ? t(ps.labelKey) : order.payment_status}
                         </span>
                         <span style={{ fontSize: 9.5, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: fs?.color + '18', color: fs?.color }}>
-                          {fs?.label ?? order.fulfillment_status}
+                          {fs ? t(fs.labelKey) : order.fulfillment_status}
                         </span>
                       </div>
                       <ExternalLink size={12} style={{ color: T.muted, flexShrink: 0 }} />

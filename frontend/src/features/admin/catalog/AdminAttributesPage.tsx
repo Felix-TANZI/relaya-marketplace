@@ -11,6 +11,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Search, Check, X, RefreshCw, Eye, Plus, Edit3, Trash2,
   ExternalLink, Zap, Info, Tag, ImageIcon,
@@ -40,10 +41,10 @@ const ROLE_LABELS: Record<AttributeRole, string> = {
   OFFRE: "OFFRE",
 };
 
-const ROLE_DESCRIPTIONS: Record<AttributeRole, string> = {
-  AXE: "Crée une variante achetable",
-  SPEC: "Caractéristique fixe filtrable",
-  OFFRE: "Dépend du vendeur (état, garantie...)",
+const ROLE_DESCRIPTION_KEYS: Record<AttributeRole, string> = {
+  AXE: "ad3_attributes.role_desc_axe",
+  SPEC: "ad3_attributes.role_desc_spec",
+  OFFRE: "ad3_attributes.role_desc_offre",
 };
 
 const VALUES_TYPES: AttributeValuesType[] = ["SELECT", "NUMBER", "BOOL", "TEXT", "COLORDICT", "BRAND"];
@@ -52,6 +53,7 @@ const VALUES_TYPES: AttributeValuesType[] = ["SELECT", "NUMBER", "BOOL", "TEXT",
 
 export default function AdminAttributesPage() {
   const T = useAdminTheme();
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const { confirm } = useConfirm();
 
@@ -81,9 +83,9 @@ export default function AdminAttributesPage() {
       const data = await adminApi.listAttributes(filters);
       setAttributes(data);
       setSelectedIds(new Set());
-    } catch { showToast("Erreur chargement", "error"); }
+    } catch { showToast(t("ad3_attributes.toast_error_load"), "error"); }
     finally { setLoading(false); }
-  }, [tab, search, valuesTypeFilter, universalFilter, showToast]);
+  }, [tab, search, valuesTypeFilter, universalFilter, showToast, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -106,26 +108,26 @@ export default function AdminAttributesPage() {
     if (attr.role === role) return;
     try {
       await adminApi.setAttributeRole(attr.id, role);
-      showToast(`Rôle changé en ${role}`, "success");
+      showToast(t("ad3_attributes.toast_role_changed", { role }), "success");
       load();
-    } catch { showToast("Erreur", "error"); }
+    } catch { showToast(t("ad3_attributes.toast_error_generic"), "error"); }
   };
 
   const handleDelete = async (attr: AdminAttribute) => {
     const ok = await confirm({
-      title: `Supprimer '${attr.name}' ?`,
+      title: t("ad3_attributes.confirm_delete_title", { name: attr.name }),
       message: attr.used_as_axis_count > 0
-        ? `⚠️ Cet attribut est utilisé par ${attr.used_as_axis_count} fiche(s). La suppression sera refusée.`
-        : "Aucune fiche ne l'utilise. Action définitive.",
+        ? t("ad3_attributes.confirm_delete_used_message", { count: attr.used_as_axis_count })
+        : t("ad3_attributes.confirm_delete_unused_message"),
       type: "warning",
     });
     if (!ok) return;
     try {
       await adminApi.deleteAttribute(attr.id);
-      showToast(`${attr.name} supprimé`, "success");
+      showToast(t("ad3_attributes.toast_deleted", { name: attr.name }), "success");
       load();
     } catch (err: unknown) {
-      const msg = (err as { detail?: string })?.detail ?? "Impossible de supprimer.";
+      const msg = (err as { detail?: string })?.detail ?? t("ad3_attributes.error_delete_default");
       showToast(msg, "error");
     }
   };
@@ -133,16 +135,16 @@ export default function AdminAttributesPage() {
   const bulkSetRole = async (role: AttributeRole) => {
     if (selectedIds.size === 0) return;
     const ok = await confirm({
-      title: `Changer le rôle en ${role} pour ${selectedIds.size} attribut(s) ?`,
-      message: "Cette action est immédiate.",
+      title: t("ad3_attributes.confirm_bulk_role_title", { role, count: selectedIds.size }),
+      message: t("ad3_attributes.confirm_bulk_role_message"),
       type: "info",
     });
     if (!ok) return;
     try {
       const res = await adminApi.bulkSetAttributesRole(Array.from(selectedIds), role);
-      showToast(`${res.updated_count} attribut(s) mis à jour`, "success");
+      showToast(t("ad3_attributes.toast_bulk_updated", { count: res.updated_count }), "success");
       load();
-    } catch { showToast("Erreur bulk", "error"); }
+    } catch { showToast(t("ad3_attributes.toast_error_bulk"), "error"); }
   };
 
   const toggleSelect = (id: number) => {
@@ -164,17 +166,17 @@ export default function AdminAttributesPage() {
         <div>
           <h1 style={{
             fontFamily: "'Syne', sans-serif", fontSize: 24, fontWeight: 800, color: T.text, marginBottom: 4,
-          }}>Attributs</h1>
+          }}>{t("ad3_attributes.title")}</h1>
           <p style={{ fontSize: 13, color: T.muted }}>
-            {counts.AXE} axes · {counts.SPEC} specs · {counts.OFFRE} attributs vendeur
+            {t("ad3_attributes.subtitle_counts", { axe: counts.AXE, spec: counts.SPEC, offre: counts.OFFRE })}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={load} style={btnGhost(T)}>
-            <RefreshCw size={12} className={loading ? "animate-spin" : ""} /> Actualiser
+            <RefreshCw size={12} className={loading ? "animate-spin" : ""} /> {t("ad3_attributes.btn_refresh")}
           </button>
           <button onClick={() => setEditItem("new")} style={btnPrimary(T)}>
-            <Plus size={12} /> Nouvel attribut
+            <Plus size={12} /> {t("ad3_attributes.btn_new")}
           </button>
         </div>
       </div>
@@ -183,7 +185,7 @@ export default function AdminAttributesPage() {
       <div className="flex items-center gap-2 flex-wrap">
         {(["all", "AXE", "SPEC", "OFFRE"] as RoleTab[]).map((k) => {
           const isActive = tab === k;
-          const label = k === "all" ? "Tous" : ROLE_LABELS[k];
+          const label = k === "all" ? t("ad3_attributes.tab_all") : ROLE_LABELS[k];
           const count = counts[k as keyof typeof counts] ?? 0;
           const color = k === "all" ? "#6B7280" : ROLE_COLORS[k as AttributeRole];
           return (
@@ -213,7 +215,7 @@ export default function AdminAttributesPage() {
             color: T.muted, pointerEvents: "none",
           }} />
           <input value={search} onChange={(e) => setSearch(e.target.value)}
-            placeholder="Nom ou slug..."
+            placeholder={t("ad3_attributes.search_placeholder")}
             style={{
               width: "100%", padding: "10px 12px 10px 34px", borderRadius: 10,
               fontSize: 12.5, background: T.input, color: T.text,
@@ -225,23 +227,23 @@ export default function AdminAttributesPage() {
         <select value={valuesTypeFilter}
           onChange={(e) => setValuesTypeFilter(e.target.value as AttributeValuesType | "")}
           style={selectStyle(T)}>
-          <option value="">Tous les types</option>
+          <option value="">{t("ad3_attributes.filter_all_types")}</option>
           {VALUES_TYPES.map((t2) => <option key={t2} value={t2}>{t2}</option>)}
         </select>
 
         <select value={universalFilter}
           onChange={(e) => setUniversalFilter(e.target.value as "any" | "yes" | "no")}
           style={selectStyle(T)}>
-          <option value="any">Universel + spécifique</option>
-          <option value="yes">Universel uniquement</option>
-          <option value="no">Spécifique catégorie</option>
+          <option value="any">{t("ad3_attributes.filter_universal_both")}</option>
+          <option value="yes">{t("ad3_attributes.filter_universal_only")}</option>
+          <option value="no">{t("ad3_attributes.filter_category_specific")}</option>
         </select>
 
         {selectedIds.size > 0 && (
           <>
             <span style={{ fontSize: 11.5, fontWeight: 700, color: T.red,
               padding: "6px 12px", background: T.red + "15", borderRadius: 20,
-            }}>{selectedIds.size} sélectionné(s)</span>
+            }}>{t("ad3_attributes.selected_count", { count: selectedIds.size })}</span>
             <button onClick={() => bulkSetRole("AXE")} style={btnColored(ROLE_COLORS.AXE)}>
               → AXE
             </button>
@@ -263,12 +265,12 @@ export default function AdminAttributesPage() {
         {loading ? (
           <div style={{ padding: 40, textAlign: "center", color: T.muted }}>
             <RefreshCw size={20} className="animate-spin" style={{ margin: "0 auto 12px" }} />
-            Chargement...
+            {t("ad3_attributes.loading")}
           </div>
         ) : attributes.length === 0 ? (
           <div style={{ padding: 40, textAlign: "center", color: T.muted }}>
             <Zap size={32} style={{ margin: "0 auto 12px", opacity: 0.4 }} />
-            <p style={{ fontSize: 13 }}>Aucun attribut dans ce filtre.</p>
+            <p style={{ fontSize: 13 }}>{t("ad3_attributes.empty_state")}</p>
           </div>
         ) : (
           <div style={{ overflowX: "auto" }}>
@@ -280,13 +282,13 @@ export default function AdminAttributesPage() {
                       checked={selectedIds.size === attributes.length && attributes.length > 0}
                       onChange={toggleAll} />
                   </th>
-                  <TH>Nom</TH>
-                  <TH>Rôle</TH>
-                  <TH>Type</TH>
-                  <TH>Portée</TH>
-                  <TH>Valeurs</TH>
-                  <TH>Usage</TH>
-                  <TH>Actions</TH>
+                  <TH>{t("ad3_attributes.col_name")}</TH>
+                  <TH>{t("ad3_attributes.col_role")}</TH>
+                  <TH>{t("ad3_attributes.col_type")}</TH>
+                  <TH>{t("ad3_attributes.col_scope")}</TH>
+                  <TH>{t("ad3_attributes.col_values")}</TH>
+                  <TH>{t("ad3_attributes.col_usage")}</TH>
+                  <TH>{t("ad3_attributes.col_actions")}</TH>
                 </tr>
               </thead>
               <tbody>
@@ -387,6 +389,7 @@ function AttributeRow({
   onToggle: () => void; onDetail: () => void; onEdit: () => void;
   onSetRole: (role: AttributeRole) => void; onDelete: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <tr style={{
       borderBottom: `1px solid ${T.border}`,
@@ -417,7 +420,7 @@ function AttributeRow({
           <span style={{
             display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700,
             color: "#7C3AED", background: "#7C3AED18", padding: "2px 8px", borderRadius: 8,
-          }}>UNIVERSEL</span>
+          }}>{t("ad3_attributes.badge_universal")}</span>
         ) : (
           <span style={{ color: T.muted }}>{attr.category_name ?? "—"}</span>
         )}
@@ -425,30 +428,30 @@ function AttributeRow({
       <td style={{ padding: "12px 16px", fontSize: 12, color: T.text }}>
         {attr.values_count > 0 ? (
           <span title={attr.values.join(", ")}>
-            {attr.values_count} valeur{attr.values_count > 1 ? "s" : ""}
+            {t(attr.values_count > 1 ? "ad3_attributes.values_count_plural" : "ad3_attributes.values_count", { count: attr.values_count })}
           </span>
         ) : (
-          <span style={{ color: T.mutedL, fontStyle: "italic" }}>libre</span>
+          <span style={{ color: T.mutedL, fontStyle: "italic" }}>{t("ad3_attributes.values_free")}</span>
         )}
         {attr.unit && <span style={{ color: T.mutedL, marginLeft: 4 }}>({attr.unit})</span>}
       </td>
       <td style={{ padding: "12px 16px", fontSize: 12, fontWeight: 600, color: T.text }}>
         {attr.used_as_axis_count > 0 ? (
-          <span>{attr.used_as_axis_count} fiche{attr.used_as_axis_count > 1 ? "s" : ""}</span>
+          <span>{t(attr.used_as_axis_count > 1 ? "ad3_attributes.fiche_count_plural" : "ad3_attributes.fiche_count", { count: attr.used_as_axis_count })}</span>
         ) : (
           <span style={{ color: T.mutedL }}>—</span>
         )}
       </td>
       <td style={{ padding: "12px 16px" }}>
         <div style={{ display: "flex", gap: 4 }}>
-          <ActionBtn onClick={onDetail} title="Détails" T={T}><Eye size={12} /></ActionBtn>
-          <ActionBtn onClick={onEdit} title="Modifier" T={T}><Edit3 size={12} /></ActionBtn>
+          <ActionBtn onClick={onDetail} title={t("ad3_attributes.action_details")} T={T}><Eye size={12} /></ActionBtn>
+          <ActionBtn onClick={onEdit} title={t("ad3_attributes.action_edit")} T={T}><Edit3 size={12} /></ActionBtn>
           {attr.role !== "AXE" && (
-            <ActionBtn onClick={() => onSetRole("AXE")} title="Promouvoir AXE" T={T}
+            <ActionBtn onClick={() => onSetRole("AXE")} title={t("ad3_attributes.action_promote_axe")} T={T}
               color={ROLE_COLORS.AXE}><Zap size={12} /></ActionBtn>
           )}
           {attr.used_as_axis_count === 0 && (
-            <ActionBtn onClick={onDelete} title="Supprimer" T={T} color="#DC2626">
+            <ActionBtn onClick={onDelete} title={t("ad3_attributes.action_delete")} T={T} color="#DC2626">
               <Trash2 size={12} />
             </ActionBtn>
           )}
@@ -493,6 +496,7 @@ function AttributeDetailModal({ attributeId, onClose, onModified, onEdit }: {
   onEdit: (d: AdminAttributeDetail) => void;
 }) {
   const T = useAdminTheme();
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const [detail, setDetail] = useState<AdminAttributeDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -501,19 +505,19 @@ function AttributeDetailModal({ attributeId, onClose, onModified, onEdit }: {
     let cancelled = false;
     adminApi.getAttributeDetail(attributeId)
       .then((d) => { if (!cancelled) setDetail(d); })
-      .catch(() => { if (!cancelled) showToast("Erreur chargement", "error"); })
+      .catch(() => { if (!cancelled) showToast(t("ad3_attributes.toast_error_load"), "error"); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [attributeId, showToast]);
+  }, [attributeId, showToast, t]);
 
   const changeRole = async (role: AttributeRole) => {
     if (!detail || detail.role === role) return;
     try {
       const updated = await adminApi.setAttributeRole(detail.id, role);
       setDetail(updated);
-      showToast(`Rôle changé en ${role}`, "success");
+      showToast(t("ad3_attributes.toast_role_changed", { role }), "success");
       onModified();
-    } catch { showToast("Erreur", "error"); }
+    } catch { showToast(t("ad3_attributes.toast_error_generic"), "error"); }
   };
 
   return (
@@ -521,7 +525,7 @@ function AttributeDetailModal({ attributeId, onClose, onModified, onEdit }: {
       {loading || !detail ? (
         <div style={{ padding: 60, textAlign: "center", color: T.muted }}>
           <RefreshCw size={24} className="animate-spin" style={{ margin: "0 auto 12px" }} />
-          Chargement...
+          {t("ad3_attributes.loading")}
         </div>
       ) : (
         <>
@@ -533,7 +537,7 @@ function AttributeDetailModal({ attributeId, onClose, onModified, onEdit }: {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 10.5, color: T.mutedL, marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
                 <Tag size={11} />
-                {detail.is_universal ? "Attribut universel" : (
+                {detail.is_universal ? t("ad3_attributes.universal_attribute_label") : (
                   <>
                     {detail.category_parent_name && (
                       <>{detail.category_parent_name} <span style={{ opacity: 0.5 }}>›</span> </>
@@ -574,15 +578,17 @@ function AttributeDetailModal({ attributeId, onClose, onModified, onEdit }: {
             }}>
               <Info size={14} color={ROLE_COLORS[detail.role]} style={{ flexShrink: 0, marginTop: 2 }} />
               <div style={{ fontSize: 12.5, color: T.text, lineHeight: 1.5 }}>
-                <strong style={{ color: ROLE_COLORS[detail.role] }}>Rôle {detail.role}</strong> — {ROLE_DESCRIPTIONS[detail.role]}
+                <strong style={{ color: ROLE_COLORS[detail.role] }}>{t("ad3_attributes.role_label", { role: detail.role })}</strong> — {t(ROLE_DESCRIPTION_KEYS[detail.role])}
               </div>
             </div>
 
             {/* Valeurs */}
-            <Section title={`Valeurs disponibles${detail.unit ? ` (unité : ${detail.unit})` : ""}`} T={T}>
+            <Section title={detail.unit
+              ? t("ad3_attributes.values_available_with_unit", { unit: detail.unit })
+              : t("ad3_attributes.values_available")} T={T}>
               {detail.values.length === 0 ? (
                 <div style={{ fontSize: 12, color: T.muted, fontStyle: "italic" }}>
-                  Aucune valeur prédéfinie (saisie libre côté vendeur).
+                  {t("ad3_attributes.no_predefined_values")}
                 </div>
               ) : (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -598,20 +604,20 @@ function AttributeDetailModal({ attributeId, onClose, onModified, onEdit }: {
             </Section>
 
             {/* Stats */}
-            <Section title="Utilisation" T={T}>
+            <Section title={t("ad3_attributes.section_usage")} T={T}>
               <div style={{
                 display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12,
                 background: T.cardAlt, padding: 14, borderRadius: 12,
               }}>
-                <StatCell label="Fiches utilisatrices" value={detail.stats.used_as_axis_count} T={T} />
-                <StatCell label="Fiches approuvées" value={detail.stats.approved_masters_using} T={T} color={ROLE_COLORS.SPEC} />
-                <StatCell label="Valeurs prédéfinies" value={detail.stats.values_count} T={T} />
+                <StatCell label={t("ad3_attributes.stat_used_by_fiches")} value={detail.stats.used_as_axis_count} T={T} />
+                <StatCell label={t("ad3_attributes.stat_approved_fiches")} value={detail.stats.approved_masters_using} T={T} color={ROLE_COLORS.SPEC} />
+                <StatCell label={t("ad3_attributes.stat_predefined_values")} value={detail.stats.values_count} T={T} />
               </div>
             </Section>
 
             {/* Fiches utilisatrices */}
             {detail.used_by_masters.length > 0 && (
-              <Section title={`Fiches maîtres utilisant '${detail.slug}' comme axe`} T={T}>
+              <Section title={t("ad3_attributes.section_master_fiches", { slug: detail.slug })} T={T}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 300, overflowY: "auto" }}>
                   {detail.used_by_masters.map((m) => (
                     <Link key={m.id} to={`/product/${m.slug}`} target="_blank" style={{
@@ -634,7 +640,7 @@ function AttributeDetailModal({ attributeId, onClose, onModified, onEdit }: {
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 12.5, fontWeight: 700, color: T.text }}>{m.title}</div>
                         <div style={{ fontSize: 10.5, color: T.muted, marginTop: 2 }}>
-                          {m.category_name} · axes : {m.variant_axes.join(", ")}
+                          {t("ad3_attributes.category_axes_label", { category: m.category_name, axes: m.variant_axes.join(", ") })}
                         </div>
                       </div>
                       <ExternalLink size={11} color={T.mutedL} />
@@ -657,21 +663,21 @@ function AttributeDetailModal({ attributeId, onClose, onModified, onEdit }: {
                 borderRadius: 10, fontSize: 12.5, fontWeight: 700,
                 background: T.card, color: T.text, border: `1px solid ${T.border}`, cursor: "pointer",
               }}>
-                <Edit3 size={13} /> Modifier
+                <Edit3 size={13} /> {t("ad3_attributes.action_edit")}
               </button>
               {detail.role !== "AXE" && (
                 <button onClick={() => changeRole("AXE")} style={btnColored(ROLE_COLORS.AXE)}>
-                  Promouvoir en AXE
+                  {t("ad3_attributes.action_promote_to_axe")}
                 </button>
               )}
               {detail.role !== "SPEC" && (
                 <button onClick={() => changeRole("SPEC")} style={btnColored(ROLE_COLORS.SPEC)}>
-                  Passer en SPEC
+                  {t("ad3_attributes.action_switch_to_spec")}
                 </button>
               )}
               {detail.role !== "OFFRE" && (
                 <button onClick={() => changeRole("OFFRE")} style={btnColored(ROLE_COLORS.OFFRE)}>
-                  Passer en OFFRE
+                  {t("ad3_attributes.action_switch_to_offre")}
                 </button>
               )}
             </div>
@@ -691,6 +697,7 @@ function AttributeFormModal({ attribute, onClose, onSaved }: {
   onClose: () => void; onSaved: () => void;
 }) {
   const T = useAdminTheme();
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const isEdit = attribute !== null;
 
@@ -714,7 +721,7 @@ function AttributeFormModal({ attribute, onClose, onSaved }: {
     const v = newValue.trim();
     if (!v) return;
     if ((form.values ?? []).includes(v)) {
-      showToast("Cette valeur existe déjà", "warning");
+      showToast(t("ad3_attributes.toast_value_exists"), "warning");
       return;
     }
     setForm({ ...form, values: [...(form.values ?? []), v] });
@@ -726,20 +733,20 @@ function AttributeFormModal({ attribute, onClose, onSaved }: {
 
   const handleSubmit = async () => {
     if (!form.name || form.name.trim().length < 2) {
-      showToast("Nom trop court", "warning"); return;
+      showToast(t("ad3_attributes.toast_name_too_short"), "warning"); return;
     }
     setBusy(true);
     try {
       if (isEdit) {
         await adminApi.updateAttribute(attribute.id, form);
-        showToast("Attribut mis à jour", "success");
+        showToast(t("ad3_attributes.toast_updated"), "success");
       } else {
         await adminApi.createAttribute(form);
-        showToast("Attribut créé", "success");
+        showToast(t("ad3_attributes.toast_created"), "success");
       }
       onSaved();
     } catch (err: unknown) {
-      const msg = (err as { detail?: string })?.detail ?? "Erreur";
+      const msg = (err as { detail?: string })?.detail ?? t("ad3_attributes.error_generic");
       showToast(msg, "error");
     } finally { setBusy(false); }
   };
@@ -752,7 +759,7 @@ function AttributeFormModal({ attribute, onClose, onSaved }: {
         display: "flex", justifyContent: "space-between", alignItems: "center",
       }}>
         <h2 style={{ fontSize: 18, fontWeight: 800, color: T.text, margin: 0 }}>
-          {isEdit ? `Modifier ${attribute.name}` : "Nouvel attribut"}
+          {isEdit ? t("ad3_attributes.form_title_edit", { name: attribute.name }) : t("ad3_attributes.form_title_new")}
         </h2>
         <button onClick={onClose} style={{
           padding: 6, borderRadius: 8, background: T.card, border: `1px solid ${T.border}`,
@@ -761,15 +768,15 @@ function AttributeFormModal({ attribute, onClose, onSaved }: {
       </div>
 
       <div style={{ padding: "22px 26px", display: "flex", flexDirection: "column", gap: 14 }}>
-        <FormField label="Nom *" T={T}>
+        <FormField label={t("ad3_attributes.field_name")} T={T}>
           <input type="text" value={form.name ?? ""}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
-            placeholder="Ex : Stockage"
+            placeholder={t("ad3_attributes.placeholder_name_example")}
             style={inputStyle(T)} />
         </FormField>
 
         {isEdit && (
-          <FormField label="Slug (auto-généré à la création)" T={T}>
+          <FormField label={t("ad3_attributes.field_slug")} T={T}>
             <input type="text" value={form.slug ?? ""}
               onChange={(e) => setForm({ ...form, slug: e.target.value })}
               placeholder="phone-storage"
@@ -778,16 +785,16 @@ function AttributeFormModal({ attribute, onClose, onSaved }: {
         )}
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <FormField label="Rôle" T={T}>
+          <FormField label={t("ad3_attributes.field_role")} T={T}>
             <select value={form.role ?? "SPEC"}
               onChange={(e) => setForm({ ...form, role: e.target.value as AttributeRole })}
               style={inputStyle(T)}>
               {(["AXE", "SPEC", "OFFRE"] as AttributeRole[]).map((r) => (
-                <option key={r} value={r}>{ROLE_LABELS[r]} — {ROLE_DESCRIPTIONS[r]}</option>
+                <option key={r} value={r}>{ROLE_LABELS[r]} — {t(ROLE_DESCRIPTION_KEYS[r])}</option>
               ))}
             </select>
           </FormField>
-          <FormField label="Type de valeurs" T={T}>
+          <FormField label={t("ad3_attributes.field_values_type")} T={T}>
             <select value={form.values_type ?? "SELECT"}
               onChange={(e) => setForm({ ...form, values_type: e.target.value as AttributeValuesType })}
               style={inputStyle(T)}>
@@ -797,20 +804,20 @@ function AttributeFormModal({ attribute, onClose, onSaved }: {
         </div>
 
         <div style={{ display: "flex", gap: 16 }}>
-          <Toggle label="Universel" value={!!form.is_universal}
+          <Toggle label={t("ad3_attributes.field_universal")} value={!!form.is_universal}
             onChange={(v) => setForm({ ...form, is_universal: v, category: v ? null : form.category })}
             T={T} />
-          <Toggle label="Obligatoire (is_required)" value={!!form.is_required}
+          <Toggle label={t("ad3_attributes.field_required")} value={!!form.is_required}
             onChange={(v) => setForm({ ...form, is_required: v })} T={T} />
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <FormField label="Unité (ex : Go, mAh)" T={T}>
+          <FormField label={t("ad3_attributes.field_unit")} T={T}>
             <input type="text" value={form.unit ?? ""}
               onChange={(e) => setForm({ ...form, unit: e.target.value })}
-              placeholder="Ex : Go" style={inputStyle(T)} />
+              placeholder={t("ad3_attributes.placeholder_unit_example")} style={inputStyle(T)} />
           </FormField>
-          <FormField label="Display order" T={T}>
+          <FormField label={t("ad3_attributes.field_display_order")} T={T}>
             <input type="number" value={form.display_order ?? 100}
               onChange={(e) => setForm({ ...form, display_order: parseInt(e.target.value) || 0 })}
               style={inputStyle(T)} />
@@ -819,17 +826,17 @@ function AttributeFormModal({ attribute, onClose, onSaved }: {
 
         {/* Values editor */}
         {(form.values_type === "SELECT" || form.values_type === "NUMBER") && (
-          <FormField label={`Valeurs prédéfinies (${(form.values ?? []).length})`} T={T}>
+          <FormField label={t("ad3_attributes.field_predefined_values", { count: (form.values ?? []).length })} T={T}>
             <div style={{ display: "flex", gap: 8 }}>
               <input type="text" value={newValue}
                 onChange={(e) => setNewValue(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addValue(); } }}
-                placeholder="Ajouter une valeur (Enter)" style={inputStyle(T)} />
+                placeholder={t("ad3_attributes.placeholder_add_value")} style={inputStyle(T)} />
               <button onClick={addValue} style={{
                 padding: "10px 14px", borderRadius: 10, background: T.red, color: "#fff",
                 border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700,
                 display: "flex", alignItems: "center", gap: 4,
-              }}><Plus size={12} /> Ajouter</button>
+              }}><Plus size={12} /> {t("ad3_attributes.btn_add")}</button>
             </div>
             {(form.values ?? []).length > 0 && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
@@ -862,7 +869,7 @@ function AttributeFormModal({ attribute, onClose, onSaved }: {
           display: "flex", alignItems: "center", gap: 6, padding: "10px 14px",
           borderRadius: 10, fontSize: 12.5, fontWeight: 700,
           background: T.card, color: T.text, border: `1px solid ${T.border}`, cursor: "pointer",
-        }}>Annuler</button>
+        }}>{t("ad3_attributes.btn_cancel")}</button>
         <button onClick={handleSubmit} disabled={busy}
           style={{
             display: "flex", alignItems: "center", gap: 6, padding: "10px 16px",
@@ -871,7 +878,7 @@ function AttributeFormModal({ attribute, onClose, onSaved }: {
             cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.6 : 1,
           }}>
           {busy ? <RefreshCw size={13} className="animate-spin" /> : <Check size={13} />}
-          {isEdit ? "Enregistrer" : "Créer"}
+          {isEdit ? t("ad3_attributes.btn_save") : t("ad3_attributes.btn_create")}
         </button>
       </div>
     </ModalShell>

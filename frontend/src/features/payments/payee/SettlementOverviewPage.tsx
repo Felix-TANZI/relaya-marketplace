@@ -15,6 +15,7 @@
 
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { useAdjustments, useSettlements } from '../hooks/useSettlements';
 import { useAmountDue } from '../hooks/useAmountDue';
@@ -35,6 +36,7 @@ export default function SettlementOverviewPage({
   basePath = '/seller',
   profilePath,
 }: SettlementOverviewPageProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { data: due, loading, error } = useAmountDue();
   const { data: batches } = useSettlements();
@@ -60,7 +62,7 @@ export default function SettlementOverviewPage({
   if (loading) {
     return (
       <div style={{ padding: '3rem', textAlign: 'center' }}>
-        <span style={{ fontSize: 13, color: FT.faint }}>Chargement…</span>
+        <span style={{ fontSize: 13, color: FT.faint }}>{t('sl2_payee_settlements.loading')}</span>
       </div>
     );
   }
@@ -69,13 +71,13 @@ export default function SettlementOverviewPage({
     return (
       <EmptyState
         icon="alert-circle"
-        title="Impossible d'afficher votre compte"
-        description={error ?? 'Réessayez dans un instant.'}
+        title={t('sl2_payee_settlements.overview_error_title')}
+        description={error ?? t('sl2_payee_settlements.overview_retry')}
       />
     );
   }
 
-  const titre = due.display_label || 'Mon compte BelivaY';
+  const titre = due.display_label || t('sl2_payee_settlements.overview_title');
 
   return (
     <div style={{ maxWidth: 880 }}>
@@ -88,7 +90,7 @@ export default function SettlementOverviewPage({
           <p style={{
             fontSize: 19, margin: 0, color: 'var(--text-primary, #1A1209)',
           }}>
-            Mon compte BelivaY
+            {t('sl2_payee_settlements.overview_title')}
           </p>
           <p style={{ fontSize: 12.5, margin: '4px 0 0', color: FT.muted }}>
             {titre}
@@ -105,7 +107,7 @@ export default function SettlementOverviewPage({
             aria-hidden="true"
             style={{ fontSize: 14, verticalAlign: -2, marginRight: 6 }}
           />
-          Tous mes relevés
+          {t('sl2_payee_settlements.all_statements')}
         </button>
       </div>
 
@@ -126,11 +128,9 @@ export default function SettlementOverviewPage({
         }}>
           <FinancialAlert
             severity="ATTENTION"
-            title={`Une retenue de ${
-              retenue.remaining_xaf.toLocaleString('fr-FR')
-            } FCFA sur ce cycle`}
+            title={t('sl2_payee_settlements.holdback_title', { amount: retenue.remaining_xaf.toLocaleString('fr-FR') })}
             detail={retenue.reason}
-            actionLabel="Détail"
+            actionLabel={t('sl2_payee_settlements.detail')}
             onAction={() => navigate(`${basePath}/adjustments`)}
           />
         </div>
@@ -144,7 +144,7 @@ export default function SettlementOverviewPage({
           fontSize: 11, margin: 0, letterSpacing: '0.08em',
           textTransform: 'uppercase', color: FT.faint,
         }}>
-          Derniers règlements
+          {t('sl2_payee_settlements.recent_settlements')}
         </p>
         {derniers.length > 0 && (
           <button
@@ -152,7 +152,7 @@ export default function SettlementOverviewPage({
             onClick={() => navigate(`${basePath}/payments`)}
             style={{ fontSize: 12, padding: '5px 11px' }}
           >
-            Tout voir
+            {t('sl2_payee_settlements.see_all')}
           </button>
         )}
       </div>
@@ -165,11 +165,8 @@ export default function SettlementOverviewPage({
         {derniers.length === 0 ? (
           <EmptyState
             icon="receipt"
-            title="Aucun règlement pour le moment"
-            description={
-              'Votre premier relevé apparaîtra ici dès la fin du prochain '
-              + 'cycle.'
-            }
+            title={t('sl2_payee_settlements.empty_title')}
+            description={t('sl2_payee_settlements.empty_description_short')}
           />
         ) : (
           derniers.map((lot, index) => (

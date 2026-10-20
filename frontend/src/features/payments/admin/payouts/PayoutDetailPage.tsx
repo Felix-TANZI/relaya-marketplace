@@ -14,6 +14,7 @@
 
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { adminFinanceApi } from '../../api/admin-finance.api';
 import { useAdminPayout } from '../../hooks/useFinanceAdmin';
@@ -53,6 +54,7 @@ function Ligne({ label, value }: { label: string; value: React.ReactNode }) {
 export default function PayoutDetailPage({
   basePath = '/admin/finance',
 }: PayoutDetailPageProps) {
+  const { t } = useTranslation();
   const { reference = '' } = useParams<{ reference: string }>();
   const navigate = useNavigate();
   const [dialogue, setDialogue] = useState<Dialogue>(null);
@@ -66,7 +68,7 @@ export default function PayoutDetailPage({
   if (loading) {
     return (
       <div style={{ padding: '3rem', textAlign: 'center' }}>
-        <span style={{ fontSize: 13, color: FT.faint }}>Chargement…</span>
+        <span style={{ fontSize: 13, color: FT.faint }}>{t('pm1_payout_detail.loading')}</span>
       </div>
     );
   }
@@ -75,7 +77,7 @@ export default function PayoutDetailPage({
     return (
       <EmptyState
         icon="file-off"
-        title="Versement introuvable"
+        title={t('pm1_payout_detail.not_found_title')}
         description={error ?? undefined}
       />
     );
@@ -89,17 +91,17 @@ export default function PayoutDetailPage({
     if (dialogue === 'approve') {
       void action.run(
         () => adminFinanceApi.approvePayout(reference, motif),
-        'Versement approuvé.',
+        t('pm1_payout_detail.toast_approved'),
       );
     } else if (dialogue === 'reject') {
       void action.run(
         () => adminFinanceApi.rejectPayout(reference, motif),
-        'Versement rejeté.',
+        t('pm1_payout_detail.toast_rejected'),
       );
     } else if (dialogue === 'execute') {
       void action.run(
         () => adminFinanceApi.executePayout(reference),
-        'Versement émis.',
+        t('pm1_payout_detail.toast_executed'),
       );
     }
   };
@@ -116,7 +118,7 @@ export default function PayoutDetailPage({
           aria-hidden="true"
           style={{ fontSize: 14, verticalAlign: -2, marginRight: 6 }}
         />
-        Versements
+        {t('pm1_payout_detail.back_to_payouts')}
       </button>
 
       <div style={{
@@ -132,9 +134,11 @@ export default function PayoutDetailPage({
           <div>
             <TransactionReference value={versement.reference} size={14} />
             <p style={{ fontSize: 12, margin: '3px 0 0', color: FT.muted }}>
-              {versement.payee.display_label || versement.payee.payee_code}
-              {' · demandé par '}{versement.requested_by_username}
-              {' le '}{formatDay(versement.requested_at)}
+              {t('pm1_payout_detail.meta_line', {
+                payee: versement.payee.display_label || versement.payee.payee_code,
+                requester: versement.requested_by_username,
+                date: formatDay(versement.requested_at),
+              })}
             </p>
           </div>
           <Money value={versement.amount_xaf} size={22} />
@@ -178,7 +182,7 @@ export default function PayoutDetailPage({
 
         <div style={{ padding: '0.25rem 1.25rem' }}>
           <Ligne
-            label="État"
+            label={t('pm1_payout_detail.label_state')}
             value={(
               <StatusBadge
                 domain="payout"
@@ -190,24 +194,24 @@ export default function PayoutDetailPage({
             )}
           />
           <Ligne
-            label="Destinataire"
+            label={t('pm1_payout_detail.label_recipient')}
             value={`${versement.payee_msisdn_masked} · ${
               versement.payee_operator}`}
           />
           <Ligne
-            label="Référence prestataire"
+            label={t('pm1_payout_detail.label_provider_reference')}
             value={versement.provider_reference || '—'}
           />
           <Ligne
-            label="Référence externe émise"
+            label={t('pm1_payout_detail.label_external_reference')}
             value={versement.provider_external_reference || '—'}
           />
           <Ligne
-            label="Lot d'origine"
+            label={t('pm1_payout_detail.label_origin_batch')}
             value={versement.batch_reference || '—'}
           />
           {versement.justification && (
-            <Ligne label="Justification" value={versement.justification} />
+            <Ligne label={t('pm1_payout_detail.label_justification')} value={versement.justification} />
           )}
         </div>
 
@@ -219,14 +223,16 @@ export default function PayoutDetailPage({
             fontSize: 11, margin: '0 0 10px', letterSpacing: '0.06em',
             textTransform: 'uppercase', color: FT.faint,
           }}>
-            Historique
+            {t('pm1_payout_detail.history_title')}
           </p>
           <div style={{ display: 'flex', gap: 10, marginBottom: 9 }}>
             <span style={{ fontSize: 11.5, color: FT.faint, width: 96 }}>
               {formatDay(versement.requested_at)}
             </span>
             <span style={{ fontSize: 12.5, color: FT.muted }}>
-              Demandé par {versement.requested_by_username}
+              {t('pm1_payout_detail.history_requested_by', {
+                username: versement.requested_by_username,
+              })}
             </span>
           </div>
           {versement.approvals.map((approbation) => (
@@ -238,8 +244,12 @@ export default function PayoutDetailPage({
                 {formatDay(approbation.at)}
               </span>
               <span style={{ fontSize: 12.5, color: FT.muted }}>
-                Approuvé par {approbation.by}
-                {approbation.comment && ` — « ${approbation.comment} »`}
+                {t(approbation.comment
+                  ? 'pm1_payout_detail.history_approved_by_comment'
+                  : 'pm1_payout_detail.history_approved_by', {
+                  username: approbation.by,
+                  comment: approbation.comment,
+                })}
               </span>
             </div>
           ))}
@@ -252,8 +262,10 @@ export default function PayoutDetailPage({
                 fontSize: 12.5, color: inconnu ? FT.redD : FT.muted,
               }}>
                 {inconnu
-                  ? 'Émission — délai dépassé, issue inconnue'
-                  : `Émission — ${versement.status_label.toLowerCase()}`}
+                  ? t('pm1_payout_detail.emission_unknown')
+                  : t('pm1_payout_detail.emission_status', {
+                    status: versement.status_label.toLowerCase(),
+                  })}
               </span>
             </div>
           )}
@@ -277,12 +289,12 @@ export default function PayoutDetailPage({
             onClick={() => {
               void action.run(
                 () => adminFinanceApi.runReconciliation('unknown_payouts'),
-                'Réconciliation lancée.',
+                t('pm1_payout_detail.toast_reconciliation_launched'),
               );
             }}
             style={{ fontSize: 12.5, padding: '7px 14px' }}
           >
-            {action.running ? 'En cours…' : 'Interroger le prestataire'}
+            {action.running ? t('pm1_payout_detail.running_ellipsis') : t('pm1_payout_detail.query_provider')}
           </button>
         )}
         {aApprouver && (
@@ -292,7 +304,7 @@ export default function PayoutDetailPage({
               onClick={() => setDialogue('reject')}
               style={{ fontSize: 12.5, padding: '7px 14px' }}
             >
-              Rejeter
+              {t('pm1_payout_detail.action_reject')}
             </button>
             <button
               type="button"
@@ -302,7 +314,7 @@ export default function PayoutDetailPage({
                 borderColor: FT.green, color: FT.greenD,
               }}
             >
-              Approuver
+              {t('pm1_payout_detail.action_approve')}
             </button>
           </>
         )}
@@ -315,44 +327,46 @@ export default function PayoutDetailPage({
               borderColor: FT.coral, color: '#993C1D',
             }}
           >
-            Exécuter le versement
+            {t('pm1_payout_detail.execute_payout_button')}
           </button>
         )}
       </div>
 
       <ApprovalDialog
         open={dialogue !== null}
-        title={{
-          approve: 'Approuver ce versement',
-          reject: 'Rejeter ce versement',
-          execute: 'Exécuter ce versement',
-        }[dialogue ?? 'approve']}
+        title={t({
+          approve: 'pm1_payout_detail.dialog_title_approve',
+          reject: 'pm1_payout_detail.dialog_title_reject',
+          execute: 'pm1_payout_detail.dialog_title_execute',
+        }[dialogue ?? 'approve'])}
         amountXaf={versement.amount_xaf}
         fields={[
           {
-            label: 'Bénéficiaire',
+            label: t('pm1_payout_detail.label_beneficiary'),
             value: versement.payee.display_label || versement.payee.payee_code,
           },
           {
-            label: 'Destinataire',
+            label: t('pm1_payout_detail.label_recipient'),
             value: `${versement.payee_msisdn_masked} · ${
               versement.payee_operator}`,
           },
-          { label: 'Demandé par', value: versement.requested_by_username },
+          { label: t('pm1_payout_detail.label_requested_by'), value: versement.requested_by_username },
         ]}
-        confirmLabel={{
-          approve: 'Approuver', reject: 'Rejeter', execute: 'Exécuter',
-        }[dialogue ?? 'approve']}
+        confirmLabel={t({
+          approve: 'pm1_payout_detail.action_approve',
+          reject: 'pm1_payout_detail.action_reject',
+          execute: 'pm1_payout_detail.action_execute',
+        }[dialogue ?? 'approve'])}
         // Rejeter, c'est s'ecarter du cours normal : ca doit s'expliquer.
         reasonRequired={dialogue === 'reject'}
         reasonPlaceholder={dialogue === 'reject'
-          ? 'Motif du rejet…'
-          : 'Vérifié : relevé conforme au lot.'}
+          ? t('pm1_payout_detail.reason_placeholder_reject')
+          : t('pm1_payout_detail.reason_placeholder_default')}
         danger={dialogue === 'reject'}
         warning={dialogue === 'execute'
-          ? 'Une fois émis, ce versement ne peut pas être annulé.'
+          ? t('pm1_payout_detail.warning_execute_irreversible')
           : dialogue === 'approve'
-            ? 'Le demandeur ne peut pas approuver sa propre demande.'
+            ? t('pm1_payout_detail.warning_approve_self')
             : undefined}
         running={action.running}
         error={action.error}

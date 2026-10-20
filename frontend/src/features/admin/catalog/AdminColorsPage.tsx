@@ -11,6 +11,7 @@
 //   - Modale create/edit avec color picker HTML5
 
 import { useEffect, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Search, Check, X, RefreshCw, Eye, Plus, Edit3, Trash2,
   Palette, Droplet, Sparkles,
@@ -27,12 +28,12 @@ import {
 
 type FamilyTab = "all" | "COLOR" | "FINISH" | "neutral" | "inactive";
 
-const FAMILY_LABELS: Record<FamilyTab, string> = {
-  all: "Toutes",
-  COLOR: "Couleurs",
-  FINISH: "Finitions",
-  neutral: "Neutres",
-  inactive: "Inactives",
+const FAMILY_LABEL_KEYS: Record<FamilyTab, string> = {
+  all: "ad3_colors.tab_all",
+  COLOR: "ad3_colors.tab_colors",
+  FINISH: "ad3_colors.tab_finishes",
+  neutral: "ad3_colors.tab_neutral",
+  inactive: "ad3_colors.tab_inactive",
 };
 
 const FAMILY_ICONS: Record<FamilyTab, React.ElementType> = {
@@ -47,6 +48,7 @@ const FAMILY_ICONS: Record<FamilyTab, React.ElementType> = {
 
 export default function AdminColorsPage() {
   const T = useAdminTheme();
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const { confirm } = useConfirm();
 
@@ -82,9 +84,9 @@ export default function AdminColorsPage() {
       const data = await adminApi.listColors(filters);
       setColors(data);
       setSelectedIds(new Set());
-    } catch { showToast("Erreur chargement", "error"); }
+    } catch { showToast(t("ad3_colors.toast_error_load"), "error"); }
     finally { setLoading(false); }
-  }, [tab, search, showToast]);
+  }, [tab, search, showToast, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -108,27 +110,27 @@ export default function AdminColorsPage() {
 
   // ── Actions ─────────────────────────────────────────────────────────
   const handleActivate = async (c: AdminColor) => {
-    try { await adminApi.activateColor(c.id); showToast(`${c.name} activée`, "success"); load(); }
-    catch { showToast("Erreur", "error"); }
+    try { await adminApi.activateColor(c.id); showToast(t("ad3_colors.toast_activated", { name: c.name }), "success"); load(); }
+    catch { showToast(t("ad3_colors.toast_error_generic"), "error"); }
   };
   const handleDeactivate = async (c: AdminColor) => {
-    try { await adminApi.deactivateColor(c.id); showToast(`${c.name} désactivée`, "success"); load(); }
-    catch { showToast("Erreur", "error"); }
+    try { await adminApi.deactivateColor(c.id); showToast(t("ad3_colors.toast_deactivated", { name: c.name }), "success"); load(); }
+    catch { showToast(t("ad3_colors.toast_error_generic"), "error"); }
   };
   const handleDelete = async (c: AdminColor) => {
     const ok = await confirm({
-      title: `Supprimer ${c.name} ?`,
+      title: t("ad3_colors.confirm_delete_title", { name: c.name }),
       message: c.used_by_variants_count > 0
-        ? `⚠️ Cette couleur est référencée par ${c.used_by_variants_count} variant(s). La suppression sera refusée. Utilise plutôt "Désactiver".`
-        : "Aucun variant ne la référence. Action définitive.",
+        ? t(c.used_by_variants_count > 1 ? "ad3_colors.confirm_delete_blocked_plural" : "ad3_colors.confirm_delete_blocked", { count: c.used_by_variants_count })
+        : t("ad3_colors.confirm_delete_ok"),
       type: "warning",
     });
     if (!ok) return;
     try {
       await adminApi.deleteColor(c.id);
-      showToast(`${c.name} supprimée`, "success"); load();
+      showToast(t("ad3_colors.toast_deleted", { name: c.name }), "success"); load();
     } catch (err: unknown) {
-      const msg = (err as { detail?: string })?.detail ?? "Impossible.";
+      const msg = (err as { detail?: string })?.detail ?? t("ad3_colors.error_impossible");
       showToast(msg, "error");
     }
   };
@@ -136,15 +138,15 @@ export default function AdminColorsPage() {
   const bulkAction = async (label: string, fn: (ids: number[]) => Promise<{ updated_count: number }>) => {
     if (selectedIds.size === 0) return;
     const ok = await confirm({
-      title: `${label} ${selectedIds.size} couleur(s) ?`,
-      message: "Immédiat.", type: "info",
+      title: t(selectedIds.size > 1 ? "ad3_colors.confirm_bulk_title_plural" : "ad3_colors.confirm_bulk_title", { label, count: selectedIds.size }),
+      message: t("ad3_colors.confirm_bulk_message"), type: "info",
     });
     if (!ok) return;
     try {
       const res = await fn(Array.from(selectedIds));
-      showToast(`${res.updated_count} couleur(s) traitée(s)`, "success");
+      showToast(t(res.updated_count > 1 ? "ad3_colors.toast_bulk_result_plural" : "ad3_colors.toast_bulk_result", { count: res.updated_count }), "success");
       load();
-    } catch { showToast("Erreur", "error"); }
+    } catch { showToast(t("ad3_colors.toast_error_generic"), "error"); }
   };
 
   const toggleSelect = (id: number) => {
@@ -167,18 +169,18 @@ export default function AdminColorsPage() {
           <h1 style={{
             fontFamily: "'Syne', sans-serif", fontSize: 24, fontWeight: 800,
             color: T.text, marginBottom: 4,
-          }}>Dictionnaire couleurs</h1>
+          }}>{t("ad3_colors.title")}</h1>
           <p style={{ fontSize: 13, color: T.muted }}>
-            {counts.COLOR} couleurs · {counts.FINISH} finitions
-            {counts.inactive > 0 && ` · ${counts.inactive} désactivée${counts.inactive > 1 ? "s" : ""}`}
+            {t("ad3_colors.stats_summary", { colorCount: counts.COLOR, finishCount: counts.FINISH })}
+            {counts.inactive > 0 && t(counts.inactive > 1 ? "ad3_colors.stats_inactive_plural" : "ad3_colors.stats_inactive", { count: counts.inactive })}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={load} style={btnGhost(T)}>
-            <RefreshCw size={12} className={loading ? "animate-spin" : ""} /> Actualiser
+            <RefreshCw size={12} className={loading ? "animate-spin" : ""} /> {t("ad3_colors.refresh")}
           </button>
           <button onClick={() => setEditItem("new")} style={btnPrimary(T)}>
-            <Plus size={12} /> Nouvelle entrée
+            <Plus size={12} /> {t("ad3_colors.new_entry")}
           </button>
         </div>
       </div>
@@ -198,7 +200,7 @@ export default function AdminColorsPage() {
               border: `1px solid ${isActive ? T.red : T.border}`, cursor: "pointer",
             }}>
               <Icon size={12} />
-              {FAMILY_LABELS[k]}
+              {t(FAMILY_LABEL_KEYS[k])}
               <span style={{
                 background: isActive ? "rgba(255,255,255,0.25)" : T.card,
                 color: isActive ? "#fff" : T.muted,
@@ -217,7 +219,7 @@ export default function AdminColorsPage() {
             color: T.muted, pointerEvents: "none",
           }} />
           <input value={search} onChange={(e) => setSearch(e.target.value)}
-            placeholder="Nom (FR ou EN) ou slug..."
+            placeholder={t("ad3_colors.search_placeholder")}
             style={{
               width: "100%", padding: "10px 12px 10px 34px", borderRadius: 10,
               fontSize: 12.5, background: T.input, color: T.text,
@@ -233,13 +235,13 @@ export default function AdminColorsPage() {
             background: viewMode === "grid" ? T.red : T.cardAlt,
             color: viewMode === "grid" ? "#fff" : T.muted,
             border: "none", cursor: "pointer",
-          }}>Grille</button>
+          }}>{t("ad3_colors.view_grid")}</button>
           <button onClick={() => setViewMode("list")} style={{
             padding: "9px 12px", fontSize: 11.5, fontWeight: 600,
             background: viewMode === "list" ? T.red : T.cardAlt,
             color: viewMode === "list" ? "#fff" : T.muted,
             border: "none", cursor: "pointer",
-          }}>Liste</button>
+          }}>{t("ad3_colors.view_list")}</button>
         </div>
 
         {selectedIds.size > 0 && (
@@ -247,14 +249,14 @@ export default function AdminColorsPage() {
             <span style={{
               fontSize: 11.5, fontWeight: 700, color: T.red,
               padding: "6px 12px", background: T.red + "15", borderRadius: 20,
-            }}>{selectedIds.size} sélectionnée(s)</span>
-            <button onClick={() => bulkAction("Activer", adminApi.bulkActivateColors)}
+            }}>{t(selectedIds.size > 1 ? "ad3_colors.selected_count_plural" : "ad3_colors.selected_count", { count: selectedIds.size })}</span>
+            <button onClick={() => bulkAction(t("ad3_colors.activate"), adminApi.bulkActivateColors)}
               style={btnColored("#059669")}>
-              <Check size={11} /> Activer
+              <Check size={11} /> {t("ad3_colors.activate")}
             </button>
-            <button onClick={() => bulkAction("Désactiver", adminApi.bulkDeactivateColors)}
+            <button onClick={() => bulkAction(t("ad3_colors.deactivate"), adminApi.bulkDeactivateColors)}
               style={btnColored("#DC2626")}>
-              <X size={11} /> Désactiver
+              <X size={11} /> {t("ad3_colors.deactivate")}
             </button>
           </>
         )}
@@ -267,7 +269,7 @@ export default function AdminColorsPage() {
           background: T.card, borderRadius: 16, border: `1px solid ${T.border}`,
         }}>
           <RefreshCw size={20} className="animate-spin" style={{ margin: "0 auto 12px" }} />
-          Chargement...
+          {t("ad3_colors.loading")}
         </div>
       ) : colors.length === 0 ? (
         <div style={{
@@ -275,7 +277,7 @@ export default function AdminColorsPage() {
           background: T.card, borderRadius: 16, border: `1px solid ${T.border}`,
         }}>
           <Palette size={32} style={{ margin: "0 auto 12px", opacity: 0.4 }} />
-          <p style={{ fontSize: 13 }}>Aucune entrée dans ce filtre.</p>
+          <p style={{ fontSize: 13 }}>{t("ad3_colors.empty_filtered")}</p>
         </div>
       ) : viewMode === "grid" ? (
         <ColorGrid colors={colors} T={T} selectedIds={selectedIds}
@@ -283,7 +285,7 @@ export default function AdminColorsPage() {
           onDetail={setDetailId}
           onEdit={async (c) => {
             try { const d = await adminApi.getColorDetail(c.id); setEditItem(d); }
-            catch { showToast("Erreur", "error"); }
+            catch { showToast(t("ad3_colors.toast_error_generic"), "error"); }
           }}
           onActivate={handleActivate} onDeactivate={handleDeactivate}
         />
@@ -293,7 +295,7 @@ export default function AdminColorsPage() {
           onDetail={setDetailId}
           onEdit={async (c) => {
             try { const d = await adminApi.getColorDetail(c.id); setEditItem(d); }
-            catch { showToast("Erreur", "error"); }
+            catch { showToast(t("ad3_colors.toast_error_generic"), "error"); }
           }}
           onActivate={handleActivate} onDeactivate={handleDeactivate}
           onDelete={handleDelete}
@@ -388,6 +390,7 @@ function ColorCard({
   onToggle: () => void; onDetail: () => void; onEdit: () => void;
   onActivate: () => void; onDeactivate: () => void;
 }) {
+  const { t } = useTranslation();
   const hex = color.hex_code || "#E5E7EB";
   return (
     <div style={{
@@ -414,7 +417,7 @@ function ColorCard({
             alignItems: "center", justifyContent: "center",
             background: "rgba(0,0,0,0.4)", color: "#fff",
             fontSize: 10, fontWeight: 800, letterSpacing: "0.1em",
-          }}>DÉSACTIVÉE</div>
+          }}>{t("ad3_colors.badge_deactivated")}</div>
         )}
       </button>
 
@@ -430,10 +433,10 @@ function ColorCard({
             }}>
               {color.name}
               {color.is_neutral && (
-                <span title="Couleur neutre" style={{
+                <span title={t("ad3_colors.neutral")} style={{
                   fontSize: 9, fontWeight: 700, background: T.cardAlt, color: T.muted,
                   padding: "1px 6px", borderRadius: 4,
-                }}>N</span>
+                }}>{t("ad3_colors.neutral_abbr")}</span>
               )}
             </div>
             {color.name_en && (
@@ -451,19 +454,19 @@ function ColorCard({
         }}>
           <span>{color.hex_code || "—"}</span>
           {color.used_by_variants_count > 0 && (
-            <span>{color.used_by_variants_count} var.</span>
+            <span>{t("ad3_colors.variant_abbr", { count: color.used_by_variants_count })}</span>
           )}
         </div>
 
         {/* Actions */}
         <div style={{ display: "flex", gap: 4, marginTop: 10, justifyContent: "flex-end" }}>
-          <IconBtn onClick={onEdit} title="Modifier" T={T}><Edit3 size={11} /></IconBtn>
+          <IconBtn onClick={onEdit} title={t("ad3_colors.edit")} T={T}><Edit3 size={11} /></IconBtn>
           {color.is_active ? (
-            <IconBtn onClick={onDeactivate} title="Désactiver" T={T} color="#DC2626">
+            <IconBtn onClick={onDeactivate} title={t("ad3_colors.deactivate")} T={T} color="#DC2626">
               <X size={11} />
             </IconBtn>
           ) : (
-            <IconBtn onClick={onActivate} title="Activer" T={T} color="#059669">
+            <IconBtn onClick={onActivate} title={t("ad3_colors.activate")} T={T} color="#059669">
               <Check size={11} />
             </IconBtn>
           )}
@@ -513,6 +516,7 @@ function ColorList({
   onActivate: (c: AdminColor) => void; onDeactivate: (c: AdminColor) => void;
   onDelete: (c: AdminColor) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div style={{
       background: T.card, borderRadius: 16, border: `1px solid ${T.border}`,
@@ -527,12 +531,12 @@ function ColorList({
                   checked={selectedIds.size === colors.length && colors.length > 0}
                   onChange={onToggleAll} />
               </th>
-              <th style={thStyle}>Couleur</th>
-              <th style={thStyle}>Famille</th>
-              <th style={thStyle}>Hex</th>
-              <th style={thStyle}>Statut</th>
-              <th style={thStyle}>Usage</th>
-              <th style={thStyle}>Actions</th>
+              <th style={thStyle}>{t("ad3_colors.col_color")}</th>
+              <th style={thStyle}>{t("ad3_colors.family")}</th>
+              <th style={thStyle}>{t("ad3_colors.col_hex")}</th>
+              <th style={thStyle}>{t("ad3_colors.col_status")}</th>
+              <th style={thStyle}>{t("ad3_colors.col_usage")}</th>
+              <th style={thStyle}>{t("ad3_colors.col_actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -563,7 +567,7 @@ function ColorList({
                           <span style={{
                             marginLeft: 4, fontSize: 9, background: T.cardAlt, color: T.muted,
                             padding: "1px 5px", borderRadius: 3,
-                          }}>N</span>
+                          }}>{t("ad3_colors.neutral_abbr")}</span>
                         )}
                       </div>
                       {c.name_en && (
@@ -586,38 +590,38 @@ function ColorList({
                     <span style={{
                       fontSize: 10, fontWeight: 700, color: "#059669",
                       background: "#05966918", padding: "2px 8px", borderRadius: 20,
-                    }}>ACTIVE</span>
+                    }}>{t("ad3_colors.status_active")}</span>
                   ) : (
                     <span style={{
                       fontSize: 10, fontWeight: 700, color: "#9CA3AF",
                       background: "#9CA3AF18", padding: "2px 8px", borderRadius: 20,
-                    }}>INACTIVE</span>
+                    }}>{t("ad3_colors.status_inactive")}</span>
                   )}
                 </td>
                 <td style={{ padding: "10px 16px", fontSize: 12, color: T.text }}>
                   {c.used_by_variants_count > 0
-                    ? `${c.used_by_variants_count} variant(s)`
+                    ? t(c.used_by_variants_count > 1 ? "ad3_colors.variant_count_plural" : "ad3_colors.variant_count", { count: c.used_by_variants_count })
                     : <span style={{ color: T.mutedL }}>—</span>}
                 </td>
                 <td style={{ padding: "10px 16px" }}>
                   <div style={{ display: "flex", gap: 4 }}>
-                    <IconBtn onClick={() => onDetail(c.id)} title="Détails" T={T}>
+                    <IconBtn onClick={() => onDetail(c.id)} title={t("ad3_colors.details")} T={T}>
                       <Eye size={11} />
                     </IconBtn>
-                    <IconBtn onClick={() => onEdit(c)} title="Modifier" T={T}>
+                    <IconBtn onClick={() => onEdit(c)} title={t("ad3_colors.edit")} T={T}>
                       <Edit3 size={11} />
                     </IconBtn>
                     {c.is_active ? (
-                      <IconBtn onClick={() => onDeactivate(c)} title="Désactiver" T={T} color="#DC2626">
+                      <IconBtn onClick={() => onDeactivate(c)} title={t("ad3_colors.deactivate")} T={T} color="#DC2626">
                         <X size={11} />
                       </IconBtn>
                     ) : (
-                      <IconBtn onClick={() => onActivate(c)} title="Activer" T={T} color="#059669">
+                      <IconBtn onClick={() => onActivate(c)} title={t("ad3_colors.activate")} T={T} color="#059669">
                         <Check size={11} />
                       </IconBtn>
                     )}
                     {c.used_by_variants_count === 0 && (
-                      <IconBtn onClick={() => onDelete(c)} title="Supprimer" T={T} color="#DC2626">
+                      <IconBtn onClick={() => onDelete(c)} title={t("ad3_colors.delete")} T={T} color="#DC2626">
                         <Trash2 size={11} />
                       </IconBtn>
                     )}
@@ -648,6 +652,7 @@ function ColorDetailModal({ colorId, onClose, onModified, onEdit }: {
   onEdit: (d: AdminColorDetail) => void;
 }) {
   const T = useAdminTheme();
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const { confirm } = useConfirm();
   const [detail, setDetail] = useState<AdminColorDetail | null>(null);
@@ -657,10 +662,10 @@ function ColorDetailModal({ colorId, onClose, onModified, onEdit }: {
     let cancelled = false;
     adminApi.getColorDetail(colorId)
       .then((d) => { if (!cancelled) setDetail(d); })
-      .catch(() => { if (!cancelled) showToast("Erreur chargement", "error"); })
+      .catch(() => { if (!cancelled) showToast(t("ad3_colors.toast_error_load"), "error"); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [colorId, showToast]);
+  }, [colorId, showToast, t]);
 
   const toggle = async (activate: boolean) => {
     if (!detail) return;
@@ -669,24 +674,24 @@ function ColorDetailModal({ colorId, onClose, onModified, onEdit }: {
         ? await adminApi.activateColor(detail.id)
         : await adminApi.deactivateColor(detail.id);
       setDetail(updated);
-      showToast(activate ? "Activée" : "Désactivée", "success");
+      showToast(t(activate ? "ad3_colors.toast_activated_simple" : "ad3_colors.toast_deactivated_simple"), "success");
       onModified();
-    } catch { showToast("Erreur", "error"); }
+    } catch { showToast(t("ad3_colors.toast_error_generic"), "error"); }
   };
 
   const handleDelete = async () => {
     if (!detail) return;
     const ok = await confirm({
-      title: `Supprimer ${detail.name} ?`, message: "Action définitive.",
+      title: t("ad3_colors.confirm_delete_title", { name: detail.name }), message: t("ad3_colors.confirm_delete_definitive"),
       type: "warning",
     });
     if (!ok) return;
     try {
       await adminApi.deleteColor(detail.id);
-      showToast("Supprimée", "success");
+      showToast(t("ad3_colors.toast_deleted_simple"), "success");
       onClose(); onModified();
     } catch (err: unknown) {
-      const msg = (err as { detail?: string })?.detail ?? "Impossible.";
+      const msg = (err as { detail?: string })?.detail ?? t("ad3_colors.error_impossible");
       showToast(msg, "error");
     }
   };
@@ -696,7 +701,7 @@ function ColorDetailModal({ colorId, onClose, onModified, onEdit }: {
       {loading || !detail ? (
         <div style={{ padding: 60, textAlign: "center", color: T.muted }}>
           <RefreshCw size={24} className="animate-spin" style={{ margin: "0 auto 12px" }} />
-          Chargement...
+          {t("ad3_colors.loading")}
         </div>
       ) : (
         <>
@@ -722,7 +727,7 @@ function ColorDetailModal({ colorId, onClose, onModified, onEdit }: {
                   <span style={{
                     fontSize: 10, fontWeight: 700, background: T.card, color: T.muted,
                     padding: "2px 8px", borderRadius: 4,
-                  }}>NEUTRE</span>
+                  }}>{t("ad3_colors.badge_neutral")}</span>
                 )}
               </div>
               <h2 style={{ fontSize: 24, fontWeight: 800, color: T.text, margin: 0 }}>
@@ -748,7 +753,7 @@ function ColorDetailModal({ colorId, onClose, onModified, onEdit }: {
                   <span style={{
                     fontSize: 10, fontWeight: 700, background: "#DC262618",
                     color: "#DC2626", padding: "2px 8px", borderRadius: 20,
-                  }}>INACTIVE</span>
+                  }}>{t("ad3_colors.status_inactive")}</span>
                 )}
               </div>
             </div>
@@ -766,14 +771,14 @@ function ColorDetailModal({ colorId, onClose, onModified, onEdit }: {
               <div style={{
                 fontSize: 10.5, fontWeight: 700, color: T.muted,
                 textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10,
-              }}>Utilisation</div>
+              }}>{t("ad3_colors.section_usage")}</div>
               <div style={{
                 display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12,
                 background: T.cardAlt, padding: 14, borderRadius: 12,
               }}>
                 <div>
                   <div style={{ fontSize: 10, fontWeight: 600, color: T.mutedL, textTransform: "uppercase" }}>
-                    Variants total
+                    {t("ad3_colors.stat_variants_total")}
                   </div>
                   <div style={{ fontSize: 16, fontWeight: 800, color: T.text, marginTop: 2 }}>
                     {detail.stats.variants_using}
@@ -781,7 +786,7 @@ function ColorDetailModal({ colorId, onClose, onModified, onEdit }: {
                 </div>
                 <div>
                   <div style={{ fontSize: 10, fontWeight: 600, color: T.mutedL, textTransform: "uppercase" }}>
-                    Approuvés
+                    {t("ad3_colors.stat_approved")}
                   </div>
                   <div style={{ fontSize: 16, fontWeight: 800, color: "#059669", marginTop: 2 }}>
                     {detail.stats.approved_variants_using}
@@ -789,13 +794,13 @@ function ColorDetailModal({ colorId, onClose, onModified, onEdit }: {
                 </div>
                 <div>
                   <div style={{ fontSize: 10, fontWeight: 600, color: T.mutedL, textTransform: "uppercase" }}>
-                    Suppression
+                    {t("ad3_colors.stat_deletion")}
                   </div>
                   <div style={{
                     fontSize: 14, fontWeight: 800, marginTop: 2,
                     color: detail.is_deletable ? "#059669" : "#DC2626",
                   }}>
-                    {detail.is_deletable ? "Possible" : "Bloquée"}
+                    {t(detail.is_deletable ? "ad3_colors.deletion_possible" : "ad3_colors.deletion_blocked")}
                   </div>
                 </div>
               </div>
@@ -803,7 +808,7 @@ function ColorDetailModal({ colorId, onClose, onModified, onEdit }: {
 
             {/* Display order */}
             <div style={{ fontSize: 12, color: T.muted }}>
-              Ordre d'affichage : <strong style={{ color: T.text }}>{detail.display_order}</strong>
+              {t("ad3_colors.display_order_label")} <strong style={{ color: T.text }}>{detail.display_order}</strong>
             </div>
           </div>
 
@@ -819,15 +824,15 @@ function ColorDetailModal({ colorId, onClose, onModified, onEdit }: {
                 borderRadius: 10, fontSize: 12.5, fontWeight: 700,
                 background: T.card, color: T.text, border: `1px solid ${T.border}`, cursor: "pointer",
               }}>
-                <Edit3 size={13} /> Modifier
+                <Edit3 size={13} /> {t("ad3_colors.edit")}
               </button>
               {detail.is_active ? (
                 <button onClick={() => toggle(false)} style={btnColored("#DC2626")}>
-                  <X size={13} /> Désactiver
+                  <X size={13} /> {t("ad3_colors.deactivate")}
                 </button>
               ) : (
                 <button onClick={() => toggle(true)} style={btnColored("#059669")}>
-                  <Check size={13} /> Activer
+                  <Check size={13} /> {t("ad3_colors.activate")}
                 </button>
               )}
             </div>
@@ -838,7 +843,7 @@ function ColorDetailModal({ colorId, onClose, onModified, onEdit }: {
                   borderRadius: 10, fontSize: 12.5, fontWeight: 700,
                   background: "#DC2626", color: "#fff", border: "none", cursor: "pointer",
                 }}>
-                  <Trash2 size={13} /> Supprimer
+                  <Trash2 size={13} /> {t("ad3_colors.delete")}
                 </button>
               )}
             </div>
@@ -858,6 +863,7 @@ function ColorFormModal({ color, onClose, onSaved }: {
   onClose: () => void; onSaved: () => void;
 }) {
   const T = useAdminTheme();
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const isEdit = color !== null;
 
@@ -875,23 +881,23 @@ function ColorFormModal({ color, onClose, onSaved }: {
 
   const handleSubmit = async () => {
     if (!form.name || form.name.trim().length < 2) {
-      showToast("Nom trop court", "warning"); return;
+      showToast(t("ad3_colors.error_name_too_short"), "warning"); return;
     }
     setBusy(true);
     try {
       if (isEdit) {
         await adminApi.updateColor(color.id, form);
-        showToast("Couleur mise à jour", "success");
+        showToast(t("ad3_colors.toast_updated"), "success");
       } else {
         await adminApi.createColor(form);
-        showToast("Couleur créée", "success");
+        showToast(t("ad3_colors.toast_created"), "success");
       }
       onSaved();
     } catch (err: unknown) {
       const detail = (err as { detail?: string; name?: string[]; hex_code?: string[] })?.detail
         ?? (err as { name?: string[] })?.name?.[0]
         ?? (err as { hex_code?: string[] })?.hex_code?.[0]
-        ?? "Erreur";
+        ?? t("ad3_colors.toast_error_generic");
       showToast(detail, "error");
     } finally { setBusy(false); }
   };
@@ -906,7 +912,7 @@ function ColorFormModal({ color, onClose, onSaved }: {
         display: "flex", justifyContent: "space-between", alignItems: "center",
       }}>
         <h2 style={{ fontSize: 18, fontWeight: 800, color: T.text, margin: 0 }}>
-          {isEdit ? `Modifier ${color.name}` : "Nouvelle entrée"}
+          {isEdit ? t("ad3_colors.edit_title", { name: color.name }) : t("ad3_colors.new_entry")}
         </h2>
         <button onClick={onClose} style={{
           padding: 6, borderRadius: 8, background: T.card, border: `1px solid ${T.border}`,
@@ -929,7 +935,7 @@ function ColorFormModal({ color, onClose, onSaved }: {
           }} />
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>
-              {form.name || "Nom de la couleur"}
+              {form.name || t("ad3_colors.name_placeholder_preview")}
             </div>
             {form.name_en && (
               <div style={{ fontSize: 11.5, color: T.muted, fontStyle: "italic" }}>{form.name_en}</div>
@@ -941,31 +947,31 @@ function ColorFormModal({ color, onClose, onSaved }: {
           </div>
         </div>
 
-        <FormField label="Famille" T={T}>
+        <FormField label={t("ad3_colors.family")} T={T}>
           <select value={form.family ?? "COLOR"}
             onChange={(e) => setForm({ ...form, family: e.target.value as ColorFamily })}
             style={inputStyle(T)}>
-            <option value="COLOR">COLOR — Couleur vraie</option>
-            <option value="FINISH">FINISH — Finition / matériau</option>
+            <option value="COLOR">{t("ad3_colors.option_color")}</option>
+            <option value="FINISH">{t("ad3_colors.option_finish")}</option>
           </select>
         </FormField>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <FormField label="Nom (FR) *" T={T}>
+          <FormField label={t("ad3_colors.field_name_fr")} T={T}>
             <input type="text" value={form.name ?? ""}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="Ex : Noir"
+              placeholder={t("ad3_colors.placeholder_name_fr_example")}
               style={inputStyle(T)} />
           </FormField>
-          <FormField label="Nom (EN)" T={T}>
+          <FormField label={t("ad3_colors.field_name_en")} T={T}>
             <input type="text" value={form.name_en ?? ""}
               onChange={(e) => setForm({ ...form, name_en: e.target.value })}
-              placeholder="Ex : Black"
+              placeholder={t("ad3_colors.placeholder_name_en_example")}
               style={inputStyle(T)} />
           </FormField>
         </div>
 
-        <FormField label="Code hexadécimal" T={T}>
+        <FormField label={t("ad3_colors.field_hex_code")} T={T}>
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             <input type="color" value={hex}
               onChange={(e) => setForm({ ...form, hex_code: e.target.value.toUpperCase() })}
@@ -982,22 +988,22 @@ function ColorFormModal({ color, onClose, onSaved }: {
           </div>
         </FormField>
 
-        <FormField label="URL image motif (optionnel — pour finitions à texture)" T={T}>
+        <FormField label={t("ad3_colors.field_pattern_url")} T={T}>
           <input type="url" value={form.pattern_url ?? ""}
             onChange={(e) => setForm({ ...form, pattern_url: e.target.value })}
             placeholder="https://..." style={inputStyle(T)} />
         </FormField>
 
-        <FormField label="Display order" T={T}>
+        <FormField label={t("ad3_colors.field_display_order")} T={T}>
           <input type="number" value={form.display_order ?? 100}
             onChange={(e) => setForm({ ...form, display_order: parseInt(e.target.value) || 0 })}
             style={inputStyle(T)} />
         </FormField>
 
         <div style={{ display: "flex", gap: 16 }}>
-          <Toggle label="Couleur neutre" value={!!form.is_neutral}
+          <Toggle label={t("ad3_colors.neutral")} value={!!form.is_neutral}
             onChange={(v) => setForm({ ...form, is_neutral: v })} T={T} />
-          <Toggle label="Active" value={!!form.is_active}
+          <Toggle label={t("ad3_colors.toggle_active")} value={!!form.is_active}
             onChange={(v) => setForm({ ...form, is_active: v })} T={T} />
         </div>
       </div>
@@ -1011,7 +1017,7 @@ function ColorFormModal({ color, onClose, onSaved }: {
           display: "flex", alignItems: "center", gap: 6, padding: "10px 14px",
           borderRadius: 10, fontSize: 12.5, fontWeight: 700,
           background: T.card, color: T.text, border: `1px solid ${T.border}`, cursor: "pointer",
-        }}>Annuler</button>
+        }}>{t("ad3_colors.cancel")}</button>
         <button onClick={handleSubmit} disabled={busy} style={{
           display: "flex", alignItems: "center", gap: 6, padding: "10px 16px",
           borderRadius: 10, fontSize: 12.5, fontWeight: 700,
@@ -1019,7 +1025,7 @@ function ColorFormModal({ color, onClose, onSaved }: {
           cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.6 : 1,
         }}>
           {busy ? <RefreshCw size={13} className="animate-spin" /> : <Check size={13} />}
-          {isEdit ? "Enregistrer" : "Créer"}
+          {t(isEdit ? "ad3_colors.save" : "ad3_colors.create")}
         </button>
       </div>
     </ModalShell>

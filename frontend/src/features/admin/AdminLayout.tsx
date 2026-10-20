@@ -490,7 +490,7 @@ export default function AdminLayout() {
               animation: 'pulse-dot 2s ease-in-out infinite',
             }} />
             <span style={{ fontSize: 11.5, color: 'rgba(249,250,251,0.45)', fontWeight: 600 }}>
-              Production
+              {t('ad1_layout.production_indicator')}
             </span>
           </div>
 

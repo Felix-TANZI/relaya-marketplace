@@ -11,6 +11,8 @@
  * rendu a maintenir, comme pour DeliverySidebarContent et le tiroir.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import {
   BadgeCheck,
   Building2,
@@ -77,111 +79,6 @@ export interface DeliverySettingsProps {
   /** Mentions legales du pied de menu : version, conformite, chapitre anonymat. */
   footer: string[];
 }
-
-const COPY = {
-  fr: {
-    title: "Paramètres",
-    subtitle: "Entreprise, sécurité, langue et application",
-    profileTitle: "Profil de l'entreprise",
-    rows: {
-      name: "Raison sociale",
-      manager: "Responsable",
-      kind: "Type",
-      address: "Adresse agence",
-      zone: "Zones couvertes",
-      phone: "Téléphone",
-      contract: "Référence contrat",
-      fleet: "Flotte approuvée",
-      since: "Partenaire depuis",
-    },
-    todo: "À compléter",
-    kind: "Entreprise de livraison partenaire",
-    legalHint: "Registre de commerce, pièce du responsable et moyen de paiement sont collectés dans le dossier Contrat & KYC.",
-    editProfile: "Modifier les zones & la capacité",
-    securityTitle: "Sécurité",
-    twoFactor: "Double authentification (2FA)",
-    twoFactorHint: "Code à usage unique à chaque connexion sensible",
-    dispatch: "Confirmation avant affectation",
-    dispatchHint: "Demander validation avant d'assigner une mission",
-    darkTheme: "Thème sombre",
-    darkThemeHint: "Confort visuel en faible lumière",
-    language: "Langue",
-    languageHint: "Français / English",
-    otpSent: "Code envoyé à",
-    otpPlaceholder: "Code à 6 chiffres",
-    otpConfirm: "Activer la 2FA",
-    passwordPlaceholder: "Mot de passe actuel",
-    otpDisable: "Désactiver la 2FA",
-    twoFactorOn: "Double authentification activée.",
-    twoFactorOff: "Double authentification désactivée.",
-    cancel: "Annuler",
-    certTitle: "Entreprise Partenaire Vérifiée BelivaY",
-    certCaption: "Scannez pour vérifier l'authenticité",
-    certPending: "Certificat disponible dès la validation du contrat.",
-    appTitle: "Application",
-    pwaBody: "Installer l'app (PWA) sur votre téléphone ou tablette pour un accès hors-connexion rapide.",
-    pwaAction: "Installer l'application",
-    pwaUnavailable: "Déjà installée ou non proposée par ce navigateur.",
-    version: "Version",
-    compliance: "Conformité",
-    logout: "Se déconnecter",
-    changePhoto: "Changer la photo",
-    close: "Fermer",
-    sendFailed: "Envoi du code impossible.",
-    actionFailed: "Opération impossible.",
-  },
-  en: {
-    title: "Settings",
-    subtitle: "Company, security, language and app",
-    profileTitle: "Company profile",
-    rows: {
-      name: "Legal name",
-      manager: "Manager",
-      kind: "Type",
-      address: "Agency address",
-      zone: "Covered zones",
-      phone: "Phone",
-      contract: "Contract reference",
-      fleet: "Approved fleet",
-      since: "Partner since",
-    },
-    todo: "To complete",
-    kind: "Partner delivery company",
-    legalHint: "Trade register, manager ID and payout method are collected in the Contract & KYC file.",
-    editProfile: "Edit zones & capacity",
-    securityTitle: "Security",
-    twoFactor: "Two-factor authentication (2FA)",
-    twoFactorHint: "One-time code on every sensitive sign-in",
-    dispatch: "Confirm before dispatch",
-    dispatchHint: "Ask for validation before assigning a mission",
-    darkTheme: "Dark theme",
-    darkThemeHint: "Easier on the eyes in low light",
-    language: "Language",
-    languageHint: "Français / English",
-    otpSent: "Code sent to",
-    otpPlaceholder: "6-digit code",
-    otpConfirm: "Enable 2FA",
-    passwordPlaceholder: "Current password",
-    otpDisable: "Disable 2FA",
-    twoFactorOn: "Two-factor authentication enabled.",
-    twoFactorOff: "Two-factor authentication disabled.",
-    cancel: "Cancel",
-    certTitle: "BelivaY verified partner company",
-    certCaption: "Scan to check authenticity",
-    certPending: "Certificate available once the contract is approved.",
-    appTitle: "Application",
-    pwaBody: "Install the app (PWA) on your phone or tablet for fast offline access.",
-    pwaAction: "Install the app",
-    pwaUnavailable: "Already installed, or not offered by this browser.",
-    version: "Version",
-    compliance: "Compliance",
-    logout: "Log out",
-    changePhoto: "Change photo",
-    close: "Close",
-    sendFailed: "Could not send the code.",
-    actionFailed: "Action failed.",
-  },
-};
 
 /** Carte de la feuille : meme cadre que `Panel`, mais compacte pour le mobile. */
 function Card({
@@ -280,7 +177,7 @@ function SettingRow({
 }
 
 /** « Février 2025 · 1 an 4 mois » — repere d'anciennete lisible d'un coup d'oeil. */
-function formatMembership(iso: string | null, locale: "fr" | "en") {
+function formatMembership(iso: string | null, locale: "fr" | "en", t: TFunction) {
   if (!iso) return null;
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return null;
@@ -289,8 +186,8 @@ function formatMembership(iso: string | null, locale: "fr" | "en") {
   const months = Math.max(0, (now.getFullYear() - date.getFullYear()) * 12 + now.getMonth() - date.getMonth());
   const years = Math.floor(months / 12);
   const rest = months % 12;
-  const yearWord = locale === "en" ? (years > 1 ? "years" : "year") : years > 1 ? "ans" : "an";
-  const monthWord = locale === "en" ? (rest > 1 ? "months" : "month") : "mois";
+  const yearWord = years > 1 ? t("do1_profile_sheet.membership.years") : t("do1_profile_sheet.membership.year");
+  const monthWord = rest > 1 ? t("do1_profile_sheet.membership.months") : t("do1_profile_sheet.membership.month");
   const age = [years ? `${years} ${yearWord}` : "", rest ? `${rest} ${monthWord}` : ""].filter(Boolean).join(" ");
   const capitalized = month.charAt(0).toUpperCase() + month.slice(1);
   return age ? `${capitalized} · ${age}` : capitalized;
@@ -312,7 +209,7 @@ export function DeliverySettingsContent({
   onSuccess,
   footer,
 }: DeliverySettingsProps) {
-  const t = COPY[locale];
+  const { t } = useTranslation();
   const [twoFactor, setTwoFactor] = useState(false);
   const [twoFactorBusy, setTwoFactorBusy] = useState(false);
   /** null = aucun formulaire ouvert ; sinon on attend un OTP ou un mot de passe. */
@@ -392,13 +289,13 @@ export function DeliverySettingsContent({
       await http("/api/auth/2fa/send-code/", { method: "POST", body: JSON.stringify({ purpose: "2FA_ENABLE" }) });
       setTwoFactorStep("enable");
       setTwoFactorInput("");
-      onSuccess(`${t.otpSent} ${email}.`);
+      onSuccess(`${t("do1_profile_sheet.otp_sent")} ${email}.`);
     } catch (error) {
-      onError(error instanceof Error ? error.message : t.sendFailed);
+      onError(error instanceof Error ? error.message : t("do1_profile_sheet.send_failed"));
     } finally {
       setTwoFactorBusy(false);
     }
-  }, [twoFactor, email, onError, onSuccess, t.otpSent, t.sendFailed]);
+  }, [twoFactor, email, onError, onSuccess, t]);
 
   const confirmTwoFactor = useCallback(async () => {
     const enabling = twoFactorStep === "enable";
@@ -418,40 +315,40 @@ export function DeliverySettingsContent({
       setTwoFactor(enabling);
       setTwoFactorStep(null);
       setTwoFactorInput("");
-      onSuccess(enabling ? t.twoFactorOn : t.twoFactorOff);
+      onSuccess(enabling ? t("do1_profile_sheet.two_factor_on") : t("do1_profile_sheet.two_factor_off"));
     } catch (error) {
-      onError(error instanceof Error ? error.message : t.actionFailed);
+      onError(error instanceof Error ? error.message : t("do1_profile_sheet.action_failed"));
     } finally {
       setTwoFactorBusy(false);
     }
-  }, [twoFactorStep, twoFactorInput, onError, onSuccess, t.twoFactorOn, t.twoFactorOff, t.actionFailed]);
+  }, [twoFactorStep, twoFactorInput, onError, onSuccess, t]);
 
   const install = useCallback(async () => {
     if (!installEvent) {
-      onError(t.pwaUnavailable);
+      onError(t("do1_profile_sheet.pwa_unavailable"));
       return;
     }
     await installEvent.prompt();
     const { outcome } = await installEvent.userChoice;
     if (outcome === "accepted") setInstallEvent(null);
-  }, [installEvent, onError, t.pwaUnavailable]);
+  }, [installEvent, onError, t]);
 
-  const membership = formatMembership(organization.memberSince, locale);
+  const membership = formatMembership(organization.memberSince, locale, t);
   const zone = organization.zones.filter(Boolean).join(" · ");
 
   return (
     <div className="space-y-4">
-      <Card icon={Building2} title={t.profileTitle}>
+      <Card icon={Building2} title={t("do1_profile_sheet.profile_title")}>
         <div>
-          <Row label={t.rows.name} value={organization.name} />
-          <Row label={t.rows.manager} value={organization.manager} />
-          <Row label={t.rows.kind} value={t.kind} />
-          <Row label={t.rows.address} value={organization.address} />
-          <Row label={t.rows.zone} value={zone || t.todo} muted={!zone} />
-          <Row label={t.rows.phone} value={organization.phone} />
-          <Row label={t.rows.contract} value={organization.contract} />
-          <Row label={t.rows.fleet} value={organization.fleetSummary} />
-          <Row label={t.rows.since} value={membership || t.todo} muted={!membership} />
+          <Row label={t("do1_profile_sheet.rows.name")} value={organization.name} />
+          <Row label={t("do1_profile_sheet.rows.manager")} value={organization.manager} />
+          <Row label={t("do1_profile_sheet.rows.kind")} value={t("do1_profile_sheet.kind")} />
+          <Row label={t("do1_profile_sheet.rows.address")} value={organization.address} />
+          <Row label={t("do1_profile_sheet.rows.zone")} value={zone || t("do1_profile_sheet.todo")} muted={!zone} />
+          <Row label={t("do1_profile_sheet.rows.phone")} value={organization.phone} />
+          <Row label={t("do1_profile_sheet.rows.contract")} value={organization.contract} />
+          <Row label={t("do1_profile_sheet.rows.fleet")} value={organization.fleetSummary} />
+          <Row label={t("do1_profile_sheet.rows.since")} value={membership || t("do1_profile_sheet.todo")} muted={!membership} />
         </div>
 
         <button
@@ -460,7 +357,7 @@ export function DeliverySettingsContent({
           className="mt-3 flex w-full items-start gap-2 rounded-xl border border-cyan-100 bg-cyan-50 p-3 text-left transition active:scale-[.99] dark:border-cyan-900 dark:bg-cyan-950/40"
         >
           <Info size={15} className="mt-0.5 flex-shrink-0 text-cyan-700 dark:text-cyan-300" />
-          <span className="text-[12px] font-semibold leading-snug text-cyan-950/80 dark:text-cyan-100/80">{t.legalHint}</span>
+          <span className="text-[12px] font-semibold leading-snug text-cyan-950/80 dark:text-cyan-100/80">{t("do1_profile_sheet.legal_hint")}</span>
           <ChevronRight size={15} className="mt-0.5 flex-shrink-0 text-cyan-400" />
         </button>
 
@@ -469,13 +366,13 @@ export function DeliverySettingsContent({
           onClick={() => onNavigate("zones")}
           className="tap-target mt-3 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-[13px] font-black text-slate-700 transition active:scale-[.98] hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
         >
-          {t.editProfile}
+          {t("do1_profile_sheet.edit_profile")}
         </button>
       </Card>
 
-      <Card icon={ShieldCheck} title={t.securityTitle}>
-        <SettingRow title={t.twoFactor} hint={t.twoFactorHint}>
-          <Toggle checked={twoFactor} onChange={startTwoFactor} label={t.twoFactor} busy={twoFactorBusy} />
+      <Card icon={ShieldCheck} title={t("do1_profile_sheet.security_title")}>
+        <SettingRow title={t("do1_profile_sheet.two_factor")} hint={t("do1_profile_sheet.two_factor_hint")}>
+          <Toggle checked={twoFactor} onChange={startTwoFactor} label={t("do1_profile_sheet.two_factor")} busy={twoFactorBusy} />
         </SettingRow>
 
         {twoFactorStep ? (
@@ -486,7 +383,7 @@ export function DeliverySettingsContent({
               type={twoFactorStep === "enable" ? "text" : "password"}
               inputMode={twoFactorStep === "enable" ? "numeric" : undefined}
               autoComplete={twoFactorStep === "enable" ? "one-time-code" : "current-password"}
-              placeholder={twoFactorStep === "enable" ? t.otpPlaceholder : t.passwordPlaceholder}
+              placeholder={twoFactorStep === "enable" ? t("do1_profile_sheet.otp_placeholder") : t("do1_profile_sheet.password_placeholder")}
               className="w-full rounded-lg border border-cyan-200 bg-white px-3 py-2 text-sm font-bold text-slate-900 outline-none dark:border-cyan-800 dark:bg-slate-900 dark:text-white"
             />
             <div className="mt-2 flex gap-2">
@@ -496,28 +393,28 @@ export function DeliverySettingsContent({
                 disabled={twoFactorBusy || twoFactorInput.trim().length < 4}
                 className="flex-1 rounded-lg bg-cyan-600 px-3 py-2 text-[13px] font-black text-white disabled:opacity-50"
               >
-                {twoFactorStep === "enable" ? t.otpConfirm : t.otpDisable}
+                {twoFactorStep === "enable" ? t("do1_profile_sheet.otp_confirm") : t("do1_profile_sheet.otp_disable")}
               </button>
               <button
                 type="button"
                 onClick={() => setTwoFactorStep(null)}
                 className="rounded-lg border border-cyan-200 px-3 py-2 text-[13px] font-black text-cyan-700 dark:border-cyan-800 dark:text-cyan-200"
               >
-                {t.cancel}
+                {t("do1_profile_sheet.cancel")}
               </button>
             </div>
           </div>
         ) : null}
 
-        <SettingRow title={t.dispatch} hint={t.dispatchHint}>
-          <Toggle checked={dispatchConfirm} onChange={toggleDispatchConfirm} label={t.dispatch} />
+        <SettingRow title={t("do1_profile_sheet.dispatch")} hint={t("do1_profile_sheet.dispatch_hint")}>
+          <Toggle checked={dispatchConfirm} onChange={toggleDispatchConfirm} label={t("do1_profile_sheet.dispatch")} />
         </SettingRow>
 
-        <SettingRow title={t.darkTheme} hint={t.darkThemeHint}>
-          <Toggle checked={theme === "dark"} onChange={onToggleTheme} label={t.darkTheme} />
+        <SettingRow title={t("do1_profile_sheet.dark_theme")} hint={t("do1_profile_sheet.dark_theme_hint")}>
+          <Toggle checked={theme === "dark"} onChange={onToggleTheme} label={t("do1_profile_sheet.dark_theme")} />
         </SettingRow>
 
-        <SettingRow title={t.language} hint={t.languageHint}>
+        <SettingRow title={t("do1_profile_sheet.language")} hint={t("do1_profile_sheet.language_hint")}>
           <div className="flex flex-shrink-0 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
             {(["fr", "en"] as const).map((code) => (
               <button
@@ -550,24 +447,24 @@ export function DeliverySettingsContent({
         </div>
         <h3 className="mt-3 flex items-center justify-center gap-1.5 text-[15px] font-black text-slate-950 dark:text-white">
           <BadgeCheck size={16} className="flex-shrink-0 text-cyan-600 dark:text-cyan-300" />
-          {t.certTitle}
+          {t("do1_profile_sheet.cert_title")}
         </h3>
         <p className="mt-1 text-[12px] font-semibold text-slate-500 dark:text-slate-400">
           {organization.name} · {organization.status}
         </p>
         {qrDataUrl ? (
           <>
-            <img src={qrDataUrl} alt={t.certCaption} className="mx-auto mt-4 h-36 w-36 rounded-xl bg-white p-1.5" />
-            <p className="mt-2 text-[11px] font-semibold text-slate-400 dark:text-slate-500">{t.certCaption}</p>
+            <img src={qrDataUrl} alt={t("do1_profile_sheet.cert_caption")} className="mx-auto mt-4 h-36 w-36 rounded-xl bg-white p-1.5" />
+            <p className="mt-2 text-[11px] font-semibold text-slate-400 dark:text-slate-500">{t("do1_profile_sheet.cert_caption")}</p>
           </>
         ) : (
           <p className="mt-4 rounded-xl border border-dashed border-cyan-200 p-4 text-[12px] font-semibold text-cyan-900/70 dark:border-cyan-800 dark:text-cyan-100/70">
-            {t.certPending}
+            {t("do1_profile_sheet.cert_pending")}
           </p>
         )}
         <label className="tap-target mt-4 inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-cyan-200 bg-white px-4 py-2 text-[13px] font-black text-cyan-700 transition active:scale-95 dark:border-cyan-800 dark:bg-slate-900 dark:text-cyan-200">
           <Camera size={15} />
-          {t.changePhoto}
+          {t("do1_profile_sheet.change_photo")}
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
@@ -581,10 +478,10 @@ export function DeliverySettingsContent({
         </label>
       </section>
 
-      <Card icon={Smartphone} title={t.appTitle}>
+      <Card icon={Smartphone} title={t("do1_profile_sheet.app_title")}>
         <div className="flex items-start gap-2 rounded-xl border border-cyan-100 bg-cyan-50 p-3 dark:border-cyan-900 dark:bg-cyan-950/40">
           <Download size={15} className="mt-0.5 flex-shrink-0 text-cyan-700 dark:text-cyan-300" />
-          <p className="text-[12px] font-semibold leading-snug text-cyan-950/80 dark:text-cyan-100/80">{t.pwaBody}</p>
+          <p className="text-[12px] font-semibold leading-snug text-cyan-950/80 dark:text-cyan-100/80">{t("do1_profile_sheet.pwa_body")}</p>
         </div>
         <button
           type="button"
@@ -593,19 +490,19 @@ export function DeliverySettingsContent({
           className="tap-target mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-600 px-4 py-2.5 text-[13px] font-black text-white transition active:scale-[.98] disabled:bg-slate-200 disabled:text-slate-400 dark:disabled:bg-slate-800 dark:disabled:text-slate-500"
         >
           <Smartphone size={15} />
-          {t.pwaAction}
+          {t("do1_profile_sheet.pwa_action")}
         </button>
         {!installEvent ? (
-          <p className="mt-1.5 text-center text-[11px] font-semibold text-slate-400 dark:text-slate-500">{t.pwaUnavailable}</p>
+          <p className="mt-1.5 text-center text-[11px] font-semibold text-slate-400 dark:text-slate-500">{t("do1_profile_sheet.pwa_unavailable")}</p>
         ) : null}
 
         <div className="mt-3">
-          <Row label={t.version} value={footer[0] || "—"} />
+          <Row label={t("do1_profile_sheet.version")} value={footer[0] || "—"} />
           <div className="flex items-start justify-between gap-4 py-2.5">
-            <span className="flex-shrink-0 text-[13px] font-semibold text-slate-500 dark:text-slate-400">{t.compliance}</span>
+            <span className="flex-shrink-0 text-[13px] font-semibold text-slate-500 dark:text-slate-400">{t("do1_profile_sheet.compliance")}</span>
             <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-black text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
               <CheckCircle2 size={12} />
-              ANTIC · OHADA · Anonymat V5
+              {t("do1_profile_sheet.compliance_value")}
             </span>
           </div>
         </div>
@@ -616,7 +513,7 @@ export function DeliverySettingsContent({
           className="tap-target mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 px-4 py-2.5 text-[13px] font-black text-red-700 transition active:scale-[.98] hover:bg-red-100 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300"
         >
           <LogOut size={15} />
-          {t.logout}
+          {t("do1_profile_sheet.logout")}
         </button>
       </Card>
 
@@ -642,7 +539,7 @@ export default function DeliveryProfileSheet({
   ...content
 }: DeliverySettingsProps & { open: boolean; onClose: () => void }) {
   const panelRef = useRef<HTMLDivElement>(null);
-  const t = COPY[content.locale];
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (!open) return;
@@ -667,7 +564,7 @@ export default function DeliveryProfileSheet({
       <button
         type="button"
         tabIndex={open ? 0 : -1}
-        aria-label={t.close}
+        aria-label={t("do1_profile_sheet.close")}
         onClick={onClose}
         className={`absolute inset-0 h-full w-full cursor-default bg-slate-950/60 backdrop-blur-sm transition-opacity duration-300 ${
           open ? "opacity-100" : "opacity-0"
@@ -677,7 +574,7 @@ export default function DeliveryProfileSheet({
       <div
         role="dialog"
         aria-modal={open ? true : undefined}
-        aria-label={t.title}
+        aria-label={t("do1_profile_sheet.title")}
         /* Fermee, la feuille reste montee pour s'animer ; `inert` la sort de
            l'ordre de tabulation le temps qu'elle est hors de l'ecran. */
         inert={!open}
@@ -691,14 +588,14 @@ export default function DeliveryProfileSheet({
           <div className="min-w-0">
             <h2 className="flex items-center gap-2 text-xl font-black tracking-tight text-slate-950 dark:text-white">
               <Settings2 size={20} strokeWidth={2.4} className="flex-shrink-0 text-cyan-700 dark:text-cyan-300" />
-              {t.title}
+              {t("do1_profile_sheet.title")}
             </h2>
-            <p className="mt-0.5 truncate text-[12px] font-semibold text-slate-500 dark:text-slate-400">{t.subtitle}</p>
+            <p className="mt-0.5 truncate text-[12px] font-semibold text-slate-500 dark:text-slate-400">{t("do1_profile_sheet.subtitle")}</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label={t.close}
+            aria-label={t("do1_profile_sheet.close")}
             className="tap-target -mr-1 flex flex-shrink-0 items-center justify-center rounded-xl text-slate-500 transition active:scale-90 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
           >
             <X size={20} />

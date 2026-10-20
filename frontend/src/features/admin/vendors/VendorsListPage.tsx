@@ -3,6 +3,7 @@
 // KPIs · GMV Chart · Donuts · Filtres · Tableau/Cards · Actions · Pagination
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   RefreshCw, AlertCircle, ChevronLeft, ChevronRight,
@@ -50,25 +51,25 @@ const PAGE_SIZES = [10, 20, 50] as const;
 // CONFIG VISUELLE
 // ─────────────────────────────────────────────────────────────────────────────
 
-const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> = {
-  PENDING:   { label: 'En attente',  color: '#F59E0B', bg: 'rgba(245,158,11,0.12)' },
-  APPROVED:  { label: 'Approuvé',   color: '#10B981', bg: 'rgba(16,185,129,0.12)' },
-  REJECTED:  { label: 'Rejeté',     color: '#EF4444', bg: 'rgba(239,68,68,0.12)'  },
-  SUSPENDED: { label: 'Suspendu',   color: '#9CA3AF', bg: 'rgba(156,163,175,0.12)' },
+const STATUS_CFG: Record<string, { labelKey: string; color: string; bg: string }> = {
+  PENDING:   { labelKey: 'ad4_vendors_list.status.pending',   color: '#F59E0B', bg: 'rgba(245,158,11,0.12)' },
+  APPROVED:  { labelKey: 'ad4_vendors_list.status.approved',  color: '#10B981', bg: 'rgba(16,185,129,0.12)' },
+  REJECTED:  { labelKey: 'ad4_vendors_list.status.rejected',  color: '#EF4444', bg: 'rgba(239,68,68,0.12)'  },
+  SUSPENDED: { labelKey: 'ad4_vendors_list.status.suspended', color: '#9CA3AF', bg: 'rgba(156,163,175,0.12)' },
 };
 
-const PLAN_CFG: Record<string, { label: string; color: string; bg: string }> = {
-  FREE:     { label: 'Gratuit',  color: '#9CA3AF', bg: 'rgba(156,163,175,0.12)' },
-  STARTER:  { label: 'Starter', color: '#3B82F6', bg: 'rgba(59,130,246,0.12)'  },
-  PRO:      { label: 'Pro',     color: '#F47920', bg: 'rgba(244,121,32,0.12)'  },
-  BUSINESS: { label: 'Business',color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)' },
+const PLAN_CFG: Record<string, { labelKey: string; color: string; bg: string }> = {
+  FREE:     { labelKey: 'ad4_vendors_list.plan.free',     color: '#9CA3AF', bg: 'rgba(156,163,175,0.12)' },
+  STARTER:  { labelKey: 'ad4_vendors_list.plan.starter',  color: '#3B82F6', bg: 'rgba(59,130,246,0.12)'  },
+  PRO:      { labelKey: 'ad4_vendors_list.plan.pro',      color: '#F47920', bg: 'rgba(244,121,32,0.12)'  },
+  BUSINESS: { labelKey: 'ad4_vendors_list.plan.business', color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)' },
 };
 
-const CERT_CFG: Record<string, { label: string; color: string }> = {
-  BRONZE:  { label: 'Bronze',  color: '#CD7F32' },
-  SILVER:  { label: 'Argent',  color: '#A8A9AD' },
-  GOLD:    { label: 'Or',      color: '#FFD700' },
-  DIAMOND: { label: 'Diamant', color: '#60A5FA' },
+const CERT_CFG: Record<string, { labelKey: string; color: string }> = {
+  BRONZE:  { labelKey: 'ad4_vendors_list.cert.bronze',  color: '#CD7F32' },
+  SILVER:  { labelKey: 'ad4_vendors_list.cert.silver',  color: '#A8A9AD' },
+  GOLD:    { labelKey: 'ad4_vendors_list.cert.gold',    color: '#FFD700' },
+  DIAMOND: { labelKey: 'ad4_vendors_list.cert.diamond', color: '#60A5FA' },
 };
 
 const CHART_COLORS = ['#10B981', '#F59E0B', '#9CA3AF', '#EF4444'];
@@ -90,29 +91,32 @@ const isNew     = (d: string) => Date.now() - new Date(d).getTime() < 7 * 86400_
 // ─────────────────────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: string }) {
-  const cfg = STATUS_CFG[status] ?? { label: status, color: '#9CA3AF', bg: 'rgba(156,163,175,0.12)' };
+  const { t } = useTranslation();
+  const cfg = STATUS_CFG[status];
   return (
-    <span style={{ fontSize: 10.5, fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.color}40` }}>
-      {cfg.label}
+    <span style={{ fontSize: 10.5, fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: cfg?.bg ?? 'rgba(156,163,175,0.12)', color: cfg?.color ?? '#9CA3AF', border: `1px solid ${(cfg?.color ?? '#9CA3AF')}40` }}>
+      {cfg ? t(cfg.labelKey) : status}
     </span>
   );
 }
 
 function PlanBadge({ plan }: { plan: string | null }) {
+  const { t } = useTranslation();
   if (!plan) return null;
   const cfg = PLAN_CFG[plan] ?? PLAN_CFG.FREE;
   return (
     <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 7px', borderRadius: 6, background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.color}40` }}>
-      {cfg.label}
+      {t(cfg.labelKey)}
     </span>
   );
 }
 
 function CertBadge({ tier }: { tier: string }) {
+  const { t } = useTranslation();
   const cfg = CERT_CFG[tier] ?? CERT_CFG.BRONZE;
   return (
     <span style={{ fontSize: 9.5, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: cfg.color + '18', color: cfg.color }}>
-      {cfg.label}
+      {t(cfg.labelKey)}
     </span>
   );
 }
@@ -164,6 +168,7 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function VendorsListPage() {
+  const { t }          = useTranslation();
   const T             = useAdminTheme();
   const { showToast } = useToast();
   const { confirm }   = useConfirm();
@@ -200,7 +205,7 @@ export default function VendorsListPage() {
       const vList = await adminApi.listVendors();
       setVendors(vList);
     } catch {
-      showToast('Erreur chargement vendeurs', 'error');
+      showToast(t('ad4_vendors_list.load_error'), 'error');
     } finally {
       setLoading(false);
     }
@@ -277,31 +282,31 @@ export default function VendorsListPage() {
   // ── Actions ───────────────────────────────────────────────────────────────
   const doAction = async (v: VendorProfile, action: 'approve' | 'reject' | 'suspend') => {
     const cfgs = {
-      approve: { title: `Approuver ${v.business_name} ?`,  message: 'Le vendeur pourra mettre des produits en vente.',  type: 'warning' as const, confirmText: 'Approuver' },
-      reject:  { title: `Rejeter ${v.business_name} ?`,    message: 'La demande sera définitivement rejetée.',           type: 'danger'  as const, confirmText: 'Rejeter'   },
-      suspend: { title: `Suspendre ${v.business_name} ?`,  message: 'La boutique sera désactivée immédiatement.',        type: 'warning' as const, confirmText: 'Suspendre' },
+      approve: { title: t('ad4_vendors_list.confirm_approve_title', { name: v.business_name }), message: t('ad4_vendors_list.confirm_approve_message'), type: 'warning' as const, confirmText: t('ad4_vendors_list.action_approve') },
+      reject:  { title: t('ad4_vendors_list.confirm_reject_title', { name: v.business_name }),   message: t('ad4_vendors_list.confirm_reject_message'),  type: 'danger'  as const, confirmText: t('ad4_vendors_list.action_reject')  },
+      suspend: { title: t('ad4_vendors_list.confirm_suspend_title', { name: v.business_name }),  message: t('ad4_vendors_list.confirm_suspend_message'), type: 'warning' as const, confirmText: t('ad4_vendors_list.action_suspend') },
     };
-    const ok = await confirm({ ...cfgs[action], cancelText: 'Annuler' });
+    const ok = await confirm({ ...cfgs[action], cancelText: t('ad4_vendors_list.confirm_cancel') });
     if (!ok) return;
     setActing(v.id);
     try {
       if (action === 'approve')      await adminApi.approveVendor(v.id);
       else if (action === 'reject')  await adminApi.rejectVendor(v.id);
       else                           await adminApi.suspendVendor(v.id);
-      showToast('Action effectuée', 'success');
+      showToast(t('ad4_vendors_list.action_success'), 'success');
       await load();
-    } catch { showToast('Erreur', 'error'); }
+    } catch { showToast(t('ad4_vendors_list.generic_error'), 'error'); }
     finally  { setActing(null); }
   };
 
   // ── Export CSV ────────────────────────────────────────────────────────────
   const exportCSV = () => {
-    const headers = 'ID;Boutique;Propriétaire;Email;Ville;Statut;Plan;Certification;Produits;Revenus;Commandes;Inscrit';
+    const headers = t('ad4_vendors_list.csv_header');
     const rows    = sorted.map(v => [
       v.id, v.business_name, v.user_full_name, v.user_email, v.city,
-      STATUS_CFG[v.status]?.label ?? v.status,
-      PLAN_CFG[v.plan_code ?? 'FREE']?.label ?? 'Gratuit',
-      CERT_CFG[v.certification_tier]?.label ?? v.certification_tier,
+      (STATUS_CFG[v.status] ? t(STATUS_CFG[v.status].labelKey) : v.status),
+      t(PLAN_CFG[v.plan_code ?? 'FREE']?.labelKey ?? 'ad4_vendors_list.plan.free'),
+      (CERT_CFG[v.certification_tier] ? t(CERT_CFG[v.certification_tier].labelKey) : v.certification_tier),
       v.total_products ?? 0, v.total_revenue ?? 0, v.total_orders ?? 0,
       fmtDate(v.created_at),
     ].join(';'));
@@ -352,15 +357,15 @@ export default function VendorsListPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: T.text, marginBottom: 4 }}>
-            Gestion Vendeurs
+            {t('ad4_vendors_list.title')}
           </h1>
           <p style={{ fontSize: 13, color: T.muted }}>
             {stats?.kpis.pending !== undefined && stats.kpis.pending > 0 && (
               <span style={{ color: T.red, fontWeight: 700, marginRight: 6 }}>
-                {stats.kpis.pending} en attente ·
+                {t('ad4_vendors_list.pending_count', { count: stats.kpis.pending })} ·
               </span>
             )}
-            {vendors.length.toLocaleString('fr-FR')} boutiques enregistrées
+            {t('ad4_vendors_list.boutiques_registered', { n: vendors.length.toLocaleString('fr-FR') })}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -369,7 +374,7 @@ export default function VendorsListPage() {
             style={{ background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}` }}
             onMouseEnter={e => (e.currentTarget.style.color = T.text)}
             onMouseLeave={e => (e.currentTarget.style.color = T.muted)}>
-            <Download size={13} /> <span className="hidden sm:inline">Exporter CSV</span>
+            <Download size={13} /> <span className="hidden sm:inline">{t('ad4_vendors_list.export_csv')}</span>
           </button>
           <button onClick={() => load()}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold transition-all"
@@ -377,7 +382,7 @@ export default function VendorsListPage() {
             onMouseEnter={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.18)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.1)')}>
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-            <span className="hidden sm:inline">Actualiser</span>
+            <span className="hidden sm:inline">{t('ad4_vendors_list.refresh')}</span>
           </button>
         </div>
       </div>
@@ -385,10 +390,10 @@ export default function VendorsListPage() {
       {/* ── KPI Cards ────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: 'Total boutiques',  value: stats?.kpis.total    ?? '—', sub: `+${stats?.kpis.new_month ?? 0} ce mois`,   accent: T.text,    tab: 'all'      as StatusTab },
-          { label: 'En attente',       value: stats?.kpis.pending  ?? '—', sub: 'à valider',                                accent: '#F59E0B', tab: 'PENDING'  as StatusTab },
-          { label: 'Approuvés',        value: stats?.kpis.approved ?? '—', sub: 'boutiques actives',                        accent: '#10B981', tab: 'APPROVED' as StatusTab },
-          { label: 'GMV ce mois',      value: stats ? fmtXaf(stats.kpis.gmv_month) : '—', sub: `Total : ${stats ? fmtXaf(stats.kpis.gmv_total) : '—'}`, accent: '#8B5CF6', tab: null },
+          { label: t('ad4_vendors_list.kpi_total'),    value: stats?.kpis.total    ?? '—', sub: t('ad4_vendors_list.kpi_total_sub', { count: stats?.kpis.new_month ?? 0 }), accent: T.text,    tab: 'all'      as StatusTab },
+          { label: t('ad4_vendors_list.kpi_pending'),  value: stats?.kpis.pending  ?? '—', sub: t('ad4_vendors_list.kpi_pending_sub'),  accent: '#F59E0B', tab: 'PENDING'  as StatusTab },
+          { label: t('ad4_vendors_list.kpi_approved'), value: stats?.kpis.approved ?? '—', sub: t('ad4_vendors_list.kpi_approved_sub'), accent: '#10B981', tab: 'APPROVED' as StatusTab },
+          { label: t('ad4_vendors_list.kpi_gmv'),      value: stats ? fmtXaf(stats.kpis.gmv_month) : '—', sub: t('ad4_vendors_list.kpi_gmv_sub', { value: stats ? fmtXaf(stats.kpis.gmv_total) : '—' }), accent: '#8B5CF6', tab: null },
         ].map((kpi, i) => (
           <button key={i}
             onClick={() => { if (kpi.tab) { setStatusTab(kpi.tab); setPage(1); } }}
@@ -415,15 +420,15 @@ export default function VendorsListPage() {
               <Trophy size={17} />
             </div>
             <div>
-              <h2 style={{ color: T.text, fontSize: 14, fontWeight: 800 }}>Top vendeurs</h2>
-              <p style={{ color: T.muted, fontSize: 11.5 }}>Tri par performance commerciale</p>
+              <h2 style={{ color: T.text, fontSize: 14, fontWeight: 800 }}>{t('ad4_vendors_list.top_vendors_title')}</h2>
+              <p style={{ color: T.muted, fontSize: 11.5 }}>{t('ad4_vendors_list.top_vendors_subtitle')}</p>
             </div>
           </div>
           <div className="flex gap-1 rounded-xl p-1" style={{ background: T.cardAlt, border: `1px solid ${T.border}` }}>
             {([
-              { key: 'day', label: 'Jour' },
-              { key: 'week', label: 'Semaine' },
-              { key: 'month', label: 'Mois' },
+              { key: 'day', label: t('ad4_vendors_list.period_day') },
+              { key: 'week', label: t('ad4_vendors_list.period_week') },
+              { key: 'month', label: t('ad4_vendors_list.period_month') },
             ] as { key: TopPeriod; label: string }[]).map((period) => (
               <button
                 key={period.key}
@@ -452,7 +457,7 @@ export default function VendorsListPage() {
               <VendorAvatar vendor={vendor} size={36} />
               <div className="min-w-0 flex-1">
                 <p className="truncate" style={{ color: T.text, fontSize: 13, fontWeight: 800 }}>{vendor.business_name}</p>
-                <p className="truncate" style={{ color: T.muted, fontSize: 11 }}>{vendor.city || 'Ville non renseignée'} · {vendor.total_orders ?? 0} commandes</p>
+                <p className="truncate" style={{ color: T.muted, fontSize: 11 }}>{vendor.city || t('ad4_vendors_list.city_unknown')} · {t('ad4_vendors_list.orders_count', { count: vendor.total_orders ?? 0 })}</p>
               </div>
               <span style={{ color: T.red, fontSize: 12, fontWeight: 800 }}>{fmtXaf(vendor.total_revenue ?? 0)}</span>
             </Link>
@@ -469,14 +474,14 @@ export default function VendorsListPage() {
             <div className="flex items-start justify-between mb-4">
               <div>
                 <p style={{ fontFamily: "'Syne',sans-serif", fontSize: 14, fontWeight: 800, color: T.text }}>
-                  GMV Plateforme — 30 jours
+                  {t('ad4_vendors_list.gmv_chart_title')}
                 </p>
                 <p style={{ fontSize: 11.5, color: T.muted, marginTop: 2 }}>
-                  Volume brut de marchandises vendues
+                  {t('ad4_vendors_list.gmv_chart_subtitle')}
                 </p>
               </div>
               <div style={{ padding: '4px 10px', borderRadius: 8, background: 'rgba(139,92,246,0.12)', color: '#8B5CF6', fontSize: 11, fontWeight: 700 }}>
-                {fmtXaf(stats.kpis.gmv_month)} ce mois
+                {t('ad4_vendors_list.gmv_chart_month_badge', { value: fmtXaf(stats.kpis.gmv_month) })}
               </div>
             </div>
             <ResponsiveContainer width="100%" height={160}>
@@ -501,7 +506,7 @@ export default function VendorsListPage() {
 
             {/* Statuts */}
             <div>
-              <p style={{ fontFamily: "'Syne',sans-serif", fontSize: 13, fontWeight: 800, color: T.text, marginBottom: 8 }}>Statuts</p>
+              <p style={{ fontFamily: "'Syne',sans-serif", fontSize: 13, fontWeight: 800, color: T.text, marginBottom: 8 }}>{t('ad4_vendors_list.donut_status_title')}</p>
               <div className="flex items-center gap-3">
                 <ResponsiveContainer width={80} height={80}>
                   <PieChart>
@@ -528,7 +533,7 @@ export default function VendorsListPage() {
 
             {/* Plans */}
             <div>
-              <p style={{ fontFamily: "'Syne',sans-serif", fontSize: 13, fontWeight: 800, color: T.text, marginBottom: 8 }}>Plans</p>
+              <p style={{ fontFamily: "'Syne',sans-serif", fontSize: 13, fontWeight: 800, color: T.text, marginBottom: 8 }}>{t('ad4_vendors_list.donut_plan_title')}</p>
               <div className="flex items-center gap-3">
                 <ResponsiveContainer width={80} height={80}>
                   <PieChart>
@@ -542,7 +547,7 @@ export default function VendorsListPage() {
                     <div key={i} className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
                         <div style={{ width: 6, height: 6, borderRadius: 2, background: PLAN_COLORS[i], flexShrink: 0 }} />
-                        <span style={{ fontSize: 10.5, color: T.muted }}>{PLAN_CFG[d.plan]?.label ?? d.plan}</span>
+                        <span style={{ fontSize: 10.5, color: T.muted }}>{PLAN_CFG[d.plan] ? t(PLAN_CFG[d.plan].labelKey) : d.plan}</span>
                       </div>
                       <span style={{ fontSize: 11, fontWeight: 700, color: T.text }}>{d.count}</span>
                     </div>
@@ -561,21 +566,21 @@ export default function VendorsListPage() {
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex gap-1 overflow-x-auto flex-shrink-0" style={{ scrollbarWidth: 'none' }}>
             {([
-              { key: 'all'       as StatusTab, label: 'Tous',         count: vendors.length },
-              { key: 'PENDING'   as StatusTab, label: 'En attente',   count: stats?.kpis.pending   ?? 0, alert: (stats?.kpis.pending ?? 0) > 0 },
-              { key: 'APPROVED'  as StatusTab, label: 'Approuvés',    count: stats?.kpis.approved  ?? 0 },
-              { key: 'SUSPENDED' as StatusTab, label: 'Suspendus',    count: stats?.kpis.suspended ?? 0 },
-              { key: 'REJECTED'  as StatusTab, label: 'Rejetés',      count: stats?.kpis.rejected  ?? 0 },
-            ] as { key: StatusTab; label: string; count: number; alert?: boolean }[]).map(t => (
-              <button key={t.key}
-                onClick={() => { setStatusTab(t.key); setPage(1); }}
+              { key: 'all'       as StatusTab, label: t('ad4_vendors_list.tab_all'),       count: vendors.length },
+              { key: 'PENDING'   as StatusTab, label: t('ad4_vendors_list.tab_pending'),   count: stats?.kpis.pending   ?? 0, alert: (stats?.kpis.pending ?? 0) > 0 },
+              { key: 'APPROVED'  as StatusTab, label: t('ad4_vendors_list.tab_approved'),  count: stats?.kpis.approved  ?? 0 },
+              { key: 'SUSPENDED' as StatusTab, label: t('ad4_vendors_list.tab_suspended'), count: stats?.kpis.suspended ?? 0 },
+              { key: 'REJECTED'  as StatusTab, label: t('ad4_vendors_list.tab_rejected'),  count: stats?.kpis.rejected  ?? 0 },
+            ] as { key: StatusTab; label: string; count: number; alert?: boolean }[]).map(tab => (
+              <button key={tab.key}
+                onClick={() => { setStatusTab(tab.key); setPage(1); }}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold whitespace-nowrap transition-all"
-                style={{ background: statusTab === t.key ? (t.alert ? '#F59E0B' : T.red) : 'transparent', color: statusTab === t.key ? '#fff' : (t.alert ? '#F59E0B' : T.muted) }}
-                onMouseEnter={e => { if (statusTab !== t.key) (e.currentTarget.style.color = T.text); }}
-                onMouseLeave={e => { if (statusTab !== t.key) (e.currentTarget.style.color = t.alert ? '#F59E0B' : T.muted); }}>
-                {t.label}
-                <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 999, fontWeight: 700, background: statusTab === t.key ? 'rgba(255,255,255,0.25)' : T.cardAlt, color: statusTab === t.key ? '#fff' : (t.alert ? '#F59E0B' : T.muted) }}>
-                  {t.count}
+                style={{ background: statusTab === tab.key ? (tab.alert ? '#F59E0B' : T.red) : 'transparent', color: statusTab === tab.key ? '#fff' : (tab.alert ? '#F59E0B' : T.muted) }}
+                onMouseEnter={e => { if (statusTab !== tab.key) (e.currentTarget.style.color = T.text); }}
+                onMouseLeave={e => { if (statusTab !== tab.key) (e.currentTarget.style.color = tab.alert ? '#F59E0B' : T.muted); }}>
+                {tab.label}
+                <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 999, fontWeight: 700, background: statusTab === tab.key ? 'rgba(255,255,255,0.25)' : T.cardAlt, color: statusTab === tab.key ? '#fff' : (tab.alert ? '#F59E0B' : T.muted) }}>
+                  {tab.count}
                 </span>
               </button>
             ))}
@@ -586,7 +591,7 @@ export default function VendorsListPage() {
           {/* Recherche */}
           <div className="relative w-full sm:w-60 flex-shrink-0">
             <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: T.muted }} />
-            <input type="text" placeholder="Boutique, email, ville…"
+            <input type="text" placeholder={t('ad4_vendors_list.search_placeholder')}
               onChange={e => handleSearch(e.target.value)}
               className="w-full pl-8 pr-3 py-2 rounded-xl text-[12.5px] outline-none transition-all"
               style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}`, fontFamily: "'Plus Jakarta Sans',sans-serif" }}
@@ -600,19 +605,19 @@ export default function VendorsListPage() {
           <Filter size={13} style={{ color: T.muted, flexShrink: 0 }} />
 
           <div className="relative" onClick={e => e.stopPropagation()}>
-            <DropBtn label={planF === 'all' ? 'Plan' : PLAN_CFG[planF]?.label ?? planF} active={planF !== 'all'} onClick={() => setOpenDrop(openDrop === 'plan' ? null : 'plan')} />
+            <DropBtn label={planF === 'all' ? t('ad4_vendors_list.filter_plan_label') : (PLAN_CFG[planF] ? t(PLAN_CFG[planF].labelKey) : planF)} active={planF !== 'all'} onClick={() => setOpenDrop(openDrop === 'plan' ? null : 'plan')} />
             <DropMenu show={openDrop === 'plan'}>
-              <DropItem label="Tous les plans" active={planF === 'all'} onClick={() => { setPlanF('all'); setPage(1); }} />
+              <DropItem label={t('ad4_vendors_list.filter_plan_all')} active={planF === 'all'} onClick={() => { setPlanF('all'); setPage(1); }} />
               {(['FREE','STARTER','PRO','BUSINESS'] as PlanFilter[]).map(k => (
-                <DropItem key={k} label={PLAN_CFG[k]?.label ?? k} active={planF === k} onClick={() => { setPlanF(k); setPage(1); }} />
+                <DropItem key={k} label={PLAN_CFG[k] ? t(PLAN_CFG[k].labelKey) : k} active={planF === k} onClick={() => { setPlanF(k); setPage(1); }} />
               ))}
             </DropMenu>
           </div>
 
           <div className="relative" onClick={e => e.stopPropagation()}>
-            <DropBtn label={({ all: 'Période', today: "Aujourd'hui", week: 'Cette semaine', month: 'Ce mois' } as Record<DateFilter,string>)[dateF]} active={dateF !== 'all'} onClick={() => setOpenDrop(openDrop === 'date' ? null : 'date')} />
+            <DropBtn label={({ all: t('ad4_vendors_list.filter_date_all'), today: t('ad4_vendors_list.filter_date_today'), week: t('ad4_vendors_list.filter_date_week'), month: t('ad4_vendors_list.filter_date_month') } as Record<DateFilter,string>)[dateF]} active={dateF !== 'all'} onClick={() => setOpenDrop(openDrop === 'date' ? null : 'date')} />
             <DropMenu show={openDrop === 'date'}>
-              {([['all','Toutes périodes'],['today',"Aujourd'hui"],['week','Cette semaine'],['month','Ce mois']] as [DateFilter,string][]).map(([k,l]) => (
+              {([['all',t('ad4_vendors_list.filter_date_all_option')],['today',t('ad4_vendors_list.filter_date_today')],['week',t('ad4_vendors_list.filter_date_week')],['month',t('ad4_vendors_list.filter_date_month')]] as [DateFilter,string][]).map(([k,l]) => (
                 <DropItem key={k} label={l} active={dateF === k} onClick={() => { setDateF(k as DateFilter); setPage(1); }} />
               ))}
             </DropMenu>
@@ -622,12 +627,12 @@ export default function VendorsListPage() {
             <button onClick={resetFilters}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold"
               style={{ background: T.red + '10', color: T.red, border: `1px solid ${T.red}30` }}>
-              <X size={11} /> {activeFilters} filtre{activeFilters > 1 ? 's' : ''}
+              <X size={11} /> {t(activeFilters > 1 ? 'ad4_vendors_list.active_filters_plural' : 'ad4_vendors_list.active_filters', { count: activeFilters })}
             </button>
           )}
 
           <p style={{ fontSize: 12, color: T.muted, marginLeft: 'auto' }}>
-            {sorted.length} résultat{sorted.length > 1 ? 's' : ''}
+            {t(sorted.length > 1 ? 'ad4_vendors_list.results_count_plural' : 'ad4_vendors_list.results_count', { count: sorted.length })}
           </p>
         </div>
       </div>
@@ -641,14 +646,14 @@ export default function VendorsListPage() {
             <thead>
               <tr style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
                 {([
-                  { label: 'Boutique',    k: 'business_name'  as SortKey | null },
-                  { label: 'Statut',      k: null },
-                  { label: 'Plan',        k: null },
-                  { label: 'Cert.',       k: null },
-                  { label: 'Produits',    k: 'total_products' as SortKey | null },
-                  { label: 'Revenus',     k: 'total_revenue'  as SortKey | null },
-                  { label: 'Commandes',   k: 'total_orders'   as SortKey | null },
-                  { label: 'Inscrit',     k: 'created_at'     as SortKey | null },
+                  { label: t('ad4_vendors_list.col_shop'),      k: 'business_name'  as SortKey | null },
+                  { label: t('ad4_vendors_list.col_status'),    k: null },
+                  { label: t('ad4_vendors_list.col_plan'),      k: null },
+                  { label: t('ad4_vendors_list.col_cert'),      k: null },
+                  { label: t('ad4_vendors_list.col_products'),  k: 'total_products' as SortKey | null },
+                  { label: t('ad4_vendors_list.col_revenue'),   k: 'total_revenue'  as SortKey | null },
+                  { label: t('ad4_vendors_list.col_orders'),    k: 'total_orders'   as SortKey | null },
+                  { label: t('ad4_vendors_list.col_registered'),k: 'created_at'     as SortKey | null },
                   { label: '',            k: null },
                 ] as { label: string; k: SortKey | null }[]).map((col, i) => (
                   <th key={i}
@@ -671,8 +676,8 @@ export default function VendorsListPage() {
                     <tr><td colSpan={9} style={{ padding: '60px 0', textAlign: 'center' }}>
                       <div className="flex flex-col items-center gap-3">
                         <AlertCircle size={28} style={{ color: T.muted }} />
-                        <p style={{ fontSize: 14, color: T.muted }}>Aucune boutique trouvée</p>
-                        {activeFilters > 0 && <button onClick={resetFilters} style={{ fontSize: 12, color: T.red, fontWeight: 600 }}>Réinitialiser les filtres</button>}
+                        <p style={{ fontSize: 14, color: T.muted }}>{t('ad4_vendors_list.no_shop_found')}</p>
+                        {activeFilters > 0 && <button onClick={resetFilters} style={{ fontSize: 12, color: T.red, fontWeight: 600 }}>{t('ad4_vendors_list.reset_filters')}</button>}
                       </div>
                     </td></tr>
                   )
@@ -689,7 +694,7 @@ export default function VendorsListPage() {
                           <div>
                             <div className="flex items-center gap-1.5">
                               <p style={{ fontSize: 13, fontWeight: 600, color: T.text, lineHeight: 1.2 }}>{v.business_name}</p>
-                              {isNew(v.created_at) && <span style={{ fontSize: 9, fontWeight: 800, padding: '1px 5px', borderRadius: 4, background: 'rgba(16,185,129,0.15)', color: '#10B981' }}>NOUVEAU</span>}
+                              {isNew(v.created_at) && <span style={{ fontSize: 9, fontWeight: 800, padding: '1px 5px', borderRadius: 4, background: 'rgba(16,185,129,0.15)', color: '#10B981' }}>{t('ad4_vendors_list.badge_new')}</span>}
                             </div>
                             <p style={{ fontSize: 11, color: T.muted }}>{v.user_email}</p>
                             {v.city && <p style={{ fontSize: 10.5, color: T.muted }}>{v.city}</p>}
@@ -703,7 +708,7 @@ export default function VendorsListPage() {
                         <div className="flex items-center gap-1">
                           <Package size={11} style={{ color: T.muted }} />
                           <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{v.total_products ?? 0}</span>
-                          <span style={{ fontSize: 10, color: T.muted }}>/{v.active_products ?? 0} actifs</span>
+                          <span style={{ fontSize: 10, color: T.muted }}>{t('ad4_vendors_list.active_products_suffix', { count: v.active_products ?? 0 })}</span>
                         </div>
                       </td>
                       <td style={{ padding: '12px 14px' }}>
@@ -743,30 +748,30 @@ export default function VendorsListPage() {
                                   <>
                                     <button onClick={() => { setMobileMenu(null); doAction(v, 'approve'); }}
                                       className="w-full flex items-center gap-2 px-4 py-2.5 text-[12px]" style={{ color: '#10B981' }}>
-                                      <CheckCircle size={13} /> Approuver
+                                      <CheckCircle size={13} /> {t('ad4_vendors_list.action_approve')}
                                     </button>
                                     <button onClick={() => { setMobileMenu(null); doAction(v, 'reject'); }}
                                       className="w-full flex items-center gap-2 px-4 py-2.5 text-[12px]" style={{ color: '#EF4444' }}>
-                                      <XCircle size={13} /> Rejeter
+                                      <XCircle size={13} /> {t('ad4_vendors_list.action_reject')}
                                     </button>
                                   </>
                                 )}
                                 {v.status === 'APPROVED' && (
                                   <button onClick={() => { setMobileMenu(null); doAction(v, 'suspend'); }}
                                     className="w-full flex items-center gap-2 px-4 py-2.5 text-[12px]" style={{ color: '#F59E0B' }}>
-                                    <Ban size={13} /> Suspendre
+                                    <Ban size={13} /> {t('ad4_vendors_list.action_suspend')}
                                   </button>
                                 )}
                                 {v.status === 'SUSPENDED' && (
                                   <button onClick={() => { setMobileMenu(null); doAction(v, 'approve'); }}
                                     className="w-full flex items-center gap-2 px-4 py-2.5 text-[12px]" style={{ color: '#10B981' }}>
-                                    <CheckCircle size={13} /> Réactiver
+                                    <CheckCircle size={13} /> {t('ad4_vendors_list.action_reactivate')}
                                   </button>
                                 )}
                                 {v.status === 'REJECTED' && (
                                   <button onClick={() => { setMobileMenu(null); doAction(v, 'approve'); }}
                                     className="w-full flex items-center gap-2 px-4 py-2.5 text-[12px]" style={{ color: '#10B981' }}>
-                                    <CheckCircle size={13} /> Approuver quand même
+                                    <CheckCircle size={13} /> {t('ad4_vendors_list.action_approve_anyway')}
                                   </button>
                                 )}
                               </div>
@@ -790,7 +795,7 @@ export default function VendorsListPage() {
           ) : paginated.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
               <AlertCircle size={28} style={{ color: T.muted }} />
-              <p style={{ fontSize: 14, color: T.muted }}>Aucune boutique trouvée</p>
+              <p style={{ fontSize: 14, color: T.muted }}>{t('ad4_vendors_list.no_shop_found')}</p>
             </div>
           ) : (
             <div className="divide-y" style={{ borderColor: T.border }}>
@@ -802,7 +807,7 @@ export default function VendorsListPage() {
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <p style={{ fontSize: 13, fontWeight: 600, color: T.text }} className="truncate">{v.business_name}</p>
-                          {isNew(v.created_at) && <span style={{ fontSize: 9, fontWeight: 800, padding: '1px 5px', borderRadius: 4, background: 'rgba(16,185,129,0.15)', color: '#10B981', flexShrink: 0 }}>NOUVEAU</span>}
+                          {isNew(v.created_at) && <span style={{ fontSize: 9, fontWeight: 800, padding: '1px 5px', borderRadius: 4, background: 'rgba(16,185,129,0.15)', color: '#10B981', flexShrink: 0 }}>{t('ad4_vendors_list.badge_new')}</span>}
                         </div>
                         <p style={{ fontSize: 11, color: T.muted }} className="truncate">{v.user_email}</p>
                       </div>
@@ -813,7 +818,7 @@ export default function VendorsListPage() {
                       <CertBadge tier={v.certification_tier} />
                     </div>
                     <div className="flex items-center gap-3 flex-wrap">
-                      <span style={{ fontSize: 11, color: T.muted }}><Package size={10} style={{ display: 'inline', marginRight: 3 }} />{v.total_products ?? 0} produits</span>
+                      <span style={{ fontSize: 11, color: T.muted }}><Package size={10} style={{ display: 'inline', marginRight: 3 }} />{t('ad4_vendors_list.products_count', { count: v.total_products ?? 0 })}</span>
                       {(v.total_revenue ?? 0) > 0 && <span style={{ fontSize: 11, color: '#10B981', fontWeight: 600 }}>{fmtXaf(v.total_revenue ?? 0)}</span>}
                       {v.city && <span style={{ fontSize: 11, color: T.muted }}>{v.city}</span>}
                     </div>
@@ -829,14 +834,14 @@ export default function VendorsListPage() {
                       <div className="absolute right-0 top-10 z-20 rounded-xl overflow-hidden py-1"
                         style={{ background: T.card, border: `1px solid ${T.border}`, boxShadow: '0 8px 32px rgba(0,0,0,0.3)', minWidth: 160 }}>
                         <Link to={`/admin/vendors/${v.id}`} className="flex items-center gap-2 px-4 py-2.5 text-[12px]" style={{ color: T.text }} onClick={() => setMobileMenu(null)}>
-                          <Eye size={13} /> Voir la fiche
+                          <Eye size={13} /> {t('ad4_vendors_list.view_full_sheet')}
                         </Link>
                         {v.status === 'PENDING' && <>
-                          <button onClick={() => { setMobileMenu(null); doAction(v, 'approve'); }} className="w-full flex items-center gap-2 px-4 py-2.5 text-[12px]" style={{ color: '#10B981' }}><CheckCircle size={13} /> Approuver</button>
-                          <button onClick={() => { setMobileMenu(null); doAction(v, 'reject'); }} className="w-full flex items-center gap-2 px-4 py-2.5 text-[12px]" style={{ color: '#EF4444' }}><XCircle size={13} /> Rejeter</button>
+                          <button onClick={() => { setMobileMenu(null); doAction(v, 'approve'); }} className="w-full flex items-center gap-2 px-4 py-2.5 text-[12px]" style={{ color: '#10B981' }}><CheckCircle size={13} /> {t('ad4_vendors_list.action_approve')}</button>
+                          <button onClick={() => { setMobileMenu(null); doAction(v, 'reject'); }} className="w-full flex items-center gap-2 px-4 py-2.5 text-[12px]" style={{ color: '#EF4444' }}><XCircle size={13} /> {t('ad4_vendors_list.action_reject')}</button>
                         </>}
                         {v.status === 'APPROVED' && (
-                          <button onClick={() => { setMobileMenu(null); doAction(v, 'suspend'); }} className="w-full flex items-center gap-2 px-4 py-2.5 text-[12px]" style={{ color: '#F59E0B' }}><Ban size={13} /> Suspendre</button>
+                          <button onClick={() => { setMobileMenu(null); doAction(v, 'suspend'); }} className="w-full flex items-center gap-2 px-4 py-2.5 text-[12px]" style={{ color: '#F59E0B' }}><Ban size={13} /> {t('ad4_vendors_list.action_suspend')}</button>
                         )}
                       </div>
                     )}
@@ -851,7 +856,7 @@ export default function VendorsListPage() {
         {!loading && sorted.length > 0 && (
           <div className="flex items-center justify-between px-4 sm:px-5 py-3 flex-wrap gap-3" style={{ borderTop: `1px solid ${T.border}` }}>
             <div className="flex items-center gap-2">
-              <span style={{ fontSize: 12, color: T.muted }}>Lignes :</span>
+              <span style={{ fontSize: 12, color: T.muted }}>{t('ad4_vendors_list.rows_label')}</span>
               {PAGE_SIZES.map(s => (
                 <button key={s} onClick={() => { setPageSize(s); setPage(1); }}
                   className="w-8 h-7 rounded-lg text-[12px] font-semibold"
@@ -861,7 +866,7 @@ export default function VendorsListPage() {
               ))}
             </div>
             <p style={{ fontSize: 12, color: T.muted }}>
-              {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, sorted.length)} sur {sorted.length}
+              {t('ad4_vendors_list.pagination_range', { start: (page - 1) * pageSize + 1, end: Math.min(page * pageSize, sorted.length), total: sorted.length })}
             </p>
             <div className="flex items-center gap-1">
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}

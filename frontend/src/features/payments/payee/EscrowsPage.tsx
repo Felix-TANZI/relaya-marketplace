@@ -10,6 +10,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { usePartnerEscrow } from '../hooks/usePartnerEscrow';
 import EmptyState from '../shared/EmptyState';
@@ -20,6 +21,7 @@ import EscrowCard from './components/EscrowCard';
 const ACTIFS = ['HELD', 'RELEASE_SCHEDULED', 'FROZEN'];
 
 export default function EscrowsPage() {
+  const { t } = useTranslation();
   const { data, loading, error } = usePartnerEscrow();
 
   const { actifs, total, geles } = useMemo(() => {
@@ -37,11 +39,10 @@ export default function EscrowsPage() {
       <p style={{
         fontSize: 19, margin: '0 0 4px', color: 'var(--text-primary, #1A1209)',
       }}>
-        Mes fonds en attente
+        {t('sl2_payee_escrow.page_title')}
       </p>
       <p style={{ fontSize: 12.5, margin: '0 0 1.25rem', color: FT.muted }}>
-        BelivaY conserve ces montants jusqu’à la confirmation de chaque
-        commande.
+        {t('sl2_payee_escrow.page_subtitle')}
       </p>
 
       {!loading && !error && actifs.length > 0 && (
@@ -57,15 +58,15 @@ export default function EscrowsPage() {
               fontSize: 11, margin: '0 0 8px', letterSpacing: '0.08em',
               textTransform: 'uppercase', color: FT.faint,
             }}>
-              Total en attente
+              {t('sl2_payee_escrow.total_pending')}
             </p>
             <Money value={total} size={28} showCurrency />
           </div>
           <p style={{ fontSize: 12.5, margin: 0, color: FT.muted }}>
-            {actifs.length} commande{actifs.length > 1 ? 's' : ''}
+            {t(actifs.length > 1 ? 'sl2_payee_escrow.orders_count_plural' : 'sl2_payee_escrow.orders_count', { count: actifs.length })}
             {geles > 0 && (
               <span style={{ color: FT.redD }}>
-                {' · '}{geles} en litige
+                {' · '}{t(geles > 1 ? 'sl2_payee_escrow.in_dispute_plural' : 'sl2_payee_escrow.in_dispute', { count: geles })}
               </span>
             )}
           </p>
@@ -79,14 +80,14 @@ export default function EscrowsPage() {
       }}>
         {loading && (
           <div style={{ padding: '2.5rem', textAlign: 'center' }}>
-            <span style={{ fontSize: 13, color: FT.faint }}>Chargement…</span>
+            <span style={{ fontSize: 13, color: FT.faint }}>{t('sl2_payee_escrow.loading')}</span>
           </div>
         )}
 
         {!loading && error && (
           <EmptyState
             icon="alert-circle"
-            title="Impossible d'afficher vos fonds"
+            title={t('sl2_payee_escrow.error_title')}
             description={error}
           />
         )}
@@ -94,11 +95,8 @@ export default function EscrowsPage() {
         {!loading && !error && actifs.length === 0 && (
           <EmptyState
             icon="wallet"
-            title="Aucun fonds en attente"
-            description={
-              'Les montants de vos prochaines commandes apparaîtront ici '
-              + 'dès leur paiement.'
-            }
+            title={t('sl2_payee_escrow.empty_title')}
+            description={t('sl2_payee_escrow.empty_description')}
           />
         )}
 

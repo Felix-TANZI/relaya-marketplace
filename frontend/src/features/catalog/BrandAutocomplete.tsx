@@ -11,6 +11,7 @@
 //   - Gestion propre du 409 Conflict (marque déjà existante → auto-select)
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { Check, Plus, X, AlertCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import {
@@ -47,7 +48,7 @@ export function BrandAutocomplete({
   value,
   onChange,
   label,
-  placeholder = "Rechercher une marque…",
+  placeholder,
   verifiedOnly = false,
   allowPropose = true,
   error,
@@ -55,6 +56,8 @@ export function BrandAutocomplete({
   className = "",
   disabled = false,
 }: BrandAutocompleteProps) {
+  const { t } = useTranslation();
+  const resolvedPlaceholder = placeholder ?? t("misc1_brand_autocomplete.search_placeholder");
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<BrandLight[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -164,9 +167,9 @@ export function BrandAutocomplete({
         } catch {
           // ignore
         }
-        setProposeError("Cette marque existe déjà, mais nous n'arrivons pas à la retrouver.");
+        setProposeError(t("misc1_brand_autocomplete.brand_exists_not_found"));
       } else {
-        setProposeError("Erreur lors de la création. Réessayez.");
+        setProposeError(t("misc1_brand_autocomplete.create_error"));
       }
     } finally {
       setIsProposing(false);
@@ -245,10 +248,10 @@ export function BrandAutocomplete({
           {value.is_verified && (
             <span
               className="flex items-center gap-1 text-xs font-medium text-green-600"
-              title="Marque vérifiée"
+              title={t("misc1_brand_autocomplete.verified_brand_title")}
             >
               <Check size={14} />
-              Vérifiée
+              {t("misc1_brand_autocomplete.verified_label")}
             </span>
           )}
           <button
@@ -256,7 +259,7 @@ export function BrandAutocomplete({
             onClick={clearSelection}
             disabled={disabled}
             className="rounded p-1 text-gray-400 hover:bg-white hover:text-gray-900 disabled:opacity-50 dark:hover:bg-gray-800 dark:hover:text-white"
-            aria-label="Changer de marque"
+            aria-label={t("misc1_brand_autocomplete.change_brand_aria")}
           >
             <X size={16} />
           </button>
@@ -276,7 +279,7 @@ export function BrandAutocomplete({
             }}
             onFocus={() => setIsOpen(true)}
             onKeyDown={handleKeyDown}
-            placeholder={placeholder}
+            placeholder={resolvedPlaceholder}
             disabled={disabled}
             className={cn(
               "w-full rounded-xl border bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-all",
@@ -332,7 +335,7 @@ export function BrandAutocomplete({
                 <Check
                   size={14}
                   className="text-green-600"
-                  aria-label="Vérifiée"
+                  aria-label={t("misc1_brand_autocomplete.verified_label")}
                 />
               )}
             </button>
@@ -350,7 +353,7 @@ export function BrandAutocomplete({
               ) : (
                 <Plus size={16} />
               )}
-              Créer la marque « {query.trim()} »
+              {t("misc1_brand_autocomplete.create_brand_button", { name: query.trim() })}
             </button>
           )}
         </div>

@@ -11,6 +11,7 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { useAnalytics } from '../../hooks/useFinanceAdmin';
 import EmptyState from '../../shared/EmptyState';
@@ -25,9 +26,9 @@ interface FinanceAnalyticsPageProps {
 }
 
 const PERIODES = [
-  { jours: 7, label: '7 j' },
-  { jours: 30, label: '30 j' },
-  { jours: 90, label: '90 j' },
+  { jours: 7 },
+  { jours: 30 },
+  { jours: 90 },
 ];
 
 function Bloc({ title, children, subtitle }: {
@@ -89,6 +90,7 @@ function Barre({ value, max, color }: {
 export default function FinanceAnalyticsPage({
   basePath = '/admin/finance',
 }: FinanceAnalyticsPageProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [jours, setJours] = useState(30);
   const { data, loading, error } = useAnalytics(jours);
@@ -96,7 +98,7 @@ export default function FinanceAnalyticsPage({
   if (loading) {
     return (
       <div style={{ padding: '3rem', textAlign: 'center' }}>
-        <span style={{ fontSize: 13, color: FT.faint }}>Chargement…</span>
+        <span style={{ fontSize: 13, color: FT.faint }}>{t('pm1_analytics.loading')}</span>
       </div>
     );
   }
@@ -105,8 +107,8 @@ export default function FinanceAnalyticsPage({
     return (
       <EmptyState
         icon="alert-circle"
-        title="Impossible d'afficher le pilotage"
-        description={error ?? 'Réessayez dans un instant.'}
+        title={t('pm1_analytics.error_title')}
+        description={error ?? t('pm1_analytics.retry_message')}
       />
     );
   }
@@ -141,12 +143,12 @@ export default function FinanceAnalyticsPage({
               aria-hidden="true"
               style={{ fontSize: 14, verticalAlign: -2, marginRight: 6 }}
             />
-            Centre financier
+            {t('pm1_analytics.back_button')}
           </button>
           <p style={{
             fontSize: 19, margin: 0, color: 'var(--text-primary, #1A1209)',
           }}>
-            Pilotage
+            {t('pm1_analytics.page_title')}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
@@ -161,7 +163,7 @@ export default function FinanceAnalyticsPage({
                 color: jours === periode.jours ? '#993C1D' : undefined,
               }}
             >
-              {periode.label}
+              {t('pm1_analytics.period_label', { days: periode.jours })}
             </button>
           ))}
         </div>
@@ -182,7 +184,7 @@ export default function FinanceAnalyticsPage({
               fontSize: 11, margin: '0 0 8px', letterSpacing: '0.08em',
               textTransform: 'uppercase', color: FT.faint,
             }}>
-              Encaissé
+              {t('pm1_analytics.kpi_collected')}
             </p>
             <Money value={summary.current.collected_xaf} size={34} />
             <p style={{
@@ -190,7 +192,7 @@ export default function FinanceAnalyticsPage({
               display: 'flex', alignItems: 'center', gap: 8,
             }}>
               <Variation percent={summary.change_percent.collected} />
-              vs période précédente
+              {t('pm1_analytics.vs_previous_period')}
             </p>
           </div>
           <div style={{ textAlign: 'right' }}>
@@ -198,12 +200,16 @@ export default function FinanceAnalyticsPage({
               fontSize: 11, margin: '0 0 8px', letterSpacing: '0.08em',
               textTransform: 'uppercase', color: FT.faint,
             }}>
-              Panier moyen
+              {t('pm1_analytics.kpi_average_basket')}
             </p>
             <Money value={summary.current.average_xaf} size={22} />
             <p style={{ fontSize: 11.5, margin: '7px 0 0', color: FT.faint }}>
-              {summary.current.count} paiement
-              {summary.current.count > 1 ? 's' : ''}
+              {t(
+                summary.current.count > 1
+                  ? 'pm1_analytics.payment_count_plural'
+                  : 'pm1_analytics.payment_count',
+                { count: summary.current.count },
+              )}
             </p>
           </div>
         </div>
@@ -219,7 +225,7 @@ export default function FinanceAnalyticsPage({
           </span>
           <span style={{ fontSize: 11, color: FT.faint }}>
             {/* Le trait pointille est la serie des remboursements. */}
-            — encaissements · ‑ ‑ remboursements
+            {t('pm1_analytics.chart_legend')}
           </span>
           <span style={{ fontSize: 11, color: FT.faint }}>
             {formatShortDate(data.collections.at(-1)?.date)}
@@ -233,16 +239,23 @@ export default function FinanceAnalyticsPage({
         gap: 12, marginBottom: 12,
       }}>
         <Bloc
-          title="Conversion"
-          subtitle={`${funnel.total} intention${funnel.total > 1 ? 's' : ''}`}
+          title={t('pm1_analytics.conversion_title')}
+          subtitle={t(
+            funnel.total > 1
+              ? 'pm1_analytics.intentions_count_plural'
+              : 'pm1_analytics.intentions_count',
+            { count: funnel.total },
+          )}
         >
           {[
-            { label: 'Réussite', value: funnel.success_rate, color: FT.green },
-            { label: 'Échec technique', value: funnel.failure_rate,
+            { label: t('pm1_analytics.success_rate'), value: funnel.success_rate,
+              color: FT.green },
+            { label: t('pm1_analytics.failure_rate'), value: funnel.failure_rate,
               color: FT.red },
             // Un abandon n'est pas un incident : l'acheteur n'a pas
             // compose son code.
-            { label: 'Abandon', value: funnel.abandon_rate, color: FT.amber },
+            { label: t('pm1_analytics.abandon_rate'), value: funnel.abandon_rate,
+              color: FT.amber },
           ].map((ligne) => (
             <div key={ligne.label} style={{ marginBottom: 12 }}>
               <div style={{
@@ -264,14 +277,17 @@ export default function FinanceAnalyticsPage({
           ))}
         </Bloc>
 
-        <Bloc title="Revenus" subtitle="frais prestataire inclus">
+        <Bloc
+          title={t('pm1_analytics.revenue_title')}
+          subtitle={t('pm1_analytics.revenue_subtitle')}
+        >
           <div style={{
             display: 'flex', justifyContent: 'space-between',
             alignItems: 'baseline', paddingBottom: 10,
             borderBottom: `0.5px solid ${FT.border}`,
           }}>
             <span style={{ fontSize: 12.5, color: FT.muted }}>
-              Chiffre d’affaires
+              {t('pm1_analytics.gross_revenue')}
             </span>
             <Money value={revenue.revenue_total_xaf} size={14} />
           </div>
@@ -281,7 +297,7 @@ export default function FinanceAnalyticsPage({
             borderBottom: `0.5px solid ${FT.border}`,
           }}>
             <span style={{ fontSize: 12.5, color: FT.muted }}>
-              Frais prestataire
+              {t('pm1_analytics.psp_fees')}
             </span>
             <Money value={-revenue.psp_fees_total_xaf} size={14} />
           </div>
@@ -289,7 +305,9 @@ export default function FinanceAnalyticsPage({
             display: 'flex', justifyContent: 'space-between',
             alignItems: 'baseline', paddingTop: 10,
           }}>
-            <span style={{ fontSize: 12.5, color: FT.muted }}>Marge nette</span>
+            <span style={{ fontSize: 12.5, color: FT.muted }}>
+              {t('pm1_analytics.net_margin')}
+            </span>
             <Money
               value={revenue.net_margin_xaf}
               size={16}
@@ -298,10 +316,13 @@ export default function FinanceAnalyticsPage({
           </div>
         </Bloc>
 
-        <Bloc title="Opérateurs" subtitle="taux de réussite">
+        <Bloc
+          title={t('pm1_analytics.operators_title')}
+          subtitle={t('pm1_analytics.success_rate_subtitle')}
+        >
           {operators.length === 0 ? (
             <p style={{ fontSize: 12.5, margin: 0, color: FT.faint }}>
-              Aucune donnée sur la période.
+              {t('pm1_analytics.no_data_period')}
             </p>
           ) : operators.map((operateur) => (
             <div key={operateur.operator} style={{ marginBottom: 12 }}>
@@ -325,8 +346,12 @@ export default function FinanceAnalyticsPage({
                 color={FT.blue}
               />
               <p style={{ fontSize: 11, margin: '4px 0 0', color: FT.faint }}>
-                {formatXaf(operateur.amount_xaf)} FCFA · {operateur.total}{' '}
-                tentative{operateur.total > 1 ? 's' : ''}
+                {t(
+                  operateur.total > 1
+                    ? 'pm1_analytics.attempts_count_plural'
+                    : 'pm1_analytics.attempts_count',
+                  { amount: formatXaf(operateur.amount_xaf), count: operateur.total },
+                )}
               </p>
             </div>
           ))}
@@ -339,8 +364,8 @@ export default function FinanceAnalyticsPage({
         gap: 12,
       }}>
         <Bloc
-          title="Ancienneté des séquestres"
-          subtitle="au-delà de 30 jours : commande probablement oubliée"
+          title={t('pm1_analytics.escrow_aging_title')}
+          subtitle={t('pm1_analytics.escrow_aging_subtitle')}
         >
           {data.escrow_aging.map((tranche) => (
             <div key={tranche.label} style={{ marginBottom: 11 }}>
@@ -365,9 +390,13 @@ export default function FinanceAnalyticsPage({
         </Bloc>
 
         <Bloc
-          title="Litiges"
-          subtitle={`sur ${disputes.orders_with_escrow} commande${
-            disputes.orders_with_escrow > 1 ? 's' : ''}`}
+          title={t('pm1_analytics.disputes_title')}
+          subtitle={t(
+            disputes.orders_with_escrow > 1
+              ? 'pm1_analytics.disputes_subtitle_plural'
+              : 'pm1_analytics.disputes_subtitle',
+            { count: disputes.orders_with_escrow },
+          )}
         >
           <div style={{ marginBottom: 14 }}>
             <span style={{
@@ -382,22 +411,25 @@ export default function FinanceAnalyticsPage({
             display: 'flex', justifyContent: 'space-between',
             fontSize: 12.5, color: FT.muted, marginBottom: 8,
           }}>
-            <span>Litiges ouverts</span>
+            <span>{t('pm1_analytics.disputes_opened')}</span>
             <span>{disputes.disputes_opened}</span>
           </div>
           <div style={{
             display: 'flex', justifyContent: 'space-between',
             fontSize: 12.5, color: FT.muted,
           }}>
-            <span>Remboursés</span>
+            <span>{t('pm1_analytics.refunded')}</span>
             <span>{disputes.refunds_from_disputes}</span>
           </div>
         </Bloc>
 
-        <Bloc title="Partenaires les plus réglés" subtitle="sur la période">
+        <Bloc
+          title={t('pm1_analytics.top_payees_title')}
+          subtitle={t('pm1_analytics.period_subtitle')}
+        >
           {data.top_payees.length === 0 ? (
             <p style={{ fontSize: 12.5, margin: 0, color: FT.faint }}>
-              Aucun versement sur la période.
+              {t('pm1_analytics.no_payouts_period')}
             </p>
           ) : data.top_payees.slice(0, 5).map((partenaire) => (
             <div

@@ -9,6 +9,8 @@
 // crier.
 // ─────────────────────────────────────────────────────────────────────────
 
+import { useTranslation } from 'react-i18next';
+
 import MaturityBar from '../../shared/MaturityBar';
 import type { MaturitySegment } from '../../shared/MaturityBar';
 import Money from '../../shared/Money';
@@ -21,16 +23,17 @@ interface TreasuryCardProps {
 }
 
 export default function TreasuryCard({ treasury }: TreasuryCardProps) {
+  const { t } = useTranslation();
   const segments: MaturitySegment[] = [
     {
-      label: 'Sous séquestre',
-      hint: 'commandes vivantes',
+      label: t('pm1_treasury_card.escrow_label'),
+      hint: t('pm1_treasury_card.escrow_hint'),
       amount: treasury.escrow_xaf,
       color: FT.blue,
     },
     {
-      label: 'Dettes exigibles',
-      hint: 'à verser',
+      label: t('pm1_treasury_card.payables_label'),
+      hint: t('pm1_treasury_card.payables_hint'),
       amount: treasury.payables_xaf,
       color: FT.amber,
     },
@@ -59,16 +62,16 @@ export default function TreasuryCard({ treasury }: TreasuryCardProps) {
             fontSize: 11, margin: '0 0 8px', letterSpacing: '0.08em',
             textTransform: 'uppercase', color: FT.faint,
           }}>
-            Détenu chez le prestataire
+            {t('pm1_treasury_card.held_by_provider')}
           </p>
           {treasury.provider_total_xaf === null ? (
             <>
               <p style={{ fontSize: 20, margin: 0, color: FT.muted }}>
-                indisponible
+                {t('pm1_treasury_card.unavailable')}
               </p>
               <p style={{ fontSize: 11.5, margin: '7px 0 0', color: FT.faint }}>
                 {treasury.provider_error
-                  ? 'La solvabilité ne peut pas être vérifiée.'
+                  ? t('pm1_treasury_card.solvency_unverifiable')
                   : ''}
               </p>
             </>
@@ -90,7 +93,7 @@ export default function TreasuryCard({ treasury }: TreasuryCardProps) {
               fontSize: 11, margin: '0 0 8px', letterSpacing: '0.08em',
               textTransform: 'uppercase', color: FT.faint,
             }}>
-              Couverture
+              {t('pm1_treasury_card.coverage')}
             </p>
             <Money
               value={couverture}
@@ -100,8 +103,8 @@ export default function TreasuryCard({ treasury }: TreasuryCardProps) {
             />
             <p style={{ fontSize: 11.5, margin: '7px 0 0', color: FT.faint }}>
               {couverture >= 0
-                ? 'au-delà de ce qui est dû'
-                : 'de déficit — geler les versements'}
+                ? t('pm1_treasury_card.coverage_positive')
+                : t('pm1_treasury_card.coverage_negative')}
             </p>
           </div>
         )}
@@ -120,8 +123,7 @@ export default function TreasuryCard({ treasury }: TreasuryCardProps) {
             background: FT.red, flexShrink: 0,
           }} />
           <p style={{ fontSize: 12.5, margin: 0, color: FT.muted, flex: 1 }}>
-            {formatXaf(treasury.in_transit_xaf)} FCFA en transit — issue
-            inconnue, ne jamais rejouer.
+            {t('pm1_treasury_card.in_transit', { amount: formatXaf(treasury.in_transit_xaf) })}
           </p>
         </div>
       )}

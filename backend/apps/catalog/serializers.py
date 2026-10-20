@@ -4,7 +4,34 @@
 from rest_framework import serializers
 from django.db.models import Avg
 import re
-from .models import Product, Category, ProductMedia, ProductImage, ProductReview, MasterProduct, ProductCondition, PromotionCampaign, Brand, ColorDictionary, ProductAttribute, MasterProduct, AttributeRole, ProductVariant, ColorFamily
+from .models import Product, Category, ProductMedia, ProductImage, ProductReview, MasterProduct, ProductCondition, PromotionCampaign, Brand, ColorDictionary, ProductAttribute, MasterProduct, AttributeRole, ProductVariant, ColorFamily, ProductQuestion
+from apps.common.translation import translate_fields, request_language
+
+
+def translate_for_buyer(data: dict, fields: list[str], context: dict) -> dict:
+    """
+    Traduit les `fields` d'un dict de representation (title/description/
+    short_description d'une fiche produit) vers la langue demandee par la
+    requete courante (`?lang=` ou Accept-Language, voir request_language()).
+
+    Traduction A LA LECTURE uniquement — le contenu stocke en base n'est
+    jamais modifie, seule cette representation API change selon la requete.
+
+    Desactivee si :
+      - `context['translate_content']` vaut explicitement False (ex. le
+        vendeur consultant SES PROPRES produits : il doit toujours voir
+        exactement ce qu'il a ecrit, jamais une traduction) ;
+      - aucune `request` n'est presente dans le contexte (serializer
+        instancie hors requete HTTP : commande de management, test unitaire,
+        shell) — on ne devine jamais une langue cible dans ce cas.
+    """
+    if context.get('translate_content') is False:
+        return data
+    request = context.get('request')
+    if request is None:
+        return data
+    lang = request_language(request)
+    return translate_fields(data, fields, target_lang=lang)
 
 
 class CategoryImageUrlMixin(serializers.Serializer):
@@ -22,18 +49,32 @@ class CategoryImageUrlMixin(serializers.Serializer):
         return request.build_absolute_uri(url) if request else url
 
 
-class CategorySerializer(CategoryImageUrlMixin, serializers.ModelSerializer):
+class CategoryTranslationMixin:
+    """
+    Traduit `name`/`description` vers la langue de la requête courante —
+    même mécanisme que les fiches produit (voir `translate_for_buyer`).
+    Sans ce mixin, les noms de catégories restaient figés en français
+    quel que soit le sélecteur de langue du front, puisqu'aucune
+    traduction n'était câblée dessus.
+    """
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        return translate_for_buyer(data, ["name", "description"], self.context)
+
+
+class CategorySerializer(CategoryTranslationMixin, CategoryImageUrlMixin, serializers.ModelSerializer):
     """
     Serializer de base — utilisé partout où on affiche UNE catégorie
     (fiche produit, listing, filtres, etc.).
- 
+
     Version étendue : expose les nouveaux champs pour permettre au frontend
     de rendre l'icône, la description, et de détecter les catégories
     à modération renforcée.
     """
     full_path = serializers.CharField(read_only=True)
     effective_requires_approval = serializers.BooleanField(read_only=True)
- 
+
     class Meta:
         model = Category
         fields = [
@@ -57,7 +98,7 @@ class CategorySerializer(CategoryImageUrlMixin, serializers.ModelSerializer):
         ]
 
 
-class CategoryTreeSerializer(CategoryImageUrlMixin, serializers.ModelSerializer):
+class CategoryTreeSerializer(CategoryTranslationMixin, CategoryImageUrlMixin, serializers.ModelSerializer):
     """
     Serializer arborescent — sérialise une catégorie AVEC ses enfants
     récursivement. Utilisé par l'endpoint /api/catalog/categories/tree/.
@@ -99,7 +140,7 @@ class CategoryTreeSerializer(CategoryImageUrlMixin, serializers.ModelSerializer)
         ).data
     
 
-class CategoryFlatSerializer(CategoryImageUrlMixin, serializers.ModelSerializer):
+class CategoryFlatSerializer(CategoryTranslationMixin, CategoryImageUrlMixin, serializers.ModelSerializer):
     """
     Version plate (pas d'enfants imbriqués) — utilisée pour les selects
     et les listes admin où on n'a pas besoin de l'arbre complet.
@@ -247,6 +288,7 @@ class PromotionCampaignSerializer(serializers.ModelSerializer):
             "product_title",
             "campaign_type",
             "status",
+            "origin",
             "title",
             "starts_at",
             "ends_at",
@@ -267,6 +309,7 @@ class PromotionCampaignSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "id",
             "status",
+            "origin",
             "stock_claimed",
             "placement_fee_xaf",
             "commission_uplift_points",
@@ -275,6 +318,10 @@ class PromotionCampaignSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        return translate_for_buyer(data, ["title", "product_title"], self.context)
 
     def validate_product(self, product):
         request = self.context.get("request")
@@ -313,6 +360,76 @@ class PromotionCampaignSerializer(serializers.ModelSerializer):
         campaign.full_clean()
         campaign.save()
         return campaign
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# QUESTIONS CLIENTS SUR UNE FICHE (côté acheteur) — connecteur « poserQuestion »
+# (espace-client-belivay/site, domaine messagerie, CONNECTEURS.md).
+#
+# Le modèle ProductQuestion (plus haut dans models.py) existait déjà : construit
+# pour l'espace vendeur (réponse publique, signalement, modèles de réponse —
+# voir apps/vendors/views.py "questions clients"), mais sans route côté client
+# pour POSER la question. Complète ce côté manquant du même système, sans en
+# créer un nouveau. DIFFÉRENT de la messagerie directe acheteur-vendeur, qui
+# n'existe pas côté serveur (choix délibéré, Addendum Décisions v1.0) : ici la
+# question et la réponse sont publiques sur la fiche produit, comme un avis.
+#
+# Même règle de masquage que le filtre vendeur (apps/vendors/views.py
+# _filtrer_coordonnees) : numéros, e-mails et liens retirés avant stockage,
+# pour qu'aucun échange de coordonnées ne passe par une question produit.
+# ─────────────────────────────────────────────────────────────────────────────
+
+_QUESTION_EMAIL_RE = re.compile(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}')
+_QUESTION_LIEN_RE = re.compile(r'(?:https?://|www\.)\S+', re.IGNORECASE)
+_QUESTION_NUMERO_RE = re.compile(r'(?:(?:\+|00)\d{1,3}[\s.\-]?)?(?:\d[\s.\-]?){7,}\d')
+
+
+def _filtrer_coordonnees_question(texte: str) -> tuple[str, bool]:
+    propre = _QUESTION_EMAIL_RE.sub('•••', texte)
+    propre = _QUESTION_LIEN_RE.sub('•••', propre)
+    propre = _QUESTION_NUMERO_RE.sub('•••', propre)
+    return propre, propre != texte
+
+
+class ProductQuestionSerializer(serializers.ModelSerializer):
+    """Lecture publique (fiche produit) : la question et sa réponse, sans l'identité de qui demande."""
+
+    class Meta:
+        model = ProductQuestion
+        fields = ["id", "product", "text", "answer_text", "answered_at", "created_at"]
+        read_only_fields = fields
+
+
+class ProductQuestionCreateSerializer(serializers.ModelSerializer):
+    """Écriture (acheteur authentifié) : POST /api/catalog/products/{id}/questions/."""
+
+    class Meta:
+        model = ProductQuestion
+        fields = ["id", "product", "text", "masked"]
+        read_only_fields = ["id", "masked"]
+
+    masked = serializers.SerializerMethodField()
+
+    def get_masked(self, obj):
+        return getattr(obj, "_masked", [])
+
+    def validate_text(self, value):
+        value = (value or "").strip()
+        if not value:
+            raise serializers.ValidationError("La question est vide.")
+        if len(value) > 500:
+            raise serializers.ValidationError("500 caractères au plus.")
+        return value
+
+    def create(self, validated_data):
+        request = self.context.get("request")
+        texte = validated_data["text"]
+        propre, filtre = _filtrer_coordonnees_question(texte)
+        question = ProductQuestion.objects.create(
+            product=validated_data["product"], asker=request.user, text=propre,
+        )
+        question._masked = ["texte"] if filtre else []
+        return question
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -364,7 +481,11 @@ class ProductSerializer(serializers.ModelSerializer):
             
         ]
         read_only_fields = ['id', 'slug', 'created_at', 'updated_at']
-    
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        return translate_for_buyer(data, ['title', 'description', 'short_description'], self.context)
+
     def get_stock_quantity(self, obj):
         try:
             return obj.inventory.quantity
@@ -615,6 +736,10 @@ class OfferSerializer(serializers.ModelSerializer):
             'short_description', 'faq',
         ]
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        return translate_for_buyer(data, ['short_description'], self.context)
+
     def get_stock_quantity(self, obj):
         try:
             return obj.inventory.quantity
@@ -681,6 +806,10 @@ class MasterProductListSerializer(serializers.ModelSerializer):
         offer = obj.buy_box_offer
         return OfferSerializer(offer, context=self.context).data if offer else None
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        return translate_for_buyer(data, ['title'], self.context)
+
 
 class MasterProductDetailSerializer(MasterProductListSerializer):
     images = serializers.SerializerMethodField()
@@ -688,6 +817,11 @@ class MasterProductDetailSerializer(MasterProductListSerializer):
 
     class Meta(MasterProductListSerializer.Meta):
         fields = MasterProductListSerializer.Meta.fields + ['description', 'images', 'offers']
+
+    def to_representation(self, instance):
+        # super() (MasterProductListSerializer.to_representation) traduit deja 'title'.
+        data = super().to_representation(instance)
+        return translate_for_buyer(data, ['description'], self.context)
 
     def get_images(self, obj):
         request = self.context.get('request')
@@ -761,7 +895,11 @@ class BrandSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = ["id", "created_at", "logo_url", "master_products_count"]
- 
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        return translate_for_buyer(data, ["description"], self.context)
+
     def get_logo_url(self, obj):
         if obj.logo:
             request = self.context.get("request")

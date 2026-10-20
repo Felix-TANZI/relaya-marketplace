@@ -1,6 +1,7 @@
 // frontend/src/features/payments/buyer/PaymentDetailPage.tsx
 // Le detail d'un paiement.
 
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { useFinanceAction } from '../hooks/useFinanceAction';
@@ -24,6 +25,7 @@ export default function PaymentDetailPage({
   basePath = '/payments',
   ordersPath = '/orders',
 }: PaymentDetailPageProps) {
+  const { t } = useTranslation();
   const { reference = '' } = useParams<{ reference: string }>();
   const navigate = useNavigate();
   const { data: paiement, loading, error, reload } = useMyPayment(reference);
@@ -32,7 +34,9 @@ export default function PaymentDetailPage({
   if (loading) {
     return (
       <div style={{ padding: '3rem', textAlign: 'center' }}>
-        <span style={{ fontSize: 13, color: FT.faint }}>Chargement…</span>
+        <span style={{ fontSize: 13, color: FT.faint }}>
+          {t('pm2_buyer_detail.loading')}
+        </span>
       </div>
     );
   }
@@ -41,8 +45,8 @@ export default function PaymentDetailPage({
     return (
       <EmptyState
         icon="file-off"
-        title="Paiement introuvable"
-        description={error ?? 'Ce paiement n’existe pas ou ne vous concerne pas.'}
+        title={t('pm2_buyer_detail.not_found_title')}
+        description={error ?? t('pm2_buyer_detail.not_found_description')}
       />
     );
   }
@@ -61,7 +65,7 @@ export default function PaymentDetailPage({
           aria-hidden="true"
           style={{ fontSize: 14, verticalAlign: -2, marginRight: 6 }}
         />
-        Mes paiements
+        {t('pm2_buyer_detail.back_to_history')}
       </button>
 
       <div style={{
@@ -104,7 +108,7 @@ export default function PaymentDetailPage({
               fontSize: 13.5, margin: 0,
               color: 'var(--text-primary, #1A1209)',
             }}>
-              Composez votre code secret sur votre téléphone
+              {t('pm2_buyer_detail.enter_code_title')}
             </p>
             <p style={{
               fontSize: 12.5, margin: '3px 0 0', lineHeight: 1.55,
@@ -112,8 +116,7 @@ export default function PaymentDetailPage({
             }}>
               {/* Le prestataire fait foi : on l'interroge plutot que de se
                   fier a l'etat local. */}
-              Une fois validé, actualisez pour vérifier auprès de votre
-              opérateur.
+              {t('pm2_buyer_detail.enter_code_hint')}
             </p>
             {action.error && (
               <p style={{ fontSize: 12, margin: '8px 0 0', color: FT.redD }}>
@@ -129,7 +132,9 @@ export default function PaymentDetailPage({
             }}
             style={{ fontSize: 12, padding: '6px 13px', whiteSpace: 'nowrap' }}
           >
-            {action.running ? 'Vérification…' : 'Actualiser'}
+            {action.running
+              ? t('pm2_buyer_detail.checking')
+              : t('pm2_buyer_detail.refresh')}
           </button>
         </div>
       )}
@@ -145,7 +150,7 @@ export default function PaymentDetailPage({
             letterSpacing: '0.08em', textTransform: 'uppercase',
             color: FT.faint,
           }}>
-            Commandes couvertes
+            {t('pm2_buyer_detail.orders_covered')}
           </p>
           {paiement.orders.map((orderId, index) => (
             <div
@@ -163,7 +168,7 @@ export default function PaymentDetailPage({
               <span style={{
                 fontSize: 13, color: 'var(--text-primary, #1A1209)',
               }}>
-                Commande #{orderId}
+                {t('pm2_buyer_detail.order_number', { id: orderId })}
               </span>
               <i
                 className="ti ti-chevron-right"

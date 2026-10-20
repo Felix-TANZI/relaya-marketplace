@@ -25,6 +25,7 @@
  * contrat — ce qui sera payé, plutôt qu'un tableau vide.
  */
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Check, CircleHelp, Smartphone, TriangleAlert } from "lucide-react";
 import { http } from "@/services/api/http";
 import {
@@ -129,6 +130,7 @@ export default function RelayPayouts({
   /** Deroule la carte de verification, seul endroit ou le numero se change. */
   onChangeNumber: () => void;
 }) {
+  const { t } = useTranslation();
   const [due, setDue] = useState<RelayAmountDue | null>(null);
   const [settlements, setSettlements] = useState<RelaySettlement[]>([]);
   const [payouts, setPayouts] = useState<RelayPayout[]>([]);
@@ -188,7 +190,7 @@ export default function RelayPayouts({
 
   const blocage = due?.blockers?.[0];
   const quand = blocage
-    ? humaniserBlocage(blocage)
+    ? humaniserBlocage(blocage, t)
     : due?.next_settlement_at
       ? `Prévu · ${formatLong(due.next_settlement_at)}`
       : due?.next_settlement_cycle || "Prochain versement";
@@ -261,7 +263,7 @@ export default function RelayPayouts({
 
         {due?.next_settlement_at && !blocage ? (
           <p className="mt-1.5 text-[13px] font-semibold text-white/80">
-            {compteARebours(due.next_settlement_at)}
+            {compteARebours(due.next_settlement_at, t)}
           </p>
         ) : null}
 
@@ -295,7 +297,7 @@ export default function RelayPayouts({
         </h3>
         {releve ? (
           <p className="mt-0.5 text-[12.5px] font-medium text-slate-400 dark:text-slate-500">
-            {formatPeriode(releve.period_start, releve.period_end)}
+            {formatPeriode(releve.period_start, releve.period_end, t)}
           </p>
         ) : null}
 

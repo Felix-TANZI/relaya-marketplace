@@ -1,6 +1,7 @@
 // frontend/src/features/payments/SavedPaymentMethods.tsx
 import { useCallback, useState } from "react";
 import { Plus, Smartphone, Trash2, Wallet } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { CAMEROON, detectOperator, isValidNationalNumber, toE164, toNationalNumber } from "@/lib/phone";
 import { PhoneInput } from "@/components/ui/PhoneInput";
 import { useToast } from "@/context/ToastContext";
@@ -36,6 +37,7 @@ export function getDefaultPaymentMethod(): SavedMethod | null {
 }
 
 export function SavedPaymentMethods() {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   // Lecture a l'initialisation plutot que dans un effet : `read()` est un
   // acces localStorage synchrone, le passer par un effet declencherait un
@@ -57,17 +59,17 @@ export function SavedPaymentMethods() {
 
   const add = () => {
     if (!valid || !detected) {
-      showToast("Numéro invalide", { description: "Seuls les numéros MTN et Orange acceptent le Mobile Money.", type: "error" });
+      showToast(t("pm2_saved_methods.toast_invalid_number"), { description: t("pm2_saved_methods.toast_invalid_number_description"), type: "error" });
       return;
     }
     const e164 = toE164(national);
     if (methods.some((m) => m.phone === e164)) {
-      showToast("Ce numéro est déjà enregistré", "error");
+      showToast(t("pm2_saved_methods.toast_already_registered"), "error");
       return;
     }
     persist([...methods, { id: `pm-${Date.now()}`, operator: detected, phone: e164, default: methods.length === 0 }]);
     setPhone("");
-    showToast("Moyen de paiement ajouté", { description: `${detected === "MTN" ? "MTN Mobile Money" : "Orange Money"} · ${e164}`, type: "success" });
+    showToast(t("pm2_saved_methods.toast_method_added"), { description: `${detected === "MTN" ? "MTN Mobile Money" : "Orange Money"} · ${e164}`, type: "success" });
   };
 
   const setDefault = (id: string) => persist(methods.map((m) => ({ ...m, default: m.id === id })));
@@ -76,7 +78,7 @@ export function SavedPaymentMethods() {
     const next = methods.filter((m) => m.id !== id);
     if (next.length && !next.some((m) => m.default)) next[0].default = true;
     persist(next);
-    showToast("Moyen de paiement retiré", "success");
+    showToast(t("pm2_saved_methods.toast_method_removed"), "success");
   };
 
   return (
@@ -85,16 +87,16 @@ export function SavedPaymentMethods() {
 
       <div className="pf-panel-head">
         <div>
-          <div className="pf-panel-title">Mes moyens de paiement</div>
-          <div className="pf-panel-sub">Vos comptes Mobile Money enregistrés sur cet appareil</div>
+          <div className="pf-panel-title">{t("pm2_saved_methods.title")}</div>
+          <div className="pf-panel-sub">{t("pm2_saved_methods.subtitle")}</div>
         </div>
       </div>
 
       {methods.length === 0 ? (
         <div className="pf-empty">
           <span className="pf-empty-ic"><Smartphone size={22} /></span>
-          <div className="pf-empty-t">Aucun moyen enregistré</div>
-          <div className="pf-muted-sm">Ajoutez un numéro pour payer en un geste au prochain achat.</div>
+          <div className="pf-empty-t">{t("pm2_saved_methods.empty_title")}</div>
+          <div className="pf-muted-sm">{t("pm2_saved_methods.empty_description")}</div>
         </div>
       ) : (
         <div className="pf-addr-grid" style={{ marginBottom: 16 }}>
@@ -103,34 +105,36 @@ export function SavedPaymentMethods() {
               <div className="pf-addr-label">
                 <OperatorLogo provider={m.operator === "MTN" ? "MTN_MOMO" : "ORANGE_MONEY"} size={30} />
                 {m.operator === "MTN" ? "MTN Mobile Money" : "Orange Money"}
-                {m.default && <span className="pf-badge-soft">Par défaut</span>}
+                {m.default && <span className="pf-badge-soft">{t("pm2_saved_methods.default_badge")}</span>}
               </div>
               <div className="pf-addr-line">{m.phone}</div>
               <div className="pf-addr-actions">
-                {!m.default && <button type="button" className="pf-btn-ghost" onClick={() => setDefault(m.id)}>Par défaut</button>}
-                <button type="button" className="pf-btn-danger" onClick={() => remove(m.id)}><Trash2 size={13} />Retirer</button>
+                {!m.default && <button type="button" className="pf-btn-ghost" onClick={() => setDefault(m.id)}>{t("pm2_saved_methods.set_default")}</button>}
+                <button type="button" className="pf-btn-danger" onClick={() => remove(m.id)}><Trash2 size={13} />{t("pm2_saved_methods.remove")}</button>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      <div className="pf-card-title pf-mb">Ajouter un compte</div>
+      <div className="pf-card-title pf-mb">{t("pm2_saved_methods.add_account_title")}</div>
       <div className="pf-pay-form">
         <div style={{ flex: 1, minWidth: 200 }}>
           <PhoneInput value={phone} onChange={setPhone} placeholder="6XX XXX XXX" />
         </div>
-        <button type="button" className="pf-btn-accent" onClick={add} disabled={!valid || !detected}><Plus size={14} />Ajouter</button>
+        <button type="button" className="pf-btn-accent" onClick={add} disabled={!valid || !detected}><Plus size={14} />{t("pm2_saved_methods.add")}</button>
       </div>
 
       <div className="pf-info-note">
         <span className="pf-info-ic"><Wallet size={15} /></span>
         <div>
           <div className="pf-toggle-t" style={{ fontSize: 13 }}>
-            {detected ? `Opérateur détecté : ${detected === "MTN" ? "MTN" : "Orange"}` : "Modes acceptés sur BelivaY"}
+            {detected
+              ? t("pm2_saved_methods.operator_detected", { operator: detected === "MTN" ? "MTN" : "Orange" })
+              : t("pm2_saved_methods.accepted_modes")}
           </div>
           <div className="pf-muted-sm">
-            L'opérateur est déduit du préfixe. BelivaY ne stocke jamais votre code secret Mobile Money.
+            {t("pm2_saved_methods.privacy_note")}
           </div>
         </div>
       </div>

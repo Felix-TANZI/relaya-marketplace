@@ -7,6 +7,7 @@ import {
   Radio, RefreshCw, Users, Store, User, Clock,
   Monitor, Smartphone, Globe, MapPin, ExternalLink,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import { useToast } from '@/context/ToastContext';
 import { http } from '@/services/api/http';
@@ -44,9 +45,9 @@ interface LiveStats {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const ROLE_CFG = {
-  admin:  { label: 'Admin',    color: '#EF4444', bg: 'rgba(239,68,68,0.12)'   },
-  vendor: { label: 'Vendeur',  color: '#F47920', bg: 'rgba(244,121,32,0.12)' },
-  buyer:  { label: 'Acheteur', color: '#3B82F6', bg: 'rgba(59,130,246,0.12)' },
+  admin:  { labelKey: 'ad1_live_users.role_admin',  color: '#EF4444', bg: 'rgba(239,68,68,0.12)'   },
+  vendor: { labelKey: 'ad1_live_users.role_vendor', color: '#F47920', bg: 'rgba(244,121,32,0.12)' },
+  buyer:  { labelKey: 'ad1_live_users.role_buyer',  color: '#3B82F6', bg: 'rgba(59,130,246,0.12)' },
 };
 
 const DEVICE_ICONS = {
@@ -71,6 +72,7 @@ const fmtTime = (d: string) =>
 
 export default function LiveUsersPage() {
   const T             = useAdminTheme();
+  const { t }          = useTranslation();
   const { showToast } = useToast();
   const toastRef      = useRef(showToast);
   useEffect(() => { toastRef.current = showToast; });
@@ -88,11 +90,11 @@ export default function LiveUsersPage() {
       setStats(data);
       setCountdown(30);
     } catch {
-      if (!silent) toastRef.current('Erreur chargement des utilisateurs connectés', 'error');
+      if (!silent) toastRef.current(t('ad1_live_users.load_error'), 'error');
     } finally {
       if (!silent) setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     load(false);
@@ -118,17 +120,17 @@ export default function LiveUsersPage() {
         <div>
           <div className="flex items-center gap-3 mb-1">
             <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: T.text }}>
-              Utilisateurs Connectés
+              {t('ad1_live_users.page_title')}
             </h1>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full"
               style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)' }}>
               <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#10B981', animation: 'pulse 1.5s ease-in-out infinite' }} />
-              <span style={{ fontSize: 11, fontWeight: 700, color: '#10B981' }}>LIVE</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#10B981' }}>{t('ad1_live_users.live_badge')}</span>
             </div>
           </div>
           <p style={{ fontSize: 12.5, color: T.muted }}>
-            Actualisation dans <strong style={{ color: T.text }}>{countdown}s</strong>
-            {stats?.last_updated && <span> · MàJ {fmtTime(stats.last_updated)}</span>}
+            {t('ad1_live_users.refreshing_in_prefix')} <strong style={{ color: T.text }}>{countdown}s</strong>
+            {stats?.last_updated && <span>{t('ad1_live_users.update_suffix', { time: fmtTime(stats.last_updated) })}</span>}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -139,13 +141,13 @@ export default function LiveUsersPage() {
             onMouseEnter={e => (e.currentTarget.style.background = 'rgba(59,130,246,0.18)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'rgba(59,130,246,0.1)')}>
             <MapPin size={13} />
-            <span className="hidden sm:inline">Voir la carte</span>
+            <span className="hidden sm:inline">{t('ad1_live_users.view_map')}</span>
           </Link>
           <button onClick={() => load(false)}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold"
             style={{ background: 'rgba(220,38,38,0.1)', color: T.red, border: '1px solid rgba(220,38,38,0.25)' }}>
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-            <span className="hidden sm:inline">Actualiser</span>
+            <span className="hidden sm:inline">{t('ad1_live_users.refresh')}</span>
           </button>
         </div>
       </div>
@@ -159,10 +161,10 @@ export default function LiveUsersPage() {
           {/* KPIs */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { label: 'En ligne',  value: stats.total_online, accent: '#10B981', icon: Radio   },
-              { label: 'Acheteurs', value: stats.buyers,       accent: '#3B82F6', icon: Users   },
-              { label: 'Vendeurs',  value: stats.vendors,      accent: '#F47920', icon: Store   },
-              { label: 'Admins',    value: stats.admins,       accent: '#EF4444', icon: User    },
+              { label: t('ad1_live_users.kpi_online'),  value: stats.total_online, accent: '#10B981', icon: Radio   },
+              { label: t('ad1_live_users.kpi_buyers'), value: stats.buyers,       accent: '#3B82F6', icon: Users   },
+              { label: t('ad1_live_users.kpi_vendors'),  value: stats.vendors,      accent: '#F47920', icon: Store   },
+              { label: t('ad1_live_users.kpi_admins'),    value: stats.admins,       accent: '#EF4444', icon: User    },
             ].map((k, i) => {
               const Icon = k.icon;
               return (
@@ -187,7 +189,7 @@ export default function LiveUsersPage() {
               <div className="flex items-center gap-2">
                 <Monitor size={14} style={{ color: T.muted }} />
                 <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{desktopCount}</span>
-                <span style={{ fontSize: 12, color: T.muted }}>desktop</span>
+                <span style={{ fontSize: 12, color: T.muted }}>{t('ad1_live_users.device_desktop')}</span>
               </div>
               <div style={{ flex: 1, height: 6, background: T.border, borderRadius: 3, overflow: 'hidden' }}>
                 <div style={{ height: '100%', width: `${Math.round(desktopCount / (desktopCount + mobileCount) * 100)}%`, background: '#3B82F6', borderRadius: 3 }} />
@@ -195,7 +197,7 @@ export default function LiveUsersPage() {
               <div className="flex items-center gap-2">
                 <Smartphone size={14} style={{ color: T.muted }} />
                 <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{mobileCount}</span>
-                <span style={{ fontSize: 12, color: T.muted }}>mobile</span>
+                <span style={{ fontSize: 12, color: T.muted }}>{t('ad1_live_users.device_mobile')}</span>
               </div>
             </div>
           )}
@@ -207,19 +209,19 @@ export default function LiveUsersPage() {
               <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
                 <div className="flex items-center gap-2">
                   <Users size={14} style={{ color: T.red }} />
-                  <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Sessions actives ({stats.users.length})</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad1_live_users.sessions_active_title', { count: stats.users.length })}</span>
                 </div>
                 <Link to="/admin/live/map"
                   style={{ fontSize: 12, fontWeight: 600, color: '#3B82F6', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <MapPin size={12} /> Carte complète
+                  <MapPin size={12} /> {t('ad1_live_users.full_map_link')}
                 </Link>
               </div>
               {stats.users.length === 0 ? (
                 <div className="flex flex-col items-center py-14 gap-3">
                   <Radio size={30} style={{ color: T.muted }} />
-                  <p style={{ fontSize: 14, color: T.muted }}>Aucun utilisateur connecté</p>
+                  <p style={{ fontSize: 14, color: T.muted }}>{t('ad1_live_users.no_users_online')}</p>
                   <p style={{ fontSize: 12, color: T.muted, maxWidth: 280, textAlign: 'center', lineHeight: 1.6 }}>
-                    Les utilisateurs apparaissent ici dès qu'ils font une requête API (navigation, panier, commandes…)
+                    {t('ad1_live_users.no_users_online_desc')}
                   </p>
                 </div>
               ) : (
@@ -244,7 +246,7 @@ export default function LiveUsersPage() {
                               @{u.username}
                             </Link>
                             <span style={{ fontSize: 9.5, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: cfg.bg, color: cfg.color }}>
-                              {cfg.label}
+                              {t(cfg.labelKey)}
                             </span>
                             <span className="flex items-center gap-1" style={{ fontSize: 11, color: T.muted }}>
                               <DevIcon size={10} /> {u.device}
@@ -291,7 +293,7 @@ export default function LiveUsersPage() {
               <div className="rounded-2xl overflow-hidden" style={{ background: T.card, border: `1px solid ${T.border}` }}>
                 <div className="flex items-center gap-2 px-5 py-3.5" style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
                   <Globe size={14} style={{ color: T.red }} />
-                  <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Pages actives</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad1_live_users.pages_active_title')}</span>
                 </div>
                 <div className="p-4 space-y-2.5">
                   {stats.by_page.length === 0 ? (
@@ -317,7 +319,7 @@ export default function LiveUsersPage() {
               <div className="rounded-2xl overflow-hidden" style={{ background: T.card, border: `1px solid ${T.border}` }}>
                 <div className="flex items-center gap-2 px-5 py-3.5" style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
                   <MapPin size={14} style={{ color: T.red }} />
-                  <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Par ville</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad1_live_users.by_city_title')}</span>
                 </div>
                 <div className="p-4 space-y-2">
                   {stats.by_city.length === 0 ? (

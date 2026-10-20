@@ -5,6 +5,8 @@
 // non lus : la donnée est désormais partagée, persistée et notifiée par
 // événement, comme les favoris et les litiges.
 
+import type { TFunction } from "i18next";
+
 const STORAGE_KEY = "belivay_support_inbox";
 export const SUPPORT_UPDATED_EVENT = "belivay-support-updated";
 
@@ -25,34 +27,36 @@ export interface SupportConversation {
 }
 
 /** Conversations de démarrage, posées une seule fois au premier accès. */
-function seed(): SupportConversation[] {
+function seed(t: TFunction): SupportConversation[] {
   const now = Date.now();
   const at = (minutesAgo: number) => new Date(now - minutesAgo * 60_000).toISOString();
+  const support = t("misc1_support_inbox.author_support");
+  const you = t("misc1_support_inbox.author_you");
 
   return [
     {
       id: "support-1",
-      name: "Support BelivaY",
-      preview: "Le dossier est en cours de traitement, retour sous 24h.",
+      name: t("misc1_support_inbox.seed_conversation1_name"),
+      preview: t("misc1_support_inbox.seed_message_case_in_progress"),
       unread: 2,
       updatedAt: at(45),
       messages: [
-        { id: "m1", author: "Support", text: "Bonjour, nous avons bien reçu votre demande.", createdAt: at(60) },
-        { id: "m2", author: "Vous", text: "Merci, je voulais vérifier le statut de mon remboursement.", createdAt: at(52) },
-        { id: "m3", author: "Support", text: "Le dossier est en cours de traitement, retour sous 24h.", createdAt: at(45) },
+        { id: "m1", author: support, text: t("misc1_support_inbox.seed_message_request_received"), createdAt: at(60) },
+        { id: "m2", author: you, text: t("misc1_support_inbox.seed_message_refund_status_question"), createdAt: at(52) },
+        { id: "m3", author: support, text: t("misc1_support_inbox.seed_message_case_in_progress"), createdAt: at(45) },
       ],
     },
     {
       id: "support-2",
-      name: "Support abonnement",
-      preview: "Votre dépôt Mobile Money a été validé.",
+      name: t("misc1_support_inbox.seed_conversation2_name"),
+      preview: t("misc1_support_inbox.seed_message_deposit_validated"),
       unread: 0,
       updatedAt: at(24 * 60),
       messages: [
         {
           id: "m7",
-          author: "Support",
-          text: "Votre dépôt a bien été validé sur votre Compte BelivaY.",
+          author: support,
+          text: t("misc1_support_inbox.seed_message_deposit_validated"),
           createdAt: at(24 * 60),
         },
       ],
@@ -60,12 +64,12 @@ function seed(): SupportConversation[] {
   ];
 }
 
-function read(): SupportConversation[] {
+function read(t: TFunction): SupportConversation[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      const initial = seed();
+      const initial = seed(t);
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
       return initial;
     }
@@ -82,39 +86,40 @@ function write(conversations: SupportConversation[]) {
   window.dispatchEvent(new Event(SUPPORT_UPDATED_EVENT));
 }
 
-export function getSupportConversations(): SupportConversation[] {
-  return read().sort(
+export function getSupportConversations(t: TFunction): SupportConversation[] {
+  return read(t).sort(
     (left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime(),
   );
 }
 
-export function getUnreadSupportCount(): number {
-  return read().reduce((sum, conversation) => sum + (conversation.unread || 0), 0);
+export function getUnreadSupportCount(t: TFunction): number {
+  return read(t).reduce((sum, conversation) => sum + (conversation.unread || 0), 0);
 }
 
 /** Marque une conversation comme lue — appelée à l'ouverture du fil. */
-export function markSupportConversationRead(id: string) {
-  const current = read();
+export function markSupportConversationRead(id: string, t: TFunction) {
+  const current = read(t);
   if (!current.some((conversation) => conversation.id === id && conversation.unread > 0)) return;
   write(current.map((conversation) => (conversation.id === id ? { ...conversation, unread: 0 } : conversation)));
 }
 
-export function addSupportMessage(id: string, text: string, author = "Vous") {
+export function addSupportMessage(id: string, text: string, t: TFunction, author?: string) {
   const trimmed = text.trim();
   if (!trimmed) return;
 
+  const resolvedAuthor = author ?? t("misc1_support_inbox.author_you");
   const now = new Date().toISOString();
   write(
-    read().map((conversation) =>
+    read(t).map((conversation) =>
       conversation.id === id
         ? {
             ...conversation,
             preview: trimmed,
             updatedAt: now,
-            unread: author === "Vous" ? 0 : conversation.unread + 1,
+            unread: resolvedAuthor === t("misc1_support_inbox.author_you") ? 0 : conversation.unread + 1,
             messages: [
               ...conversation.messages,
-              { id: `${conversation.id}-${Date.now()}`, author, text: trimmed, createdAt: now },
+              { id: `${conversation.id}-${Date.now()}`, author: resolvedAuthor, text: trimmed, createdAt: now },
             ],
           }
         : conversation,
@@ -123,7 +128,7 @@ export function addSupportMessage(id: string, text: string, author = "Vous") {
 }
 
 /** Ouvre un nouveau fil support, par exemple depuis un formulaire de contact. */
-export function openSupportConversation(name: string, firstMessage: string): SupportConversation {
+export function openSupportConversation(name: string, firstMessage: string, t: TFunction): SupportConversation {
   const now = new Date().toISOString();
   const conversation: SupportConversation = {
     id: `support-${Date.now()}`,
@@ -131,9 +136,9 @@ export function openSupportConversation(name: string, firstMessage: string): Sup
     preview: firstMessage,
     unread: 0,
     updatedAt: now,
-    messages: [{ id: `msg-${Date.now()}`, author: "Vous", text: firstMessage, createdAt: now }],
+    messages: [{ id: `msg-${Date.now()}`, author: t("misc1_support_inbox.author_you"), text: firstMessage, createdAt: now }],
   };
-  write([conversation, ...read()]);
+  write([conversation, ...read(t)]);
   return conversation;
 }
 

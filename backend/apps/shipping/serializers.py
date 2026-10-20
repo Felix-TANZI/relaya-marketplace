@@ -7,15 +7,18 @@ from django.shortcuts import get_object_or_404
 from django.http import Http404
 from apps.orders.models import Dispute, Order, OrderHistory
 from apps.accounts.models import CourierProfile, UserNotification
+from apps.common.translation import request_language, translate_text
 from .models import (
     CourierSOSAlert,
     RelayParcel,
+    RelayPickupAttempt,
     RelayPointReview,
     Shipment,
     ShipmentEvent,
     ShipmentEvidence,
     ShipmentLocation,
     ShipmentMessage,
+    infer_actor_role,
 )
 
 # Shipment.parcel_size est un champ libre cote livraison : on traduit les
@@ -362,11 +365,15 @@ class ShipmentCreateSerializer(serializers.Serializer):
             shipment = assign_shipment_or_mark_blocked(shipment, required_vehicle_type=shipment.required_vehicle_type)
 
         # Ajoute un event (V1 simple)
-        ShipmentEvent.objects.create(
+        request = self.context.get("request")
+        actor = getattr(request, "user", None)
+        ShipmentEvent.record(
             shipment=shipment,
             status=shipment.status,
             message="Shipment created" if created else "Shipment updated",
             location="",
+            actor=actor,
+            actor_role=infer_actor_role(actor),
         )
 
         if shipment.courier_id:
@@ -564,13 +571,61 @@ class RelayParcelReceiveSerializer(serializers.Serializer):
         shipment.assignment_issue_code = ""
         shipment.assignment_issue_message = ""
         shipment.save(update_fields=["relay_point", "status", "assignment_issue_code", "assignment_issue_message", "updated_at"])
-        ShipmentEvent.objects.create(
+        ShipmentEvent.record(
             shipment=shipment,
             status=Shipment.Status.IN_TRANSIT,
             message=f"Colis recu et stocke au point relais {relay_point.name}",
             location=relay_point.name,
+            actor=self.context.get("user"),
+            actor_role="RELAY_POINT",
         )
         return parcel
+
+
+class RelayPickupCodeCheckSerializer(serializers.Serializer):
+    """
+    Verification en direct d'un code de retrait avant la remise. Ne modifie
+    aucun `RelayParcel` : seul `RelayParcelPickupSerializer` finalise la
+    remise. Alimente l'ecran comptoir en detectant en direct les deux
+    sous-etats jusque-la invisibles — code faux et colis bloque 24 h apres 3
+    echecs consecutifs (Regles Systeme DEV v2.0 §8.2).
+    """
+
+    pickup_code = serializers.CharField()
+
+    def check(self):
+        relay_point = self.context["relay_point"]
+        code = self.validated_data["pickup_code"]
+
+        locked_until = RelayPickupAttempt.locked_until(relay_point, code)
+        if locked_until:
+            return {"locked": True, "locked_until": locked_until, "attempts_left": 0, "parcels": []}
+
+        parcels = list(
+            RelayParcel.objects.select_related("shipment", "shipment__order", "relay_point")
+            .filter(
+                relay_point=relay_point,
+                pickup_code=code,
+                status__in=[RelayParcel.Status.RECEIVED, RelayParcel.Status.STORED],
+            )
+        )
+        if parcels:
+            RelayPickupAttempt.register(relay_point, code, success=True)
+            return {
+                "locked": False,
+                "locked_until": None,
+                "attempts_left": RelayPickupAttempt.MAX_ATTEMPTS,
+                "parcels": parcels,
+            }
+
+        RelayPickupAttempt.register(relay_point, code, success=False)
+        locked_until = RelayPickupAttempt.locked_until(relay_point, code)
+        return {
+            "locked": bool(locked_until),
+            "locked_until": locked_until,
+            "attempts_left": RelayPickupAttempt.attempts_left(relay_point, code),
+            "parcels": [],
+        }
 
 
 class RelayParcelPickupSerializer(serializers.Serializer):
@@ -610,6 +665,17 @@ class RelayParcelPickupSerializer(serializers.Serializer):
     def save(self, **kwargs):
         relay_point = self.context["relay_point"]
         code = self.validated_data["pickup_code"]
+
+        # 3 codes faux consecutifs bloquent ce code 24 h (Regles Systeme DEV
+        # v2.0 §8.2) : verifie ici en dernier recours, meme si l'ecran de
+        # retrait appelle deja RelayPickupCodeCheckSerializer avant d'arriver
+        # jusqu'ici.
+        locked_until = RelayPickupAttempt.locked_until(relay_point, code)
+        if locked_until:
+            raise serializers.ValidationError({
+                "pickup_code": f"Code bloque jusqu'au {locked_until:%d/%m %H:%M} apres 3 codes faux. Seul le support peut debloquer.",
+            })
+
         parcels = list(
             RelayParcel.objects.select_related("shipment", "shipment__order", "relay_point")
             .filter(
@@ -619,7 +685,9 @@ class RelayParcelPickupSerializer(serializers.Serializer):
             )
         )
         if not parcels:
+            RelayPickupAttempt.register(relay_point, code, success=False)
             raise serializers.ValidationError({"pickup_code": "Code de retrait incorrect ou colis deja retire."})
+        RelayPickupAttempt.register(relay_point, code, success=True)
 
         # Retrait par un tiers : si l'acheteur a designe une personne
         # autorisee, le relais doit loguer sa piece d'identite avant de
@@ -644,11 +712,13 @@ class RelayParcelPickupSerializer(serializers.Serializer):
             shipment = parcel.shipment
             shipment.status = Shipment.Status.DELIVERED
             shipment.save(update_fields=["status", "updated_at"])
-            ShipmentEvent.objects.create(
+            ShipmentEvent.record(
                 shipment=shipment,
                 status=Shipment.Status.DELIVERED,
                 message=f"Colis retire au point relais {relay_point.name}",
                 location=relay_point.name,
+                actor=self.context.get("user"),
+                actor_role="RELAY_POINT",
             )
         # Un seul appel par commande (tous les colis partagent la meme
         # commande quand ils partagent un code) — mark_delivered() est
@@ -679,7 +749,7 @@ class RelayParcelPickupSerializer(serializers.Serializer):
             if shipment.buyer_confirmed_at is None:
                 shipment.buyer_confirmed_at = now
                 shipment.save(update_fields=["buyer_confirmed_at", "updated_at"])
-            ShipmentEvent.objects.create(
+            ShipmentEvent.record(
                 shipment=shipment,
                 status=shipment.status,
                 message=(
@@ -687,6 +757,8 @@ class RelayParcelPickupSerializer(serializers.Serializer):
                     f"{relay_point.name}"
                 ),
                 location=relay_point.name,
+                actor=user,
+                actor_role="RELAY_POINT",
             )
 
         # Commande multi-vendeur : chaque vendeur a son colis, et un relais ne
@@ -744,11 +816,13 @@ class RelayParcelReturnSerializer(serializers.Serializer):
         parcel.returned_at = timezone.now()
         parcel.save()
 
-        ShipmentEvent.objects.create(
+        ShipmentEvent.record(
             shipment=parcel.shipment,
             status=parcel.shipment.status,
             message=f"Retour point relais vers {'vendeur' if destination == 'VENDOR' else 'BelivaY'}",
             location=relay_point.name,
+            actor=self.context.get("user"),
+            actor_role="RELAY_POINT",
         )
         return parcel
 
@@ -774,11 +848,15 @@ class ShipmentEventCreateSerializer(serializers.Serializer):
         shipment.status = validated_data["status"]
         shipment.save(update_fields=["status", "updated_at"])
 
-        event = ShipmentEvent.objects.create(
+        request = self.context.get("request")
+        actor = getattr(request, "user", None)
+        event = ShipmentEvent.record(
             shipment=shipment,
             status=validated_data["status"],
             message=validated_data.get("message", ""),
             location=validated_data.get("location", ""),
+            actor=actor,
+            actor_role=infer_actor_role(actor),
         )
         return event
 
@@ -859,11 +937,13 @@ class CourierShipmentActionSerializer(serializers.Serializer):
 
         shipment.save(update_fields=["status", "courier", "courier_name", "courier_phone", "accepted_at", "penalty_notified_at", "updated_at"])
 
-        ShipmentEvent.objects.create(
+        ShipmentEvent.record(
             shipment=shipment,
             status=shipment.status,
             message=message or action.replace("_", " ").title(),
             location=location,
+            actor=request.user,
+            actor_role="COURIER",
         )
 
         if action == "INCIDENT" and order.user_id:
@@ -987,6 +1067,17 @@ class CourierDisputeSerializer(serializers.ModelSerializer):
 class ShipmentMessageSerializer(serializers.ModelSerializer):
     sender_name = serializers.SerializerMethodField()
 
+    # Traduction a la lecture (demande Felix : acheteur anglophone <->
+    # livreur francophone sur le canal CLIENT). CHOIX DE NOMMAGE : champ
+    # SEPARE `message_translated` plutot que de reecrire `message` en place,
+    # pour ne casser aucun appelant existant du champ original (events,
+    # notifications, autres serializers qui lisent `.message`). Le champ
+    # vaut None si rien n'a ete traduit (lecteur anonyme, langue cible
+    # inconnue, langue cible = langue source, ou echec de l'API — voir
+    # translate_text) : le frontend n'affiche l'etat "(traduit)" que si ce
+    # champ est non vide, et retombe sur `message` sinon.
+    message_translated = serializers.SerializerMethodField()
+
     class Meta:
         model = ShipmentMessage
         fields = [
@@ -996,6 +1087,7 @@ class ShipmentMessageSerializer(serializers.ModelSerializer):
             "sender_role",
             "sender_name",
             "message",
+            "message_translated",
             "created_at",
         ]
         read_only_fields = fields
@@ -1003,6 +1095,47 @@ class ShipmentMessageSerializer(serializers.ModelSerializer):
     def get_sender_name(self, obj):
         full_name = obj.sender.get_full_name().strip()
         return full_name or obj.sender.username
+
+    def _reader_target_language(self, obj):
+        """
+        Langue cible = celle du LECTEUR (destinataire du fil), pas de
+        l'expediteur. Le fil CLIENT n'a que deux parties possibles (voir
+        ClientOrderMessagesView._resolve) : le livreur assigne au colis, ou
+        l'acheteur (toute autre personne authentifiee autorisee a lire ce
+        fil, ex. via CourierShipmentMessageListCreateView qui n'est en
+        pratique accessible qu'au livreur).
+        """
+        request = self.context.get("request")
+        user = getattr(request, "user", None) if request is not None else None
+        if user is None or not getattr(user, "is_authenticated", False):
+            return ""
+
+        shipment = obj.shipment
+        courier = shipment.courier
+        if courier and courier.user_id == user.id:
+            return (courier.preferred_language or "").strip().lower()
+
+        return request_language(request)
+
+    def get_message_translated(self, obj):
+        cible = self._reader_target_language(obj)
+        if not cible:
+            return None
+
+        # Heuristique de langue source : un message ecrit par le livreur est
+        # presume ecrit dans sa langue preferee (persistee) ; un message
+        # ecrit par l'acheteur n'a pas de langue source connue (pas de champ
+        # persiste cote acheteur), on laisse Google Translate la detecter.
+        source = ""
+        if obj.sender_role == ShipmentMessage.SenderRole.COURIER:
+            courier = obj.shipment.courier
+            if courier and courier.preferred_language:
+                source = courier.preferred_language
+
+        traduit = translate_text(obj.message, target_lang=cible, source_lang=source)
+        if not traduit or traduit == obj.message:
+            return None
+        return traduit
 
 
 class ShipmentMessageCreateSerializer(serializers.ModelSerializer):

@@ -25,7 +25,8 @@
  *   Un problème       → AUCUNE remise. Le colis reste en stock, les photos
  *                       partent en preuve, BelivaY tranche.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   AlertTriangle,
   Camera,
@@ -43,6 +44,7 @@ import {
   QrCode,
   RotateCcw,
   Scale,
+  ShieldAlert,
   X,
   XCircle,
 } from "lucide-react";
@@ -66,6 +68,21 @@ export interface RelayPickupParcel {
   gardeFeeXaf: number;
 }
 
+/**
+ * Reponse du serveur a un code saisi au comptoir.
+ *
+ * §8.2 Regles Systeme DEV v2.0 : 3 codes faux consecutifs bloquent ce code
+ * 24 h pour ce relais. Le controle vit cote serveur — seule source fiable
+ * pour un compteur que personne ne doit pouvoir remettre a zero en rechargeant
+ * la page, et qui doit prevenir BelivaY.
+ */
+export interface PickupCodeCheck {
+  parcels: RelayPickupParcel[];
+  locked: boolean;
+  lockedUntil: string | null;
+  attemptsLeft: number | null;
+}
+
 export type BuyerInspection = "ACCEPTED" | "SKIPPED";
 
 export interface HandOverInput {
@@ -86,6 +103,17 @@ export interface CounterIssueInput {
 }
 
 const nf = (value: number) => value.toLocaleString("fr-FR");
+
+/** Date de levee du blocage, lisible au comptoir (ex. "08/10 02:10"). */
+const formatLockUntil = (iso: string | null | undefined) => {
+  if (!iso) return "";
+  return new Date(iso).toLocaleString("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
 
 /**
  * Les situations que le gerant rencontre sans savoir quoi en faire.
@@ -491,15 +519,23 @@ function PickupScanSheet({
 }
 
 export default function RelayPickup({
-  parcels,
   busy,
+  onCheckCode,
   onHandOver,
   onIssue,
   onOpenReturnDeposit,
   onOpenErrorStates,
+  onContactSupport,
 }: {
-  parcels: RelayPickupParcel[];
   busy: boolean;
+  /**
+   * Verifie le code aupres du serveur a chaque saisie complete.
+   *
+   * Le comptoir ne compare plus localement : le compteur d'essais et le
+   * blocage 24 h (§8.2) doivent survivre a un rechargement de page et etre
+   * visibles de BelivaY, donc vivre cote serveur.
+   */
+  onCheckCode: (code: string) => Promise<PickupCodeCheck>;
   onHandOver: (input: HandOverInput) => Promise<boolean>;
   onIssue: (input: CounterIssueInput) => Promise<boolean>;
   /**
@@ -513,12 +549,18 @@ export default function RelayPickup({
   onOpenReturnDeposit: () => void;
   /** Ouvre la liste des états du portail, sur l'entrée « États d'erreur ». */
   onOpenErrorStates: () => void;
+  /** Code bloqué : seul le support peut lever le blocage. */
+  onContactSupport: () => void;
 }) {
+  const { t } = useTranslation();
   const [code, setCode] = useState("");
   const [onCounter, setOnCounter] = useState<number[]>([]);
   const [sheet, setSheet] = useState<BuyerInspection | "ISSUE" | null>(null);
   const [scanOpen, setScanOpen] = useState(false);
   const [signatureHelp, setSignatureHelp] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [check, setCheck] = useState<PickupCodeCheck | null>(null);
+  const checkedCodeRef = useRef("");
   /**
    * Consignes depliees.
    *
@@ -537,12 +579,21 @@ export default function RelayPickup({
       current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
     );
 
-  // Un code entier fait foi : tant qu'il n'est pas complet on ne montre rien,
-  // sinon le recapitulatif clignoterait a chaque frappe.
-  const matched = useMemo(() => {
-    if (code.length < 6) return [];
-    return parcels.filter((parcel) => parcel.pickupCode.toUpperCase() === code.toUpperCase());
-  }, [code, parcels]);
+  /**
+   * Verifie un code complet aupres du serveur.
+   *
+   * Declenchee depuis la saisie elle-meme (pas un effet) : un code entier
+   * fait foi exactement une fois, et `checkedCodeRef` empeche une reponse en
+   * retard d'ecraser le resultat d'un code deja change.
+   */
+  const runCheck = (next: string) => {
+    checkedCodeRef.current = next;
+    setChecking(true);
+    onCheckCode(next)
+      .then((result) => { if (checkedCodeRef.current === next) setCheck(result); })
+      .catch(() => { if (checkedCodeRef.current === next) setCheck(null); })
+      .finally(() => { if (checkedCodeRef.current === next) setChecking(false); });
+  };
 
   /**
    * Changer de code remet le comptoir a zero.
@@ -554,12 +605,18 @@ export default function RelayPickup({
   const changeCode = (next: string) => {
     setCode(next);
     setOnCounter([]);
+    checkedCodeRef.current = "";
+    setCheck(null);
+    if (next.length === 6) runCheck(next);
   };
 
+  const matched = check?.parcels ?? [];
   const resolved = matched.length > 0;
   const gardeTotal = matched.reduce((total, parcel) => total + (parcel.gardeFeeXaf || 0), 0);
   const allOnCounter = resolved && onCounter.length === matched.length;
-  const notFound = code.length === 6 && matched.length === 0;
+  const locked = Boolean(check?.locked);
+  const notFound = code.length === 6 && !checking && Boolean(check) && !resolved && !locked;
+  const attemptsLeft = check?.attemptsLeft ?? null;
 
   const toggleCounter = (id: number) =>
     setOnCounter((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
@@ -607,7 +664,40 @@ export default function RelayPickup({
           Le QR du client porte exactement le meme code : le scanner evite au
           gerant de recopier six chiffres lus sur un ecran fissure, au-dessus
           d'un comptoir, avec la queue derriere. */}
-      {!resolved ? (
+      {!resolved && locked ? (
+        <section className="overflow-hidden rounded-[14px] border border-slate-200 bg-white shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
+          <span className="block h-[3px] bg-[#B42318]" aria-hidden />
+          <div className="px-5 pb-5 pt-4">
+            <div className="flex items-center gap-3">
+              <span className="flex h-[44px] w-[44px] flex-shrink-0 items-center justify-center rounded-[12px] bg-[#FDECEA] text-[#B42318] dark:bg-red-950/50 dark:text-red-300">
+                <ShieldAlert size={21} strokeWidth={2.2} />
+              </span>
+              <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
+                {t("rl1_pickup_lock.locked_title")}
+              </h3>
+            </div>
+            <p className="mt-3.5 text-[14px] font-medium leading-[1.55] text-slate-600 dark:text-slate-300">
+              {t("rl1_pickup_lock.locked_body", { until: formatLockUntil(check?.lockedUntil) })}
+            </p>
+            <button
+              type="button"
+              onClick={onContactSupport}
+              className="mt-4 w-full rounded-[12px] border border-slate-200 bg-white px-4 py-3.5 text-[15px] font-bold text-slate-700 transition active:scale-[.97] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+            >
+              {t("rl1_pickup_lock.locked_action")}
+            </button>
+            <button
+              type="button"
+              onClick={() => changeCode("")}
+              className="mt-3 w-full text-center text-xs font-bold text-slate-400 transition active:scale-95 dark:text-slate-500"
+            >
+              Saisir un autre code
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      {!resolved && !locked ? (
         <section className="rounded-[14px] border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
           <label className="block text-[11px] font-black uppercase leading-none tracking-[0.1em] text-slate-500 dark:text-slate-400">
             Code de retrait du client
@@ -633,10 +723,21 @@ export default function RelayPickup({
             <QrCode size={18} strokeWidth={2.2} /> Scanner le QR du client
           </button>
 
-          {notFound ? (
+          {checking ? (
+            <p className="mt-3 text-[13.5px] font-medium text-slate-500 dark:text-slate-400">
+              {t("rl1_pickup_lock.checking")}
+            </p>
+          ) : notFound ? (
             <p className="mt-3 flex items-start gap-2 text-[13.5px] font-semibold text-red-600 dark:text-red-400">
               <XCircle size={16} className="mt-0.5 flex-shrink-0" />
-              Aucun colis en stock ne porte ce code. Vérifiez les 6 chiffres du SMS du client.
+              {attemptsLeft !== null && attemptsLeft < 3
+                ? t(
+                    attemptsLeft === 1
+                      ? "rl1_pickup_lock.attempts_remaining"
+                      : "rl1_pickup_lock.attempts_remaining_plural",
+                    { count: attemptsLeft },
+                  )
+                : "Aucun colis en stock ne porte ce code. Vérifiez les 6 chiffres du SMS du client."}
             </p>
           ) : (
             <p className="mt-3 text-[13.5px] font-medium leading-[1.5] text-slate-500 dark:text-slate-400">
@@ -645,7 +746,9 @@ export default function RelayPickup({
             </p>
           )}
         </section>
-      ) : (
+      ) : null}
+
+      {resolved ? (
         /* ── Recapitulatif et issues ─────────────────────────────────────── */
         <section className="rounded-[14px] border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-start justify-between gap-3">
@@ -766,7 +869,7 @@ export default function RelayPickup({
             Saisir un autre code
           </button>
         </section>
-      )}
+      ) : null}
 
       {/* ── Consignes de comptoir ──────────────────────────────────────────── */}
       <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">

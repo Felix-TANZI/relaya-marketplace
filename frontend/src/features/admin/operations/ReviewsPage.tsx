@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Star, Search, RefreshCw, CheckCircle,
   XCircle, ChevronLeft, ChevronRight, Filter,
@@ -73,6 +74,7 @@ function Stars({ rating, size = 12 }: { rating: number; size?: number }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function ReviewsPage() {
+  const { t }          = useTranslation();
   const T             = useAdminTheme();
   const { showToast } = useToast();
   const { confirm }   = useConfirm();
@@ -104,11 +106,11 @@ export default function ReviewsPage() {
       setReviews(revData);
       if (statData) setStats(statData);
     } catch {
-      showToast('Erreur chargement des avis', 'error');
+      showToast(t('ad5b_reviews.toast_load_error'), 'error');
     } finally {
       setLoading(false);
     }
-  }, [statusF, ratingF, showToast]);
+  }, [statusF, ratingF, showToast, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -138,37 +140,38 @@ export default function ReviewsPage() {
 
   // ── Actions ───────────────────────────────────────────────────────────────
   const toggleApproval = async (r: Review) => {
-    const action = r.is_approved ? 'masquer' : 'approuver';
     const ok = await confirm({
-      title:       `${r.is_approved ? 'Masquer' : 'Approuver'} cet avis ?`,
-      message:     `L'avis de ${r.user_name} sur "${r.product_title}" sera ${r.is_approved ? 'retiré du catalogue' : 'visible publiquement'}.`,
-      type:        r.is_approved ? 'warning' : 'warning',
-      confirmText: r.is_approved ? 'Masquer' : 'Approuver',
-      cancelText:  'Annuler',
+      title:       r.is_approved ? t('ad5b_reviews.confirm_hide_title') : t('ad5b_reviews.confirm_approve_title'),
+      message:     r.is_approved
+        ? t('ad5b_reviews.confirm_hide_message', { user: r.user_name, product: r.product_title })
+        : t('ad5b_reviews.confirm_approve_message', { user: r.user_name, product: r.product_title }),
+      type:        'warning',
+      confirmText: r.is_approved ? t('ad5b_reviews.confirm_hide_button') : t('ad5b_reviews.confirm_approve_button'),
+      cancelText:  t('ad5b_reviews.cancel_button'),
     });
     if (!ok) return;
     setActing(r.id);
     try {
       await http(`/api/vendors/admin/reviews/${r.id}/toggle/`, { method: 'POST', headers: authHeader() });
-      showToast(`Avis ${action === 'masquer' ? 'masqué' : 'approuvé'}`, 'success');
+      showToast(r.is_approved ? t('ad5b_reviews.toast_hidden') : t('ad5b_reviews.toast_approved'), 'success');
       await load();
-    } catch { showToast('Erreur', 'error'); }
+    } catch { showToast(t('ad5b_reviews.toast_generic_error'), 'error'); }
     finally  { setActing(null); }
   };
 
   const deleteReview = async (r: Review) => {
     const ok = await confirm({
-      title:       'Supprimer cet avis définitivement ?',
-      message:     `L'avis de ${r.user_name} sera supprimé de la base de données.`,
-      type:        'danger', confirmText: 'Supprimer', cancelText: 'Annuler',
+      title:       t('ad5b_reviews.confirm_delete_title'),
+      message:     t('ad5b_reviews.confirm_delete_message', { user: r.user_name }),
+      type:        'danger', confirmText: t('ad5b_reviews.confirm_delete_button'), cancelText: t('ad5b_reviews.cancel_button'),
     });
     if (!ok) return;
     setActing(r.id);
     try {
       await http(`/api/vendors/admin/reviews/${r.id}/delete/`, { method: 'DELETE', headers: authHeader() });
-      showToast('Avis supprimé', 'success');
+      showToast(t('ad5b_reviews.toast_deleted'), 'success');
       await load();
-    } catch { showToast('Erreur', 'error'); }
+    } catch { showToast(t('ad5b_reviews.toast_generic_error'), 'error'); }
     finally  { setActing(null); }
   };
 
@@ -197,13 +200,13 @@ export default function ReviewsPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: T.text, marginBottom: 4 }}>
-            Modération des Avis
+            {t('ad5b_reviews.title')}
           </h1>
           <p style={{ fontSize: 13, color: T.muted }}>
             {kpis.pending > 0 && (
-              <span style={{ color: T.red, fontWeight: 700, marginRight: 6 }}>{kpis.pending} en attente ·</span>
+              <span style={{ color: T.red, fontWeight: 700, marginRight: 6 }}>{t('ad5b_reviews.subtitle_pending', { count: kpis.pending })}</span>
             )}
-            Note moyenne : <span style={{ color: '#F59E0B', fontWeight: 700 }}>{kpis.avg.toFixed(1)} ★</span>
+            {t('ad5b_reviews.subtitle_avg_rating')} <span style={{ color: '#F59E0B', fontWeight: 700 }}>{t('ad5b_reviews.rating_stars', { rating: kpis.avg.toFixed(1) })}</span>
           </p>
         </div>
         <button onClick={() => load()}
@@ -212,17 +215,17 @@ export default function ReviewsPage() {
           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.18)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.1)')}>
           <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-          <span className="hidden sm:inline">Actualiser</span>
+          <span className="hidden sm:inline">{t('ad5b_reviews.refresh')}</span>
         </button>
       </div>
 
       {/* ── KPI Cards ────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: 'Total avis',  value: kpis.total,    accent: T.text,    onClick: () => setStatusF('all') },
-          { label: 'Approuvés',   value: kpis.approved, accent: '#10B981', onClick: () => setStatusF('approved') },
-          { label: 'En attente',  value: kpis.pending,  accent: T.red,     onClick: () => setStatusF('pending') },
-          { label: 'Note moy.',   value: `${kpis.avg.toFixed(1)} ★`, accent: '#F59E0B', onClick: undefined },
+          { label: t('ad5b_reviews.kpi_total_label'),  value: kpis.total,    accent: T.text,    onClick: () => setStatusF('all') },
+          { label: t('ad5b_reviews.kpi_approved_label'),   value: kpis.approved, accent: '#10B981', onClick: () => setStatusF('approved') },
+          { label: t('ad5b_reviews.kpi_pending_label'),  value: kpis.pending,  accent: T.red,     onClick: () => setStatusF('pending') },
+          { label: t('ad5b_reviews.kpi_avg_rating_label'),   value: t('ad5b_reviews.rating_stars', { rating: kpis.avg.toFixed(1) }), accent: '#F59E0B', onClick: undefined },
         ].map((k, i) => (
           <button key={i} onClick={() => { k.onClick?.(); setPage(1); }}
             className="rounded-2xl p-4 text-left w-full transition-all"
@@ -243,19 +246,19 @@ export default function ReviewsPage() {
           {/* Tabs statut */}
           <div className="flex gap-1 flex-shrink-0">
             {([
-              { key: 'all'      as StatusFilter, label: 'Tous',         count: reviews.length },
-              { key: 'approved' as StatusFilter, label: 'Approuvés',    count: kpis.approved },
-              { key: 'pending'  as StatusFilter, label: 'En attente',   count: kpis.pending },
-            ] as { key: StatusFilter; label: string; count: number }[]).map(t => (
-              <button key={t.key}
-                onClick={() => { setStatusF(t.key); setPage(1); }}
+              { key: 'all'      as StatusFilter, label: t('ad5b_reviews.tab_all'),       count: reviews.length },
+              { key: 'approved' as StatusFilter, label: t('ad5b_reviews.tab_approved'),  count: kpis.approved },
+              { key: 'pending'  as StatusFilter, label: t('ad5b_reviews.tab_pending'),   count: kpis.pending },
+            ] as { key: StatusFilter; label: string; count: number }[]).map(tab => (
+              <button key={tab.key}
+                onClick={() => { setStatusF(tab.key); setPage(1); }}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold whitespace-nowrap"
-                style={{ background: statusF === t.key ? T.red : 'transparent', color: statusF === t.key ? '#fff' : T.muted }}
-                onMouseEnter={e => { if (statusF !== t.key) (e.currentTarget.style.color = T.text); }}
-                onMouseLeave={e => { if (statusF !== t.key) (e.currentTarget.style.color = T.muted); }}>
-                {t.label}
-                <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 999, fontWeight: 700, background: statusF === t.key ? 'rgba(255,255,255,0.25)' : T.cardAlt, color: statusF === t.key ? '#fff' : T.muted }}>
-                  {t.count}
+                style={{ background: statusF === tab.key ? T.red : 'transparent', color: statusF === tab.key ? '#fff' : T.muted }}
+                onMouseEnter={e => { if (statusF !== tab.key) (e.currentTarget.style.color = T.text); }}
+                onMouseLeave={e => { if (statusF !== tab.key) (e.currentTarget.style.color = T.muted); }}>
+                {tab.label}
+                <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 999, fontWeight: 700, background: statusF === tab.key ? 'rgba(255,255,255,0.25)' : T.cardAlt, color: statusF === tab.key ? '#fff' : T.muted }}>
+                  {tab.count}
                 </span>
               </button>
             ))}
@@ -264,7 +267,7 @@ export default function ReviewsPage() {
           {/* Recherche */}
           <div className="relative w-full sm:w-60 flex-shrink-0">
             <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: T.muted }} />
-            <input type="text" placeholder="Produit, client, commentaire…"
+            <input type="text" placeholder={t('ad5b_reviews.search_placeholder')}
               onChange={e => handleSearch(e.target.value)}
               className="w-full pl-8 pr-3 py-2 rounded-xl text-[12.5px] outline-none"
               style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}` }}
@@ -280,12 +283,12 @@ export default function ReviewsPage() {
             <button onClick={() => setOpenDrop(openDrop === 'rating' ? null : 'rating')}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold whitespace-nowrap"
               style={{ background: ratingF !== 'all' ? T.red + '18' : T.cardAlt, color: ratingF !== 'all' ? T.red : T.muted, border: `1px solid ${ratingF !== 'all' ? T.red + '40' : T.border}` }}>
-              {ratingF === 'all' ? 'Note' : `${ratingF} ★`} <ChevronDown size={11} />
+              {ratingF === 'all' ? t('ad5b_reviews.filter_rating_label') : t('ad5b_reviews.rating_stars', { rating: ratingF })} <ChevronDown size={11} />
             </button>
             <DropMenu show={openDrop === 'rating'}>
-              <DropItem label="Toutes notes" active={ratingF === 'all'} onClick={() => { setRatingF('all'); setPage(1); }} />
+              <DropItem label={t('ad5b_reviews.filter_all_ratings')} active={ratingF === 'all'} onClick={() => { setRatingF('all'); setPage(1); }} />
               {['5','4','3','2','1'].map(r => (
-                <DropItem key={r} label={`${r} étoile${r === '1' ? '' : 's'}`} active={ratingF === r} onClick={() => { setRatingF(r as RatingFilter); setPage(1); load(); }} />
+                <DropItem key={r} label={t(r === '1' ? 'ad5b_reviews.rating_star_single' : 'ad5b_reviews.rating_star_plural', { n: r })} active={ratingF === r} onClick={() => { setRatingF(r as RatingFilter); setPage(1); load(); }} />
               ))}
             </DropMenu>
           </div>
@@ -293,11 +296,11 @@ export default function ReviewsPage() {
             <button onClick={() => { setRatingF('all'); setPage(1); }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold"
               style={{ background: T.red + '10', color: T.red, border: `1px solid ${T.red}30` }}>
-              <X size={11} /> Effacer
+              <X size={11} /> {t('ad5b_reviews.clear_filter')}
             </button>
           )}
           <p style={{ fontSize: 12, color: T.muted, marginLeft: 'auto' }}>
-            {filtered.length} avis
+            {t('ad5b_reviews.results_count', { count: filtered.length })}
           </p>
         </div>
       </div>
@@ -312,7 +315,7 @@ export default function ReviewsPage() {
         ) : paginated.length === 0 ? (
           <div className="flex flex-col items-center py-20 gap-3">
             <Star size={32} style={{ color: T.muted }} />
-            <p style={{ fontSize: 14, color: T.muted }}>Aucun avis trouvé</p>
+            <p style={{ fontSize: 14, color: T.muted }}>{t('ad5b_reviews.empty_state')}</p>
           </div>
         ) : (
           <div className="divide-y" style={{ borderColor: T.border }}>
@@ -329,15 +332,15 @@ export default function ReviewsPage() {
                         style={{ color: '#F47920' }}>
                         <Package size={12} /> {r.product_title}
                       </Link>
-                      <span style={{ fontSize: 11, color: T.muted }}>par {r.vendor_name}</span>
+                      <span style={{ fontSize: 11, color: T.muted }}>{t('ad5b_reviews.by_vendor', { vendor: r.vendor_name })}</span>
                       {r.is_verified_purchase && (
                         <span style={{ fontSize: 9.5, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: 'rgba(16,185,129,0.12)', color: '#10B981' }}>
-                          Achat vérifié
+                          {t('ad5b_reviews.verified_purchase')}
                         </span>
                       )}
                       {!r.is_approved && (
                         <span style={{ fontSize: 9.5, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: 'rgba(220,38,38,0.12)', color: T.red }}>
-                          Non approuvé
+                          {t('ad5b_reviews.not_approved_badge')}
                         </span>
                       )}
                     </div>
@@ -356,7 +359,7 @@ export default function ReviewsPage() {
                     {r.comment ? (
                       <p style={{ fontSize: 13, color: T.muted, lineHeight: 1.7 }}>{r.comment}</p>
                     ) : (
-                      <p style={{ fontSize: 12.5, color: T.muted, fontStyle: 'italic' }}>Aucun commentaire écrit</p>
+                      <p style={{ fontSize: 12.5, color: T.muted, fontStyle: 'italic' }}>{t('ad5b_reviews.no_comment')}</p>
                     )}
                   </div>
 
@@ -370,7 +373,7 @@ export default function ReviewsPage() {
                         border:     `1px solid ${r.is_approved ? 'rgba(156,163,175,0.2)' : 'rgba(16,185,129,0.3)'}`,
                       }}>
                       {acting === r.id ? <RefreshCw size={12} className="animate-spin" /> : r.is_approved ? <XCircle size={12} /> : <CheckCircle size={12} />}
-                      {r.is_approved ? 'Masquer' : 'Approuver'}
+                      {r.is_approved ? t('ad5b_reviews.hide_button') : t('ad5b_reviews.approve_button')}
                     </button>
                     <button onClick={() => deleteReview(r)} disabled={acting === r.id}
                       className="w-8 h-8 rounded-xl flex items-center justify-center"
@@ -388,7 +391,7 @@ export default function ReviewsPage() {
         {!loading && filtered.length > 0 && (
           <div className="flex items-center justify-between px-5 py-3 flex-wrap gap-3" style={{ borderTop: `1px solid ${T.border}` }}>
             <div className="flex items-center gap-2">
-              <span style={{ fontSize: 12, color: T.muted }}>Lignes :</span>
+              <span style={{ fontSize: 12, color: T.muted }}>{t('ad5b_reviews.rows_label')}</span>
               {PAGE_SIZES.map(s => (
                 <button key={s} onClick={() => { setPageSize(s); setPage(1); }}
                   className="w-8 h-7 rounded-lg text-[12px] font-semibold"
@@ -398,7 +401,7 @@ export default function ReviewsPage() {
               ))}
             </div>
             <p style={{ fontSize: 12, color: T.muted }}>
-              {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, filtered.length)} sur {filtered.length}
+              {t('ad5b_reviews.pagination_range', { from: (page - 1) * pageSize + 1, to: Math.min(page * pageSize, filtered.length), total: filtered.length })}
             </p>
             <div className="flex items-center gap-1">
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}

@@ -10,6 +10,8 @@
 // laborieuse.
 // ─────────────────────────────────────────────────────────────────────────
 
+import { useTranslation } from 'react-i18next';
+
 import { FT } from './tokens';
 
 export interface SparkPoint {
@@ -32,6 +34,8 @@ export default function Sparkline({
   points, height = 64, color = FT.coral,
   secondaryColor = FT.red, showAverage = false,
 }: SparklineProps) {
+  const { t } = useTranslation();
+
   if (points.length < 2) {
     return (
       <div style={{
@@ -39,7 +43,7 @@ export default function Sparkline({
         justifyContent: 'center',
       }}>
         <span style={{ fontSize: 12, color: FT.faint }}>
-          Pas assez de données
+          {t('pm2_shared_sparkline.not_enough_data')}
         </span>
       </div>
     );
@@ -73,7 +77,7 @@ export default function Sparkline({
       preserveAspectRatio="none"
       style={{ width: '100%', height, display: 'block' }}
       role="img"
-      aria-label="Évolution sur la période"
+      aria-label={t('pm2_shared_sparkline.aria_label')}
     >
       <defs>
         <linearGradient id="spark-fill" x1="0" y1="0" x2="0" y2="1">

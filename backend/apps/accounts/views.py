@@ -2,56 +2,87 @@
 # Vues pour la gestion des utilisateurs et de l'authentification.
 # Inclut l'enregistrement, la récupération du profil utilisateur et un point de terminaison de santé.
 
-from rest_framework import status, generics
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
-from rest_framework.exceptions import PermissionDenied
-from rest_framework.views import APIView
-from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-import os
 import logging
-import random
-import string
+import os
 from datetime import timedelta
-from django.utils import timezone
-from apps.common.tasks import send_plain_email
+
 from django.conf import settings as django_settings
+from django.contrib.auth.models import User, update_last_login
+from django.utils import timezone
+from drf_spectacular.utils import OpenApiParameter, extend_schema
+from rest_framework import generics, status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView as _BaseLoginView
+
 from .serializers import (
     AppReleaseSerializer,
+    AvatarUploadSerializer,
     BelivayTokenObtainPairSerializer,
     CourierApplicationSerializer,
     CourierProfileSerializer,
+    FavoriteSerializer,
+    NotificationSerializer,
     PayoutAccountCreateSerializer,
     PayoutAccountSerializer,
     PayoutAccountVerifySerializer,
     PhoneValidationSerializer,
-    UserProfileSerializer,
-    UserProfileUpdateSerializer,
-    AvatarUploadSerializer,
-    FavoriteSerializer,
-    NotificationSerializer,
     RewardAccountSerializer,
     UserCartSerializer,
+    UserProfileSerializer,
+    UserProfileUpdateSerializer,
 )
-from drf_spectacular.utils import extend_schema, OpenApiParameter
-from django.contrib.auth.models import User
-from django.contrib.auth.models import update_last_login
-from django.db import transaction
-from django.shortcuts import get_object_or_404
-from django.utils.text import slugify
-from django.utils.crypto import constant_time_compare
-from django.db.models import Q
 
-from .serializers import UserSerializer, RegisterSerializer, user_with_email_exists
-from .models import AppRelease, ComplianceDocument, RelayEmployee, RelayNotificationPreferences, CourierProfile, DeliveryOrganizationProfile, DeliveryVehicle, PartnerBlacklist, RelayPointProfile, RelayTrainingCompletion, PayoutAccount, RewardAccount, TrustScoreProfile, UserCart, UserProfile, UserFavorite, UserNotification
-from apps.common.phone import normalize_cameroon_phone
+
+def _marquer_derniere_connexion(user) -> None:
+    """
+    Met a jour `last_login` apres une connexion construite a la main.
+
+    `update_last_login` est d'abord un recepteur de signal : son premier
+    parametre est l'emetteur. Une connexion manuelle n'en a pas, et passer
+    `None` est l'ecriture canonique — celle employee par
+    `rest_framework_simplejwt` lui-meme. Les annotations de Django ne
+    prevoient pas ce cas : on l'isole ici pour l'expliquer une fois au lieu
+    de trois.
+    """
+    update_last_login(None, user)  # type: ignore[arg-type]
+
 from django.core.exceptions import ValidationError as DjangoValidationError
-from apps.orders.models import Dispute, DisputeEvidenceRequest, DisputeMessage
-from apps.shipping.models import Shipment, ShipmentEvent
+from django.db import transaction
+from django.db.models import Q
+from django.shortcuts import get_object_or_404
+from django.utils.crypto import constant_time_compare
+from django.utils.text import slugify
 
+from apps.common.phone import normalize_cameroon_phone
+from apps.orders.models import Dispute, DisputeEvidenceRequest, DisputeMessage
+from apps.shipping.models import Shipment, ShipmentEvent, infer_actor_role
+
+from .models import (
+    AppleIdentity,
+    AppRelease,
+    ComplianceDocument,
+    CourierProfile,
+    DeliveryOrganizationProfile,
+    DeliveryVehicle,
+    PartnerBlacklist,
+    PayoutAccount,
+    RelayEmployee,
+    RelayNotificationPreferences,
+    RelayPointProfile,
+    RelayTrainingCompletion,
+    RewardAccount,
+    TrustScoreProfile,
+    UserCart,
+    UserFavorite,
+    UserNotification,
+    UserProfile,
+)
+from .serializers import RegisterSerializer, UserSerializer, user_with_email_exists
 
 logger = logging.getLogger(__name__)
 
@@ -93,16 +124,26 @@ def google_login(request):
     if not credential:
         return Response({"detail": "Jeton Google requis."}, status=status.HTTP_400_BAD_REQUEST)
 
-    try:
-        from google.auth import exceptions as google_exceptions
-        from google.auth.transport import requests as google_requests
-        from google.oauth2 import id_token
+    # Imports HORS du `try` : la clause `except google_exceptions.TransportError`
+    # plus bas doit evaluer `google_exceptions`. S'ils etaient dans le `try` et
+    # que l'import lui-meme echouait (dependance absente), Python leverait un
+    # NameError en cherchant la clause — masquant l'erreur reelle derriere un
+    # 500 incomprehensible.
+    from google.auth import exceptions as google_exceptions
+    from google.auth.transport import requests as google_requests
+    from google.oauth2 import id_token
 
+    try:
+        # audience=None : on verifie nous-memes le champ "aud" pour accepter
+        # l'ID web ET les ID des apps natives (iOS), cf. GOOGLE_EXTRA_CLIENT_IDS.
         identity = id_token.verify_oauth2_token(
             credential,
             google_requests.Request(),
-            client_id,
+            None,
         )
+        allowed_audiences = {client_id, *getattr(django_settings, "GOOGLE_EXTRA_CLIENT_IDS", [])}
+        if identity.get("aud") not in allowed_audiences:
+            raise ValueError(f"Audience Google non autorisee: {identity.get('aud')}")
     except google_exceptions.TransportError as exc:
         logger.warning("Google identity service unavailable: %s", exc)
         return Response(
@@ -171,7 +212,167 @@ def google_login(request):
         "created": created,
     })
     _register_session_from_response(response, user, request)
-    update_last_login(None, user)
+    _marquer_derniere_connexion(user)
+    return response
+
+
+def _available_apple_username(email, subject):
+    local_part = email.split("@", 1)[0] if email else ""
+    base = slugify(local_part).replace("-", "_")[:120] or f"apple_{subject[-12:]}"
+    candidate = base
+    suffix = 1
+    while User.objects.filter(username=candidate).exists():
+        suffix += 1
+        candidate = f"{base[:140]}_{suffix}"
+    return candidate
+
+
+def _verify_apple_identity_token(identity_token):
+    """Verifie la signature et les claims d'un identityToken "Sign in with
+    Apple", en validant contre les cles publiques JWKS d'Apple. Leve
+    jwt.PyJWTError (ou une sous-classe) si le jeton est invalide/expire, et
+    ValueError si l'audience ne correspond a aucun client Apple attendu."""
+    import jwt
+    from jwt import PyJWKClient
+
+    jwk_client = PyJWKClient("https://appleid.apple.com/auth/keys")
+    signing_key = jwk_client.get_signing_key_from_jwt(identity_token)
+    claims = jwt.decode(
+        identity_token,
+        signing_key.key,
+        algorithms=["RS256"],
+        audience=django_settings.APPLE_CLIENT_IDS,
+        issuer="https://appleid.apple.com",
+    )
+    return claims
+
+
+def _link_apple_identity(user, claims, authorization_code):
+    """Mémorise l'identité Apple du compte et, si le client a transmis le code
+    d'autorisation, l'échange contre un refresh_token Apple (chiffré) : il
+    permettra de révoquer l'autorisation à la suppression du compte
+    (Guideline 5.1.1(v)). Ne bloque jamais la connexion en cas d'échec."""
+    from . import apple
+
+    try:
+        client_id = str(claims.get("aud") or "")
+        identity, _ = AppleIdentity.objects.get_or_create(
+            user=user,
+            defaults={"subject": str(claims.get("sub", "")), "client_id": client_id},
+        )
+        identity.subject = str(claims.get("sub", ""))
+        identity.client_id = client_id
+        if authorization_code and apple.is_configured():
+            refresh_token = apple.exchange_authorization_code(authorization_code, client_id)
+            if refresh_token:
+                identity.refresh_token_encrypted = apple.encrypt_token(refresh_token)
+        identity.save()
+    except Exception as exc:  # noqa: BLE001 — repli volontaire
+        logger.warning("Apple authorization code exchange skipped for user %s: %s", user.pk, exc)
+
+
+@extend_schema(tags=["Auth"], summary="Connexion ou inscription avec Apple")
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def apple_login(request):
+    """Valide un identityToken "Sign in with Apple" puis ouvre une session
+    client BelivaY. Apple ne renvoie l'email (et le nom) que lors de la toute
+    premiere autorisation : le client doit alors les transmettre en plus du
+    jeton (`email`, `given_name`, `family_name`) pour la creation du compte —
+    les connexions suivantes n'ont besoin que du jeton, l'utilisateur etant
+    deja cree et retrouve par email. Le client transmet aussi
+    `authorization_code` : echange contre un refresh_token Apple, conserve
+    pour revoquer l'autorisation a la suppression du compte."""
+    identity_token = str(request.data.get("identity_token", "")).strip()
+    if not django_settings.APPLE_CLIENT_IDS:
+        return Response(
+            {"detail": "La connexion Apple n'est pas configuree sur le serveur."},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+    if not identity_token:
+        return Response({"detail": "Jeton Apple requis."}, status=status.HTTP_400_BAD_REQUEST)
+
+    import jwt as pyjwt
+
+    try:
+        claims = _verify_apple_identity_token(identity_token)
+    except pyjwt.PyJWTError as exc:
+        logger.info("Apple login rejected: %s", exc)
+        return Response({"detail": "Jeton Apple invalide ou expire."}, status=status.HTTP_401_UNAUTHORIZED)
+    except Exception as exc:  # indisponibilite du service JWKS d'Apple, etc.  # noqa: BLE001 — repli volontaire
+        logger.warning("Apple identity service unavailable: %s", exc)
+        return Response(
+            {"detail": "Apple est temporairement indisponible. Reessayez dans un instant."},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+
+    subject = str(claims.get("sub", "")).strip()
+    if not subject:
+        return Response({"detail": "Jeton Apple invalide."}, status=status.HTTP_400_BAD_REQUEST)
+
+    # L'email n'est present dans le jeton que si Apple le fournit (relay
+    # prive inclus) ; a defaut, on retombe sur celui transmis par le client
+    # lors de la toute premiere autorisation.
+    email = str(claims.get("email") or request.data.get("email") or "").strip().lower()
+    email_verified = claims.get("email_verified") in (True, "true")
+
+    matches = User.objects.filter(email__iexact=email) if email else User.objects.none()
+    if matches.count() > 1:
+        return Response(
+            {"detail": "Plusieurs comptes utilisent cet email. Contactez le support BelivaY."},
+            status=status.HTTP_409_CONFLICT,
+        )
+
+    user = matches.first()
+    created = user is None
+    if created:
+        if not email or not email_verified:
+            return Response(
+                {"detail": "Apple n'a pas confirme d'adresse email pour ce compte. Reessayez la connexion."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        with transaction.atomic():
+            user = User(
+                username=_available_apple_username(email, subject),
+                email=email,
+                first_name=str(request.data.get("given_name", ""))[:150],
+                last_name=str(request.data.get("family_name", ""))[:150],
+            )
+            user.set_unusable_password()
+            user.save()
+
+    if not user.is_active:
+        return Response({"detail": "Ce compte BelivaY est desactive."}, status=status.HTTP_403_FORBIDDEN)
+
+    _link_apple_identity(user, claims, str(request.data.get("authorization_code", "")).strip())
+
+    profile = get_or_create_profile(user)
+    if profile.two_factor_enabled:
+        try:
+            _create_and_send_otp(user, "2FA_LOGIN")
+        except Exception as exc:
+            logger.exception("Apple login 2FA delivery failed")
+            return Response(
+                {"detail": f"Erreur envoi code 2FA : {exc}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+        return Response({
+            "2fa_required": True,
+            "user_id": user.id,
+            "email": user.email,
+            "created": created,
+        })
+
+    from rest_framework_simplejwt.tokens import RefreshToken
+
+    refresh = RefreshToken.for_user(user)
+    response = Response({
+        "access": str(refresh.access_token),
+        "refresh": str(refresh),
+        "created": created,
+    })
+    _register_session_from_response(response, user, request)
+    _marquer_derniere_connexion(user)
     return response
 
 
@@ -320,7 +521,12 @@ class PayoutAccountVerifyView(APIView):
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def bootstrap_admin(request):
-    expected_token = django_settings.__dict__.get("BOOTSTRAP_ADMIN_TOKEN") or os.getenv("BOOTSTRAP_ADMIN_TOKEN")
+    # `getattr` et non `__dict__.get` : sur l'objet de reglages paresseux de
+    # Django, `__dict__` ne contient une cle que si quelqu'un l'a deja lue
+    # normalement avant. Un jeton pose dans les reglages plutot que dans
+    # l'environnement passait donc inapercu, et l'amorcage repondait 404 sans
+    # qu'on comprenne pourquoi.
+    expected_token = getattr(django_settings, "BOOTSTRAP_ADMIN_TOKEN", None) or os.getenv("BOOTSTRAP_ADMIN_TOKEN")
     provided_token = request.headers.get("X-Bootstrap-Token", "")
 
     if not expected_token or not constant_time_compare(provided_token, expected_token):
@@ -369,7 +575,20 @@ def bootstrap_admin(request):
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def bootstrap_demo_accounts(request):
-    expected_token = django_settings.__dict__.get("BOOTSTRAP_ADMIN_TOKEN") or os.getenv("BOOTSTRAP_ADMIN_TOKEN")
+    # Tache D27 — « Retirer toutes les simulations de connexion de la version
+    # en ligne ». Cette vue cree admin_demo / vendeur_demo / livreur_demo avec
+    # un mot de passe par defaut : elle n'a rien a faire sur le site public.
+    #
+    # Le jeton seul ne protegeait pas : deploy.yml le transmet a la
+    # production. Il faut maintenant AUSSI l'interrupteur, ferme par defaut
+    # (voir COMPTES_DEMO_AUTORISES dans relaya/settings/base.py). On repond
+    # 404 et non 403 : confirmer l'existence de l'endpoint n'apporterait rien
+    # a un appelant legitime et renseignerait les autres.
+    if not getattr(django_settings, "COMPTES_DEMO_AUTORISES", False):
+        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    # `getattr` et non `__dict__.get` : voir `bootstrap_admin`.
+    expected_token = getattr(django_settings, "BOOTSTRAP_ADMIN_TOKEN", None) or os.getenv("BOOTSTRAP_ADMIN_TOKEN")
     provided_token = request.headers.get("X-Bootstrap-Token", "")
 
     if not expected_token or not constant_time_compare(provided_token, expected_token):
@@ -482,7 +701,7 @@ def admin_list_couriers(request):
  
     Filtres : is_approved, is_active, is_online, city, vehicle_type, search
     """
-    from apps.shipping.models import Shipment, CourierSOSAlert
+    from apps.shipping.models import CourierSOSAlert, Shipment
  
     qs = CourierProfile.objects.select_related("user", "delivery_organization").order_by("-created_at")
  
@@ -752,6 +971,7 @@ def admin_delete_courier(request, pk):
 @permission_classes([IsAdminUser])
 def admin_create_user(request):
     from apps.vendors.models import VendorProfile
+
     from .models import DeliveryOrganizationProfile, RelayPointProfile
 
     role = request.data.get("role", "client")
@@ -1333,11 +1553,13 @@ def delivery_organization_assign_mission(request, shipment_id):
     shipment.assignment_issue_code = ""
     shipment.assignment_issue_message = ""
     shipment.save(update_fields=["courier", "courier_name", "courier_phone", "status", "assignment_issue_code", "assignment_issue_message", "updated_at"])
-    ShipmentEvent.objects.create(
+    ShipmentEvent.record(
         shipment=shipment,
         status=Shipment.Status.ASSIGNED,
         message=f"Mission affectée par {organization.company_name} à {shipment.courier_name}",
         location=shipment.order.city,
+        actor=request.user,
+        actor_role=infer_actor_role(request.user),
     )
     UserNotification.objects.create(
         user=courier.user,
@@ -1925,7 +2147,7 @@ def _relay_user_par_telephone(telephone):
 
     try:
         username = resolve_login_identifier(telephone)
-    except Exception:
+    except Exception:  # noqa: BLE001 — repli volontaire
         return None
     if not username:
         return None
@@ -2059,10 +2281,17 @@ class RelayPinLoginView(APIView):
         echec = Response(
             {"detail": "Numero ou code incorrect."}, status=status.HTTP_401_UNAUTHORIZED,
         )
-        if acces is None or not acces.pin_hash:
+        # `user is None` est redondant avec `acces is None` — `acces` n'est
+        # cherche que si `user` existe. On l'ecrit quand meme : l'invariant
+        # devient lisible, et un remaniement futur qui le casserait serait
+        # signale au lieu de produire un plantage a la ligne du jeton.
+        if user is None or acces is None or not acces.pin_hash:
             return echec
 
-        if acces.est_bloque:
+        # Meme raison : `est_bloque` vaut deja `locked_until and locked_until >
+        # maintenant`, mais le dire ici evite une soustraction sur None si la
+        # propriete changeait un jour.
+        if acces.est_bloque and acces.locked_until:
             restant = int((acces.locked_until - timezone.now()).total_seconds() // 60) + 1
             return Response(
                 {
@@ -2197,7 +2426,7 @@ class RelayTeamView(APIView):
         # une place, sans effacer son passage.
         if RelayEmployee.actifs_pour(relay_point).count() >= RelayEmployee.MAX_ACTIFS_PAR_RELAIS:
             return Response(
-                {"detail": f"Trois personnes au plus. Retirez un acces avant d'en ajouter un."},
+                {"detail": "Trois personnes au plus. Retirez un acces avant d'en ajouter un."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -2252,44 +2481,96 @@ class ComplianceDocumentListCreateView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
 
-    def _owner_role(self, user):
+    #: Un selfie video ne tient pas dans les formats d'une piece scannee, ni
+    #: dans 10 Mo (tache D19). On garde donc deux jeux de regles plutot que
+    #: d'elargir la limite pour tout le monde.
+    FORMATS_IMAGE = {".pdf", ".jpg", ".jpeg", ".png", ".webp"}
+    FORMATS_VIDEO = {".mp4", ".mov", ".webm", ".m4v", ".3gp"}
+    TAILLE_MAX_IMAGE = 10 * 1024 * 1024
+    TAILLE_MAX_VIDEO = 50 * 1024 * 1024
+
+    def _roles_possibles(self, user):
+        """Tous les roles sous lesquels ce compte peut deposer une piece."""
+        roles = []
         if _get_request_delivery_organization(user):
-            return ComplianceDocument.OwnerRole.DELIVERY_ORGANIZATION
+            roles.append(ComplianceDocument.OwnerRole.DELIVERY_ORGANIZATION)
         if _get_request_relay_point(user):
-            return ComplianceDocument.OwnerRole.RELAY_POINT
-        return None
+            roles.append(ComplianceDocument.OwnerRole.RELAY_POINT)
+        # Tache D19 : un vendeur depose sa CNI et son selfie video ici, par le
+        # meme chemin que les autres partenaires.
+        from apps.vendors.models import VendorProfile
+        if VendorProfile.objects.filter(user=user).exists():
+            roles.append(ComplianceDocument.OwnerRole.VENDOR)
+        return roles
+
+    def _owner_role(self, user, demande=""):
+        """
+        Role sous lequel classer la piece.
+
+        Un meme compte peut etre vendeur ET point relais. Sans precision, on
+        garde l'ordre historique ; avec `owner_role`, l'appelant choisit —
+        mais seulement parmi les roles qu'il detient reellement.
+        """
+        roles = self._roles_possibles(user)
+        if not roles:
+            return None
+        demande = (demande or "").strip().upper()
+        if demande:
+            return demande if demande in roles else None
+        return roles[0]
 
     def _payload(self, document, request):
+        from apps.vendors.kyc import echeance_examen
+
+        # Tache D19 : « Repondre en 48 h ouvrees au plus. » On rend
+        # l'echeance visible plutot que de la laisser implicite — le
+        # deposant sait quand attendre une reponse, et l'administration voit
+        # ce qui a depasse le delai.
+        echeance = echeance_examen(document.created_at)
         return {
             "id": document.id,
             "owner_role": document.owner_role,
             "document_type": document.document_type,
-            "file_url": request.build_absolute_uri(document.file.url) if document.file else None,
+            # Jamais l'URL brute du fichier : nginx refuse /media/compliance/.
+            # On rend le chemin qui controle le demandeur (tache D19).
+            "file_url": request.build_absolute_uri(
+                f"/api/auth/compliance-documents/{document.id}/file/"
+            ) if document.file else None,
             "status": document.status,
             "review_note": document.review_note,
             "updated_at": document.updated_at.isoformat(),
+            "reponse_attendue_avant": echeance.isoformat(),
         }
 
     def get(self, request):
-        owner_role = self._owner_role(request.user)
+        owner_role = self._owner_role(request.user, request.query_params.get("owner_role", ""))
         if not owner_role:
             return Response({"detail": "Compte partenaire approuvé requis."}, status=status.HTTP_403_FORBIDDEN)
         documents = ComplianceDocument.objects.filter(user=request.user, owner_role=owner_role)
         return Response([self._payload(document, request) for document in documents])
 
     def post(self, request):
-        owner_role = self._owner_role(request.user)
+        owner_role = self._owner_role(request.user, request.data.get("owner_role", ""))
         if not owner_role:
             return Response({"detail": "Compte partenaire approuvé requis."}, status=status.HTTP_403_FORBIDDEN)
         document_type = str(request.data.get("document_type", "")).strip().upper()
         uploaded_file = request.FILES.get("file")
         if not document_type or not uploaded_file:
             return Response({"detail": "Le type de document et le fichier sont obligatoires."}, status=status.HTTP_400_BAD_REQUEST)
-        if uploaded_file.size > 10 * 1024 * 1024:
-            return Response({"file": ["Le fichier ne doit pas dépasser 10 Mo."]}, status=status.HTTP_400_BAD_REQUEST)
+
         extension = os.path.splitext(uploaded_file.name)[1].lower()
-        if extension not in {".pdf", ".jpg", ".jpeg", ".png", ".webp"}:
-            return Response({"file": ["Formats acceptés : PDF, JPG, PNG ou WEBP."]}, status=status.HTTP_400_BAD_REQUEST)
+        est_video = extension in self.FORMATS_VIDEO
+        if extension not in self.FORMATS_IMAGE and not est_video:
+            return Response(
+                {"file": ["Formats acceptés : PDF, JPG, PNG, WEBP, ou MP4, MOV, WEBM, 3GP pour un selfie vidéo."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        taille_max = self.TAILLE_MAX_VIDEO if est_video else self.TAILLE_MAX_IMAGE
+        if uploaded_file.size > taille_max:
+            return Response(
+                {"file": [f"Le fichier ne doit pas dépasser {taille_max // (1024 * 1024)} Mo."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         document, created = ComplianceDocument.objects.get_or_create(
             user=request.user,
@@ -2308,13 +2589,66 @@ class ComplianceDocumentListCreateView(APIView):
         return Response(self._payload(document, request), status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
 
-@extend_schema(tags=["Auth"], summary="Get current user profile")
-@api_view(["GET"])
+@extend_schema(tags=["Auth"], summary="Telecharger une piece justificative")
+class ComplianceDocumentFileView(APIView):
+    """
+    Sert une piece justificative APRES avoir verifie qui la demande.
+
+    Tache D19 : « les stocker en acces restreint ». Les fichiers vivent dans
+    le dossier media, que nginx exposait entierement — une CNI ou un selfie
+    video etait donc lisible par toute personne connaissant l'URL. nginx
+    refuse desormais /media/compliance/ ; ce chemin-ci est le seul acces.
+
+    Un demandeur qui n'a pas le droit recoit 404, pas 403 : repondre
+    « interdit » confirmerait que la piece existe, et pour qui.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        from django.http import FileResponse, Http404
+
+        document = ComplianceDocument.objects.filter(pk=pk).first()
+        if document is None:
+            raise Http404
+
+        autorise = document.user_id == request.user.id or request.user.is_staff
+        if not autorise or not document.file:
+            raise Http404
+
+        return FileResponse(document.file.open("rb"), filename=os.path.basename(document.file.name))
+
+
+@extend_schema(tags=["Auth"], summary="Get current user profile / delete account")
+@api_view(["GET", "DELETE"])
 @permission_classes([IsAuthenticated])
 def me(request):
+    if request.method == "DELETE":
+        return _delete_own_account(request)
     get_or_create_profile(request.user)
     serializer = UserSerializer(request.user, context={'request': request})
     return Response(serializer.data)
+
+
+def _delete_own_account(request):
+    """Suppression du compte par son titulaire (Guideline 5.1.1(v)).
+    Les comptes avec mot de passe doivent le ressaisir ; les comptes créés
+    via Google/Apple (sans mot de passe) confirment en envoyant
+    confirm="SUPPRIMER"."""
+    from .account_deletion import AccountDeletionBlocked, delete_account
+
+    user = request.user
+    if user.has_usable_password():
+        if not user.check_password(str(request.data.get("password", ""))):
+            return Response({"password": ["Mot de passe incorrect."]}, status=status.HTTP_400_BAD_REQUEST)
+    elif str(request.data.get("confirm", "")).strip().upper() != "SUPPRIMER":
+        return Response({"confirm": ["Confirmation requise."]}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        delete_account(user)
+    except AccountDeletionBlocked as exc:
+        return Response({"detail": str(exc)}, status=status.HTTP_409_CONFLICT)
+    return Response(status=status.HTTP_204_NO_CONTENT)
 
 @extend_schema(
     tags=["Auth"], 
@@ -2453,7 +2787,7 @@ class NotificationsListView(generics.ListAPIView):
     serializer_class = NotificationSerializer
 
     def get_queryset(self):
-        qs = UserNotification.objects.filter(user=self.request.user)
+        qs = UserNotification.objects.filter(user=self.request.user).select_related("user__courier_profile")
         audience = (self.request.query_params.get("audience") or "customer").strip().lower()
 
         if audience in {"courier", "driver", "livreur"}:
@@ -2482,7 +2816,7 @@ class NotificationMarkReadView(APIView):
         )
         notification.is_read = True
         notification.save(update_fields=['is_read', 'updated_at'])
-        return Response(NotificationSerializer(notification).data)
+        return Response(NotificationSerializer(notification, context={'request': request}).data)
 
 
 @extend_schema(tags=["Client"], summary="Delete one notification")
@@ -2508,83 +2842,77 @@ class NotificationMarkAllReadView(APIView):
         return Response({"detail": "Notifications marked as read"})
 
 
-@extend_schema(
-    tags=["Auth"],
-    summary="Change user password",
-)
-@api_view(["POST"])
-@permission_classes([IsAuthenticated])
-def change_password(request):
-    from django.contrib.auth.password_validation import validate_password
-    from django.core.exceptions import ValidationError as DjangoValidationError
-
-    user          = request.user
-    old_password  = request.data.get("old_password", "")
-    new_password  = request.data.get("new_password", "")
-    new_password2 = request.data.get("new_password2", "")
-
-    if not user.check_password(old_password):
-        return Response({"old_password": ["Mot de passe actuel incorrect."]}, status=status.HTTP_400_BAD_REQUEST)
-
-    if new_password != new_password2:
-        return Response({"new_password2": ["Les nouveaux mots de passe ne correspondent pas."]}, status=status.HTTP_400_BAD_REQUEST)
-
-    try:
-        validate_password(new_password, user)
-    except DjangoValidationError as e:
-        return Response({"new_password": list(e.messages)}, status=status.HTTP_400_BAD_REQUEST)
-
-    user.set_password(new_password)
-    user.save()
-    return Response({"detail": "Mot de passe modifié avec succès."}, status=status.HTTP_200_OK)
+# `change_password` etait definie DEUX fois dans ce fichier. Python ne
+# gardait que la seconde (plus bas, section « Mot de passe ») : celle-ci
+# ne s'executait jamais. Les deux corps etaient identiques, donc aucun
+# comportement ne change — mais on risquait de corriger la mauvaise.
 
 
 # ── Helpers OTP ───────────────────────────────────────────────────────────────
  
-def _generate_otp() -> str:
-    return ''.join(random.choices(string.digits, k=6))
+# `_generate_otp()` a ete retiree : elle tirait le code avec `random`, qui
+# n'est pas un generateur cryptographique. Le moteur unique utilise `secrets`.
  
  
+#: Objets de code de la double authentification.
+#:
+#: Ils ne figurent pas dans `CodeOtp.Objet` : cette enumeration decrit les
+#: parcours de l'espace client du kit, qu'on garde identique a sa source pour
+#: pouvoir le mettre a jour. Le champ n'etant pas contraint en base, un objet
+#: propre au projet s'y range sans migration ni divergence.
+OBJETS_2FA = {
+    "2FA_LOGIN": "2fa-connexion",
+    "2FA_ENABLE": "2fa-activation",
+    "2FA_DISABLE": "2fa-desactivation",
+}
+
+
 def _create_and_send_otp(user, purpose: str) -> None:
-    """Invalide les anciens codes, génère un nouveau et envoie l'email."""
-    from .models import OTPCode
- 
+    """
+    Emet un code de double authentification et l'envoie par e-mail.
+
+    Le code est produit et verifie par le moteur unique du projet
+    (`apps.otp.services`, tache D6 : « garder un seul systeme de codes »).
+    L'ancien modele `OTPCode` stockait le code EN CLAIR et ne comptait pas les
+    essais ; le moteur n'en garde qu'une empreinte, limite les tentatives et
+    bloque temporairement au-dela.
+
+    `exiger_utilisateur=True` est indispensable ici : le moteur retrouve
+    normalement un code par (objet, destination), et la destination est l'email
+    du compte. Or Django n'impose pas l'unicite de `email` — seuls les
+    serialiseurs la verifient. Sans ce drapeau, deux comptes partageant une
+    adresse partageraient l'espace des codes.
+
+    L'envoi ne bloque pas la requete : EMAIL_BACKEND met le message en file
+    Celery (voir apps/common/mail.py).
+    """
+    from apps.otp import services as codes
+
     if not user.email:
         raise ValueError("Aucune adresse email n'est associee a ce compte.")
 
-    OTPCode.objects.filter(user=user, purpose=purpose, is_used=False).update(is_used=True)
-    code = _generate_otp()
-    OTPCode.objects.create(
-        user=user, code=code, purpose=purpose,
-        expires_at=timezone.now() + timedelta(minutes=10),
+    codes.envoyer(
+        objet=OBJETS_2FA[purpose],
+        destination=user.email,
+        utilisateur=user,
+        exiger_utilisateur=True,
     )
- 
-    labels = {
-        '2FA_LOGIN':   'Connexion sécurisée',
-        '2FA_ENABLE':  'Activation de la double authentification',
-        '2FA_DISABLE': 'Désactivation de la double authentification',
-    }
-    label = labels.get(purpose, 'Vérification')
-    from_email = getattr(django_settings, 'DEFAULT_FROM_EMAIL', 'BelivaY <noreply@belivay.com>')
- 
-    send_plain_email.delay(
-        subject=f'[BelivaY] Code de vérification — {label}',
-        message=(
-            f'Bonjour {user.first_name or user.username},\n\n'
-            f'Votre code de vérification BelivaY :\n\n'
-            f'        {code}\n\n'
-            f'Ce code est valable 10 minutes.\n'
-            f'Ne le partagez jamais avec personne.\n\n'
-            f"Si vous n'êtes pas à l'origine de cette demande, "
-            f'changez votre mot de passe immédiatement.\n\n'
-            f'— L\'équipe BelivaY'
-        ),
-        from_email=from_email,
-        recipient_list=[user.email],
-        fail_silently=False,
+
+
+def _verifier_code_2fa(user, purpose: str, code: str) -> bool:
+    """Vrai si `code` est le code en cours de ce compte, pour cet usage."""
+    from apps.otp import services as codes
+
+    resultat = codes.verifier(
+        objet=OBJETS_2FA[purpose],
+        code=code,
+        destination=user.email or "",
+        utilisateur=user,
+        exiger_utilisateur=True,
     )
- 
- 
+    return bool(resultat.get("ok"))
+
+
 # ── Login enrichi (2FA) ───────────────────────────────────────────────────────
  
 class TwoFactorTokenObtainPairView(_BaseLoginView):
@@ -2597,11 +2925,11 @@ class TwoFactorTokenObtainPairView(_BaseLoginView):
  
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-        try:
-            serializer.is_valid(raise_exception=True)
-        except Exception:
-            raise
- 
+        # `is_valid(raise_exception=True)` leve deja ce qu'il faut : le
+        # try/except qui entourait cette ligne attrapait pour relancer
+        # aussitot, sans rien ajouter.
+        serializer.is_valid(raise_exception=True)
+
         user    = serializer.user
         profile = get_or_create_profile(user)
  
@@ -2609,7 +2937,7 @@ class TwoFactorTokenObtainPairView(_BaseLoginView):
         if profile.two_factor_enabled:
             try:
                 _create_and_send_otp(user, '2FA_LOGIN')
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 — repli volontaire
                 return Response(
                     {'detail': f'Erreur envoi code 2FA : {exc}'},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -2630,8 +2958,9 @@ def _register_session_from_response(response, user, request):
     """Crée la UserSession depuis la réponse de login."""
     try:
         from rest_framework_simplejwt.tokens import AccessToken as _AccessToken
+
+        from .middleware import get_client_ip, parse_user_agent
         from .models import UserSession
-        from .middleware import parse_user_agent, get_client_ip
         access = _AccessToken(response.data['access'])
         jti    = str(access['jti'])
         ua     = request.META.get('HTTP_USER_AGENT', '')
@@ -2645,7 +2974,7 @@ def _register_session_from_response(response, user, request):
                 'is_active': True,
             },
         )
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 — repli volontaire
         logger.debug('Session login registration skipped: %s', exc)
  
  
@@ -2656,8 +2985,9 @@ def _register_session_from_response(response, user, request):
 @permission_classes([IsAuthenticated])
 def logout_view(request):
     """Blackliste le refresh token et désactive la session courante."""
-    from rest_framework_simplejwt.tokens import RefreshToken as _RT
     from rest_framework_simplejwt.exceptions import TokenError
+    from rest_framework_simplejwt.tokens import RefreshToken as _RT
+
     from .models import UserSession
  
     current_jti = str(getattr(request.auth, 'payload', {}).get('jti', ''))
@@ -2736,8 +3066,12 @@ def list_sessions(request):
 @permission_classes([IsAuthenticated])
 def revoke_session(request, jti):
     """Révoque une session (blacklist token + désactive)."""
+    from rest_framework_simplejwt.token_blacklist.models import (
+        BlacklistedToken,
+        OutstandingToken,
+    )
+
     from .models import UserSession
-    from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
  
     current_jti = str(getattr(request.auth, 'payload', {}).get('jti', ''))
     if jti == current_jti:
@@ -2752,7 +3086,7 @@ def revoke_session(request, jti):
         outstanding = OutstandingToken.objects.filter(jti=jti).first()
         if outstanding:
             BlacklistedToken.objects.get_or_create(token=outstanding)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 — repli volontaire
         logger.debug('Blacklist error: %s', exc)
  
     session.is_active = False
@@ -2765,8 +3099,12 @@ def revoke_session(request, jti):
 @permission_classes([IsAuthenticated])
 def revoke_all_sessions(request):
     """Révoque toutes les sessions sauf la courante."""
+    from rest_framework_simplejwt.token_blacklist.models import (
+        BlacklistedToken,
+        OutstandingToken,
+    )
+
     from .models import UserSession
-    from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
  
     current_jti = str(getattr(request.auth, 'payload', {}).get('jti', ''))
     sessions    = UserSession.objects.filter(user=request.user, is_active=True).exclude(jti=current_jti)
@@ -2777,7 +3115,7 @@ def revoke_all_sessions(request):
             outstanding = OutstandingToken.objects.filter(jti=s.jti).first()
             if outstanding:
                 BlacklistedToken.objects.get_or_create(token=outstanding)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 — repli volontaire
             logger.debug('Blacklist error %s: %s', s.jti, exc)
         s.is_active = False
         s.save(update_fields=['is_active'])
@@ -2805,13 +3143,20 @@ def get_2fa_status(request):
 @permission_classes([IsAuthenticated])
 def send_2fa_code(request):
     """Envoie un code OTP pour activer ou désactiver la 2FA."""
+    from apps.client_core.erreurs import ErreurClient
+
     purpose = request.data.get('purpose', '2FA_ENABLE')
     if purpose not in ('2FA_ENABLE', '2FA_DISABLE'):
         return Response({'detail': 'Purpose invalide.'}, status=400)
     try:
         _create_and_send_otp(request.user, purpose)
         return Response({'detail': f'Code envoyé à {request.user.email}.', 'email': request.user.email})
-    except Exception as e:
+    except ErreurClient:
+        # Le moteur refuse poliment : trop de demandes rapprochées (429).
+        # Transformer ça en 500 ferait croire à une panne et pousserait
+        # l'utilisateur à réessayer, ce qui aggraverait la limitation.
+        raise
+    except Exception as e:  # noqa: BLE001 — repli volontaire
         return Response({'detail': f'Erreur envoi email : {e}'}, status=500)
  
  
@@ -2820,23 +3165,19 @@ def send_2fa_code(request):
 @permission_classes([IsAuthenticated])
 def enable_2fa(request):
     """Vérifie le code OTP et active la 2FA."""
-    from .models import OTPCode
     code   = request.data.get('code', '').strip()
     method = request.data.get('method', 'EMAIL')
     phone  = request.data.get('phone', '').strip()
- 
+
     if not code:
         return Response({'detail': 'Code requis.'}, status=400)
- 
-    otp = OTPCode.objects.filter(user=request.user, purpose='2FA_ENABLE', is_used=False).order_by('-created_at').first()
-    if not otp or not otp.is_valid:
-        return Response({'detail': 'Code expiré ou invalide. Demandez un nouveau code.'}, status=400)
-    if otp.code != code:
-        return Response({'detail': 'Code incorrect.'}, status=400)
- 
-    otp.is_used = True
-    otp.save(update_fields=['is_used'])
- 
+
+    if not _verifier_code_2fa(request.user, '2FA_ENABLE', code):
+        return Response(
+            {'detail': 'Code expiré ou incorrect. Demandez un nouveau code.'},
+            status=400,
+        )
+
     profile = get_or_create_profile(request.user)
     profile.two_factor_enabled = True
     profile.two_factor_method  = method
@@ -2869,29 +3210,27 @@ def disable_2fa(request):
 @permission_classes([AllowAny])
 def verify_2fa_login(request):
     """Vérifie le code OTP de connexion et retourne les tokens JWT."""
-    from .models import OTPCode, UserSession
-    from .middleware import parse_user_agent, get_client_ip
     from rest_framework_simplejwt.tokens import RefreshToken as _RT
- 
+
+    from .middleware import get_client_ip, parse_user_agent
+    from .models import UserSession
+
     user_id = request.data.get('user_id')
     code    = request.data.get('code', '').strip()
     if not user_id or not code:
         return Response({'detail': 'user_id et code requis.'}, status=400)
- 
+
     try:
         user = User.objects.get(id=user_id)
     except User.DoesNotExist:
         return Response({'detail': 'Utilisateur introuvable.'}, status=404)
- 
-    otp = OTPCode.objects.filter(user=user, purpose='2FA_LOGIN', is_used=False).order_by('-created_at').first()
-    if not otp or not otp.is_valid:
-        return Response({'detail': 'Code expiré. Reconnectez-vous.'}, status=400)
-    if otp.code != code:
-        return Response({'detail': 'Code incorrect.'}, status=400)
- 
-    otp.is_used = True
-    otp.save(update_fields=['is_used'])
- 
+
+    if not _verifier_code_2fa(user, '2FA_LOGIN', code):
+        return Response(
+            {'detail': 'Code expiré ou incorrect. Reconnectez-vous.'},
+            status=400,
+        )
+
     refresh = _RT.for_user(user)
     access  = refresh.access_token
     jti     = str(access['jti'])
@@ -2907,9 +3246,8 @@ def verify_2fa_login(request):
         },
     )
     
-    # Mettre à jour last_login (simplejwt ne le fait pas en mode manuel)
-    from django.contrib.auth.models import update_last_login
-    update_last_login(None, user)
+    # last_login : simplejwt ne le met pas a jour en mode manuel.
+    _marquer_derniere_connexion(user)
  
     return Response({'access': str(access), 'refresh': str(refresh)})
 

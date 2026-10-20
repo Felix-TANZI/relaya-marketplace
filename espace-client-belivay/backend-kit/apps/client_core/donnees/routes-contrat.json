@@ -1,0 +1,3052 @@
+[
+ {
+  "methode": "POST",
+  "chemin": "/api/admin/media",
+  "sources": [
+   "(admin : téléversement)"
+  ],
+  "domaines": [
+   "Contenus et photos"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/auth/apple/",
+  "sources": [
+   "connecter"
+  ],
+  "domaines": [
+   "Connexion et inscription"
+  ],
+  "etat": "existe",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/auth/change-password/",
+  "sources": [
+   "changerMotDePasse"
+  ],
+  "domaines": [
+   "Sécurité, confidentialité, suppression"
+  ],
+  "etat": "existe",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/auth/diaspora/register",
+  "sources": [
+   "inscrireDiaspora"
+  ],
+  "domaines": [
+   "Diaspora et proches"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/auth/favorites/",
+  "sources": [
+   "favoris",
+   "basculerFavori",
+   "panier"
+  ],
+  "domaines": [
+   "Favoris",
+   "Panier et panier partagé"
+  ],
+  "etat": "existe",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/auth/favorites/",
+  "sources": [
+   "basculerFavori",
+   "remettreFavori"
+  ],
+  "domaines": [
+   "Favoris"
+  ],
+  "etat": "existe",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/auth/favorites/{id}/",
+  "sources": [
+   "basculerFavori",
+   "retirerFavori"
+  ],
+  "domaines": [
+   "Favoris"
+  ],
+  "etat": "existe",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/auth/google/",
+  "sources": [
+   "connecter"
+  ],
+  "domaines": [
+   "Connexion et inscription"
+  ],
+  "etat": "existe",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/auth/login/",
+  "sources": [
+   "connecterEmail",
+   "inscrire"
+  ],
+  "domaines": [
+   "Connexion et inscription"
+  ],
+  "etat": "existe",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/auth/logout/",
+  "sources": [
+   "deconnecter"
+  ],
+  "domaines": [
+   "Connexion et inscription"
+  ],
+  "etat": "existe",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/auth/me/",
+  "sources": [
+   "session",
+   "securite"
+  ],
+  "domaines": [
+   "Session, menu et compte",
+   "Sécurité, confidentialité, suppression"
+  ],
+  "etat": "existe",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/auth/notifications/",
+  "sources": [
+   "session",
+   "notificationsClient"
+  ],
+  "domaines": [
+   "Session, menu et compte",
+   "Notifications"
+  ],
+  "etat": "existe",
+  "idempotent": false,
+  "publique": false,
+  "pagine": true
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/auth/notifications/{id}/read/",
+  "sources": [
+   "lireNotification"
+  ],
+  "domaines": [
+   "Notifications"
+  ],
+  "etat": "existe",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/auth/notifications/read-all/",
+  "sources": [
+   "lireNotification"
+  ],
+  "domaines": [
+   "Notifications"
+  ],
+  "etat": "existe",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/auth/otp/send",
+  "sources": [
+   "envoyerCode",
+   "envoyerCodeDiaspora"
+  ],
+  "domaines": [
+   "Profil, numéro et codes",
+   "Diaspora et proches"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/auth/otp/verify",
+  "sources": [
+   "verifierPremierNumero",
+   "verifierCodeEmail",
+   "verifierCodeNumeroAncien",
+   "verifierCodeDiaspora"
+  ],
+  "domaines": [
+   "Profil, numéro et codes",
+   "Diaspora et proches"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/auth/password/forgot",
+  "sources": [
+   "demanderLienMdp"
+  ],
+  "domaines": [
+   "Connexion et inscription"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/auth/password/reset",
+  "sources": [
+   "nouveauMotDePasse"
+  ],
+  "domaines": [
+   "Connexion et inscription"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/auth/refresh/",
+  "sources": [
+   "reprendreCompte"
+  ],
+  "domaines": [
+   "Connexion et inscription"
+  ],
+  "etat": "existe",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/auth/register/",
+  "sources": [
+   "inscrire"
+  ],
+  "domaines": [
+   "Connexion et inscription"
+  ],
+  "etat": "existe",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/auth/sessions/",
+  "sources": [
+   "securite"
+  ],
+  "domaines": [
+   "Sécurité, confidentialité, suppression"
+  ],
+  "etat": "existe",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/auth/sessions/{jti}/revoke/",
+  "sources": [
+   "deconnecterAppareil"
+  ],
+  "domaines": [
+   "Sécurité, confidentialité, suppression"
+  ],
+  "etat": "existe",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/auth/sessions/revoke-all/",
+  "sources": [
+   "deconnecterAutres"
+  ],
+  "domaines": [
+   "Sécurité, confidentialité, suppression"
+  ],
+  "etat": "existe",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/auth/social/diaspora",
+  "sources": [
+   "inscrireDiaspora"
+  ],
+  "domaines": [
+   "Diaspora et proches"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/auth/social/lookup",
+  "sources": [
+   "identiteFournisseur"
+  ],
+  "domaines": [
+   "Diaspora et proches"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/cart",
+  "sources": [
+   "session",
+   "panier",
+   "verifierPanier"
+  ],
+  "domaines": [
+   "Session, menu et compte",
+   "Panier et panier partagé"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PATCH",
+  "chemin": "/api/cart",
+  "sources": [
+   "choisirModePanier"
+  ],
+  "domaines": [
+   "Panier et panier partagé"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/cart/lines",
+  "sources": [
+   "ajouterProduit",
+   "favoriAuPanier",
+   "remettreLigne",
+   "ajouterAuPanier",
+   "ajouterFlash"
+  ],
+  "domaines": [
+   "Catalogue, fiche et avis produit",
+   "Favoris",
+   "Panier et panier partagé",
+   "Ventes flash"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/cart/lines/{id}",
+  "sources": [
+   "retirerLigne"
+  ],
+  "domaines": [
+   "Panier et panier partagé"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PATCH",
+  "chemin": "/api/cart/lines/{id}",
+  "sources": [
+   "changerQuantite",
+   "changerOption"
+  ],
+  "domaines": [
+   "Panier et panier partagé"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/cart/lines/{id}/save",
+  "sources": [
+   "mettreEnFavori"
+  ],
+  "domaines": [
+   "Favoris"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/cart/lines/{id}/swap-offer",
+  "sources": [
+   "choisirVendeur"
+  ],
+  "domaines": [
+   "Panier et panier partagé"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/cart/send-to",
+  "sources": [
+   "envoyerPanierA"
+  ],
+  "domaines": [
+   "Échanges entre clients"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/carts/{id}/share",
+  "sources": [
+   "partagerPanier"
+  ],
+  "domaines": [
+   "Panier et panier partagé"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/catalog/products/",
+  "sources": [
+   "produits"
+  ],
+  "domaines": [
+   "Catalogue, fiche et avis produit"
+  ],
+  "etat": "existe",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/catalog/products/{id}/",
+  "sources": [
+   "produit"
+  ],
+  "domaines": [
+   "Catalogue, fiche et avis produit"
+  ],
+  "etat": "existe",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/catalog/products/{id}/reviews/",
+  "sources": [
+   "avisProduit"
+  ],
+  "domaines": [
+   "Catalogue, fiche et avis produit"
+  ],
+  "etat": "existe",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/checkout",
+  "sources": [
+   "passerCommande"
+  ],
+  "domaines": [
+   "Paiement"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/checkout/confirm",
+  "sources": [
+   "accepterChangements"
+  ],
+  "domaines": [
+   "Panier et panier partagé"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/config/flags",
+  "sources": [
+   "session"
+  ],
+  "domaines": [
+   "Session, menu et compte"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/contact/",
+  "sources": [
+   "ecrireSupport"
+  ],
+  "domaines": [
+   "Messagerie, aide et rappel"
+  ],
+  "etat": "existe",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/content/home",
+  "sources": [
+   "contenuAccueil"
+  ],
+  "domaines": [
+   "Contenus et photos"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/content/pages/{slug}",
+  "sources": [
+   "(page éditoriale)"
+  ],
+  "domaines": [
+   "Contenus et photos"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/devices",
+  "sources": [
+   "enregistrerAbonnementPush"
+  ],
+  "domaines": [
+   "Notifications"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/devices/{id}",
+  "sources": [
+   "enregistrerAbonnementPush"
+  ],
+  "domaines": [
+   "Notifications"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/disputes",
+  "sources": [
+   "ouvrirLitige"
+  ],
+  "domaines": [
+   "Litiges et retours"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/disputes/{id}",
+  "sources": [
+   "litige"
+  ],
+  "domaines": [
+   "Litiges et retours"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/disputes/{id}/appeal",
+  "sources": [
+   "contesterDecision"
+  ],
+  "domaines": [
+   "Litiges et retours"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/disputes/{id}/arrangement",
+  "sources": [
+   "repondreArrangement"
+  ],
+  "domaines": [
+   "Litiges et retours"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/disputes/{id}/withdraw",
+  "sources": [
+   "retirerLitige"
+  ],
+  "domaines": [
+   "Litiges et retours"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/family-links/{id}/orders",
+  "sources": [
+   "commanderPour"
+  ],
+  "domaines": [
+   "Diaspora et proches"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/flash-deals",
+  "sources": [
+   "ventesFlash"
+  ],
+  "domaines": [
+   "Ventes flash"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/gift-links/{token}",
+  "sources": [
+   "panierPartage"
+  ],
+  "domaines": [
+   "Panier et panier partagé"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/gift-payments",
+  "sources": [
+   "payerPanierPartage"
+  ],
+  "domaines": [
+   "Panier et panier partagé"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/help",
+  "sources": [
+   "aide"
+  ],
+  "domaines": [
+   "Messagerie, aide et rappel"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/help/faq",
+  "sources": [
+   "faq"
+  ],
+  "domaines": [
+   "Messagerie, aide et rappel"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/legal/{doc}",
+  "sources": [
+   "legal"
+  ],
+  "domaines": [
+   "Légal"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/me",
+  "sources": [
+   "supprimerCompte"
+  ],
+  "domaines": [
+   "Sécurité, confidentialité, suppression"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/me",
+  "sources": [
+   "session",
+   "compte",
+   "securite",
+   "relaisListe"
+  ],
+  "domaines": [
+   "Session, menu et compte",
+   "Sécurité, confidentialité, suppression",
+   "Relais, adresses, intérêts"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PATCH",
+  "chemin": "/api/me",
+  "sources": [
+   "confirmerProfil"
+  ],
+  "domaines": [
+   "Profil, numéro et codes"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/me/active-relative",
+  "sources": [
+   "choisirProche"
+  ],
+  "domaines": [
+   "Diaspora et proches"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/me/adresses",
+  "sources": [
+   "adresses"
+  ],
+  "domaines": [
+   "Relais, adresses, intérêts"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/adresses",
+  "sources": [
+   "enregistrerAdresse"
+  ],
+  "domaines": [
+   "Relais, adresses, intérêts"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/me/adresses/{id}",
+  "sources": [
+   "supprimerAdresse"
+  ],
+  "domaines": [
+   "Relais, adresses, intérêts"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/me/adresses/{id}",
+  "sources": [
+   "enregistrerAdresse",
+   "adresseParDefaut"
+  ],
+  "domaines": [
+   "Relais, adresses, intérêts"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/business",
+  "sources": [
+   "demanderBusiness"
+  ],
+  "domaines": [
+   "Devenir vendeur"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/cagnotte/payout",
+  "sources": [
+   "verserCagnotte"
+  ],
+  "domaines": [
+   "Abonnement et cagnotte"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/me/cartes",
+  "sources": [
+   "cartes"
+  ],
+  "domaines": [
+   "Portefeuille, moyens de paiement, factures"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/cartes",
+  "sources": [
+   "ajouterCarte"
+  ],
+  "domaines": [
+   "Portefeuille, moyens de paiement, factures"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/me/cartes/{id}",
+  "sources": [
+   "retirerCarte"
+  ],
+  "domaines": [
+   "Portefeuille, moyens de paiement, factures"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PATCH",
+  "chemin": "/api/me/cartes/{id}",
+  "sources": [
+   "carteParDefaut"
+  ],
+  "domaines": [
+   "Portefeuille, moyens de paiement, factures"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/consents",
+  "sources": [
+   "reglerCanal"
+  ],
+  "domaines": [
+   "Notifications"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/contacts/lookup",
+  "sources": [
+   "chercherProche"
+  ],
+  "domaines": [
+   "Échanges entre clients"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/me/deletion",
+  "sources": [
+   "suppression"
+  ],
+  "domaines": [
+   "Sécurité, confidentialité, suppression"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/me/disputes",
+  "sources": [
+   "litiges"
+  ],
+  "domaines": [
+   "Litiges et retours"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": true
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/me/email",
+  "sources": [
+   "confirmerEmail"
+  ],
+  "domaines": [
+   "Profil, numéro et codes"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/email/check",
+  "sources": [
+   "verifierNouvelEmail"
+  ],
+  "domaines": [
+   "Profil, numéro et codes"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/me/exchanges",
+  "sources": [
+   "echanges"
+  ],
+  "domaines": [
+   "Échanges entre clients"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": true
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/exchanges/send",
+  "sources": [
+   "envoyerAuxProches"
+  ],
+  "domaines": [
+   "Échanges entre clients"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/me/factures",
+  "sources": [
+   "factures"
+  ],
+  "domaines": [
+   "Portefeuille, moyens de paiement, factures"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": true
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/me/family-baskets",
+  "sources": [
+   "famille"
+  ],
+  "domaines": [
+   "Panier famille"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/family-baskets",
+  "sources": [
+   "enregistrerPanierFamille"
+  ],
+  "domaines": [
+   "Panier famille"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PATCH",
+  "chemin": "/api/me/family-baskets/{id}",
+  "sources": [
+   "suspendrePanierFamille"
+  ],
+  "domaines": [
+   "Panier famille"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/me/family-baskets/{id}",
+  "sources": [
+   "enregistrerPanierFamille"
+  ],
+  "domaines": [
+   "Panier famille"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/family-baskets/{id}/pay",
+  "sources": [
+   "payerPanierFamille"
+  ],
+  "domaines": [
+   "Panier famille"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/family-baskets/recipient",
+  "sources": [
+   "lierDestinataire"
+  ],
+  "domaines": [
+   "Panier famille"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/me/family-links",
+  "sources": [
+   "liensFamille"
+  ],
+  "domaines": [
+   "Diaspora et proches"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/family-links",
+  "sources": [
+   "lierParCode"
+  ],
+  "domaines": [
+   "Diaspora et proches"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/me/family-links/{id}",
+  "sources": [
+   "retirerLien"
+  ],
+  "domaines": [
+   "Diaspora et proches"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/family-links/{id}/answer",
+  "sources": [
+   "repondreLien"
+  ],
+  "domaines": [
+   "Diaspora et proches"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PATCH",
+  "chemin": "/api/me/family-links/{id}/delivery",
+  "sources": [
+   "reglerLivraisonLien"
+  ],
+  "domaines": [
+   "Diaspora et proches"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/family-links/{id}/requests",
+  "sources": [
+   "envoyerPanierAuProche"
+  ],
+  "domaines": [
+   "Diaspora et proches"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/family-links/code",
+  "sources": [
+   "creerCodeFamille"
+  ],
+  "domaines": [
+   "Diaspora et proches"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/family-links/invitation",
+  "sources": [
+   "lienInvitation"
+  ],
+  "domaines": [
+   "Diaspora et proches"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/family-links/invitation/{code}/accept",
+  "sources": [
+   "accepterInvitation"
+  ],
+  "domaines": [
+   "Diaspora et proches"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/family-links/invite",
+  "sources": [
+   "inviterProche"
+  ],
+  "domaines": [
+   "Diaspora et proches"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/me/family-requests",
+  "sources": [
+   "demandesProches"
+  ],
+  "domaines": [
+   "Diaspora et proches"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": true
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/me/family-requests/{id}",
+  "sources": [
+   "annulerDemande"
+  ],
+  "domaines": [
+   "Diaspora et proches"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/family-requests/{id}/decline",
+  "sources": [
+   "refuserDemande"
+  ],
+  "domaines": [
+   "Diaspora et proches"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PATCH",
+  "chemin": "/api/me/favorites/{id}",
+  "sources": [
+   "reglerAlerteFavori"
+  ],
+  "domaines": [
+   "Favoris"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/me/followed-wishlists/{code}",
+  "sources": [
+   "suivreListe"
+  ],
+  "domaines": [
+   "Échanges entre clients"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/me/gift-links",
+  "sources": [
+   "paniersPartages"
+  ],
+  "domaines": [
+   "Panier et panier partagé"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/identities",
+  "sources": [
+   "lierMethode"
+  ],
+  "domaines": [
+   "Sécurité, confidentialité, suppression"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/me/identities/{provider}",
+  "sources": [
+   "delierMethode"
+  ],
+  "domaines": [
+   "Sécurité, confidentialité, suppression"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/me/inbox",
+  "sources": [
+   "recus"
+  ],
+  "domaines": [
+   "Échanges entre clients"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/me/inbox/{id}",
+  "sources": [
+   "recu"
+  ],
+  "domaines": [
+   "Échanges entre clients"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/inbox/{id}/actions",
+  "sources": [
+   "executerRecu"
+  ],
+  "domaines": [
+   "Échanges entre clients"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/inbox/{id}/thanks",
+  "sources": [
+   "remercierRecu"
+  ],
+  "domaines": [
+   "Échanges entre clients"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/incoming-parcels/{id}/answer",
+  "sources": [
+   "repondreColis"
+  ],
+  "domaines": [
+   "Échanges entre clients"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/me/interets",
+  "sources": [
+   "interets"
+  ],
+  "domaines": [
+   "Relais, adresses, intérêts"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/me/interets",
+  "sources": [
+   "choisirInterets"
+  ],
+  "domaines": [
+   "Relais, adresses, intérêts"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/me/layaways",
+  "sources": [
+   "misesDeCote"
+  ],
+  "domaines": [
+   "Mises de côté"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": true
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/layaways",
+  "sources": [
+   "creerMiseDeCote",
+   "creerMiseDeCoteListe"
+  ],
+  "domaines": [
+   "Mises de côté"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/layaways/{id}/cancel",
+  "sources": [
+   "annulerMiseDeCote"
+  ],
+  "domaines": [
+   "Mises de côté"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/layaways/{id}/installments",
+  "sources": [
+   "payerVersement"
+  ],
+  "domaines": [
+   "Mises de côté"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/me/legal",
+  "sources": [
+   "legal"
+  ],
+  "domaines": [
+   "Légal"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/legal/accept",
+  "sources": [
+   "accepterConditions"
+  ],
+  "domaines": [
+   "Légal"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/me/menu",
+  "sources": [
+   "menu"
+  ],
+  "domaines": [
+   "Session, menu et compte"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/me/moyens-paiement",
+  "sources": [
+   "moyensPaiement"
+  ],
+  "domaines": [
+   "Portefeuille, moyens de paiement, factures"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/moyens-paiement",
+  "sources": [
+   "ajouterMoyen"
+  ],
+  "domaines": [
+   "Portefeuille, moyens de paiement, factures"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/me/moyens-paiement/{id}",
+  "sources": [
+   "retirerMoyen"
+  ],
+  "domaines": [
+   "Portefeuille, moyens de paiement, factures"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PATCH",
+  "chemin": "/api/me/moyens-paiement/{id}",
+  "sources": [
+   "moyenParDefaut"
+  ],
+  "domaines": [
+   "Portefeuille, moyens de paiement, factures"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/moyens-paiement/{id}/verify",
+  "sources": [
+   "confirmerMoyen"
+  ],
+  "domaines": [
+   "Portefeuille, moyens de paiement, factures"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/me/notification-settings",
+  "sources": [
+   "notifications"
+  ],
+  "domaines": [
+   "Notifications"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/me/notification-settings",
+  "sources": [
+   "reglerNotification",
+   "reglerCanal",
+   "reglerCalme",
+   "alerteFlash"
+  ],
+  "domaines": [
+   "Notifications",
+   "Ventes flash"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/outbox",
+  "sources": [
+   "envoyerRecu"
+  ],
+  "domaines": [
+   "Échanges entre clients"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/me/pending-payments",
+  "sources": [
+   "paiementsEnAttente"
+  ],
+  "domaines": [
+   "Paiement"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/me/phone",
+  "sources": [
+   "confirmerNumero"
+  ],
+  "domaines": [
+   "Profil, numéro et codes"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/phone/check",
+  "sources": [
+   "verifierNouveauNumero"
+  ],
+  "domaines": [
+   "Profil, numéro et codes"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/me/phone/last-change",
+  "sources": [
+   "changementNumero"
+  ],
+  "domaines": [
+   "Profil, numéro et codes"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/me/pools",
+  "sources": [
+   "cotisations"
+  ],
+  "domaines": [
+   "Cotisations"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": true
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/pools",
+  "sources": [
+   "creerCotisation"
+  ],
+  "domaines": [
+   "Cotisations"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/pools/{id}/price-rise",
+  "sources": [
+   "deciderHausse"
+  ],
+  "domaines": [
+   "Cotisations"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PATCH",
+  "chemin": "/api/me/preferences",
+  "sources": [
+   "reglerDevise"
+  ],
+  "domaines": [
+   "Diaspora et proches"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/me/privacy",
+  "sources": [
+   "confidentialite"
+  ],
+  "domaines": [
+   "Sécurité, confidentialité, suppression"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PATCH",
+  "chemin": "/api/me/privacy",
+  "sources": [
+   "reglerConfidentialite"
+  ],
+  "domaines": [
+   "Sécurité, confidentialité, suppression"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/me/relais-habituel",
+  "sources": [
+   "choisirRelais"
+  ],
+  "domaines": [
+   "Relais, adresses, intérêts"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/me/search-history",
+  "sources": [
+   "effacerHistorique"
+  ],
+  "domaines": [
+   "Sécurité, confidentialité, suppression"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PATCH",
+  "chemin": "/api/me/security",
+  "sources": [
+   "reglerAlerteConnexion"
+  ],
+  "domaines": [
+   "Sécurité, confidentialité, suppression"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/me/shop",
+  "sources": [
+   "boutique"
+  ],
+  "domaines": [
+   "Devenir vendeur"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/shop",
+  "sources": [
+   "ouvrirBoutique"
+  ],
+  "domaines": [
+   "Devenir vendeur"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/me/subscription",
+  "sources": [
+   "prime"
+  ],
+  "domaines": [
+   "Abonnement et cagnotte"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PATCH",
+  "chemin": "/api/me/subscription",
+  "sources": [
+   "changerMoyenAbonnement"
+  ],
+  "domaines": [
+   "Abonnement et cagnotte"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/subscription",
+  "sources": [
+   "souscrire"
+  ],
+  "domaines": [
+   "Abonnement et cagnotte"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/subscription/cancel",
+  "sources": [
+   "resilierAbonnement"
+  ],
+  "domaines": [
+   "Abonnement et cagnotte"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/subscription/pay",
+  "sources": [
+   "payerAbonnement"
+  ],
+  "domaines": [
+   "Abonnement et cagnotte"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/subscription/resume",
+  "sources": [
+   "reprendreAbonnement"
+  ],
+  "domaines": [
+   "Abonnement et cagnotte"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/thanks",
+  "sources": [
+   "remercier"
+  ],
+  "domaines": [
+   "Échanges entre clients"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/me/threads",
+  "sources": [
+   "conversations"
+  ],
+  "domaines": [
+   "Messagerie, aide et rappel"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": true
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/me/threads/{id}",
+  "sources": [
+   "conversation"
+  ],
+  "domaines": [
+   "Messagerie, aide et rappel"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/threads/{id}/messages",
+  "sources": [
+   "envoyerMessage"
+  ],
+  "domaines": [
+   "Messagerie, aide et rappel"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/threads/read",
+  "sources": [
+   "marquerToutLu"
+  ],
+  "domaines": [
+   "Messagerie, aide et rappel"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/me/trades",
+  "sources": [
+   "trocs"
+  ],
+  "domaines": [
+   "Troc"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": true
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/trades",
+  "sources": [
+   "creerTroc"
+  ],
+  "domaines": [
+   "Troc"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/me/trades/{id}",
+  "sources": [
+   "annulerTroc"
+  ],
+  "domaines": [
+   "Troc"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/trades/{id}/answer",
+  "sources": [
+   "repondreTroc"
+  ],
+  "domaines": [
+   "Troc"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/trades/{id}/contest",
+  "sources": [
+   "contesterTroc"
+  ],
+  "domaines": [
+   "Troc"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/trades/{id}/pay",
+  "sources": [
+   "payerTroc"
+  ],
+  "domaines": [
+   "Troc"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/me/viewed",
+  "sources": [
+   "effacerHistorique"
+  ],
+  "domaines": [
+   "Sécurité, confidentialité, suppression"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/me/wallet",
+  "sources": [
+   "portefeuille"
+  ],
+  "domaines": [
+   "Portefeuille, moyens de paiement, factures"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/wallet/topups",
+  "sources": [
+   "recharger"
+  ],
+  "domaines": [
+   "Portefeuille, moyens de paiement, factures"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/me/wallet/withdrawal-fee",
+  "sources": [
+   "fraisRetrait"
+  ],
+  "domaines": [
+   "Portefeuille, moyens de paiement, factures"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/wallet/withdrawals",
+  "sources": [
+   "retirer"
+  ],
+  "domaines": [
+   "Portefeuille, moyens de paiement, factures"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/me/wishlists",
+  "sources": [
+   "listes"
+  ],
+  "domaines": [
+   "Listes d'envies"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/wishlists",
+  "sources": [
+   "creerListe"
+  ],
+  "domaines": [
+   "Listes d'envies"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PATCH",
+  "chemin": "/api/me/wishlists/{id}",
+  "sources": [
+   "reglerListe"
+  ],
+  "domaines": [
+   "Listes d'envies"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/wishlists/{id}/items",
+  "sources": [
+   "ajouterArticleListe"
+  ],
+  "domaines": [
+   "Listes d'envies"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/me/wishlists/{id}/items/{produit}",
+  "sources": [
+   "retirerArticleListe"
+  ],
+  "domaines": [
+   "Listes d'envies"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/wishlists/{id}/remind",
+  "sources": [
+   "rappelerInvites"
+  ],
+  "domaines": [
+   "Échanges entre clients"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/me/wishlists/{id}/share",
+  "sources": [
+   "arreterPartage"
+  ],
+  "domaines": [
+   "Listes d'envies"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/wishlists/{id}/share",
+  "sources": [
+   "partagerListe"
+  ],
+  "domaines": [
+   "Listes d'envies"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/wishlists/{id}/start",
+  "sources": [
+   "demarrerListe"
+  ],
+  "domaines": [
+   "Listes d'envies"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/me/wishlists/{id}/status-shares",
+  "sources": [
+   "partagerStatutListe"
+  ],
+  "domaines": [
+   "Listes d'envies"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/messages/threads",
+  "sources": [
+   "poserQuestion"
+  ],
+  "domaines": [
+   "Messagerie, aide et rappel"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/orders/{id}",
+  "sources": [
+   "commandeLitige"
+  ],
+  "domaines": [
+   "Litiges et retours"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/orders/{id}/",
+  "sources": [
+   "commandeClient"
+  ],
+  "domaines": [
+   "Commandes, retrait et modification"
+  ],
+  "etat": "existe",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/orders/{id}/address",
+  "sources": [
+   "changerLieu"
+  ],
+  "domaines": [
+   "Commandes, retrait et modification"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/orders/{id}/confirm-receipt/",
+  "sources": [
+   "confirmerRetrait"
+  ],
+  "domaines": [
+   "Commandes, retrait et modification"
+  ],
+  "etat": "existe",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/orders/{id}/counter-payment",
+  "sources": [
+   "payerAuComptoir"
+  ],
+  "domaines": [
+   "Paiement"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/orders/{id}/delegation",
+  "sources": [
+   "deleguerRetrait"
+  ],
+  "domaines": [
+   "Commandes, retrait et modification"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/orders/{id}/invoice.pdf",
+  "sources": [
+   "factures"
+  ],
+  "domaines": [
+   "Portefeuille, moyens de paiement, factures"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": true
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/orders/{id}/manage",
+  "sources": [
+   "apercuAnnulation"
+  ],
+  "domaines": [
+   "Commandes, retrait et modification"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/orders/{id}/rebuy",
+  "sources": [
+   "racheter"
+  ],
+  "domaines": [
+   "Commandes, retrait et modification"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/orders/{id}/receipt",
+  "sources": [
+   "commandePassee"
+  ],
+  "domaines": [
+   "Paiement"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/orders/{id}/relais",
+  "sources": [
+   "changerLieu"
+  ],
+  "domaines": [
+   "Commandes, retrait et modification"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/orders/{id}/replacement",
+  "sources": [
+   "choisirRemplacement"
+  ],
+  "domaines": [
+   "Panier et panier partagé"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/orders/{id}/reviews",
+  "sources": [
+   "avis"
+  ],
+  "domaines": [
+   "Avis sur une commande"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/orders/{id}/reviews",
+  "sources": [
+   "envoyerAvis"
+  ],
+  "domaines": [
+   "Avis sur une commande"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "PUT",
+  "chemin": "/api/orders/{id}/reviews",
+  "sources": [
+   "envoyerAvis"
+  ],
+  "domaines": [
+   "Avis sur une commande"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/orders/my-orders/",
+  "sources": [
+   "session",
+   "commandes"
+  ],
+  "domaines": [
+   "Session, menu et compte",
+   "Commandes, retrait et modification"
+  ],
+  "etat": "existe",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/parcels/{id}/transfer",
+  "sources": [
+   "changerLieu"
+  ],
+  "domaines": [
+   "Commandes, retrait et modification"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/payments/{id}/abandon",
+  "sources": [
+   "echouerPaiement"
+  ],
+  "domaines": [
+   "Paiement"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/payments/{id}/cancel",
+  "sources": [
+   "annulerPaiement"
+  ],
+  "domaines": [
+   "Paiement"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/payments/{id}/resend",
+  "sources": [
+   "relancerPaiement"
+  ],
+  "domaines": [
+   "Paiement"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/pools/{code}",
+  "sources": [
+   "cotisationPublique"
+  ],
+  "domaines": [
+   "Cotisations"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/pools/{code}/contributions",
+  "sources": [
+   "participer"
+  ],
+  "domaines": [
+   "Cotisations"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/returns/{id}/deposit",
+  "sources": [
+   "deposerRetour"
+  ],
+  "domaines": [
+   "Litiges et retours"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/reviews/{id}/vote",
+  "sources": [
+   "voterAvis"
+  ],
+  "domaines": [
+   "Catalogue, fiche et avis produit"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/school-lists",
+  "sources": [
+   "rentree"
+  ],
+  "domaines": [
+   "Rentrée scolaire"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/school-lists/{id}/order",
+  "sources": [
+   "commanderRentree"
+  ],
+  "domaines": [
+   "Rentrée scolaire"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/school-lists/{id}/publish",
+  "sources": [
+   "publierListe"
+  ],
+  "domaines": [
+   "Rentrée scolaire"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/shipping/relay-points/nearby/",
+  "sources": [
+   "relaisListe"
+  ],
+  "domaines": [
+   "Relais, adresses, intérêts"
+  ],
+  "etat": "existe",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/suborders/{id}/cancel",
+  "sources": [
+   "annulerColis"
+  ],
+  "domaines": [
+   "Commandes, retrait et modification"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/subscription-gifts",
+  "sources": [
+   "offrirAbonnement"
+  ],
+  "domaines": [
+   "Abonnement et cagnotte"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "DELETE",
+  "chemin": "/api/support/callback",
+  "sources": [
+   "annulerRappel"
+  ],
+  "domaines": [
+   "Messagerie, aide et rappel"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/support/callback",
+  "sources": [
+   "rappel"
+  ],
+  "domaines": [
+   "Messagerie, aide et rappel"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/support/callback",
+  "sources": [
+   "demanderRappel"
+  ],
+  "domaines": [
+   "Messagerie, aide et rappel"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/whatsapp/conversation",
+  "sources": [
+   "whatsapp"
+  ],
+  "domaines": [
+   "WhatsApp"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/whatsapp/conversation/messages",
+  "sources": [
+   "repondreWhatsapp"
+  ],
+  "domaines": [
+   "WhatsApp"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": false,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/wishlists/{code}",
+  "sources": [
+   "listePublique"
+  ],
+  "domaines": [
+   "Listes d'envies"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/wishlists/{code}/fund",
+  "sources": [
+   "participerCagnotteListe"
+  ],
+  "domaines": [
+   "Listes d'envies"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/wishlists/{code}/gifts",
+  "sources": [
+   "offrirArticleListe"
+  ],
+  "domaines": [
+   "Listes d'envies"
+  ],
+  "etat": "a_creer",
+  "idempotent": true,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "GET",
+  "chemin": "/api/wishlists/{code}/gifts/{ref}",
+  "sources": [
+   "suiviCadeau"
+  ],
+  "domaines": [
+   "Listes d'envies"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/wishlists/{code}/gifts/otp",
+  "sources": [
+   "envoyerCodeCadeau"
+  ],
+  "domaines": [
+   "Listes d'envies"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ },
+ {
+  "methode": "POST",
+  "chemin": "/api/wishlists/{code}/items/{produit}/pool",
+  "sources": [
+   "cotiserArticleListe"
+  ],
+  "domaines": [
+   "Échanges entre clients"
+  ],
+  "etat": "a_creer",
+  "idempotent": false,
+  "publique": true,
+  "pagine": false
+ }
+]

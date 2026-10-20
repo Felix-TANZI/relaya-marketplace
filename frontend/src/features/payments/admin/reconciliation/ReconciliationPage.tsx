@@ -10,6 +10,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { adminFinanceApi } from '../../api/admin-finance.api';
 import type { ListParams } from '../../api/admin-finance.api';
@@ -32,10 +33,10 @@ interface ReconciliationPageProps {
 }
 
 const NIVEAUX = [
-  { cle: 'solvency', label: 'Solvabilité' },
-  { cle: 'escrow', label: 'Séquestres' },
-  { cle: 'transactional', label: 'Transactions' },
-  { cle: 'unknown_payouts', label: 'Issues inconnues' },
+  { cle: 'solvency', labelKey: 'pm1_reconciliation.level_solvency' },
+  { cle: 'escrow', labelKey: 'pm1_reconciliation.level_escrow' },
+  { cle: 'transactional', labelKey: 'pm1_reconciliation.level_transactional' },
+  { cle: 'unknown_payouts', labelKey: 'pm1_reconciliation.level_unknown_payouts' },
 ] as const;
 
 const GRAVITES: Record<string, string> = {
@@ -48,6 +49,7 @@ const GRAVITES: Record<string, string> = {
 export default function ReconciliationPage({
   basePath = '/admin/finance',
 }: ReconciliationPageProps) {
+  const { t } = useTranslation();
   const [filtre, setFiltre] = useState('open');
   const [page, setPage] = useState(1);
   const [ecart, setEcart] = useState<AdminDiscrepancyRow | null>(null);
@@ -69,15 +71,15 @@ export default function ReconciliationPage({
   const lignes = data?.results ?? [];
 
   const onglets: FilterTab[] = [
-    { key: 'open', label: 'Ouverts', urgent: true },
-    { key: 'critical', label: 'Critiques' },
-    { key: 'all', label: 'Tous' },
+    { key: 'open', label: t('pm1_reconciliation.tab_open'), urgent: true },
+    { key: 'critical', label: t('pm1_reconciliation.tab_critical') },
+    { key: 'all', label: t('pm1_reconciliation.tab_all') },
   ];
 
   return (
     <AdminPageShell
-      title="Réconciliation"
-      subtitle={`${data?.count ?? 0} écart${(data?.count ?? 0) > 1 ? 's' : ''}`}
+      title={t('pm1_reconciliation.title')}
+      subtitle={t((data?.count ?? 0) > 1 ? 'pm1_reconciliation.gap_count_plural' : 'pm1_reconciliation.gap_count', { count: data?.count ?? 0 })}
       backTo={basePath}
       actions={(
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -90,7 +92,7 @@ export default function ReconciliationPage({
       )}
     >
       <div style={{ marginBottom: 12 }}>
-        <AdminCard padded title="Lancer une vérification">
+        <AdminCard padded title={t('pm1_reconciliation.run_check_title')}>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {NIVEAUX.map((niveau) => (
               <button
@@ -100,12 +102,12 @@ export default function ReconciliationPage({
                 onClick={() => {
                   void action.run(
                     () => adminFinanceApi.runReconciliation(niveau.cle),
-                    `${niveau.label} : vérification lancée.`,
+                    t('pm1_reconciliation.verification_started', { label: t(niveau.labelKey) }),
                   );
                 }}
                 style={{ fontSize: 12, padding: '6px 12px' }}
               >
-                {niveau.label}
+                {t(niveau.labelKey)}
               </button>
             ))}
           </div>
@@ -125,14 +127,14 @@ export default function ReconciliationPage({
       <AdminCard>
         {loading && (
           <div style={{ padding: '2.5rem', textAlign: 'center' }}>
-            <span style={{ fontSize: 13, color: FT.faint }}>Chargement…</span>
+            <span style={{ fontSize: 13, color: FT.faint }}>{t('pm1_reconciliation.loading')}</span>
           </div>
         )}
 
         {!loading && error && (
           <EmptyState
             icon="alert-circle"
-            title="Impossible d'afficher les écarts"
+            title={t('pm1_reconciliation.error_title')}
             description={error}
           />
         )}
@@ -140,8 +142,8 @@ export default function ReconciliationPage({
         {!loading && !error && lignes.length === 0 && (
           <EmptyState
             icon="check"
-            title="Aucun écart"
-            description="Le registre et le prestataire concordent."
+            title={t('pm1_reconciliation.empty_title')}
+            description={t('pm1_reconciliation.empty_description')}
           />
         )}
 
@@ -185,7 +187,10 @@ export default function ReconciliationPage({
                   <p style={{
                     fontSize: 12, margin: '4px 0 0', color: FT.faint,
                   }}>
-                    {ligne.resolution_label} — « {ligne.resolution_note} »
+                    {t('pm1_reconciliation.resolution_note', {
+                      label: ligne.resolution_label,
+                      note: ligne.resolution_note,
+                    })}
                     {ligne.resolved_by_username
                       && ` · ${ligne.resolved_by_username}`}
                   </p>
@@ -210,7 +215,7 @@ export default function ReconciliationPage({
                     onClick={() => { setEcart(ligne); setResolution('RESOLVED'); }}
                     style={{ fontSize: 12, padding: '5px 12px' }}
                   >
-                    Qualifier
+                    {t('pm1_reconciliation.qualify')}
                   </button>
                 )}
               </div>
@@ -224,22 +229,22 @@ export default function ReconciliationPage({
             pages={data.pages}
             count={data.count}
             onChange={setPage}
-            label="écart"
+            label={t('pm1_reconciliation.pagination_label')}
           />
         )}
       </AdminCard>
 
       {ecart && (
         <div style={{ marginTop: 12 }}>
-          <AdminCard padded title="Résolution">
+          <AdminCard padded title={t('pm1_reconciliation.resolution_title')}>
             <div style={{
               display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12,
             }}>
               {[
-                { cle: 'RESOLVED', label: 'Résolu' },
-                { cle: 'INVESTIGATING', label: 'En investigation' },
-                { cle: 'ACCEPTED', label: 'Écart accepté' },
-                { cle: 'FALSE_POSITIVE', label: 'Faux positif' },
+                { cle: 'RESOLVED', label: t('pm1_reconciliation.resolution_resolved') },
+                { cle: 'INVESTIGATING', label: t('pm1_reconciliation.resolution_investigating') },
+                { cle: 'ACCEPTED', label: t('pm1_reconciliation.resolution_accepted') },
+                { cle: 'FALSE_POSITIVE', label: t('pm1_reconciliation.resolution_false_positive') },
               ].map((choix) => (
                 <button
                   key={choix.cle}
@@ -261,19 +266,19 @@ export default function ReconciliationPage({
 
       <ApprovalDialog
         open={ecart !== null}
-        title="Qualifier cet écart"
+        title={t('pm1_reconciliation.dialog_title')}
         amountXaf={ecart?.gap_xaf ?? 0}
         fields={ecart ? [
-          { label: 'Nature', value: ecart.kind_label },
-          { label: 'Sujet', value: ecart.subject_ref },
-          { label: 'Résolution', value: resolution },
+          { label: t('pm1_reconciliation.field_kind'), value: ecart.kind_label },
+          { label: t('pm1_reconciliation.field_subject'), value: ecart.subject_ref },
+          { label: t('pm1_reconciliation.field_resolution'), value: resolution },
         ] : []}
-        confirmLabel="Enregistrer"
+        confirmLabel={t('pm1_reconciliation.save')}
         // Une resolution sans note ne vaut rien : le prochain operateur
         // relira ce champ, pas la conversation qui a mene a la decision.
         reasonRequired
-        reasonPlaceholder="Ce que vous avez constaté et pourquoi…"
-        warning="Un écart est qualifié, jamais corrigé automatiquement."
+        reasonPlaceholder={t('pm1_reconciliation.reason_placeholder')}
+        warning={t('pm1_reconciliation.warning')}
         running={action.running}
         error={action.error}
         onConfirm={(note) => {
@@ -282,7 +287,7 @@ export default function ReconciliationPage({
             () => adminFinanceApi.resolveDiscrepancy(
               ecart.id, resolution, note,
             ),
-            'Écart qualifié.',
+            t('pm1_reconciliation.toast_qualified'),
           );
         }}
         onCancel={() => setEcart(null)}

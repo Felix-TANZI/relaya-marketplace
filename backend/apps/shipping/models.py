@@ -1,3 +1,4 @@
+import logging
 import secrets
 from datetime import time
 
@@ -9,9 +10,43 @@ from apps.accounts.models import CourierProfile
 
 
 def shipment_evidence_retention_deadline():
+    # values_list : ne lit QUE la colonne necessaire, jamais toute la ligne
+    # (PlatformSettings.get_settings() le ferait) — ce callable est le
+    # default= d'un champ ajoute par une migration ancienne (0009). Toute
+    # migration ulterieure ajoutant un champ a PlatformSettings ferait
+    # echouer un replay de migrations depuis zero si on selectionnait la
+    # ligne entiere ici.
     from apps.orders.models import PlatformSettings
-    days = PlatformSettings.get_settings().evidence_retention_days
+    days = (
+        PlatformSettings.objects.filter(id=1)
+        .values_list('evidence_retention_days', flat=True)
+        .first()
+    )
+    if days is None:
+        days = PlatformSettings._meta.get_field('evidence_retention_days').default
     return timezone.now() + timezone.timedelta(days=days)
+
+
+def infer_actor_role(user):
+    """
+    Déduit le rôle d'un utilisateur authentifié pour signer un ShipmentEvent
+    (VENDOR/COURIER/RELAY_POINT/SUPPORT/CLIENT) — même logique que les
+    contrôles d'accès déjà en place (getattr(user, "courier_profile", None)
+    dans shipping/views.py).
+    """
+    if not user or not getattr(user, "is_authenticated", False):
+        return ShipmentEvent.ACTOR_ROLE_SYSTEM
+    if getattr(user, "courier_profile", None):
+        return "COURIER"
+    if getattr(user, "relay_point_profile", None):
+        return "RELAY_POINT"
+    if getattr(user, "vendor_profile", None):
+        return "VENDOR"
+    if getattr(user, "delivery_organization_profile", None):
+        return "DISPATCHER"
+    if user.is_staff:
+        return "SUPPORT"
+    return "CLIENT"
 
 
 class Zone(models.Model):
@@ -290,15 +325,79 @@ class Shipment(models.Model):
         return f"Shipment(order={self.order_id}, vendor={self.vendor_id}, status={self.status})"
 
 
+# ── Notification client a chaque etape de commande (D21) ────────────────────
+#
+# (type, critique, titre, texte) par statut de Shipment. "critique" declenche
+# le repli SMS/WhatsApp existant (apps.notifications_client.services) si
+# aucun appareil n'a recu le push. "type" respecte les choix du client :
+# commande/incident restent toujours actifs (422 category_locked cote
+# ReglagesNotifications), suivi est desactivable. Seuls les statuts que le
+# CLIENT comprend sont notifies ici — les statuts d'exception internes
+# (ZONE_UNCOVERED, CAPACITY_BLOCKED, VEHICLE_INCOMPATIBLE,
+# VALUE_LIMIT_EXCEEDED, WAITING_MANUAL_ASSIGNMENT) relevent des outils
+# d'exploitation, pas d'une notification client.
+def _client_status_notifications():
+    S = Shipment.Status
+    return {
+        S.ASSIGNED: ("commande", False, "Livreur affecté", "Un livreur a été affecté à votre commande {ref}."),
+        S.PICKED_UP: ("suivi", False, "Colis récupéré", "Votre colis de la commande {ref} a été récupéré chez le vendeur."),
+        S.IN_TRANSIT: ("suivi", False, "Colis en route", "Votre colis de la commande {ref} est en route."),
+        S.OUT_FOR_DELIVERY: ("suivi", False, "Livraison en cours", "Le livreur arrive bientôt pour votre commande {ref}."),
+        S.DELIVERED: ("commande", True, "Colis livré", "Votre commande {ref} a été livrée."),
+        S.INCIDENT: ("incident", True, "Incident signalé", "Un incident est survenu sur la livraison de votre commande {ref}."),
+        S.FAILED: ("commande", True, "Livraison échouée", "La livraison de votre commande {ref} a échoué."),
+        S.CANCELLED: ("commande", True, "Livraison annulée", "La livraison de votre commande {ref} a été annulée."),
+    }
+
+
+def _notify_client_of_status(shipment, status):
+    """Jamais bloquant : un prestataire en panne ou un module absent ne doit
+    jamais casser un changement de statut de livraison (meme logique que
+    envoyer_notification elle-meme, qui avale deja les echecs de push)."""
+    entry = _client_status_notifications().get(status)
+    if entry is None:
+        return
+    user = getattr(shipment.order, "user", None)
+    if user is None:
+        return  # commande invite (D3, sans compte) : pas d'appareil a notifier
+    type_, critique, titre, texte = entry
+    try:
+        from apps.notifications_client.services import envoyer_notification
+        envoyer_notification(user, type_, titre, texte.format(ref=f"BLV-{shipment.order_id:05d}"), critique=critique)
+    except Exception:
+        logging.getLogger("apps.shipping").exception(
+            "Notification client echouee (shipment=%s, status=%s)", shipment.pk, status,
+        )
+
+
 class ShipmentEvent(models.Model):
     """
     Timeline d'un shipment : chaque event est un statut + message + localisation.
     """
 
+    # Rôles possibles pour actor_role (même convention libre que
+    # ShipmentEvidence.actor_role) : VENDOR, COURIER, RELAY_POINT, CLIENT,
+    # SUPPORT. SYSTEM désigne une transition automatique (pas d'utilisateur
+    # a l'origine du changement) — valeur sobre plutôt qu'une règle inventée
+    # pour distinguer les cas automatiques.
+    ACTOR_ROLE_SYSTEM = "SYSTEM"
+
     shipment = models.ForeignKey(Shipment, on_delete=models.CASCADE, related_name="events")
     status = models.CharField(max_length=32)
+    previous_status = models.CharField(
+        max_length=32, blank=True, default="",
+        help_text="Statut du shipment juste avant cet événement, vide si c'est le premier événement.",
+    )
     message = models.CharField(max_length=255, blank=True, default="")
     location = models.CharField(max_length=120, blank=True, default="")
+    actor = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="shipment_events",
+        help_text="Compte ayant déclenché ce changement — vide pour une transition automatique.",
+    )
+    actor_role = models.CharField(
+        max_length=20, blank=True, default="",
+        help_text="Rôle de l'acteur au moment de l'action (VENDOR, COURIER, RELAY_POINT, CLIENT, SUPPORT, SYSTEM).",
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -307,6 +406,32 @@ class ShipmentEvent(models.Model):
 
     def __str__(self):
         return f"ShipmentEvent(shipment={self.shipment_id}, status={self.status})"
+
+    @classmethod
+    def record(cls, *, shipment, status, message="", location="", actor=None, actor_role=""):
+        """
+        Crée un event en capturant automatiquement previous_status (statut du
+        dernier event existant pour ce shipment, vide s'il n'y en a aucun) —
+        évite de dupliquer cette lecture dans chaque site d'appel.
+        """
+        previous_status = (
+            cls.objects.filter(shipment=shipment)
+            .order_by("-created_at", "-id")
+            .values_list("status", flat=True)
+            .first()
+            or ""
+        )
+        event = cls.objects.create(
+            shipment=shipment,
+            status=status,
+            previous_status=previous_status,
+            message=message,
+            location=location,
+            actor=actor,
+            actor_role=actor_role,
+        )
+        _notify_client_of_status(shipment, status)
+        return event
 
 
 class ShipmentLocation(models.Model):
@@ -465,6 +590,66 @@ class RelayParcel(models.Model):
 
     def __str__(self):
         return f"RelayParcel(shipment={self.shipment_id}, relay={self.relay_point_id}, status={self.status})"
+
+
+class RelayPickupAttempt(models.Model):
+    """
+    Trace chaque code de retrait saisi au comptoir (Règles Système DEV v2.0,
+    §8.2) : 3 essais faux consécutifs sur un même code bloquent ce code 24 h
+    pour ce relais — seul le support peut lever le blocage.
+    """
+
+    MAX_ATTEMPTS = 3
+    LOCK_HOURS = 24
+
+    relay_point = models.ForeignKey(
+        "accounts.RelayPointProfile",
+        on_delete=models.CASCADE,
+        related_name="pickup_attempts",
+    )
+    code = models.CharField(max_length=24)
+    success = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["relay_point", "code", "-created_at"])]
+        verbose_name = "Tentative de retrait"
+        verbose_name_plural = "Tentatives de retrait"
+
+    def __str__(self):
+        etat = "ok" if self.success else "echec"
+        return f"RelayPickupAttempt(relay={self.relay_point_id}, code={self.code}, {etat})"
+
+    @classmethod
+    def register(cls, relay_point, code, success):
+        return cls.objects.create(relay_point=relay_point, code=(code or "").strip().upper(), success=success)
+
+    @classmethod
+    def _recent_failures(cls, relay_point, code):
+        """Les echecs consecutifs les plus recents pour ce code, du plus recent au plus ancien."""
+        code = (code or "").strip().upper()
+        recent = cls.objects.filter(relay_point=relay_point, code=code).order_by("-created_at")[: cls.MAX_ATTEMPTS]
+        failures = []
+        for attempt in recent:
+            if attempt.success:
+                break
+            failures.append(attempt)
+        return failures
+
+    @classmethod
+    def locked_until(cls, relay_point, code):
+        """Date de levee du blocage si ce code vient de subir 3 echecs consecutifs, sinon None."""
+        failures = cls._recent_failures(relay_point, code)
+        if len(failures) < cls.MAX_ATTEMPTS:
+            return None
+        until = failures[0].created_at + timezone.timedelta(hours=cls.LOCK_HOURS)
+        return until if timezone.now() < until else None
+
+    @classmethod
+    def attempts_left(cls, relay_point, code):
+        """Essais encore disponibles avant blocage (0 si deja au seuil)."""
+        return max(0, cls.MAX_ATTEMPTS - len(cls._recent_failures(relay_point, code)))
 
 
 class ShipmentMessage(models.Model):

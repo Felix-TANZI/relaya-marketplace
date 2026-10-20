@@ -8,6 +8,7 @@ import {
   Truck, DollarSign, CreditCard, Mail, Shield,
   CheckCircle, Clock, Smartphone, Package,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { adminApi, ProductCondition, type PlatformSettings } from '@/services/api/admin';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import { useToast } from '@/context/ToastContext';
@@ -81,6 +82,7 @@ function Toggle({ checked, onChange, label, description, T }: {
 
 function ConditionsManager() {
   const T = useAdminTheme();
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const [conditions, setConditions] = useState<ProductCondition[]>([]);
   const [newName, setNewName] = useState('');
@@ -94,17 +96,17 @@ function ConditionsManager() {
   const add = async () => {
     const name = newName.trim();
     if (!name) return;
-    try { setBusy(true); await adminApi.createCondition(name); setNewName(''); showToast('État ajouté', 'success'); await load(); }
-    catch { showToast("Impossible d'ajouter (doublon ?)", 'error'); }
+    try { setBusy(true); await adminApi.createCondition(name); setNewName(''); showToast(t('ad1_settings.toast_condition_added'), 'success'); await load(); }
+    catch { showToast(t('ad1_settings.toast_condition_add_error'), 'error'); }
     finally { setBusy(false); }
   };
   const toggle = async (c: ProductCondition) => {
     try { await adminApi.updateCondition(c.id, { is_active: !c.is_active }); await load(); }
-    catch { showToast('Erreur', 'error'); }
+    catch { showToast(t('ad1_settings.toast_error'), 'error'); }
   };
   const remove = async (c: ProductCondition) => {
-    try { await adminApi.deleteCondition(c.id); showToast('État supprimé', 'success'); await load(); }
-    catch { showToast('Erreur', 'error'); }
+    try { await adminApi.deleteCondition(c.id); showToast(t('ad1_settings.toast_condition_deleted'), 'success'); await load(); }
+    catch { showToast(t('ad1_settings.toast_error'), 'error'); }
   };
 
   const inpStyle = {
@@ -114,9 +116,9 @@ function ConditionsManager() {
 
   return (
     <div style={{ marginTop: 16 }}>
-      <p style={{ fontSize: 12.5, fontWeight: 700, color: T.text, marginBottom: 4 }}>États du produit</p>
+      <p style={{ fontSize: 12.5, fontWeight: 700, color: T.text, marginBottom: 4 }}>{t('ad1_settings.conditions_title')}</p>
       <p style={{ fontSize: 11.5, color: T.muted, marginBottom: 10 }}>
-        La liste proposée aux vendeurs. Tu peux en ajouter, désactiver ou supprimer.
+        {t('ad1_settings.conditions_desc')}
       </p>
 
       <div className="flex flex-col gap-1.5" style={{ marginBottom: 10 }}>
@@ -129,9 +131,9 @@ function ConditionsManager() {
             <div className="flex items-center gap-2">
               <button onClick={() => toggle(c)}
                 style={{ fontSize: 11.5, fontWeight: 600, cursor: 'pointer', background: 'none', border: 'none', color: c.is_active ? T.muted : '#15803D' }}>
-                {c.is_active ? 'Désactiver' : 'Activer'}
+                {c.is_active ? t('ad1_settings.deactivate') : t('ad1_settings.activate')}
               </button>
-              <button onClick={() => remove(c)} title="Supprimer"
+              <button onClick={() => remove(c)} title={t('ad1_settings.delete_tooltip')}
                 className="w-7 h-7 rounded-lg flex items-center justify-center"
                 style={{ color: '#EF4444', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
                 <Trash2 size={12} />
@@ -143,12 +145,12 @@ function ConditionsManager() {
 
       <div className="flex gap-2">
         <input value={newName} onChange={e => setNewName(e.target.value)}
-          placeholder="Nouvel état (ex : Reconditionné)" style={inpStyle}
+          placeholder={t('ad1_settings.condition_placeholder')} style={inpStyle}
           onKeyDown={e => { if (e.key === 'Enter') add(); }} />
         <button onClick={add} disabled={busy}
           className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold text-white flex-shrink-0"
           style={{ background: 'linear-gradient(135deg,#DC2626,#991B1B)' }}>
-          <Plus size={14} /> Ajouter
+          <Plus size={14} /> {t('ad1_settings.add')}
         </button>
       </div>
     </div>
@@ -161,6 +163,7 @@ function ConditionsManager() {
 
 export default function SettingsPage() {
   const T             = useAdminTheme();
+  const { t }          = useTranslation();
   const { showToast } = useToast();
 
   const [settings, setSettings] = useState<PlatformSettings | null>(null);
@@ -210,11 +213,11 @@ export default function SettingsPage() {
       setFees(data.delivery_fees ?? {});
       setDirty(false);
     } catch {
-      showToast('Erreur chargement des paramètres', 'error');
+      showToast(t('ad1_settings.toast_load_error'), 'error');
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, [showToast, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -228,7 +231,7 @@ export default function SettingsPage() {
     const city = newCity.trim();
     const fee  = parseInt(newFee, 10);
     if (!city || isNaN(fee) || fee < 0) {
-      showToast('Renseignez un nom de ville et un montant valide', 'error');
+      showToast(t('ad1_settings.toast_city_validation_error'), 'error');
       return;
     }
     setFees(prev => ({ ...prev, [city]: fee }));
@@ -246,10 +249,10 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       await adminApi.updateSettings({ ...form, delivery_fees: fees });
-      showToast('Paramètres sauvegardés', 'success');
+      showToast(t('ad1_settings.toast_save_success'), 'success');
       await load();
     } catch {
-      showToast('Erreur lors de la sauvegarde', 'error');
+      showToast(t('ad1_settings.toast_save_error'), 'error');
     } finally {
       setSaving(false);
     }
@@ -275,13 +278,13 @@ export default function SettingsPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: T.text, marginBottom: 4 }}>
-            Paramètres Plateforme
+            {t('ad1_settings.page_title')}
           </h1>
           {settings && (
             <p style={{ fontSize: 12.5, color: T.muted, display: 'flex', alignItems: 'center', gap: 6 }}>
               <Clock size={12} />
-              Dernière modification : {fmtDate(settings.updated_at)}
-              {settings.updated_by_name && ` par ${settings.updated_by_name}`}
+              {t('ad1_settings.last_modified', { date: fmtDate(settings.updated_at) })}
+              {settings.updated_by_name && t('ad1_settings.modified_by_suffix', { name: settings.updated_by_name })}
             </p>
           )}
         </div>
@@ -302,7 +305,7 @@ export default function SettingsPage() {
               boxShadow: dirty ? '0 4px 16px rgba(220,38,38,0.35)' : 'none',
             }}>
             {saving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
-            {saving ? 'Sauvegarde…' : 'Sauvegarder'}
+            {saving ? t('ad1_settings.saving_ellipsis') : t('ad1_settings.save_button')}
           </button>
         </div>
       </div>
@@ -312,8 +315,8 @@ export default function SettingsPage() {
         <div className="flex items-start gap-3 p-4 rounded-2xl" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' }}>
           <AlertTriangle size={18} style={{ color: '#EF4444', flexShrink: 0, marginTop: 1 }} />
           <div>
-            <p style={{ fontSize: 13.5, fontWeight: 700, color: '#EF4444' }}>Mode maintenance actif</p>
-            <p style={{ fontSize: 12.5, color: T.muted, marginTop: 2 }}>La plateforme est inaccessible aux visiteurs. Désactivez dès que les travaux sont terminés.</p>
+            <p style={{ fontSize: 13.5, fontWeight: 700, color: '#EF4444' }}>{t('ad1_settings.maintenance_active_title')}</p>
+            <p style={{ fontSize: 12.5, color: T.muted, marginTop: 2 }}>{t('ad1_settings.maintenance_active_desc')}</p>
           </div>
         </div>
       )}
@@ -330,10 +333,10 @@ export default function SettingsPage() {
           <div className="space-y-5">
 
             {/* Frais de livraison */}
-            <Section title="Frais de livraison par ville" icon={Truck} T={T}>
+            <Section title={t('ad1_settings.section_delivery_fees')} icon={Truck} T={T}>
               {Object.keys(fees).length === 0 ? (
                 <p style={{ fontSize: 13, color: T.muted, textAlign: 'center', padding: '12px 0' }}>
-                  Aucune ville configurée
+                  {t('ad1_settings.no_city_configured')}
                 </p>
               ) : (
                 <div className="space-y-2 mb-4">
@@ -367,13 +370,13 @@ export default function SettingsPage() {
 
               {/* Ajouter une ville */}
               <div>
-                <Label>Ajouter une ville</Label>
+                <Label>{t('ad1_settings.add_city_label')}</Label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={newCity}
                     onChange={e => setNewCity(e.target.value)}
-                    placeholder="Ex : Bafoussam"
+                    placeholder={t('ad1_settings.city_placeholder')}
                     style={{ ...inp, flex: 1 }}
                     onFocus={e => (e.target.style.borderColor = T.red)}
                     onBlur={e  => (e.target.style.borderColor = T.inputBorder)}
@@ -383,7 +386,7 @@ export default function SettingsPage() {
                     type="number"
                     value={newFee}
                     onChange={e => setNewFee(e.target.value)}
-                    placeholder="FCFA"
+                    placeholder={t('ad1_settings.fee_placeholder')}
                     style={{ ...inp, width: 110 }}
                     onFocus={e => (e.target.style.borderColor = T.red)}
                     onBlur={e  => (e.target.style.borderColor = T.inputBorder)}
@@ -393,17 +396,17 @@ export default function SettingsPage() {
                     onClick={addCity}
                     className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold text-white flex-shrink-0"
                     style={{ background: 'linear-gradient(135deg,#DC2626,#991B1B)' }}>
-                    <Plus size={14} /> Ajouter
+                    <Plus size={14} /> {t('ad1_settings.add')}
                   </button>
                 </div>
               </div>
             </Section>
 
 
-            <Section title="Catalogue" icon={Package} T={T}>
+            <Section title={t('ad1_settings.section_catalog')} icon={Package} T={T}>
               <div>
-                <Label hint="Nombre maximum d'offres vendeurs affichées sur une fiche produit (côté acheteur).">
-                  Offres affichées par fiche
+                <Label hint={t('ad1_settings.max_offers_hint')}>
+                  {t('ad1_settings.max_offers_label')}
                 </Label>
                 <input type="number" min="1" max="50" value={form.max_offers_displayed}
                   onChange={e => set('max_offers_displayed', Number(e.target.value))}
@@ -416,10 +419,10 @@ export default function SettingsPage() {
             </Section>
 
             {/* Commission & Montants */}
-            <Section title="Commission & Montants" icon={DollarSign} T={T}>
+            <Section title={t('ad1_settings.section_commission')} icon={DollarSign} T={T}>
               <div>
-                <Label hint="Pourcentage prélevé sur chaque vente. Ne s'applique qu'aux nouvelles commandes.">
-                  Commission plateforme (%)
+                <Label hint={t('ad1_settings.commission_hint')}>
+                  {t('ad1_settings.commission_label')}
                 </Label>
                 <div className="relative">
                   <input
@@ -438,8 +441,8 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <Label hint="Montant minimum qu'un client doit commander. En dessous, la commande est bloquée.">
-                  Montant minimum de commande (FCFA)
+                <Label hint={t('ad1_settings.min_order_hint')}>
+                  {t('ad1_settings.min_order_label')}
                 </Label>
                 <input
                   type="number"
@@ -454,8 +457,8 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <Label hint="Délai affiché au client pour estimer la date de livraison.">
-                  Délai de livraison par défaut (jours)
+                <Label hint={t('ad1_settings.delivery_delay_hint')}>
+                  {t('ad1_settings.delivery_delay_label')}
                 </Label>
                 <input
                   type="number"
@@ -470,10 +473,10 @@ export default function SettingsPage() {
               </div>
             </Section>
 
-            <Section title="Litiges & preuves" icon={AlertTriangle} T={T}>
+            <Section title={t('ad1_settings.section_disputes')} icon={AlertTriangle} T={T}>
               <div>
-                <Label hint="Une preuve de livraison (photo, scan) sans litige ouvert est supprimée après ce délai. Une preuve liée à un litige actif reste gelée quel que soit ce réglage. Modifier cette valeur recalcule aussi le délai des preuves déjà en attente de purge.">
-                  Conservation des preuves colis (jours)
+                <Label hint={t('ad1_settings.evidence_hint')}>
+                  {t('ad1_settings.evidence_label')}
                 </Label>
                 <input
                   type="number"
@@ -493,34 +496,34 @@ export default function SettingsPage() {
           <div className="space-y-5">
 
             {/* Méthodes de paiement */}
-            <Section title="Méthodes de paiement Mobile Money" icon={CreditCard} T={T}>
+            <Section title={t('ad1_settings.section_payment_methods')} icon={CreditCard} T={T}>
               <Toggle
                 checked={form.mtn_momo_enabled}
                 onChange={v => set('mtn_momo_enabled', v)}
-                label="MTN Mobile Money"
-                description="Activer/désactiver les paiements via MTN MoMo"
+                label={t('ad1_settings.mtn_label')}
+                description={t('ad1_settings.mtn_desc')}
                 T={T}
               />
               <Toggle
                 checked={form.orange_money_enabled}
                 onChange={v => set('orange_money_enabled', v)}
-                label="Orange Money"
-                description="Activer/désactiver les paiements via Orange Money"
+                label={t('ad1_settings.orange_label')}
+                description={t('ad1_settings.orange_desc')}
                 T={T}
               />
               {!form.mtn_momo_enabled && !form.orange_money_enabled && (
                 <div className="flex items-center gap-2 p-3 rounded-xl" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
                   <AlertTriangle size={14} style={{ color: '#EF4444', flexShrink: 0 }} />
-                  <p style={{ fontSize: 12, color: '#EF4444' }}>Aucune méthode de paiement active — les clients ne pourront pas passer de commandes.</p>
+                  <p style={{ fontSize: 12, color: '#EF4444' }}>{t('ad1_settings.no_payment_method_warning')}</p>
                 </div>
               )}
             </Section>
 
             {/* Emails de contact */}
-            <Section title="Emails de contact" icon={Mail} T={T}>
+            <Section title={t('ad1_settings.section_emails')} icon={Mail} T={T}>
               <div>
-                <Label hint="Email des notifications système et des alertes admin.">
-                  Email administrateur
+                <Label hint={t('ad1_settings.admin_email_hint')}>
+                  {t('ad1_settings.admin_email_label')}
                 </Label>
                 <input
                   type="email"
@@ -533,8 +536,8 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <Label hint="Email visible par les clients pour les demandes de support.">
-                  Email support client
+                <Label hint={t('ad1_settings.support_email_hint')}>
+                  {t('ad1_settings.support_email_label')}
                 </Label>
                 <input
                   type="email"
@@ -548,25 +551,25 @@ export default function SettingsPage() {
             </Section>
 
             {/* Maintenance */}
-            <Section title="Mode Maintenance" icon={Shield} T={T}>
+            <Section title={t('ad1_settings.section_maintenance')} icon={Shield} T={T}>
               <Toggle
                 checked={form.maintenance_mode}
                 onChange={v => set('maintenance_mode', v)}
-                label="Activer le mode maintenance"
-                description="La plateforme sera inaccessible aux visiteurs — à utiliser avec précaution."
+                label={t('ad1_settings.enable_maintenance_label')}
+                description={t('ad1_settings.enable_maintenance_desc')}
                 T={T}
               />
 
               {form.maintenance_mode && (
                 <div>
-                  <Label hint="Message affiché sur la page de maintenance.">
-                    Message aux visiteurs
+                  <Label hint={t('ad1_settings.maintenance_message_hint')}>
+                    {t('ad1_settings.maintenance_message_label')}
                   </Label>
                   <textarea
                     value={form.maintenance_message}
                     onChange={e => { set('maintenance_message', e.target.value); }}
                     rows={3}
-                    placeholder="Ex : BelivaY est en maintenance. Retour prévu dans 1 heure."
+                    placeholder={t('ad1_settings.maintenance_message_placeholder')}
                     style={{ ...inp, resize: 'vertical' }}
                     onFocus={e => (e.target.style.borderColor = T.red)}
                     onBlur={e  => (e.target.style.borderColor = T.inputBorder)}
@@ -579,16 +582,16 @@ export default function SettingsPage() {
             {settings && (
               <div className="rounded-2xl p-5" style={{ background: T.card, border: `1px solid ${T.border}` }}>
                 <p style={{ fontFamily: "'Syne',sans-serif", fontSize: 13, fontWeight: 800, color: T.text, marginBottom: 12 }}>
-                  Configuration actuelle
+                  {t('ad1_settings.current_config_title')}
                 </p>
                 <div className="space-y-2.5">
                   {[
-                    { label: 'Commission',      value: `${settings.platform_commission_percent}%`,                          icon: DollarSign,   color: T.red },
-                    { label: 'Commande min.',   value: `${new Intl.NumberFormat('fr-FR').format(settings.minimum_order_amount_xaf)} FCFA`, icon: Shield, color: '#3B82F6' },
-                    { label: 'Délai livraison', value: `${settings.default_delivery_days} jour(s)`,                         icon: Truck,        color: '#F47920' },
-                    { label: 'MTN MoMo',        value: settings.mtn_momo_enabled ? 'Actif' : 'Inactif',                     icon: Smartphone,   color: settings.mtn_momo_enabled ? '#10B981' : '#EF4444' },
-                    { label: 'Orange Money',    value: settings.orange_money_enabled ? 'Actif' : 'Inactif',                  icon: Smartphone,   color: settings.orange_money_enabled ? '#10B981' : '#EF4444' },
-                    { label: 'Maintenance',     value: settings.maintenance_mode ? 'ACTIVÉE' : 'Désactivée',                 icon: settings.maintenance_mode ? AlertTriangle : CheckCircle, color: settings.maintenance_mode ? '#EF4444' : '#10B981' },
+                    { label: t('ad1_settings.recap_commission'),      value: `${settings.platform_commission_percent}%`,                          icon: DollarSign,   color: T.red },
+                    { label: t('ad1_settings.recap_min_order'),   value: `${new Intl.NumberFormat('fr-FR').format(settings.minimum_order_amount_xaf)} FCFA`, icon: Shield, color: '#3B82F6' },
+                    { label: t('ad1_settings.recap_delivery_delay'), value: t('ad1_settings.delay_days_value', { count: settings.default_delivery_days }),                         icon: Truck,        color: '#F47920' },
+                    { label: 'MTN MoMo',        value: settings.mtn_momo_enabled ? t('ad1_settings.status_active') : t('ad1_settings.status_inactive'),                     icon: Smartphone,   color: settings.mtn_momo_enabled ? '#10B981' : '#EF4444' },
+                    { label: 'Orange Money',    value: settings.orange_money_enabled ? t('ad1_settings.status_active') : t('ad1_settings.status_inactive'),                  icon: Smartphone,   color: settings.orange_money_enabled ? '#10B981' : '#EF4444' },
+                    { label: t('ad1_settings.recap_maintenance'),     value: settings.maintenance_mode ? t('ad1_settings.maintenance_enabled') : t('ad1_settings.maintenance_disabled'),                 icon: settings.maintenance_mode ? AlertTriangle : CheckCircle, color: settings.maintenance_mode ? '#EF4444' : '#10B981' },
                   ].map((item, i) => {
                     const Icon = item.icon;
                     return (
@@ -617,7 +620,7 @@ export default function SettingsPage() {
             className="flex items-center gap-2 px-6 py-3 rounded-2xl text-[13.5px] font-semibold text-white shadow-2xl"
             style={{ background: 'linear-gradient(135deg,#DC2626,#991B1B)', boxShadow: '0 8px 30px rgba(220,38,38,0.5)' }}>
             {saving ? <RefreshCw size={15} className="animate-spin" /> : <Save size={15} />}
-            {saving ? 'Sauvegarde…' : 'Sauvegarder les modifications'}
+            {saving ? t('ad1_settings.saving_ellipsis') : t('ad1_settings.save_changes_button')}
           </button>
         </div>
       )}

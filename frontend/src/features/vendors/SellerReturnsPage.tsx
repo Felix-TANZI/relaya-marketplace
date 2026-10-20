@@ -4,30 +4,32 @@
 // l'etape logistique (depot/ramassage) ; l'admin finalise apres inspection.
 
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { RotateCcw, Package, CheckCircle, XCircle, Clock3 } from 'lucide-react';
 import { vendorsApi } from '@/services/api/vendors';
 import type { OrderReturn } from '@/services/api/customer';
 import { useToast } from '@/context/ToastContext';
 
 const REASON_LABELS: Record<string, string> = {
-  DAMAGED: 'Article endommagé',
-  NOT_AS_DESCRIBED: 'Non conforme à la description',
-  WRONG_ITEM: 'Mauvais article reçu',
-  COUNTERFEIT: 'Suspicion de contrefaçon',
-  OTHER: 'Autre',
+  DAMAGED: 'sl4_returns.reason_damaged',
+  NOT_AS_DESCRIBED: 'sl4_returns.reason_not_as_described',
+  WRONG_ITEM: 'sl4_returns.reason_wrong_item',
+  COUNTERFEIT: 'sl4_returns.reason_counterfeit',
+  OTHER: 'sl4_returns.reason_other',
 };
 
-const STATUS_LABELS: Record<OrderReturn['status'], { label: string; color: string; bg: string }> = {
-  REQUESTED: { label: 'À examiner', color: '#D97706', bg: 'rgba(217,119,6,0.10)' },
-  APPROVED: { label: 'Approuvé — en attente de dépôt', color: '#16A34A', bg: 'rgba(22,163,74,0.10)' },
-  REJECTED: { label: 'Rejeté', color: '#DC2626', bg: 'rgba(220,38,38,0.10)' },
-  AWAITING_DROPOFF: { label: 'En attente de dépôt', color: '#2563EB', bg: 'rgba(37,99,235,0.10)' },
-  RECEIVED: { label: 'Reçu — inspection en cours', color: '#2563EB', bg: 'rgba(37,99,235,0.10)' },
-  REFUNDED: { label: 'Remboursé', color: '#16A34A', bg: 'rgba(22,163,74,0.10)' },
-  CLOSED_NO_REFUND: { label: 'Clôturé sans remboursement', color: '#7C6E5A', bg: 'rgba(124,110,90,0.10)' },
+const STATUS_LABELS: Record<OrderReturn['status'], { labelKey: string; color: string; bg: string }> = {
+  REQUESTED: { labelKey: 'sl4_returns.status_requested', color: '#D97706', bg: 'rgba(217,119,6,0.10)' },
+  APPROVED: { labelKey: 'sl4_returns.status_approved', color: '#16A34A', bg: 'rgba(22,163,74,0.10)' },
+  REJECTED: { labelKey: 'sl4_returns.status_rejected', color: '#DC2626', bg: 'rgba(220,38,38,0.10)' },
+  AWAITING_DROPOFF: { labelKey: 'sl4_returns.status_awaiting_dropoff', color: '#2563EB', bg: 'rgba(37,99,235,0.10)' },
+  RECEIVED: { labelKey: 'sl4_returns.status_received', color: '#2563EB', bg: 'rgba(37,99,235,0.10)' },
+  REFUNDED: { labelKey: 'sl4_returns.status_refunded', color: '#16A34A', bg: 'rgba(22,163,74,0.10)' },
+  CLOSED_NO_REFUND: { labelKey: 'sl4_returns.status_closed_no_refund', color: '#7C6E5A', bg: 'rgba(124,110,90,0.10)' },
 };
 
 export default function SellerReturnsPage() {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const [returns, setReturns] = useState<OrderReturn[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,9 +40,9 @@ export default function SellerReturnsPage() {
     setLoading(true);
     vendorsApi.getReturns()
       .then(setReturns)
-      .catch(() => showToast('Impossible de charger les retours.', 'error'))
+      .catch(() => showToast(t('sl4_returns.toast_load_error'), 'error'))
       .finally(() => setLoading(false));
-  }, [showToast]);
+  }, [showToast, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -49,9 +51,9 @@ export default function SellerReturnsPage() {
     try {
       const updated = await vendorsApi.reviewReturn(returnId, decision, noteDrafts[returnId] || '');
       setReturns((current) => current.map((r) => (r.id === returnId ? updated : r)));
-      showToast(decision === 'APPROVED' ? 'Retour approuvé.' : 'Retour rejeté.', 'success');
+      showToast(decision === 'APPROVED' ? t('sl4_returns.toast_approved') : t('sl4_returns.toast_rejected'), 'success');
     } catch (error) {
-      showToast(error instanceof Error ? error.message : 'Action impossible.', 'error');
+      showToast(error instanceof Error ? error.message : t('sl4_returns.toast_action_error'), 'error');
     } finally {
       setActingId(null);
     }
@@ -65,18 +67,18 @@ export default function SellerReturnsPage() {
             <RotateCcw size={22} />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-[#1A1209]">Retours</h1>
+            <h1 className="text-2xl font-black text-[#1A1209]">{t('sl4_returns.page_title')}</h1>
             <p className="text-sm font-semibold text-[#7C6E5A]">
-              Rappel : approuver n'engage pas de remboursement — celui-ci n'intervient qu'après réception et inspection du colis retourné.
+              {t('sl4_returns.page_reminder')}
             </p>
           </div>
         </div>
 
         {loading ? (
-          <div className="rounded-2xl bg-white p-8 text-center text-sm font-semibold text-[#7C6E5A]">Chargement…</div>
+          <div className="rounded-2xl bg-white p-8 text-center text-sm font-semibold text-[#7C6E5A]">{t('sl4_returns.loading')}</div>
         ) : returns.length === 0 ? (
           <div className="rounded-2xl bg-white p-8 text-center text-sm font-semibold text-[#7C6E5A]">
-            Aucune demande de retour pour le moment.
+            {t('sl4_returns.empty')}
           </div>
         ) : (
           <div className="space-y-4">
@@ -92,7 +94,7 @@ export default function SellerReturnsPage() {
                       <div>
                         <p className="font-bold text-[#1A1209]">{ret.order_item_title}</p>
                         <p className="text-xs font-semibold text-[#7C6E5A]">
-                          Commande #{ret.order} · {ret.requested_by_name} · {REASON_LABELS[ret.reason] || ret.reason}
+                          {t('sl4_returns.order_meta', { order: ret.order, requester: ret.requested_by_name, reason: t(REASON_LABELS[ret.reason] ?? ret.reason) })}
                         </p>
                       </div>
                     </div>
@@ -100,7 +102,7 @@ export default function SellerReturnsPage() {
                       className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-black"
                       style={{ color: statusInfo.color, background: statusInfo.bg }}
                     >
-                      <Clock3 size={12} /> {statusInfo.label}
+                      <Clock3 size={12} /> {t(statusInfo.labelKey)}
                     </span>
                   </div>
 
@@ -113,7 +115,7 @@ export default function SellerReturnsPage() {
                       <textarea
                         value={noteDrafts[ret.id] || ''}
                         onChange={(e) => setNoteDrafts((current) => ({ ...current, [ret.id]: e.target.value }))}
-                        placeholder="Note optionnelle pour l'acheteur (visible dans son suivi de commande)"
+                        placeholder={t('sl4_returns.note_placeholder')}
                         className="w-full rounded-xl border border-[#E8E2D9] px-3 py-2 text-sm outline-none focus:border-[#F47920]"
                       />
                       <div className="flex flex-wrap gap-3">
@@ -123,7 +125,7 @@ export default function SellerReturnsPage() {
                           onClick={() => void handleReview(ret.id, 'APPROVED')}
                           className="inline-flex items-center gap-2 rounded-xl bg-[#16A34A] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
                         >
-                          <CheckCircle size={16} /> Approuver le retour
+                          <CheckCircle size={16} /> {t('sl4_returns.approve_button')}
                         </button>
                         <button
                           type="button"
@@ -131,14 +133,14 @@ export default function SellerReturnsPage() {
                           onClick={() => void handleReview(ret.id, 'REJECTED')}
                           className="inline-flex items-center gap-2 rounded-xl border border-[#DC2626]/30 bg-[#DC2626]/5 px-4 py-2.5 text-sm font-bold text-[#DC2626] disabled:opacity-50"
                         >
-                          <XCircle size={16} /> Rejeter
+                          <XCircle size={16} /> {t('sl4_returns.reject_button')}
                         </button>
                       </div>
                     </div>
                   )}
 
                   {ret.review_note && ret.status !== 'REQUESTED' && (
-                    <p className="mt-3 text-sm font-semibold text-[#7C6E5A]">Votre note : {ret.review_note}</p>
+                    <p className="mt-3 text-sm font-semibold text-[#7C6E5A]">{t('sl4_returns.your_note_label', { note: ret.review_note })}</p>
                   )}
                 </div>
               );

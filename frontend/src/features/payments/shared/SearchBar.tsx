@@ -5,6 +5,7 @@
 // requete par caractere sur des tables qui grossissent vite.
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { FT } from './tokens';
 
@@ -16,8 +17,9 @@ interface SearchBarProps {
 }
 
 export default function SearchBar({
-  value, onChange, placeholder = 'Rechercher…', delay = 350,
+  value, onChange, placeholder, delay = 350,
 }: SearchBarProps) {
+  const { t } = useTranslation();
   const [saisie, setSaisie] = useState(value);
 
   useEffect(() => {
@@ -40,7 +42,7 @@ export default function SearchBar({
         type="search"
         value={saisie}
         onChange={(evenement) => setSaisie(evenement.target.value)}
-        placeholder={placeholder}
+        placeholder={placeholder ?? t('pm2_shared_search_bar.placeholder')}
         style={{ width: '100%', fontSize: 12.5, paddingLeft: 32 }}
       />
     </div>

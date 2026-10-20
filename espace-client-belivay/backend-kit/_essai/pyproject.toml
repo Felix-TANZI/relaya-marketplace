@@ -1,0 +1,23 @@
+[project]
+name = "belivay-backend-kit-essai"
+version = "0.1.0"
+description = "Projet Django minimal pour vérifier le kit de reprise (imports, migrations, tests). Pas pour la production."
+requires-python = ">=3.11,<3.13"
+# Mêmes bornes que backend/requirements.txt de relaya-marketplace (commit 9546ffe).
+dependencies = [
+  "Django>=5.1,<5.2",
+  "djangorestframework>=3.14,<3.15",
+  "djangorestframework-simplejwt>=5.3,<6.0",
+  "drf-spectacular>=0.28,<1.0",
+  "django-cors-headers>=4.3,<5.0",
+  "django-filter>=24.0,<25.0",
+  "cryptography>=42.0,<47.0",
+  # Comme relaya (ImageField) : variantes WebP des photos de apps.contenus (srcset) et photos produits du serveur d'essai.
+  "Pillow>=10.0,<12.0",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.0,<9.0", "pytest-django==4.11.1", "pytest-cov>=5.0,<6.0", "pyyaml>=6"]
+
+[tool.uv]
+package = false

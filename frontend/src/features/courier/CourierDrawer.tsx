@@ -7,6 +7,7 @@
  */
 import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { COURIER_SIDEBAR_SURFACE, CourierSidebarContent, type CourierSidebarProps } from "./CourierSidebar";
 
 export default function CourierDrawer({
@@ -14,6 +15,7 @@ export default function CourierDrawer({
   onClose,
   ...content
 }: CourierSidebarProps & { open: boolean; onClose: () => void }) {
+  const { t } = useTranslation();
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Echap ferme le tiroir, et le fond ne defile plus derriere lui : sans ce
@@ -48,7 +50,7 @@ export default function CourierDrawer({
       <button
         type="button"
         tabIndex={open ? 0 : -1}
-        aria-label="Fermer le menu"
+        aria-label={t("cr1_drawer.close_menu")}
         onClick={onClose}
         className={`absolute inset-0 h-full w-full cursor-default bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${
           open ? "opacity-100" : "opacity-0"
@@ -59,7 +61,7 @@ export default function CourierDrawer({
         ref={panelRef}
         role="dialog"
         aria-modal={open ? true : undefined}
-        aria-label="Espace livreur"
+        aria-label={t("cr1_drawer.aria_label")}
         /* Ferme, le panneau reste monte pour s'animer, mais `inert` le sort de
            l'ordre de tabulation : sans lui, les 13 destinations resteraient
            atteignables au clavier alors qu'elles sont hors de l'ecran. */
@@ -71,7 +73,7 @@ export default function CourierDrawer({
         <button
           type="button"
           onClick={onClose}
-          aria-label="Fermer le menu"
+          aria-label={t("cr1_drawer.close_menu")}
           className="tap-target absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10 flex items-center justify-center rounded-full border border-white/15 bg-white/10 text-white/80 transition active:scale-90 hover:bg-white/20 hover:text-white"
         >
           <X size={18} />

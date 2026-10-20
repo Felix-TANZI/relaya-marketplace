@@ -13,6 +13,8 @@
 // La phrase vient de l'API quand elle est fournie, du catalogue local sinon.
 // ─────────────────────────────────────────────────────────────────────────
 
+import { useTranslation } from 'react-i18next';
+
 import { statusMeta, TONE } from '../model/status';
 import type { StatusDomain } from '../model/status';
 import type { Guidance } from '../model/finance.types';
@@ -30,7 +32,8 @@ interface StatusBadgeProps {
 export default function StatusBadge({
   domain, status, label, guidance, size = 'md',
 }: StatusBadgeProps) {
-  const meta = statusMeta(domain, status);
+  const { t } = useTranslation();
+  const meta = statusMeta(domain, status, t);
   const teinte = TONE[meta.tone];
 
   const sens = guidance?.meaning || meta.meaning;

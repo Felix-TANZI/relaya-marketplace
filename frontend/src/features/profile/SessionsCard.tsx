@@ -2,6 +2,8 @@
 // Appareils connectés — API réelle /api/auth/sessions/ (liste + révocation).
 
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Monitor, Smartphone, Clock, Globe, Loader2, Shield } from 'lucide-react';
 import { http } from '@/services/api/http';
 import { useToast } from '@/context/ToastContext';
@@ -17,18 +19,19 @@ type Session = {
   is_current: boolean;
 };
 
-function timeAgo(iso: string): string {
+function timeAgo(iso: string, t: TFunction): string {
   const diff = Date.now() - new Date(iso).getTime();
   const min = Math.floor(diff / 60000);
-  if (min < 1) return "à l'instant";
-  if (min < 60) return `il y a ${min} min`;
+  if (min < 1) return t('cl7_sessions_card.just_now');
+  if (min < 60) return t(min > 1 ? 'cl7_sessions_card.minutes_ago_plural' : 'cl7_sessions_card.minutes_ago', { count: min });
   const hours = Math.floor(min / 60);
-  if (hours < 24) return `il y a ${hours} h`;
+  if (hours < 24) return t(hours > 1 ? 'cl7_sessions_card.hours_ago_plural' : 'cl7_sessions_card.hours_ago', { count: hours });
   const days = Math.floor(hours / 24);
-  return `il y a ${days} j`;
+  return t(days > 1 ? 'cl7_sessions_card.days_ago_plural' : 'cl7_sessions_card.days_ago', { count: days });
 }
 
 export default function SessionsCard() {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,10 +57,10 @@ export default function SessionsCard() {
     try {
       setBusy(jti);
       await http(`/api/auth/sessions/${jti}/revoke/`, { method: 'DELETE' });
-      showToast('Session révoquée.', 'success');
+      showToast(t('cl7_sessions_card.revoked_toast'), 'success');
       load();
     } catch {
-      showToast('Erreur lors de la révocation.', 'error');
+      showToast(t('cl7_sessions_card.revoke_error_toast'), 'error');
     } finally {
       setBusy(null);
     }
@@ -67,10 +70,10 @@ export default function SessionsCard() {
     try {
       setBusy('all');
       await http('/api/auth/sessions/revoke-all/', { method: 'POST' });
-      showToast('Autres sessions révoquées.', 'success');
+      showToast(t('cl7_sessions_card.revoked_all_toast'), 'success');
       load();
     } catch {
-      showToast('Erreur.', 'error');
+      showToast(t('cl7_sessions_card.generic_error_toast'), 'error');
     } finally {
       setBusy(null);
     }
@@ -86,8 +89,8 @@ export default function SessionsCard() {
             <Shield size={17} />
           </span>
           <div>
-            <div className="font-bold text-[#111827] dark:text-white">Appareils connectés</div>
-            <div className="text-[12px] text-[#9ca3af]">Sessions actives sur votre compte.</div>
+            <div className="font-bold text-[#111827] dark:text-white">{t('cl7_sessions_card.title')}</div>
+            <div className="text-[12px] text-[#9ca3af]">{t('cl7_sessions_card.subtitle')}</div>
           </div>
         </div>
         {others > 0 && (
@@ -97,7 +100,7 @@ export default function SessionsCard() {
             disabled={busy === 'all'}
             className="flex-shrink-0 rounded-[10px] border border-[#fecaca] px-3 py-2 text-[12px] font-bold text-[#dc2626] transition hover:bg-red-50 disabled:opacity-50"
           >
-            {busy === 'all' ? '…' : 'Tout déconnecter'}
+            {busy === 'all' ? '…' : t('cl7_sessions_card.disconnect_all')}
           </button>
         )}
       </div>
@@ -105,10 +108,10 @@ export default function SessionsCard() {
       {loading ? (
         <div className="flex items-center gap-2 py-4 text-[13px] text-[#9ca3af]">
           <Loader2 size={15} className="animate-spin" />
-          Chargement…
+          {t('cl7_sessions_card.loading')}
         </div>
       ) : sessions.length === 0 ? (
-        <div className="py-3 text-[13px] text-[#9ca3af]">Aucune session active.</div>
+        <div className="py-3 text-[13px] text-[#9ca3af]">{t('cl7_sessions_card.no_active_session')}</div>
       ) : (
         <div className="space-y-2">
           {sessions.map((s) => {
@@ -125,17 +128,17 @@ export default function SessionsCard() {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-[13px] font-bold text-[#111827] dark:text-white">
-                      {s.device_name || 'Appareil'} · {s.browser || '—'}
+                      {s.device_name || t('cl7_sessions_card.device_fallback')} · {s.browser || '—'}
                     </span>
                     {s.is_current && (
-                      <span className="rounded-full bg-[#f47920] px-2 py-0.5 text-[10px] font-bold text-white">Cet appareil</span>
+                      <span className="rounded-full bg-[#f47920] px-2 py-0.5 text-[10px] font-bold text-white">{t('cl7_sessions_card.this_device')}</span>
                     )}
                   </div>
                   <div className="mt-0.5 flex flex-wrap items-center gap-3 text-[11.5px] text-[#9ca3af]">
                     {s.ip_address && (
                       <span className="inline-flex items-center gap-1"><Globe size={10} />{s.ip_address}</span>
                     )}
-                    <span className="inline-flex items-center gap-1"><Clock size={10} />{timeAgo(s.last_activity)}</span>
+                    <span className="inline-flex items-center gap-1"><Clock size={10} />{timeAgo(s.last_activity, t)}</span>
                   </div>
                 </div>
                 {!s.is_current && (
@@ -145,7 +148,7 @@ export default function SessionsCard() {
                     disabled={busy === s.jti}
                     className="flex-shrink-0 rounded-[9px] border border-[#fecaca] px-2.5 py-1.5 text-[11.5px] font-bold text-[#dc2626] transition hover:bg-red-50 disabled:opacity-50"
                   >
-                    {busy === s.jti ? '…' : 'Révoquer'}
+                    {busy === s.jti ? '…' : t('cl7_sessions_card.revoke')}
                   </button>
                 )}
               </div>

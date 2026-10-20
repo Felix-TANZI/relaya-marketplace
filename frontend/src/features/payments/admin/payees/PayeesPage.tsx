@@ -11,6 +11,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { adminFinanceApi } from '../../api/admin-finance.api';
 import type { ListParams } from '../../api/admin-finance.api';
@@ -39,6 +40,7 @@ const TYPES: Record<string, string> = {
 export default function PayeesPage({
   basePath = '/admin/finance',
 }: PayeesPageProps) {
+  const { t } = useTranslation();
   const [filtre, setFiltre] = useState('all');
   const [recherche, setRecherche] = useState('');
   const [page, setPage] = useState(1);
@@ -58,16 +60,18 @@ export default function PayeesPage({
   const lignes = data?.results ?? [];
 
   const onglets: FilterTab[] = [
-    { key: 'all', label: 'Tous' },
-    { key: 'vendors', label: 'Vendeurs' },
-    { key: 'delivery', label: 'Livraison' },
-    { key: 'relay', label: 'Points relais' },
+    { key: 'all', label: t('pm1_payees.tab_all') },
+    { key: 'vendors', label: t('pm1_payees.tab_vendors') },
+    { key: 'delivery', label: t('pm1_payees.tab_delivery') },
+    { key: 'relay', label: t('pm1_payees.tab_relay') },
   ];
 
   return (
     <AdminPageShell
-      title="Bénéficiaires"
-      subtitle={`${data?.count ?? 0} compte${(data?.count ?? 0) > 1 ? 's' : ''}`}
+      title={t('pm1_payees.title')}
+      subtitle={t((data?.count ?? 0) > 1
+        ? 'pm1_payees.account_count_plural'
+        : 'pm1_payees.account_count', { count: data?.count ?? 0 })}
       backTo={basePath}
       actions={(
         <div style={{
@@ -76,7 +80,7 @@ export default function PayeesPage({
           <SearchBar
             value={recherche}
             onChange={(valeur) => { setRecherche(valeur); setPage(1); }}
-            placeholder="Nom, code, numéro…"
+            placeholder={t('pm1_payees.search_placeholder')}
           />
           <FilterTabs
             tabs={onglets}
@@ -89,20 +93,20 @@ export default function PayeesPage({
       <AdminCard>
         {loading && (
           <div style={{ padding: '2.5rem', textAlign: 'center' }}>
-            <span style={{ fontSize: 13, color: FT.faint }}>Chargement…</span>
+            <span style={{ fontSize: 13, color: FT.faint }}>{t('pm1_payees.loading')}</span>
           </div>
         )}
 
         {!loading && error && (
           <EmptyState
             icon="alert-circle"
-            title="Impossible d'afficher les bénéficiaires"
+            title={t('pm1_payees.error_title')}
             description={error}
           />
         )}
 
         {!loading && !error && lignes.length === 0 && (
-          <EmptyState icon="users" title="Aucun bénéficiaire" />
+          <EmptyState icon="users" title={t('pm1_payees.empty_title')} />
         )}
 
         {!loading && !error && lignes.map((compte, index) => {
@@ -156,7 +160,11 @@ export default function PayeesPage({
               <span style={{
                 fontSize: 11.5, width: 96, textAlign: 'right', color: FT.muted,
               }}>
-                {bloque ? 'bloqué' : compte.is_active ? 'actif' : 'inactif'}
+                {bloque
+                  ? t('pm1_payees.status_blocked')
+                  : compte.is_active
+                    ? t('pm1_payees.status_active')
+                    : t('pm1_payees.status_inactive')}
               </span>
             </div>
           );
@@ -168,7 +176,7 @@ export default function PayeesPage({
             pages={data.pages}
             count={data.count}
             onChange={setPage}
-            label="bénéficiaire"
+            label={t('pm1_payees.pagination_label')}
           />
         )}
       </AdminCard>

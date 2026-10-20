@@ -37,6 +37,7 @@
  * le bloc ne la fabrique pas : il montre ce qu'il sait.
  */
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Check, ChevronRight, CreditCard, KeyRound, ShieldCheck, Truck, Wifi, WifiOff } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { http } from "@/services/api/http";
@@ -199,6 +200,7 @@ export default function RelayToday({
    */
   footer?: React.ReactNode;
 }) {
+  const { t } = useTranslation();
   const [due, setDue] = useState<RelayAmountDue | null>(null);
   const [reviews, setReviews] = useState<ReviewSummary | null>(null);
   const [online, setOnline] = useState(() => navigator.onLine);
@@ -651,7 +653,7 @@ export default function RelayToday({
             <>
               {earnedLabel}
               {firstBlocker ? (
-                <> · {humaniserBlocage(firstBlocker)}</>
+                <> · {humaniserBlocage(firstBlocker, t)}</>
               ) : due.next_settlement_at ? (
                 <>
                   {locale === "en" ? " · payout expected " : " · versement prévu "}

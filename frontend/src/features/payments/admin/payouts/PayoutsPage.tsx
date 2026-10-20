@@ -17,6 +17,7 @@
 
 import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { adminFinanceApi } from '../../api/admin-finance.api';
 import type { ListParams } from '../../api/admin-finance.api';
@@ -50,6 +51,7 @@ const FILTRES: Record<string, string> = {
 export default function PayoutsPage({
   basePath = '/admin/finance',
 }: PayoutsPageProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const filtre = params.get('filter') ?? 'pending';
@@ -75,10 +77,10 @@ export default function PayoutsPage({
   const total = lignes.reduce((somme, ligne) => somme + ligne.amount_xaf, 0);
 
   const onglets: FilterTab[] = [
-    { key: 'pending', label: 'À approuver', urgent: true },
-    { key: 'approved', label: 'À exécuter' },
-    { key: 'incidents', label: 'Incidents' },
-    { key: 'all', label: 'Tous' },
+    { key: 'pending', label: t('pm1_payouts.tab_pending'), urgent: true },
+    { key: 'approved', label: t('pm1_payouts.tab_approved') },
+    { key: 'incidents', label: t('pm1_payouts.tab_incidents') },
+    { key: 'all', label: t('pm1_payouts.tab_all') },
   ];
 
   const confirmer = (motif: string) => {
@@ -87,12 +89,12 @@ export default function PayoutsPage({
     if (dialogue.mode === 'approve') {
       void action.run(
         () => adminFinanceApi.approvePayout(reference, motif),
-        'Versement approuvé.',
+        t('pm1_payouts.toast_approved'),
       );
     } else {
       void action.run(
         () => adminFinanceApi.executePayout(reference),
-        'Versement émis.',
+        t('pm1_payouts.toast_executed'),
       );
     }
   };
@@ -109,7 +111,7 @@ export default function PayoutsPage({
           aria-hidden="true"
           style={{ fontSize: 14, verticalAlign: -2, marginRight: 6 }}
         />
-        Centre financier
+        {t('pm1_payouts.back_to_finance_center')}
       </button>
 
       <div style={{
@@ -121,11 +123,13 @@ export default function PayoutsPage({
           <p style={{
             fontSize: 19, margin: 0, color: 'var(--text-primary, #1A1209)',
           }}>
-            Versements
+            {t('pm1_payouts.page_title')}
           </p>
           <p style={{ fontSize: 12.5, margin: '4px 0 0', color: FT.muted }}>
-            {data?.count ?? 0} demande{(data?.count ?? 0) > 1 ? 's' : ''}
-            {total > 0 && ` · ${formatXaf(total)} FCFA`}
+            {t((data?.count ?? 0) > 1 ? 'pm1_payouts.request_count_plural' : 'pm1_payouts.request_count', {
+              count: data?.count ?? 0,
+            })}
+            {total > 0 && t('pm1_payouts.total_amount_suffix', { amount: formatXaf(total) })}
           </p>
         </div>
         <FilterTabs
@@ -159,14 +163,14 @@ export default function PayoutsPage({
       }}>
         {loading && (
           <div style={{ padding: '2.5rem', textAlign: 'center' }}>
-            <span style={{ fontSize: 13, color: FT.faint }}>Chargement…</span>
+            <span style={{ fontSize: 13, color: FT.faint }}>{t('pm1_payouts.loading')}</span>
           </div>
         )}
 
         {!loading && error && (
           <EmptyState
             icon="alert-circle"
-            title="Impossible d'afficher les versements"
+            title={t('pm1_payouts.error_title')}
             description={error}
           />
         )}
@@ -175,10 +179,10 @@ export default function PayoutsPage({
           <EmptyState
             icon="send"
             title={filtre === 'pending'
-              ? 'Aucun versement en attente'
-              : 'Aucun versement'}
+              ? t('pm1_payouts.empty_title_pending')
+              : t('pm1_payouts.empty_title_all')}
             description={filtre === 'pending'
-              ? 'Tous les partenaires ont été réglés.'
+              ? t('pm1_payouts.empty_description_pending')
               : undefined}
           />
         )}
@@ -198,27 +202,27 @@ export default function PayoutsPage({
       <ApprovalDialog
         open={dialogue !== null}
         title={dialogue?.mode === 'execute'
-          ? 'Exécuter ce versement'
-          : 'Approuver ce versement'}
+          ? t('pm1_payouts.dialog_title_execute')
+          : t('pm1_payouts.dialog_title_approve')}
         amountXaf={dialogue?.payout.amount_xaf ?? 0}
         fields={dialogue ? [
           {
-            label: 'Bénéficiaire',
+            label: t('pm1_payouts.label_beneficiary'),
             value: dialogue.payout.payee.display_label
               || dialogue.payout.payee.payee_code,
           },
           {
-            label: 'Destinataire',
+            label: t('pm1_payouts.label_recipient'),
             value: `${dialogue.payout.payee_msisdn_masked} · ${
               dialogue.payout.payee_operator}`,
           },
-          { label: 'Référence', value: dialogue.payout.reference },
+          { label: t('pm1_payouts.label_reference'), value: dialogue.payout.reference },
         ] : []}
-        confirmLabel={dialogue?.mode === 'execute' ? 'Exécuter' : 'Approuver'}
-        reasonPlaceholder="Vérifié : relevé conforme au lot."
+        confirmLabel={dialogue?.mode === 'execute' ? t('pm1_payouts.action_execute') : t('pm1_payouts.action_approve')}
+        reasonPlaceholder={t('pm1_payouts.reason_placeholder_default')}
         warning={dialogue?.mode === 'execute'
-          ? 'Une fois émis, ce versement ne peut pas être annulé.'
-          : 'Le demandeur ne peut pas approuver sa propre demande.'}
+          ? t('pm1_payouts.warning_execute_irreversible')
+          : t('pm1_payouts.warning_approve_self')}
         running={action.running}
         error={action.error}
         onConfirm={confirmer}

@@ -110,6 +110,13 @@ jobs:
           GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
           VITE_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
 
+          # ── Google Maps (carte point relais / checkout) ───────────────
+          VITE_GOOGLE_MAPS_API_KEY=${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
+          VITE_MAP_PROVIDER=${{ vars.VITE_MAP_PROVIDER || 'google' }}
+
+          # ── Traduction automatique (Google Cloud Translation) ─────────
+          GOOGLE_TRANSLATE_API_KEY=${{ secrets.GOOGLE_TRANSLATE_API_KEY }}
+
           # ── Assistant IA (OpenRouter) ────────────────────────────────
           OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
           OPENROUTER_MODEL=${{ vars.OPENROUTER_MODEL }}
@@ -175,6 +182,10 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ vars.SSH_PORT || 22 }}
+          # Par défaut cette action coupe la connexion après 10 minutes.
+          # Le build complet (8 images Docker, dont 6 frontends, sans cache)
+          # a fini par dépasser cette limite — on l'augmente avec de la marge.
+          command_timeout: 25m
           script: |
             set -e
             cd "${{ vars.TARGET_PATH }}"

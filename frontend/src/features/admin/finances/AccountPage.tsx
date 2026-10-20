@@ -2,6 +2,7 @@
 // Compte BelivaY — solde plateforme, escrow, santé système
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Landmark, RefreshCw, DollarSign, Lock, TrendingUp,
   ArrowDownToLine, Shield, CheckCircle, AlertTriangle,
@@ -86,6 +87,7 @@ function KpiCard({ label, value, sub, accent, icon: Icon, T }: {
 
 export default function AccountPage() {
   const T             = useAdminTheme();
+  const { t }          = useTranslation();
   const { showToast } = useToast();
   const toastRef      = useRef(showToast);
   useEffect(() => { toastRef.current = showToast; });
@@ -102,7 +104,7 @@ export default function AccountPage() {
       );
       setStats(data);
     } catch {
-      toastRef.current('Erreur chargement du compte', 'error');
+      toastRef.current(t('ad6_fin_account.toast_error_load'), 'error');
     } finally {
       setLoading(false);
     }
@@ -129,12 +131,12 @@ export default function AccountPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: T.text, marginBottom: 4 }}>
-            Compte BelivaY
+            {t('ad6_fin_account.title')}
           </h1>
           <p style={{ fontSize: 13, color: T.muted }}>
-            Finances de la plateforme · Commission actuelle : <span style={{ color: T.red, fontWeight: 700 }}>{stats.commission_rate}%</span>
+            {t('ad6_fin_account.subtitle_prefix')} <span style={{ color: T.red, fontWeight: 700 }}>{stats.commission_rate}%</span>
             {stats.maintenance_mode && (
-              <span style={{ color: '#EF4444', fontWeight: 700, marginLeft: 12 }}>· Mode maintenance ACTIF</span>
+              <span style={{ color: '#EF4444', fontWeight: 700, marginLeft: 12 }}>{t('ad6_fin_account.maintenance_active')}</span>
             )}
           </p>
         </div>
@@ -143,7 +145,7 @@ export default function AccountPage() {
           style={{ background: 'rgba(220,38,38,0.1)', color: T.red, border: '1px solid rgba(220,38,38,0.25)' }}
           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.18)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.1)')}>
-          <RefreshCw size={13} /> Actualiser
+          <RefreshCw size={13} /> {t('ad6_fin_account.refresh')}
         </button>
       </div>
 
@@ -152,9 +154,9 @@ export default function AccountPage() {
         <div className="flex items-start gap-3 p-4 rounded-2xl" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' }}>
           <AlertTriangle size={18} style={{ color: '#EF4444', flexShrink: 0, marginTop: 1 }} />
           <div>
-            <p style={{ fontSize: 13.5, fontWeight: 700, color: '#EF4444' }}>Plateforme en mode maintenance</p>
+            <p style={{ fontSize: 13.5, fontWeight: 700, color: '#EF4444' }}>{t('ad6_fin_account.maintenance_banner_title')}</p>
             <p style={{ fontSize: 12.5, color: T.muted, marginTop: 2 }}>
-              Les clients ne peuvent pas accéder à BelivaY. Désactivez dans Paramètres dès que les travaux sont terminés.
+              {t('ad6_fin_account.maintenance_banner_desc')}
             </p>
           </div>
         </div>
@@ -164,26 +166,26 @@ export default function AccountPage() {
       <div className="rounded-2xl p-5" style={{ background: 'linear-gradient(135deg,#0F172A 0%,#1E293B 100%)', border: '1px solid rgba(255,255,255,0.06)' }}>
         <div className="flex items-center gap-2 mb-5">
           <Landmark size={16} style={{ color: T.red }} />
-          <span style={{ fontFamily: "'Syne',sans-serif", fontSize: 15, fontWeight: 800, color: '#F9FAFB' }}>Finances de la plateforme</span>
+          <span style={{ fontFamily: "'Syne',sans-serif", fontSize: 15, fontWeight: 800, color: '#F9FAFB' }}>{t('ad6_fin_account.platform_finances_title')}</span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
             {
-              label: 'GMV Total',
+              label: t('ad6_fin_account.kpi_gmv_total_label'),
               value: fmtXaf(stats.total_gmv),
-              sub:   'Volume brut de toutes les ventes',
+              sub:   t('ad6_fin_account.kpi_gmv_total_sub'),
               accent: '#3B82F6',
             },
             {
-              label: 'Commissions Générées',
+              label: t('ad6_fin_account.kpi_commissions_label'),
               value: fmtXaf(stats.total_commissions_earned),
-              sub:   `${stats.commission_rate}% sur chaque vente`,
+              sub:   t('ad6_fin_account.kpi_commissions_sub', { rate: stats.commission_rate }),
               accent: T.red,
             },
             {
-              label: 'Revenu Net Plateforme',
+              label: t('ad6_fin_account.kpi_net_revenue_label'),
               value: fmtXaf(stats.net_platform_revenue),
-              sub:   'Commissions − retraits vendeurs',
+              sub:   t('ad6_fin_account.kpi_net_revenue_sub'),
               accent: '#10B981',
             },
           ].map((k, i) => (
@@ -203,13 +205,13 @@ export default function AccountPage() {
       {/* ─── KPIs Escrow ─────────────────────────────────────────────────── */}
       <div>
         <p style={{ fontSize: 12.5, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 12 }}>
-          État de l'Escrow
+          {t('ad6_fin_account.escrow_state_title')}
         </p>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <KpiCard label="Fonds bloqués"       value={fmtXaf(stats.total_escrow_blocked)}          sub="Commandes en cours"           accent="#F59E0B" icon={Lock}            T={T} />
-          <KpiCard label="Libération en cours" value={fmtXaf(stats.total_escrow_release_pending)}   sub="Délai 24h post-livraison"     accent="#3B82F6" icon={Clock}           T={T} />
-          <KpiCard label="Libéré aux vendeurs" value={fmtXaf(stats.total_escrow_released)}          sub="Fonds débloqués"              accent="#10B981" icon={CheckCircle}     T={T} />
-          <KpiCard label="Retraits approuvés"  value={fmtXaf(stats.total_withdrawals_approved)}     sub="Versés aux vendeurs"          accent="#8B5CF6" icon={ArrowDownToLine} T={T} />
+          <KpiCard label={t('ad6_fin_account.escrow_blocked_label')}       value={fmtXaf(stats.total_escrow_blocked)}          sub={t('ad6_fin_account.escrow_blocked_sub')}           accent="#F59E0B" icon={Lock}            T={T} />
+          <KpiCard label={t('ad6_fin_account.escrow_release_pending_label')} value={fmtXaf(stats.total_escrow_release_pending)}   sub={t('ad6_fin_account.escrow_release_pending_sub')}     accent="#3B82F6" icon={Clock}           T={T} />
+          <KpiCard label={t('ad6_fin_account.escrow_released_label')} value={fmtXaf(stats.total_escrow_released)}          sub={t('ad6_fin_account.escrow_released_sub')}              accent="#10B981" icon={CheckCircle}     T={T} />
+          <KpiCard label={t('ad6_fin_account.withdrawals_approved_label')}  value={fmtXaf(stats.total_withdrawals_approved)}     sub={t('ad6_fin_account.withdrawals_approved_sub')}          accent="#8B5CF6" icon={ArrowDownToLine} T={T} />
         </div>
       </div>
 
@@ -219,11 +221,11 @@ export default function AccountPage() {
           <ArrowDownToLine size={18} style={{ color: '#F59E0B', flexShrink: 0, marginTop: 1 }} />
           <div>
             <p style={{ fontSize: 13.5, fontWeight: 700, color: '#F59E0B' }}>
-              {stats.pending_withdrawals_count} retrait{stats.pending_withdrawals_count > 1 ? 's' : ''} en attente d'approbation
+              {stats.pending_withdrawals_count} {t(stats.pending_withdrawals_count > 1 ? 'ad6_fin_account.pending_withdrawal_plural' : 'ad6_fin_account.pending_withdrawal')}
             </p>
             <p style={{ fontSize: 12.5, color: T.muted, marginTop: 2 }}>
-              Montant total : <strong style={{ color: T.text }}>{fmtXaf(stats.pending_withdrawals_amount)}</strong> — 
-              à traiter dans la section <a href="/admin/vendors/withdrawals" style={{ color: '#F59E0B', fontWeight: 600, marginLeft: 4 }}>Retraits vendeurs →</a>
+              {t('ad6_fin_account.pending_withdrawal_amount_prefix')} <strong style={{ color: T.text }}>{fmtXaf(stats.pending_withdrawals_amount)}</strong> —
+              {t('ad6_fin_account.pending_withdrawal_link_prefix')} <a href="/admin/vendors/withdrawals" style={{ color: '#F59E0B', fontWeight: 600, marginLeft: 4 }}>{t('ad6_fin_account.pending_withdrawal_link')}</a>
             </p>
           </div>
         </div>
@@ -236,17 +238,17 @@ export default function AccountPage() {
         <div className="rounded-2xl overflow-hidden" style={{ background: T.card, border: `1px solid ${T.border}` }}>
           <div className="flex items-center gap-2 px-5 py-3.5" style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
             <Activity size={14} style={{ color: T.red }} />
-            <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Santé Système</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad6_fin_account.system_health_title')}</span>
           </div>
           <div className="p-5 space-y-0">
             {[
-              { label: 'Base de données',     value: stats.db_status === 'ok' ? 'Opérationnelle' : 'Dégradée', accent: stats.db_status === 'ok' ? '#10B981' : '#EF4444', icon: Shield },
-              { label: 'Utilisateurs totaux', value: stats.total_users.toLocaleString('fr-FR'),               accent: '#3B82F6', icon: Activity },
-              { label: 'Vendeurs actifs',     value: stats.active_vendors.toLocaleString('fr-FR'),            accent: '#F47920', icon: Activity },
-              { label: 'Commandes totales',   value: stats.total_orders.toLocaleString('fr-FR'),              accent: '#8B5CF6', icon: TrendingUp },
-              { label: 'Commandes payées',    value: stats.paid_orders.toLocaleString('fr-FR'),               accent: '#10B981', icon: CheckCircle },
-              { label: 'Litiges en cours',    value: stats.pending_disputes.toLocaleString('fr-FR'),          accent: stats.pending_disputes > 0 ? '#EF4444' : '#10B981', icon: AlertTriangle },
-              { label: 'Dernière commande',   value: fmtDate(stats.last_order_at),                            accent: T.muted, icon: Clock },
+              { label: t('ad6_fin_account.db_label'),     value: stats.db_status === 'ok' ? t('ad6_fin_account.db_ok') : t('ad6_fin_account.db_degraded'), accent: stats.db_status === 'ok' ? '#10B981' : '#EF4444', icon: Shield },
+              { label: t('ad6_fin_account.total_users_label'), value: stats.total_users.toLocaleString('fr-FR'),               accent: '#3B82F6', icon: Activity },
+              { label: t('ad6_fin_account.active_vendors_label'),     value: stats.active_vendors.toLocaleString('fr-FR'),            accent: '#F47920', icon: Activity },
+              { label: t('ad6_fin_account.total_orders_label'),   value: stats.total_orders.toLocaleString('fr-FR'),              accent: '#8B5CF6', icon: TrendingUp },
+              { label: t('ad6_fin_account.paid_orders_label'),    value: stats.paid_orders.toLocaleString('fr-FR'),               accent: '#10B981', icon: CheckCircle },
+              { label: t('ad6_fin_account.pending_disputes_label'),    value: stats.pending_disputes.toLocaleString('fr-FR'),          accent: stats.pending_disputes > 0 ? '#EF4444' : '#10B981', icon: AlertTriangle },
+              { label: t('ad6_fin_account.last_order_label'),   value: fmtDate(stats.last_order_at),                            accent: T.muted, icon: Clock },
             ].map(({ label, value, accent, icon: Icon }, i, arr) => (
               <div key={i} className="flex items-center justify-between py-3"
                 style={{ borderBottom: i < arr.length - 1 ? `1px solid ${T.border}` : 'none' }}>
@@ -266,7 +268,7 @@ export default function AccountPage() {
         <div className="rounded-2xl overflow-hidden" style={{ background: T.card, border: `1px solid ${T.border}` }}>
           <div className="flex items-center gap-2 px-5 py-3.5" style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
             <DollarSign size={14} style={{ color: T.red }} />
-            <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Flux de Trésorerie</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad6_fin_account.cashflow_title')}</span>
           </div>
           <div className="p-5 space-y-4">
 
@@ -278,18 +280,18 @@ export default function AccountPage() {
               return (
                 <div>
                   <p style={{ fontSize: 12, fontWeight: 700, color: T.muted, marginBottom: 8 }}>
-                    Répartition du GMV Total
+                    {t('ad6_fin_account.gmv_distribution_title')}
                   </p>
                   <div style={{ height: 12, borderRadius: 6, overflow: 'hidden', background: T.border, display: 'flex' }}>
-                    <div style={{ width: `${commPct}%`,   background: T.red,      transition: 'width 0.5s' }} title={`Commissions: ${commPct}%`} />
-                    <div style={{ width: `${escrowPct}%`, background: '#F59E0B',  transition: 'width 0.5s' }} title={`Escrow: ${escrowPct}%`} />
-                    <div style={{ width: `${relPct}%`,    background: '#10B981',  transition: 'width 0.5s' }} title={`Libéré: ${relPct}%`} />
+                    <div style={{ width: `${commPct}%`,   background: T.red,      transition: 'width 0.5s' }} title={`${t('ad6_fin_account.legend_commissions')}: ${commPct}%`} />
+                    <div style={{ width: `${escrowPct}%`, background: '#F59E0B',  transition: 'width 0.5s' }} title={`${t('ad6_fin_account.legend_escrow')}: ${escrowPct}%`} />
+                    <div style={{ width: `${relPct}%`,    background: '#10B981',  transition: 'width 0.5s' }} title={`${t('ad6_fin_account.legend_released')}: ${relPct}%`} />
                   </div>
                   <div className="flex items-center gap-4 mt-2 flex-wrap">
                     {[
-                      { color: T.red,     label: `Commissions ${commPct}%` },
-                      { color: '#F59E0B', label: `Escrow ${escrowPct}%` },
-                      { color: '#10B981', label: `Libéré ${relPct}%` },
+                      { color: T.red,     label: `${t('ad6_fin_account.legend_commissions')} ${commPct}%` },
+                      { color: '#F59E0B', label: `${t('ad6_fin_account.legend_escrow')} ${escrowPct}%` },
+                      { color: '#10B981', label: `${t('ad6_fin_account.legend_released')} ${relPct}%` },
                     ].map((l, i) => (
                       <div key={i} className="flex items-center gap-1.5">
                         <div style={{ width: 10, height: 10, borderRadius: 2, background: l.color }} />
@@ -303,10 +305,10 @@ export default function AccountPage() {
 
             {/* Lignes détail */}
             {[
-              { label: 'GMV Total',            value: fmtXaf(stats.total_gmv),                    accent: '#3B82F6' },
-              { label: '− Commissions (-)',     value: fmtXaf(stats.total_commissions_earned),     accent: T.red },
-              { label: '− Retraits versés (-)', value: fmtXaf(stats.total_withdrawals_approved),  accent: '#8B5CF6' },
-              { label: '= Revenu Net',          value: fmtXaf(stats.net_platform_revenue),         accent: '#10B981' },
+              { label: t('ad6_fin_account.detail_gmv_total'),            value: fmtXaf(stats.total_gmv),                    accent: '#3B82F6' },
+              { label: t('ad6_fin_account.detail_commissions'),     value: fmtXaf(stats.total_commissions_earned),     accent: T.red },
+              { label: t('ad6_fin_account.detail_withdrawals'), value: fmtXaf(stats.total_withdrawals_approved),  accent: '#8B5CF6' },
+              { label: t('ad6_fin_account.detail_net_revenue'),          value: fmtXaf(stats.net_platform_revenue),         accent: '#10B981' },
             ].map(({ label, value, accent }, i) => (
               <div key={i} className="flex items-center justify-between py-2.5"
                 style={{ borderBottom: i < 3 ? `1px solid ${T.border}` : 'none' }}>

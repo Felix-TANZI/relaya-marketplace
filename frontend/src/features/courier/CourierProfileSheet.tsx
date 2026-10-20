@@ -13,6 +13,7 @@
  * que soit le theme : c'est le parti pris du chrome livreur.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   BadgeCheck,
   Camera,
@@ -177,115 +178,6 @@ function formatMembership(iso: string | null, locale: "fr" | "en") {
   return age ? `${capitalized} · ${age}` : capitalized;
 }
 
-const COPY = {
-  fr: {
-    title: "Mon compte",
-    subtitle: "Profil, permissions, langue et application",
-    profileTitle: "Profil du livreur",
-    rows: {
-      name: "Nom",
-      username: "Identifiant",
-      city: "Ville",
-      vehicle: "Vehicule",
-      zones: "Zones",
-      account: "Statut du compte",
-      availability: "Disponibilite",
-      trust: "Trust Score",
-      since: "Livreur depuis",
-    },
-    todo: "A completer",
-    online: "Disponible",
-    offline: "Hors ligne",
-    operationalHint: "Mode disponible, ville, zones et vehicule se reglent dans l'onglet Parametres.",
-    securityTitle: "Securite & permissions",
-    twoFactor: "Double authentification (2FA)",
-    twoFactorHint: "Code a usage unique a chaque connexion sensible",
-    gps: "Localisation GPS",
-    gpsHint: "Requise pour le suivi de tournee et les preuves",
-    camera: "Appareil photo",
-    cameraHint: "Requis pour scanner les QR et photographier les preuves",
-    darkTheme: "Theme sombre",
-    darkThemeHint: "Confort visuel en faible lumiere",
-    language: "Langue",
-    languageHint: "Francais / English",
-    otpSent: "Code envoye a",
-    otpPlaceholder: "Code a 6 chiffres",
-    otpConfirm: "Activer la 2FA",
-    passwordPlaceholder: "Mot de passe actuel",
-    otpDisable: "Desactiver la 2FA",
-    twoFactorOn: "Double authentification activee.",
-    twoFactorOff: "Double authentification desactivee.",
-    cancel: "Annuler",
-    certTitle: "Livreur Verifie BelivaY",
-    certCaption: "Scannez pour verifier l'authenticite",
-    certPending: "Certificat disponible des la validation du dossier livreur.",
-    appTitle: "Application",
-    pwaBody: "Installer l'app (PWA) sur votre telephone pour un acces hors-connexion rapide en tournee.",
-    pwaAction: "Installer l'application",
-    pwaUnavailable: "Deja installee ou non proposee par ce navigateur.",
-    version: "Version",
-    compliance: "Conformite",
-    logout: "Se deconnecter",
-    changePhoto: "Changer la photo",
-    close: "Fermer",
-    sendFailed: "Envoi du code impossible.",
-    actionFailed: "Operation impossible.",
-  },
-  en: {
-    title: "My account",
-    subtitle: "Profile, permissions, language and app",
-    profileTitle: "Courier profile",
-    rows: {
-      name: "Name",
-      username: "Username",
-      city: "City",
-      vehicle: "Vehicle",
-      zones: "Areas",
-      account: "Account status",
-      availability: "Availability",
-      trust: "Trust score",
-      since: "Courier since",
-    },
-    todo: "To complete",
-    online: "Available",
-    offline: "Offline",
-    operationalHint: "Availability, city, areas and vehicle are set in the Settings tab.",
-    securityTitle: "Security & permissions",
-    twoFactor: "Two-factor authentication (2FA)",
-    twoFactorHint: "One-time code on every sensitive sign-in",
-    gps: "GPS location",
-    gpsHint: "Required for route tracking and proofs",
-    camera: "Camera",
-    cameraHint: "Required to scan QR codes and capture proofs",
-    darkTheme: "Dark theme",
-    darkThemeHint: "Easier on the eyes in low light",
-    language: "Language",
-    languageHint: "Francais / English",
-    otpSent: "Code sent to",
-    otpPlaceholder: "6-digit code",
-    otpConfirm: "Enable 2FA",
-    passwordPlaceholder: "Current password",
-    otpDisable: "Disable 2FA",
-    twoFactorOn: "Two-factor authentication enabled.",
-    twoFactorOff: "Two-factor authentication disabled.",
-    cancel: "Cancel",
-    certTitle: "BelivaY verified courier",
-    certCaption: "Scan to check authenticity",
-    certPending: "Certificate available once the courier file is approved.",
-    appTitle: "Application",
-    pwaBody: "Install the app (PWA) on your phone for fast offline access on the road.",
-    pwaAction: "Install the app",
-    pwaUnavailable: "Already installed, or not offered by this browser.",
-    version: "Version",
-    compliance: "Compliance",
-    logout: "Log out",
-    changePhoto: "Change photo",
-    close: "Close",
-    sendFailed: "Could not send the code.",
-    actionFailed: "Action failed.",
-  },
-};
-
 export function CourierSettingsContent({
   locale,
   theme,
@@ -304,7 +196,7 @@ export function CourierSettingsContent({
   onFeedback,
   footer,
 }: CourierSettingsProps) {
-  const t = COPY[locale];
+  const { t } = useTranslation();
   const [twoFactor, setTwoFactor] = useState(false);
   const [twoFactorBusy, setTwoFactorBusy] = useState(false);
   /** null = aucun formulaire ouvert ; sinon on attend un OTP ou un mot de passe. */
@@ -374,13 +266,13 @@ export function CourierSettingsContent({
       await http("/api/auth/2fa/send-code/", { method: "POST", body: JSON.stringify({ purpose: "2FA_ENABLE" }) });
       setTwoFactorStep("enable");
       setTwoFactorInput("");
-      onFeedback(`${t.otpSent} ${courier.email}.`);
+      onFeedback(t("cr1_profile_sheet.otp_sent_to", { email: courier.email }));
     } catch (error) {
-      onFeedback(error instanceof Error ? error.message : t.sendFailed);
+      onFeedback(error instanceof Error ? error.message : t("cr1_profile_sheet.send_failed"));
     } finally {
       setTwoFactorBusy(false);
     }
-  }, [twoFactor, courier.email, onFeedback, t.otpSent, t.sendFailed]);
+  }, [twoFactor, courier.email, onFeedback, t]);
 
   const confirmTwoFactor = useCallback(async () => {
     const enabling = twoFactorStep === "enable";
@@ -397,40 +289,51 @@ export function CourierSettingsContent({
       setTwoFactor(enabling);
       setTwoFactorStep(null);
       setTwoFactorInput("");
-      onFeedback(enabling ? t.twoFactorOn : t.twoFactorOff);
+      onFeedback(enabling ? t("cr1_profile_sheet.two_factor_on") : t("cr1_profile_sheet.two_factor_off"));
     } catch (error) {
-      onFeedback(error instanceof Error ? error.message : t.actionFailed);
+      onFeedback(error instanceof Error ? error.message : t("cr1_profile_sheet.action_failed"));
     } finally {
       setTwoFactorBusy(false);
     }
-  }, [twoFactorStep, twoFactorInput, onFeedback, t.twoFactorOn, t.twoFactorOff, t.actionFailed]);
+  }, [twoFactorStep, twoFactorInput, onFeedback, t]);
 
   const install = useCallback(async () => {
     if (!installEvent) {
-      onFeedback(t.pwaUnavailable);
+      onFeedback(t("cr1_profile_sheet.pwa_unavailable"));
       return;
     }
     await installEvent.prompt();
     const { outcome } = await installEvent.userChoice;
     if (outcome === "accepted") setInstallEvent(null);
-  }, [installEvent, onFeedback, t.pwaUnavailable]);
+  }, [installEvent, onFeedback, t]);
 
   const membership = formatMembership(courier.memberSince, locale);
   const zones = courier.zones.filter(Boolean).join(" · ");
 
   return (
     <div className="space-y-4">
-      <Card icon={User} title={t.profileTitle}>
+      <Card icon={User} title={t("cr1_profile_sheet.profile_title")}>
         <div>
-          <Row label={t.rows.name} value={courier.name} />
-          <Row label={t.rows.username} value={courier.username} />
-          <Row label={t.rows.city} value={courier.city} />
-          <Row label={t.rows.vehicle} value={courier.vehicle} />
-          <Row label={t.rows.zones} value={zones || t.todo} muted={!zones} />
-          <Row label={t.rows.account} value={courier.accountStatus} />
-          <Row label={t.rows.availability} value={courier.online ? t.online : t.offline} />
-          <Row label={t.rows.trust} value={courier.trustScore || t.todo} muted={!courier.trustScore} />
-          <Row label={t.rows.since} value={membership || t.todo} muted={!membership} />
+          <Row label={t("cr1_profile_sheet.rows.name")} value={courier.name} />
+          <Row label={t("cr1_profile_sheet.rows.username")} value={courier.username} />
+          <Row label={t("cr1_profile_sheet.rows.city")} value={courier.city} />
+          <Row label={t("cr1_profile_sheet.rows.vehicle")} value={courier.vehicle} />
+          <Row label={t("cr1_profile_sheet.rows.zones")} value={zones || t("cr1_profile_sheet.todo")} muted={!zones} />
+          <Row label={t("cr1_profile_sheet.rows.account")} value={courier.accountStatus} />
+          <Row
+            label={t("cr1_profile_sheet.rows.availability")}
+            value={courier.online ? t("cr1_profile_sheet.online") : t("cr1_profile_sheet.offline")}
+          />
+          <Row
+            label={t("cr1_profile_sheet.rows.trust")}
+            value={courier.trustScore || t("cr1_profile_sheet.todo")}
+            muted={!courier.trustScore}
+          />
+          <Row
+            label={t("cr1_profile_sheet.rows.since")}
+            value={membership || t("cr1_profile_sheet.todo")}
+            muted={!membership}
+          />
         </div>
 
         {/* La feuille ne double pas l'onglet Parametres : on y renvoie plutot
@@ -441,14 +344,19 @@ export function CourierSettingsContent({
           className="mt-3 flex w-full items-start gap-2 rounded-[14px] border border-emerald-500/15 bg-emerald-500/5 p-3 text-left transition active:scale-[.99] hover:bg-emerald-500/10"
         >
           <MapPin size={15} className="mt-0.5 flex-shrink-0 text-emerald-300" />
-          <span className="text-[12px] leading-snug text-white/75">{t.operationalHint}</span>
+          <span className="text-[12px] leading-snug text-white/75">{t("cr1_profile_sheet.operational_hint")}</span>
           <ChevronRight size={15} className="mt-0.5 flex-shrink-0 text-white/35" />
         </button>
       </Card>
 
-      <Card icon={ShieldCheck} title={t.securityTitle}>
-        <SettingRow title={t.twoFactor} hint={t.twoFactorHint}>
-          <Toggle checked={twoFactor} onChange={startTwoFactor} label={t.twoFactor} busy={twoFactorBusy} />
+      <Card icon={ShieldCheck} title={t("cr1_profile_sheet.security_title")}>
+        <SettingRow title={t("cr1_profile_sheet.two_factor")} hint={t("cr1_profile_sheet.two_factor_hint")}>
+          <Toggle
+            checked={twoFactor}
+            onChange={startTwoFactor}
+            label={t("cr1_profile_sheet.two_factor")}
+            busy={twoFactorBusy}
+          />
         </SettingRow>
 
         {twoFactorStep ? (
@@ -459,7 +367,11 @@ export function CourierSettingsContent({
               type={twoFactorStep === "enable" ? "text" : "password"}
               inputMode={twoFactorStep === "enable" ? "numeric" : undefined}
               autoComplete={twoFactorStep === "enable" ? "one-time-code" : "current-password"}
-              placeholder={twoFactorStep === "enable" ? t.otpPlaceholder : t.passwordPlaceholder}
+              placeholder={
+                twoFactorStep === "enable"
+                  ? t("cr1_profile_sheet.otp_placeholder")
+                  : t("cr1_profile_sheet.password_placeholder")
+              }
               className="w-full rounded-[10px] border border-white/10 bg-white/5 px-3 py-2 text-sm font-bold text-white outline-none placeholder:text-[#8B949E]"
             />
             <div className="mt-2 flex gap-2">
@@ -469,14 +381,14 @@ export function CourierSettingsContent({
                 disabled={twoFactorBusy || twoFactorInput.trim().length < 4}
                 className="flex-1 rounded-[10px] bg-emerald-500 px-3 py-2 text-[13px] font-black text-[#022c22] disabled:opacity-50"
               >
-                {twoFactorStep === "enable" ? t.otpConfirm : t.otpDisable}
+                {twoFactorStep === "enable" ? t("cr1_profile_sheet.otp_confirm") : t("cr1_profile_sheet.otp_disable")}
               </button>
               <button
                 type="button"
                 onClick={() => setTwoFactorStep(null)}
                 className="rounded-[10px] border border-white/15 px-3 py-2 text-[13px] font-bold text-white/80"
               >
-                {t.cancel}
+                {t("cr1_profile_sheet.cancel")}
               </button>
             </div>
           </div>
@@ -484,19 +396,29 @@ export function CourierSettingsContent({
 
         {/* GPS et camera sont de vraies permissions du profil livreur : la
             bascule les synchronise avec le backend, comme l'onglet Parametres. */}
-        <SettingRow title={t.gps} hint={t.gpsHint}>
-          <Toggle checked={gpsGranted} onChange={onToggleGps} label={t.gps} busy={savingLabel === "gps"} />
+        <SettingRow title={t("cr1_profile_sheet.gps")} hint={t("cr1_profile_sheet.gps_hint")}>
+          <Toggle
+            checked={gpsGranted}
+            onChange={onToggleGps}
+            label={t("cr1_profile_sheet.gps")}
+            busy={savingLabel === "gps"}
+          />
         </SettingRow>
 
-        <SettingRow title={t.camera} hint={t.cameraHint}>
-          <Toggle checked={cameraGranted} onChange={onToggleCamera} label={t.camera} busy={savingLabel === "camera"} />
+        <SettingRow title={t("cr1_profile_sheet.camera")} hint={t("cr1_profile_sheet.camera_hint")}>
+          <Toggle
+            checked={cameraGranted}
+            onChange={onToggleCamera}
+            label={t("cr1_profile_sheet.camera")}
+            busy={savingLabel === "camera"}
+          />
         </SettingRow>
 
-        <SettingRow title={t.darkTheme} hint={t.darkThemeHint}>
-          <Toggle checked={theme === "dark"} onChange={onToggleTheme} label={t.darkTheme} />
+        <SettingRow title={t("cr1_profile_sheet.dark_theme")} hint={t("cr1_profile_sheet.dark_theme_hint")}>
+          <Toggle checked={theme === "dark"} onChange={onToggleTheme} label={t("cr1_profile_sheet.dark_theme")} />
         </SettingRow>
 
-        <SettingRow title={t.language} hint={t.languageHint}>
+        <SettingRow title={t("cr1_profile_sheet.language")} hint={t("cr1_profile_sheet.language_hint")}>
           <div className="flex flex-shrink-0 overflow-hidden rounded-[10px] border border-white/15">
             {(["fr", "en"] as const).map((code) => (
               <button
@@ -528,7 +450,7 @@ export function CourierSettingsContent({
         </div>
         <h3 className="mt-3 flex items-center justify-center gap-1.5 text-[15px] font-extrabold text-white">
           <BadgeCheck size={16} className="flex-shrink-0 text-emerald-300" />
-          {t.certTitle}
+          {t("cr1_profile_sheet.cert_title")}
         </h3>
         <p className="mt-1 text-[12px] text-[#8B949E]">
           {courier.name}
@@ -536,17 +458,21 @@ export function CourierSettingsContent({
         </p>
         {qrDataUrl ? (
           <>
-            <img src={qrDataUrl} alt={t.certCaption} className="mx-auto mt-4 h-36 w-36 rounded-[14px] bg-white p-1.5" />
-            <p className="mt-2 text-[11px] text-[#8B949E]">{t.certCaption}</p>
+            <img
+              src={qrDataUrl}
+              alt={t("cr1_profile_sheet.cert_caption")}
+              className="mx-auto mt-4 h-36 w-36 rounded-[14px] bg-white p-1.5"
+            />
+            <p className="mt-2 text-[11px] text-[#8B949E]">{t("cr1_profile_sheet.cert_caption")}</p>
           </>
         ) : (
           <p className="mt-4 rounded-[14px] border border-dashed border-emerald-500/25 p-4 text-[12px] text-white/60">
-            {t.certPending}
+            {t("cr1_profile_sheet.cert_pending")}
           </p>
         )}
         <label className="tap-target mt-4 inline-flex cursor-pointer items-center justify-center gap-2 rounded-[12px] border border-emerald-500/25 bg-white/5 px-4 py-2 text-[13px] font-bold text-emerald-300 transition active:scale-95 hover:bg-white/10">
           <Camera size={15} />
-          {t.changePhoto}
+          {t("cr1_profile_sheet.change_photo")}
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
@@ -560,10 +486,10 @@ export function CourierSettingsContent({
         </label>
       </section>
 
-      <Card icon={Smartphone} title={t.appTitle}>
+      <Card icon={Smartphone} title={t("cr1_profile_sheet.app_title")}>
         <div className="flex items-start gap-2 rounded-[14px] border border-emerald-500/15 bg-emerald-500/5 p-3">
           <Download size={15} className="mt-0.5 flex-shrink-0 text-emerald-300" />
-          <p className="text-[12px] leading-snug text-white/75">{t.pwaBody}</p>
+          <p className="text-[12px] leading-snug text-white/75">{t("cr1_profile_sheet.pwa_body")}</p>
         </div>
         <button
           type="button"
@@ -572,17 +498,19 @@ export function CourierSettingsContent({
           className="tap-target mt-3 flex w-full items-center justify-center gap-2 rounded-[12px] bg-emerald-500 px-4 py-2.5 text-[13px] font-black text-[#022c22] transition active:scale-[.98] disabled:bg-white/10 disabled:text-[#8B949E]"
         >
           <Smartphone size={15} />
-          {t.pwaAction}
+          {t("cr1_profile_sheet.pwa_action")}
         </button>
-        {!installEvent ? <p className="mt-1.5 text-center text-[11px] text-[#8B949E]">{t.pwaUnavailable}</p> : null}
+        {!installEvent ? (
+          <p className="mt-1.5 text-center text-[11px] text-[#8B949E]">{t("cr1_profile_sheet.pwa_unavailable")}</p>
+        ) : null}
 
         <div className="mt-3">
-          <Row label={t.version} value={footer[0] || "—"} />
+          <Row label={t("cr1_profile_sheet.version")} value={footer[0] || "—"} />
           <div className="flex items-start justify-between gap-4 py-2.5">
-            <span className="flex-shrink-0 text-[13px] text-[#8B949E]">{t.compliance}</span>
+            <span className="flex-shrink-0 text-[13px] text-[#8B949E]">{t("cr1_profile_sheet.compliance")}</span>
             <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-black text-emerald-300">
               <CheckCircle2 size={12} />
-              ANTIC · OHADA · Anonymat V5
+              {t("cr1_profile_sheet.compliance_badge")}
             </span>
           </div>
         </div>
@@ -593,7 +521,7 @@ export function CourierSettingsContent({
           className="tap-target mt-2 flex w-full items-center justify-center gap-2 rounded-[12px] border border-red-500/25 bg-red-500/10 px-4 py-2.5 text-[13px] font-black text-red-300 transition active:scale-[.98] hover:bg-red-500/15"
         >
           <LogOut size={15} />
-          {t.logout}
+          {t("cr1_profile_sheet.logout")}
         </button>
       </Card>
 
@@ -619,7 +547,7 @@ export default function CourierProfileSheet({
   ...content
 }: CourierSettingsProps & { open: boolean; onClose: () => void }) {
   const panelRef = useRef<HTMLDivElement>(null);
-  const t = COPY[content.locale];
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (!open) return;
@@ -644,7 +572,7 @@ export default function CourierProfileSheet({
       <button
         type="button"
         tabIndex={open ? 0 : -1}
-        aria-label={t.close}
+        aria-label={t("cr1_profile_sheet.close")}
         onClick={onClose}
         className={`absolute inset-0 h-full w-full cursor-default bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${
           open ? "opacity-100" : "opacity-0"
@@ -654,7 +582,7 @@ export default function CourierProfileSheet({
       <div
         role="dialog"
         aria-modal={open ? true : undefined}
-        aria-label={t.title}
+        aria-label={t("cr1_profile_sheet.title")}
         /* Fermee, la feuille reste montee pour s'animer ; `inert` la sort de
            l'ordre de tabulation le temps qu'elle est hors de l'ecran. */
         inert={!open}
@@ -668,14 +596,14 @@ export default function CourierProfileSheet({
           <div className="min-w-0">
             <h2 className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-white">
               <Settings2 size={20} strokeWidth={2.3} className="flex-shrink-0 text-emerald-300" />
-              {t.title}
+              {t("cr1_profile_sheet.title")}
             </h2>
-            <p className="mt-0.5 truncate text-[12px] text-[#8B949E]">{t.subtitle}</p>
+            <p className="mt-0.5 truncate text-[12px] text-[#8B949E]">{t("cr1_profile_sheet.subtitle")}</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label={t.close}
+            aria-label={t("cr1_profile_sheet.close")}
             className="tap-target -mr-1 flex flex-shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white/80 transition active:scale-90 hover:bg-white/20 hover:text-white"
           >
             <X size={18} />

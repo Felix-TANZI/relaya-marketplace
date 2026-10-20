@@ -27,7 +27,7 @@ export function usePortalLogin() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, googleLogin, verify2FA } = useAuth();
+  const { login, googleLogin, appleLogin, verify2FA } = useAuth();
   const { showToast } = useToast();
 
   const routeState = (location.state ?? null) as LoginRouteState | null;
@@ -58,7 +58,7 @@ export function usePortalLogin() {
   const askForCode = (state: TwoFAState) => {
     setTwoFA(state);
     setCode('');
-    showToast(`Un code de vérification a été envoyé à ${state.email}`, 'success');
+    showToast(t('cl6_portal_login.verification_code_sent', { email: state.email }), 'success');
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -83,7 +83,26 @@ export function usePortalLogin() {
       if (res.twoFactorRequired) askForCode({ userId: res.userId, email: res.email });
       else finishLogin();
     } catch (error) {
-      showToast(error instanceof Error ? error.message : 'Connexion Google impossible.', 'error');
+      showToast(error instanceof Error ? error.message : t('cl6_portal_login.google_login_failed'), 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAppleCredential = async (credential: {
+    identityToken: string;
+    authorizationCode: string | null;
+    email: string | null;
+    givenName: string | null;
+    familyName: string | null;
+  }) => {
+    setLoading(true);
+    try {
+      const res = await appleLogin(credential);
+      if (res.twoFactorRequired) askForCode({ userId: res.userId, email: res.email });
+      else finishLogin();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : t('cl6_social_auth.apple_login_failed'), 'error');
     } finally {
       setLoading(false);
     }
@@ -92,7 +111,7 @@ export function usePortalLogin() {
   const handleVerify = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!twoFA || code.trim().length < 6) {
-      showToast('Entrez le code à 6 chiffres.', 'error');
+      showToast(t('cl6_portal_login.enter_six_digit_code'), 'error');
       return;
     }
     setVerifying(true);
@@ -100,7 +119,7 @@ export function usePortalLogin() {
       await verify2FA(twoFA.userId, code.trim());
       finishLogin();
     } catch (error) {
-      showToast(error instanceof Error ? error.message : 'Code invalide.', 'error');
+      showToast(error instanceof Error ? error.message : t('cl6_portal_login.invalid_code'), 'error');
     } finally {
       setVerifying(false);
     }
@@ -110,9 +129,9 @@ export function usePortalLogin() {
     setResending(true);
     try {
       await login(credentials.username, credentials.password);
-      showToast('Nouveau code envoyé.', 'success');
+      showToast(t('cl6_portal_login.new_code_sent'), 'success');
     } catch {
-      showToast('Impossible de renvoyer le code.', 'error');
+      showToast(t('cl6_portal_login.resend_failed'), 'error');
     } finally {
       setResending(false);
     }
@@ -137,6 +156,7 @@ export function usePortalLogin() {
     googleUnavailable,
     setGoogleUnavailable,
     handleGoogleCredential,
+    handleAppleCredential,
     twoFA,
     code,
     setCode,

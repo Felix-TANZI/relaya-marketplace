@@ -3,6 +3,7 @@
 
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import type { ListParams } from '../../api/admin-finance.api';
 import { useAdminIntents } from '../../hooks/useFinanceAdmin';
@@ -44,6 +45,7 @@ const TEINTES: Record<string, string> = {
 export default function IntentsPage({
   basePath = '/admin/finance',
 }: IntentsPageProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [filtre, setFiltre] = useState('all');
   const [recherche, setRecherche] = useState('');
@@ -61,17 +63,18 @@ export default function IntentsPage({
   const lignes = data?.results ?? [];
 
   const onglets: FilterTab[] = [
-    { key: 'all', label: 'Tous' },
-    { key: 'succeeded', label: 'Encaissés' },
-    { key: 'pending', label: 'En attente' },
-    { key: 'failed', label: 'Sans suite' },
+    { key: 'all', label: t('pm1_intents.tab_all') },
+    { key: 'succeeded', label: t('pm1_intents.tab_succeeded') },
+    { key: 'pending', label: t('pm1_intents.tab_pending') },
+    { key: 'failed', label: t('pm1_intents.tab_failed') },
   ];
 
   return (
     <AdminPageShell
-      title="Paiements"
-      subtitle={`${data?.count ?? 0} intention${
-        (data?.count ?? 0) > 1 ? 's' : ''}`}
+      title={t('pm1_intents.title')}
+      subtitle={t((data?.count ?? 0) > 1
+        ? 'pm1_intents.intent_count_plural'
+        : 'pm1_intents.intent_count', { count: data?.count ?? 0 })}
       backTo={basePath}
       actions={(
         <div style={{
@@ -80,7 +83,7 @@ export default function IntentsPage({
           <SearchBar
             value={recherche}
             onChange={(valeur) => { setRecherche(valeur); setPage(1); }}
-            placeholder="Référence, numéro…"
+            placeholder={t('pm1_intents.search_placeholder')}
           />
           <FilterTabs
             tabs={onglets}
@@ -93,20 +96,20 @@ export default function IntentsPage({
       <AdminCard>
         {loading && (
           <div style={{ padding: '2.5rem', textAlign: 'center' }}>
-            <span style={{ fontSize: 13, color: FT.faint }}>Chargement…</span>
+            <span style={{ fontSize: 13, color: FT.faint }}>{t('pm1_intents.loading')}</span>
           </div>
         )}
 
         {!loading && error && (
           <EmptyState
             icon="alert-circle"
-            title="Impossible d'afficher les paiements"
+            title={t('pm1_intents.error_title')}
             description={error}
           />
         )}
 
         {!loading && !error && lignes.length === 0 && (
-          <EmptyState icon="credit-card" title="Aucun paiement" />
+          <EmptyState icon="credit-card" title={t('pm1_intents.empty_title')} />
         )}
 
         {!loading && !error && lignes.map((intention, index) => (
@@ -140,14 +143,16 @@ export default function IntentsPage({
                 overflow: 'hidden', textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
               }}>
-                {formatShortDate(intention.created_at)}
-                {' · '}{intention.buyer_username}
-                {' · '}{intention.payer_operator}
-                {' '}{intention.payer_msisdn_masked}
                 {/* Le payeur tiers est le cas NOMINAL en diaspora : on
                     l'affiche sans le signaler comme une anomalie. */}
-                {intention.payer_relationship === 'THIRD_PARTY'
-                  && ' · payeur tiers'}
+                {t(intention.payer_relationship === 'THIRD_PARTY'
+                  ? 'pm1_intents.payment_meta_line_third_party'
+                  : 'pm1_intents.payment_meta_line', {
+                  date: formatShortDate(intention.created_at),
+                  buyer: intention.buyer_username,
+                  operator: intention.payer_operator,
+                  msisdn: intention.payer_msisdn_masked,
+                })}
               </p>
             </div>
 
@@ -169,7 +174,7 @@ export default function IntentsPage({
             pages={data.pages}
             count={data.count}
             onChange={setPage}
-            label="paiement"
+            label={t('pm1_intents.pagination_label')}
           />
         )}
       </AdminCard>

@@ -1,3 +1,5 @@
+import secrets
+import uuid
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
@@ -12,12 +14,22 @@ from django.urls import reverse
 
 from .models import CourierProfile, DeliveryOrganizationProfile, RelayPointProfile, TrustScoreProfile, UserProfile
 
+# Mot de passe de fixture : jamais relu, juste exige par create_user()/les
+# serializers d'inscription. Genere plutot qu'ecrit en dur pour ne pas faire
+# remonter de faux positifs sur les scanners de secrets.
+TEST_PASSWORD = secrets.token_urlsafe(16)
+
 
 @override_settings(GOOGLE_CLIENT_ID="belivay-test.apps.googleusercontent.com")
 class GoogleLoginTests(APITestCase):
     endpoint = "/api/auth/google/"
+    # `aud` manquait : la vue verifie que le jeton a bien ete emis POUR BelivaY
+    # et non pour une autre application, et renvoyait donc 401. Un vrai jeton
+    # Google porte toujours ce champ. Ces tests n'etant jamais collectes par
+    # pytest (nom de fichier `tests.py`), l'ecart n'avait jamais ete vu.
     identity = {
         "sub": "google-subject-123",
+        "aud": "belivay-test.apps.googleusercontent.com",
         "email": "client.google@example.com",
         "email_verified": True,
         "given_name": "Client",
@@ -46,7 +58,7 @@ class GoogleLoginTests(APITestCase):
         User.objects.create_user(
             username="existing_google_client",
             email=self.identity["email"],
-            password="Existing2026",
+            password=TEST_PASSWORD,
         )
         verify.return_value = self.identity
 
@@ -61,6 +73,20 @@ class GoogleLoginTests(APITestCase):
         response = self.client.post(self.endpoint, {"credential": "invalid-token"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+    @patch("google.oauth2.id_token.verify_oauth2_token")
+    def test_un_jeton_emis_pour_une_autre_application_est_refuse(self, verify):
+        """
+        Un jeton Google valide mais emis pour une AUTRE application ne doit pas
+        ouvrir de session BelivaY. Sans ce controle, n'importe quel site
+        utilisant Google pourrait faire entrer ses utilisateurs chez nous.
+        """
+        verify.return_value = {**self.identity, "aud": "autre-site.apps.googleusercontent.com"}
+
+        response = self.client.post(self.endpoint, {"credential": "valid-token"}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertFalse(User.objects.filter(email=self.identity["email"]).exists())
+
 
 class ClientRegistrationUniquenessTests(APITestCase):
     endpoint = "/api/auth/register/"
@@ -70,8 +96,8 @@ class ClientRegistrationUniquenessTests(APITestCase):
             "username": "nouveau_client",
             "email": "nouveau.client@example.com",
             "phone": "+237690123456",
-            "password": "ClientSolide2026!",
-            "password2": "ClientSolide2026!",
+            "password": TEST_PASSWORD,
+            "password2": TEST_PASSWORD,
             "first_name": "Nouveau",
             "last_name": "Client",
         }
@@ -106,7 +132,7 @@ class ClientRegistrationUniquenessTests(APITestCase):
 
 class TrustScoreV55Tests(APITestCase):
     def setUp(self):
-        self.user = User.objects.create_user("trust_courier", password="Trust2026!")
+        self.user = User.objects.create_user("trust_courier", password=TEST_PASSWORD)
         CourierProfile.objects.create(
             user=self.user,
             phone="+237670123456",
@@ -159,7 +185,7 @@ class TrustScoreV55Tests(APITestCase):
     def test_vendor_confirmed_tier_requires_minimum_order_volume(self, observations):
         from .trust_score import Observation, calculate_trust_score
 
-        vendor = User.objects.create_user("trust_vendor_volume", password="Trust2026!")
+        vendor = User.objects.create_user("trust_vendor_volume", password=TEST_PASSWORD)
         high = [Observation(100, timezone.now()) for _ in range(20)]
         base_obs = {
             "punctuality": high, "quality": high, "satisfaction": high,
@@ -179,7 +205,7 @@ class TrustScoreV55Tests(APITestCase):
     def test_vendor_gold_tier_requires_audit_passed(self, observations):
         from .trust_score import Observation, calculate_trust_score
 
-        vendor = User.objects.create_user("trust_vendor_audit", password="Trust2026!")
+        vendor = User.objects.create_user("trust_vendor_audit", password=TEST_PASSWORD)
         # 35 observations -> score ~88.9 : au-dessus du seuil Or (80) mais
         # sous le seuil Platine (90), pour isoler le blocage "audit requis".
         high = [Observation(100, timezone.now()) for _ in range(35)]
@@ -212,8 +238,8 @@ class TrustScoreCatastrophicVetoTests(APITestCase):
         from apps.catalog.models import Category, Product
         from apps.orders.models import Dispute, Order, OrderItem
 
-        self.vendor = User.objects.create_user("veto_vendor", password="pass")
-        self.buyer = User.objects.create_user("veto_buyer", password="pass")
+        self.vendor = User.objects.create_user("veto_vendor", password=TEST_PASSWORD)
+        self.buyer = User.objects.create_user("veto_buyer", password=TEST_PASSWORD)
         category = Category.objects.create(name="Veto", slug="veto")
         product = Product.objects.create(
             title="Article veto", slug="article-veto", price_xaf=5000,
@@ -270,14 +296,14 @@ class EnterpriseTrustScoreRollupTests(APITestCase):
     """V5.5 : Trust_Ent = 0.8 x moyenne ponderee par volume + 0.2 x pire livreur."""
 
     def setUp(self):
-        org_user = User.objects.create_user("rollup_org", password="pass")
+        org_user = User.objects.create_user("rollup_org", password=TEST_PASSWORD)
         self.organization = DeliveryOrganizationProfile.objects.create(
             user=org_user, company_name="Rollup Logistics", phone="+237690300001",
             city="Yaounde", status=DeliveryOrganizationProfile.Status.APPROVED,
         )
 
     def _courier_with_score(self, username, score, volume):
-        user = User.objects.create_user(username, password="pass")
+        user = User.objects.create_user(username, password=TEST_PASSWORD)
         CourierProfile.objects.create(
             user=user, delivery_organization=self.organization, phone="+237690300002",
             city="Yaounde", id_card=f"CNI-{username}", is_active=True, is_approved=True,
@@ -315,14 +341,14 @@ class BuyerIFATests(APITestCase):
     """IFA acheteur (V5.5 §6) : indice interne, jamais un Trust Score public."""
 
     def setUp(self):
-        self.buyer = User.objects.create_user("ifa_buyer", password="pass")
+        self.buyer = User.objects.create_user("ifa_buyer", password=TEST_PASSWORD)
 
     def _order(self, *, status_, suffix, buyer=None):
         from apps.catalog.models import Category, Product
         from apps.orders.models import OrderItem
 
         category, _ = Category.objects.get_or_create(name="IFA", slug="ifa")
-        vendor = User.objects.create_user(f"ifa_vendor_{suffix}", password="pass")
+        vendor = User.objects.create_user(f"ifa_vendor_{suffix}", password=TEST_PASSWORD)
         product = Product.objects.create(
             title=f"Article IFA {suffix}", slug=f"article-ifa-{suffix}", price_xaf=5000,
             category=category, vendor=vendor,
@@ -366,7 +392,7 @@ class BuyerIFATests(APITestCase):
         # Les 4 commandes contestées par cet acheteur sortent du "confirmé
         # sans litige" ET ajoutent une observation à 0 chacune : score net
         # sous celui d'un acheteur sans aucun litige rejeté.
-        clean_buyer = User.objects.create_user("ifa_buyer_clean", password="pass")
+        clean_buyer = User.objects.create_user("ifa_buyer_clean", password=TEST_PASSWORD)
         for i in range(10):
             self._order(status_=Order.FulfillmentStatus.BUYER_CONFIRMED, suffix=f"clean-{i}", buyer=clean_buyer)
         clean_profile = calculate_trust_score(clean_buyer, TrustScoreProfile.Role.BUYER)
@@ -390,7 +416,7 @@ class SanctionsLadderTests(APITestCase):
     """Échelle de sanctions 1→4 complète (V5.5 §8)."""
 
     def setUp(self):
-        self.user = User.objects.create_user("sanction_target", password="pass")
+        self.user = User.objects.create_user("sanction_target", password=TEST_PASSWORD)
         CourierProfile.objects.create(
             user=self.user, phone="+237699000000", city="Douala", id_card="SANCTION-CNI-000",
             is_active=True, is_approved=True,
@@ -509,8 +535,8 @@ class SanctionEscalationTests(APITestCase):
         from apps.catalog.models import Category, Product
         from apps.orders.models import Dispute, OrderItem
 
-        self.vendor = User.objects.create_user("escalation_vendor", password="pass")
-        self.buyer = User.objects.create_user("escalation_buyer", password="pass")
+        self.vendor = User.objects.create_user("escalation_vendor", password=TEST_PASSWORD)
+        self.buyer = User.objects.create_user("escalation_buyer", password=TEST_PASSWORD)
         category = Category.objects.create(name="Escalation", slug="escalation")
 
         def make_dispute(suffix):
@@ -561,17 +587,41 @@ class SanctionEscalationTests(APITestCase):
 
 
 class AntiCollusionTests(APITestCase):
-    """Anti-collusion sous anonymat (V5.5 §9) : détection de rings device/MoMo."""
+    """
+    Anti-collusion sous anonymat (V5.5 §9) : détection de rings device/MoMo.
+
+    La détection (`detect_self_dealing`, `scan_shared_momo_across_buyers`)
+    lit les paiements réussis via `PaymentIntent.payer_msisdn_fingerprint`
+    (apps.payments.intents) — c'est le seul chemin de création de paiement
+    actif en production depuis la refonte du 12/08/2026 (`PaymentTransaction`
+    est réduit en lecture seule, cf. apps/payments/urls.py). Ces tests
+    créaient auparavant des `PaymentTransaction`, un modèle que la détection
+    ne lit plus : les 3 tests positifs échouaient silencieusement en CI
+    depuis leur ajout (04/09/2026), sans lien avec la production réelle.
+    """
+
+    def _create_succeeded_payment(self, order, payer_phone, amount_xaf=None):
+        from apps.payments.bridge.intent_orders import link_orders
+        from apps.payments.intents.models import PaymentIntent
+
+        intent = PaymentIntent(
+            buyer=order.user,
+            idempotency_key=f"test-collusion-{uuid.uuid4()}",
+            amount_xaf=amount_xaf or order.total_xaf,
+            status=PaymentIntent.Status.SUCCEEDED,
+        )
+        intent.set_payer(payer_phone, "MTN")
+        intent.save()
+        link_orders(intent, [order])
+        return intent
 
     def setUp(self):
         from apps.catalog.models import Category, Product
         from apps.orders.models import OrderItem
-        from apps.payments.models import PaymentTransaction
         from apps.vendors.models import VendorProfile
 
-        self.PaymentTransaction = PaymentTransaction
-        self.buyer = User.objects.create_user("collusion_buyer", password="pass")
-        self.vendor_user = User.objects.create_user("collusion_vendor", password="pass")
+        self.buyer = User.objects.create_user("collusion_buyer", password=TEST_PASSWORD)
+        self.vendor_user = User.objects.create_user("collusion_vendor", password=TEST_PASSWORD)
         VendorProfile.objects.create(
             user=self.vendor_user, business_name="Complice SARL", phone="+237699111111", city="Douala",
         )
@@ -592,10 +642,7 @@ class AntiCollusionTests(APITestCase):
     def test_same_momo_number_as_buyer_and_vendor_is_detected(self):
         from .trust_score import detect_self_dealing
 
-        self.PaymentTransaction.objects.create(
-            order=self.order, provider=self.PaymentTransaction.Provider.MTN_MOMO,
-            status=self.PaymentTransaction.Status.SUCCESS, amount_xaf=8000, payer_phone="+237699111111",
-        )
+        self._create_succeeded_payment(self.order, "+237699111111")
 
         involved = detect_self_dealing(self.order)
 
@@ -604,10 +651,7 @@ class AntiCollusionTests(APITestCase):
     def test_apply_collusion_veto_bans_buyer_and_vendor(self):
         from .trust_score import apply_collusion_veto_for_order
 
-        self.PaymentTransaction.objects.create(
-            order=self.order, provider=self.PaymentTransaction.Provider.MTN_MOMO,
-            status=self.PaymentTransaction.Status.SUCCESS, amount_xaf=8000, payer_phone="+237699111111",
-        )
+        self._create_succeeded_payment(self.order, "+237699111111")
 
         records = apply_collusion_veto_for_order(self.order)
 
@@ -620,10 +664,7 @@ class AntiCollusionTests(APITestCase):
     def test_different_payer_number_triggers_no_veto(self):
         from .trust_score import apply_collusion_veto_for_order
 
-        self.PaymentTransaction.objects.create(
-            order=self.order, provider=self.PaymentTransaction.Provider.MTN_MOMO,
-            status=self.PaymentTransaction.Status.SUCCESS, amount_xaf=8000, payer_phone="+237600000000",
-        )
+        self._create_succeeded_payment(self.order, "+237600000000")
 
         records = apply_collusion_veto_for_order(self.order)
 
@@ -634,14 +675,11 @@ class AntiCollusionTests(APITestCase):
 
         shared_phone = "+237677000000"
         for i in range(3):
-            buyer = User.objects.create_user(f"shared_buyer_{i}", password="pass")
+            buyer = User.objects.create_user(f"shared_buyer_{i}", password=TEST_PASSWORD)
             order = Order.objects.create(
                 user=buyer, customer_phone=shared_phone, city="Douala", address="Bonanjo", total_xaf=3000,
             )
-            self.PaymentTransaction.objects.create(
-                order=order, provider=self.PaymentTransaction.Provider.MTN_MOMO,
-                status=self.PaymentTransaction.Status.SUCCESS, amount_xaf=3000, payer_phone=shared_phone,
-            )
+            self._create_succeeded_payment(order, shared_phone, amount_xaf=3000)
 
         flagged = scan_shared_momo_across_buyers(min_accounts=3)
 
@@ -654,14 +692,11 @@ class AntiCollusionTests(APITestCase):
 
         shared_phone = "+237677111111"
         for i in range(2):
-            buyer = User.objects.create_user(f"family_buyer_{i}", password="pass")
+            buyer = User.objects.create_user(f"family_buyer_{i}", password=TEST_PASSWORD)
             order = Order.objects.create(
                 user=buyer, customer_phone=shared_phone, city="Douala", address="Bonanjo", total_xaf=3000,
             )
-            self.PaymentTransaction.objects.create(
-                order=order, provider=self.PaymentTransaction.Provider.MTN_MOMO,
-                status=self.PaymentTransaction.Status.SUCCESS, amount_xaf=3000, payer_phone=shared_phone,
-            )
+            self._create_succeeded_payment(order, shared_phone, amount_xaf=3000)
 
         flagged = scan_shared_momo_across_buyers(min_accounts=3)
 
@@ -692,7 +727,7 @@ class BlacklistEnforcementTests(APITestCase):
     def test_vendor_application_rejects_blacklisted_id_document(self):
         from django.urls import reverse
 
-        user = User.objects.create_user("blacklist_vendor_cni", password="pass")
+        user = User.objects.create_user("blacklist_vendor_cni", password=TEST_PASSWORD)
         self.client.force_authenticate(user)
 
         response = self.client.post(reverse("vendors:apply-vendor"), {
@@ -706,7 +741,7 @@ class BlacklistEnforcementTests(APITestCase):
     def test_vendor_application_rejects_blacklisted_momo_number(self):
         from django.urls import reverse
 
-        user = User.objects.create_user("blacklist_vendor_momo", password="pass")
+        user = User.objects.create_user("blacklist_vendor_momo", password=TEST_PASSWORD)
         self.client.force_authenticate(user)
 
         response = self.client.post(reverse("vendors:apply-vendor"), {
@@ -720,7 +755,7 @@ class BlacklistEnforcementTests(APITestCase):
     def test_vendor_application_with_clean_identifiers_still_succeeds(self):
         from django.urls import reverse
 
-        user = User.objects.create_user("clean_vendor", password="pass")
+        user = User.objects.create_user("clean_vendor", password=TEST_PASSWORD)
         self.client.force_authenticate(user)
 
         response = self.client.post(reverse("vendors:apply-vendor"), {
@@ -734,7 +769,7 @@ class BlacklistEnforcementTests(APITestCase):
     def test_courier_application_rejects_blacklisted_id_card(self):
         from django.urls import reverse
 
-        user = User.objects.create_user("blacklist_courier_cni", password="pass")
+        user = User.objects.create_user("blacklist_courier_cni", password=TEST_PASSWORD)
         self.client.force_authenticate(user)
 
         response = self.client.post(reverse("courier-application"), {
@@ -747,7 +782,7 @@ class BlacklistEnforcementTests(APITestCase):
     def test_courier_application_rejects_blacklisted_momo_number(self):
         from django.urls import reverse
 
-        user = User.objects.create_user("blacklist_courier_momo", password="pass")
+        user = User.objects.create_user("blacklist_courier_momo", password=TEST_PASSWORD)
         self.client.force_authenticate(user)
 
         response = self.client.post(reverse("courier-application"), {
@@ -760,7 +795,7 @@ class BlacklistEnforcementTests(APITestCase):
     def test_courier_application_with_clean_identifiers_still_succeeds(self):
         from django.urls import reverse
 
-        user = User.objects.create_user("clean_courier", password="pass")
+        user = User.objects.create_user("clean_courier", password=TEST_PASSWORD)
         self.client.force_authenticate(user)
 
         response = self.client.post(reverse("courier-application"), {
@@ -773,7 +808,7 @@ class BlacklistEnforcementTests(APITestCase):
     def test_admin_cannot_create_a_delivery_org_with_a_blacklisted_momo_number(self):
         from django.urls import reverse
 
-        admin = User.objects.create_superuser("blacklist_admin", password="pass")
+        admin = User.objects.create_superuser("blacklist_admin", password=TEST_PASSWORD)
         self.client.force_authenticate(admin)
 
         response = self.client.post(reverse("auth-admin-create-user"), {
@@ -795,7 +830,7 @@ class AppReleaseEndpointTests(APITestCase):
         from .models import AppRelease
 
         self.AppRelease = AppRelease
-        self.user = User.objects.create_user("app_release_user", password="pass")
+        self.user = User.objects.create_user("app_release_user", password=TEST_PASSWORD)
         self.client.force_authenticate(self.user)
 
     def test_returns_the_configured_release_for_a_portal(self):
@@ -833,6 +868,100 @@ class AppReleaseEndpointTests(APITestCase):
         response = self.client.get(reverse("app-release-latest"), {"portal": "vendor"})
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class AccountDeletionTests(APITestCase):
+    endpoint = "/api/auth/me/"
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="client_delete", email="client.delete@example.com",
+            password="Secret-pass-123", first_name="Awa", last_name="Client",
+        )
+        UserProfile.objects.create(user=self.user, phone="+237650000099", bio="bio")
+        self.client.force_authenticate(self.user)
+
+    def test_wrong_password_is_rejected(self):
+        response = self.client.delete(self.endpoint, {"password": "wrong"}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_active)
+
+    def test_deletion_anonymizes_and_deactivates_but_keeps_orders(self):
+        order = Order.objects.create(
+            user=self.user, customer_email="client.delete@example.com", customer_phone="+237650000099",
+            city="Yaoundé", address="Mvan", fulfillment_status=Order.FulfillmentStatus.BUYER_CONFIRMED,
+            total_xaf=5000,
+        )
+
+        response = self.client.delete(self.endpoint, {"password": "Secret-pass-123"}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+        self.assertEqual(self.user.email, "")
+        self.assertEqual(self.user.first_name, "")
+        self.assertTrue(self.user.username.startswith("deleted_"))
+        self.assertFalse(self.user.has_usable_password())
+        self.assertIsNone(self.user.profile.phone)
+        order.refresh_from_db()
+        self.assertEqual(order.user_id, self.user.id)
+        self.assertIsNone(order.customer_email)
+        self.assertEqual(order.customer_phone, "")
+        self.assertEqual(order.address, "")
+        self.assertEqual(order.total_xaf, 5000)
+
+    def test_deletion_is_blocked_while_an_order_is_in_progress(self):
+        Order.objects.create(
+            user=self.user, customer_phone="+237650000099", city="Yaoundé", address="Mvan",
+            fulfillment_status=Order.FulfillmentStatus.OUT_FOR_DELIVERY, total_xaf=5000,
+        )
+
+        response = self.client.delete(self.endpoint, {"password": "Secret-pass-123"}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_active)
+
+    def test_social_account_confirms_without_password(self):
+        self.user.set_unusable_password()
+        self.user.save()
+
+        self.assertEqual(self.client.delete(self.endpoint, {}, format="json").status_code, status.HTTP_400_BAD_REQUEST)
+        response = self.client.delete(self.endpoint, {"confirm": "SUPPRIMER"}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+
+    @override_settings(APPLE_TEAM_ID="TEAM", APPLE_KEY_ID="KEY", APPLE_PRIVATE_KEY="dummy")
+    @patch("apps.accounts.apple.revoke_token")
+    def test_apple_authorization_is_revoked(self, revoke):
+        from . import apple
+        from .models import AppleIdentity
+
+        AppleIdentity.objects.create(
+            user=self.user, subject="apple-sub", client_id="com.belivay.client",
+            refresh_token_encrypted=apple.encrypt_token("apple-refresh"),
+        )
+
+        response = self.client.delete(self.endpoint, {"password": "Secret-pass-123"}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        revoke.assert_called_once_with("apple-refresh", "com.belivay.client")
+        self.assertFalse(AppleIdentity.objects.filter(user=self.user).exists())
+
+    def test_deleted_account_can_no_longer_log_in(self):
+        self.client.delete(self.endpoint, {"password": "Secret-pass-123"}, format="json")
+        self.client.force_authenticate(None)
+
+        response = self.client.post(
+            "/api/auth/login/", {"username": "client_delete", "password": "Secret-pass-123"}, format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
 
 class RelayNotificationPreferencesTests(APITestCase):
     """

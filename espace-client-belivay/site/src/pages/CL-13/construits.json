@@ -1,0 +1,47 @@
+{
+ "routes": [
+  "compte",
+  "adresses",
+  "moyens-paiement",
+  "factures",
+  "supprimer",
+  "avis-donner",
+  "avis-bas",
+  "aide",
+  "faq",
+  "messagerie",
+  "fil",
+  "rappel",
+  "legal",
+  "legal-doc",
+  "reseau",
+  "reglages",
+  "wallet",
+  "devenir-vendeur"
+ ],
+ "exclus": {
+  "#fil?id=support&st=nouveau": "DP-54 : sujet « Arnaque » ajouté aux demandes au support (signalement depuis l'aide).",
+  "#fil?id=question": "DP-54 : « Signaler cette conversation » ajouté aux conversations avec un vendeur.",
+  "#menu": "DP-54 : la cagnotte en attente est calculée (2 % des commandes passées avec Prime, BLV-52107) et non plus le chiffre figé du prototype.",
+  "#accueil?pop=profil": "DP-54 : la cagnotte en attente est calculée (2 % des commandes passées avec Prime, BLV-52107) et non plus le chiffre figé du prototype."
+ },
+ "repris": {
+  "adresses": "DP-54 : repris pour l'usage réel (position GPS, carte OpenStreetMap, informations pour le livreur).",
+  "moyens-paiement": "DP-54 : repris pour l'usage réel (carte Visa ou Mastercard, Portefeuille, comptoir, payeur à l'étranger).",
+  "reglages": "DP-54 : repris pour l'usage réel (taille du texte en 8 crans sur une barre, animations réduites).",
+  "aide": "DP-54 : repris pour l'usage réel (état des services, signalement d'arnaque).",
+  "messagerie": "DP-54 : repris pour l'usage réel (recherche, filtres, tout marquer comme lu).",
+  "rappel": "DP-54 : corps de l'aide repris (état des services, signalement d'arnaque).",
+  "legal": "DP-54 : repris (mes acceptations, confidentialité, question au support).",
+  "legal-doc": "DP-54 : repris (partager, imprimer, par e-mail, historique des versions).",
+  "reseau": "DP-54 : repris pour l'usage réel (état du réseau en direct, données économes, codes gardés sur le téléphone, place prise).",
+  "compte": "DP-54 : la cagnotte en attente est calculée (2 % des commandes passées avec Prime, BLV-52107) et non plus le chiffre figé du prototype.",
+  "wallet": "DP-54 : la cagnotte en attente est calculée (2 % des commandes passées avec Prime, BLV-52107) et non plus le chiffre figé du prototype.",
+  "factures": "DP-54 : enrichi pour le client (en-tête d'origine gardé, contenu complété : recherche, filtres par période, totaux, relevé PDF, erreur signalée).",
+  "supprimer": "DP-54 : enrichi pour le client (en-tête d'origine gardé, contenu complété : conséquences lues dans les données, durée de conservation, pause proposée).",
+  "avis-donner": "DP-54 : enrichi pour le client (en-tête d'origine gardé, contenu complété : compteur, ce qui est publié sans le nom, formats de photo).",
+  "faq": "DP-54 : enrichi pour le client (en-tête d'origine gardé, contenu complété : thèmes Livraison et relais, Diaspora, réponses alignées sur les décisions).",
+  "fil": "DP-54 : enrichi pour le client (en-tête d'origine gardé, contenu complété : pièces jointes, sujets Livraison, Facture, Diaspora, délai DP-12).",
+  "devenir-vendeur": "DP-54 : enrichi pour le client (en-tête d'origine gardé, contenu complété : conditions, versements, règles à connaître)."
+ }
+}

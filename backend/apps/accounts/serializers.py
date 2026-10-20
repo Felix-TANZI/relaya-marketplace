@@ -24,6 +24,7 @@ from .models import (
 )
 from apps.common.phone import normalize_cameroon_phone
 from apps.common.images import ImageOptimizationError, optimize_uploaded_image
+from apps.common.translation import request_language, translate_text
 
 
 def user_with_email_exists(email: str, exclude_user_id=None) -> bool:
@@ -299,6 +300,9 @@ class PayoutAccountVerifySerializer(serializers.Serializer):
 
 class CartItemSerializer(serializers.Serializer):
     id = serializers.IntegerField()
+    # MasterProduct id (distinct de l'id de l'offre ci-dessus) : necessaire
+    # pour les recommandations panier, qui raisonnent en MasterProduct.
+    master_id = serializers.IntegerField(required=False, allow_null=True)
     name = serializers.CharField(max_length=255)
     price = serializers.IntegerField(min_value=0)
     quantity = serializers.IntegerField(min_value=1)
@@ -378,6 +382,7 @@ class UserSerializer(serializers.ModelSerializer):
     sms_notifications = serializers.SerializerMethodField()
     loyalty_points = serializers.SerializerMethodField()
     loyalty_tier = serializers.SerializerMethodField()
+    has_usable_password = serializers.SerializerMethodField()
     
     class Meta:
         model = User
@@ -404,9 +409,15 @@ class UserSerializer(serializers.ModelSerializer):
             "sms_notifications",
             "loyalty_points",
             "loyalty_tier",
+            "has_usable_password",
         ]
         read_only_fields = fields
     
+    def get_has_usable_password(self, obj):
+        """False pour les comptes créés via Google/Apple (confirmation de
+        suppression sans mot de passe)."""
+        return obj.has_usable_password()
+
     def get_is_vendor(self, obj):
         """Vérifier si l'utilisateur a un profil vendeur actif"""
         return hasattr(obj, 'vendor_profile') and str(obj.vendor_profile.status).upper() == 'APPROVED'
@@ -727,6 +738,40 @@ class NotificationSerializer(serializers.ModelSerializer):
             'updated_at',
         ]
         read_only_fields = fields
+
+    def _target_language(self, obj):
+        """
+        Langue cible pour l'affichage de CETTE notification.
+
+        Tous les points de creation (30+ call sites) ecrivent title/message
+        en francais code en dur (voir apps/common/translation.py) : la
+        traduction se fait donc uniquement ici, a la lecture, jamais a la
+        creation ni en migrant les donnees existantes.
+
+        Le livreur a une preference de langue persistee (CourierProfile)
+        qui prime, car elle vaut au-dela d'une seule requete. Acheteur et
+        vendeur n'ont pas ce champ : on retombe sur la langue de LA
+        REQUETE en cours (?lang= / Accept-Language).
+        """
+        courier = getattr(obj.user, "courier_profile", None)
+        if courier is not None:
+            langue_livreur = (courier.preferred_language or "").strip().lower()
+            if langue_livreur and langue_livreur != "fr":
+                return langue_livreur
+
+        request = self.context.get('request')
+        if request is not None:
+            return request_language(request)
+
+        return "fr"
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        cible = self._target_language(instance)
+        if cible and cible != "fr":
+            data['title'] = translate_text(data['title'], target_lang=cible, source_lang="fr")
+            data['message'] = translate_text(data['message'], target_lang=cible, source_lang="fr")
+        return data
 
 
 class RewardTransactionSerializer(serializers.ModelSerializer):

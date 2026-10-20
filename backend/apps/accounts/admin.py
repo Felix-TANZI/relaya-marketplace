@@ -3,23 +3,22 @@
 # Remplace le fichier vide existant.
 
 from django.contrib import admin
-from django.utils.html import format_html
-from django.contrib.auth.models import User
+
 from .models import (
     AppRelease,
     ComplianceDocument,
     DeliveryVehicle,
+    OTPCode,
     PartnerBlacklist,
+    RewardAccount,
+    RewardTransaction,
     SanctionRecord,
-    UserProfile,
+    TrustScoreProfile,
     UserActivityLog,
     UserFavorite,
     UserNotification,
-    RewardAccount,
-    RewardTransaction,
-    TrustScoreProfile,
+    UserProfile,
     UserSession,
-    OTPCode,
 )
 
 
@@ -65,11 +64,27 @@ class DeliveryVehicleAdmin(admin.ModelAdmin):
 
 @admin.register(ComplianceDocument)
 class ComplianceDocumentAdmin(admin.ModelAdmin):
-    list_display = ('document_type', 'owner_role', 'user', 'status', 'updated_at')
+    list_display = ('document_type', 'owner_role', 'user', 'status', 'delai', 'updated_at')
     list_filter = ('owner_role', 'status', 'document_type')
     search_fields = ('user__username', 'user__email', 'document_type')
     readonly_fields = ('user', 'owner_role', 'document_type', 'file', 'created_at', 'updated_at')
     fields = ('user', 'owner_role', 'document_type', 'file', 'status', 'review_note', 'created_at', 'updated_at')
+
+    @admin.display(description="Délai")
+    def delai(self, obj):
+        """
+        Tâche D19 : « Répondre en 48 h ouvrées au plus. »
+
+        Une promesse de délai sans moyen de voir ce qui la dépasse ne se tient
+        pas. Cette colonne montre ce qui attend encore, et ce qui a débordé.
+        """
+        from apps.vendors.kyc import echeance_examen, examen_en_retard
+
+        if obj.status != ComplianceDocument.Status.PENDING:
+            return "—"
+        if examen_en_retard(obj):
+            return "EN RETARD"
+        return f"avant le {echeance_examen(obj.created_at):%d/%m %H:%M}"
 
     actions = ('approve_documents', 'reject_documents')
 
@@ -233,14 +248,38 @@ class UserSessionAdmin(admin.ModelAdmin):
 
 @admin.register(OTPCode)
 class OTPCodeAdmin(admin.ModelAdmin):
-    list_display  = ('user', 'purpose', 'code', 'is_used', 'expires_at', 'created_at')
+    """
+    Le code lui-même n'est JAMAIS montré ici.
+
+    Il l'était : en colonne de liste et dans la recherche. Un membre du staff
+    ayant le simple droit de lecture pouvait donc lire le code 2FA actif d'un
+    compte — ou retrouver à qui appartenait un code — et terminer la connexion
+    à sa place. La double authentification ne protégeait plus de rien vis-à-vis
+    de l'interne.
+
+    On garde l'écran, utile au support pour voir qu'un code a bien été émis et
+    s'il est encore valable ; on retire seulement ce qui permet de s'en servir.
+    """
+
+    list_display  = ('user', 'purpose', 'etat', 'expires_at', 'created_at')
     list_filter   = ('purpose', 'is_used')
-    search_fields = ('user__username', 'code')
-    readonly_fields = ('created_at',)
+    search_fields = ('user__username', 'user__email')
+    readonly_fields = ('user', 'purpose', 'is_used', 'expires_at', 'created_at')
+    exclude       = ('code',)
     ordering      = ('-created_at',)
+
+    @admin.display(description="État")
+    def etat(self, obj):
+        if obj.is_used:
+            return "utilisé"
+        return "valable" if obj.is_valid else "expiré"
 
     def has_add_permission(self, request):
         # Les codes OTP se génèrent via le système
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        # Lecture seule : rien à modifier à la main sur un code.
         return False
 
 

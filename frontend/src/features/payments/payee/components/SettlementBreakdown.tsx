@@ -12,6 +12,7 @@
 // n'est pas le sujet. Le net est en noir.
 // ─────────────────────────────────────────────────────────────────────────
 
+import { useTranslation } from 'react-i18next';
 import Money from '../../shared/Money';
 import { FT } from '../../shared/tokens';
 import type { Adjustment } from '../../model/adjustment.types';
@@ -26,6 +27,7 @@ interface SettlementBreakdownProps {
 export default function SettlementBreakdown({
   lines, adjustments, netAmountXaf,
 }: SettlementBreakdownProps) {
+  const { t } = useTranslation();
   return (
     <>
       <div style={{ padding: '0.25rem 1.25rem' }}>
@@ -38,7 +40,7 @@ export default function SettlementBreakdown({
             }}
           >
             <span style={{ fontSize: 12.5, flex: 1, color: FT.muted }}>
-              {ligne.order_id ? `Commande #${ligne.order_id}` : ligne.component}
+              {ligne.order_id ? t('sl2_payee_settlements.order_hash', { id: ligne.order_id }) : ligne.component}
             </span>
             {ligne.commission_xaf > 0 && (
               <span style={{ width: 90, textAlign: 'right' }}>
@@ -89,7 +91,7 @@ export default function SettlementBreakdown({
           fontSize: 12, letterSpacing: '0.04em',
           textTransform: 'uppercase', color: FT.muted,
         }}>
-          Net versé
+          {t('sl2_payee_settlements.net_paid')}
         </span>
         <Money value={netAmountXaf} size={16} showCurrency />
       </div>

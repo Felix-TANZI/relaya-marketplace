@@ -57,6 +57,7 @@ export default function CatalogProductCard({
     if (!inStock) return;
     addItem({
       id: product.id,
+      master_id: product.master ?? undefined,
       name: product.title,
       price: finalPrice,
       quantity: 1,

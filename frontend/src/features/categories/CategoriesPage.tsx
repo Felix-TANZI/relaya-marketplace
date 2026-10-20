@@ -49,7 +49,7 @@ export default function CategoriesPage() {
           </div>
         ) : !selected ? (
           <div className="pf-card" style={{ textAlign: "center", padding: 40, color: "var(--pf-muted)" }}>
-            Aucune catégorie disponible pour le moment.
+            {t("cl4_categories.no_categories")}
           </div>
         ) : (
           <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[270px_1fr] lg:items-start">
@@ -123,11 +123,53 @@ export default function CategoriesPage() {
                       </p>
                     ) : null}
                   </div>
-                  <Link to={`/categorie/${selected.slug}`} className="pf-btn-accent" style={{ textDecoration: "none" }}>
-                    Voir tous les produits <ArrowRight size={15} />
+                </div>
+                <Link to={`/catalog?category=${selected.node?.id ?? ""}`} className="pf-btn-accent" style={{ textDecoration: "none" }}>
+                  {t("cl4_categories.view_all_products")} <ArrowRight size={15} />
+                </Link>
+              </div>
+
+              {children.length > 0 ? (
+                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+                  {children.map((child) => {
+                    const ChildIcon = categoryIcon({ slug: child.slug, name: child.name, iconName: child.icon_name });
+                    return (
+                      <Link
+                        key={child.id}
+                        to={`/catalog?category=${child.id}`}
+                        className="flex items-center gap-3 rounded-xl px-3 py-3 transition-all hover:-translate-y-0.5"
+                        style={{ background: "var(--pf-s3)", border: "1px solid var(--pf-border)" }}
+                      >
+                        <span style={{ width: 34, height: 34, flexShrink: 0, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--pf-asoft)", color: "var(--pf-accent)" }}>
+                          <ChildIcon size={16} />
+                        </span>
+                        <span style={{ flex: 1, minWidth: 0 }}>
+                          <span style={{ display: "block", fontSize: 12.5, fontWeight: 700, color: "var(--pf-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {child.name}
+                          </span>
+                          {child.children.length > 0 ? (
+                            <span style={{ display: "block", fontSize: 10.5, color: "var(--pf-muted)" }}>
+                              {t("categories.subcategory_count_plural", { count: child.children.length })}
+                            </span>
+                          ) : null}
+                        </span>
+                        <ChevronRight size={15} style={{ color: "#c2b6bf", flexShrink: 0 }} />
+                      </Link>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: "36px 0", textAlign: "center" }}>
+                  <PackageSearch size={30} style={{ color: "var(--pf-muted)" }} />
+                  <p style={{ fontSize: 13, fontWeight: 700, color: "var(--pf-text)" }}>{t("categories.main_category")}</p>
+                  <p style={{ fontSize: 12, color: "var(--pf-muted)", maxWidth: 360 }}>
+                    {t("cl4_categories.no_subcategories_desc")}
+                  </p>
+                  <Link to={`/catalog?category=${selected.node?.id ?? ""}`} className="pf-btn-accent" style={{ textDecoration: "none", marginTop: 6 }}>
+                    {t("categories.explore")} <ArrowRight size={15} />
                   </Link>
                 </div>
-              </div>
+              )}
 
               <div style={{ padding: 16 }}>
                 {children.length > 0 ? (

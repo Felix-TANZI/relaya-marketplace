@@ -1,6 +1,7 @@
 // frontend/src/features/payments/payee/components/SettlementRow.tsx
 // Une ligne de reglement dans une liste.
 
+import { useTranslation } from 'react-i18next';
 import Money from '../../shared/Money';
 import { statusMeta, TONE } from '../../model/status';
 import { FT } from '../../shared/tokens';
@@ -16,7 +17,8 @@ interface SettlementRowProps {
 export default function SettlementRow({
   batch, onClick, showBorder = true,
 }: SettlementRowProps) {
-  const meta = statusMeta('settlement', batch.status);
+  const { t } = useTranslation();
+  const meta = statusMeta('settlement', batch.status, t);
   const verse = batch.payout?.settled_at ?? null;
 
   return (
@@ -47,15 +49,14 @@ export default function SettlementRow({
         </p>
         <p style={{ fontSize: 11.5, margin: '2px 0 0', color: FT.faint }}>
           {formatPeriod(batch.period_start, batch.period_end)}
-          {batch.lines.length > 0 && ` · ${batch.lines.length} commande${
-            batch.lines.length > 1 ? 's' : ''}`}
+          {batch.lines.length > 0 && ` · ${t(batch.lines.length > 1 ? 'sl2_payee_settlements.orders_count_plural' : 'sl2_payee_settlements.orders_count', { count: batch.lines.length })}`}
         </p>
       </div>
 
       <span style={{
         fontSize: 11.5, width: 96, textAlign: 'right', color: FT.muted,
       }}>
-        {verse ? `versé le ${formatShortDate(verse)}` : meta.label}
+        {verse ? t('sl2_payee_settlements.paid_on', { date: formatShortDate(verse) }) : meta.label}
       </span>
 
       <span style={{ width: 82, textAlign: 'right' }}>

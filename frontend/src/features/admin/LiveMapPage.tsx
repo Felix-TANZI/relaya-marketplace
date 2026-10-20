@@ -10,6 +10,7 @@ import {
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { useTranslation } from 'react-i18next';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import { useToast } from '@/context/ToastContext';
 import { http } from '@/services/api/http';
@@ -57,9 +58,9 @@ interface LiveStats {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const ROLE_CFG = {
-  admin:  { label: 'Admin',    color: '#EF4444', emoji: '👑', gradient: 'linear-gradient(135deg,#EF4444,#B91C1C)' },
-  vendor: { label: 'Vendeur',  color: '#F47920', emoji: '🏪', gradient: 'linear-gradient(135deg,#F47920,#C2590A)' },
-  buyer:  { label: 'Acheteur', color: '#3B82F6', emoji: '👤', gradient: 'linear-gradient(135deg,#3B82F6,#1D4ED8)' },
+  admin:  { labelKey: 'ad1_live_map.role_admin',  color: '#EF4444', emoji: '👑', gradient: 'linear-gradient(135deg,#EF4444,#B91C1C)' },
+  vendor: { labelKey: 'ad1_live_map.role_vendor', color: '#F47920', emoji: '🏪', gradient: 'linear-gradient(135deg,#F47920,#C2590A)' },
+  buyer:  { labelKey: 'ad1_live_map.role_buyer',  color: '#3B82F6', emoji: '👤', gradient: 'linear-gradient(135deg,#3B82F6,#1D4ED8)' },
 };
 
 const CITY_FALLBACK: Record<string, [number, number]> = {
@@ -217,6 +218,7 @@ const GLOBAL_CSS = `
 
 export default function LiveMapPage() {
   const T             = useAdminTheme();
+  const { t }          = useTranslation();
   const { showToast } = useToast();
   const toastRef      = useRef(showToast);
   useEffect(() => { toastRef.current = showToast; });
@@ -236,11 +238,11 @@ export default function LiveMapPage() {
       setStats(data);
       setCountdown(30);
     } catch {
-      if (!silent) toastRef.current('Erreur chargement', 'error');
+      if (!silent) toastRef.current(t('ad1_live_map.load_error'), 'error');
     } finally {
       if (!silent) setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     load(false);
@@ -269,7 +271,7 @@ export default function LiveMapPage() {
   type CityGroup = { count: number; color: string; roles: Record<string, number>; users: LiveUser[]; coords: [number, number] };
   const cityGroups: Record<string, CityGroup> = {};
   filteredUsers.forEach(u => {
-    const city   = u.city || 'Inconnue';
+    const city   = u.city || t('ad1_live_map.unknown_city');
     const coords = CITY_FALLBACK[city] ?? [5.5, 12.0];
     if (!cityGroups[city]) cityGroups[city] = { count: 0, color: '#3B82F6', roles: {}, users: [], coords };
     cityGroups[city].count++;
@@ -300,23 +302,23 @@ export default function LiveMapPage() {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 20, fontWeight: 800, color: T.text, margin: 0 }}>
-                Carte Live
+                {t('ad1_live_map.page_title')}
               </h1>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 20, background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)' }}>
                 <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981', animation: 'livePulse 1.5s infinite' }} />
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#10B981' }}>LIVE · {countdown}s</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#10B981' }}>{t('ad1_live_map.live_countdown', { count: countdown })}</span>
               </div>
               {/* Badge GPS */}
               {(stats?.gps_count ?? 0) > 0 && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 8px', borderRadius: 20, background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.3)' }}>
                   <Navigation size={10} style={{ color: '#3B82F6' }} />
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#3B82F6' }}>{stats?.gps_count} GPS exact</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#3B82F6' }}>{t('ad1_live_map.gps_badge', { count: stats?.gps_count })}</span>
                 </div>
               )}
             </div>
             <p style={{ fontSize: 12, color: T.muted, margin: 0 }}>
-              {stats?.total_online ?? 0} utilisateur{(stats?.total_online ?? 0) > 1 ? 's' : ''} en ligne
-              {stats?.last_updated && <span style={{ marginLeft: 6 }}>· {fmtTime(stats.last_updated)}</span>}
+              {t((stats?.total_online ?? 0) > 1 ? 'ad1_live_map.users_online_count_plural' : 'ad1_live_map.users_online_count', { count: stats?.total_online ?? 0 })}
+              {stats?.last_updated && <span style={{ marginLeft: 6 }}>{t('ad1_live_map.update_time_suffix', { time: fmtTime(stats.last_updated) })}</span>}
             </p>
           </div>
         </div>
@@ -325,8 +327,8 @@ export default function LiveMapPage() {
           {/* Toggle mode */}
           <div style={{ display: 'flex', borderRadius: 10, overflow: 'hidden', border: `1px solid ${T.border}` }}>
             {[
-              { key: 'user', label: 'Individuel' },
-              { key: 'city', label: 'Par ville'  },
+              { key: 'user', label: t('ad1_live_map.mode_individual') },
+              { key: 'city', label: t('ad1_live_map.mode_by_city')  },
             ].map(v => (
               <button key={v.key} onClick={() => setViewMode(v.key as 'city' | 'user')}
                 style={{ padding: '6px 14px', fontSize: 12, fontWeight: 600, background: viewMode === v.key ? T.red : T.cardAlt, color: viewMode === v.key ? '#fff' : T.muted, border: 'none', cursor: 'pointer' }}>
@@ -342,7 +344,7 @@ export default function LiveMapPage() {
             return (
               <button key={role} onClick={() => setSelectedRole(role)}
                 style={{ padding: '5px 12px', borderRadius: 8, fontSize: 11.5, fontWeight: 600, cursor: 'pointer', border: `1px solid ${active ? (cfg?.color ?? T.red) + '50' : T.border}`, background: active ? (cfg?.color ?? T.red) + '18' : T.cardAlt, color: active ? (cfg?.color ?? T.red) : T.muted }}>
-                {role === 'all' ? 'Tous' : cfg?.label}
+                {role === 'all' ? t('ad1_live_map.filter_all') : (cfg ? t(cfg.labelKey) : null)}
                 {role !== 'all' && stats && <span style={{ marginLeft: 4, opacity: 0.7, fontSize: 10 }}>({role === 'buyer' ? stats.buyers : role === 'vendor' ? stats.vendors : stats.admins})</span>}
               </button>
             );
@@ -350,7 +352,7 @@ export default function LiveMapPage() {
 
           <button onClick={() => load(false)}
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 10, fontSize: 12, fontWeight: 600, background: 'rgba(220,38,38,0.1)', color: T.red, border: '1px solid rgba(220,38,38,0.25)', cursor: 'pointer' }}>
-            <RefreshCw size={12} className={loading ? 'animate-spin' : ''} /> Actualiser
+            <RefreshCw size={12} className={loading ? 'animate-spin' : ''} /> {t('ad1_live_map.refresh')}
           </button>
         </div>
       </div>
@@ -407,7 +409,7 @@ export default function LiveMapPage() {
                               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)' }}>{u.full_name}</div>
                             </div>
                             <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: 'rgba(255,255,255,0.2)' }}>
-                              {cfg.label}
+                              {t(cfg.labelKey)}
                             </span>
                           </div>
                         </div>
@@ -421,8 +423,8 @@ export default function LiveMapPage() {
                             <MapPin size={13} color={u.has_gps ? '#10B981' : '#9CA3AF'} style={{ flexShrink: 0 }} />
                             <span style={{ fontSize: 12, color: u.has_gps ? '#10B981' : '#6B7280', fontWeight: u.has_gps ? 600 : 400 }}>
                               {u.has_gps
-                                ? `GPS exact · ±${u.accuracy ?? '?'}m`
-                                : `${u.city || 'Position inconnue'} (approximatif)`
+                                ? t('ad1_live_map.gps_exact_label', { accuracy: u.accuracy ?? '?' })
+                                : t('ad1_live_map.approx_location', { city: u.city || t('ad1_live_map.unknown_position') })
                               }
                             </span>
                           </div>
@@ -434,7 +436,7 @@ export default function LiveMapPage() {
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 6, borderTop: '1px solid #F3F4F6' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                               <Clock size={12} color="#9CA3AF" />
-                              <span style={{ fontSize: 12, color: '#6B7280' }}>{u.session_min} min</span>
+                              <span style={{ fontSize: 12, color: '#6B7280' }}>{t('ad1_live_map.minutes_suffix', { count: u.session_min })}</span>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                               {u.device === 'mobile' ? <Smartphone size={12} color="#9CA3AF" /> : <Monitor size={12} color="#9CA3AF" />}
@@ -465,7 +467,7 @@ export default function LiveMapPage() {
                             const cfg = ROLE_CFG[role as keyof typeof ROLE_CFG];
                             return cfg ? (
                               <span key={role} style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 8px', borderRadius: 5, background: 'rgba(255,255,255,0.2)' }}>
-                                {cfg.label} {count}
+                                {t(cfg.labelKey)} {count}
                               </span>
                             ) : null;
                           })}
@@ -492,7 +494,7 @@ export default function LiveMapPage() {
                         })}
                         {group.users.length > 6 && (
                           <p style={{ fontSize: 11, color: '#9CA3AF', textAlign: 'center', margin: '6px 0 0' }}>
-                            +{group.users.length - 6} autre{group.users.length - 6 > 1 ? 's' : ''}
+                            {t(group.users.length - 6 > 1 ? 'ad1_live_map.more_users_plural' : 'ad1_live_map.more_users', { count: group.users.length - 6 })}
                           </p>
                         )}
                       </div>
@@ -512,22 +514,22 @@ export default function LiveMapPage() {
             <div style={{ padding: '10px 14px', borderRadius: 12, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', display: 'flex', alignItems: 'center', gap: 8 }}>
               <Navigation size={14} color="#10B981" style={{ flexShrink: 0 }} />
               <div>
-                <p style={{ fontSize: 12.5, fontWeight: 700, color: '#10B981', margin: 0 }}>{stats?.gps_count} position{(stats?.gps_count ?? 0) > 1 ? 's' : ''} exacte{(stats?.gps_count ?? 0) > 1 ? 's' : ''}</p>
-                <p style={{ fontSize: 11, color: T.muted, margin: 0 }}>{(stats?.total_online ?? 0) - (stats?.gps_count ?? 0)} approximative{(stats?.total_online ?? 0) - (stats?.gps_count ?? 0) > 1 ? 's' : ''}</p>
+                <p style={{ fontSize: 12.5, fontWeight: 700, color: '#10B981', margin: 0 }}>{t((stats?.gps_count ?? 0) > 1 ? 'ad1_live_map.exact_positions_plural' : 'ad1_live_map.exact_positions', { count: stats?.gps_count ?? 0 })}</p>
+                <p style={{ fontSize: 11, color: T.muted, margin: 0 }}>{t(((stats?.total_online ?? 0) - (stats?.gps_count ?? 0)) > 1 ? 'ad1_live_map.approx_positions_plural' : 'ad1_live_map.approx_positions', { count: (stats?.total_online ?? 0) - (stats?.gps_count ?? 0) })}</p>
               </div>
             </div>
           )}
 
           {/* Résumé */}
           <div style={{ padding: '14px', borderRadius: 14, background: T.card, border: `1px solid ${T.border}` }}>
-            <p style={{ fontSize: 12.5, fontWeight: 700, color: T.text, marginBottom: 10 }}>Résumé</p>
+            <p style={{ fontSize: 12.5, fontWeight: 700, color: T.text, marginBottom: 10 }}>{t('ad1_live_map.summary_title')}</p>
             {[
-              { icon: Radio,      label: 'En ligne',  value: stats?.total_online ?? 0, accent: '#10B981' },
-              { icon: Users,      label: 'Acheteurs', value: stats?.buyers        ?? 0, accent: '#3B82F6' },
-              { icon: Store,      label: 'Vendeurs',  value: stats?.vendors       ?? 0, accent: '#F47920' },
-              { icon: User,       label: 'Admins',    value: stats?.admins        ?? 0, accent: '#EF4444' },
-              { icon: Monitor,    label: 'Desktop',   value: stats?.by_device?.find(d => d.device === 'desktop')?.count ?? 0, accent: T.muted },
-              { icon: Smartphone, label: 'Mobile',    value: stats?.by_device?.filter(d => d.device !== 'desktop').reduce((s, d) => s + d.count, 0) ?? 0, accent: T.muted },
+              { icon: Radio,      label: t('ad1_live_map.summary_online'),  value: stats?.total_online ?? 0, accent: '#10B981' },
+              { icon: Users,      label: t('ad1_live_map.summary_buyers'), value: stats?.buyers        ?? 0, accent: '#3B82F6' },
+              { icon: Store,      label: t('ad1_live_map.summary_vendors'),  value: stats?.vendors       ?? 0, accent: '#F47920' },
+              { icon: User,       label: t('ad1_live_map.summary_admins'),    value: stats?.admins        ?? 0, accent: '#EF4444' },
+              { icon: Monitor,    label: t('ad1_live_map.summary_desktop'),   value: stats?.by_device?.find(d => d.device === 'desktop')?.count ?? 0, accent: T.muted },
+              { icon: Smartphone, label: t('ad1_live_map.summary_mobile'),    value: stats?.by_device?.filter(d => d.device !== 'desktop').reduce((s, d) => s + d.count, 0) ?? 0, accent: T.muted },
             ].map(({ icon: Icon, label, value, accent }, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 0', borderTop: `1px solid ${T.border}` }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
@@ -543,7 +545,7 @@ export default function LiveMapPage() {
           <div style={{ borderRadius: 14, background: T.card, border: `1px solid ${T.border}`, overflow: 'hidden' }}>
             <div style={{ padding: '10px 14px', borderBottom: `1px solid ${T.border}`, background: T.cardAlt, display: 'flex', alignItems: 'center', gap: 6 }}>
               <Globe size={13} style={{ color: T.red }} />
-              <span style={{ fontSize: 12.5, fontWeight: 700, color: T.text }}>Pages actives</span>
+              <span style={{ fontSize: 12.5, fontWeight: 700, color: T.text }}>{t('ad1_live_map.pages_active_title')}</span>
             </div>
             <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
               {(stats?.by_page ?? []).length === 0
@@ -571,7 +573,7 @@ export default function LiveMapPage() {
             <div style={{ borderRadius: 14, background: T.card, border: `1px solid ${T.border}`, overflow: 'hidden' }}>
               <div style={{ padding: '10px 14px', borderBottom: `1px solid ${T.border}`, background: T.cardAlt, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Clock size={13} style={{ color: T.red }} />
-                <span style={{ fontSize: 12.5, fontWeight: 700, color: T.text }}>Sessions ({filteredUsers.length})</span>
+                <span style={{ fontSize: 12.5, fontWeight: 700, color: T.text }}>{t('ad1_live_map.sessions_title', { count: filteredUsers.length })}</span>
               </div>
               <div style={{ maxHeight: 200, overflowY: 'auto', scrollbarWidth: 'thin' }}>
                 {filteredUsers.map(u => {
@@ -588,7 +590,7 @@ export default function LiveMapPage() {
                         <div style={{ fontSize: 12, fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>@{u.username}</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                           {u.has_gps && <Navigation size={9} color="#10B981" />}
-                          <span style={{ fontSize: 10.5, color: T.muted }}>{u.city || 'N/A'}</span>
+                          <span style={{ fontSize: 10.5, color: T.muted }}>{u.city || t('ad1_live_map.na_label')}</span>
                         </div>
                       </div>
                       <span style={{ fontSize: 11, color: T.muted, flexShrink: 0 }}>{u.session_min}m</span>

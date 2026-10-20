@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Zap } from "lucide-react";
 import { dealHref, discountOf, useFlashCountdown, useFlashDeals } from "@/data/flashDeals";
 
@@ -12,6 +13,7 @@ import { dealHref, discountOf, useFlashCountdown, useFlashDeals } from "@/data/f
  * doublon. Le point de bascule est donc exactement celui du panneau.
  */
 export default function MobileFlashStrip() {
+  const { t } = useTranslation();
   const deals = useFlashDeals();
   const remaining = useFlashCountdown(deals);
 
@@ -19,10 +21,10 @@ export default function MobileFlashStrip() {
 
   return (
     <section className="flex items-start gap-3 bg-[linear-gradient(180deg,#fff1ed,#fff7f4)] px-3 py-3 xl:hidden dark:bg-[linear-gradient(180deg,#1c1917,#0f172a)]">
-      <Link to="/flash-deals" className="flex-shrink-0 pt-1" aria-label="Voir tous les Flash Deals">
+      <Link to="/flash-deals" className="flex-shrink-0 pt-1" aria-label={t("home.flash_deals_aria")}>
         <p className="flex items-center gap-1 text-[12.5px] font-black text-primary">
           <Zap size={14} className="animate-flame-flicker" fill="currentColor" />
-          Flash Deals
+          {t("home.flash_deals")}
         </p>
         <p className="mt-1 font-mono text-[13px] font-black tabular-nums tracking-tight text-gray-900 dark:text-white">
           {remaining}

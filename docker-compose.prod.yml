@@ -54,7 +54,12 @@ services:
       - static_volume:/app/staticfiles
       - media_volume:/app/mediafiles
     environment:
-      - DJANGO_SETTINGS_MODULE=relaya.settings.base
+      # relaya.settings.prod, pas .base : `prod.py` refuse de demarrer si
+      # ALLOWED_HOSTS n'est pas defini, au lieu de retomber silencieusement
+      # sur le joker "*" herite de base.py. Cette ligne ecrasait le reglage
+      # du Dockerfile (ENV DJANGO_SETTINGS_MODULE=relaya.settings.prod) et
+      # desactivait donc ce garde-fou sans que rien ne le signale.
+      - DJANGO_SETTINGS_MODULE=relaya.settings.prod
       - DEBUG=False
       - SECRET_KEY=${DJANGO_SECRET_KEY}
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
@@ -88,7 +93,12 @@ services:
     volumes:
       - media_volume:/app/mediafiles
     environment:
-      - DJANGO_SETTINGS_MODULE=relaya.settings.base
+      # relaya.settings.prod, pas .base : `prod.py` refuse de demarrer si
+      # ALLOWED_HOSTS n'est pas defini, au lieu de retomber silencieusement
+      # sur le joker "*" herite de base.py. Cette ligne ecrasait le reglage
+      # du Dockerfile (ENV DJANGO_SETTINGS_MODULE=relaya.settings.prod) et
+      # desactivait donc ce garde-fou sans que rien ne le signale.
+      - DJANGO_SETTINGS_MODULE=relaya.settings.prod
       - DEBUG=False
       - SECRET_KEY=${DJANGO_SECRET_KEY}
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
@@ -125,6 +135,8 @@ services:
         VITE_API_URL: /api
         VITE_PORTAL_ROLE: client
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
+        VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
+        VITE_MAP_PROVIDER: ${VITE_MAP_PROVIDER:-openstreetmap}
     restart: unless-stopped
     networks:
       - relaya-network
@@ -137,6 +149,8 @@ services:
         VITE_API_URL: /api
         VITE_PORTAL_ROLE: seller
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
+        VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
+        VITE_MAP_PROVIDER: ${VITE_MAP_PROVIDER:-openstreetmap}
     restart: unless-stopped
     networks:
       - relaya-network
@@ -149,6 +163,8 @@ services:
         VITE_API_URL: /api
         VITE_PORTAL_ROLE: courier
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
+        VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
+        VITE_MAP_PROVIDER: ${VITE_MAP_PROVIDER:-openstreetmap}
     restart: unless-stopped
     networks:
       - relaya-network
@@ -161,6 +177,8 @@ services:
         VITE_API_URL: /api
         VITE_PORTAL_ROLE: admin
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
+        VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
+        VITE_MAP_PROVIDER: ${VITE_MAP_PROVIDER:-openstreetmap}
     restart: unless-stopped
     networks:
       - relaya-network
@@ -173,6 +191,8 @@ services:
         VITE_API_URL: /api
         VITE_PORTAL_ROLE: relay_point
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
+        VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
+        VITE_MAP_PROVIDER: ${VITE_MAP_PROVIDER:-openstreetmap}
     restart: unless-stopped
     networks:
       - relaya-network
@@ -185,6 +205,8 @@ services:
         VITE_API_URL: /api
         VITE_PORTAL_ROLE: delivery_organization
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
+        VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
+        VITE_MAP_PROVIDER: ${VITE_MAP_PROVIDER:-openstreetmap}
     restart: unless-stopped
     networks:
       - relaya-network

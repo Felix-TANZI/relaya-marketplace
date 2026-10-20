@@ -8,6 +8,7 @@ import {
   ShieldOff, Shield, Trash2, ChevronLeft, ChevronRight,
   ArrowUpDown, ArrowUp, ArrowDown, Store, Filter, ChevronDown, X, Bike,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { adminApi, type AdminUser, type UserFilters } from '@/services/api/admin';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import { useToast } from '@/context/ToastContext';
@@ -18,8 +19,8 @@ import { useConfirm } from '@/context/ConfirmContext';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const ROLE_CFG = {
-  vendor:     { label: 'Vendeur',     color: '#F47920', bg: 'rgba(244,121,32,0.12)' },
-  courier:    { label: 'Livreur',     color: '#10B981', bg: 'rgba(16,185,129,0.12)' },
+  vendor:     { labelKey: 'ad1_users_mgmt.role_vendor',  color: '#F47920', bg: 'rgba(244,121,32,0.12)' },
+  courier:    { labelKey: 'ad1_users_mgmt.role_courier', color: '#10B981', bg: 'rgba(16,185,129,0.12)' },
 };
 
 type SortKey = 'date_joined' | 'last_login' | 'username';
@@ -47,19 +48,20 @@ const getRoles = (u: AdminUser): string[] => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function RoleBadges({ user }: { user: AdminUser }) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center gap-1 flex-wrap">
       {getRoles(user).map(role => {
         const cfg = ROLE_CFG[role as keyof typeof ROLE_CFG] ?? ROLE_CFG.courier;
         return (
           <span key={role} style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: cfg.bg, color: cfg.color }}>
-            {cfg.label}
+            {t(cfg.labelKey)}
           </span>
         );
       })}
       {user.is_banned && (
         <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: 'rgba(239,68,68,0.15)', color: '#EF4444' }}>
-          BANNI
+          {t('ad1_users_mgmt.banned_badge')}
         </span>
       )}
     </div>
@@ -84,6 +86,7 @@ function SkeletonRow({ T }: { T: ReturnType<typeof useAdminTheme> }) {
 
 export default function UsersManagementPage() {
   const T             = useAdminTheme();
+  const { t }          = useTranslation();
   const { showToast } = useToast();
   const { confirm }   = useConfirm();
   const toastRef      = useRef(showToast);
@@ -113,11 +116,11 @@ export default function UsersManagementPage() {
       const data = await adminApi.listUsers(filters);
       setUsers(data);
     } catch {
-      toastRef.current('Erreur chargement des utilisateurs', 'error');
+      toastRef.current(t('ad1_users_mgmt.load_error'), 'error');
     } finally {
       setLoading(false);
     }
-  }, [roleF]);
+  }, [roleF, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -167,38 +170,38 @@ export default function UsersManagementPage() {
 
   // ── Actions ───────────────────────────────────────────────────────────────
   const handleBan = async (u: AdminUser) => {
-    const reason = window.prompt(`Raison du bannissement de @${u.username} :`);
+    const reason = window.prompt(t('ad1_users_mgmt.ban_reason_prompt', { username: u.username }));
     if (!reason?.trim()) return;
     setActing(u.id);
     try {
       await adminApi.banUser(u.id, reason.trim());
-      showToast(`@${u.username} banni`, 'success');
+      showToast(t('ad1_users_mgmt.ban_success', { username: u.username }), 'success');
       await load();
-    } catch { showToast('Erreur', 'error'); }
+    } catch { showToast(t('ad1_users_mgmt.generic_error'), 'error'); }
     finally  { setActing(null); }
   };
 
   const handleUnban = async (u: AdminUser) => {
-    const ok = await confirm({ title: `Débannir @${u.username} ?`, message: 'L\'accès sera restauré immédiatement.', type: 'warning', confirmText: 'Débannir', cancelText: 'Annuler' });
+    const ok = await confirm({ title: t('ad1_users_mgmt.unban_confirm_title', { username: u.username }), message: t('ad1_users_mgmt.unban_confirm_message'), type: 'warning', confirmText: t('ad1_users_mgmt.unban_confirm_button'), cancelText: t('ad1_users_mgmt.cancel_button') });
     if (!ok) return;
     setActing(u.id);
     try {
       await adminApi.unbanUser(u.id);
-      showToast(`@${u.username} débanni`, 'success');
+      showToast(t('ad1_users_mgmt.unban_success', { username: u.username }), 'success');
       await load();
-    } catch { showToast('Erreur', 'error'); }
+    } catch { showToast(t('ad1_users_mgmt.generic_error'), 'error'); }
     finally  { setActing(null); }
   };
 
   const handleDelete = async (u: AdminUser) => {
-    const ok = await confirm({ title: `Supprimer @${u.username} ?`, message: 'Cette action est irréversible.', type: 'danger', confirmText: 'Supprimer', cancelText: 'Annuler' });
+    const ok = await confirm({ title: t('ad1_users_mgmt.delete_confirm_title', { username: u.username }), message: t('ad1_users_mgmt.delete_confirm_message'), type: 'danger', confirmText: t('ad1_users_mgmt.delete_confirm_button'), cancelText: t('ad1_users_mgmt.cancel_button') });
     if (!ok) return;
     setActing(u.id);
     try {
       await adminApi.deleteUser(u.id);
-      showToast('Utilisateur supprimé', 'success');
+      showToast(t('ad1_users_mgmt.delete_success'), 'success');
       await load();
-    } catch { showToast('Erreur', 'error'); }
+    } catch { showToast(t('ad1_users_mgmt.generic_error'), 'error'); }
     finally  { setActing(null); }
   };
 
@@ -232,11 +235,11 @@ export default function UsersManagementPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: T.text, marginBottom: 4 }}>
-            Gestion des Utilisateurs
+            {t('ad1_users_mgmt.page_title')}
           </h1>
           <p style={{ fontSize: 13, color: T.muted }}>
-            {kpis.banned > 0 && <span style={{ color: T.red, fontWeight: 700, marginRight: 6 }}>{kpis.banned} bannis ·</span>}
-            {users.length.toLocaleString('fr-FR')} utilisateurs
+            {kpis.banned > 0 && <span style={{ color: T.red, fontWeight: 700, marginRight: 6 }}>{t('ad1_users_mgmt.banned_count_prefix', { count: kpis.banned })}</span>}
+            {t('ad1_users_mgmt.users_count', { n: users.length.toLocaleString('fr-FR') })}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -253,7 +256,7 @@ export default function UsersManagementPage() {
             onMouseEnter={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.18)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.1)')}>
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-            <span className="hidden sm:inline">Actualiser</span>
+            <span className="hidden sm:inline">{t('ad1_users_mgmt.refresh')}</span>
           </button>
         </div>
       </div>
@@ -261,10 +264,10 @@ export default function UsersManagementPage() {
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: 'Acteurs',  value: kpis.total,   accent: T.text,    onClick: () => setRoleF('all') },
-          { label: 'Vendeurs', value: kpis.vendors, accent: '#F47920', onClick: () => setRoleF('vendor') },
-          { label: 'Livreurs', value: kpis.couriers, accent: '#10B981', onClick: () => setRoleF('courier') },
-          { label: 'Bannis',   value: kpis.banned,  accent: T.red,     onClick: () => setRoleF('banned') },
+          { label: t('ad1_users_mgmt.kpi_actors'),  value: kpis.total,   accent: T.text,    onClick: () => setRoleF('all') },
+          { label: t('ad1_users_mgmt.kpi_vendors'), value: kpis.vendors, accent: '#F47920', onClick: () => setRoleF('vendor') },
+          { label: t('ad1_users_mgmt.kpi_couriers'), value: kpis.couriers, accent: '#10B981', onClick: () => setRoleF('courier') },
+          { label: t('ad1_users_mgmt.kpi_banned'),   value: kpis.banned,  accent: T.red,     onClick: () => setRoleF('banned') },
         ].map((k, i) => (
           <button key={i} onClick={() => { k.onClick(); setPage(1); }}
             className="rounded-2xl p-4 text-left w-full transition-all"
@@ -287,11 +290,11 @@ export default function UsersManagementPage() {
           <button onClick={() => setOpenDrop(openDrop === 'role' ? null : 'role')}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold whitespace-nowrap"
             style={{ background: roleF !== 'all' ? T.red + '18' : T.cardAlt, color: roleF !== 'all' ? T.red : T.muted, border: `1px solid ${roleF !== 'all' ? T.red + '40' : T.border}` }}>
-            {({ all: 'Tous les acteurs', vendor: 'Vendeurs', courier: 'Livreurs', banned: 'Bannis' } as Record<RoleFilter, string>)[roleF]} <ChevronDown size={11} />
+            {t(`ad1_users_mgmt.filter_${roleF}`)} <ChevronDown size={11} />
           </button>
           <DropMenu show={openDrop === 'role'}>
-            {([['all','Tous les acteurs'],['vendor','Vendeurs'],['courier','Livreurs'],['banned','Bannis']] as [RoleFilter,string][]).map(([k,l]) => (
-              <DropItem key={k} label={l} active={roleF === k} onClick={() => { setRoleF(k); setPage(1); }} />
+            {(['all','vendor','courier','banned'] as RoleFilter[]).map(k => (
+              <DropItem key={k} label={t(`ad1_users_mgmt.filter_${k}`)} active={roleF === k} onClick={() => { setRoleF(k); setPage(1); }} />
             ))}
           </DropMenu>
         </div>
@@ -299,20 +302,20 @@ export default function UsersManagementPage() {
           <button onClick={() => { setRoleF('all'); setPage(1); }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold"
             style={{ background: T.red + '10', color: T.red, border: `1px solid ${T.red}30` }}>
-            <X size={11} /> Effacer
+            <X size={11} /> {t('ad1_users_mgmt.clear_filter')}
           </button>
         )}
         {/* Recherche */}
         <div className="relative flex-1 max-w-72 ml-auto">
           <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: T.muted }} />
-          <input type="text" placeholder="Username, email, boutique…"
+          <input type="text" placeholder={t('ad1_users_mgmt.search_placeholder')}
             onChange={e => handleSearch(e.target.value)}
             className="w-full pl-8 pr-3 py-2 rounded-xl text-[12.5px] outline-none"
             style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}` }}
             onFocus={e => (e.target.style.borderColor = T.red)}
             onBlur={e  => (e.target.style.borderColor = T.inputBorder)} />
         </div>
-        <p style={{ fontSize: 12, color: T.muted, flexShrink: 0 }}>{sorted.length} résultat{sorted.length > 1 ? 's' : ''}</p>
+        <p style={{ fontSize: 12, color: T.muted, flexShrink: 0 }}>{t(sorted.length > 1 ? 'ad1_users_mgmt.results_count_plural' : 'ad1_users_mgmt.results_count', { count: sorted.length })}</p>
       </div>
 
       {/* Tableau */}
@@ -323,12 +326,12 @@ export default function UsersManagementPage() {
             <thead>
               <tr style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
                 {([
-                  { label: 'Utilisateur', k: 'username'    as SortKey | null },
-                  { label: 'Email',       k: null },
-                  { label: 'Rôles',       k: null },
-                  { label: 'Boutique',    k: null },
-                  { label: 'Inscrit le',  k: 'date_joined' as SortKey | null },
-                  { label: 'Dernière connexion', k: 'last_login' as SortKey | null },
+                  { label: t('ad1_users_mgmt.col_user'), k: 'username'    as SortKey | null },
+                  { label: t('ad1_users_mgmt.col_email'),       k: null },
+                  { label: t('ad1_users_mgmt.col_roles'),       k: null },
+                  { label: t('ad1_users_mgmt.col_shop'),    k: null },
+                  { label: t('ad1_users_mgmt.col_joined'),  k: 'date_joined' as SortKey | null },
+                  { label: t('ad1_users_mgmt.col_last_login'), k: 'last_login' as SortKey | null },
                   { label: '',            k: null },
                 ] as { label: string; k: SortKey | null }[]).map((col, i) => (
                   <th key={i}
@@ -350,7 +353,7 @@ export default function UsersManagementPage() {
                   ? <tr><td colSpan={7} style={{ padding: '60px 0', textAlign: 'center' }}>
                       <div className="flex flex-col items-center gap-3">
                         <Users size={28} style={{ color: T.muted }} />
-                        <p style={{ fontSize: 14, color: T.muted }}>Aucun utilisateur trouvé</p>
+                        <p style={{ fontSize: 14, color: T.muted }}>{t('ad1_users_mgmt.no_users_found')}</p>
                       </div>
                     </td></tr>
                   : paginated.map((u, i) => (
@@ -375,11 +378,11 @@ export default function UsersManagementPage() {
                       <td style={{ padding: '12px 12px' }}>
                         {u.is_vendor ? (
                           <span className="flex items-center gap-1.5" style={{ fontSize: 12, color: '#F47920', fontWeight: 600 }}>
-                            <Store size={12} /> Vendeur
+                            <Store size={12} /> {t('ad1_users_mgmt.role_vendor')}
                           </span>
                         ) : u.is_courier ? (
                           <span className="flex items-center gap-1.5" style={{ fontSize: 12, color: '#10B981', fontWeight: 600 }}>
-                            <Bike size={12} /> Livreur
+                            <Bike size={12} /> {t('ad1_users_mgmt.role_courier')}
                           </span>
                         ) : <span style={{ color: T.muted, fontSize: 12 }}>—</span>}
                       </td>
@@ -447,12 +450,12 @@ export default function UsersManagementPage() {
                     <p style={{ fontSize: 12, color: T.muted, marginBottom: 4 }} className="truncate">{u.email}</p>
                     {u.is_vendor && (
                       <p style={{ fontSize: 11.5, color: '#F47920', fontWeight: 600 }}>
-                        <Store size={10} style={{ display: 'inline', marginRight: 3 }} />Vendeur
+                        <Store size={10} style={{ display: 'inline', marginRight: 3 }} />{t('ad1_users_mgmt.role_vendor')}
                       </p>
                     )}
                     {u.is_courier && (
                       <p style={{ fontSize: 11.5, color: '#10B981', fontWeight: 600 }}>
-                        <Bike size={10} style={{ display: 'inline', marginRight: 3 }} />Livreur
+                        <Bike size={10} style={{ display: 'inline', marginRight: 3 }} />{t('ad1_users_mgmt.role_courier')}
                       </p>
                     )}
                   </div>
@@ -466,7 +469,7 @@ export default function UsersManagementPage() {
         {!loading && sorted.length > 0 && (
           <div className="flex items-center justify-between px-4 sm:px-5 py-3 flex-wrap gap-3" style={{ borderTop: `1px solid ${T.border}` }}>
             <div className="flex items-center gap-2">
-              <span style={{ fontSize: 12, color: T.muted }}>Lignes :</span>
+              <span style={{ fontSize: 12, color: T.muted }}>{t('ad1_users_mgmt.rows_label')}</span>
               {PAGE_SIZES.map(s => (
                 <button key={s} onClick={() => { setPageSize(s); setPage(1); }}
                   className="w-8 h-7 rounded-lg text-[12px] font-semibold"
@@ -476,7 +479,7 @@ export default function UsersManagementPage() {
               ))}
             </div>
             <p style={{ fontSize: 12, color: T.muted }}>
-              {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, sorted.length)} sur {sorted.length}
+              {t('ad1_users_mgmt.pagination_range', { start: (page - 1) * pageSize + 1, end: Math.min(page * pageSize, sorted.length), total: sorted.length })}
             </p>
             <div className="flex items-center gap-1">
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}

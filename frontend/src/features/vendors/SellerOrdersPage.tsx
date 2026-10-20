@@ -4,6 +4,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle, CheckCircle, Clock, Download, FileText, Lock, Package,
   PackageCheck, RefreshCw, Search, ShieldCheck, ShoppingBag, Truck, XCircle,
@@ -22,11 +23,11 @@ import {
 } from './vendorTheme';
 
 const STEPS = [
-  { key: 'PAID_IN_ESCROW',      label: 'Payée' },
-  { key: 'VENDOR_ACKNOWLEDGED', label: 'Confirmée' },
-  { key: 'PREPARING',           label: 'Préparation' },
-  { key: 'READY_FOR_PICKUP',    label: 'Prête' },
-  { key: 'DELIVERED',           label: 'Livrée' },
+  { key: 'PAID_IN_ESCROW',      labelKey: 'sl3_orders.step_paid' },
+  { key: 'VENDOR_ACKNOWLEDGED', labelKey: 'sl3_orders.step_acknowledged' },
+  { key: 'PREPARING',           labelKey: 'sl3_orders.step_preparing' },
+  { key: 'READY_FOR_PICKUP',    labelKey: 'sl3_orders.step_ready' },
+  { key: 'DELIVERED',           labelKey: 'sl3_orders.step_delivered' },
 ];
 
 const STATUS_ORDER: Record<string, number> = {
@@ -34,46 +35,48 @@ const STATUS_ORDER: Record<string, number> = {
   READY_FOR_PICKUP: 4, DELIVERED: 5, CANCELLED: -1, DISPUTED: -1, REFUNDED: -1,
 };
 
-const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> = {
-  CREATED:             { label: 'Reçue',            color: T.muted,  bg: T.creamAlt },
-  PAID_IN_ESCROW:      { label: 'À confirmer',      color: T.amber,  bg: T.amberL   },
-  VENDOR_ACKNOWLEDGED: { label: 'Confirmée',        color: T.blue,   bg: T.blueL    },
-  PREPARING:           { label: 'En préparation',   color: T.blue,   bg: T.blueL    },
-  READY_FOR_PICKUP:    { label: 'Prête',            color: T.violet, bg: T.violetL  },
-  DRIVER_ASSIGNED:     { label: 'Livreur assigné',  color: T.blue,   bg: T.blueL    },
-  PICKED_UP:           { label: 'Pris en charge',   color: T.blue,   bg: T.blueL    },
-  OUT_FOR_DELIVERY:    { label: 'En livraison',     color: T.blue,   bg: T.blueL    },
-  DELIVERED:           { label: 'Livrée',           color: T.green,  bg: T.greenL   },
-  BUYER_CONFIRMED:     { label: 'Reçue · Confirmée', color: T.green, bg: T.greenL   },
-  AUTO_CONFIRMED:      { label: 'Confirmée auto',   color: T.green,  bg: T.greenL   },
-  RELEASED_TO_VENDOR:  { label: 'Fonds libérés',    color: T.green,  bg: T.greenL   },
-  DISPUTED:            { label: 'Litige',           color: T.red,    bg: T.redL     },
-  CANCELLED:           { label: 'Annulée',          color: T.red,    bg: T.redL     },
-  REFUNDED:            { label: 'Remboursée',       color: T.blue,   bg: T.blueL    },
+const STATUS_CFG: Record<string, { labelKey: string; color: string; bg: string }> = {
+  CREATED:             { labelKey: 'sl3_orders.status_created',      color: T.muted,  bg: T.creamAlt },
+  PAID_IN_ESCROW:      { labelKey: 'sl3_orders.status_to_confirm',   color: T.amber,  bg: T.amberL   },
+  VENDOR_ACKNOWLEDGED: { labelKey: 'sl3_orders.status_confirmed',    color: T.blue,   bg: T.blueL    },
+  PREPARING:           { labelKey: 'sl3_orders.status_preparing',   color: T.blue,   bg: T.blueL    },
+  READY_FOR_PICKUP:    { labelKey: 'sl3_orders.status_ready',        color: T.violet, bg: T.violetL  },
+  DRIVER_ASSIGNED:     { labelKey: 'sl3_orders.status_driver_assigned', color: T.blue,   bg: T.blueL    },
+  PICKED_UP:           { labelKey: 'sl3_orders.status_picked_up',   color: T.blue,   bg: T.blueL    },
+  OUT_FOR_DELIVERY:    { labelKey: 'sl3_orders.status_out_for_delivery', color: T.blue,   bg: T.blueL    },
+  DELIVERED:           { labelKey: 'sl3_orders.status_delivered',    color: T.green,  bg: T.greenL   },
+  BUYER_CONFIRMED:     { labelKey: 'sl3_orders.status_buyer_confirmed', color: T.green, bg: T.greenL   },
+  AUTO_CONFIRMED:      { labelKey: 'sl3_orders.status_auto_confirmed', color: T.green,  bg: T.greenL   },
+  RELEASED_TO_VENDOR:  { labelKey: 'sl3_orders.status_released',     color: T.green,  bg: T.greenL   },
+  DISPUTED:            { labelKey: 'sl3_orders.status_disputed',     color: T.red,    bg: T.redL     },
+  CANCELLED:           { labelKey: 'sl3_orders.status_cancelled',    color: T.red,    bg: T.redL     },
+  REFUNDED:            { labelKey: 'sl3_orders.status_refunded',     color: T.blue,   bg: T.blueL    },
 };
 
 type TabFilter = 'all' | 'PAID_IN_ESCROW' | 'PREPARING' | 'READY_FOR_PICKUP' | 'DELIVERED' | 'CANCELLED' | 'DISPUTED';
 
-const TABS: { key: TabFilter; label: string }[] = [
-  { key: 'all',              label: 'Toutes' },
-  { key: 'PAID_IN_ESCROW',   label: 'À confirmer' },
-  { key: 'PREPARING',        label: 'En préparation' },
-  { key: 'READY_FOR_PICKUP', label: 'Prêtes' },
-  { key: 'DELIVERED',        label: 'Livrées' },
-  { key: 'CANCELLED',        label: 'Annulées' },
-  { key: 'DISPUTED',         label: 'Litiges' },
+const TABS: { key: TabFilter; labelKey: string }[] = [
+  { key: 'all',              labelKey: 'sl3_orders.tab_all' },
+  { key: 'PAID_IN_ESCROW',   labelKey: 'sl3_orders.tab_to_confirm' },
+  { key: 'PREPARING',        labelKey: 'sl3_orders.tab_preparing' },
+  { key: 'READY_FOR_PICKUP', labelKey: 'sl3_orders.tab_ready' },
+  { key: 'DELIVERED',        labelKey: 'sl3_orders.tab_delivered' },
+  { key: 'CANCELLED',        labelKey: 'sl3_orders.tab_cancelled' },
+  { key: 'DISPUTED',         labelKey: 'sl3_orders.tab_disputed' },
 ];
 
 function useShopName(): string {
-  const [name, setName] = useState('Ma Boutique');
+  const { t } = useTranslation();
+  const [name, setName] = useState<string | null>(null);
   useEffect(() => {
     vendorsApi.getProfile().then(p => setName(p.business_name)).catch(() => null);
   }, []);
-  return name;
+  return name ?? t('sl3_orders.default_shop_name');
 }
 
 /** Minuterie 72 h — Date.now() jamais appelé pendant le rendu. */
 function useOrderTimer(createdAt: string, isPending: boolean): string | null {
+  const { t } = useTranslation();
   const [timer, setTimer] = useState<string | null>(null);
   useEffect(() => {
     if (!isPending) return;
@@ -81,16 +84,17 @@ function useOrderTimer(createdAt: string, isPending: boolean): string | null {
     const tick = () => {
       const diff = deadline - Date.now();
       setTimer(diff <= 0 ? null
-        : `${Math.floor(diff / 3600000)} h ${Math.floor((diff % 3600000) / 60000)} min restantes`);
+        : t('sl3_orders.time_remaining', { h: Math.floor(diff / 3600000), m: Math.floor((diff % 3600000) / 60000) }));
     };
     const initId = setTimeout(tick, 0);
     const loopId = setInterval(tick, 60_000);
     return () => { clearTimeout(initId); clearInterval(loopId); };
-  }, [isPending, createdAt]);
+  }, [isPending, createdAt, t]);
   return isPending ? timer : null;
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation();
   const cfg = STATUS_CFG[status];
   if (!cfg) return null;
   return (
@@ -98,12 +102,13 @@ function StatusBadge({ status }: { status: string }) {
       style={{ fontSize: 11, padding: '5px 11px', color: cfg.color, background: cfg.bg }}>
       {status === 'DELIVERED' && <CheckCircle size={10} />}
       {status === 'CANCELLED' && <XCircle size={10} />}
-      {cfg.label}
+      {t(cfg.labelKey)}
     </span>
   );
 }
 
 function Stepper({ status }: { status: string }) {
+  const { t } = useTranslation();
   if (status === 'CANCELLED') {
     return (
       <div className="flex items-center gap-2 mt-3">
@@ -111,7 +116,7 @@ function Stepper({ status }: { status: string }) {
           style={{ background: T.redL, border: `1.5px solid ${T.red}` }}>
           <XCircle size={11} style={{ color: T.red }} />
         </span>
-        <span className="font-medium" style={{ fontSize: 11.5, color: T.red }}>Commande annulée</span>
+        <span className="font-medium" style={{ fontSize: 11.5, color: T.red }}>{t('sl3_orders.order_cancelled')}</span>
       </div>
     );
   }
@@ -136,7 +141,7 @@ function Stepper({ status }: { status: string }) {
               </span>
               <span className="mt-1 whitespace-nowrap"
                 style={{ fontSize: 9.5, fontWeight: now ? 700 : 500, color: done ? T.green : now ? T.orange : T.mutedL }}>
-                {s.label}
+                {t(s.labelKey)}
               </span>
             </div>
             {i < STEPS.length - 1 && (
@@ -156,6 +161,7 @@ function Actions({ order, onAdvance, onInvoice, updating }: {
   onInvoice: (o: VendorOrder) => void;
   updating: boolean;
 }) {
+  const { t } = useTranslation();
   const status = order.fulfillment_status as FulfillmentStatus;
   const spin = <RefreshCw size={13} className="animate-spin" />;
   const ghost = { padding: '9px 15px', fontSize: 12.5, background: T.cream, border: `1px solid ${T.border}`, color: T.muted };
@@ -163,13 +169,13 @@ function Actions({ order, onAdvance, onInvoice, updating }: {
   const details = (
     <Link to={`/seller/orders/${order.id}`}
       className="flex items-center gap-1.5 rounded-xl font-semibold transition-all" style={ghost}>
-      <FileText size={13} />Détails
+      <FileText size={13} />{t('sl3_orders.details')}
     </Link>
   );
   const invoice = (
     <button type="button" onClick={() => onInvoice(order)}
       className="flex items-center gap-1.5 rounded-xl font-semibold transition-all" style={ghost}>
-      <FileText size={13} />Facture
+      <FileText size={13} />{t('sl3_orders.invoice')}
     </button>
   );
 
@@ -183,7 +189,7 @@ function Actions({ order, onAdvance, onInvoice, updating }: {
     return (
       <div className="flex gap-2 mt-4 pt-4 flex-wrap items-center" style={{ borderTop: `1px solid ${T.border}` }}>
         <span className="flex items-center gap-1.5 font-medium" style={{ fontSize: 11.5, color: T.muted }}>
-          <Truck size={13} />En attente du livreur
+          <Truck size={13} />{t('sl3_orders.waiting_for_courier')}
         </span>
         <span className="ml-auto flex gap-2">{details}{invoice}</span>
       </div>
@@ -196,15 +202,15 @@ function Actions({ order, onAdvance, onInvoice, updating }: {
         <>
           <button type="button" onClick={() => onAdvance(order, 'VENDOR_ACKNOWLEDGED')}
             disabled={updating || !order.is_paid}
-            title={!order.is_paid ? 'Paiement non confirmé' : undefined}
+            title={!order.is_paid ? t('sl3_orders.payment_not_confirmed') : undefined}
             className="flex items-center gap-1.5 rounded-xl font-bold text-white transition-all hover:-translate-y-px disabled:opacity-60"
             style={{ padding: '9px 16px', fontSize: 12.5, background: T.green, boxShadow: '0 8px 18px -8px rgba(22,163,74,.7)' }}>
-            {updating ? spin : <CheckCircle size={13} />}Accepter
+            {updating ? spin : <CheckCircle size={13} />}{t('sl3_orders.accept')}
           </button>
           <button type="button" onClick={() => onAdvance(order, 'CANCELLED')} disabled={updating}
             className="flex items-center gap-1.5 rounded-xl font-semibold transition-all"
             style={{ padding: '9px 15px', fontSize: 12.5, background: T.redL, border: `1px solid ${T.redB}`, color: T.red }}>
-            {updating ? spin : <XCircle size={13} />}Refuser
+            {updating ? spin : <XCircle size={13} />}{t('sl3_orders.refuse')}
           </button>
         </>
       )}
@@ -212,14 +218,14 @@ function Actions({ order, onAdvance, onInvoice, updating }: {
         <button type="button" onClick={() => onAdvance(order, 'PREPARING')} disabled={updating}
           className="flex items-center gap-1.5 rounded-xl font-bold text-white transition-all hover:-translate-y-px"
           style={{ padding: '9px 16px', fontSize: 12.5, background: T.blue, boxShadow: '0 8px 18px -8px rgba(37,99,235,.7)' }}>
-          {updating ? spin : <Package size={13} />}Commencer la préparation
+          {updating ? spin : <Package size={13} />}{t('sl3_orders.start_preparing')}
         </button>
       )}
       {status === 'PREPARING' && (
         <button type="button" onClick={() => onAdvance(order, 'READY_FOR_PICKUP')} disabled={updating}
           className="flex items-center gap-1.5 rounded-xl font-bold text-white transition-all hover:-translate-y-px"
           style={{ padding: '9px 16px', fontSize: 12.5, background: T.orange, boxShadow: '0 8px 18px -8px rgba(244,121,32,.8)' }}>
-          {updating ? spin : <Truck size={13} />}Prêt à expédier
+          {updating ? spin : <Truck size={13} />}{t('sl3_orders.ready_to_ship')}
         </button>
       )}
       <span className="flex gap-2 ml-auto">{details}{invoice}</span>
@@ -233,6 +239,7 @@ function OrderCard({ order, onAdvance, onInvoice, updating }: {
   onInvoice: (o: VendorOrder) => void;
   updating: boolean;
 }) {
+  const { t } = useTranslation();
   const status = order.fulfillment_status as FulfillmentStatus;
   const timer = useOrderTimer(order.created_at, status === 'PAID_IN_ESCROW');
   const items = order.items ?? [];
@@ -247,11 +254,11 @@ function OrderCard({ order, onAdvance, onInvoice, updating }: {
           <p className="font-black" style={{ fontSize: 15, color: T.text }}>{orderRef(order.id)}</p>
           <p className="mt-0.5" style={{ fontSize: 11.5, color: T.muted }}>
             {fmtDate(order.created_at)} · {order.city}
-            {items.length > 0 && ` · ${items.length} article${items.length > 1 ? 's' : ''}`}
+            {items.length > 0 && ` · ${t(items.length > 1 ? 'sl3_orders.item_count_plural' : 'sl3_orders.item_count', { count: items.length })}`}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <Badge label={escrow.label} color={escrow.color} bg={escrow.bg} />
+          <Badge label={t(escrow.labelKey)} color={escrow.color} bg={escrow.bg} />
           <StatusBadge status={status} />
         </div>
       </div>
@@ -276,7 +283,7 @@ function OrderCard({ order, onAdvance, onInvoice, updating }: {
             </span>
             <div className="flex-1 min-w-0">
               <p className="font-semibold v-cell" style={{ fontSize: 13, color: T.text }}>{item.product_title}</p>
-              <p style={{ fontSize: 11, color: T.muted }}>Qté : {item.qty}</p>
+              <p style={{ fontSize: 11, color: T.muted }}>{t('sl3_orders.qty_label', { qty: item.qty })}</p>
             </div>
             <p className="font-black flex-shrink-0" style={{ fontSize: 14, color: T.text }}>
               {fmtXAF(item.line_total_xaf)}
@@ -285,7 +292,7 @@ function OrderCard({ order, onAdvance, onInvoice, updating }: {
         ))}
         {items.length > 3 && (
           <p className="mt-2" style={{ fontSize: 11, color: T.muted }}>
-            + {items.length - 3} article{items.length - 3 > 1 ? 's' : ''} de plus
+            {t(items.length - 3 > 1 ? 'sl3_orders.more_items_plural' : 'sl3_orders.more_items', { count: items.length - 3 })}
           </p>
         )}
 
@@ -296,7 +303,7 @@ function OrderCard({ order, onAdvance, onInvoice, updating }: {
             style={{ padding: '9px 13px', background: T.amberL, border: `1px solid ${T.amberB}` }}>
             <AlertTriangle size={13} style={{ color: T.amber, flexShrink: 0 }} />
             <p className="font-semibold" style={{ fontSize: 11.5, color: T.amber }}>
-              Paiement non encore confirmé — vous ne pouvez pas traiter cette commande
+              {t('sl3_orders.payment_pending_warning')}
             </p>
           </div>
         )}
@@ -309,7 +316,7 @@ function OrderCard({ order, onAdvance, onInvoice, updating }: {
         style={{ padding: '12px 20px', background: T.cream, borderTop: `1px solid ${T.border}` }}>
         <p className="flex items-center gap-1.5 font-medium flex-wrap" style={{ fontSize: 11.5, color: T.muted }}>
           <Lock size={12} style={{ color: escrow.color }} />
-          Brut {fmtXAF(order.vendor_subtotal)} · commission {order.commission_rate.toFixed(1)} %
+          {t('sl3_orders.gross_commission', { gross: fmtXAF(order.vendor_subtotal), rate: order.commission_rate.toFixed(1) })}
           <span style={{ color: T.red }}>− {nf(order.commission_amount)}</span>
         </p>
         <p className="font-black" style={{ fontSize: 15, color: T.orange }}>
@@ -321,6 +328,7 @@ function OrderCard({ order, onAdvance, onInvoice, updating }: {
 }
 
 export default function SellerOrdersPage() {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const shopName = useShopName();
 
@@ -338,12 +346,12 @@ export default function SellerOrdersPage() {
       if (tab !== 'all') filters.fulfillment_status = tab as VendorOrder['fulfillment_status'];
       setOrders(await vendorsApi.getOrders(filters));
     } catch {
-      showToast('Erreur de chargement', 'error');
+      showToast(t('sl3_orders.toast_load_error'), 'error');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [tab, showToast]);
+  }, [tab, showToast, t]);
 
   useEffect(() => { loadOrders(); }, [loadOrders]);
 
@@ -352,9 +360,10 @@ export default function SellerOrdersPage() {
       setUpdatingId(order.id);
       const updated = await vendorsApi.updateFulfillmentStatus(order.id, { fulfillment_status: next });
       setOrders(prev => prev.map(o => (o.id === order.id ? updated : o)));
-      showToast(`Commande mise à jour : ${STATUS_CFG[next]?.label ?? next}`, 'success');
+      const nextLabel = STATUS_CFG[next]?.labelKey ? t(STATUS_CFG[next].labelKey) : next;
+      showToast(t('sl3_orders.toast_status_updated', { status: nextLabel }), 'success');
     } catch {
-      showToast('Erreur de mise à jour', 'error');
+      showToast(t('sl3_orders.toast_update_error'), 'error');
     } finally {
       setUpdatingId(null);
     }
@@ -393,30 +402,30 @@ export default function SellerOrdersPage() {
       <VendorStyles />
 
       <PageHead
-        kicker="Commandes" title="Commandes reçues"
+        kicker={t('sl3_orders.kicker')} title={t('sl3_orders.page_title')}
         subtitle={
-          `${orders.length} commande${orders.length > 1 ? 's' : ''}` +
-          (stats.pending > 0 ? ` · ${stats.pending} en attente` : '') +
-          (stats.inEscrow > 0 ? ` · ${nf(stats.inEscrow)} FCFA en escrow` : '')
+          t(orders.length > 1 ? 'sl3_orders.order_count_plural' : 'sl3_orders.order_count', { count: orders.length }) +
+          (stats.pending > 0 ? t('sl3_orders.subtitle_pending', { count: stats.pending }) : '') +
+          (stats.inEscrow > 0 ? t('sl3_orders.subtitle_escrow', { amount: nf(stats.inEscrow) }) : '')
         }
         actions={
           <>
             <GhostBtn icon={<Download size={13} />}
               onClick={() => {
-                if (filtered.length === 0) { showToast('Aucune commande à exporter', 'error'); return; }
-                exportOrdersCSV(filtered, shopName);
-                showToast(`${filtered.length} commandes exportées en CSV`, 'success');
+                if (filtered.length === 0) { showToast(t('sl3_orders.toast_no_orders_export'), 'error'); return; }
+                exportOrdersCSV(filtered, shopName, t);
+                showToast(t('sl3_orders.toast_exported', { count: filtered.length }), 'success');
               }}>
-              Exporter
+              {t('sl3_orders.export')}
             </GhostBtn>
             <button type="button"
               onClick={() => {
-                if (filtered.length === 0) { showToast('Aucune commande à facturer', 'error'); return; }
-                openInvoice(filtered, shopName);
+                if (filtered.length === 0) { showToast(t('sl3_orders.toast_no_orders_invoice'), 'error'); return; }
+                openInvoice(filtered, shopName, t);
               }}
               className="flex items-center gap-1.5 rounded-xl font-bold text-white transition-all hover:-translate-y-px"
               style={{ padding: '9px 14px', fontSize: 12, background: T.orange, boxShadow: '0 8px 18px -8px rgba(244,121,32,.8)' }}>
-              <FileText size={13} />Factures
+              <FileText size={13} />{t('sl3_orders.invoices')}
             </button>
             <button type="button" onClick={() => loadOrders(true)} disabled={refreshing}
               className="rounded-xl transition-all"
@@ -430,12 +439,12 @@ export default function SellerOrdersPage() {
       {/* ═══ 6 MÉTRIQUES ═══ */}
       <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(148px,1fr))' }}>
         {[
-          { label: 'En attente',     value: String(stats.pending),     icon: Clock,        color: T.amber,  bg: T.amberL  },
-          { label: 'En préparation', value: String(stats.processing),  icon: Package,      color: T.blue,   bg: T.blueL   },
-          { label: 'Expédiées',      value: String(stats.shipped),     icon: Truck,        color: T.violet, bg: T.violetL },
-          { label: 'Livrées',        value: String(stats.delivered),   icon: PackageCheck, color: T.green,  bg: T.greenL  },
-          { label: 'Annulées',       value: String(stats.cancelled),   icon: XCircle,      color: T.red,    bg: T.redL    },
-          { label: 'CA livré',       value: fmtXAF(stats.caDelivered), icon: ShoppingBag,  color: T.orange, bg: T.orangeL },
+          { label: t('sl3_orders.stat_pending'),     value: String(stats.pending),     icon: Clock,        color: T.amber,  bg: T.amberL  },
+          { label: t('sl3_orders.stat_preparing'), value: String(stats.processing),  icon: Package,      color: T.blue,   bg: T.blueL   },
+          { label: t('sl3_orders.stat_shipped'),      value: String(stats.shipped),     icon: Truck,        color: T.violet, bg: T.violetL },
+          { label: t('sl3_orders.stat_delivered'),      value: String(stats.delivered),   icon: PackageCheck, color: T.green,  bg: T.greenL  },
+          { label: t('sl3_orders.stat_cancelled'),       value: String(stats.cancelled),   icon: XCircle,      color: T.red,    bg: T.redL    },
+          { label: t('sl3_orders.stat_revenue'),       value: fmtXAF(stats.caDelivered), icon: ShoppingBag,  color: T.orange, bg: T.orangeL },
         ].map(s => {
           const Icon = s.icon;
           return (
@@ -452,11 +461,11 @@ export default function SellerOrdersPage() {
       {/* ═══ ONGLETS + RECHERCHE ═══ */}
       <div className="rounded-2xl overflow-hidden" style={card}>
         <div className="flex overflow-x-auto" style={{ borderBottom: `1px solid ${T.border}` }}>
-          {TABS.map(t => {
-            const on = tab === t.key;
-            const n = counts[t.key] ?? 0;
+          {TABS.map(tabItem => {
+            const on = tab === tabItem.key;
+            const n = counts[tabItem.key] ?? 0;
             return (
-              <button key={t.key} type="button" onClick={() => setTab(t.key)}
+              <button key={tabItem.key} type="button" onClick={() => setTab(tabItem.key)}
                 className="flex items-center gap-1.5 font-semibold whitespace-nowrap flex-shrink-0 transition-all"
                 style={{
                   padding: '13px 16px', fontSize: 12.5,
@@ -464,12 +473,12 @@ export default function SellerOrdersPage() {
                   color: on ? T.orange : T.muted,
                   background: on ? T.orangeL : 'transparent',
                 }}>
-                {t.label}
-                {t.key !== 'all' && n > 0 && (
+                {t(tabItem.labelKey)}
+                {tabItem.key !== 'all' && n > 0 && (
                   <span className="font-black rounded-full flex items-center justify-center text-white"
                     style={{ fontSize: 10, width: 16, height: 16, background: on ? T.orange : T.mutedL }}>{n}</span>
                 )}
-                {t.key === 'all' && <span className="font-medium" style={{ fontSize: 10, color: T.mutedL }}>({n})</span>}
+                {tabItem.key === 'all' && <span className="font-medium" style={{ fontSize: 10, color: T.mutedL }}>({n})</span>}
               </button>
             );
           })}
@@ -478,7 +487,7 @@ export default function SellerOrdersPage() {
           <div className="relative">
             <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: T.mutedL }} />
             <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Rechercher une référence, une ville ou un produit…"
+              placeholder={t('sl3_orders.search_placeholder')}
               className="w-full rounded-xl outline-none"
               style={{ padding: '10px 12px 10px 36px', fontSize: 13, background: T.cream, border: `1px solid ${T.border}`, color: T.text, fontFamily: 'inherit' }}
               onFocus={e => { e.currentTarget.style.borderColor = T.orange; }}
@@ -488,8 +497,7 @@ export default function SellerOrdersPage() {
       </div>
 
       <Note icon={<ShieldCheck size={15} />}>
-        L'identité de l'acheteur n'apparaît pas dans cette liste. La ville, le contenu de la commande et le contact
-        de livraison — disponible dans le détail — couvrent tout ce que la préparation demande.
+        {t('sl3_orders.privacy_note')}
       </Note>
 
       {/* ═══ LISTE ═══ */}
@@ -516,20 +524,20 @@ export default function SellerOrdersPage() {
           <span className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center"
             style={{ background: T.orangeL }}><ShoppingBag size={24} style={{ color: T.orange }} /></span>
           <p className="font-semibold mb-1" style={{ fontSize: 15, color: T.text }}>
-            {search ? 'Aucun résultat' : 'Aucune commande'}
+            {search ? t('sl3_orders.empty_no_results') : t('sl3_orders.empty_no_orders')}
           </p>
           <p className="mx-auto" style={{ fontSize: 13, color: T.muted, maxWidth: 320 }}>
             {search
-              ? `Aucune commande ne correspond à « ${search} »`
+              ? t('sl3_orders.empty_no_match', { search })
               : tab === 'all'
-                ? 'Vos commandes apparaîtront ici dès que des clients achèteront vos produits.'
-                : `Aucune commande avec le statut « ${TABS.find(t => t.key === tab)?.label} ».`}
+                ? t('sl3_orders.empty_hint')
+                : t('sl3_orders.empty_status_filtered', { status: t(TABS.find(tabItem => tabItem.key === tab)?.labelKey ?? '') })}
           </p>
           {search && (
             <button type="button" onClick={() => setSearch('')}
               className="mt-4 rounded-xl font-semibold"
               style={{ padding: '9px 16px', fontSize: 12.5, background: T.orangeL, color: T.orange }}>
-              Effacer la recherche
+              {t('sl3_orders.clear_search')}
             </button>
           )}
         </div>
@@ -538,17 +546,17 @@ export default function SellerOrdersPage() {
           {filtered.map(o => (
             <OrderCard key={o.id} order={o}
               onAdvance={handleAdvance}
-              onInvoice={ord => openInvoice([ord], shopName)}
+              onInvoice={ord => openInvoice([ord], shopName, t)}
               updating={updatingId === o.id} />
           ))}
           <div className="rounded-2xl flex items-center justify-between gap-3 flex-wrap"
             style={{ padding: '13px 18px', background: T.creamAlt, border: `1px solid ${T.border}` }}>
             <p className="font-medium" style={{ fontSize: 12, color: T.muted }}>
-              {filtered.length} commande{filtered.length > 1 ? 's' : ''} affichée{filtered.length > 1 ? 's' : ''}
-              {search && ` · Recherche : « ${search} »`}
+              {t(filtered.length > 1 ? 'sl3_orders.displayed_count_plural' : 'sl3_orders.displayed_count', { count: filtered.length })}
+              {search && t('sl3_orders.search_suffix', { search })}
             </p>
             <p className="font-bold" style={{ fontSize: 12, color: T.orange }}>
-              Net total : {fmtXAF(filtered.reduce((a, o) => a + (o.vendor_net_amount ?? 0), 0))}
+              {t('sl3_orders.net_total', { amount: fmtXAF(filtered.reduce((a, o) => a + (o.vendor_net_amount ?? 0), 0)) })}
             </p>
           </div>
         </div>

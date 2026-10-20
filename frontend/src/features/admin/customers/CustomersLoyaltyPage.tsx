@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Award, RefreshCw, Users, TrendingUp, ShoppingCart,
   ChevronLeft, ExternalLink, Star,
@@ -53,18 +54,18 @@ interface LoyaltyStats {
 // CONFIG
 // ─────────────────────────────────────────────────────────────────────────────
 
-const TIER_CFG: Record<string, { label: string; color: string; bg: string; gradient: string }> = {
-  BRONZE:  { label: 'Bronze',  color: '#CD7F32', bg: 'rgba(205,127,50,0.12)',  gradient: 'linear-gradient(135deg,#CD7F32,#8B5E2D)' },
-  SILVER:  { label: 'Argent',  color: '#8B909A', bg: 'rgba(139,144,154,0.12)', gradient: 'linear-gradient(135deg,#8B909A,#5A5F6A)' },
-  GOLD:    { label: 'Or',      color: '#C8A000', bg: 'rgba(200,160,0,0.12)',   gradient: 'linear-gradient(135deg,#C8A000,#8B6E00)' },
-  DIAMOND: { label: 'Diamant', color: '#2563EB', bg: 'rgba(37,99,235,0.12)',   gradient: 'linear-gradient(135deg,#2563EB,#1D4ED8)' },
+const TIER_CFG: Record<string, { labelKey: string; color: string; bg: string; gradient: string }> = {
+  BRONZE:  { labelKey: 'ad2_customers_loyalty.tier_bronze',  color: '#CD7F32', bg: 'rgba(205,127,50,0.12)',  gradient: 'linear-gradient(135deg,#CD7F32,#8B5E2D)' },
+  SILVER:  { labelKey: 'ad2_customers_loyalty.tier_silver',  color: '#8B909A', bg: 'rgba(139,144,154,0.12)', gradient: 'linear-gradient(135deg,#8B909A,#5A5F6A)' },
+  GOLD:    { labelKey: 'ad2_customers_loyalty.tier_gold',    color: '#C8A000', bg: 'rgba(200,160,0,0.12)',   gradient: 'linear-gradient(135deg,#C8A000,#8B6E00)' },
+  DIAMOND: { labelKey: 'ad2_customers_loyalty.tier_diamond', color: '#2563EB', bg: 'rgba(37,99,235,0.12)',   gradient: 'linear-gradient(135deg,#2563EB,#1D4ED8)' },
 };
 
 const TIER_BENEFITS: Record<string, string[]> = {
-  BRONZE:  ['Accès au catalogue', 'Historique commandes', 'Support standard'],
-  SILVER:  ['Badge Argent · 500 pts', 'Livraison prioritaire', 'Support amélioré'],
-  GOLD:    ['Badge Or · 1 000 pts', 'Livraison offerte (-10%)', 'Support dédié', 'Accès ventes privées'],
-  DIAMOND: ['Badge Diamant · 2 000 pts', 'Livraison offerte', 'Support VIP 24/7', 'Accès exclusifs', 'Cadeau anniversaire'],
+  BRONZE:  ['ad2_customers_loyalty.benefit_bronze_1', 'ad2_customers_loyalty.benefit_bronze_2', 'ad2_customers_loyalty.benefit_bronze_3'],
+  SILVER:  ['ad2_customers_loyalty.benefit_silver_1', 'ad2_customers_loyalty.benefit_silver_2', 'ad2_customers_loyalty.benefit_silver_3'],
+  GOLD:    ['ad2_customers_loyalty.benefit_gold_1', 'ad2_customers_loyalty.benefit_gold_2', 'ad2_customers_loyalty.benefit_gold_3', 'ad2_customers_loyalty.benefit_gold_4'],
+  DIAMOND: ['ad2_customers_loyalty.benefit_diamond_1', 'ad2_customers_loyalty.benefit_diamond_2', 'ad2_customers_loyalty.benefit_diamond_3', 'ad2_customers_loyalty.benefit_diamond_4', 'ad2_customers_loyalty.benefit_diamond_5'],
 };
 
 const authHeader = () => ({
@@ -78,6 +79,7 @@ const authHeader = () => ({
 
 export default function CustomersLoyaltyPage() {
   const T             = useAdminTheme();
+  const { t }          = useTranslation();
   const { showToast } = useToast();
   const toastRef      = useRef(showToast);
   useEffect(() => { toastRef.current = showToast; });
@@ -95,11 +97,11 @@ export default function CustomersLoyaltyPage() {
       );
       setData(result);
     } catch {
-      toastRef.current('Erreur chargement fidélité', 'error');
+      toastRef.current(t('ad2_customers_loyalty.toast_error_loading'), 'error');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -121,28 +123,28 @@ export default function CustomersLoyaltyPage() {
               <ChevronLeft size={14} />
             </Link>
             <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: T.text }}>
-              Fidélité & Segments
+              {t('ad2_customers_loyalty.heading')}
             </h1>
           </div>
           <p style={{ fontSize: 13, color: T.muted, paddingLeft: 44 }}>
-            {data?.earning_rule ?? '—'} · {data?.total_buyers ?? '—'} acheteurs analysés
+            {t('ad2_customers_loyalty.subtitle', { rule: data?.earning_rule ?? '—', n: data?.total_buyers ?? '—' })}
           </p>
         </div>
         <button onClick={() => load()}
           className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold"
           style={{ background: 'rgba(220,38,38,0.1)', color: T.red, border: '1px solid rgba(220,38,38,0.25)' }}>
           <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-          <span className="hidden sm:inline">Actualiser</span>
+          <span className="hidden sm:inline">{t('ad2_customers_loyalty.refresh')}</span>
         </button>
       </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: 'Total acheteurs', value: data?.total_buyers,                     accent: T.text,    icon: Users      },
-          { label: 'Points moyens',   value: data?.avg_points?.toFixed(0),            accent: '#F47920', icon: Star       },
-          { label: 'Tier Gold+',      value: (data?.tier_counts?.GOLD ?? 0) + (data?.tier_counts?.DIAMOND ?? 0), accent: '#C8A000', icon: Award      },
-          { label: 'Diamant',         value: data?.tier_counts?.DIAMOND,              accent: '#2563EB', icon: TrendingUp },
+          { label: t('ad2_customers_loyalty.kpi_total_buyers'), value: data?.total_buyers,                     accent: T.text,    icon: Users      },
+          { label: t('ad2_customers_loyalty.kpi_avg_points'),   value: data?.avg_points?.toFixed(0),            accent: '#F47920', icon: Star       },
+          { label: t('ad2_customers_loyalty.kpi_gold_plus'),      value: (data?.tier_counts?.GOLD ?? 0) + (data?.tier_counts?.DIAMOND ?? 0), accent: '#C8A000', icon: Award      },
+          { label: t('ad2_customers_loyalty.kpi_diamond'),         value: data?.tier_counts?.DIAMOND,              accent: '#2563EB', icon: TrendingUp },
         ].map((k, i) => {
           const Icon = k.icon;
           return (
@@ -168,11 +170,11 @@ export default function CustomersLoyaltyPage() {
         <div className="rounded-2xl p-5" style={{ background: T.card, border: `1px solid ${T.border}` }}>
           <div className="flex items-center gap-2 mb-4">
             <Award size={14} style={{ color: T.red }} />
-            <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Répartition par tier</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad2_customers_loyalty.distribution_title')}</span>
           </div>
           {loading || !data ? (
             <div className="flex items-center justify-center" style={{ height: 200 }}>
-              <p style={{ fontSize: 13, color: T.muted }}>Chargement…</p>
+              <p style={{ fontSize: 13, color: T.muted }}>{t('ad2_customers_loyalty.loading')}</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-4">
@@ -199,7 +201,7 @@ export default function CustomersLoyaltyPage() {
                       <div className="flex items-center justify-between mb-0.5">
                         <div className="flex items-center gap-1.5">
                           <div style={{ width: 8, height: 8, borderRadius: 2, background: cfg?.color }} />
-                          <span style={{ fontSize: 12, color: T.text }}>{cfg?.label}</span>
+                          <span style={{ fontSize: 12, color: T.text }}>{cfg ? t(cfg.labelKey) : ''}</span>
                         </div>
                         <div className="text-right">
                           <span style={{ fontSize: 12, fontWeight: 700, color: cfg?.color }}>{d.count}</span>
@@ -221,7 +223,7 @@ export default function CustomersLoyaltyPage() {
         <div className="rounded-2xl overflow-hidden" style={{ background: T.card, border: `1px solid ${T.border}` }}>
           <div className="flex items-center gap-2 px-5 py-3.5" style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
             <Star size={14} style={{ color: T.red }} />
-            <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Seuils & Avantages</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad2_customers_loyalty.thresholds_title')}</span>
           </div>
           <div className="divide-y" style={{ borderColor: T.border }}>
             {(['BRONZE', 'SILVER', 'GOLD', 'DIAMOND'] as const).map((tier) => {
@@ -237,18 +239,18 @@ export default function CustomersLoyaltyPage() {
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <span style={{ fontSize: 13.5, fontWeight: 800, color: cfg.color }}>{cfg.label}</span>
-                        <span style={{ fontSize: 11, color: T.muted }}>≥ {threshold.toLocaleString('fr-FR')} pts</span>
+                        <span style={{ fontSize: 13.5, fontWeight: 800, color: cfg.color }}>{t(cfg.labelKey)}</span>
+                        <span style={{ fontSize: 11, color: T.muted }}>{t('ad2_customers_loyalty.threshold_pts', { n: threshold.toLocaleString('fr-FR') })}</span>
                       </div>
                     </div>
                     <span style={{ fontSize: 13, fontWeight: 700, color: cfg.color }}>
-                      {loading ? '—' : (data?.tier_counts[tier] ?? 0)} clients
+                      {loading ? '—' : t('ad2_customers_loyalty.tier_clients_count', { count: data?.tier_counts[tier] ?? 0 })}
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-1.5 pl-11">
                     {benefits.map((b, j) => (
                       <span key={j} style={{ fontSize: 10.5, fontWeight: 600, padding: '2px 7px', borderRadius: 4, background: cfg.bg, color: cfg.color }}>
-                        {b}
+                        {t(b)}
                       </span>
                     ))}
                   </div>
@@ -264,7 +266,7 @@ export default function CustomersLoyaltyPage() {
         <div className="rounded-2xl p-5" style={{ background: T.card, border: `1px solid ${T.border}` }}>
           <div className="flex items-center gap-2 mb-4">
             <ShoppingCart size={14} style={{ color: T.red }} />
-            <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Volume par tier</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad2_customers_loyalty.volume_by_tier')}</span>
           </div>
           <ResponsiveContainer width="100%" height={120}>
             <BarChart data={data.distribution} margin={{ top: 0, right: 0, bottom: 0, left: -20 }}>
@@ -272,7 +274,7 @@ export default function CustomersLoyaltyPage() {
               <YAxis tick={{ fontSize: 11, fill: T.muted }} axisLine={false} tickLine={false} />
               <Tooltip
                 contentStyle={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, fontSize: 12 }}
-                formatter={(v: number | undefined) => [v ?? 0, 'clients']} />
+                formatter={(v: number | undefined) => [v ?? 0, t('ad2_customers_loyalty.tooltip_clients')]} />
               <Bar dataKey="count" radius={[6, 6, 0, 0]}>
                 {data.distribution.map((d) => (
                   <Cell key={d.tier} fill={TIER_CFG[d.tier]?.color ?? '#9CA3AF'} />
@@ -290,17 +292,17 @@ export default function CustomersLoyaltyPage() {
           <div className="flex items-center gap-2">
             <Award size={14} style={{ color: T.red }} />
             <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>
-              Top clients {filterTier !== 'all' ? `— ${TIER_CFG[filterTier]?.label}` : ''}
+              {filterTier !== 'all' ? t('ad2_customers_loyalty.top_clients_tier', { tier: TIER_CFG[filterTier] ? t(TIER_CFG[filterTier].labelKey) : '' }) : t('ad2_customers_loyalty.top_clients')}
             </span>
             <span style={{ fontSize: 11, color: T.muted }}>({filteredClients.length})</span>
           </div>
           {/* Filtre tier */}
           <div className="flex items-center gap-1.5 flex-wrap">
-            {(['all', 'DIAMOND', 'GOLD', 'SILVER', 'BRONZE'] as const).map(t => (
-              <button key={t} onClick={() => setFilterTier(t)}
+            {(['all', 'DIAMOND', 'GOLD', 'SILVER', 'BRONZE'] as const).map(ft => (
+              <button key={ft} onClick={() => setFilterTier(ft)}
                 className="px-2.5 py-1 rounded-lg text-[11px] font-semibold"
-                style={{ background: filterTier === t ? (t === 'all' ? T.red : TIER_CFG[t]?.color) + '20' : T.cardAlt, color: filterTier === t ? (t === 'all' ? T.red : TIER_CFG[t]?.color) : T.muted, border: `1px solid ${filterTier === t ? (t === 'all' ? T.red : TIER_CFG[t]?.color) + '40' : T.border}` }}>
-                {t === 'all' ? 'Tous' : TIER_CFG[t]?.label}
+                style={{ background: filterTier === ft ? (ft === 'all' ? T.red : TIER_CFG[ft]?.color) + '20' : T.cardAlt, color: filterTier === ft ? (ft === 'all' ? T.red : TIER_CFG[ft]?.color) : T.muted, border: `1px solid ${filterTier === ft ? (ft === 'all' ? T.red : TIER_CFG[ft]?.color) + '40' : T.border}` }}>
+                {ft === 'all' ? t('ad2_customers_loyalty.filter_all') : t(TIER_CFG[ft]?.labelKey)}
               </button>
             ))}
           </div>
@@ -314,14 +316,22 @@ export default function CustomersLoyaltyPage() {
         ) : filteredClients.length === 0 ? (
           <div className="flex flex-col items-center py-12 gap-2">
             <Award size={32} style={{ color: T.muted }} />
-            <p style={{ fontSize: 14, color: T.muted }}>Aucun client dans ce tier</p>
+            <p style={{ fontSize: 14, color: T.muted }}>{t('ad2_customers_loyalty.no_clients_in_tier')}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full" style={{ borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: T.cardAlt, borderBottom: `1px solid ${T.border}` }}>
-                  {['#', 'Client', 'Tier', 'Points', 'Commandes payées', 'Membre depuis', ''].map((h, i) => (
+                  {[
+                    t('ad2_customers_loyalty.col_rank'),
+                    t('ad2_customers_loyalty.col_client'),
+                    t('ad2_customers_loyalty.col_tier'),
+                    t('ad2_customers_loyalty.col_points'),
+                    t('ad2_customers_loyalty.col_paid_orders'),
+                    t('ad2_customers_loyalty.col_member_since'),
+                    '',
+                  ].map((h, i) => (
                     <th key={i} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 10.5, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '.04em', whiteSpace: 'nowrap' }}>
                       {h}
                     </th>
@@ -356,7 +366,7 @@ export default function CustomersLoyaltyPage() {
                             style={{ background: cfg?.gradient }}>
                             <Award size={12} style={{ color: '#fff' }} />
                           </div>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: cfg?.color }}>{cfg?.label}</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: cfg?.color }}>{cfg ? t(cfg.labelKey) : ''}</span>
                         </div>
                       </td>
                       {/* Points */}
@@ -364,7 +374,7 @@ export default function CustomersLoyaltyPage() {
                         <span style={{ fontSize: 14, fontWeight: 800, color: cfg?.color }}>
                           {c.points.toLocaleString('fr-FR')}
                         </span>
-                        <span style={{ fontSize: 11, color: T.muted, marginLeft: 3 }}>pts</span>
+                        <span style={{ fontSize: 11, color: T.muted, marginLeft: 3 }}>{t('ad2_customers_loyalty.pts_suffix')}</span>
                       </td>
                       {/* Commandes */}
                       <td style={{ padding: '12px 16px' }}>

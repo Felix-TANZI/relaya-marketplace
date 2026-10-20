@@ -4,6 +4,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Package,
   Search,
@@ -118,6 +119,7 @@ function SkeletonRow({ T }: { T: ReturnType<typeof useAdminTheme> }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function CataloguePage() {
+  const { t } = useTranslation();
   const T = useAdminTheme();
   const { showToast } = useToast();
   const { confirm } = useConfirm();
@@ -174,7 +176,7 @@ export default function CataloguePage() {
       setProducts(data);
       setPendingCampaigns(campaigns);
     } catch {
-      showToast("Erreur chargement du catalogue", "error");
+      showToast(t('ad5a_catalogue.toast_load_error'), "error");
     } finally {
       setLoading(false);
     }
@@ -288,25 +290,26 @@ export default function CataloguePage() {
 
   // ── Actions ───────────────────────────────────────────────────────────────
   const handleToggle = async (p: AdminProduct) => {
-    const action = p.is_active ? "désactiver" : "activer";
     const ok = await confirm({
-      title: `${p.is_active ? "Désactiver" : "Activer"} ce produit ?`,
-      message: `"${p.title}" sera ${p.is_active ? "masqué du catalogue" : "visible sur le catalogue"}.`,
+      title: p.is_active ? t('ad5a_catalogue.confirm_deactivate_title') : t('ad5a_catalogue.confirm_activate_title'),
+      message: p.is_active
+        ? t('ad5a_catalogue.confirm_deactivate_message', { title: p.title })
+        : t('ad5a_catalogue.confirm_activate_message', { title: p.title }),
       type: p.is_active ? "warning" : "warning",
-      confirmText: p.is_active ? "Désactiver" : "Activer",
-      cancelText: "Annuler",
+      confirmText: p.is_active ? t('ad5a_catalogue.deactivate') : t('ad5a_catalogue.activate'),
+      cancelText: t('ad5a_catalogue.cancel'),
     });
     if (!ok) return;
     setActing(p.id);
     try {
       await adminApi.toggleProductStatus(p.id);
       showToast(
-        `Produit ${action === "désactiver" ? "désactivé" : "activé"}`,
+        p.is_active ? t('ad5a_catalogue.toast_product_deactivated') : t('ad5a_catalogue.toast_product_activated'),
         "success",
       );
       await load();
     } catch {
-      showToast("Erreur", "error");
+      showToast(t('ad5a_catalogue.toast_generic_error'), "error");
     } finally {
       setActing(null);
     }
@@ -314,18 +317,18 @@ export default function CataloguePage() {
 
   const handleApprove = async (p: AdminProduct) => {
     const ok = await confirm({
-      title: "Approuver ce produit ?",
-      message: `Rendre "${p.title}" visible côté acheteur ?`,
+      title: t('ad5a_catalogue.confirm_approve_title'),
+      message: t('ad5a_catalogue.confirm_approve_message', { title: p.title }),
       type: "info",
     });
     if (!ok) return;
     try {
       setActing(p.id);
       await adminApi.approveProduct(p.id);
-      showToast("Produit approuvé", "success");
+      showToast(t('ad5a_catalogue.toast_product_approved'), "success");
       load();
     } catch {
-      showToast("Erreur lors de l'approbation", "error");
+      showToast(t('ad5a_catalogue.toast_approve_error'), "error");
     } finally {
       setActing(null);
     }
@@ -344,11 +347,11 @@ export default function CataloguePage() {
         rejectTarget.id,
         rejectReason.trim() || undefined,
       );
-      showToast("Produit rejeté — vendeur notifié", "success");
+      showToast(t('ad5a_catalogue.toast_product_rejected'), "success");
       setRejectTarget(null);
       load();
     } catch {
-      showToast("Erreur lors du rejet", "error");
+      showToast(t('ad5a_catalogue.toast_reject_error'), "error");
     } finally {
       setActing(null);
     }
@@ -369,21 +372,20 @@ export default function CataloguePage() {
 
   const handleDelete = async (p: AdminProduct) => {
     const ok = await confirm({
-      title: `Supprimer "${p.title}" ?`,
-      message:
-        "Cette action est irréversible. Le produit sera définitivement supprimé.",
+      title: t('ad5a_catalogue.confirm_delete_title', { title: p.title }),
+      message: t('ad5a_catalogue.confirm_delete_message'),
       type: "danger",
-      confirmText: "Supprimer",
-      cancelText: "Annuler",
+      confirmText: t('ad5a_catalogue.delete'),
+      cancelText: t('ad5a_catalogue.cancel'),
     });
     if (!ok) return;
     setActing(p.id);
     try {
       await adminApi.deleteProduct(p.id);
-      showToast("Produit supprimé", "success");
+      showToast(t('ad5a_catalogue.toast_product_deleted'), "success");
       await load();
     } catch {
-      showToast("Erreur lors de la suppression", "error");
+      showToast(t('ad5a_catalogue.toast_delete_error'), "error");
     } finally {
       setActing(null);
     }
@@ -419,15 +421,15 @@ export default function CataloguePage() {
     const stock = Number(campaignForm.stock_reserved);
 
     if (!campaignForm.title.trim() || !campaignForm.starts_at || !campaignForm.ends_at || !reference || !promo) {
-      showToast('Remplis le titre, les dates et les prix.', 'error');
+      showToast(t('ad5a_catalogue.toast_campaign_missing_fields'), 'error');
       return;
     }
     if (promo >= reference) {
-      showToast('Le prix promo doit être inférieur au prix de référence.', 'error');
+      showToast(t('ad5a_catalogue.toast_campaign_promo_too_high'), 'error');
       return;
     }
     if (campaignForm.campaign_type === 'FLASH' && stock < 5) {
-      showToast('Un Flash Deal demande au moins 5 unités réservées.', 'error');
+      showToast(t('ad5a_catalogue.toast_campaign_min_stock'), 'error');
       return;
     }
 
@@ -444,14 +446,14 @@ export default function CataloguePage() {
       });
       showToast(
         campaignForm.campaign_type === 'FLASH'
-          ? 'Flash Deal créé. Il reste à l’approuver pour l’afficher.'
-          : 'Promotion créée. Elle reste à approuver pour l’afficher.',
+          ? t('ad5a_catalogue.toast_flash_created')
+          : t('ad5a_catalogue.toast_promo_created'),
         'success',
       );
       setCampaignProduct(null);
       await load();
     } catch {
-      showToast('Impossible de créer la campagne. Vérifie les règles de prix, durée et stock.', 'error');
+      showToast(t('ad5a_catalogue.toast_campaign_create_error'), 'error');
     } finally {
       setCampaignSaving(false);
     }
@@ -462,23 +464,23 @@ export default function CataloguePage() {
     status: 'APPROVED' | 'REJECTED',
   ) => {
     const ok = await confirm({
-      title: status === 'APPROVED' ? 'Approuver cette campagne ?' : 'Rejeter cette campagne ?',
+      title: status === 'APPROVED' ? t('ad5a_catalogue.confirm_approve_campaign_title') : t('ad5a_catalogue.confirm_reject_campaign_title'),
       message: `${campaign.title} · ${campaign.product_title}`,
       type: status === 'APPROVED' ? 'warning' : 'danger',
-      confirmText: status === 'APPROVED' ? 'Approuver' : 'Rejeter',
-      cancelText: 'Annuler',
+      confirmText: status === 'APPROVED' ? t('ad5a_catalogue.approve') : t('ad5a_catalogue.reject'),
+      cancelText: t('ad5a_catalogue.cancel'),
     });
     if (!ok) return;
     setActing(campaign.product);
     try {
       await adminApi.decidePromotionCampaign(campaign.id, {
         status,
-        rejection_reason: status === 'REJECTED' ? 'Demande rejetée depuis le back-office BelivaY.' : undefined,
+        rejection_reason: status === 'REJECTED' ? t('ad5a_catalogue.campaign_rejection_reason') : undefined,
       });
-      showToast(status === 'APPROVED' ? 'Campagne approuvée' : 'Campagne rejetée', 'success');
+      showToast(status === 'APPROVED' ? t('ad5a_catalogue.toast_campaign_approved') : t('ad5a_catalogue.toast_campaign_rejected'), 'success');
       await load();
     } catch {
-      showToast('Impossible de traiter cette campagne.', 'error');
+      showToast(t('ad5a_catalogue.toast_campaign_decision_error'), 'error');
     } finally {
       setActing(null);
     }
@@ -486,8 +488,7 @@ export default function CataloguePage() {
 
   // ── Export CSV ────────────────────────────────────────────────────────────
   const exportCSV = () => {
-    const headers =
-      "ID;Titre;Vendeur;Boutique;Catégorie;Prix;Stock;Actif;Ajouté le";
+    const headers = t('ad5a_catalogue.csv_headers');
     const rows = sorted.map((p) =>
       [
         p.id,
@@ -497,7 +498,7 @@ export default function CataloguePage() {
         p.category_name,
         p.price_xaf,
         p.stock_quantity,
-        p.is_active ? "Oui" : "Non",
+        p.is_active ? t('ad5a_catalogue.yes') : t('ad5a_catalogue.no'),
         fmtDate(p.created_at),
       ].join(";"),
     );
@@ -592,17 +593,17 @@ export default function CataloguePage() {
               marginBottom: 4,
             }}
           >
-            Catalogue Produits
+            {t('ad5a_catalogue.page_title')}
           </h1>
           <p style={{ fontSize: 13, color: T.muted }}>
             {kpis.lowStock > 0 && (
               <span
                 style={{ color: "#F59E0B", fontWeight: 700, marginRight: 6 }}
               >
-                {kpis.lowStock} stock faible ·
+                {t('ad5a_catalogue.low_stock_count', { count: kpis.lowStock })} ·
               </span>
             )}
-            {products.length.toLocaleString("fr-FR")} produits au total
+            {t('ad5a_catalogue.total_products', { n: products.length.toLocaleString("fr-FR") })}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -618,7 +619,7 @@ export default function CataloguePage() {
             onMouseLeave={(e) => (e.currentTarget.style.color = T.muted)}
           >
             <Download size={13} />{" "}
-            <span className="hidden sm:inline">Exporter CSV</span>
+            <span className="hidden sm:inline">{t('ad5a_catalogue.export_csv')}</span>
           </button>
           <button
             onClick={() => load()}
@@ -636,7 +637,7 @@ export default function CataloguePage() {
             }
           >
             <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
-            <span className="hidden sm:inline">Actualiser</span>
+            <span className="hidden sm:inline">{t('ad5a_catalogue.refresh')}</span>
           </button>
         </div>
 
@@ -647,22 +648,22 @@ export default function CataloguePage() {
                    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
           <div onClick={e => e.stopPropagation()}
             style={{ background: T.card, borderRadius: 16, border: `1px solid ${T.border}`, width: '100%', maxWidth: 460, padding: 20 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 800, color: T.text, marginBottom: 6 }}>Rejeter le produit</h3>
+            <h3 style={{ fontSize: 16, fontWeight: 800, color: T.text, marginBottom: 6 }}>{t('ad5a_catalogue.reject_modal_title')}</h3>
             <p style={{ fontSize: 13, color: T.muted, marginBottom: 14 }}>
-              « {rejectTarget.title} » — le vendeur sera notifié. Le motif est optionnel.
+              {t('ad5a_catalogue.reject_modal_message', { title: rejectTarget.title })}
             </p>
             <textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)} rows={4}
-              placeholder="Motif du rejet (optionnel) — ex : photos floues, prix incohérent…"
+              placeholder={t('ad5a_catalogue.reject_reason_placeholder')}
               style={{ width: '100%', background: T.cardAlt, border: `1px solid ${T.border}`, borderRadius: 10,
                        padding: '10px 12px', fontSize: 13, color: T.text, outline: 'none', resize: 'vertical' }} />
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
               <button onClick={() => setRejectTarget(null)}
                 style={{ padding: '8px 14px', borderRadius: 10, fontSize: 13, fontWeight: 600, background: T.cardAlt, color: T.text, border: `1px solid ${T.border}`, cursor: 'pointer' }}>
-                Annuler
+                {t('ad5a_catalogue.cancel')}
               </button>
               <button onClick={confirmReject} disabled={acting === rejectTarget.id}
                 style={{ padding: '8px 14px', borderRadius: 10, fontSize: 13, fontWeight: 700, background: '#EF4444', color: '#fff', border: 'none', cursor: 'pointer' }}>
-                Confirmer le rejet
+                {t('ad5a_catalogue.confirm_reject_button')}
               </button>
             </div>
           </div>
@@ -686,25 +687,25 @@ export default function CataloguePage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           {
-            label: "Total",
+            label: t('ad5a_catalogue.kpi_total'),
             value: kpis.total,
             accent: T.text,
             onClick: () => setStatusTab("all"),
           },
           {
-            label: "Actifs",
+            label: t('ad5a_catalogue.kpi_active'),
             value: kpis.active,
             accent: "#10B981",
             onClick: () => setStatusTab("active"),
           },
           {
-            label: "Inactifs",
+            label: t('ad5a_catalogue.kpi_inactive'),
             value: kpis.inactive,
             accent: "#9CA3AF",
             onClick: () => setStatusTab("inactive"),
           },
           {
-            label: "Stock ≤ 3",
+            label: t('ad5a_catalogue.kpi_low_stock'),
             value: kpis.lowStock,
             accent: "#F59E0B",
             onClick: () => setStatusTab("active"),
@@ -755,14 +756,14 @@ export default function CataloguePage() {
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
               <h2 style={{ fontSize: 14, fontWeight: 800, color: T.text }}>
-                Campagnes en attente
+                {t('ad5a_catalogue.pending_campaigns_title')}
               </h2>
               <p style={{ fontSize: 12, color: T.muted }}>
-                Flash Deals et promotions demandés par les vendeurs, à valider avant affichage client.
+                {t('ad5a_catalogue.pending_campaigns_subtitle')}
               </p>
             </div>
             <span style={{ fontSize: 11, fontWeight: 800, padding: '4px 9px', borderRadius: 999, background: T.red + '18', color: T.red }}>
-              {pendingCampaigns.length} demande{pendingCampaigns.length > 1 ? 's' : ''}
+              {t(pendingCampaigns.length > 1 ? 'ad5a_catalogue.request_count_plural' : 'ad5a_catalogue.request_count', { count: pendingCampaigns.length })}
             </span>
           </div>
 
@@ -781,10 +782,10 @@ export default function CataloguePage() {
                   </p>
                   <p className="truncate" style={{ fontSize: 11.5, color: T.muted }}>
                     {campaign.product_title} · -{campaign.discount_percent}% · {fmtXaf(campaign.promo_price_xaf)}
-                    {campaign.campaign_type === 'FLASH' ? ` · stock ${campaign.stock_reserved}` : ''}
+                    {campaign.campaign_type === 'FLASH' ? ` · ${t('ad5a_catalogue.stock_label', { count: campaign.stock_reserved })}` : ''}
                   </p>
                   <p style={{ fontSize: 11, color: T.muted }}>
-                    {fmtDate(campaign.starts_at)} au {fmtDate(campaign.ends_at)}
+                    {t('ad5a_catalogue.date_range', { start: fmtDate(campaign.starts_at), end: fmtDate(campaign.ends_at) })}
                   </p>
                 </div>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -793,14 +794,14 @@ export default function CataloguePage() {
                     disabled={acting === campaign.product}
                     className="px-3 py-1.5 rounded-lg text-[11px] font-bold"
                     style={{ background: 'rgba(16,185,129,0.12)', color: '#10B981', border: '1px solid rgba(16,185,129,0.28)' }}>
-                    Approuver
+                    {t('ad5a_catalogue.approve')}
                   </button>
                   <button type="button"
                     onClick={() => handleCampaignDecision(campaign, 'REJECTED')}
                     disabled={acting === campaign.product}
                     className="px-3 py-1.5 rounded-lg text-[11px] font-bold"
                     style={{ background: 'rgba(239,68,68,0.10)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.24)' }}>
-                    Rejeter
+                    {t('ad5a_catalogue.reject')}
                   </button>
                 </div>
               </div>
@@ -814,14 +815,14 @@ export default function CataloguePage() {
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
               <h2 style={{ fontSize: 14, fontWeight: 800, color: T.text }}>
-                Campagnes en attente
+                {t('ad5a_catalogue.pending_campaigns_title')}
               </h2>
               <p style={{ fontSize: 12, color: T.muted }}>
-                Flash Deals et promotions demandés par les vendeurs, à valider avant affichage client.
+                {t('ad5a_catalogue.pending_campaigns_subtitle')}
               </p>
             </div>
             <span style={{ fontSize: 11, fontWeight: 800, padding: '4px 9px', borderRadius: 999, background: T.red + '18', color: T.red }}>
-              {pendingCampaigns.length} demande{pendingCampaigns.length > 1 ? 's' : ''}
+              {t(pendingCampaigns.length > 1 ? 'ad5a_catalogue.request_count_plural' : 'ad5a_catalogue.request_count', { count: pendingCampaigns.length })}
             </span>
           </div>
 
@@ -840,10 +841,10 @@ export default function CataloguePage() {
                   </p>
                   <p className="truncate" style={{ fontSize: 11.5, color: T.muted }}>
                     {campaign.product_title} · -{campaign.discount_percent}% · {fmtXaf(campaign.promo_price_xaf)}
-                    {campaign.campaign_type === 'FLASH' ? ` · stock ${campaign.stock_reserved}` : ''}
+                    {campaign.campaign_type === 'FLASH' ? ` · ${t('ad5a_catalogue.stock_label', { count: campaign.stock_reserved })}` : ''}
                   </p>
                   <p style={{ fontSize: 11, color: T.muted }}>
-                    {fmtDate(campaign.starts_at)} au {fmtDate(campaign.ends_at)}
+                    {t('ad5a_catalogue.date_range', { start: fmtDate(campaign.starts_at), end: fmtDate(campaign.ends_at) })}
                   </p>
                 </div>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -852,14 +853,14 @@ export default function CataloguePage() {
                     disabled={acting === campaign.product}
                     className="px-3 py-1.5 rounded-lg text-[11px] font-bold"
                     style={{ background: 'rgba(16,185,129,0.12)', color: '#10B981', border: '1px solid rgba(16,185,129,0.28)' }}>
-                    Approuver
+                    {t('ad5a_catalogue.approve')}
                   </button>
                   <button type="button"
                     onClick={() => handleCampaignDecision(campaign, 'REJECTED')}
                     disabled={acting === campaign.product}
                     className="px-3 py-1.5 rounded-lg text-[11px] font-bold"
                     style={{ background: 'rgba(239,68,68,0.10)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.24)' }}>
-                    Rejeter
+                    {t('ad5a_catalogue.reject')}
                   </button>
                 </div>
               </div>
@@ -880,42 +881,42 @@ export default function CataloguePage() {
               [
                 {
                   key: "all" as StatusTab,
-                  label: "Tous",
+                  label: t('ad5a_catalogue.tab_all'),
                   count: products.length,
                 },
                 {
                   key: "active" as StatusTab,
-                  label: "Actifs",
+                  label: t('ad5a_catalogue.tab_active'),
                   count: kpis.active,
                 },
                 {
                   key: "inactive" as StatusTab,
-                  label: "Inactifs",
+                  label: t('ad5a_catalogue.tab_inactive'),
                   count: kpis.inactive,
                 },
               ] as { key: StatusTab; label: string; count: number }[]
-            ).map((t) => (
+            ).map((tabItem) => (
               <button
-                key={t.key}
+                key={tabItem.key}
                 onClick={() => {
-                  setStatusTab(t.key);
+                  setStatusTab(tabItem.key);
                   setPage(1);
                   load();
                 }}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold whitespace-nowrap transition-all"
                 style={{
-                  background: statusTab === t.key ? T.red : "transparent",
-                  color: statusTab === t.key ? "#fff" : T.muted,
+                  background: statusTab === tabItem.key ? T.red : "transparent",
+                  color: statusTab === tabItem.key ? "#fff" : T.muted,
                 }}
                 onMouseEnter={(e) => {
-                  if (statusTab !== t.key) e.currentTarget.style.color = T.text;
+                  if (statusTab !== tabItem.key) e.currentTarget.style.color = T.text;
                 }}
                 onMouseLeave={(e) => {
-                  if (statusTab !== t.key)
+                  if (statusTab !== tabItem.key)
                     e.currentTarget.style.color = T.muted;
                 }}
               >
-                {t.label}
+                {tabItem.label}
                 <span
                   style={{
                     fontSize: 10,
@@ -923,13 +924,13 @@ export default function CataloguePage() {
                     borderRadius: 999,
                     fontWeight: 700,
                     background:
-                      statusTab === t.key
+                      statusTab === tabItem.key
                         ? "rgba(255,255,255,0.25)"
                         : T.cardAlt,
-                    color: statusTab === t.key ? "#fff" : T.muted,
+                    color: statusTab === tabItem.key ? "#fff" : T.muted,
                   }}
                 >
-                  {t.count}
+                  {tabItem.count}
                 </span>
               </button>
             ))}
@@ -950,7 +951,7 @@ export default function CataloguePage() {
                 color: statusTab === "pending" ? "#B45309" : "inherit",
               }}
             >
-              En attente{kpis.pending ? ` (${kpis.pending})` : ""}
+              {kpis.pending ? t('ad5a_catalogue.tab_pending_with_count', { count: kpis.pending }) : t('ad5a_catalogue.tab_pending')}
             </button>
           </div>
 
@@ -970,7 +971,7 @@ export default function CataloguePage() {
             />
             <input
               type="text"
-              placeholder="Titre, vendeur, catégorie…"
+              placeholder={t('ad5a_catalogue.search_placeholder')}
               onChange={(e) => handleSearch(e.target.value)}
               className="w-full pl-8 pr-3 py-2 rounded-xl text-[12.5px] outline-none"
               style={{
@@ -1000,10 +1001,10 @@ export default function CataloguePage() {
               {
                 (
                   {
-                    all: "Période",
-                    today: "Aujourd'hui",
-                    week: "Cette semaine",
-                    month: "Ce mois",
+                    all: t('ad5a_catalogue.period_all'),
+                    today: t('ad5a_catalogue.period_today'),
+                    week: t('ad5a_catalogue.period_week'),
+                    month: t('ad5a_catalogue.period_month'),
                   } as Record<DateFilter, string>
                 )[dateF]
               }{" "}
@@ -1012,10 +1013,10 @@ export default function CataloguePage() {
             <DropMenu show={openDrop === "date"}>
               {(
                 [
-                  ["all", "Toutes périodes"],
-                  ["today", "Aujourd'hui"],
-                  ["week", "Cette semaine"],
-                  ["month", "Ce mois"],
+                  ["all", t('ad5a_catalogue.period_all_full')],
+                  ["today", t('ad5a_catalogue.period_today')],
+                  ["week", t('ad5a_catalogue.period_week')],
+                  ["month", t('ad5a_catalogue.period_month')],
                 ] as [DateFilter, string][]
               ).map(([k, l]) => (
                 <DropItem
@@ -1049,7 +1050,7 @@ export default function CataloguePage() {
               border: `1px solid ${categoryF !== "all" ? T.red + "40" : T.border}`,
             }}
           >
-            <option value="all">Toutes catégories</option>
+            <option value="all">{t('ad5a_catalogue.all_categories')}</option>
             {(rootCategories.length ? rootCategories : categories).map(
               (cat) => (
                 <option key={cat.id} value={cat.id}>
@@ -1077,7 +1078,7 @@ export default function CataloguePage() {
               border: `1px solid ${subcategoryF !== "all" ? T.red + "40" : T.border}`,
             }}
           >
-            <option value="all">Sous-catégories</option>
+            <option value="all">{t('ad5a_catalogue.all_subcategories')}</option>
             {subcategories.map((cat) => (
               <option key={cat.id} value={cat.id}>
                 {cat.name}
@@ -1100,12 +1101,12 @@ export default function CataloguePage() {
                 border: `1px solid ${T.red}30`,
               }}
             >
-              <X size={11} /> Effacer
+              <X size={11} /> {t('ad5a_catalogue.clear_filters')}
             </button>
           )}
 
           <p style={{ fontSize: 12, color: T.muted, marginLeft: "auto" }}>
-            {sorted.length} produit{sorted.length > 1 ? "s" : ""}
+            {t(sorted.length > 1 ? 'ad5a_catalogue.product_count_plural' : 'ad5a_catalogue.product_count', { count: sorted.length })}
           </p>
         </div>
       </div>
@@ -1127,14 +1128,14 @@ export default function CataloguePage() {
               >
                 {(
                   [
-                    { label: "Photo", k: null },
-                    { label: "Produit", k: "title" as SortKey | null },
-                    { label: "Vendeur", k: null },
-                    { label: "Catégorie", k: null },
-                    { label: "Prix", k: "price_xaf" as SortKey | null },
-                    { label: "Stock", k: "stock_quantity" as SortKey | null },
-                    { label: "Statut", k: null },
-                    { label: "Ajouté", k: "created_at" as SortKey | null },
+                    { label: t('ad5a_catalogue.th_photo'), k: null },
+                    { label: t('ad5a_catalogue.th_product'), k: "title" as SortKey | null },
+                    { label: t('ad5a_catalogue.th_vendor'), k: null },
+                    { label: t('ad5a_catalogue.th_category'), k: null },
+                    { label: t('ad5a_catalogue.th_price'), k: "price_xaf" as SortKey | null },
+                    { label: t('ad5a_catalogue.th_stock'), k: "stock_quantity" as SortKey | null },
+                    { label: t('ad5a_catalogue.th_status'), k: null },
+                    { label: t('ad5a_catalogue.th_added'), k: "created_at" as SortKey | null },
                     { label: "", k: null },
                   ] as { label: string; k: SortKey | null }[]
                 ).map((col, i) => (
@@ -1175,7 +1176,7 @@ export default function CataloguePage() {
                     <div className="flex flex-col items-center gap-3">
                       <Package size={28} style={{ color: T.muted }} />
                       <p style={{ fontSize: 14, color: T.muted }}>
-                        Aucun produit trouvé
+                        {t('ad5a_catalogue.no_products_found')}
                       </p>
                     </div>
                   </td>
@@ -1336,7 +1337,7 @@ export default function CataloguePage() {
                           border: `1px solid ${p.is_active ? "rgba(16,185,129,0.25)" : "rgba(156,163,175,0.2)"}`,
                         }}
                       >
-                        {p.is_active ? "Actif" : "Inactif"}
+                        {p.is_active ? t('ad5a_catalogue.status_active') : t('ad5a_catalogue.status_inactive')}
                       </span>
 
                       {p.moderation_status === "PENDING" && (
@@ -1350,7 +1351,7 @@ export default function CataloguePage() {
                             color: "#B45309",
                           }}
                         >
-                          En attente
+                          {t('ad5a_catalogue.status_pending')}
                         </span>
                       )}
                       {p.moderation_status === "REJECTED" && (
@@ -1364,7 +1365,7 @@ export default function CataloguePage() {
                             color: "#B91C1C",
                           }}
                         >
-                          Rejeté
+                          {t('ad5a_catalogue.status_rejected')}
                         </span>
                       )}
                     </td>
@@ -1386,7 +1387,7 @@ export default function CataloguePage() {
                       <div className="flex items-center gap-1.5 justify-end">
                           {/* Promo / Flash Deal */}
                           <button onClick={() => openCampaignModal(p, 'FLASH')} disabled={acting === p.id}
-                            title="Créer une promotion ou un Flash Deal"
+                            title={t('ad5a_catalogue.create_promo_title')}
                             className="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
                             style={{ background: 'rgba(244,121,32,0.1)', color: '#F47920', border: '1px solid rgba(244,121,32,0.25)' }}>
                             <Zap size={12} />
@@ -1395,7 +1396,7 @@ export default function CataloguePage() {
                         <button
                           onClick={() => handleToggle(p)}
                           disabled={acting === p.id}
-                          title={p.is_active ? "Désactiver" : "Activer"}
+                          title={p.is_active ? t('ad5a_catalogue.deactivate') : t('ad5a_catalogue.activate')}
                           className="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
                           style={{
                             background: p.is_active
@@ -1415,7 +1416,7 @@ export default function CataloguePage() {
                         </button>
                         <button
                           onClick={() => openDetail(p)}
-                          title="Voir le détail"
+                          title={t('ad5a_catalogue.view_detail')}
                           className="w-8 h-8 rounded-lg flex items-center justify-center"
                           style={{
                             background: T.cardAlt,
@@ -1429,7 +1430,7 @@ export default function CataloguePage() {
                         <button
                           onClick={() => handleDelete(p)}
                           disabled={acting === p.id}
-                          title="Supprimer"
+                          title={t('ad5a_catalogue.delete')}
                           className="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
                           style={{
                             background: "rgba(239,68,68,0.08)",
@@ -1444,7 +1445,7 @@ export default function CataloguePage() {
                             <button
                               onClick={() => handleApprove(p)}
                               disabled={acting === p.id}
-                              title="Approuver"
+                              title={t('ad5a_catalogue.approve')}
                               style={{
                                 padding: "6px 10px",
                                 borderRadius: 8,
@@ -1456,12 +1457,12 @@ export default function CataloguePage() {
                                 color: "#15803D",
                               }}
                             >
-                              Approuver
+                              {t('ad5a_catalogue.approve')}
                             </button>
                             <button
                               onClick={() => handleReject(p)}
                               disabled={acting === p.id}
-                              title="Rejeter"
+                              title={t('ad5a_catalogue.reject')}
                               style={{
                                 padding: "6px 10px",
                                 borderRadius: 8,
@@ -1473,7 +1474,7 @@ export default function CataloguePage() {
                                 color: "#B91C1C",
                               }}
                             >
-                              Rejeter
+                              {t('ad5a_catalogue.reject')}
                             </button>
                           </>
                         )}
@@ -1504,7 +1505,7 @@ export default function CataloguePage() {
           ) : paginated.length === 0 ? (
             <div className="flex flex-col items-center py-16 gap-3">
               <Package size={28} style={{ color: T.muted }} />
-              <p style={{ fontSize: 14, color: T.muted }}>Aucun produit</p>
+              <p style={{ fontSize: 14, color: T.muted }}>{t('ad5a_catalogue.no_products')}</p>
             </div>
           ) : (
             <div className="divide-y" style={{ borderColor: T.border }}>
@@ -1547,7 +1548,7 @@ export default function CataloguePage() {
                           flexShrink: 0,
                         }}
                       >
-                        {p.is_active ? "Actif" : "Inactif"}
+                        {p.is_active ? t('ad5a_catalogue.status_active') : t('ad5a_catalogue.status_inactive')}
                       </span>
                     </div>
                     <p
@@ -1571,7 +1572,7 @@ export default function CataloguePage() {
                           color: p.stock_quantity <= 3 ? "#F59E0B" : T.muted,
                         }}
                       >
-                        Stock: {p.stock_quantity}
+                        {t('ad5a_catalogue.stock_field', { count: p.stock_quantity })}
                       </span>
                       <span style={{ fontSize: 11, color: T.muted }}>
                         {fmtDate(p.created_at)}
@@ -1583,7 +1584,7 @@ export default function CataloguePage() {
                     <button onClick={() => openCampaignModal(p, 'FLASH')} disabled={acting === p.id}
                       className="w-8 h-8 rounded-lg flex items-center justify-center"
                       style={{ background: 'rgba(244,121,32,0.1)', color: '#F47920', border: '1px solid rgba(244,121,32,0.25)' }}
-                      aria-label="Créer une promotion ou un Flash Deal">
+                      aria-label={t('ad5a_catalogue.create_promo_title')}>
                       <Zap size={13} />
                     </button>
                     <button
@@ -1630,7 +1631,7 @@ export default function CataloguePage() {
             style={{ borderTop: `1px solid ${T.border}` }}
           >
             <div className="flex items-center gap-2">
-              <span style={{ fontSize: 12, color: T.muted }}>Lignes :</span>
+              <span style={{ fontSize: 12, color: T.muted }}>{t('ad5a_catalogue.rows_label')}</span>
               {PAGE_SIZES.map((s) => (
                 <button
                   key={s}
@@ -1650,8 +1651,11 @@ export default function CataloguePage() {
               ))}
             </div>
             <p style={{ fontSize: 12, color: T.muted }}>
-              {(page - 1) * pageSize + 1}–
-              {Math.min(page * pageSize, sorted.length)} sur {sorted.length}
+              {t('ad5a_catalogue.pagination_range', {
+                from: (page - 1) * pageSize + 1,
+                to: Math.min(page * pageSize, sorted.length),
+                total: sorted.length,
+              })}
             </p>
             <div className="flex items-center gap-1">
               <button
@@ -1732,13 +1736,13 @@ export default function CataloguePage() {
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
                 <p style={{ fontSize: 11, fontWeight: 800, color: '#F47920', letterSpacing: '.08em', textTransform: 'uppercase' }}>
-                  Campagne produit
+                  {t('ad5a_catalogue.campaign_modal_eyebrow')}
                 </p>
                 <h2 style={{ fontFamily: "'Syne',sans-serif", fontSize: 20, fontWeight: 800, color: T.text, marginTop: 3 }}>
                   {campaignProduct.title}
                 </h2>
                 <p style={{ fontSize: 12, color: T.muted, marginTop: 4 }}>
-                  Prix actuel: {fmtXaf(campaignProduct.price_xaf)} · Stock: {campaignProduct.stock_quantity}
+                  {t('ad5a_catalogue.campaign_modal_price_stock', { price: fmtXaf(campaignProduct.price_xaf), stock: campaignProduct.stock_quantity })}
                 </p>
               </div>
               <button
@@ -1747,7 +1751,7 @@ export default function CataloguePage() {
                 disabled={campaignSaving}
                 className="h-9 w-9 rounded-xl flex items-center justify-center"
                 style={{ background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}` }}
-                aria-label="Fermer"
+                aria-label={t('ad5a_catalogue.close_aria')}
               >
                 <X size={16} />
               </button>
@@ -1755,8 +1759,8 @@ export default function CataloguePage() {
 
             <div className="mb-4 grid grid-cols-2 gap-2">
               {([
-                { key: 'FLASH' as const, label: 'Flash Deal', icon: Zap },
-                { key: 'REGULAR' as const, label: 'Promotion', icon: Percent },
+                { key: 'FLASH' as const, label: t('ad5a_catalogue.campaign_type_flash'), icon: Zap },
+                { key: 'REGULAR' as const, label: t('ad5a_catalogue.campaign_type_promotion'), icon: Percent },
               ]).map((item) => (
                 <button
                   key={item.key}
@@ -1777,7 +1781,7 @@ export default function CataloguePage() {
 
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="sm:col-span-2">
-                <span style={{ fontSize: 11, fontWeight: 800, color: T.muted, textTransform: 'uppercase' }}>Titre</span>
+                <span style={{ fontSize: 11, fontWeight: 800, color: T.muted, textTransform: 'uppercase' }}>{t('ad5a_catalogue.field_title')}</span>
                 <input
                   value={campaignForm.title}
                   onChange={(event) => updateCampaignForm('title', event.target.value)}
@@ -1787,7 +1791,7 @@ export default function CataloguePage() {
               </label>
 
               <label>
-                <span style={{ fontSize: 11, fontWeight: 800, color: T.muted, textTransform: 'uppercase' }}>Début</span>
+                <span style={{ fontSize: 11, fontWeight: 800, color: T.muted, textTransform: 'uppercase' }}>{t('ad5a_catalogue.field_start')}</span>
                 <input
                   type="datetime-local"
                   value={campaignForm.starts_at}
@@ -1798,7 +1802,7 @@ export default function CataloguePage() {
               </label>
 
               <label>
-                <span style={{ fontSize: 11, fontWeight: 800, color: T.muted, textTransform: 'uppercase' }}>Fin</span>
+                <span style={{ fontSize: 11, fontWeight: 800, color: T.muted, textTransform: 'uppercase' }}>{t('ad5a_catalogue.field_end')}</span>
                 <input
                   type="datetime-local"
                   value={campaignForm.ends_at}
@@ -1809,7 +1813,7 @@ export default function CataloguePage() {
               </label>
 
               <label>
-                <span style={{ fontSize: 11, fontWeight: 800, color: T.muted, textTransform: 'uppercase' }}>Prix référence</span>
+                <span style={{ fontSize: 11, fontWeight: 800, color: T.muted, textTransform: 'uppercase' }}>{t('ad5a_catalogue.field_reference_price')}</span>
                 <input
                   type="number"
                   min={1}
@@ -1821,7 +1825,7 @@ export default function CataloguePage() {
               </label>
 
               <label>
-                <span style={{ fontSize: 11, fontWeight: 800, color: T.muted, textTransform: 'uppercase' }}>Prix promo</span>
+                <span style={{ fontSize: 11, fontWeight: 800, color: T.muted, textTransform: 'uppercase' }}>{t('ad5a_catalogue.field_promo_price')}</span>
                 <input
                   type="number"
                   min={1}
@@ -1834,7 +1838,7 @@ export default function CataloguePage() {
 
               {campaignForm.campaign_type === 'FLASH' && (
                 <label className="sm:col-span-2">
-                  <span style={{ fontSize: 11, fontWeight: 800, color: T.muted, textTransform: 'uppercase' }}>Stock réservé flash</span>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: T.muted, textTransform: 'uppercase' }}>{t('ad5a_catalogue.field_flash_stock')}</span>
                   <input
                     type="number"
                     min={5}
@@ -1849,8 +1853,7 @@ export default function CataloguePage() {
 
             <div className="mt-4 rounded-xl px-3 py-3" style={{ background: T.cardAlt, border: `1px solid ${T.border}` }}>
               <p style={{ fontSize: 12, lineHeight: 1.6, color: T.muted }}>
-                Flash Deal: durée 2h à 48h, stock minimum 5, remise entre 15% et 70%.
-                La campagne créée reste en attente d’approbation avant d’être visible côté client.
+                {t('ad5a_catalogue.campaign_rules_hint')}
               </p>
             </div>
 
@@ -1862,7 +1865,7 @@ export default function CataloguePage() {
                 className="rounded-xl px-4 py-2.5 text-[13px] font-bold"
                 style={{ background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}` }}
               >
-                Annuler
+                {t('ad5a_catalogue.cancel')}
               </button>
               <button
                 type="button"
@@ -1872,7 +1875,7 @@ export default function CataloguePage() {
                 style={{ background: '#F47920', opacity: campaignSaving ? 0.7 : 1 }}
               >
                 {campaignSaving ? <RefreshCw size={14} className="animate-spin" /> : <Zap size={14} />}
-                Créer la campagne
+                {t('ad5a_catalogue.create_campaign_button')}
               </button>
             </div>
           </div>

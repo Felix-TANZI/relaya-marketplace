@@ -1,0 +1,21 @@
+[project]
+name = "belivay-moteurs"
+version = "0.1.0"
+description = "Moteurs de calcul de l'Espace client BelivaY, purs (sans Django ni base de données), à intégrer au serveur de relaya-marketplace."
+requires-python = ">=3.11,<3.13"  # relaya-marketplace : 3.11 en CI et en production (Dockerfile.prod), 3.12 en développement
+dependencies = []
+
+[dependency-groups]
+dev = ["pytest>=8,<9", "pytest-cov>=5,<7"]
+
+[tool.pytest.ini_options]
+python_files = ["test_*.py"]
+pythonpath = ["."]
+addopts = "-ra --cov=belivay_moteurs --cov-report=term-missing --cov-fail-under=100"
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"

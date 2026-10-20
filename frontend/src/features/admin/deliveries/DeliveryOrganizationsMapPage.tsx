@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Building2, CheckCircle2, Phone, RefreshCw, Route, Search, Truck, Users } from "lucide-react";
 import { http } from "@/services/api/http";
 import { useAdminTheme } from "@/hooks/useAdminTheme";
@@ -16,14 +17,15 @@ interface DeliveryOrganization {
   status: "PENDING" | "APPROVED" | "SUSPENDED";
 }
 
-function statusLabel(status: DeliveryOrganization["status"]) {
-  if (status === "APPROVED") return "Approuvee";
-  if (status === "SUSPENDED") return "Suspendue";
-  return "En attente";
+function statusLabelKey(status: DeliveryOrganization["status"]) {
+  if (status === "APPROVED") return "ad6_del_org_map.status_approved";
+  if (status === "SUSPENDED") return "ad6_del_org_map.status_suspended";
+  return "ad6_del_org_map.status_pending";
 }
 
 export default function DeliveryOrganizationsMapPage() {
   const T = useAdminTheme();
+  const { t } = useTranslation();
   const [organizations, setOrganizations] = useState<DeliveryOrganization[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
@@ -82,8 +84,8 @@ export default function DeliveryOrganizationsMapPage() {
           <div className="text-sm font-black text-slate-950">{org.company_name}</div>
           <div className="mt-1 text-xs font-semibold text-slate-600">{org.address || org.city}</div>
           <div className="mt-2 flex items-center justify-between gap-3 text-xs">
-            <span className="font-bold text-cyan-700">{org.contract_reference || "Contrat a definir"}</span>
-            <span className="rounded-full bg-cyan-50 px-2 py-1 font-black text-cyan-700">{statusLabel(org.status)}</span>
+            <span className="font-bold text-cyan-700">{org.contract_reference || t('ad6_del_org_map.contract_to_define')}</span>
+            <span className="rounded-full bg-cyan-50 px-2 py-1 font-black text-cyan-700">{t(statusLabelKey(org.status))}</span>
           </div>
         </button>
       ),
@@ -95,13 +97,13 @@ export default function DeliveryOrganizationsMapPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-[11px] font-black uppercase tracking-[0.18em] text-cyan-700">
-            Reseau logistique partenaire
+            {t('ad6_del_org_map.eyebrow')}
           </p>
           <h1 style={{ color: T.text }} className="mt-1 text-2xl font-black">
-            Organisations de livraison BelivaY
+            {t('ad6_del_org_map.title')}
           </h1>
           <p style={{ color: T.muted }} className="mt-1 max-w-2xl text-sm">
-            Vue admin de supervision : entreprises partenaires, zones couvertes, contrats et rattachement operationnel des livreurs.
+            {t('ad6_del_org_map.subtitle')}
           </p>
         </div>
         <button
@@ -110,16 +112,16 @@ export default function DeliveryOrganizationsMapPage() {
           style={{ background: T.card, border: `1px solid ${T.border}`, color: T.text }}
         >
           <RefreshCw size={15} />
-          Actualiser
+          {t('ad6_del_org_map.refresh')}
         </button>
       </div>
 
       <section className="grid gap-4 md:grid-cols-4">
         {[
-          ["Organisations", organizations.length.toString(), Building2],
-          ["Approuvees", approvedCount.toString(), CheckCircle2],
-          ["Zones couvertes", zonesCount.toString(), Route],
-          ["Livreurs rattaches", "A connecter", Truck],
+          [t('ad6_del_org_map.kpi_organizations'), organizations.length.toString(), Building2],
+          [t('ad6_del_org_map.kpi_approved'), approvedCount.toString(), CheckCircle2],
+          [t('ad6_del_org_map.kpi_covered_zones'), zonesCount.toString(), Route],
+          [t('ad6_del_org_map.kpi_attached_couriers'), t('ad6_del_org_map.to_connect'), Truck],
         ].map(([label, value, Icon]) => (
           <article key={label as string} className="rounded-2xl p-5" style={{ background: T.card, border: `1px solid ${T.border}` }}>
             <div className="flex items-center justify-between">
@@ -143,13 +145,13 @@ export default function DeliveryOrganizationsMapPage() {
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Rechercher organisation, ville, zone, contrat..."
+                placeholder={t('ad6_del_org_map.search_placeholder')}
                 className="w-full rounded-xl py-2 pl-10 pr-3 text-sm outline-none"
                 style={{ background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text }}
               />
             </div>
             <span style={{ color: T.muted }} className="text-sm font-semibold">
-              {loading ? "Chargement..." : `${filtered.length} organisations affichees`}
+              {loading ? t('ad6_del_org_map.loading') : t('ad6_del_org_map.organizations_shown', { count: filtered.length })}
             </span>
           </div>
 
@@ -162,31 +164,31 @@ export default function DeliveryOrganizationsMapPage() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-[11px] font-black uppercase tracking-[0.16em] text-cyan-700">
-                    {selected.contract_reference || "Contrat a definir"}
+                    {selected.contract_reference || t('ad6_del_org_map.contract_to_define')}
                   </p>
                   <h2 style={{ color: T.text }} className="mt-1 text-xl font-black">{selected.company_name}</h2>
                   <p style={{ color: T.muted }} className="mt-1 text-sm">{selected.address || selected.city}</p>
                 </div>
                 <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-black text-cyan-700">
-                  {statusLabel(selected.status)}
+                  {t(statusLabelKey(selected.status))}
                 </span>
               </div>
 
               <div className="mt-5 space-y-3">
                 <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3">
                   <Users size={17} className="text-cyan-700" />
-                  <span className="text-sm font-semibold text-slate-700">{selected.manager_name || "Responsable a completer"}</span>
+                  <span className="text-sm font-semibold text-slate-700">{selected.manager_name || t('ad6_del_org_map.manager_to_complete')}</span>
                 </div>
                 <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3">
                   <Phone size={17} className="text-cyan-700" />
-                  <span className="text-sm font-semibold text-slate-700">{selected.phone || "Telephone a completer"}</span>
+                  <span className="text-sm font-semibold text-slate-700">{selected.phone || t('ad6_del_org_map.phone_to_complete')}</span>
                 </div>
               </div>
 
               <div className="mt-5">
-                <p style={{ color: T.muted }} className="text-xs font-bold uppercase tracking-[0.12em]">Zones couvertes</p>
+                <p style={{ color: T.muted }} className="text-xs font-bold uppercase tracking-[0.12em]">{t('ad6_del_org_map.covered_zones')}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {(selected.zones.length ? selected.zones : [selected.city || "Zone a definir"]).map((zone) => (
+                  {(selected.zones.length ? selected.zones : [selected.city || t('ad6_del_org_map.zone_to_define')]).map((zone) => (
                     <span key={zone} className="rounded-full bg-cyan-50 px-3 py-1 text-xs font-bold text-cyan-700">
                       {zone}
                     </span>
@@ -195,7 +197,7 @@ export default function DeliveryOrganizationsMapPage() {
               </div>
             </div>
           ) : (
-            <p style={{ color: T.muted }} className="text-sm">Aucune organisation a afficher.</p>
+            <p style={{ color: T.muted }} className="text-sm">{t('ad6_del_org_map.no_organization')}</p>
           )}
         </aside>
       </section>

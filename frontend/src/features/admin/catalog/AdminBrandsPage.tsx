@@ -13,6 +13,7 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ensureImageUnderLimit } from "@/lib/imageCompression";
 import {
   Search, Check, X, RefreshCw, Eye, ExternalLink,
@@ -38,11 +39,11 @@ import {
 
 type TabKey = "all" | "verified" | "pending" | "inactive";
 
-const TAB_LABELS: Record<TabKey, string> = {
-  all: "Toutes",
-  verified: "Vérifiées",
-  pending: "Propositions",
-  inactive: "Inactives",
+const TAB_LABEL_KEYS: Record<TabKey, string> = {
+  all: "ad3_brands.tab_all",
+  verified: "ad3_brands.tab_verified",
+  pending: "ad3_brands.tab_pending",
+  inactive: "ad3_brands.tab_inactive",
 };
 
 const TAB_COLORS: Record<TabKey, string> = {
@@ -78,6 +79,7 @@ const filtersFromTab = (tab: TabKey): BrandListFilters => {
 
 export default function AdminBrandsPage() {
   const T = useAdminTheme();
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const { confirm } = useConfirm();
 
@@ -111,11 +113,11 @@ export default function AdminBrandsPage() {
       setBrands(data);
       setSelectedIds(new Set());
     } catch {
-      showToast("Erreur chargement des marques", "error");
+      showToast(t("ad3_brands.toast_error_load"), "error");
     } finally {
       setLoading(false);
     }
-  }, [tab, search, hasMasters, ordering, showToast]);
+  }, [tab, search, hasMasters, ordering, showToast, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -139,43 +141,43 @@ export default function AdminBrandsPage() {
 
   // ── Actions individuelles ───────────────────────────────────────────
   const handleVerify = async (b: AdminBrand) => {
-    try { await adminApi.verifyBrand(b.id); showToast(`${b.name} vérifiée`, "success"); load(); }
-    catch { showToast("Erreur", "error"); }
+    try { await adminApi.verifyBrand(b.id); showToast(t("ad3_brands.toast_verified", { name: b.name }), "success"); load(); }
+    catch { showToast(t("ad3_brands.toast_error_generic"), "error"); }
   };
   const handleUnverify = async (b: AdminBrand) => {
-    try { await adminApi.unverifyBrand(b.id); showToast(`${b.name} : vérification retirée`, "success"); load(); }
-    catch { showToast("Erreur", "error"); }
+    try { await adminApi.unverifyBrand(b.id); showToast(t("ad3_brands.toast_unverified", { name: b.name }), "success"); load(); }
+    catch { showToast(t("ad3_brands.toast_error_generic"), "error"); }
   };
   const handleActivate = async (b: AdminBrand) => {
-    try { await adminApi.activateBrand(b.id); showToast(`${b.name} activée`, "success"); load(); }
-    catch { showToast("Erreur", "error"); }
+    try { await adminApi.activateBrand(b.id); showToast(t("ad3_brands.toast_activated", { name: b.name }), "success"); load(); }
+    catch { showToast(t("ad3_brands.toast_error_generic"), "error"); }
   };
   const handleDeactivate = async (b: AdminBrand) => {
     const ok = await confirm({
-      title: `Désactiver ${b.name} ?`,
-      message: "La marque restera en base mais ne sera plus suggérée aux vendeurs.",
+      title: t("ad3_brands.confirm_deactivate_title", { name: b.name }),
+      message: t("ad3_brands.confirm_deactivate_message"),
       type: "warning",
     });
     if (!ok) return;
-    try { await adminApi.deactivateBrand(b.id); showToast(`${b.name} désactivée`, "success"); load(); }
-    catch { showToast("Erreur", "error"); }
+    try { await adminApi.deactivateBrand(b.id); showToast(t("ad3_brands.toast_deactivated", { name: b.name }), "success"); load(); }
+    catch { showToast(t("ad3_brands.toast_error_generic"), "error"); }
   };
   const handleDelete = async (b: AdminBrand) => {
     const ok = await confirm({
-      title: `Supprimer définitivement ${b.name} ?`,
+      title: t("ad3_brands.confirm_delete_title", { name: b.name }),
       message: b.master_products_count > 0
-        ? `⚠️ Cette marque est utilisée par ${b.master_products_count} fiche(s). La suppression sera refusée.`
-        : "Aucune fiche ne l'utilise. Action définitive.",
+        ? t(b.master_products_count > 1 ? "ad3_brands.confirm_delete_blocked_message_plural" : "ad3_brands.confirm_delete_blocked_message", { count: b.master_products_count })
+        : t("ad3_brands.confirm_delete_safe_message"),
       type: "warning",
     });
     if (!ok) return;
     try {
       await adminApi.deleteBrand(b.id);
-      showToast(`${b.name} supprimée`, "success");
+      showToast(t("ad3_brands.toast_deleted", { name: b.name }), "success");
       load();
     } catch (err: unknown) {
       const message = (err as { detail?: string })?.detail
-        ?? "Impossible de supprimer cette marque (elle est utilisée).";
+        ?? t("ad3_brands.error_delete_blocked_fallback");
       showToast(message, "error");
     }
   };
@@ -188,16 +190,16 @@ export default function AdminBrandsPage() {
   ) => {
     if (selectedIds.size === 0) return;
     const ok = await confirm({
-      title: `${label} ${selectedIds.size} marque(s) ?`,
-      message: "Cette action est immédiate.",
+      title: t(selectedIds.size > 1 ? "ad3_brands.bulk_confirm_title_plural" : "ad3_brands.bulk_confirm_title", { label, count: selectedIds.size }),
+      message: t("ad3_brands.bulk_confirm_message"),
       type: warning ? "warning" : "info",
     });
     if (!ok) return;
     try {
       const res = await fn(Array.from(selectedIds));
-      showToast(`${res.updated_count} marque(s) traitée(s)`, "success");
+      showToast(t(res.updated_count > 1 ? "ad3_brands.toast_bulk_success_plural" : "ad3_brands.toast_bulk_success", { count: res.updated_count }), "success");
       load();
-    } catch { showToast("Erreur bulk action", "error"); }
+    } catch { showToast(t("ad3_brands.toast_error_bulk"), "error"); }
   };
 
   // ── Sélection ───────────────────────────────────────────────────────
@@ -221,7 +223,7 @@ export default function AdminBrandsPage() {
 
   const openMerge = () => {
     if (selectedIds.size < 2) {
-      showToast("Sélectionne au moins 2 marques pour fusionner", "warning");
+      showToast(t("ad3_brands.toast_merge_min_two"), "warning");
       return;
     }
     setMergeMode(true);
@@ -252,10 +254,10 @@ export default function AdminBrandsPage() {
         hasMasters={hasMasters} setHasMasters={setHasMasters}
         ordering={ordering} setOrdering={setOrdering}
         selectedCount={selectedIds.size}
-        onBulkVerify={() => bulkAction("Vérifier", adminApi.bulkVerifyBrands)}
-        onBulkUnverify={() => bulkAction("Retirer la vérification de", adminApi.bulkUnverifyBrands)}
-        onBulkActivate={() => bulkAction("Activer", adminApi.bulkActivateBrands)}
-        onBulkDeactivate={() => bulkAction("Désactiver", adminApi.bulkDeactivateBrands, true)}
+        onBulkVerify={() => bulkAction(t("ad3_brands.bulk_btn_verify"), adminApi.bulkVerifyBrands)}
+        onBulkUnverify={() => bulkAction(t("ad3_brands.bulk_confirm_label_unverify"), adminApi.bulkUnverifyBrands)}
+        onBulkActivate={() => bulkAction(t("ad3_brands.bulk_btn_activate"), adminApi.bulkActivateBrands)}
+        onBulkDeactivate={() => bulkAction(t("ad3_brands.bulk_btn_deactivate"), adminApi.bulkDeactivateBrands, true)}
         onOpenMerge={openMerge}
       />
 
@@ -269,7 +271,7 @@ export default function AdminBrandsPage() {
           try {
             const detail = await adminApi.getBrandDetail(b.id);
             setEditBrand(detail);
-          } catch { showToast("Erreur", "error"); }
+          } catch { showToast(t("ad3_brands.toast_error_generic"), "error"); }
         }}
         onVerify={handleVerify} onUnverify={handleUnverify}
         onActivate={handleActivate} onDeactivate={handleDeactivate}
@@ -317,22 +319,23 @@ function Header({ T, counts, onCreateNew, onExport, onRefresh, loading }: {
   onCreateNew: () => void; onExport: () => void; onRefresh: () => void;
   loading: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-start justify-between gap-4 flex-wrap">
       <div>
         <h1 style={{
           fontFamily: "'Syne', sans-serif", fontSize: 24, fontWeight: 800,
           color: T.text, marginBottom: 4,
-        }}>Marques</h1>
+        }}>{t("ad3_brands.header_title")}</h1>
         <p style={{ fontSize: 13, color: T.muted }}>
           {counts.pending > 0 && (
             <>
               <strong style={{ color: TAB_COLORS.pending }}>
-                {counts.pending} proposition{counts.pending > 1 ? "s" : ""} en attente
+                {t(counts.pending > 1 ? "ad3_brands.header_pending_label_plural" : "ad3_brands.header_pending_label", { count: counts.pending })}
               </strong>{" · "}
             </>
           )}
-          {counts.all} marque{counts.all > 1 ? "s" : ""} au total
+          {t(counts.all > 1 ? "ad3_brands.header_total_label_plural" : "ad3_brands.header_total_label", { count: counts.all })}
         </p>
       </div>
 
@@ -344,7 +347,7 @@ function Header({ T, counts, onCreateNew, onExport, onRefresh, loading }: {
           border: `1px solid ${T.border}`, cursor: "pointer",
         }}>
           <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
-          Actualiser
+          {t("ad3_brands.btn_refresh")}
         </button>
         <button onClick={onExport} style={{
           display: "flex", alignItems: "center", gap: 6, padding: "8px 14px",
@@ -352,7 +355,7 @@ function Header({ T, counts, onCreateNew, onExport, onRefresh, loading }: {
           background: T.cardAlt, color: T.text,
           border: `1px solid ${T.border}`, cursor: "pointer",
         }}>
-          <Download size={12} /> Exporter CSV
+          <Download size={12} /> {t("ad3_brands.btn_export_csv")}
         </button>
         <button onClick={onCreateNew} style={{
           display: "flex", alignItems: "center", gap: 6, padding: "8px 14px",
@@ -360,7 +363,7 @@ function Header({ T, counts, onCreateNew, onExport, onRefresh, loading }: {
           background: T.red, color: "#fff",
           border: "none", cursor: "pointer",
         }}>
-          <Plus size={12} /> Nouvelle marque
+          <Plus size={12} /> {t("ad3_brands.btn_new_brand")}
         </button>
       </div>
     </div>
@@ -375,6 +378,7 @@ function TabsBar({ T, tab, setTab, counts }: {
   T: AdminTokens; tab: TabKey; setTab: (t: TabKey) => void;
   counts: Record<TabKey, number>;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center gap-2 flex-wrap">
       {(["all", "verified", "pending", "inactive"] as TabKey[]).map((k) => {
@@ -389,7 +393,7 @@ function TabsBar({ T, tab, setTab, counts }: {
             color: isActive ? "#fff" : T.text,
             border: `1px solid ${isActive ? T.red : T.border}`, cursor: "pointer",
           }}>
-            {TAB_LABELS[k]}
+            {t(TAB_LABEL_KEYS[k])}
             <span style={{
               background: isActive ? "rgba(255,255,255,0.25)" : color + "22",
               color: isActive ? "#fff" : color,
@@ -419,6 +423,7 @@ function Toolbar({
   onBulkActivate: () => void; onBulkDeactivate: () => void;
   onOpenMerge: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center gap-3 flex-wrap">
       <div style={{ position: "relative", flex: 1, minWidth: 220 }}>
@@ -427,7 +432,7 @@ function Toolbar({
           color: T.muted, pointerEvents: "none",
         }} />
         <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-          placeholder="Nom ou pays..."
+          placeholder={t("ad3_brands.search_placeholder")}
           style={{
             width: "100%", padding: "10px 12px 10px 34px", borderRadius: 10,
             fontSize: 12.5, background: T.input, color: T.text,
@@ -443,9 +448,9 @@ function Toolbar({
           background: T.input, color: T.text, border: `1px solid ${T.inputBorder}`,
           outline: "none", cursor: "pointer",
         }}>
-        <option value="any">Toutes les marques</option>
-        <option value="yes">Utilisées uniquement</option>
-        <option value="no">Non utilisées uniquement</option>
+        <option value="any">{t("ad3_brands.filter_has_masters_any")}</option>
+        <option value="yes">{t("ad3_brands.filter_has_masters_yes")}</option>
+        <option value="no">{t("ad3_brands.filter_has_masters_no")}</option>
       </select>
 
       <select value={ordering}
@@ -455,11 +460,11 @@ function Toolbar({
           background: T.input, color: T.text, border: `1px solid ${T.inputBorder}`,
           outline: "none", cursor: "pointer",
         }}>
-        <option value="-is_verified,name">Vérifiées d'abord</option>
-        <option value="name">Nom A → Z</option>
-        <option value="-name">Nom Z → A</option>
-        <option value="-created_at">Récentes d'abord</option>
-        <option value="-_masters_count">Plus utilisées d'abord</option>
+        <option value="-is_verified,name">{t("ad3_brands.sort_verified_first")}</option>
+        <option value="name">{t("ad3_brands.sort_name_asc")}</option>
+        <option value="-name">{t("ad3_brands.sort_name_desc")}</option>
+        <option value="-created_at">{t("ad3_brands.sort_recent_first")}</option>
+        <option value="-_masters_count">{t("ad3_brands.sort_most_used_first")}</option>
       </select>
 
       {selectedCount > 0 && (
@@ -470,15 +475,15 @@ function Toolbar({
             borderRadius: 20, border: `1px solid ${T.red}30`,
           }}>
             <span style={{ fontSize: 11.5, fontWeight: 700, color: T.red }}>
-              {selectedCount} sélectionné{selectedCount > 1 ? "s" : ""}
+              {t(selectedCount > 1 ? "ad3_brands.selected_count_plural" : "ad3_brands.selected_count", { count: selectedCount })}
             </span>
           </div>
-          <BulkActionButton icon={BadgeCheck} label="Vérifier" onClick={onBulkVerify} color={TAB_COLORS.verified} T={T} />
-          <BulkActionButton icon={X} label="Retirer ✓" onClick={onBulkUnverify} color={TAB_COLORS.pending} T={T} />
-          <BulkActionButton icon={Check} label="Activer" onClick={onBulkActivate} color={TAB_COLORS.verified} T={T} />
-          <BulkActionButton icon={X} label="Désactiver" onClick={onBulkDeactivate} color={"#DC2626"} T={T} />
+          <BulkActionButton icon={BadgeCheck} label={t("ad3_brands.bulk_btn_verify")} onClick={onBulkVerify} color={TAB_COLORS.verified} T={T} />
+          <BulkActionButton icon={X} label={t("ad3_brands.bulk_btn_unverify")} onClick={onBulkUnverify} color={TAB_COLORS.pending} T={T} />
+          <BulkActionButton icon={Check} label={t("ad3_brands.bulk_btn_activate")} onClick={onBulkActivate} color={TAB_COLORS.verified} T={T} />
+          <BulkActionButton icon={X} label={t("ad3_brands.bulk_btn_deactivate")} onClick={onBulkDeactivate} color={"#DC2626"} T={T} />
           {selectedCount >= 2 && (
-            <BulkActionButton icon={Merge} label="Fusionner" onClick={onOpenMerge} color={T.blue} T={T} />
+            <BulkActionButton icon={Merge} label={t("ad3_brands.bulk_btn_merge")} onClick={onOpenMerge} color={T.blue} T={T} />
           )}
         </>
       )}
@@ -519,6 +524,7 @@ function BrandsTable({
   onActivate: (b: AdminBrand) => void; onDeactivate: (b: AdminBrand) => void;
   onDelete: (b: AdminBrand) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div style={{
       background: T.card, borderRadius: 16, border: `1px solid ${T.border}`,
@@ -527,12 +533,12 @@ function BrandsTable({
       {loading ? (
         <div style={{ padding: 40, textAlign: "center", color: T.muted }}>
           <RefreshCw size={20} className="animate-spin" style={{ margin: "0 auto 12px" }} />
-          Chargement...
+          {t("ad3_brands.loading")}
         </div>
       ) : brands.length === 0 ? (
         <div style={{ padding: 40, textAlign: "center", color: T.muted }}>
           <Award size={32} style={{ margin: "0 auto 12px", opacity: 0.4 }} />
-          <p style={{ fontSize: 13 }}>Aucune marque dans cet état.</p>
+          <p style={{ fontSize: 13 }}>{t("ad3_brands.empty_state")}</p>
         </div>
       ) : (
         <div style={{ overflowX: "auto" }}>
@@ -544,12 +550,12 @@ function BrandsTable({
                     checked={selectedIds.size === brands.length && brands.length > 0}
                     onChange={onToggleAll} />
                 </th>
-                <TH>Marque</TH>
-                <TH>Origine</TH>
-                <TH>Fiches</TH>
-                <TH>Statuts</TH>
-                <TH>Proposée par</TH>
-                <TH>Actions</TH>
+                <TH>{t("ad3_brands.col_brand")}</TH>
+                <TH>{t("ad3_brands.col_origin")}</TH>
+                <TH>{t("ad3_brands.col_masters")}</TH>
+                <TH>{t("ad3_brands.col_status")}</TH>
+                <TH>{t("ad3_brands.col_proposed_by")}</TH>
+                <TH>{t("ad3_brands.col_actions")}</TH>
               </tr>
             </thead>
             <tbody>
@@ -590,6 +596,7 @@ function BrandRow({
   onVerify: () => void; onUnverify: () => void;
   onActivate: () => void; onDeactivate: () => void; onDelete: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <tr style={{
       borderBottom: `1px solid ${T.border}`,
@@ -637,7 +644,7 @@ function BrandRow({
         {brand.master_products_count}
         {brand.active_masters_count !== brand.master_products_count && (
           <span style={{ fontSize: 10, color: T.mutedL, marginLeft: 4 }}>
-            ({brand.active_masters_count} act.)
+            {t("ad3_brands.row_active_masters_suffix", { count: brand.active_masters_count })}
           </span>
         )}
       </td>
@@ -646,12 +653,12 @@ function BrandRow({
       <td style={{ padding: "12px 16px" }}>
         <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
           {brand.is_verified ? (
-            <StatusPill color={TAB_COLORS.verified} label="Vérifiée" icon={BadgeCheck} />
+            <StatusPill color={TAB_COLORS.verified} label={t("ad3_brands.status_verified")} icon={BadgeCheck} />
           ) : (
-            <StatusPill color={TAB_COLORS.pending} label="En attente" />
+            <StatusPill color={TAB_COLORS.pending} label={t("ad3_brands.status_pending")} />
           )}
           {!brand.is_active && (
-            <StatusPill color={TAB_COLORS.inactive} label="Inactive" />
+            <StatusPill color={TAB_COLORS.inactive} label={t("ad3_brands.status_inactive")} />
           )}
         </div>
       </td>
@@ -663,31 +670,31 @@ function BrandRow({
             <span style={{ color: T.muted }}>@</span>{brand.proposed_by}
           </span>
         ) : (
-          <span style={{ color: T.mutedL, fontStyle: "italic" }}>Admin</span>
+          <span style={{ color: T.mutedL, fontStyle: "italic" }}>{t("ad3_brands.proposed_by_admin_fallback")}</span>
         )}
       </td>
 
       {/* Actions */}
       <td style={{ padding: "12px 16px" }}>
         <div style={{ display: "flex", gap: 4 }}>
-          <ActionBtn onClick={onDetail} title="Détails" icon={Eye} T={T} />
-          <ActionBtn onClick={onEdit} title="Modifier" icon={Edit3} T={T} />
+          <ActionBtn onClick={onDetail} title={t("ad3_brands.action_details")} icon={Eye} T={T} />
+          <ActionBtn onClick={onEdit} title={t("ad3_brands.action_edit")} icon={Edit3} T={T} />
           {!brand.is_verified ? (
-            <ActionBtn onClick={onVerify} title="Vérifier" icon={BadgeCheck}
+            <ActionBtn onClick={onVerify} title={t("ad3_brands.action_verify")} icon={BadgeCheck}
               T={T} color={TAB_COLORS.verified} />
           ) : (
-            <ActionBtn onClick={onUnverify} title="Retirer vérification" icon={X}
+            <ActionBtn onClick={onUnverify} title={t("ad3_brands.action_unverify")} icon={X}
               T={T} color={TAB_COLORS.pending} />
           )}
           {brand.is_active ? (
-            <ActionBtn onClick={onDeactivate} title="Désactiver" icon={X}
+            <ActionBtn onClick={onDeactivate} title={t("ad3_brands.action_deactivate")} icon={X}
               T={T} color="#DC2626" />
           ) : (
-            <ActionBtn onClick={onActivate} title="Activer" icon={Check}
+            <ActionBtn onClick={onActivate} title={t("ad3_brands.action_activate")} icon={Check}
               T={T} color={TAB_COLORS.verified} />
           )}
           {brand.master_products_count === 0 && (
-            <ActionBtn onClick={onDelete} title="Supprimer" icon={Trash2}
+            <ActionBtn onClick={onDelete} title={t("ad3_brands.action_delete")} icon={Trash2}
               T={T} color="#DC2626" />
           )}
         </div>
@@ -763,6 +770,7 @@ function BrandDetailModal({ brandId, onClose, onModified, onEdit }: {
   onEdit: (d: AdminBrandDetail) => void;
 }) {
   const T = useAdminTheme();
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const { confirm } = useConfirm();
   const [detail, setDetail] = useState<AdminBrandDetail | null>(null);
@@ -774,10 +782,10 @@ function BrandDetailModal({ brandId, onClose, onModified, onEdit }: {
     let cancelled = false;
     adminApi.getBrandDetail(brandId)
       .then((data) => { if (!cancelled) setDetail(data); })
-      .catch(() => { if (!cancelled) showToast("Erreur chargement", "error"); })
+      .catch(() => { if (!cancelled) showToast(t("ad3_brands.toast_error_load_detail"), "error"); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [brandId, showToast]);
+  }, [brandId, showToast, t]);
 
   const doAction = async (fn: () => Promise<AdminBrandDetail>, msg: string) => {
     try {
@@ -785,25 +793,25 @@ function BrandDetailModal({ brandId, onClose, onModified, onEdit }: {
       setDetail(updated);
       showToast(msg, "success");
       onModified();
-    } catch { showToast("Erreur", "error"); }
+    } catch { showToast(t("ad3_brands.toast_error_generic"), "error"); }
   };
 
   const handleDelete = async () => {
     if (!detail) return;
     const ok = await confirm({
-      title: `Supprimer ${detail.name} ?`,
-      message: "Action définitive.",
+      title: t("ad3_brands.confirm_delete_detail_title", { name: detail.name }),
+      message: t("ad3_brands.confirm_action_definitive"),
       type: "warning",
     });
     if (!ok) return;
     try {
       await adminApi.deleteBrand(detail.id);
-      showToast(`${detail.name} supprimée`, "success");
+      showToast(t("ad3_brands.toast_deleted", { name: detail.name }), "success");
       onClose();
       onModified();
     } catch (err: unknown) {
       const message = (err as { detail?: string })?.detail
-        ?? "Impossible (marque utilisée).";
+        ?? t("ad3_brands.error_delete_blocked_fallback_short");
       showToast(message, "error");
     }
   };
@@ -822,7 +830,7 @@ function BrandDetailModal({ brandId, onClose, onModified, onEdit }: {
         {loading || !detail ? (
           <div style={{ padding: 60, textAlign: "center", color: T.muted }}>
             <RefreshCw size={24} className="animate-spin" style={{ margin: "0 auto 12px" }} />
-            Chargement...
+            {t("ad3_brands.loading")}
           </div>
         ) : (
           <>
@@ -848,12 +856,12 @@ function BrandDetailModal({ brandId, onClose, onModified, onEdit }: {
                     color: T.text, fontFamily: "monospace", border: `1px solid ${T.border}`,
                   }}>{detail.slug}</code>
                   {detail.is_verified
-                    ? <StatusPill color={TAB_COLORS.verified} label="Vérifiée" icon={BadgeCheck} />
-                    : <StatusPill color={TAB_COLORS.pending} label="En attente" />}
-                  {!detail.is_active && <StatusPill color={TAB_COLORS.inactive} label="Inactive" />}
+                    ? <StatusPill color={TAB_COLORS.verified} label={t("ad3_brands.status_verified")} icon={BadgeCheck} />
+                    : <StatusPill color={TAB_COLORS.pending} label={t("ad3_brands.status_pending")} />}
+                  {!detail.is_active && <StatusPill color={TAB_COLORS.inactive} label={t("ad3_brands.status_inactive")} />}
                   {detail.proposed_by && (
                     <span style={{ fontSize: 11.5, color: T.muted }}>
-                      Proposée par <strong style={{ color: T.text }}>@{detail.proposed_by}</strong>
+                      {t("ad3_brands.detail_proposed_by")} <strong style={{ color: T.text }}>@{detail.proposed_by}</strong>
                     </span>
                   )}
                 </div>
@@ -873,18 +881,18 @@ function BrandDetailModal({ brandId, onClose, onModified, onEdit }: {
               {/* Colonne gauche : info + stats */}
               <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                 {detail.description && (
-                  <ModalSection title="Description" T={T}>
+                  <ModalSection title={t("ad3_brands.section_description")} T={T}>
                     <p style={{ fontSize: 13, color: T.text, lineHeight: 1.5 }}>
                       {detail.description}
                     </p>
                   </ModalSection>
                 )}
 
-                <ModalSection title="Informations" T={T}>
+                <ModalSection title={t("ad3_brands.section_information")} T={T}>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    <InfoRow label="Pays d'origine" value={detail.country_of_origin || "—"} T={T} />
+                    <InfoRow label={t("ad3_brands.label_country_of_origin")} value={detail.country_of_origin || "—"} T={T} />
                     <InfoRow
-                      label="Site web"
+                      label={t("ad3_brands.label_website")}
                       value={detail.website ? (
                         <a href={detail.website} target="_blank" rel="noreferrer"
                           style={{ color: T.red, textDecoration: "none" }}>
@@ -893,31 +901,31 @@ function BrandDetailModal({ brandId, onClose, onModified, onEdit }: {
                       ) : "—"}
                       T={T}
                     />
-                    <InfoRow label="Créée le" value={fmtDate(detail.created_at)} T={T} />
-                    <InfoRow label="Modifiée le" value={fmtDate(detail.updated_at)} T={T} />
+                    <InfoRow label={t("ad3_brands.label_created_at")} value={fmtDate(detail.created_at)} T={T} />
+                    <InfoRow label={t("ad3_brands.label_updated_at")} value={fmtDate(detail.updated_at)} T={T} />
                   </div>
                 </ModalSection>
 
-                <ModalSection title="Statistiques" T={T}>
+                <ModalSection title={t("ad3_brands.section_statistics")} T={T}>
                   <div style={{
                     display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10,
                     background: T.cardAlt, padding: 14, borderRadius: 12,
                   }}>
-                    <StatCell label="Fiches maîtres" value={detail.stats.total_masters}
+                    <StatCell label={t("ad3_brands.stat_total_masters")} value={detail.stats.total_masters}
                       sub={detail.stats.active_masters !== detail.stats.total_masters
-                        ? `${detail.stats.active_masters} approuvées` : undefined} T={T} />
-                    <StatCell label="Offres cumulées" value={detail.stats.total_offers}
+                        ? t("ad3_brands.stat_approved_suffix", { count: detail.stats.active_masters }) : undefined} T={T} />
+                    <StatCell label={t("ad3_brands.stat_total_offers")} value={detail.stats.total_offers}
                       sub={detail.stats.approved_offers !== detail.stats.total_offers
-                        ? `${detail.stats.approved_offers} approuvées` : undefined} T={T} />
-                    <StatCell label="Vendeurs distincts" value={detail.stats.distinct_vendors} T={T} />
-                    <StatCell label="Statut suppression"
-                      value={detail.is_deletable ? "Possible" : "Bloquée"}
+                        ? t("ad3_brands.stat_approved_suffix", { count: detail.stats.approved_offers }) : undefined} T={T} />
+                    <StatCell label={t("ad3_brands.stat_distinct_vendors")} value={detail.stats.distinct_vendors} T={T} />
+                    <StatCell label={t("ad3_brands.stat_deletion_status")}
+                      value={detail.is_deletable ? t("ad3_brands.stat_deletable_possible") : t("ad3_brands.stat_deletable_blocked")}
                       T={T} color={detail.is_deletable ? TAB_COLORS.verified : "#DC2626"} />
                   </div>
                 </ModalSection>
 
                 {detail.admin_note && (
-                  <ModalSection title="Note admin" T={T}>
+                  <ModalSection title={t("ad3_brands.section_admin_note")} T={T}>
                     <div style={{
                       background: T.cardAlt, padding: 12, borderRadius: 10,
                       fontSize: 12.5, color: T.text, fontStyle: "italic",
@@ -929,10 +937,10 @@ function BrandDetailModal({ brandId, onClose, onModified, onEdit }: {
 
               {/* Colonne droite : fiches attachées */}
               <div>
-                <ModalSection title={`Fiches maîtres attachées (${detail.master_products.length})`} T={T}>
+                <ModalSection title={t("ad3_brands.section_attached_masters", { count: detail.master_products.length })} T={T}>
                   {detail.master_products.length === 0 ? (
                     <div style={{ fontSize: 12, color: T.muted, fontStyle: "italic" }}>
-                      Aucune fiche n'utilise encore cette marque.
+                      {t("ad3_brands.empty_no_masters")}
                     </div>
                   ) : (
                     <div style={{
@@ -956,35 +964,35 @@ function BrandDetailModal({ brandId, onClose, onModified, onEdit }: {
             }}>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button onClick={() => onEdit(detail)} style={btnStyle(T.text, T.card, T)}>
-                  <Edit3 size={13} /> Modifier
+                  <Edit3 size={13} /> {t("ad3_brands.action_edit")}
                 </button>
                 {detail.is_verified ? (
-                  <button onClick={() => doAction(() => adminApi.unverifyBrand(detail.id), "Vérification retirée")}
+                  <button onClick={() => doAction(() => adminApi.unverifyBrand(detail.id), t("ad3_brands.detail_toast_unverified"))}
                     style={btnStyle(TAB_COLORS.pending, T.card, T)}>
-                    <X size={13} /> Retirer ✓
+                    <X size={13} /> {t("ad3_brands.bulk_btn_unverify")}
                   </button>
                 ) : (
-                  <button onClick={() => doAction(() => adminApi.verifyBrand(detail.id), "Marque vérifiée")}
+                  <button onClick={() => doAction(() => adminApi.verifyBrand(detail.id), t("ad3_brands.detail_toast_verified"))}
                     style={btnStyle(TAB_COLORS.verified, T.card, T)}>
-                    <BadgeCheck size={13} /> Vérifier
+                    <BadgeCheck size={13} /> {t("ad3_brands.bulk_btn_verify")}
                   </button>
                 )}
                 {detail.is_active ? (
-                  <button onClick={() => doAction(() => adminApi.deactivateBrand(detail.id), "Marque désactivée")}
+                  <button onClick={() => doAction(() => adminApi.deactivateBrand(detail.id), t("ad3_brands.detail_toast_deactivated"))}
                     style={btnStyle("#DC2626", T.card, T)}>
-                    <X size={13} /> Désactiver
+                    <X size={13} /> {t("ad3_brands.bulk_btn_deactivate")}
                   </button>
                 ) : (
-                  <button onClick={() => doAction(() => adminApi.activateBrand(detail.id), "Marque activée")}
+                  <button onClick={() => doAction(() => adminApi.activateBrand(detail.id), t("ad3_brands.detail_toast_activated"))}
                     style={btnStyle(TAB_COLORS.verified, T.card, T)}>
-                    <Check size={13} /> Activer
+                    <Check size={13} /> {t("ad3_brands.bulk_btn_activate")}
                   </button>
                 )}
               </div>
               <div>
                 {detail.is_deletable && (
                   <button onClick={handleDelete} style={btnStyle("#DC2626", T.card, T, true)}>
-                    <Trash2 size={13} /> Supprimer
+                    <Trash2 size={13} /> {t("ad3_brands.action_delete")}
                   </button>
                 )}
               </div>
@@ -1056,6 +1064,7 @@ function StatCell({ label, value, sub, T, color }: {
 function MasterCard({ master, T }: {
   master: AdminBrandDetail["master_products"][number]; T: AdminTokens;
 }) {
+  const { t } = useTranslation();
   return (
     <Link to={`/product/${master.slug}`} target="_blank" style={{
       display: "flex", alignItems: "center", gap: 10, padding: 10,
@@ -1082,7 +1091,7 @@ function MasterCard({ master, T }: {
         <div style={{ fontSize: 10.5, color: T.muted, marginTop: 3, display: "flex", gap: 6, alignItems: "center" }}>
           <span>{master.category_name}</span>
           <span>·</span>
-          <span>{master.offers_count} offre{master.offers_count > 1 ? "s" : ""}</span>
+          <span>{t(master.offers_count > 1 ? "ad3_brands.offers_count_plural" : "ad3_brands.offers_count", { count: master.offers_count })}</span>
           {master.moderation_status !== "APPROVED" && (
             <StatusPill color={TAB_COLORS.pending} label={master.moderation_status} />
           )}
@@ -1102,6 +1111,7 @@ function BrandFormModal({ brand, onClose, onSaved }: {
   onClose: () => void; onSaved: () => void;
 }) {
   const T = useAdminTheme();
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const isEdit = brand !== null;
 
@@ -1129,7 +1139,7 @@ function BrandFormModal({ brand, onClose, onSaved }: {
 
   const handleSubmit = async () => {
     if (!form.name || form.name.trim().length < 2) {
-      showToast("Nom trop court (min 2 caractères)", "warning");
+      showToast(t("ad3_brands.validation_name_too_short"), "warning");
       return;
     }
     setBusy(true);
@@ -1138,16 +1148,16 @@ function BrandFormModal({ brand, onClose, onSaved }: {
       if (logoFile) payload.logo = logoFile;
       if (isEdit) {
         await adminApi.updateBrand(brand.id, payload);
-        showToast("Marque mise à jour", "success");
+        showToast(t("ad3_brands.toast_updated"), "success");
       } else {
         await adminApi.createBrand(payload);
-        showToast("Marque créée", "success");
+        showToast(t("ad3_brands.toast_created"), "success");
       }
       onSaved();
     } catch (err: unknown) {
       const detail = (err as { detail?: string; name?: string[] })?.detail
         ?? (err as { name?: string[] })?.name?.[0]
-        ?? "Erreur lors de l'enregistrement";
+        ?? t("ad3_brands.error_save_fallback");
       showToast(detail, "error");
     } finally {
       setBusy(false);
@@ -1172,7 +1182,7 @@ function BrandFormModal({ brand, onClose, onSaved }: {
           display: "flex", justifyContent: "space-between", alignItems: "center",
         }}>
           <h2 style={{ fontSize: 18, fontWeight: 800, color: T.text, margin: 0 }}>
-            {isEdit ? `Modifier ${brand.name}` : "Nouvelle marque"}
+            {isEdit ? t("ad3_brands.form_title_edit", { name: brand.name }) : t("ad3_brands.btn_new_brand")}
           </h2>
           <button onClick={onClose} style={{
             padding: 6, borderRadius: 8, background: T.card, border: `1px solid ${T.border}`,
@@ -1183,7 +1193,7 @@ function BrandFormModal({ brand, onClose, onSaved }: {
         {/* Body */}
         <div style={{ padding: "22px 26px", display: "flex", flexDirection: "column", gap: 16 }}>
           {/* Logo upload */}
-          <FormField label="Logo" T={T}>
+          <FormField label={t("ad3_brands.field_logo")} T={T}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <BrandLogo src={logoPreview} T={T} size={80} name={form.name || "?"} />
               <label style={{
@@ -1192,34 +1202,34 @@ function BrandFormModal({ brand, onClose, onSaved }: {
                 background: T.cardAlt, color: T.text, border: `1px solid ${T.border}`,
                 cursor: "pointer",
               }}>
-                <Upload size={12} /> Choisir un fichier
+                <Upload size={12} /> {t("ad3_brands.btn_choose_file")}
                 <input type="file" accept="image/*" onChange={handleLogoChange}
                   style={{ display: "none" }} />
               </label>
             </div>
           </FormField>
 
-          <FormField label="Nom *" T={T}>
+          <FormField label={t("ad3_brands.field_name")} T={T}>
             <TextInput value={form.name ?? ""}
               onChange={(v) => setForm({ ...form, name: v })}
-              placeholder="Ex : Samsung" T={T} />
+              placeholder={t("ad3_brands.placeholder_name_example")} T={T} />
           </FormField>
 
-          <FormField label="Description" T={T}>
+          <FormField label={t("ad3_brands.field_description")} T={T}>
             <TextArea value={form.description ?? ""}
               onChange={(v) => setForm({ ...form, description: v })}
               rows={3}
-              placeholder="Présentation courte de la marque"
+              placeholder={t("ad3_brands.placeholder_description")}
               T={T} />
           </FormField>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <FormField label="Pays d'origine" T={T}>
+            <FormField label={t("ad3_brands.label_country_of_origin")} T={T}>
               <TextInput value={form.country_of_origin ?? ""}
                 onChange={(v) => setForm({ ...form, country_of_origin: v })}
-                placeholder="Ex : Corée du Sud" T={T} />
+                placeholder={t("ad3_brands.placeholder_country_example")} T={T} />
             </FormField>
-            <FormField label="Site officiel" T={T}>
+            <FormField label={t("ad3_brands.field_website_official")} T={T}>
               <TextInput value={form.website ?? ""}
                 onChange={(v) => setForm({ ...form, website: v })}
                 placeholder="https://..." T={T} />
@@ -1227,19 +1237,19 @@ function BrandFormModal({ brand, onClose, onSaved }: {
           </div>
 
           <div style={{ display: "flex", gap: 20 }}>
-            <Toggle label="Marque vérifiée"
+            <Toggle label={t("ad3_brands.toggle_verified")}
               value={!!form.is_verified}
               onChange={(v) => setForm({ ...form, is_verified: v })} T={T} />
-            <Toggle label="Marque active"
+            <Toggle label={t("ad3_brands.toggle_active")}
               value={!!form.is_active}
               onChange={(v) => setForm({ ...form, is_active: v })} T={T} />
           </div>
 
-          <FormField label="Note interne (admin)" T={T}>
+          <FormField label={t("ad3_brands.field_admin_note")} T={T}>
             <TextArea value={form.admin_note ?? ""}
               onChange={(v) => setForm({ ...form, admin_note: v })}
               rows={2}
-              placeholder="Ex : 'À fusionner avec Samsung', 'Faux positif'..."
+              placeholder={t("ad3_brands.placeholder_admin_note_example")}
               T={T} />
           </FormField>
         </div>
@@ -1250,11 +1260,11 @@ function BrandFormModal({ brand, onClose, onSaved }: {
           background: T.cardAlt, borderRadius: "0 0 20px 20px",
           display: "flex", gap: 8, justifyContent: "flex-end",
         }}>
-          <button onClick={onClose} style={btnStyle(T.text, T.card, T)}>Annuler</button>
+          <button onClick={onClose} style={btnStyle(T.text, T.card, T)}>{t("ad3_brands.btn_cancel")}</button>
           <button onClick={handleSubmit} disabled={busy}
             style={{ ...btnStyle(T.red, T.card, T, true), opacity: busy ? 0.6 : 1 }}>
             {busy ? <RefreshCw size={13} className="animate-spin" /> : <Check size={13} />}
-            {isEdit ? "Enregistrer" : "Créer"}
+            {isEdit ? t("ad3_brands.btn_save") : t("ad3_brands.btn_create")}
           </button>
         </div>
       </div>
@@ -1335,6 +1345,7 @@ function BrandMergeModal({ candidates, onClose, onMerged }: {
   onClose: () => void; onMerged: () => void;
 }) {
   const T = useAdminTheme();
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const { confirm } = useConfirm();
   const [targetId, setTargetId] = useState<number | null>(
@@ -1351,8 +1362,8 @@ function BrandMergeModal({ candidates, onClose, onMerged }: {
   const handleMerge = async () => {
     if (!target || sources.length === 0) return;
     const ok = await confirm({
-      title: `Fusionner ${sources.length} marque(s) dans ${target.name} ?`,
-      message: `${totalMasters} fiche(s) maître(s) seront réassignée(s). Les marques sources seront supprimées définitivement.`,
+      title: t(sources.length > 1 ? "ad3_brands.confirm_merge_title_plural" : "ad3_brands.confirm_merge_title", { count: sources.length, name: target.name }),
+      message: t(totalMasters > 1 ? "ad3_brands.confirm_merge_message_plural" : "ad3_brands.confirm_merge_message", { count: totalMasters }),
       type: "warning",
     });
     if (!ok) return;
@@ -1363,14 +1374,14 @@ function BrandMergeModal({ candidates, onClose, onMerged }: {
         source_ids: sources.map((b) => b.id),
       });
       showToast(
-        `${res.masters_reassigned} fiche(s) réassignée(s) à ${res.target_name}. ${res.sources_deleted} marque(s) supprimée(s).`,
+        `${t(res.masters_reassigned > 1 ? "ad3_brands.toast_merge_reassigned_plural" : "ad3_brands.toast_merge_reassigned", { count: res.masters_reassigned, name: res.target_name })} ${t(res.sources_deleted > 1 ? "ad3_brands.toast_merge_deleted_plural" : "ad3_brands.toast_merge_deleted", { count: res.sources_deleted })}`,
         "success",
       );
       onMerged();
     } catch (err: unknown) {
       const detail = (err as { detail?: string; target_id?: string[] })?.detail
         ?? (err as { target_id?: string[] })?.target_id?.[0]
-        ?? "Erreur fusion";
+        ?? t("ad3_brands.error_merge_fallback");
       showToast(detail, "error");
     } finally {
       setBusy(false);
@@ -1397,7 +1408,7 @@ function BrandMergeModal({ candidates, onClose, onMerged }: {
             fontSize: 18, fontWeight: 800, color: T.text, margin: 0,
             display: "flex", alignItems: "center", gap: 8,
           }}>
-            <Merge size={18} /> Fusion de marques
+            <Merge size={18} /> {t("ad3_brands.merge_modal_title")}
           </h2>
           <button onClick={onClose} style={{
             padding: 6, borderRadius: 8, background: T.card, border: `1px solid ${T.border}`,
@@ -1412,7 +1423,7 @@ function BrandMergeModal({ candidates, onClose, onMerged }: {
               display: "block", fontSize: 11, fontWeight: 700, color: T.muted,
               textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10,
             }}>
-              Choisir la marque cible (qui subsistera)
+              {t("ad3_brands.merge_choose_target_label")}
             </label>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {candidates.map((b) => (
@@ -1430,11 +1441,11 @@ function BrandMergeModal({ candidates, onClose, onMerged }: {
                       <span style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{b.name}</span>
                       {b.is_verified && <BadgeCheck size={14} color={TAB_COLORS.verified} />}
                       {!b.is_verified && (
-                        <StatusPill color={TAB_COLORS.pending} label="Non vérifiée" />
+                        <StatusPill color={TAB_COLORS.pending} label={t("ad3_brands.status_not_verified")} />
                       )}
                     </div>
                     <div style={{ fontSize: 11, color: T.muted, marginTop: 3 }}>
-                      {b.master_products_count} fiche(s)
+                      {t(b.master_products_count > 1 ? "ad3_brands.merge_candidate_masters_count_plural" : "ad3_brands.merge_candidate_masters_count", { count: b.master_products_count })}
                       {b.country_of_origin && ` · ${b.country_of_origin}`}
                     </div>
                   </div>
@@ -1452,8 +1463,8 @@ function BrandMergeModal({ candidates, onClose, onMerged }: {
             }}>
               <AlertTriangle size={14} color={TAB_COLORS.pending} style={{ flexShrink: 0, marginTop: 2 }} />
               <div style={{ fontSize: 12, color: T.text }}>
-                La marque cible doit être <strong>vérifiée</strong> pour permettre la fusion.
-                Marque d'abord <strong>{target.name}</strong> comme vérifiée.
+                {t("ad3_brands.merge_target_must_be_pre")} <strong>{t("ad3_brands.merge_target_verified_word")}</strong> {t("ad3_brands.merge_target_must_be_post")}
+                {" "}<strong>{target.name}</strong> {t("ad3_brands.merge_target_must_be_tail")}
               </div>
             </div>
           )}
@@ -1467,11 +1478,11 @@ function BrandMergeModal({ candidates, onClose, onMerged }: {
               <div style={{
                 fontSize: 11, fontWeight: 700, color: T.muted,
                 textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8,
-              }}>Résumé de la fusion</div>
+              }}>{t("ad3_brands.merge_summary_title")}</div>
               <div style={{ fontSize: 13, color: T.text, lineHeight: 1.7 }}>
-                <div>→ <strong style={{ color: TAB_COLORS.verified }}>{target.name}</strong> devient la marque canonique</div>
-                <div>→ <strong>{totalMasters}</strong> fiche(s) maître(s) seront rebasculée(s)</div>
-                <div>→ <strong style={{ color: "#DC2626" }}>{sources.length}</strong> marque(s) supprimée(s) : {sources.map((s) => s.name).join(", ")}</div>
+                <div>→ <strong style={{ color: TAB_COLORS.verified }}>{target.name}</strong> {t("ad3_brands.merge_summary_becomes_canonical")}</div>
+                <div>→ <strong>{totalMasters}</strong> {t(totalMasters > 1 ? "ad3_brands.merge_summary_masters_reassigned_plural" : "ad3_brands.merge_summary_masters_reassigned")}</div>
+                <div>→ <strong style={{ color: "#DC2626" }}>{sources.length}</strong> {t(sources.length > 1 ? "ad3_brands.merge_summary_sources_deleted_plural" : "ad3_brands.merge_summary_sources_deleted")} {sources.map((s) => s.name).join(", ")}</div>
               </div>
             </div>
           )}
@@ -1482,7 +1493,7 @@ function BrandMergeModal({ candidates, onClose, onMerged }: {
           background: T.cardAlt, borderRadius: "0 0 20px 20px",
           display: "flex", gap: 8, justifyContent: "flex-end",
         }}>
-          <button onClick={onClose} style={btnStyle(T.text, T.card, T)}>Annuler</button>
+          <button onClick={onClose} style={btnStyle(T.text, T.card, T)}>{t("ad3_brands.btn_cancel")}</button>
           <button onClick={handleMerge} disabled={!canMerge || busy}
             style={{
               ...btnStyle(T.red, T.card, T, true),
@@ -1490,7 +1501,7 @@ function BrandMergeModal({ candidates, onClose, onMerged }: {
               cursor: canMerge && !busy ? "pointer" : "not-allowed",
             }}>
             {busy ? <RefreshCw size={13} className="animate-spin" /> : <Merge size={13} />}
-            Fusionner
+            {t("ad3_brands.bulk_btn_merge")}
           </button>
         </div>
       </div>

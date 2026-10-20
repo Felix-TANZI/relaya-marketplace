@@ -61,6 +61,7 @@ interface Product {
   compare_at_price?: number | null;
   is_on_promotion?: boolean;
   promo_end_date?: string | null;
+  master?: number | null;
   master_slug?: string | null;
 }
 
@@ -136,6 +137,7 @@ export default function ProductCard({
     if (!canOrder) return;
     addItem({
       id: product.id,
+      master_id: product.master ?? undefined,
       name: product.title,
       price: finalPrice,
       quantity: 1,

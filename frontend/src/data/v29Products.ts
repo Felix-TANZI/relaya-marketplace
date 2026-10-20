@@ -1,4 +1,5 @@
 import { type Product } from "@/services/api/products";
+import type { TFunction } from "i18next";
 
 export interface V29MockVendor {
   id: number;
@@ -35,6 +36,12 @@ interface RawV29 {
   desc: string;
 }
 
+/**
+ * Copie FR de référence des 10 thèmes utilisés par le catalogue de démonstration.
+ * La traduction EN existe déjà (migration categoryThemes.ts) sous
+ * `category_theme.<slug>.name` dans `i18n/domains/hm1.fr.ts` / `hm1.en.ts` : on la
+ * réutilise via `catName()` plutôt que dupliquer ces 10 libellés.
+ */
 const CAT_NAMES: Record<string, string> = {
   femme: "Mode Femme",
   homme: "Mode Homme",
@@ -47,6 +54,12 @@ const CAT_NAMES: Record<string, string> = {
   sport: "Sport & Loisirs",
   bebe: "Bébé & Enfant",
 };
+
+/** Nom de catégorie du produit de démo, traduit dans la langue active si `t` est fourni. */
+function catName(cat: string, t?: TFunction): string {
+  const fallback = CAT_NAMES[cat] || "Autre";
+  return t ? t(`category_theme.${cat}.name`, { defaultValue: fallback }) : fallback;
+}
 
 const CAT_IDS: Record<string, number> = {
   femme: 1, homme: 2, tech: 3, phone: 4, beaute: 5,
@@ -175,18 +188,28 @@ const RAW_DATA: RawV29[] = [
   {id:180,name:"Jouet Bois Éducatif Puzzle",vendor:"ArtisanWood",price:6500,old:9000,disc:28,stars:5,reviews:73,emoji:"🧸",img:"https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?w=400&h=400&fit=crop",cat:"bebe",bg:"#FEF3C7",delivery:"Yaoundé · 24h",top:true,stock:25,viewers:5,desc:"Puzzle bois animaux Afrique, 12 pièces, 2-5 ans."}
 ];
 
-function toProduct(raw: RawV29): V29Product {
+/**
+ * `t` optionnel : sans lui, titre/description/nom de cat\u00e9gorie restent le FR
+ * d'origine (comportement historique, inchang\u00e9 pour les appelants qui ne sont
+ * pas encore pass\u00e9s \u00e0 `getV29Products`). Avec lui, le texte est r\u00e9solu dans la
+ * langue active via `i18n/domains/hm2.fr.ts` / `hm2.en.ts`
+ * (cl\u00e9 `mock_product.<id>.name` / `.desc`), avec repli sur le FR si la cl\u00e9
+ * venait \u00e0 manquer \u2014 jamais une cl\u00e9 i18n brute affich\u00e9e \u00e0 l'\u00e9cran.
+ */
+function toProduct(raw: RawV29, t?: TFunction): V29Product {
+  const title = t ? t(`mock_product.${raw.id}.name`, { defaultValue: raw.name }) : raw.name;
+  const description = t ? t(`mock_product.${raw.id}.desc`, { defaultValue: raw.desc }) : raw.desc;
   return {
     id: raw.id,
-    title: raw.name,
+    title,
     slug: raw.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
-    description: raw.desc,
+    description,
     price_xaf: raw.old || raw.price,
     discount: raw.disc,
     price_final: raw.price,
     stock_quantity: raw.stock,
     is_active: true,
-    category: { id: CAT_IDS[raw.cat] || 99, name: CAT_NAMES[raw.cat] || "Autre", slug: raw.cat, is_active: true },
+    category: { id: CAT_IDS[raw.cat] || 99, name: catName(raw.cat, t), slug: raw.cat, is_active: true },
     media: raw.img ? [{ id: raw.id, url: raw.img, media_type: "image" as const, sort_order: 0 }] : [],
     images: raw.img ? [{ id: raw.id, image: raw.img, image_url: raw.img, is_primary: true, order: 0, created_at: "2026-04-01T00:00:00Z" }] : [],
     rating_average: raw.stars,
@@ -202,28 +225,41 @@ function toProduct(raw: RawV29): V29Product {
   };
 }
 
-export const V29_PRODUCTS: V29Product[] = RAW_DATA.map(toProduct);
+/** Catalogue de d\u00e9mo brut, toujours en FR \u2014 gard\u00e9 tel quel pour la compatibilit\u00e9. */
+export const V29_PRODUCTS: V29Product[] = RAW_DATA.map((raw) => toProduct(raw));
 
-/* ── Helpers ── */
-export function getByCat(cat: string): V29Product[] {
-  return V29_PRODUCTS.filter(p => p.category?.slug === cat);
+/** Catalogue de d\u00e9mo traduit dans la langue active : \u00e0 utiliser pour tout affichage. */
+export function getV29Products(t: TFunction): V29Product[] {
+  return RAW_DATA.map((raw) => toProduct(raw, t));
 }
 
-export function getTopProducts(): V29Product[] {
-  return V29_PRODUCTS.filter(p => p.top);
+/* ── Helpers ──
+   `t` optionnel sur chacun : fourni, le texte des produits renvoyés est dans la
+   langue active ; omis, comportement historique inchangé (FR brut). */
+export function getByCat(cat: string, t?: TFunction): V29Product[] {
+  const source = t ? getV29Products(t) : V29_PRODUCTS;
+  return source.filter(p => p.category?.slug === cat);
 }
 
-export function getPromoProducts(): V29Product[] {
-  return V29_PRODUCTS.filter(p => p.discount >= 20);
+export function getTopProducts(t?: TFunction): V29Product[] {
+  const source = t ? getV29Products(t) : V29_PRODUCTS;
+  return source.filter(p => p.top);
 }
 
-export function getNewProducts(): V29Product[] {
-  return [...V29_PRODUCTS].sort((a, b) => b.id - a.id).slice(0, 12);
+export function getPromoProducts(t?: TFunction): V29Product[] {
+  const source = t ? getV29Products(t) : V29_PRODUCTS;
+  return source.filter(p => p.discount >= 20);
 }
 
-export function getRecommended(): V29Product[] {
+export function getNewProducts(t?: TFunction): V29Product[] {
+  const source = t ? getV29Products(t) : V29_PRODUCTS;
+  return [...source].sort((a, b) => b.id - a.id).slice(0, 12);
+}
+
+export function getRecommended(t?: TFunction): V29Product[] {
   // Mix of high-rated products
-  return V29_PRODUCTS.filter(p => (p.rating_average ?? 0) >= 4.5).slice(0, 12);
+  const source = t ? getV29Products(t) : V29_PRODUCTS;
+  return source.filter(p => (p.rating_average ?? 0) >= 4.5).slice(0, 12);
 }
 
 /* ── Flash Deals ── */

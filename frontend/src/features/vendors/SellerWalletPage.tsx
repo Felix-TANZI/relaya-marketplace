@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import NextSettlementCard from '@/features/vendors/components/NextSettlementCard';
 import {
   ArrowDownToLine, Check, Clock, Info, Lock, RefreshCw, Save,
@@ -57,6 +58,7 @@ function OperatorCard({ op, selected, onSelect, disabled }: {
 function PhoneField({ value, onChange, expected, disabled, label }: {
   value: string; onChange: (v: string) => void; expected: Operator; disabled?: boolean; label: string;
 }) {
+  const { t } = useTranslation();
   const valid = isValidNationalNumber(value, CAMEROON);
   const detected = detectOperator(value);
   const mismatch = valid && detected !== null && detected.name !== OP_NAME[expected];
@@ -90,19 +92,19 @@ function PhoneField({ value, onChange, expected, disabled, label }: {
       </div>
       {value.length > 0 && !valid ? (
         <p className="mt-1.5" style={{ fontSize: 11, color: '#ef4444' }}>
-          Numéro invalide — 9 chiffres et un préfixe opérateur reconnu.
+          {t('sl4_wallet.invalid_number')}
         </p>
       ) : mismatch ? (
         <p className="mt-1.5" style={{ fontSize: 11, color: '#ef4444' }}>
-          Ce numéro semble être {detected?.name}, mais vous avez choisi {OP_LABEL[expected]}.
+          {t('sl4_wallet.mismatch_number', { detected: detected?.name, expected: OP_LABEL[expected] })}
         </p>
       ) : valid ? (
         <p className="mt-1.5 flex items-center gap-1.5" style={{ fontSize: 11, color: T.green }}>
-          <Check size={12} strokeWidth={2.6} />Préfixe cohérent avec l'opérateur choisi
+          <Check size={12} strokeWidth={2.6} />{t('sl4_wallet.prefix_match')}
         </p>
       ) : (
         <p className="mt-1.5" style={{ fontSize: 11, color: T.mutedL }}>
-          Format : 690 000 000 (Orange) ou 680 000 000 (MTN)
+          {t('sl4_wallet.format_hint')}
         </p>
       )}
     </div>
@@ -110,6 +112,7 @@ function PhoneField({ value, onChange, expected, disabled, label }: {
 }
 
 export default function SellerWalletPage() {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const [summary, setSummary] = useState<VendorPaymentSummary | null>(null);
   const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>([]);
@@ -143,11 +146,11 @@ export default function SellerWalletPage() {
       setDefOp(op); setDefPhone(ph);
       setWdOp(op);  setWdPhone(ph);
     } catch {
-      showToast('Erreur de chargement', 'error');
+      showToast(t('sl4_wallet.toast_load_error'), 'error');
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, [showToast, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -160,9 +163,9 @@ export default function SellerWalletPage() {
         default_withdrawal_phone: `+237${defPhone}`,
       });
       setProfile(updated);
-      showToast('Numéro de versement enregistré', 'success');
+      showToast(t('sl4_wallet.toast_number_saved'), 'success');
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Impossible d'enregistrer le numéro", 'error');
+      showToast(err instanceof Error ? err.message : t('sl4_wallet.toast_save_number_error'), 'error');
     } finally {
       setSavingDef(false);
     }
@@ -198,11 +201,11 @@ export default function SellerWalletPage() {
         operator: wdOp,
         phone_number: `+237${wdPhone}`,
       });
-      showToast(`Demande ${wd.reference} soumise`, 'success');
+      showToast(t('sl4_wallet.toast_request_submitted', { reference: wd.reference }), 'success');
       setAmount('');
       await load();
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Erreur lors de la demande', 'error');
+      showToast(err instanceof Error ? err.message : t('sl4_wallet.toast_request_error'), 'error');
     } finally {
       setSubmitting(false);
     }
@@ -213,10 +216,10 @@ export default function SellerWalletPage() {
     try {
       setCancelling(true);
       await vendorsApi.cancelWithdrawal(pendingWd.id);
-      showToast('Demande annulée', 'success');
+      showToast(t('sl4_wallet.toast_request_cancelled'), 'success');
       await load();
     } catch {
-      showToast("Erreur lors de l'annulation", 'error');
+      showToast(t('sl4_wallet.toast_cancel_error'), 'error');
     } finally {
       setCancelling(false);
     }
@@ -241,22 +244,22 @@ export default function SellerWalletPage() {
       <VendorStyles />
 
       <PageHead
-        kicker="Compte" title="Compte BelivaY"
-        subtitle="Votre solde, votre Mobile Money de versement et vos demandes de retrait"
+        kicker={t('sl4_wallet.kicker')} title={t('sl4_wallet.title')}
+        subtitle={t('sl4_wallet.subtitle')}
         actions={
           <>
             {profile?.default_withdrawal_phone ? (
               <span className="flex items-center gap-1.5 rounded-full font-bold"
                 style={{ padding: '9px 14px', fontSize: 11.5, background: T.greenL, border: `1px solid ${T.greenB}`, color: T.green }}>
-                <Check size={13} strokeWidth={2.6} />Numéro enregistré
+                <Check size={13} strokeWidth={2.6} />{t('sl4_wallet.number_registered')}
               </span>
             ) : (
               <span className="flex items-center gap-1.5 rounded-full font-bold"
                 style={{ padding: '9px 14px', fontSize: 11.5, background: T.amberL, border: `1px solid ${T.amberB}`, color: T.amber }}>
-                <TriangleAlert size={13} />Numéro à renseigner
+                <TriangleAlert size={13} />{t('sl4_wallet.number_missing')}
               </span>
             )}
-            <GhostBtn icon={<RefreshCw size={13} />} onClick={load}>Actualiser</GhostBtn>
+            <GhostBtn icon={<RefreshCw size={13} />} onClick={load}>{t('sl4_wallet.refresh')}</GhostBtn>
           </>
         }
       />
@@ -274,14 +277,14 @@ export default function SellerWalletPage() {
           <HeroAmount kicker="Solde retirable" value={nf(balance)} />
           <div className="text-right">
             <p className="font-bold uppercase" style={{ fontSize: 10, letterSpacing: '.16em', color: 'rgba(255,255,255,.4)' }}>
-              Bientôt disponible
+              {t('sl4_wallet.upcoming_label')}
             </p>
             <p className="font-black mt-1.5" style={{ fontSize: 22, color: T.amber, letterSpacing: '-.02em' }}>
               {nf(upcoming)} <span style={{ fontSize: 11, color: 'rgba(255,255,255,.4)' }}>FCFA</span>
             </p>
             <Link to="/seller/pending-funds">
               <span className="block mt-1 font-bold" style={{ fontSize: 10.5, color: 'rgba(255,255,255,.55)' }}>
-                {summary.blocked_orders_count} commande{summary.blocked_orders_count > 1 ? 's' : ''} en escrow →
+                {t(summary.blocked_orders_count > 1 ? 'sl4_wallet.escrow_orders_count_plural' : 'sl4_wallet.escrow_orders_count', { count: summary.blocked_orders_count })}
               </span>
             </Link>
           </div>
@@ -290,13 +293,13 @@ export default function SellerWalletPage() {
           <Link to="/seller/settlements">
             <button type="button" className="flex items-center gap-2 rounded-xl font-semibold"
               style={{ padding: '12px 17px', fontSize: 12.5, background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.14)', color: 'rgba(255,255,255,.85)' }}>
-              <ArrowDownToLine size={14} />Mes règlements
+              <ArrowDownToLine size={14} />{t('sl4_wallet.settlements_button')}
             </button>
           </Link>
           <Link to="/seller/adjustments">
             <button type="button" className="flex items-center gap-2 rounded-xl font-semibold"
               style={{ padding: '12px 17px', fontSize: 12.5, background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.14)', color: 'rgba(255,255,255,.85)' }}>
-              <Info size={14} />Mes ajustements
+              <Info size={14} />{t('sl4_wallet.adjustments_button')}
             </button>
           </Link>
         </div>
@@ -307,12 +310,12 @@ export default function SellerWalletPage() {
 
           {/* ═══ NUMÉRO PAR DÉFAUT ═══ */}
           <Panel
-            title="Numéro de versement par défaut"
-            sub="Pré-rempli à chaque demande de retrait, pour éviter les erreurs de saisie"
+            title={t('sl4_wallet.default_number_title')}
+            sub={t('sl4_wallet.default_number_sub')}
             right={
               <span className="font-bold uppercase rounded-lg"
                 style={{ fontSize: 10, letterSpacing: '.1em', padding: '5px 10px', background: T.cream, border: `1px solid ${T.border}`, color: T.mutedL }}>
-                Un seul actif
+                {t('sl4_wallet.default_number_badge')}
               </span>
             }
           >
@@ -322,7 +325,7 @@ export default function SellerWalletPage() {
             </div>
 
             <div className="mt-3.5">
-              <PhoneField value={defPhone} onChange={setDefPhone} expected={defOp} label="Numéro à créditer" />
+              <PhoneField value={defPhone} onChange={setDefPhone} expected={defOp} label={t('sl4_wallet.credit_number_label')} />
             </div>
 
             <div className="flex gap-2.5 mt-4 flex-wrap">
@@ -331,7 +334,7 @@ export default function SellerWalletPage() {
                 className="flex items-center gap-2 rounded-xl font-bold text-white transition-all disabled:opacity-50"
                 style={{ padding: '12px 19px', fontSize: 12.5, background: T.orange, boxShadow: '0 10px 22px -10px rgba(244,121,32,.85)' }}>
                 {savingDef ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
-                {savingDef ? 'Enregistrement…' : 'Enregistrer ce numéro'}
+                {savingDef ? t('sl4_wallet.save_button_saving') : t('sl4_wallet.save_button_save')}
               </button>
               {defChanged && (
                 <button type="button"
@@ -341,26 +344,25 @@ export default function SellerWalletPage() {
                   }}
                   className="rounded-xl font-semibold"
                   style={{ padding: '12px 17px', fontSize: 12.5, background: T.cream, border: `1px solid ${T.border}`, color: T.muted }}>
-                  Annuler
+                  {t('sl4_wallet.cancel_edit_button')}
                 </button>
               )}
             </div>
 
             <div className="mt-3.5">
               <Note icon={<Users size={15} />}>
-                Le numéro doit être au nom du titulaire du compte vendeur. Un numéro tiers entraîne le rejet de la
-                demande par BelivaY, avec le motif indiqué dans l'historique.
+                {t('sl4_wallet.default_number_note')}
               </Note>
             </div>
           </Panel>
 
           {/* ═══ DEMANDE DE RETRAIT ═══ */}
           <Panel
-            title="Demander un retrait"
-            sub={`Délai constaté sous 2 h · frais ${fmtRate(summary.withdrawal_fee_percent)} · minimum ${nf(minAmount)} FCFA`}
+            title={t('sl4_wallet.withdraw_panel_title')}
+            sub={t('sl4_wallet.withdraw_panel_sub', { rate: fmtRate(summary.withdrawal_fee_percent), amount: nf(minAmount) })}
             right={
               <span className="text-right">
-                <span className="block font-medium" style={{ fontSize: 10, color: T.muted }}>Solde disponible</span>
+                <span className="block font-medium" style={{ fontSize: 10, color: T.muted }}>{t('sl4_wallet.available_balance_label')}</span>
                 <span className="block font-black" style={{ fontSize: 16, color: T.green }}>{nf(balance)} FCFA</span>
               </span>
             }
@@ -370,20 +372,20 @@ export default function SellerWalletPage() {
                 <div className="flex items-start justify-between gap-3 flex-wrap">
                   <div>
                     <p className="flex items-center gap-2 font-bold" style={{ fontSize: 12.5, color: T.amber }}>
-                      <TriangleAlert size={13} />Demande en attente — {pendingWd.reference}
+                      <TriangleAlert size={13} />{t('sl4_wallet.pending_request_title', { reference: pendingWd.reference })}
                     </p>
                     <p className="mt-1.5" style={{ fontSize: 11.5, color: T.muted }}>
                       {nf(pendingWd.amount_xaf)} FCFA → <strong>{OP_LABEL[pendingWd.operator as Operator]}</strong> {pendingWd.phone}
-                      {' · '}Net : <strong>{nf(pendingWd.net_xaf)} FCFA</strong>
+                      {' · '}{t('sl4_wallet.net_label')} <strong>{nf(pendingWd.net_xaf)} FCFA</strong>
                     </p>
                     <p className="mt-1" style={{ fontSize: 10.5, color: T.mutedL }}>
-                      Soumise le {fmtDate(pendingWd.created_at)} · une seule demande à la fois
+                      {t('sl4_wallet.submitted_on', { date: fmtDate(pendingWd.created_at) })}
                     </p>
                   </div>
                   <button type="button" onClick={cancel} disabled={cancelling}
                     className="flex items-center gap-1.5 rounded-xl font-semibold flex-shrink-0"
                     style={{ padding: '9px 14px', fontSize: 11.5, background: T.redL, border: `1px solid ${T.redB}`, color: T.red }}>
-                    {cancelling ? <RefreshCw size={12} className="animate-spin" /> : <XCircle size={12} />}Annuler
+                    {cancelling ? <RefreshCw size={12} className="animate-spin" /> : <XCircle size={12} />}{t('sl4_wallet.cancel_withdrawal_button')}
                   </button>
                 </div>
               </div>
@@ -395,12 +397,12 @@ export default function SellerWalletPage() {
                 </div>
 
                 <div className="mt-3.5">
-                  <PhoneField value={wdPhone} onChange={setWdPhone} expected={wdOp} label="Numéro à créditer" />
+                  <PhoneField value={wdPhone} onChange={setWdPhone} expected={wdOp} label={t('sl4_wallet.credit_number_label')} />
                 </div>
 
                 <div className="mt-4">
                   <label className="block font-semibold mb-1.5" style={{ fontSize: 12, color: T.text }}>
-                    Montant à retirer (FCFA)
+                    {t('sl4_wallet.amount_label')}
                   </label>
                   <div className="flex items-stretch rounded-xl overflow-hidden"
                     style={{
@@ -410,7 +412,7 @@ export default function SellerWalletPage() {
                     }}>
                     <input type="number" min={minAmount} max={balance} step={500} value={amount}
                       onChange={e => setAmount(e.target.value)}
-                      placeholder={`Min. ${nf(minAmount)}`}
+                      placeholder={t('sl4_wallet.amount_placeholder', { amount: nf(minAmount) })}
                       className="flex-1 outline-none font-black"
                       style={{ padding: 14, fontSize: 22, letterSpacing: '-.02em', color: T.text, background: 'transparent', minWidth: 0 }} />
                     <span className="flex items-center font-bold flex-shrink-0"
@@ -441,7 +443,7 @@ export default function SellerWalletPage() {
                           border: `1px solid ${amountNum === balance ? 'rgba(244,121,32,.35)' : T.border}`,
                           color: amountNum === balance ? T.orange : T.muted,
                         }}>
-                        Tout · {nf(balance)}
+                        {t('sl4_wallet.preset_all', { amount: nf(balance) })}
                       </button>
                     )}
                   </div>
@@ -449,21 +451,21 @@ export default function SellerWalletPage() {
 
                 <div className="mt-4 rounded-2xl overflow-hidden" style={{ border: `1px solid ${T.border}` }}>
                   <div className="flex items-center justify-between" style={{ padding: '13px 15px', background: T.cream }}>
-                    <span style={{ fontSize: 11.5, color: T.muted }}>Montant demandé</span>
+                    <span style={{ fontSize: 11.5, color: T.muted }}>{t('sl4_wallet.requested_amount_label')}</span>
                     <span className="font-bold" style={{ fontSize: 13, color: T.text }}>
                       {amountNum > 0 ? `${nf(amountNum)} FCFA` : '—'}
                     </span>
                   </div>
                   <div className="flex items-center justify-between"
                     style={{ padding: '13px 15px', background: T.white, borderTop: `1px solid ${T.borderL}` }}>
-                    <span style={{ fontSize: 11.5, color: T.red }}>Frais de retrait {fmtRate(summary.withdrawal_fee_percent)}</span>
+                    <span style={{ fontSize: 11.5, color: T.red }}>{t('sl4_wallet.withdrawal_fee_label', { rate: fmtRate(summary.withdrawal_fee_percent) })}</span>
                     <span className="font-bold" style={{ fontSize: 13, color: T.red }}>
                       {amountNum > 0 ? `− ${nf(fee)} FCFA` : '—'}
                     </span>
                   </div>
                   <div className="flex items-center justify-between"
                     style={{ padding: '16px 15px', background: T.greenL, borderTop: `1px solid ${T.greenB}` }}>
-                    <span className="font-bold" style={{ fontSize: 11.5, color: T.green }}>Vous recevrez</span>
+                    <span className="font-bold" style={{ fontSize: 11.5, color: T.green }}>{t('sl4_wallet.you_will_receive_label')}</span>
                     <span className="font-black" style={{ fontSize: 22, color: T.green, letterSpacing: '-.02em' }}>
                       {amountNum >= minAmount ? `${nf(net)} FCFA` : '—'}
                     </span>
@@ -474,18 +476,18 @@ export default function SellerWalletPage() {
                   className="w-full flex items-center justify-center gap-2 rounded-xl font-bold text-white mt-4 transition-all disabled:opacity-50"
                   style={{ padding: 15, fontSize: 14, background: HERO.orange, boxShadow: canWithdraw ? '0 14px 28px -12px rgba(244,121,32,.9)' : 'none' }}>
                   {submitting
-                    ? <><RefreshCw size={15} className="animate-spin" />Envoi en cours…</>
-                    : <><Lock size={15} />Confirmer le retrait{amountNum >= minAmount ? ` de ${nf(amountNum)} FCFA` : ''}</>}
+                    ? <><RefreshCw size={15} className="animate-spin" />{t('sl4_wallet.submit_sending')}</>
+                    : <><Lock size={15} />{amountNum >= minAmount ? t('sl4_wallet.submit_confirm_amount', { amount: nf(amountNum) }) : t('sl4_wallet.submit_confirm_plain')}</>}
                 </button>
 
                 {balance < minAmount && (
                   <p className="text-center mt-2.5" style={{ fontSize: 12, color: T.muted }}>
-                    Solde insuffisant — minimum requis {nf(minAmount)} FCFA.
+                    {t('sl4_wallet.insufficient_balance', { amount: nf(minAmount) })}
                   </p>
                 )}
                 {amountNum > balance && (
                   <p className="text-center mt-2.5" style={{ fontSize: 12, color: T.red }}>
-                    Montant supérieur à votre solde disponible.
+                    {t('sl4_wallet.amount_exceeds_balance')}
                   </p>
                 )}
               </>
@@ -495,11 +497,11 @@ export default function SellerWalletPage() {
           {/* ═══ HISTORIQUE ═══ */}
           <Panel
             pad={false}
-            title="Mes retraits" sub="Validés manuellement par BelivaY"
+            title={t('sl4_wallet.history_panel_title')} sub={t('sl4_wallet.history_panel_sub')}
             right={
               <span className="font-bold rounded-full"
                 style={{ fontSize: 11, padding: '5px 11px', background: T.cream, border: `1px solid ${T.border}`, color: T.muted }}>
-                {withdrawals.length} demande{withdrawals.length > 1 ? 's' : ''}
+                {t(withdrawals.length > 1 ? 'sl4_wallet.history_count_plural' : 'sl4_wallet.history_count', { count: withdrawals.length })}
               </span>
             }
           >
@@ -507,9 +509,9 @@ export default function SellerWalletPage() {
               <div className="text-center" style={{ padding: '40px 20px' }}>
                 <span className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3"
                   style={{ background: T.orangeB, color: T.orange }}><Wallet size={24} /></span>
-                <p className="font-bold" style={{ fontSize: 14, color: T.text }}>Aucun retrait</p>
+                <p className="font-bold" style={{ fontSize: 14, color: T.text }}>{t('sl4_wallet.empty_title')}</p>
                 <p style={{ fontSize: 12, color: T.muted, marginTop: 4 }}>
-                  Votre première demande apparaîtra ici avec son statut.
+                  {t('sl4_wallet.empty_sub')}
                 </p>
               </div>
             ) : withdrawals.map(w => {
@@ -539,7 +541,7 @@ export default function SellerWalletPage() {
                       <TriangleAlert size={14} style={{ color: T.red, flexShrink: 0, marginTop: 1 }} />
                       <div>
                         <p className="font-bold uppercase" style={{ fontSize: 9.5, letterSpacing: '.12em', color: T.red }}>
-                          Motif BelivaY
+                          {t('sl4_wallet.admin_note_title')}
                         </p>
                         <p style={{ fontSize: 11.5, lineHeight: 1.55, color: T.muted, marginTop: 3 }}>{w.admin_note}</p>
                       </div>
@@ -554,12 +556,12 @@ export default function SellerWalletPage() {
         {/* ═══ COLONNE DROITE ═══ */}
         <aside className="flex-1 flex flex-col gap-3.5" style={{ minWidth: 270, maxWidth: 340 }}>
           <div className="rounded-2xl p-5" style={card}>
-            <p className="font-bold mb-4" style={{ fontSize: 13.5, color: T.text }}>Conditions de retrait</p>
+            <p className="font-bold mb-4" style={{ fontSize: 13.5, color: T.text }}>{t('sl4_wallet.conditions_title')}</p>
             {[
-              { ic: <ArrowDownToLine size={14} />, l: 'Minimum par demande',   v: `${nf(minAmount)} FCFA` },
-              { ic: <Info size={14} />,            l: 'Frais BelivaY',          v: fmtRate(summary.withdrawal_fee_percent) },
-              { ic: <Clock size={14} />,           l: 'Délai constaté',         v: '< 2 h' },
-              { ic: <Lock size={14} />,            l: 'Demandes simultanées',   v: '1 maximum' },
+              { ic: <ArrowDownToLine size={14} />, l: t('sl4_wallet.condition_min_label'),   v: `${nf(minAmount)} FCFA` },
+              { ic: <Info size={14} />,            l: t('sl4_wallet.condition_fee_label'),          v: fmtRate(summary.withdrawal_fee_percent) },
+              { ic: <Clock size={14} />,           l: t('sl4_wallet.condition_delay_label'),         v: t('sl4_wallet.condition_delay_value') },
+              { ic: <Lock size={14} />,            l: t('sl4_wallet.condition_simultaneous_label'),   v: t('sl4_wallet.condition_simultaneous_value') },
             ].map(r => (
               <div key={r.l} className="flex items-center justify-between gap-2.5"
                 style={{ padding: '11px 0', borderBottom: `1px solid ${T.borderL}` }}>
@@ -571,8 +573,7 @@ export default function SellerWalletPage() {
             ))}
             <div className="mt-3.5">
               <Note icon={<Clock size={15} />} tone="amber">
-                Une seule demande en attente à la fois. Annulez la demande en cours pour en créer une autre —
-                le montant reste sur votre solde.
+                {t('sl4_wallet.single_request_note')}
               </Note>
             </div>
           </div>
@@ -583,13 +584,13 @@ export default function SellerWalletPage() {
                 background: 'radial-gradient(circle,rgba(244,121,32,.45),transparent 70%)' }} />
             <div className="relative">
               <p className="font-bold uppercase" style={{ fontSize: 10, letterSpacing: '.18em', color: 'rgba(255,255,255,.4)' }}>
-                Cumul
+                {t('sl4_wallet.cumulative_title')}
               </p>
               <div className="flex flex-col gap-3.5 mt-4">
                 {[
-                  { l: 'Retiré',                     v: approved.reduce((s, w) => s + w.net_amount_xaf, 0), c: '#fff' },
-                  { l: 'Frais de retrait payés',     v: approved.reduce((s, w) => s + w.fee_amount_xaf, 0), c: T.amber },
-                  { l: 'Commission BelivaY retenue', v: Math.round(summary.projection_monthly_xaf * (parseFloat(String(summary.commission_rate)) / 100)), c: T.orange },
+                  { l: t('sl4_wallet.cumulative_withdrawn'),                     v: approved.reduce((s, w) => s + w.net_amount_xaf, 0), c: '#fff' },
+                  { l: t('sl4_wallet.cumulative_fees_paid'),     v: approved.reduce((s, w) => s + w.fee_amount_xaf, 0), c: T.amber },
+                  { l: t('sl4_wallet.cumulative_commission_retained'), v: Math.round(summary.projection_monthly_xaf * (parseFloat(String(summary.commission_rate)) / 100)), c: T.orange },
                 ].map((x, i) => (
                   <div key={x.l}>
                     {i > 0 && <div style={{ height: 1, background: 'rgba(255,255,255,.1)', marginBottom: 14 }} />}
@@ -604,8 +605,7 @@ export default function SellerWalletPage() {
           </div>
 
           <Note icon={<ShieldCheck size={15} />} tone="green">
-            BelivaY ne connaît jamais votre code secret Mobile Money. Seul le numéro est enregistré, pour créditer
-            vos versements.
+            {t('sl4_wallet.secret_code_note')}
           </Note>
         </aside>
       </div>

@@ -1,11 +1,18 @@
 #!/bin/bash
 # Sauvegarde automatique de la base PostgreSQL de production.
-# Lancé quotidiennement par cron (voir SETUP-CD.md pour l'installation).
+# Lancé chaque nuit par cron et avant chaque déploiement (deploy.sh).
 set -e
+# Sans pipefail, l'échec de pg_dump est masqué par gzip : le script pourrait
+# produire un fichier vide et annoncer un succès.
+set -o pipefail
 
-PROJECT_DIR="/var/www/belivay"
-BACKUP_DIR="/var/backups/belivay"
+# Surchargeables par variable d'environnement (utile pour tester le script).
+PROJECT_DIR="${PROJECT_DIR:-/var/www/belivay}"
+BACKUP_DIR="${BACKUP_DIR:-/var/backups/belivay}"
 RETENTION_DAYS=14
+# Une sauvegarde plus petite que ça est forcément anormale (les vraies font
+# plusieurs Mo) : on la considère comme échouée.
+MIN_BYTES=102400
 
 cd "$PROJECT_DIR"
 
@@ -19,15 +26,40 @@ mkdir -p "$BACKUP_DIR"
 chmod 700 "$BACKUP_DIR"
 
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-FILENAME="belivay_${TIMESTAMP}.sql.gz"
+FINAL="$BACKUP_DIR/belivay_${TIMESTAMP}.sql.gz"
+TMP="$FINAL.partial"
 
+log() { echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$BACKUP_DIR/backup.log"; }
+
+# En cas d'échec, on supprime le fichier incomplet et on le note dans le log.
+# Les sauvegardes précédentes ne sont jamais touchées.
+cleanup() {
+  code=$?
+  if [ "$code" -ne 0 ]; then
+    rm -f "$TMP"
+    log "ECHEC de la sauvegarde (code $code)"
+  fi
+}
+trap cleanup EXIT
+
+# On écrit d'abord dans un fichier .partial : une sauvegarde n'apparaît sous
+# son vrai nom qu'une fois vérifiée.
 docker compose -f docker-compose.prod.yml --env-file .env.prod exec -T postgres \
-  pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" | gzip > "$BACKUP_DIR/$FILENAME"
+  pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" | gzip > "$TMP"
 
-chmod 600 "$BACKUP_DIR/$FILENAME"
+# Vérifications : archive lisible de bout en bout, et taille plausible.
+gzip -t "$TMP"
+SIZE_BYTES=$(stat -c %s "$TMP")
+if [ "$SIZE_BYTES" -lt "$MIN_BYTES" ]; then
+  echo "Sauvegarde anormalement petite ($SIZE_BYTES octets) : considérée comme échouée." >&2
+  exit 1
+fi
 
-# Rotation : supprime les sauvegardes de plus de RETENTION_DAYS jours
+chmod 600 "$TMP"
+mv "$TMP" "$FINAL"
+
+# Rotation : seulement APRÈS une sauvegarde réussie, pour que des échecs
+# répétés ne grignotent jamais les bonnes sauvegardes existantes.
 find "$BACKUP_DIR" -name "belivay_*.sql.gz" -mtime +$RETENTION_DAYS -delete
 
-SIZE=$(du -h "$BACKUP_DIR/$FILENAME" | cut -f1)
-echo "$(date '+%Y-%m-%d %H:%M:%S') - Sauvegarde terminee : $FILENAME ($SIZE)" >> "$BACKUP_DIR/backup.log"
+log "Sauvegarde terminee : $(basename "$FINAL") ($(du -h "$FINAL" | cut -f1))"

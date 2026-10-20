@@ -45,6 +45,7 @@ const SearchPage = lazy(() => import('@/features/search/SearchPage'));
 const ContactPage = lazy(() => import('@/features/contact/ContactPage'));
 const HelpPage = lazy(() => import('@/features/help/HelpPage'));
 const AboutPage = lazy(() => import('@/features/about/AboutPage'));
+const PrivacyPage = lazy(() => import('@/features/legal/PrivacyPage'));
 const BecomeSellerPage = lazy(() => import('@/features/vendors/BecomeSellerPage'));
 const NotFoundPage = lazy(() => import('@/features/system/NotFoundPage'));
 const PromotionsPage = lazy(() => import('@/features/promotions/PromotionsPage'));
@@ -74,6 +75,74 @@ const SellerBoostPage = lazy(() => import('@/features/vendors/SellerBoostPage'))
 const SellerCertificationsPage = lazy(() => import('@/features/vendors/SellerCertificationsPage'));
 const SellerPlansPage = lazy(() => import('@/features/vendors/SellerPlansPage'));
 const SellerSettingsPage = lazy(() => import('@/features/vendors/SellerSettingsPage'));
+const SellerMenuPage = lazy(() => import('@/features/vendors/v2/MenuPage'));
+const SellerV2ComingSoonPage = lazy(() => import('@/features/vendors/v2/V2ComingSoonPage'));
+
+// Espace vendeur v2 — onboarding public (avant que le compte ait le rôle seller)
+const VendorConnexionPage = lazy(() => import('@/features/vendors/v2/ouverture/ConnexionPage'));
+const VendorOuvrirBoutiquePage = lazy(() => import('@/features/vendors/v2/ouverture/OuvrirBoutiquePage'));
+const VendorPublierEtEtrePayePage = lazy(() => import('@/features/vendors/v2/ouverture/PublierEtEtrePayePage'));
+
+// Espace vendeur v2 — écrans protégés (lots 5/6/7/8/9/10)
+const AccueilV2Page = lazy(() => import('@/features/vendors/v2/accueil/AccueilPage'));
+const SaisieAssisteeV2Page = lazy(() => import('@/features/vendors/v2/ouverture/SaisieAssisteePage'));
+const InstallerApplicationV2Page = lazy(() => import('@/features/vendors/v2/ouverture/InstallerApplicationPage'));
+
+const CommandesListV2Page = lazy(() => import('@/features/vendors/v2/commandes/CommandesListPage'));
+const CommandeDetailV2Page = lazy(() => import('@/features/vendors/v2/commandes/CommandeDetailPage'));
+const RuptureV2Page = lazy(() => import('@/features/vendors/v2/commandes/RupturePage'));
+const ExtendV2Page = lazy(() => import('@/features/vendors/v2/commandes/ExtendPage'));
+const PreparationSlipV2Page = lazy(() => import('@/features/vendors/v2/commandes/PreparationSlipPage'));
+const OrderJournalV2Page = lazy(() => import('@/features/vendors/v2/commandes/OrderJournalPage'));
+const HandoverV2Page = lazy(() => import('@/features/vendors/v2/commandes/HandoverPage'));
+const HandoverDoneV2Page = lazy(() => import('@/features/vendors/v2/commandes/HandoverDonePage'));
+const ReceiptV2Page = lazy(() => import('@/features/vendors/v2/commandes/ReceiptPage'));
+
+const DisputesListV2Page = lazy(() => import('@/features/vendors/v2/litiges/DisputesListPage'));
+const DisputeReplyV2Page = lazy(() => import('@/features/vendors/v2/litiges/DisputeReplyPage'));
+const DisputeDecisionV2Page = lazy(() => import('@/features/vendors/v2/litiges/DisputeDecisionPage'));
+const ReturnsListV2Page = lazy(() => import('@/features/vendors/v2/litiges/ReturnsListPage'));
+const ReturnInspectionV2Page = lazy(() => import('@/features/vendors/v2/litiges/ReturnInspectionPage'));
+const ReturnReplacementV2Page = lazy(() => import('@/features/vendors/v2/litiges/ReturnReplacementPage'));
+
+const MesProduitsV2Page = lazy(() => import('@/features/vendors/v2/catalogue/MesProduitsPage'));
+const UneOffreV2Page = lazy(() => import('@/features/vendors/v2/catalogue/UneOffrePage'));
+const NouvelleOffreV2Page = lazy(() => import('@/features/vendors/v2/catalogue/NouvelleOffreWizardPage'));
+const DupliquerProduitV2Page = lazy(() => import('@/features/vendors/v2/catalogue/DupliquerProduitPage'));
+const ModifierOffreV2Page = lazy(() => import('@/features/vendors/v2/catalogue/ModifierOffrePage'));
+
+const MonPalierV2Page = lazy(() => import('@/features/vendors/v2/compte/trust-score/MonPalierPage'));
+const MonScoreV2Page = lazy(() => import('@/features/vendors/v2/compte/trust-score/MonScorePage'));
+const LesPaliersV2Page = lazy(() => import('@/features/vendors/v2/compte/trust-score/LesPaliersPage'));
+const SanctionsControleV2Page = lazy(() => import('@/features/vendors/v2/compte/sanctions/SanctionsControlePage'));
+const ContesterDecisionV2Page = lazy(() => import('@/features/vendors/v2/compte/sanctions/ContesterDecisionPage'));
+const LesPlansV2Page = lazy(() => import('@/features/vendors/v2/compte/plans/LesPlansPage'));
+const SimulateurV2Page = lazy(() => import('@/features/vendors/v2/compte/plans/SimulateurPage'));
+const SeFaireVoirV2Page = lazy(() => import('@/features/vendors/v2/compte/visibilite/SeFaireVoirPage'));
+const ParametresV2Page = lazy(() => import('@/features/vendors/v2/compte/parametres/ParametresPage'));
+const SecuriteAppareilsV2Page = lazy(() => import('@/features/vendors/v2/compte/securite/SecuriteAppareilsPage'));
+const NotificationsV2Page = lazy(() => import('@/features/vendors/v2/compte/notifications/NotificationsPage'));
+const AvisDroitReponseV2Page = lazy(() => import('@/features/vendors/v2/compte/avis/AvisDroitReponsePage'));
+const MessagerieV2Page = lazy(() => import('@/features/vendors/v2/compte/messagerie/MessageriePage'));
+const AideV2Page = lazy(() => import('@/features/vendors/v2/compte/aide/AidePage'));
+
+const MonArgentV2Page = lazy(() => import('@/features/vendors/v2/argent/MonArgentPage'));
+const MesGainsV2Page = lazy(() => import('@/features/vendors/v2/argent/MesGainsPage'));
+const SeLibereV2Page = lazy(() => import('@/features/vendors/v2/argent/SeLiberePage'));
+const GeleV2Page = lazy(() => import('@/features/vendors/v2/argent/GelePage'));
+const DocumentsV2Page = lazy(() => import('@/features/vendors/v2/argent/DocumentsPage'));
+const ChangerNumeroV2Page = lazy(() => import('@/features/vendors/v2/argent/ChangerNumeroFlow'));
+const VersementsV2Page = lazy(() => import('@/features/vendors/v2/argent/VersementsPage'));
+
+const BoutiqueV2Page = lazy(() => import('@/features/vendors/v2/boutique/BoutiquePage'));
+const HorairesV2Page = lazy(() => import('@/features/vendors/v2/boutique/HorairesPage'));
+const EmplacementV2Page = lazy(() => import('@/features/vendors/v2/boutique/EmplacementPage'));
+const EquipeV2Page = lazy(() => import('@/features/vendors/v2/boutique/EquipePage'));
+const EquipeAjoutV2Page = lazy(() => import('@/features/vendors/v2/boutique/EquipeAjoutPage'));
+
+const ServicesV2Page = lazy(() => import('@/features/vendors/v2/compte/croissance/ServicesPage'));
+const ChiffresV2Page = lazy(() => import('@/features/vendors/v2/compte/croissance/ChiffresPage'));
+const DemandeV2Page = lazy(() => import('@/features/vendors/v2/compte/croissance/DemandePage'));
 const SellerPaymentsPage = lazy(() => import('@/features/vendors/SellerPaymentsPage'));
 const SellerWalletPage = lazy(() => import('@/features/vendors/SellerWalletPage'));
 const SellerSettlementsPage = lazy(() => import('@/features/vendors/SellerSettlementsPage'));
@@ -197,7 +266,11 @@ export const router = createBrowserRouter([
       { path: 'contact',         element: <ContactPage /> },
       { path: 'help',            element: <HelpPage /> },
       { path: 'about',           element: <AboutPage /> },
+      { path: 'privacy',         element: <PrivacyPage /> },
       { path: 'become-seller',   element: <BecomeSellerPage /> },
+      { path: 'vendeur/connexion',              element: <VendorConnexionPage /> },
+      { path: 'vendeur/ouvrir-boutique',        element: <VendorOuvrirBoutiquePage /> },
+      { path: 'vendeur/publier-et-etre-paye',   element: <ProtectedRoute><VendorPublierEtEtrePayePage /></ProtectedRoute> },
 
       // Auth
       { path: 'login',    element: <PublicRoute><LoginRoute /></PublicRoute> },
@@ -224,7 +297,7 @@ export const router = createBrowserRouter([
     path: '/seller',
     element: <ProtectedRoute><RoleRoute role="seller"><SellerLayout /></RoleRoute></ProtectedRoute>,
     children: [
-      { index: true, element: <Navigate to="/seller/dashboard" replace /> },
+      { index: true, element: <Navigate to="/seller/v2/accueil" replace /> },
       { path: 'dashboard',         element: <SellerDashboardPage /> },
       { path: 'products',          element: <SellerProductsPage /> },
       { path: 'products/new',      element: <ProductFormPage /> },
@@ -239,6 +312,77 @@ export const router = createBrowserRouter([
       { path: 'certifications',    element: <SellerCertificationsPage /> },
       { path: 'plans',             element: <SellerPlansPage /> },
       { path: 'settings',          element: <SellerSettingsPage /> },
+      { path: 'menu',              element: <SellerMenuPage /> },
+
+      // Espace vendeur v2 — construits lots 5 à 10 (chemins explicites AVANT
+      // le catch-all v2/:screen, sinon celui-ci intercepte tout).
+      { path: 'v2/accueil',                    element: <AccueilV2Page /> },
+      { path: 'v2/saisie-assistee',            element: <SaisieAssisteeV2Page /> },
+      { path: 'v2/installer',                  element: <InstallerApplicationV2Page /> },
+
+      { path: 'v2/commandes',                  element: <CommandesListV2Page /> },
+      { path: 'v2/commandes/:id',              element: <CommandeDetailV2Page /> },
+      { path: 'v2/commandes/:id/rupture',      element: <RuptureV2Page /> },
+      { path: 'v2/commandes/:id/plus-de-temps',element: <ExtendV2Page /> },
+      { path: 'v2/commandes/:id/bon-de-preparation', element: <PreparationSlipV2Page /> },
+      { path: 'v2/commandes/:id/journal',      element: <OrderJournalV2Page /> },
+      { path: 'v2/commandes/:id/remise',       element: <HandoverV2Page /> },
+      { path: 'v2/commandes/:id/remis',        element: <HandoverDoneV2Page /> },
+      { path: 'v2/commandes/:id/recu',         element: <ReceiptV2Page /> },
+
+      { path: 'v2/litiges',                    element: <DisputesListV2Page /> },
+      { path: 'v2/litiges/:id',                element: <DisputeReplyV2Page /> },
+      { path: 'v2/litiges/:id/decision',       element: <DisputeDecisionV2Page /> },
+      { path: 'v2/retours',                    element: <ReturnsListV2Page /> },
+      { path: 'v2/retours/:id',                element: <ReturnInspectionV2Page /> },
+      { path: 'v2/retours/:id/remplacement',   element: <ReturnReplacementV2Page /> },
+
+      { path: 'v2/produits',                   element: <MesProduitsV2Page /> },
+      { path: 'v2/produits/nouveau',           element: <NouvelleOffreV2Page /> },
+      { path: 'v2/produits/dupliquer/:id',     element: <DupliquerProduitV2Page /> },
+      { path: 'v2/produits/:id/modifier',      element: <ModifierOffreV2Page /> },
+      { path: 'v2/produits/:id',               element: <UneOffreV2Page /> },
+
+      { path: 'v2/palier',                     element: <MonPalierV2Page /> },
+      { path: 'v2/score',                      element: <MonScoreV2Page /> },
+      { path: 'v2/paliers',                    element: <LesPaliersV2Page /> },
+      { path: 'v2/sanctions',                  element: <SanctionsControleV2Page /> },
+      { path: 'v2/sanctions/contester/:id',    element: <ContesterDecisionV2Page /> },
+      { path: 'v2/plans',                      element: <LesPlansV2Page /> },
+      { path: 'v2/simulateur',                 element: <SimulateurV2Page /> },
+      { path: 'v2/se-faire-voir',              element: <SeFaireVoirV2Page /> },
+      { path: 'v2/parametres',                 element: <ParametresV2Page /> },
+      { path: 'v2/securite',                   element: <SecuriteAppareilsV2Page /> },
+      { path: 'v2/notifications',              element: <NotificationsV2Page /> },
+      { path: 'v2/avis',                       element: <AvisDroitReponseV2Page /> },
+      { path: 'v2/messagerie',                 element: <MessagerieV2Page /> },
+      { path: 'v2/aide',                       element: <AideV2Page /> },
+
+      // Argent / versements (lot construit le 04/10 — modele retrait a la
+      // demande, decide par le proprietaire). v2/argent est un ecran racine
+      // (header verre + dock, ajoute a V2_ROOT_PATHS dans SellerLayout.tsx) ;
+      // les autres sont des ecrans enfants (fleche retour via ScreenHeader).
+      { path: 'v2/argent',                     element: <MonArgentV2Page /> },
+      { path: 'v2/argent/gains',               element: <MesGainsV2Page /> },
+      { path: 'v2/argent/se-libere',           element: <SeLibereV2Page /> },
+      { path: 'v2/argent/gele',                element: <GeleV2Page /> },
+      { path: 'v2/argent/documents',           element: <DocumentsV2Page /> },
+      { path: 'v2/argent/numero',              element: <ChangerNumeroV2Page /> },
+      { path: 'v2/versements',                 element: <VersementsV2Page /> },
+
+      // Boutique / equipe / emplacement (lot construit le 04/10).
+      { path: 'v2/boutique',                   element: <BoutiqueV2Page /> },
+      { path: 'v2/horaires',                   element: <HorairesV2Page /> },
+      { path: 'v2/emplacement',                element: <EmplacementV2Page /> },
+      { path: 'v2/equipe',                     element: <EquipeV2Page /> },
+      { path: 'v2/equipe/ajouter',             element: <EquipeAjoutV2Page /> },
+
+      // Croissance (lot construit le 04/10).
+      { path: 'v2/services',                   element: <ServicesV2Page /> },
+      { path: 'v2/chiffres',                   element: <ChiffresV2Page /> },
+      { path: 'v2/demande',                    element: <DemandeV2Page /> },
+
+      { path: 'v2/:screen',        element: <SellerV2ComingSoonPage /> },
 
       // Pages financières vendeur. Declarees AVANT `sellerPaymentRoutes` :
       // ce jeu generique expose aussi `wallet`, `payments` et `adjustments`,

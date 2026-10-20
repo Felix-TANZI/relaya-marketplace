@@ -14,6 +14,7 @@ import {
   Component, type ReactNode, type ErrorInfo,
 } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Search, Check, X, RefreshCw, Eye, Plus, Edit3, Trash2,
   ChevronRight, ChevronDown, Folder, FolderOpen, ImageIcon,
@@ -205,6 +206,7 @@ class IconGridErrorBoundary extends Component<
 // ═════════════════════════════════════════════════════════════════════════════
 
 export default function AdminCategoriesPage() {
+  const { t } = useTranslation();
   const T = useAdminTheme();
   const { showToast } = useToast();
   const { confirm } = useConfirm();
@@ -230,10 +232,10 @@ export default function AdminCategoriesPage() {
       if (expandedIds.size === 0) {
         setExpandedIds(new Set(data.map((r) => r.id)));
       }
-    } catch { showToast("Erreur chargement", "error"); }
+    } catch { showToast(t("ad3_categories.toast_error_load"), "error"); }
     finally { setLoading(false); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showToast]);
+  }, [showToast, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -289,7 +291,7 @@ export default function AdminCategoriesPage() {
       if (flag === "is_active") await adminApi.toggleCategoryActive(cat.id, newValue);
       else if (flag === "is_deprecated") await adminApi.toggleCategoryDeprecated(cat.id, newValue);
       else await adminApi.toggleCategoryApproval(cat.id, newValue);
-      showToast(`${cat.name} mis à jour`, "success");
+      showToast(t("ad3_categories.toast_updated_name", { name: cat.name }), "success");
       load();
     } catch (err) { showToast(errorMessage(err, "Mise à jour impossible."), "error"); }
   };
@@ -304,16 +306,18 @@ export default function AdminCategoriesPage() {
 
   const handleDelete = async (cat: AdminCategory) => {
     const ok = await confirm({
-      title: `Supprimer '${cat.name}' ?`,
+      title: t("ad3_categories.confirm_delete_title", { name: cat.name }),
       message: cat.children_count > 0 || cat.masters_count > 0 || cat.attributes_count > 0
-        ? `⚠️ ${cat.children_count} sous-catégorie(s), ${cat.masters_count} fiche(s), ${cat.attributes_count} attribut(s) attachés. La suppression sera refusée.`
-        : "Action définitive.",
+        ? t("ad3_categories.confirm_delete_message_with_deps", {
+            children: cat.children_count, masters: cat.masters_count, attributes: cat.attributes_count,
+          })
+        : t("ad3_categories.confirm_delete_message_final"),
       type: "warning",
     });
     if (!ok) return;
     try {
       await adminApi.deleteCategory(cat.id);
-      showToast(`${cat.name} supprimée`, "success");
+      showToast(t("ad3_categories.toast_deleted_name", { name: cat.name }), "success");
       load();
     } catch (err: unknown) {
       showToast(errorMessage(err, "Suppression impossible."), "error");
@@ -337,16 +341,19 @@ export default function AdminCategoriesPage() {
   const bulkFlag = async (flag: CategoryFlag, value: boolean) => {
     if (selectedIds.size === 0) return;
     const label = value
-      ? (flag === "is_active" ? "Activer" : flag === "is_deprecated" ? "Marquer deprecated" : "Activer modération renforcée")
-      : (flag === "is_active" ? "Désactiver" : flag === "is_deprecated" ? "Retirer deprecated" : "Désactiver modération renforcée");
+      ? (flag === "is_active" ? t("ad3_categories.bulk_label_activate") : flag === "is_deprecated" ? t("ad3_categories.bulk_label_deprecate") : t("ad3_categories.bulk_label_approval_on"))
+      : (flag === "is_active" ? t("ad3_categories.bulk_label_deactivate") : flag === "is_deprecated" ? t("ad3_categories.bulk_label_undeprecate") : t("ad3_categories.bulk_label_approval_off"));
     const ok = await confirm({
-      title: `${label} ${selectedIds.size} catégorie(s) ?`,
-      message: "Immédiat.", type: "info",
+      title: t("ad3_categories.confirm_bulk_title", { label, count: selectedIds.size }),
+      message: t("ad3_categories.confirm_bulk_message"), type: "info",
     });
     if (!ok) return;
     try {
       const res = await adminApi.bulkSetCategoriesFlag(Array.from(selectedIds), flag, value);
-      showToast(`${res.updated_count} catégorie(s) mise(s) à jour`, "success");
+      showToast(
+        t(res.updated_count > 1 ? "ad3_categories.toast_updated_count_plural" : "ad3_categories.toast_updated_count", { count: res.updated_count }),
+        "success",
+      );
       load();
     } catch (err) { showToast(errorMessage(err, "Mise à jour impossible."), "error"); }
   };
@@ -375,7 +382,7 @@ export default function AdminCategoriesPage() {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <button onClick={load} style={btnGhost(T)}>
-            <RefreshCw size={12} className={loading ? "animate-spin" : ""} /> Actualiser
+            <RefreshCw size={12} className={loading ? "animate-spin" : ""} /> {t("ad3_categories.button_refresh")}
           </button>
           <button onClick={() => openCreateChild(null, "sub")} style={btnGhost(T)}>
             <Layers size={12} /> Nouvelle sous-catégorie
@@ -394,7 +401,7 @@ export default function AdminCategoriesPage() {
             color: T.muted, pointerEvents: "none",
           }} />
           <input value={search} onChange={(e) => setSearch(e.target.value)}
-            placeholder="Nom ou slug..."
+            placeholder={t("ad3_categories.search_placeholder")}
             style={{
               width: "100%", padding: "10px 12px 10px 34px", borderRadius: 10,
               fontSize: 12.5, background: T.input, color: T.text,
@@ -403,11 +410,11 @@ export default function AdminCategoriesPage() {
           />
         </div>
 
-        <button onClick={expandAll} style={btnGhost(T)} title="Tout déplier">
-          <ChevronDown size={12} /> Tout déplier
+        <button onClick={expandAll} style={btnGhost(T)} title={t("ad3_categories.expand_all")}>
+          <ChevronDown size={12} /> {t("ad3_categories.expand_all")}
         </button>
-        <button onClick={collapseAll} style={btnGhost(T)} title="Tout replier">
-          <ChevronRight size={12} /> Tout replier
+        <button onClick={collapseAll} style={btnGhost(T)} title={t("ad3_categories.collapse_all")}>
+          <ChevronRight size={12} /> {t("ad3_categories.collapse_all")}
         </button>
         <button
           onClick={() => setMissingImageOnly((v) => !v)}
@@ -423,18 +430,18 @@ export default function AdminCategoriesPage() {
             <span style={{
               fontSize: 11.5, fontWeight: 700, color: T.red,
               padding: "6px 12px", background: T.red + "15", borderRadius: 20,
-            }}>{selectedIds.size} sélectionnée(s)</span>
+            }}>{t(selectedIds.size > 1 ? "ad3_categories.selected_count_plural" : "ad3_categories.selected_count", { count: selectedIds.size })}</span>
             <button onClick={() => bulkFlag("is_deprecated", true)}
               style={btnColored("#DC2626")}>
-              <AlertTriangle size={11} /> Deprecated
+              <AlertTriangle size={11} /> {t("ad3_categories.action_deprecated")}
             </button>
             <button onClick={() => bulkFlag("is_deprecated", false)}
               style={btnColored("#059669")}>
-              <Check size={11} /> Retirer deprecated
+              <Check size={11} /> {t("ad3_categories.action_remove_deprecated")}
             </button>
             <button onClick={() => bulkFlag("requires_admin_approval", true)}
               style={btnColored("#F59E0B")}>
-              <Shield size={11} /> Mod. renforcée
+              <Shield size={11} /> {t("ad3_categories.action_approval_reinforced")}
             </button>
           </>
         )}
@@ -448,7 +455,7 @@ export default function AdminCategoriesPage() {
         {loading ? (
           <div style={{ padding: 40, textAlign: "center", color: T.muted }}>
             <RefreshCw size={20} className="animate-spin" style={{ margin: "0 auto 12px" }} />
-            Chargement...
+            {t("ad3_categories.loading_text")}
           </div>
         ) : filteredTree.length === 0 ? (
           <div style={{ padding: 40, textAlign: "center", color: T.muted }}>
@@ -550,6 +557,7 @@ function TreeNode({
   onToggleFlag: (cat: AdminCategory, flag: CategoryFlag, value: boolean) => void;
   onMoveOrder: (cat: AdminCategory, delta: number) => void;
 }) {
+  const { t } = useTranslation();
   const isExpanded = expandedIds.has(node.id);
   const isSelected = selectedIds.has(node.id);
   const hasChildren = node.children.length > 0;
@@ -618,54 +626,54 @@ function TreeNode({
           }}>
             {node.name}
             <LevelBadge level={node.level} />
-            {node.is_deprecated && <FlagBadge label="DEPRECATED" color="#DC2626" />}
-            {node.requires_admin_approval && <FlagBadge label="MOD-RENFORCÉE" color="#F59E0B" />}
-            {!node.is_active && <FlagBadge label="INACTIVE" color="#6B7280" />}
+            {node.is_deprecated && <FlagBadge label={t("ad3_categories.badge_deprecated")} color="#DC2626" />}
+            {node.requires_admin_approval && <FlagBadge label={t("ad3_categories.badge_approval_reinforced")} color="#F59E0B" />}
+            {!node.is_active && <FlagBadge label={t("ad3_categories.badge_inactive")} color="#6B7280" />}
             {!node.image_url && <FlagBadge label="SANS IMAGE" color="#F59E0B" />}
           </div>
           <div style={{ fontSize: 10.5, color: T.mutedL, marginTop: 2, display: "flex", gap: 8, flexWrap: "wrap" }}>
             <code style={{ fontFamily: "monospace" }}>{node.slug}</code>
             {node.children_count > 0 && (
-              <span>· {node.children_count} enfant{node.children_count > 1 ? "s" : ""}</span>
+              <span>· {t(node.children_count > 1 ? "ad3_categories.children_count_plural" : "ad3_categories.children_count", { count: node.children_count })}</span>
             )}
             {node.masters_count > 0 && (
-              <span>· {node.masters_count} fiche{node.masters_count > 1 ? "s" : ""}</span>
+              <span>· {t(node.masters_count > 1 ? "ad3_categories.masters_count_plural" : "ad3_categories.masters_count", { count: node.masters_count })}</span>
             )}
             {node.attributes_count > 0 && (
-              <span>· {node.attributes_count} attr.</span>
+              <span>· {t("ad3_categories.attributes_count_abbr", { count: node.attributes_count })}</span>
             )}
           </div>
         </div>
 
         <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-          <IconBtn onClick={() => onMoveOrder(node, -1)} title="Monter" T={T}>
+          <IconBtn onClick={() => onMoveOrder(node, -1)} title={t("ad3_categories.tooltip_move_up")} T={T}>
             <ArrowUp size={11} />
           </IconBtn>
-          <IconBtn onClick={() => onMoveOrder(node, 1)} title="Descendre" T={T}>
+          <IconBtn onClick={() => onMoveOrder(node, 1)} title={t("ad3_categories.tooltip_move_down")} T={T}>
             <ArrowDown size={11} />
           </IconBtn>
-          <IconBtn onClick={() => onCreateChild(node)} title="Ajouter une sous-catégorie" T={T} color={T.red}>
+          <IconBtn onClick={() => onCreateChild(node)} title={t("ad3_categories.tooltip_add_child")} T={T} color={T.red}>
             <Plus size={11} />
           </IconBtn>
-          <IconBtn onClick={() => onDetail(node.id)} title="Détails" T={T}>
+          <IconBtn onClick={() => onDetail(node.id)} title={t("ad3_categories.tooltip_details")} T={T}>
             <Eye size={11} />
           </IconBtn>
-          <IconBtn onClick={() => onEdit(node)} title="Modifier" T={T}>
+          <IconBtn onClick={() => onEdit(node)} title={t("ad3_categories.tooltip_edit")} T={T}>
             <Edit3 size={11} />
           </IconBtn>
           {node.is_active ? (
             <IconBtn onClick={() => onToggleFlag(node, "is_active", false)}
-              title="Désactiver" T={T} color="#DC2626">
+              title={t("ad3_categories.tooltip_deactivate")} T={T} color="#DC2626">
               <X size={11} />
             </IconBtn>
           ) : (
             <IconBtn onClick={() => onToggleFlag(node, "is_active", true)}
-              title="Activer" T={T} color="#059669">
+              title={t("ad3_categories.tooltip_activate")} T={T} color="#059669">
               <Check size={11} />
             </IconBtn>
           )}
           {node.children_count === 0 && node.masters_count === 0 && node.attributes_count === 0 && (
-            <IconBtn onClick={() => onDelete(node)} title="Supprimer" T={T} color="#DC2626">
+            <IconBtn onClick={() => onDelete(node)} title={t("ad3_categories.tooltip_delete")} T={T} color="#DC2626">
               <Trash2 size={11} />
             </IconBtn>
           )}
@@ -727,6 +735,7 @@ function IconPickerModal({ currentValue, onSelect, onClose }: {
   onSelect: (name: string) => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const T = useAdminTheme();
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -743,16 +752,16 @@ function IconPickerModal({ currentValue, onSelect, onClose }: {
 
   const suggestions = useMemo(() => {
     return [
-      { label: "Téléphone", keys: ["Smartphone", "Phone"] },
-      { label: "Ordinateur", keys: ["Monitor", "Laptop"] },
-      { label: "Casque", keys: ["Headphones", "Music"] },
-      { label: "Maison", keys: ["Home", "House"] },
-      { label: "Voiture", keys: ["Car", "CarFront"] },
-      { label: "Vêtement", keys: ["Shirt", "ShoppingBag"] },
-      { label: "Nourriture", keys: ["Utensils", "Coffee"] },
-      { label: "Livre", keys: ["Book", "BookOpen"] },
+      { label: t("ad3_categories.suggestion_phone"), keys: ["Smartphone", "Phone"] },
+      { label: t("ad3_categories.suggestion_computer"), keys: ["Monitor", "Laptop"] },
+      { label: t("ad3_categories.suggestion_headphones"), keys: ["Headphones", "Music"] },
+      { label: t("ad3_categories.suggestion_home"), keys: ["Home", "House"] },
+      { label: t("ad3_categories.suggestion_car"), keys: ["Car", "CarFront"] },
+      { label: t("ad3_categories.suggestion_clothing"), keys: ["Shirt", "ShoppingBag"] },
+      { label: t("ad3_categories.suggestion_food"), keys: ["Utensils", "Coffee"] },
+      { label: t("ad3_categories.suggestion_book"), keys: ["Book", "BookOpen"] },
     ];
-  }, []);
+  }, [t]);
 
   return (
     <div onClick={onClose} style={{
@@ -778,10 +787,10 @@ function IconPickerModal({ currentValue, onSelect, onClose }: {
                 display: "flex", alignItems: "center", gap: 8,
               }}>
                 <Sparkles size={16} style={{ color: T.red }} />
-                Choisir une icône
+                {t("ad3_categories.icon_picker_title")}
               </h2>
               <p style={{ fontSize: 11.5, color: T.muted, marginTop: 4 }}>
-                {ALL_LUCIDE_ICONS.length} icônes disponibles. Clique pour sélectionner.
+                {t("ad3_categories.icon_picker_subtitle", { count: ALL_LUCIDE_ICONS.length })}
               </p>
             </div>
             <button onClick={onClose} style={{
@@ -797,7 +806,7 @@ function IconPickerModal({ currentValue, onSelect, onClose }: {
               color: T.muted, pointerEvents: "none",
             }} />
             <input ref={inputRef} value={query} onChange={(e) => setQuery(e.target.value)}
-              placeholder="Rechercher : smartphone, home, book, car..."
+              placeholder={t("ad3_categories.icon_picker_search_placeholder")}
               style={{
                 width: "100%", padding: "11px 12px 11px 36px", borderRadius: 10,
                 fontSize: 13, background: T.input, color: T.text,
@@ -819,7 +828,7 @@ function IconPickerModal({ currentValue, onSelect, onClose }: {
               <div style={{
                 fontSize: 10, fontWeight: 700, color: T.mutedL, marginBottom: 6,
                 textTransform: "uppercase", letterSpacing: "0.05em",
-              }}>Suggestions rapides</div>
+              }}>{t("ad3_categories.icon_picker_quick_suggestions")}</div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 {suggestions.map((s) => (
                   <button key={s.label} onClick={() => setQuery(s.keys[0])} style={{
@@ -837,16 +846,16 @@ function IconPickerModal({ currentValue, onSelect, onClose }: {
         <IconGridErrorBoundary fallback={
           <div style={{ padding: 40, textAlign: "center", color: T.muted, flex: 1 }}>
             <AlertTriangle size={28} color="#F59E0B" style={{ margin: "0 auto 12px" }} />
-            <p style={{ fontSize: 13, marginBottom: 4 }}>Un problème est survenu lors du rendu.</p>
+            <p style={{ fontSize: 13, marginBottom: 4 }}>{t("ad3_categories.icon_picker_error_title")}</p>
             <p style={{ fontSize: 11.5, color: T.mutedL }}>
-              Ferme cette modale et réessaie. Si le problème persiste, contacte l'équipe technique.
+              {t("ad3_categories.icon_picker_error_message")}
             </p>
           </div>
         }>
           {filtered.length === 0 ? (
             <div style={{ padding: 40, textAlign: "center", color: T.muted, flex: 1 }}>
               <ImageIcon size={32} style={{ margin: "0 auto 12px", opacity: 0.4 }} />
-              <p style={{ fontSize: 13 }}>Aucune icône ne correspond à "{query}".</p>
+              <p style={{ fontSize: 13 }}>{t("ad3_categories.icon_picker_no_results", { query })}</p>
             </div>
           ) : (
             <>
@@ -855,7 +864,7 @@ function IconPickerModal({ currentValue, onSelect, onClose }: {
                   padding: "8px 26px", fontSize: 11.5, color: T.muted,
                   background: T.cardAlt, borderBottom: `1px solid ${T.border}`,
                 }}>
-                  {filtered.length} résultat{filtered.length > 1 ? "s" : ""}
+                  {t(filtered.length > 1 ? "ad3_categories.icon_picker_results_count_plural" : "ad3_categories.icon_picker_results_count", { count: filtered.length })}
                 </div>
               )}
               <div style={{
@@ -889,14 +898,14 @@ function IconPickerModal({ currentValue, onSelect, onClose }: {
               background: T.card, color: "#DC2626", border: `1px solid #DC262644`,
               cursor: "pointer",
             }}>
-              <XCircle size={12} /> Retirer l'icône
+              <XCircle size={12} /> {t("ad3_categories.icon_picker_remove_icon")}
             </button>
           ) : <div />}
           <button onClick={onClose} style={{
             padding: "8px 14px", borderRadius: 10, fontSize: 12, fontWeight: 700,
             background: T.card, color: T.text,
             border: `1px solid ${T.border}`, cursor: "pointer",
-          }}>Annuler</button>
+          }}>{t("ad3_categories.cancel")}</button>
         </div>
       </div>
     </div>
@@ -950,6 +959,7 @@ function CategoryDetailModal({
   onEdit: (d: AdminCategoryDetail) => void;
   onCreateChild: (parent: AdminCategory) => void;
 }) {
+  const { t } = useTranslation();
   const T = useAdminTheme();
   const { showToast } = useToast();
   const { confirm } = useConfirm();
@@ -960,10 +970,10 @@ function CategoryDetailModal({
     let cancelled = false;
     adminApi.getCategoryDetail(categoryId)
       .then((d) => { if (!cancelled) setDetail(d); })
-      .catch(() => { if (!cancelled) showToast("Erreur chargement", "error"); })
+      .catch(() => { if (!cancelled) showToast(t("ad3_categories.toast_error_load"), "error"); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [categoryId, showToast]);
+  }, [categoryId, showToast, t]);
 
   const toggle = async (flag: CategoryFlag, value: boolean) => {
     if (!detail) return;
@@ -973,7 +983,7 @@ function CategoryDetailModal({
         : adminApi.toggleCategoryApproval;
       const updated = await fn(detail.id, value);
       setDetail(updated);
-      showToast("Mis à jour", "success");
+      showToast(t("ad3_categories.toast_updated_generic"), "success");
       onModified();
     } catch (err) { showToast(errorMessage(err, "Mise à jour impossible."), "error"); }
   };
@@ -981,13 +991,13 @@ function CategoryDetailModal({
   const handleDelete = async () => {
     if (!detail) return;
     const ok = await confirm({
-      title: `Supprimer '${detail.name}' ?`,
-      message: "Action définitive.", type: "warning",
+      title: t("ad3_categories.confirm_delete_title", { name: detail.name }),
+      message: t("ad3_categories.confirm_delete_message_final"), type: "warning",
     });
     if (!ok) return;
     try {
       await adminApi.deleteCategory(detail.id);
-      showToast("Supprimée", "success");
+      showToast(t("ad3_categories.toast_deleted_generic"), "success");
       onClose(); onModified();
     } catch (err: unknown) {
       showToast(errorMessage(err, "Suppression impossible."), "error");
@@ -999,7 +1009,7 @@ function CategoryDetailModal({
       {loading || !detail ? (
         <div style={{ padding: 80, textAlign: "center", color: T.muted }}>
           <RefreshCw size={24} className="animate-spin" style={{ margin: "0 auto 16px" }} />
-          <div style={{ fontSize: 12.5 }}>Chargement des détails...</div>
+          <div style={{ fontSize: 12.5 }}>{t("ad3_categories.loading_details")}</div>
         </div>
       ) : (
         <>
@@ -1067,9 +1077,9 @@ function CategoryDetailModal({
                     color: T.text, fontFamily: "monospace", border: `1px solid ${T.border}`,
                   }}>{detail.slug}</code>
                   <LevelBadge level={detail.level} />
-                  {detail.is_deprecated && <FlagBadge label="DEPRECATED" color="#DC2626" />}
-                  {detail.requires_admin_approval && <FlagBadge label="MOD-RENFORCÉE" color="#F59E0B" />}
-                  {!detail.is_active && <FlagBadge label="INACTIVE" color="#6B7280" />}
+                  {detail.is_deprecated && <FlagBadge label={t("ad3_categories.badge_deprecated")} color="#DC2626" />}
+                  {detail.requires_admin_approval && <FlagBadge label={t("ad3_categories.badge_approval_reinforced")} color="#F59E0B" />}
+                  {!detail.is_active && <FlagBadge label={t("ad3_categories.badge_inactive")} color="#6B7280" />}
                 </div>
               </div>
             </div>
@@ -1089,23 +1099,23 @@ function CategoryDetailModal({
             )}
 
             <div>
-              <SectionTitle icon={Grid3x3} T={T}>Statistiques</SectionTitle>
+              <SectionTitle icon={Grid3x3} T={T}>{t("ad3_categories.section_stats")}</SectionTitle>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
-                <StatCard T={T} label="Niveau" value={detail.stats.level} icon={FolderTree} color={LEVEL_COLORS[Math.min(detail.level, 4)]} />
-                <StatCard T={T} label="Enfants" value={detail.stats.children_count} icon={Folder} color="#0891B2" />
-                <StatCard T={T} label="Fiches"
+                <StatCard T={T} label={t("ad3_categories.stat_level")} value={detail.stats.level} icon={FolderTree} color={LEVEL_COLORS[Math.min(detail.level, 4)]} />
+                <StatCard T={T} label={t("ad3_categories.stat_children")} value={detail.stats.children_count} icon={Folder} color="#0891B2" />
+                <StatCard T={T} label={t("ad3_categories.stat_sheets")}
                   value={detail.stats.total_masters}
                   sub={detail.stats.approved_masters !== detail.stats.total_masters
-                    ? `${detail.stats.approved_masters} approuvées` : undefined}
+                    ? t("ad3_categories.stat_sheets_approved_sub", { count: detail.stats.approved_masters }) : undefined}
                   icon={Boxes} color="#059669" />
-                <StatCard T={T} label="Attributs" value={detail.stats.attributes_count} icon={Sparkles} color="#7C3AED" />
+                <StatCard T={T} label={t("ad3_categories.stat_attributes")} value={detail.stats.attributes_count} icon={Sparkles} color="#7C3AED" />
               </div>
             </div>
 
             {detail.children.length > 0 && (
               <div>
                 <SectionTitle icon={Folder} T={T}>
-                  Sous-catégories <SectionCount count={detail.children.length} T={T} />
+                  {t("ad3_categories.section_subcategories")} <SectionCount count={detail.children.length} T={T} />
                 </SectionTitle>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                   {detail.children.map((c) => (
@@ -1137,7 +1147,7 @@ function CategoryDetailModal({
             {detail.attributes.length > 0 && (
               <div>
                 <SectionTitle icon={Sparkles} T={T}>
-                  Attributs spécifiques <SectionCount count={detail.attributes.length} T={T} />
+                  {t("ad3_categories.section_specific_attributes")} <SectionCount count={detail.attributes.length} T={T} />
                 </SectionTitle>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                   {detail.attributes.map((a) => {
@@ -1157,7 +1167,7 @@ function CategoryDetailModal({
                         }}>{a.role}</span>
                         {a.values_count > 0 && (
                           <span style={{ fontSize: 10, color: T.mutedL }}>
-                            · {a.values_count} val.
+                            · {t("ad3_categories.attribute_values_count_abbr", { count: a.values_count })}
                           </span>
                         )}
                       </div>
@@ -1170,7 +1180,7 @@ function CategoryDetailModal({
             {detail.master_products.length > 0 && (
               <div>
                 <SectionTitle icon={Boxes} T={T}>
-                  Fiches maîtres <SectionCount count={detail.master_products.length} T={T} suffix={detail.master_products.length === 50 ? "+" : ""} />
+                  {t("ad3_categories.section_master_products")} <SectionCount count={detail.master_products.length} T={T} suffix={detail.master_products.length === 50 ? "+" : ""} />
                 </SectionTitle>
                 <div style={{
                   display: "flex", flexDirection: "column", gap: 6,
@@ -1202,7 +1212,7 @@ function CategoryDetailModal({
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{m.title}</div>
                         <div style={{ fontSize: 10.5, color: T.muted, marginTop: 2 }}>
-                          {m.offers_count} offre{m.offers_count > 1 ? "s" : ""} · {m.moderation_status}
+                          {t(m.offers_count > 1 ? "ad3_categories.offers_count_plural" : "ad3_categories.offers_count", { count: m.offers_count })} · {m.moderation_status}
                         </div>
                       </div>
                       <ExternalLink size={12} color={T.mutedL} />
@@ -1220,27 +1230,27 @@ function CategoryDetailModal({
           }}>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <button onClick={() => onEdit(detail)} style={btnFooter(T.text, T.card)}>
-                <Edit3 size={13} /> Modifier
+                <Edit3 size={13} /> {t("ad3_categories.tooltip_edit")}
               </button>
               <button onClick={() => onCreateChild(detail)} style={btnFooter(T.red, T.card)}>
-                <Plus size={13} /> Sous-catégorie
+                <Plus size={13} /> {t("ad3_categories.footer_add_subcategory")}
               </button>
               {detail.is_deprecated ? (
                 <button onClick={() => toggle("is_deprecated", false)} style={btnFooter("#059669", T.card)}>
-                  <Check size={13} /> Retirer deprecated
+                  <Check size={13} /> {t("ad3_categories.action_remove_deprecated")}
                 </button>
               ) : (
                 <button onClick={() => toggle("is_deprecated", true)} style={btnFooter("#DC2626", T.card)}>
-                  <AlertTriangle size={13} /> Marquer deprecated
+                  <AlertTriangle size={13} /> {t("ad3_categories.mark_deprecated")}
                 </button>
               )}
               {detail.is_active ? (
                 <button onClick={() => toggle("is_active", false)} style={btnFooter("#6B7280", T.card)}>
-                  <X size={13} /> Désactiver
+                  <X size={13} /> {t("ad3_categories.tooltip_deactivate")}
                 </button>
               ) : (
                 <button onClick={() => toggle("is_active", true)} style={btnFooter("#059669", T.card)}>
-                  <Check size={13} /> Activer
+                  <Check size={13} /> {t("ad3_categories.tooltip_activate")}
                 </button>
               )}
             </div>
@@ -1251,7 +1261,7 @@ function CategoryDetailModal({
                   borderRadius: 10, fontSize: 12.5, fontWeight: 700,
                   background: "#DC2626", color: "#fff", border: "none", cursor: "pointer",
                 }}>
-                  <Trash2 size={13} /> Supprimer
+                  <Trash2 size={13} /> {t("ad3_categories.tooltip_delete")}
                 </button>
               )}
             </div>
@@ -1340,6 +1350,7 @@ function CategoryFormModal({ category, initialParentId, initialKind, tree, onClo
   tree: AdminCategoryTreeNode[];
   onClose: () => void; onSaved: () => void;
 }) {
+  const { t } = useTranslation();
   const T = useAdminTheme();
   const { showToast } = useToast();
   const isEdit = category !== null;
@@ -1393,7 +1404,7 @@ function CategoryFormModal({ category, initialParentId, initialKind, tree, onClo
 
   const handleSubmit = async () => {
     if (!form.name || form.name.trim().length < 2) {
-      showToast("Donnez un nom d'au moins 2 caractères.", "warning"); return;
+      showToast(t("ad3_categories.toast_name_too_short"), "warning"); return;
     }
     if (kind === "sub" && !form.parent) {
       showToast("Choisissez la catégorie parente de cette sous-catégorie.", "warning"); return;
@@ -1436,7 +1447,7 @@ function CategoryFormModal({ category, initialParentId, initialKind, tree, onClo
             <div style={{
               fontSize: 10.5, fontWeight: 700, color: T.mutedL,
               textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4,
-            }}>{isEdit ? "Édition" : "Création"}</div>
+            }}>{isEdit ? t("ad3_categories.form_mode_edit") : t("ad3_categories.form_mode_create")}</div>
             <h2 style={{
               fontSize: 20, fontWeight: 800, color: T.text, margin: 0,
               fontFamily: "'Syne', sans-serif",
@@ -1463,13 +1474,14 @@ function CategoryFormModal({ category, initialParentId, initialKind, tree, onClo
 
           {/* BLOC 1 — Identité */}
           <div>
-            <BlockTitle T={T} icon={BookOpen}>Identité</BlockTitle>
+            <BlockTitle T={T} icon={BookOpen}>{t("ad3_categories.block_identity")}</BlockTitle>
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <FormField label="Nom *" T={T}
                 hint="Tel qu'il apparaîtra aux acheteurs et dans le sélecteur des vendeurs.">
                 <input value={form.name ?? ""} onChange={(e) => setForm({ ...form, name: e.target.value })}
                   placeholder={kind === "root" ? "Ex : Mode Femme" : "Ex : Robes"}
                   style={inputStyle(T)} autoFocus />
+
               </FormField>
 
               {kind === "sub" && (
@@ -1489,8 +1501,8 @@ function CategoryFormModal({ category, initialParentId, initialKind, tree, onClo
               )}
 
               {isEdit && (
-                <FormField label="Slug" T={T}
-                  hint="⚠️ Adresse de la page (/categorie/…). Ne modifie que si nécessaire.">
+                <FormField label={t("ad3_categories.field_slug_label")} T={T}
+                  hint={t("ad3_categories.field_slug_hint")}>
                   <input value={form.slug ?? ""}
                     onChange={(e) => setForm({ ...form, slug: e.target.value })}
                     style={{ ...inputStyle(T), fontFamily: "monospace", fontSize: 12 }} />
@@ -1506,7 +1518,7 @@ function CategoryFormModal({ category, initialParentId, initialKind, tree, onClo
                     }
                   }}
                   rows={2}
-                  placeholder="Une phrase courte pour l'afficher sous le titre catégorie"
+                  placeholder={t("ad3_categories.field_description_placeholder")}
                   style={{ ...inputStyle(T), resize: "vertical" }} />
               </FormField>
             </div>
@@ -1563,10 +1575,10 @@ function CategoryFormModal({ category, initialParentId, initialKind, tree, onClo
                 )}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: T.text }}>
-                    {currentIcon || "Aucune icône"}
+                    {currentIcon || t("ad3_categories.icon_none")}
                   </div>
                   <div style={{ fontSize: 11, color: T.muted, marginTop: 2 }}>
-                    Clique pour {currentIcon ? "changer" : "choisir"} parmi {ALL_LUCIDE_ICONS.length} icônes
+                    {currentIcon ? t("ad3_categories.icon_click_change") : t("ad3_categories.icon_click_choose")}
                   </div>
                 </div>
                 <Sparkles size={16} color={T.muted} />
@@ -1576,27 +1588,27 @@ function CategoryFormModal({ category, initialParentId, initialKind, tree, onClo
 
           {/* BLOC 4 — Configuration */}
           <div>
-            <BlockTitle T={T} icon={Shield}>Configuration</BlockTitle>
+            <BlockTitle T={T} icon={Shield}>{t("ad3_categories.block_configuration")}</BlockTitle>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <FormField label="Ordre d'affichage" T={T}
-                hint="Plus la valeur est basse, plus la catégorie apparaît tôt (menus, pastilles, sélecteur vendeur).">
+              <FormField label={t("ad3_categories.field_display_order_label")} T={T}
+                hint={t("ad3_categories.field_display_order_hint")}>
                 <input type="number" value={form.display_order ?? 0}
                   onChange={(e) => setForm({ ...form, display_order: parseInt(e.target.value) || 0 })}
                   style={{ ...inputStyle(T), maxWidth: 140 }} />
               </FormField>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <ToggleRow T={T} label="Active"
-                  hint="Décochée : la catégorie disparaît de la boutique et du sélecteur vendeur."
+                <ToggleRow T={T} label={t("ad3_categories.toggle_active_label")}
+                  hint={t("ad3_categories.toggle_active_hint")}
                   value={!!form.is_active}
                   onChange={(v) => setForm({ ...form, is_active: v })} />
-                <ToggleRow T={T} label="Deprecated"
-                  hint="Cochée : reste utilisable par les fiches existantes mais masquée aux nouvelles créations."
+                <ToggleRow T={T} label={t("ad3_categories.action_deprecated")}
+                  hint={t("ad3_categories.toggle_deprecated_hint")}
                   color="#DC2626"
                   value={!!form.is_deprecated}
                   onChange={(v) => setForm({ ...form, is_deprecated: v })} />
-                <ToggleRow T={T} label="Modération renforcée"
-                  hint="Cochée : chaque nouvelle fiche/offre dans cette catégorie exige validation admin."
+                <ToggleRow T={T} label={t("ad3_categories.toggle_approval_label")}
+                  hint={t("ad3_categories.toggle_approval_hint")}
                   color="#F59E0B"
                   value={!!form.requires_admin_approval}
                   onChange={(v) => setForm({ ...form, requires_admin_approval: v })} />
@@ -1614,7 +1626,7 @@ function CategoryFormModal({ category, initialParentId, initialKind, tree, onClo
             padding: "11px 18px", borderRadius: 10, fontSize: 13, fontWeight: 700,
             background: T.card, color: T.text, border: `1px solid ${T.border}`,
             cursor: "pointer",
-          }}>Annuler</button>
+          }}>{t("ad3_categories.cancel")}</button>
           <button onClick={handleSubmit} disabled={busy} style={{
             display: "flex", alignItems: "center", gap: 8,
             padding: "11px 22px", borderRadius: 10, fontSize: 13, fontWeight: 700,

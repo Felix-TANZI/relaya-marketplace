@@ -4,6 +4,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -59,37 +60,37 @@ function getCityCoords(city: string): [number, number] | null {
 // STATUTS CONFIG
 // ─────────────────────────────────────────────────────────────────────────────
 
-const STATUS_CFG: Record<string, { label: string; color: string; bg: string; markerColor: string; icon: React.ElementType; group: string }> = {
+const STATUS_CFG: Record<string, { labelKey: string; color: string; bg: string; markerColor: string; icon: React.ElementType; group: string }> = {
   // Commandes récentes (viennent d'être passées)
-  CREATED:             { label: 'Nouvelles',           color: '#F9FAFB', bg: 'rgba(249,250,251,0.12)', markerColor: '#6B7280', icon: Clock,        group: 'recent' },
-  PAID_IN_ESCROW:      { label: 'En escrow',           color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', markerColor: '#F59E0B', icon: Clock,         group: 'recent' },
-  VENDOR_ACKNOWLEDGED: { label: 'Confirmées vendeur',  color: '#3B82F6', bg: 'rgba(59,130,246,0.12)', markerColor: '#3B82F6', icon: Package,       group: 'recent' },
-  PREPARING:           { label: 'En préparation',      color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)', markerColor: '#8B5CF6', icon: Package,       group: 'recent' },
+  CREATED:             { labelKey: 'ad5b_orders_map.status_created',              color: '#F9FAFB', bg: 'rgba(249,250,251,0.12)', markerColor: '#6B7280', icon: Clock,        group: 'recent' },
+  PAID_IN_ESCROW:      { labelKey: 'ad5b_orders_map.status_paid_in_escrow',       color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', markerColor: '#F59E0B', icon: Clock,         group: 'recent' },
+  VENDOR_ACKNOWLEDGED: { labelKey: 'ad5b_orders_map.status_vendor_acknowledged',  color: '#3B82F6', bg: 'rgba(59,130,246,0.12)', markerColor: '#3B82F6', icon: Package,       group: 'recent' },
+  PREPARING:           { labelKey: 'ad5b_orders_map.status_preparing',           color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)', markerColor: '#8B5CF6', icon: Package,       group: 'recent' },
   // En cours
-  READY_FOR_PICKUP:    { label: 'Prête à enlever',     color: '#F47920', bg: 'rgba(244,121,32,0.12)', markerColor: '#F47920', icon: Package,       group: 'active' },
-  DRIVER_ASSIGNED:     { label: 'Livreur assigné',     color: '#06B6D4', bg: 'rgba(6,182,212,0.12)',  markerColor: '#06B6D4', icon: Truck,         group: 'active' },
-  PICKED_UP:           { label: 'Enlevée',             color: '#EC4899', bg: 'rgba(236,72,153,0.12)', markerColor: '#EC4899', icon: Truck,         group: 'active' },
-  OUT_FOR_DELIVERY:    { label: 'En livraison',        color: '#EF4444', bg: 'rgba(239,68,68,0.12)',  markerColor: '#EF4444', icon: Truck,         group: 'active' },
+  READY_FOR_PICKUP:    { labelKey: 'ad5b_orders_map.status_ready_for_pickup',    color: '#F47920', bg: 'rgba(244,121,32,0.12)', markerColor: '#F47920', icon: Package,       group: 'active' },
+  DRIVER_ASSIGNED:     { labelKey: 'ad5b_orders_map.status_driver_assigned',     color: '#06B6D4', bg: 'rgba(6,182,212,0.12)',  markerColor: '#06B6D4', icon: Truck,         group: 'active' },
+  PICKED_UP:           { labelKey: 'ad5b_orders_map.status_picked_up',          color: '#EC4899', bg: 'rgba(236,72,153,0.12)', markerColor: '#EC4899', icon: Truck,         group: 'active' },
+  OUT_FOR_DELIVERY:    { labelKey: 'ad5b_orders_map.status_out_for_delivery',   color: '#EF4444', bg: 'rgba(239,68,68,0.12)',  markerColor: '#EF4444', icon: Truck,         group: 'active' },
   // Livrées
-  DELIVERED:           { label: 'Livrée',              color: '#10B981', bg: 'rgba(16,185,129,0.12)', markerColor: '#10B981', icon: CheckCircle,   group: 'delivered' },
-  BUYER_CONFIRMED:     { label: 'Confirmée acheteur',  color: '#10B981', bg: 'rgba(16,185,129,0.12)', markerColor: '#059669', icon: CheckCircle,   group: 'delivered' },
-  AUTO_CONFIRMED:      { label: 'Auto-confirmée',      color: '#10B981', bg: 'rgba(16,185,129,0.12)', markerColor: '#059669', icon: CheckCircle,   group: 'delivered' },
-  RELEASED_TO_VENDOR:  { label: 'Fonds libérés',       color: '#10B981', bg: 'rgba(16,185,129,0.12)', markerColor: '#047857', icon: CheckCircle,   group: 'delivered' },
+  DELIVERED:           { labelKey: 'ad5b_orders_map.status_delivered',          color: '#10B981', bg: 'rgba(16,185,129,0.12)', markerColor: '#10B981', icon: CheckCircle,   group: 'delivered' },
+  BUYER_CONFIRMED:     { labelKey: 'ad5b_orders_map.status_buyer_confirmed',    color: '#10B981', bg: 'rgba(16,185,129,0.12)', markerColor: '#059669', icon: CheckCircle,   group: 'delivered' },
+  AUTO_CONFIRMED:      { labelKey: 'ad5b_orders_map.status_auto_confirmed',     color: '#10B981', bg: 'rgba(16,185,129,0.12)', markerColor: '#059669', icon: CheckCircle,   group: 'delivered' },
+  RELEASED_TO_VENDOR:  { labelKey: 'ad5b_orders_map.status_released_to_vendor', color: '#10B981', bg: 'rgba(16,185,129,0.12)', markerColor: '#047857', icon: CheckCircle,   group: 'delivered' },
   // Autres
-  DISPUTED:            { label: 'Litige',              color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', markerColor: '#D97706', icon: Clock,         group: 'other' },
-  CANCELLED:           { label: 'Annulée',             color: '#9CA3AF', bg: 'rgba(156,163,175,0.12)', markerColor: '#6B7280', icon: Clock,        group: 'other' },
-  REFUNDED:            { label: 'Remboursée',          color: '#9CA3AF', bg: 'rgba(156,163,175,0.12)', markerColor: '#6B7280', icon: Clock,        group: 'other' },
+  DISPUTED:            { labelKey: 'ad5b_orders_map.status_disputed',           color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', markerColor: '#D97706', icon: Clock,         group: 'other' },
+  CANCELLED:           { labelKey: 'ad5b_orders_map.status_cancelled',          color: '#9CA3AF', bg: 'rgba(156,163,175,0.12)', markerColor: '#6B7280', icon: Clock,        group: 'other' },
+  REFUNDED:            { labelKey: 'ad5b_orders_map.status_refunded',           color: '#9CA3AF', bg: 'rgba(156,163,175,0.12)', markerColor: '#6B7280', icon: Clock,        group: 'other' },
   // Compat frontend (anciens labels)
-  PENDING:             { label: 'En attente',          color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', markerColor: '#F59E0B', icon: Clock,        group: 'recent' },
-  PROCESSING:          { label: 'En cours',            color: '#3B82F6', bg: 'rgba(59,130,246,0.12)', markerColor: '#3B82F6', icon: Package,       group: 'active' },
-  SHIPPED:             { label: 'Expédiée',            color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)', markerColor: '#8B5CF6', icon: Truck,         group: 'active' },
+  PENDING:             { labelKey: 'ad5b_orders_map.status_pending',            color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', markerColor: '#F59E0B', icon: Clock,        group: 'recent' },
+  PROCESSING:          { labelKey: 'ad5b_orders_map.status_processing',         color: '#3B82F6', bg: 'rgba(59,130,246,0.12)', markerColor: '#3B82F6', icon: Package,       group: 'active' },
+  SHIPPED:             { labelKey: 'ad5b_orders_map.status_shipped',            color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)', markerColor: '#8B5CF6', icon: Truck,         group: 'active' },
 };
 
 const GROUP_LABELS: Record<string, string> = {
-  recent:    'Commandes récentes',
-  active:    'En cours de livraison',
-  delivered: 'Livrées',
-  other:     'Autres',
+  recent:    'ad5b_orders_map.group_recent',
+  active:    'ad5b_orders_map.group_active',
+  delivered: 'ad5b_orders_map.group_delivered',
+  other:     'ad5b_orders_map.group_other',
 };
 
 const GROUP_COLORS: Record<string, string> = {
@@ -170,10 +171,10 @@ interface CityGroup {
   orders:  AdminOrder[];
 }
 
-function groupByCity(orders: AdminOrder[]): CityGroup[] {
+function groupByCity(orders: AdminOrder[], unknownCityLabel: string): CityGroup[] {
   const map = new Map<string, CityGroup>();
   for (const o of orders) {
-    const city   = o.city || 'Inconnue';
+    const city   = o.city || unknownCityLabel;
     const coords = getCityCoords(city);
     if (!coords) continue;
     if (!map.has(city)) {
@@ -191,6 +192,7 @@ function groupByCity(orders: AdminOrder[]): CityGroup[] {
 type FilterGroup = 'all' | 'recent' | 'active' | 'delivered';
 
 export default function OrdersMapPage() {
+  const { t }          = useTranslation();
   const T             = useAdminTheme();
   const { showToast } = useToast();
 
@@ -204,11 +206,11 @@ export default function OrdersMapPage() {
       const data = await adminApi.listOrders();
       setOrders(data);
     } catch {
-      showToast('Erreur chargement des commandes', 'error');
+      showToast(t('ad5b_orders_map.toast_load_error'), 'error');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -220,7 +222,7 @@ export default function OrdersMapPage() {
     return cfg.group === filter;
   });
 
-  const cityGroups = groupByCity(filtered);
+  const cityGroups = groupByCity(filtered, t('ad5b_orders_map.unknown_city'));
   const allPositions: [number, number][] = cityGroups.map(g => g.coords);
 
   // Compteurs
@@ -232,10 +234,10 @@ export default function OrdersMapPage() {
   };
 
   const FILTER_TABS: { key: FilterGroup; label: string; color: string; count: number; icon: React.ElementType }[] = [
-    { key: 'all',       label: 'Toutes',          color: '#F9FAFB', count: counts.all,       icon: MapPin      },
-    { key: 'recent',    label: 'Récentes',        color: '#F59E0B', count: counts.recent,    icon: Clock       },
-    { key: 'active',    label: 'En cours',        color: '#EF4444', count: counts.active,    icon: Truck       },
-    { key: 'delivered', label: 'Livrées',         color: '#10B981', count: counts.delivered, icon: CheckCircle },
+    { key: 'all',       label: t('ad5b_orders_map.filter_all'),        color: '#F9FAFB', count: counts.all,       icon: MapPin      },
+    { key: 'recent',    label: t('ad5b_orders_map.filter_recent'),     color: '#F59E0B', count: counts.recent,    icon: Clock       },
+    { key: 'active',    label: t('ad5b_orders_map.filter_active'),     color: '#EF4444', count: counts.active,    icon: Truck       },
+    { key: 'delivered', label: t('ad5b_orders_map.filter_delivered'),  color: '#10B981', count: counts.delivered, icon: CheckCircle },
   ];
 
   return (
@@ -245,21 +247,21 @@ export default function OrdersMapPage() {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: T.text, marginBottom: 4 }}>
-            Carte des Commandes
+            {t('ad5b_orders_map.title')}
           </h1>
           <p style={{ fontSize: 13, color: T.muted }}>
-            Vue géographique des commandes — cliquez sur un marqueur pour les détails
+            {t('ad5b_orders_map.subtitle')}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Link to="/admin/orders" className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold"
             style={{ background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}` }}>
-            <ArrowLeft size={13} /> Liste
+            <ArrowLeft size={13} /> {t('ad5b_orders_map.list_link')}
           </Link>
           <button onClick={load}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold"
             style={{ background: 'rgba(220,38,38,0.1)', color: T.red, border: '1px solid rgba(220,38,38,0.25)' }}>
-            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> Actualiser
+            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> {t('ad5b_orders_map.refresh')}
           </button>
         </div>
       </div>
@@ -335,7 +337,7 @@ export default function OrdersMapPage() {
                     <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", maxHeight: 340, overflowY: 'auto' }}>
                       <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 8, color: '#111827' }}>
                         <MapPin size={12} style={{ display: 'inline', marginRight: 4 }} />
-                        {group.city} — {group.orders.length} commande{group.orders.length > 1 ? 's' : ''}
+                        {group.city} — {t(group.orders.length > 1 ? 'ad5b_orders_map.popup_orders_count_plural' : 'ad5b_orders_map.popup_orders_count', { count: group.orders.length })}
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {group.orders.map(o => {
@@ -354,7 +356,7 @@ export default function OrdersMapPage() {
                                   #{o.id}
                                 </span>
                                 <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 5, background: cfg?.bg, color: cfg?.color }}>
-                                  {cfg?.label ?? o.fulfillment_status}
+                                  {cfg ? t(cfg.labelKey) : o.fulfillment_status}
                                 </span>
                               </div>
                               <div style={{ fontSize: 11.5, color: '#374151', marginBottom: 3 }}>
@@ -389,7 +391,7 @@ export default function OrdersMapPage() {
                               )}
                               <a href={`/admin/orders/${o.id}`}
                                 style={{ display: 'flex', alignItems: 'center', gap: 3, marginTop: 6, fontSize: 11, color: '#DC2626', fontWeight: 600, textDecoration: 'none' }}>
-                                Voir détail <ExternalLink size={9} />
+                                {t('ad5b_orders_map.view_detail')} <ExternalLink size={9} />
                               </a>
                             </div>
                           );
@@ -409,24 +411,24 @@ export default function OrdersMapPage() {
           {/* Légende groupes */}
           <div className="rounded-2xl overflow-hidden" style={{ background: T.card, border: `1px solid ${T.border}` }}>
             <div className="px-4 py-3" style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
-              <p style={{ fontSize: 12.5, fontWeight: 700, color: T.text }}>Légende</p>
+              <p style={{ fontSize: 12.5, fontWeight: 700, color: T.text }}>{t('ad5b_orders_map.legend_title')}</p>
             </div>
             <div className="p-4 space-y-5">
               {(['recent', 'active', 'delivered', 'other'] as const).map(group => {
                 const statusesInGroup = Object.entries(STATUS_CFG)
                   .filter(([, v]) => v.group === group)
-                  .filter(([k], i, arr) => arr.findIndex(([, v]) => v.label === STATUS_CFG[k].label) === i);
+                  .filter(([k], i, arr) => arr.findIndex(([, v]) => v.labelKey === STATUS_CFG[k].labelKey) === i);
                 return (
                   <div key={group}>
                     <div className="flex items-center gap-2 mb-2">
                       <div style={{ width: 10, height: 10, borderRadius: '50%', background: GROUP_COLORS[group], flexShrink: 0 }} />
-                      <p style={{ fontSize: 12, fontWeight: 700, color: T.text }}>{GROUP_LABELS[group]}</p>
+                      <p style={{ fontSize: 12, fontWeight: 700, color: T.text }}>{t(GROUP_LABELS[group])}</p>
                     </div>
                     <div className="space-y-1.5 pl-4">
                       {statusesInGroup.map(([key, cfg]) => (
                         <div key={key} className="flex items-center gap-2">
                           <div style={{ width: 8, height: 8, borderRadius: '50%', background: cfg.markerColor, flexShrink: 0 }} />
-                          <p style={{ fontSize: 11.5, color: T.muted }}>{cfg.label}</p>
+                          <p style={{ fontSize: 11.5, color: T.muted }}>{t(cfg.labelKey)}</p>
                         </div>
                       ))}
                     </div>
@@ -440,10 +442,10 @@ export default function OrdersMapPage() {
           <div className="rounded-2xl p-4" style={{ background: T.card, border: `1px solid ${T.border}` }}>
             <div className="flex items-center gap-2 mb-3">
               <Truck size={13} style={{ color: '#10B981' }} />
-              <p style={{ fontSize: 12.5, fontWeight: 700, color: T.text }}>Livraisons effectuées</p>
+              <p style={{ fontSize: 12.5, fontWeight: 700, color: T.text }}>{t('ad5b_orders_map.deliveries_done_title')}</p>
             </div>
             <p style={{ fontSize: 12, color: T.muted, lineHeight: 1.6 }}>
-              Pour les commandes livrées, cliquez sur le marqueur pour voir le <strong style={{ color: T.text }}>nom</strong> et le <strong style={{ color: T.text }}>numéro du livreur</strong> associé.
+              {t('ad5b_orders_map.deliveries_done_intro')} <strong style={{ color: T.text }}>{t('ad5b_orders_map.deliveries_done_name')}</strong> {t('ad5b_orders_map.deliveries_done_and')} <strong style={{ color: T.text }}>{t('ad5b_orders_map.deliveries_done_phone')}</strong> {t('ad5b_orders_map.deliveries_done_associated')}
             </p>
           </div>
 
@@ -451,7 +453,7 @@ export default function OrdersMapPage() {
           {cityGroups.length > 0 && (
             <div className="rounded-2xl overflow-hidden" style={{ background: T.card, border: `1px solid ${T.border}` }}>
               <div className="px-4 py-3" style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
-                <p style={{ fontSize: 12.5, fontWeight: 700, color: T.text }}>Répartition par ville</p>
+                <p style={{ fontSize: 12.5, fontWeight: 700, color: T.text }}>{t('ad5b_orders_map.city_breakdown_title')}</p>
               </div>
               <div className="p-4 space-y-2" style={{ maxHeight: 200, overflowY: 'auto', scrollbarWidth: 'thin' }}>
                 {cityGroups
@@ -494,14 +496,14 @@ export default function OrdersMapPage() {
           <div className="flex items-center justify-between px-5 py-3.5"
             style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
             <p style={{ fontSize: 13, fontWeight: 700, color: T.text }}>
-              Commandes affichées ({filtered.length})
+              {t('ad5b_orders_map.orders_shown', { count: filtered.length })}
             </p>
           </div>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: T.cardAlt }}>
-                  {['#', 'Statut', 'Ville', 'Montant', 'Livreur', 'Date'].map(h => (
+                  {['#', t('ad5b_orders_map.col_status'), t('ad5b_orders_map.col_city'), t('ad5b_orders_map.col_amount'), t('ad5b_orders_map.col_courier'), t('ad5b_orders_map.col_date')].map(h => (
                     <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11.5, fontWeight: 700, color: T.muted, whiteSpace: 'nowrap' }}>
                       {h}
                     </th>
@@ -524,7 +526,7 @@ export default function OrdersMapPage() {
                           background: cfg?.bg ?? 'rgba(0,0,0,0.05)',
                           color: cfg?.color ?? T.muted,
                         }}>
-                          {cfg?.label ?? o.fulfillment_status}
+                          {cfg ? t(cfg.labelKey) : o.fulfillment_status}
                         </span>
                       </td>
                       <td style={{ padding: '10px 14px', fontSize: 12.5, color: T.text }}>{o.city}</td>

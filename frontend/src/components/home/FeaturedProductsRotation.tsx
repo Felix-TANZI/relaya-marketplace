@@ -5,6 +5,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { productsApi, type ProductListResponse } from '@/services/api/products';
 import ProductCard from '@/components/product/ProductCard';
 import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
@@ -18,6 +19,7 @@ export default function FeaturedProductsRotation({
   page = 1,
   pageSize = 20
 }: FeaturedProductsRotationProps) {
+  const { t } = useTranslation();
   const [data, setData] = useState<ProductListResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +39,7 @@ export default function FeaturedProductsRotation({
       } catch (err) {
         console.error('Failed to fetch featured products:', err);
         if (!cancelled) {
-          setError('Impossible de charger les produits recommandés');
+          setError(t('home.featured_error'));
           setData(null);
         }
       } finally {
@@ -68,10 +70,10 @@ export default function FeaturedProductsRotation({
           </div>
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              Produits en vedette
+              {t('home.featured_title')}
             </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Rotation quotidienne pour la meilleure expérience
+              {t('home.featured_subtitle')}
             </p>
           </div>
         </div>
@@ -108,10 +110,10 @@ export default function FeaturedProductsRotation({
           </div>
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              Produits en vedette
+              {t('home.featured_title')}
             </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Rotation quotidienne pour la meilleure expérience
+              {t('home.featured_subtitle')}
             </p>
           </div>
         </div>
@@ -120,18 +122,18 @@ export default function FeaturedProductsRotation({
             onClick={handlePreviousPage}
             disabled={currentPage === 1}
             className="rounded-lg bg-gray-100 p-2 disabled:opacity-50 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
-            aria-label="Page précédente"
+            aria-label={t('home.prev_page')}
           >
             <ChevronLeft size={20} />
           </button>
           <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-            Page {currentPage}
+            {t('home.page_number', { page: currentPage })}
           </span>
           <button
             onClick={handleNextPage}
             disabled={!data?.next}
             className="rounded-lg bg-gray-100 p-2 disabled:opacity-50 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
-            aria-label="Page suivante"
+            aria-label={t('home.next_page')}
           >
             <ChevronRight size={20} />
           </button>
@@ -146,7 +148,7 @@ export default function FeaturedProductsRotation({
 
       {data.count && (
         <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-          {data.count} produits disponibles
+          {t('home.products_available', { count: data.count })}
         </div>
       )}
     </section>

@@ -3,6 +3,7 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   X, Package, Tag, Layers, Boxes, Calendar, Store,
   CheckCircle2, XCircle, Clock, Image as ImageIcon, ExternalLink,
@@ -23,9 +24,9 @@ const fmtXaf  = (n: number) => `${new Intl.NumberFormat('fr-FR').format(n)} FCFA
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
 
 const STATUS = {
-  PENDING:  { label: 'En attente', bg: '#FEF3C7', fg: '#B45309', Icon: Clock },
-  APPROVED: { label: 'Validé',     bg: '#DCFCE7', fg: '#15803D', Icon: CheckCircle2 },
-  REJECTED: { label: 'Rejeté',     bg: '#FEE2E2', fg: '#B91C1C', Icon: XCircle },
+  PENDING:  { labelKey: 'ad5a_product_drawer.status_pending',  bg: '#FEF3C7', fg: '#B45309', Icon: Clock },
+  APPROVED: { labelKey: 'ad5a_product_drawer.status_approved', bg: '#DCFCE7', fg: '#15803D', Icon: CheckCircle2 },
+  REJECTED: { labelKey: 'ad5a_product_drawer.status_rejected', bg: '#FEE2E2', fg: '#B91C1C', Icon: XCircle },
 } as const;
 
 function InfoCard({ T, icon, label, value }: {
@@ -43,6 +44,7 @@ function InfoCard({ T, icon, label, value }: {
 }
 
 export default function ProductDetailDrawer({ item, detail, loading, onClose, onApprove, onReject }: Props) {
+  const { t } = useTranslation();
   const T = useAdminTheme();
   const navigate = useNavigate();
   const [shown, setShown] = useState(false);
@@ -78,9 +80,9 @@ export default function ProductDetailDrawer({ item, detail, loading, onClose, on
                       padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 999,
                          background: st.bg, color: st.fg, fontSize: 11.5, fontWeight: 700 }}>
-            <StatusIcon size={13} /> {st.label}
+            <StatusIcon size={13} /> {t(st.labelKey)}
           </span>
-          <button onClick={onClose} aria-label="Fermer"
+          <button onClick={onClose} aria-label={t('ad5a_product_drawer.close_aria')}
             className="w-8 h-8 rounded-lg flex items-center justify-center"
             style={{ background: T.cardAlt, border: `1px solid ${T.border}`, color: T.muted, cursor: 'pointer' }}>
             <X size={16} />
@@ -95,7 +97,7 @@ export default function ProductDetailDrawer({ item, detail, loading, onClose, on
             {hero
               ? <img src={hero} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               : <div className="flex flex-col items-center gap-2" style={{ color: T.muted }}>
-                  <ImageIcon size={30} /><span style={{ fontSize: 11 }}>{loading ? 'Chargement…' : 'Aucune image'}</span>
+                  <ImageIcon size={30} /><span style={{ fontSize: 11 }}>{loading ? t('ad5a_product_drawer.loading') : t('ad5a_product_drawer.no_image')}</span>
                 </div>}
           </div>
 
@@ -119,12 +121,12 @@ export default function ProductDetailDrawer({ item, detail, loading, onClose, on
 
           {/* GRILLE INFOS */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
-            <InfoCard T={T} icon={<Boxes size={13} />}    label="Stock"     value={<span style={{ color: item.stock_quantity > 3 ? '#15803D' : item.stock_quantity > 0 ? '#B45309' : '#B91C1C' }}>{item.stock_quantity}</span>} />
-            <InfoCard T={T} icon={<Tag size={13} />}      label="Catégorie" value={item.category_name} />
-            <InfoCard T={T} icon={<Layers size={13} />}   label="Fiche"     value={item.master_title || '—'} />
-            <InfoCard T={T} icon={<Package size={13} />}  label="Actif"     value={item.is_active ? 'Oui' : 'Non'} />
-            <InfoCard T={T} icon={<Calendar size={13} />} label="Ajouté"    value={fmtDate(item.created_at)} />
-            <InfoCard T={T} icon={<Tag size={13} />}      label="Référence" value={item.slug} />
+            <InfoCard T={T} icon={<Boxes size={13} />}    label={t('ad5a_product_drawer.info_stock')}     value={<span style={{ color: item.stock_quantity > 3 ? '#15803D' : item.stock_quantity > 0 ? '#B45309' : '#B91C1C' }}>{item.stock_quantity}</span>} />
+            <InfoCard T={T} icon={<Tag size={13} />}      label={t('ad5a_product_drawer.info_category')} value={item.category_name} />
+            <InfoCard T={T} icon={<Layers size={13} />}   label={t('ad5a_product_drawer.info_master')}     value={item.master_title || '—'} />
+            <InfoCard T={T} icon={<Package size={13} />}  label={t('ad5a_product_drawer.info_active')}     value={item.is_active ? t('ad5a_product_drawer.yes') : t('ad5a_product_drawer.no')} />
+            <InfoCard T={T} icon={<Calendar size={13} />} label={t('ad5a_product_drawer.info_added')}    value={fmtDate(item.created_at)} />
+            <InfoCard T={T} icon={<Tag size={13} />}      label={t('ad5a_product_drawer.info_reference')} value={item.slug} />
           </div>
 
           {/* VENDEUR */}
@@ -152,16 +154,16 @@ export default function ProductDetailDrawer({ item, detail, loading, onClose, on
           {/* MOTIF REJET */}
           {item.moderation_status === 'REJECTED' && item.moderation_reason && (
             <div style={{ background: '#FEE2E2', color: '#B91C1C', borderRadius: 12, padding: '10px 12px', fontSize: 12.5, marginBottom: 16 }}>
-              <strong>Motif du rejet : </strong>{item.moderation_reason}
+              <strong>{t('ad5a_product_drawer.rejection_reason_label')}</strong>{item.moderation_reason}
             </div>
           )}
 
           {/* DESCRIPTION */}
           {(loading || detail?.description) && (
             <div>
-              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase', color: T.muted, marginBottom: 6 }}>Description</p>
+              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase', color: T.muted, marginBottom: 6 }}>{t('ad5a_product_drawer.description_label')}</p>
               {loading && !detail
-                ? <p style={{ fontSize: 12.5, color: T.muted }}>Chargement…</p>
+                ? <p style={{ fontSize: 12.5, color: T.muted }}>{t('ad5a_product_drawer.loading')}</p>
                 : <p style={{ fontSize: 13, color: T.text, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{detail?.description || '—'}</p>}
             </div>
           )}
@@ -172,11 +174,11 @@ export default function ProductDetailDrawer({ item, detail, loading, onClose, on
                       padding: '12px 18px', display: 'flex', gap: 10 }}>
           <button onClick={() => onApprove(item)} className="flex-1 flex items-center justify-center gap-2"
             style={{ padding: '11px 0', borderRadius: 12, border: 'none', cursor: 'pointer', background: '#15803D', color: '#fff', fontWeight: 700, fontSize: 13.5 }}>
-            <CheckCircle2 size={16} /> Approuver
+            <CheckCircle2 size={16} /> {t('ad5a_product_drawer.approve')}
           </button>
           <button onClick={() => onReject(item)} className="flex-1 flex items-center justify-center gap-2"
             style={{ padding: '11px 0', borderRadius: 12, cursor: 'pointer', background: 'transparent', color: '#B91C1C', fontWeight: 700, fontSize: 13.5, border: '1px solid #FCA5A5' }}>
-            <XCircle size={16} /> Rejeter
+            <XCircle size={16} /> {t('ad5a_product_drawer.reject')}
           </button>
         </div>
       </aside>

@@ -18,6 +18,37 @@ DEBUG = False
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "*").split(",") if h.strip()]
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "").strip()
+# Identifiants OAuth Google supplementaires acceptes (apps natives iOS), separes par des virgules.
+GOOGLE_EXTRA_CLIENT_IDS = [
+    v.strip()
+    for v in os.getenv(
+        "GOOGLE_EXTRA_CLIENT_IDS",
+        "582094155516-m8somr2pbk9292ulebgo6338s8a0to0c.apps.googleusercontent.com",
+    ).split(",")
+    if v.strip()
+]
+
+# Traduction automatique de contenu utilisateur (fiches produit, messages,
+# notifications) — voir apps/common/translation.py. Distinct du i18n
+# statique frontend, qui ne lit jamais cette cle.
+GOOGLE_TRANSLATE_API_KEY = os.getenv("GOOGLE_TRANSLATE_API_KEY", "").strip()
+
+# Identifiants Apple acceptés dans l'audience ("aud") du jeton "Sign in with
+# Apple" : le Bundle ID de l'app native (flux natif iOS) et/ou le Services ID
+# (flux web), séparés par des virgules si plusieurs.
+APPLE_CLIENT_IDS = [
+    v.strip() for v in os.getenv("APPLE_CLIENT_IDS", "com.belivay.client").split(",") if v.strip()
+]
+
+# Clé serveur "Sign in with Apple" (.p8, Apple Developer > Keys) : sert à
+# signer le client_secret pour échanger le code d'autorisation et révoquer
+# l'autorisation Apple à la suppression d'un compte (Guideline 5.1.1(v)).
+# APPLE_PRIVATE_KEY = contenu du .p8 (les "\n" échappés sont acceptés), ou
+# APPLE_PRIVATE_KEY_PATH = chemin vers le fichier.
+APPLE_TEAM_ID = os.getenv("APPLE_TEAM_ID", "").strip()
+APPLE_KEY_ID = os.getenv("APPLE_KEY_ID", "").strip()
+APPLE_PRIVATE_KEY = os.getenv("APPLE_PRIVATE_KEY", "")
+APPLE_PRIVATE_KEY_PATH = os.getenv("APPLE_PRIVATE_KEY_PATH", "").strip()
 
 INSTALLED_APPS = [
     # Django
@@ -33,9 +64,10 @@ INSTALLED_APPS = [
 
     # Third-party
     "rest_framework",
+    "rest_framework_simplejwt.token_blacklist",
     "drf_spectacular",
     "corsheaders",
-    "django_filters", 
+    "django_filters",
 
     # Local apps
     "apps.common",
@@ -45,9 +77,20 @@ INSTALLED_APPS = [
     "apps.payments",
     "apps.shipping",
     'apps.vendors',
+    'apps.vendor_team',
     "apps.contact",
     # Module détachable : voir apps/whatsapp_assistant/README.md (activation, retrait).
     "apps.whatsapp_assistant",
+
+    # Espace client (kit espace-client-belivay/backend-kit, socle uniquement pour
+    # l'instant : client_core/otp/client_accounts/notifications_client — voir
+    # espace-client-belivay/backend-kit/REPRISE-BACKEND.md §5 pour le reste du
+    # rollout. wallet volontairement exclu (en attente de confirmation CEO : le
+    # référentiel verrouillé interdit tout solde/jeton stocké côté client).
+    "apps.client_core",
+    "apps.otp",
+    "apps.client_accounts",
+    "apps.notifications_client",
 ]
 
 MIDDLEWARE = [
@@ -227,7 +270,16 @@ CORS_ALLOWED_ORIGINS = [
     ]
     if origin
 ]
+# Origines supplémentaires pour le site espace-client-belivay (déployé à part,
+# voir espace-client-belivay/site/README.md) une fois son domaine connu.
+CORS_ALLOWED_ORIGINS += [
+    origin for origin in os.getenv("CORS_EXTRA_ORIGINS", "").split(",") if origin
+]
 CORS_ALLOW_CREDENTIALS = True
+
+from corsheaders.defaults import default_headers as _cors_default_headers
+CORS_ALLOW_HEADERS = (*_cors_default_headers, "idempotency-key", "x-device-id")
+CORS_EXPOSE_HEADERS = ["Retry-After", "Idempotent-Replayed"]
 
 # DRF Settings
 REST_FRAMEWORK = {
@@ -253,6 +305,9 @@ REST_FRAMEWORK = {
         "user": "2000/min",   # généreux pour les utilisateurs connectés
         "login": "5/min",     # strict : anti-brute-force sur /auth/login
         "payments_webhook": "120/min", # strict : anti-spam sur les webhooks de paiement
+        # Espace client (apps/otp) : limite d'infra en plus du contrôle métier
+        # OTP-ESSAIS/OTP-RENVOI déjà géré par ParametreMetier ; évite l'abus SMS.
+        "otp": "10/min",
     },
 }
 
@@ -274,16 +329,36 @@ SPECTACULAR_SETTINGS = {
         {"name": "Analytics", "description": "KPI, dashboards, exports"},
         {"name": "AI", "description": "Fonctionnalités IA et alertes"},
     ],
+    # Évite que les routes du kit espace-client-belivay (contrat déjà documenté
+    # par son propre openapi.yaml) polluent le schéma Relaya existant.
+    "PREPROCESSING_HOOKS": ["apps.client_core.schema.sans_routes_du_kit"],
 }
 
 # JWT Settings
+# ── Espace client (kit espace-client-belivay, socle) ─────────────────────────
+# Voir espace-client-belivay/backend-kit/REPRISE-BACKEND.md §3.2. Prestataires
+# SMS/push en mode "console" (ils journalisent sans envoyer) tant que les vrais
+# comptes SMS/VAPID ne sont pas branchés — décision D-à-finir, pas bloquant
+# pour valider le socle en local.
+BELIVAY_PARAMETRES_JSON = BASE_DIR / "apps" / "client_core" / "donnees" / "parametres-en-vigueur.json"
+BELIVAY_INTERRUPTEURS_JSON = BASE_DIR / "apps" / "client_core" / "donnees" / "interrupteurs.json"
+BELIVAY_SITE_URL = os.getenv("BELIVAY_SITE_URL", "https://belivay.com")
+BELIVAY_SMS = "apps.otp.prestataires.SmsConsole"
+# BELIVAY_PUSH et FCM_CREDENTIALS_PATH : console par defaut (journal seulement,
+# aucun compte Firebase requis). Pour activer un vrai envoi (D21) une fois le
+# projet Firebase cree : poser FCM_CREDENTIALS_PATH vers le fichier JSON du
+# compte de service, et BELIVAY_PUSH=apps.notifications_client.prestataires.FCMPush
+# dans l'environnement — aucun changement de code necessaire.
+BELIVAY_PUSH = os.getenv("BELIVAY_PUSH", "apps.notifications_client.prestataires.PushConsole")
+FCM_CREDENTIALS_PATH = os.getenv("FCM_CREDENTIALS_PATH", "")
+
 from datetime import timedelta
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "ROTATE_REFRESH_TOKENS": True,
-    "BLACKLIST_AFTER_ROTATION": False,
+    "BLACKLIST_AFTER_ROTATION": True,
     "ALGORITHM": "HS256",
     "SIGNING_KEY": SECRET_KEY,
     "AUTH_HEADER_TYPES": ("Bearer",),
@@ -336,10 +411,22 @@ LOGGING = {
 
 # EMAIL CONFIGURATION 
 
-EMAIL_BACKEND = os.getenv(
-    "EMAIL_BACKEND", 
-    "django.core.mail.backends.console.EmailBackend"  # Console par défaut
+# Deux niveaux, volontairement :
+#
+#   EMAIL_BACKEND       ce que traverse TOUT envoi du projet. Par défaut, il met
+#                       le message en file Celery et rend la main : aucun
+#                       aller-retour SMTP dans la requête de l'utilisateur.
+#   EMAIL_BACKEND_REEL  celui qui parle vraiment au serveur de mail. C'est lui
+#                       qu'utilise la tâche Celery. Sans cette séparation, la
+#                       tâche se remettrait elle-même en file, indéfiniment.
+#
+# Mettre EMAIL_BACKEND en variable d'environnement court-circuite la file (par
+# exemple en développement, pour voir les mails dans la console tout de suite).
+EMAIL_BACKEND_REEL = os.getenv(
+    "EMAIL_BACKEND_REEL",
+    "django.core.mail.backends.console.EmailBackend",  # Console par défaut
 )
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "apps.common.mail.CeleryEmailBackend")
 EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
 EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"
@@ -378,6 +465,47 @@ CAMPAY_TOKEN = os.getenv("CAMPAY_TOKEN", "")
 CAMPAY_TOKEN_SANDBOX = os.getenv("CAMPAY_TOKEN_SANDBOX", "")
 CAMPAY_TOKEN_LIVE = os.getenv("CAMPAY_TOKEN_LIVE", "")
 CAMPAY_WEBHOOK_KEY = os.getenv("CAMPAY_WEBHOOK_KEY", "")
+
+
+# ── VITRINE V2 : FERMETURE DES ACHATS (tache D2) ─────────────────────────────
+# La V2 part en ligne en mode decouverte : le catalogue se consulte, mais
+# aucune commande ne doit pouvoir naitre, ni aucun paiement etre emis.
+#
+# L'ouverture des achats n'est PAS reglee ici : elle depend de l'interrupteur
+# FF-ACHAT (administration > Interrupteurs de module), comme toutes les autres
+# fonctionnalites du socle client. Voir apps/common/purchases.py.
+#
+# Seule exception gardee en environnement : les comptes de test. La tache D23
+# impose de valider le parcours de bout en bout sur ce meme serveur, achats
+# fermes au public. Liste separee par des virgules, vide par defaut — donc
+# aucune exception tant qu'on n'en declare pas.
+PURCHASES_TEST_USERNAMES = [
+    u.strip()
+    for u in os.getenv("PURCHASES_TEST_USERNAMES", "").split(",")
+    if u.strip()
+]
+
+# ── Comptes de demonstration (tache D27) ────────────────────────────────────
+# `POST /api/auth/bootstrap-demo-accounts/` fabrique admin_demo, vendeur_demo
+# et livreur_demo avec un mot de passe par defaut. C'est commode sur un
+# serveur de developpement, et c'est precisement ce que D27 demande de retirer
+# de la version en ligne : « Retirer toutes les simulations de connexion ».
+#
+# Le jeton X-Bootstrap-Token ne suffisait pas comme garde-fou : il est fourni
+# a la production par .github/workflows/deploy.yml, donc l'endpoint y etait
+# bel et bien joignable. Un compte superutilisateur au mot de passe connu sur
+# le site public n'est pas un risque qu'on prend a l'ouverture.
+#
+# Desormais il faut DEUX conditions : le jeton ET cet interrupteur. Vide par
+# defaut, donc ferme partout tant qu'on ne l'ouvre pas — le serveur de test
+# de D23 posera COMPTES_DEMO_AUTORISES=1, la production ne le posera jamais.
+#
+# `bootstrap_admin`, lui, reste joignable : il cree le PREMIER administrateur
+# reel d'un serveur neuf, avec un mot de passe choisi par l'appelant. Ce n'est
+# pas une simulation de connexion, c'est l'amorcage.
+COMPTES_DEMO_AUTORISES = os.getenv("COMPTES_DEMO_AUTORISES", "0").strip().lower() in {
+    "1", "true", "yes", "on",
+}
 
 
 # ========================================

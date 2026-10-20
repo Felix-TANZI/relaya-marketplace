@@ -38,6 +38,7 @@ import RelayReception, { type RelayArrival, type RefuseInput } from "./RelayRece
 import RelayPickup, {
   type CounterIssueInput,
   type HandOverInput,
+  type PickupCodeCheck,
   type RelayPickupParcel,
 } from "./RelayPickup";
 import RelayReviews from "./RelayReviews";
@@ -203,6 +204,8 @@ interface ComplianceDocument {
   file_url: string | null;
 }
 
+const RELAY_NAV_GROUPS: RelayNavGroup[] = ["pilotage", "operations", "qualite", "gestion", "risque", "compte"];
+
 const relayCopy = {
   fr: {
     groups: {
@@ -322,12 +325,11 @@ const relayCopy = {
   },
 };
 
-
-const training = [
-  ["Réception & garde des colis", "Obligatoire", "Scan QR, contrôle colis, photos et transfert de responsabilité."],
-  ["Vérification CNI et code retrait", "Obligatoire", "Remise uniquement après code valide et contrôle d'identité si requis."],
-  ["Sécurité du stockage", "Recommandé", "Classement par slot, anonymat vendeur et protection contre les pertes."],
-  ["Gestion litige & médiateur", "Recommandé", "Escalade J+7, retour vendeur ou arbitrage BelivaY."],
+const training: Array<{ titleKey: string; tagKey: string; bodyKey: string }> = [
+  { titleKey: "rl1_point_page.training_reception_title", tagKey: "rl1_point_page.training_mandatory", bodyKey: "rl1_point_page.training_reception_body" },
+  { titleKey: "rl1_point_page.training_id_title", tagKey: "rl1_point_page.training_mandatory", bodyKey: "rl1_point_page.training_id_body" },
+  { titleKey: "rl1_point_page.training_storage_title", tagKey: "rl1_point_page.training_recommended", bodyKey: "rl1_point_page.training_storage_body" },
+  { titleKey: "rl1_point_page.training_dispute_title", tagKey: "rl1_point_page.training_recommended", bodyKey: "rl1_point_page.training_dispute_body" },
 ];
 
 function dataUrlToBlob(dataUrl: string): Blob {
@@ -346,7 +348,7 @@ function anonymizedBuyerRef(parcel: RelayParcel) {
 
 export default function RelayPointPage() {
   const navigate = useNavigate();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [tab, setTabState] = useState<RelayTab>(getInitialRelayTab);
@@ -409,7 +411,19 @@ export default function RelayPointPage() {
   const [disputeFocus, setDisputeFocus] = useState("");
   const locale = i18n.language.startsWith("en") ? "en" : "fr";
   const ui = relayCopy[locale];
-  const activeLabel = ui.tabs[tab] ?? ui.brand;
+  const tabLabels = useMemo(
+    () => Object.fromEntries(RELAY_TABS.map((tabId) => [tabId, t(`rl1_point_page.tabs.${tabId}`)])) as Record<RelayTab, string>,
+    [t],
+  );
+  const groupLabels = useMemo(
+    () => Object.fromEntries(RELAY_NAV_GROUPS.map((group) => [group, t(`rl1_point_page.groups.${group}`)])) as Record<RelayNavGroup, string>,
+    [t],
+  );
+  const footerLines = useMemo(
+    () => [t("rl1_point_page.footer_line1"), t("rl1_point_page.footer_line2"), t("rl1_point_page.footer_line3")],
+    [t],
+  );
+  const activeLabel = tabLabels[tab] ?? t("rl1_point_page.brand");
   const relayAccount = user?.relay_point_profile;
   useEffect(() => {
     setAvatarUrl(user?.avatar_url || "");
@@ -488,13 +502,13 @@ export default function RelayPointPage() {
         .filter((parcel) => ["RECEIVED", "STORED"].includes(parcel.status))
         .map((parcel) => ({
           ref: `BV-${parcel.order_id}`,
-          slot: parcel.slot_code || "A definir",
+          slot: parcel.slot_code || t("rl1_point_page.slot_to_define"),
           buyer: anonymizedBuyerRef(parcel),
           age: parcel.received_at ? new Date(parcel.received_at).toLocaleDateString(locale === "en" ? "en-US" : "fr-FR") : "-",
-          status: parcel.status === "STORED" ? (locale === "en" ? "Stored" : "Stocke") : parcel.status,
+          status: parcel.status === "STORED" ? t("rl1_point_page.status_stored") : parcel.status,
           tone: "emerald" as const,
         })),
-    [locale, relayParcels],
+    [locale, relayParcels, t],
   );
 
   const arrivals = useMemo<RelayArrival[]>(
@@ -508,11 +522,11 @@ export default function RelayPointPage() {
           internalRef: `BV-${parcel.order_id}`,
           courierRef: parcel.courier_ref || "",
           vehicleLabel: parcel.courier_vehicle_label || "",
-          sizeLabel: parcel.parcel_size_label || "Taille non renseignée",
+          sizeLabel: parcel.parcel_size_label || t("rl1_point_page.size_not_specified"),
           buyerRef: anonymizedBuyerRef(parcel),
           pickupCode: parcel.pickup_code || "",
         })),
-    [relayParcels],
+    [relayParcels, t],
   );
 
   /** Casiers occupes : le calcul d'emplacement a la reception les evite. */
@@ -554,23 +568,30 @@ export default function RelayPointPage() {
   const isSuspended = relayAccount?.status === "SUSPENDED";
   const hasCapacity = Number(relayAccount?.storage_capacity || 0) > 0;
   const hasHours = Boolean(relayAccount?.opening_hours?.trim());
-  const operationalStatus = isSuspended
-    ? "Suspendu"
+  const operationalStatusCode: "SUSPENDED" | "OPEN" | "CONFIGURING" = isSuspended
+    ? "SUSPENDED"
     : isKycApproved && hasCapacity && hasHours
-      ? "Ouvert"
-      : "En configuration";
+      ? "OPEN"
+      : "CONFIGURING";
+  const operationalStatus = t(`rl1_point_page.status_${operationalStatusCode.toLowerCase()}`);
   const readiness = [
-    ["KYC BelivaY", isKycApproved, isKycApproved ? "Validé" : "À valider par BelivaY"],
-    ["Capacité", hasCapacity, hasCapacity ? `${relayAccount?.storage_capacity} places déclarées` : "Nombre de places à déclarer"],
-    ["Horaires", hasHours, hasHours ? relayAccount?.opening_hours || "" : "Jours et créneaux à définir"],
+    [t("rl1_point_page.readiness_kyc_label"), isKycApproved, isKycApproved ? t("rl1_point_page.status_validated") : t("rl1_point_page.readiness_kyc_pending")],
+    [
+      t("rl1_point_page.readiness_capacity_label"),
+      hasCapacity,
+      hasCapacity ? t("rl1_point_page.readiness_capacity_declared", { count: relayAccount?.storage_capacity }) : t("rl1_point_page.readiness_capacity_pending"),
+    ],
+    [t("rl1_point_page.readiness_hours_label"), hasHours, hasHours ? relayAccount?.opening_hours || "" : t("rl1_point_page.readiness_hours_pending")],
   ] as const;
+
   const relayProfile = {
-    name: relayAccount?.name || "Point relais BelivaY",
-    manager: relayAccount?.manager_name || user?.first_name || user?.username || "Gerant",
-    city: relayAccount?.city || "Ville a definir",
-    address: relayAccount?.address || "Adresse a completer",
-    hours: relayAccount?.opening_hours || "Horaires a completer",
+    name: relayAccount?.name || t("rl1_point_page.default_relay_name"),
+    manager: relayAccount?.manager_name || user?.first_name || user?.username || t("rl1_point_page.default_manager_name"),
+    city: relayAccount?.city || t("rl1_point_page.default_city"),
+    address: relayAccount?.address || t("rl1_point_page.default_address"),
+    hours: relayAccount?.opening_hours || t("rl1_point_page.default_hours"),
     status: operationalStatus,
+    statusCode: operationalStatusCode,
     trust: trustScore,
     capacityUsed: parcels.length,
     capacityMax: relayAccount?.storage_capacity || 0,
@@ -586,6 +607,8 @@ export default function RelayPointPage() {
     address: relayProfile.address,
     status: relayAccount?.status ?? null,
   };
+  const statusTone = relayProfile.statusCode === "OPEN" ? "emerald" : relayProfile.statusCode === "SUSPENDED" ? "red" : "amber";
+
   /**
    * « 19 h » : l'echeance que le gerant repete toute la journee a ses clients.
    *
@@ -770,7 +793,6 @@ export default function RelayPointPage() {
 
     return items;
   }, [hasCapacity, hasHours, isKycApproved, locale, relayDisputes, setTab, todayCounters]);
-  const statusTone = relayProfile.status === "Ouvert" ? "emerald" : relayProfile.status === "Suspendu" ? "red" : "amber";
   const switchLanguage = () => i18n.changeLanguage(i18n.language.startsWith("fr") ? "en" : "fr");
   const changeLanguage = (next: "fr" | "en") => void i18n.changeLanguage(next);
   const handleLogout = () => {
@@ -818,8 +840,8 @@ export default function RelayPointPage() {
   // declenchent leurs chargements sur cette fonction, elle ne doit pas changer
   // a chaque rendu du portail.
   const showOperationError = useCallback((error: unknown) => {
-    setOperationMessage({ tone: "error", text: error instanceof Error ? error.message : "Impossible de terminer cette action." });
-  }, []);
+    setOperationMessage({ tone: "error", text: error instanceof Error ? error.message : t("rl1_point_page.generic_error") });
+  }, [t]);
 
   const showOperationSuccess = useCallback((text: string) => {
     setOperationMessage({ tone: "success", text });
@@ -845,8 +867,8 @@ export default function RelayPointPage() {
       setOperationMessage({
         tone: "success",
         text: slotCode
-          ? `Colis réceptionné et placé en stock au slot ${slotCode}.`
-          : "Colis réceptionné, tracé et placé en stock.",
+          ? t("rl1_point_page.receive_success_with_slot", { slot: slotCode })
+          : t("rl1_point_page.receive_success"),
       });
       await refreshRelayData();
       return true;
@@ -869,7 +891,7 @@ export default function RelayPointPage() {
       form.append("note", note);
       form.append("file", photo, photo.name || "refus.jpg");
       await http("/api/shipping/relay-point/refuse/", { method: "POST", body: form });
-      setOperationMessage({ tone: "success", text: "Colis refusé et signalé — la logistique BelivaY reprend la main." });
+      setOperationMessage({ tone: "success", text: t("rl1_point_page.refuse_success") });
       await refreshRelayData();
       return true;
     } catch (error) {
@@ -1037,7 +1059,7 @@ export default function RelayPointPage() {
     setOperationMessage(null);
     try {
       await http("/api/auth/relay-point/profile/", { method: "PATCH", body: JSON.stringify(payload) });
-      setOperationMessage({ tone: "success", text: "Configuration du point relais enregistrée." });
+      setOperationMessage({ tone: "success", text: t("rl1_point_page.settings_saved") });
       window.setTimeout(() => window.location.reload(), 500);
     } catch (error) {
       showOperationError(error);
@@ -1097,7 +1119,7 @@ export default function RelayPointPage() {
           message: corps.trim(),
         }),
       });
-      setOperationMessage({ tone: "success", text: "Demande transmise au support BelivaY." });
+      setOperationMessage({ tone: "success", text: t("rl1_point_page.support_message_sent") });
       return true;
     } catch (error) {
       showOperationError(error);
@@ -1118,7 +1140,7 @@ export default function RelayPointPage() {
     try {
       await http<ComplianceDocument>("/api/auth/compliance-documents/", { method: "POST", body });
       await refreshRelayData();
-      setOperationMessage({ tone: "success", text: "Document envoyé pour vérification BelivaY." });
+      setOperationMessage({ tone: "success", text: t("rl1_point_page.document_sent") });
     } catch (error) {
       showOperationError(error);
     } finally {
@@ -1417,34 +1439,59 @@ export default function RelayPointPage() {
 
 
   /**
-   * Les colis en stock, tels que le comptoir a besoin de les voir.
+   * Un `RelayParcel` brut vers ce que l'ecran de retrait a besoin de voir.
    *
-   * On ne passe pas `RelayParcel` brut a l'ecran de retrait : celui-ci n'a
-   * aucune raison de connaitre le telephone du client ni son adresse. Il lui
-   * faut de quoi retrouver un casier et controler une identite, rien de plus.
+   * On ne lui passe pas le type brut : celui-ci n'a aucune raison de
+   * connaitre le telephone du client ni son adresse. Il lui faut de quoi
+   * retrouver un casier et controler une identite, rien de plus.
    */
-  const pickupParcels = useMemo<RelayPickupParcel[]>(
-    () =>
-      relayParcels
-        .filter((parcel) => ["RECEIVED", "STORED"].includes(parcel.status) && parcel.pickup_code)
-        .map((parcel) => ({
-          id: parcel.id,
-          orderId: parcel.order_id,
-          ref: `BV-${parcel.order_id}`,
-          slot: parcel.slot_code || "à définir",
-          sizeLabel: parcel.parcel_size_label || "Taille non renseignée",
-          pickupCode: parcel.pickup_code,
-          authorizedName: parcel.authorized_pickup_name || "",
-          authorizedPhone: parcel.authorized_pickup_phone || "",
-          gardeFeeXaf: parcel.garde_fee_due_xaf || 0,
-        })),
-    [relayParcels],
-  );
+  const toPickupParcel = (parcel: RelayParcel): RelayPickupParcel => ({
+    id: parcel.id,
+    orderId: parcel.order_id,
+    ref: `BV-${parcel.order_id}`,
+    slot: parcel.slot_code || "à définir",
+    sizeLabel: parcel.parcel_size_label || "Taille non renseignée",
+    pickupCode: parcel.pickup_code,
+    authorizedName: parcel.authorized_pickup_name || "",
+    authorizedPhone: parcel.authorized_pickup_phone || "",
+    gardeFeeXaf: parcel.garde_fee_due_xaf || 0,
+  });
+
+  /**
+   * Verifie un code de retrait aupres du serveur, seule source fiable pour
+   * les deux sous-etats jusque-la invisibles au comptoir : code faux (avec
+   * essais restants) et colis bloque 24 h apres 3 echecs consecutifs
+   * (Regles Systeme DEV v2.0 §8.2). Remplace la comparaison locale : un
+   * compteur qu'une simple recharge de page remettrait a zero ne protegerait
+   * personne.
+   */
+  const checkPickupCode = async (code: string): Promise<PickupCodeCheck> => {
+    try {
+      const data = await http<{
+        locked: boolean;
+        locked_until: string | null;
+        attempts_left: number | null;
+        parcels: RelayParcel[];
+      }>("/api/shipping/relay-point/pickup/check/", {
+        method: "POST",
+        body: JSON.stringify({ pickup_code: code }),
+      });
+      return {
+        locked: data.locked,
+        lockedUntil: data.locked_until,
+        attemptsLeft: data.attempts_left,
+        parcels: data.parcels.map(toPickupParcel),
+      };
+    } catch (error) {
+      showOperationError(error);
+      return { locked: false, lockedUntil: null, attemptsLeft: null, parcels: [] };
+    }
+  };
 
   const renderRetrait = () => (
     <RelayPickup
-      parcels={pickupParcels}
       busy={operationBusy}
+      onCheckCode={checkPickupCode}
       onHandOver={handOverParcels}
       onIssue={reportCounterIssue}
       onOpenReturnDeposit={() => {
@@ -1455,21 +1502,21 @@ export default function RelayPointPage() {
         setStateFocus("erreur");
         setTab("etats");
       }}
+      onContactSupport={() => setTab("messagerie")}
     />
   );
 
   const renderTrust = () => <RelayTrust onError={showOperationError} onNavigate={setTab} />;
 
   const renderTokens = () => (
-    <Panel kicker="Relais Tokens" title="Module en cours de developpement">
+    <Panel kicker={t("rl1_point_page.tokens_kicker")} title={t("rl1_point_page.module_in_development_title")}>
       <div className="rounded-3xl border border-dashed border-blue-300 bg-blue-50 p-8 text-center">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-blue-700 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)]">
           <BadgeCheck size={30} />
         </div>
-        <h3 className="mt-5 text-2xl font-black text-blue-950">Relais Tokens en cours de developpement</h3>
+        <h3 className="mt-5 text-2xl font-black text-blue-950">{t("rl1_point_page.tokens_in_development_title")}</h3>
         <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-blue-950/70">
-          La logique de tokens point relais sera activee plus tard. Pour la phase actuelle, BelivaY conserve le module visible,
-          mais aucun solde fictif n'est affiche.
+          {t("rl1_point_page.tokens_in_development_body")}
         </p>
       </div>
     </Panel>
@@ -1808,17 +1855,17 @@ export default function RelayPointPage() {
 
     if (kind === "formation") {
       return (
-        <Panel kicker="Formation" title="Modules point relais">
+        <Panel kicker={t("rl1_point_page.training_kicker")} title={t("rl1_point_page.training_modules_title")}>
           <div className="grid gap-4 md:grid-cols-2">
-            {training.map(([title, tag, body]) => (
-              <div key={title as string} className="rounded-[14px] border border-slate-100 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-800">
+            {training.map((module) => (
+              <div key={module.titleKey} className="rounded-2xl border border-slate-100 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-800">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <BookOpen className="text-blue-700 dark:text-blue-300" />
-                  <StatusPill tone={tag === "Obligatoire" ? "amber" : "slate"}>{tag as string}</StatusPill>
+                  <StatusPill tone={module.tagKey === "rl1_point_page.training_mandatory" ? "amber" : "slate"}>{t(module.tagKey)}</StatusPill>
                 </div>
-                <h3 className="mt-4 font-black text-slate-950 dark:text-white">{title as string}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{body as string}</p>
-                <button className="mt-4 rounded-xl border border-blue-200 bg-white px-4 py-2 text-sm font-black text-blue-700 dark:border-blue-800 dark:bg-slate-900 dark:text-blue-200">Ouvrir le module</button>
+                <h3 className="mt-4 font-black text-slate-950 dark:text-white">{t(module.titleKey)}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{t(module.bodyKey)}</p>
+                <button className="mt-4 rounded-xl border border-blue-200 bg-white px-4 py-2 text-sm font-black text-blue-700 dark:border-blue-800 dark:bg-slate-900 dark:text-blue-200">{t("rl1_point_page.open_module")}</button>
               </div>
             ))}
           </div>
@@ -1827,9 +1874,9 @@ export default function RelayPointPage() {
     }
 
     return (
-      <Panel kicker="Point relais" title={ui.tabs[kind] ?? ui.brand}>
-        <div className="rounded-[14px] border border-dashed border-slate-200 bg-slate-50 p-5 text-sm leading-7 text-slate-600 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300">
-          Cette section n'est pas encore configurée pour le point relais.
+      <Panel kicker={t("rl1_point_page.brand")} title={tabLabels[kind] ?? t("rl1_point_page.brand")}>
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm leading-7 text-slate-600 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300">
+          {t("rl1_point_page.section_not_configured")}
         </div>
       </Panel>
     );
@@ -1867,7 +1914,7 @@ export default function RelayPointPage() {
     },
     onError: showOperationError,
     onSuccess: showOperationSuccess,
-    footer: ui.footer,
+    footer: footerLines,
   };
 
   const content = {
@@ -2068,11 +2115,11 @@ export default function RelayPointPage() {
           activeTab={tab}
           onSelect={setTab}
           onLogout={handleLogout}
-          labels={ui.tabs}
-          groupLabels={ui.groups}
+          labels={tabLabels}
+          groupLabels={groupLabels}
           badges={navBadges}
-          brandKicker={ui.brandKicker}
-          logoutLabel={ui.logout}
+          brandKicker={t("rl1_point_page.brand_kicker")}
+          logoutLabel={t("rl1_point_page.logout")}
           profile={{
             name: relayProfile.name,
             status: relayProfile.status,
@@ -2080,7 +2127,7 @@ export default function RelayPointPage() {
             trust: relayProfile.trust,
             avatarUrl: avatarUrl || undefined,
           }}
-          footer={ui.footer}
+          footer={footerLines}
         />
 
         <section className="min-w-0 flex-1">
@@ -2127,7 +2174,7 @@ export default function RelayPointPage() {
               <button
                 type="button"
                 onClick={() => setDrawerOpen(true)}
-                aria-label={ui.space}
+                aria-label={t("rl1_point_page.space")}
                 aria-haspopup="dialog"
                 aria-expanded={drawerOpen}
                 className="tap-target relative -ml-1 flex flex-shrink-0 items-center justify-center rounded-xl text-slate-700 transition active:scale-90 hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-800"
@@ -2147,7 +2194,7 @@ export default function RelayPointPage() {
               <button
                 type="button"
                 onClick={() => setTab("dashboard")}
-                aria-label={ui.tabs.dashboard}
+                aria-label={tabLabels.dashboard}
                 className="flex min-w-0 flex-shrink items-center rounded-xl px-1 py-1 transition active:scale-95"
               >
                 {/* Logo BelivaY orange, pas la declinaison bleue du portail :
@@ -2194,8 +2241,10 @@ export default function RelayPointPage() {
 
               <button
                 type="button"
-                onClick={() => setTab("parametres")}
+                onClick={() => setProfileSheetOpen(true)}
                 aria-label={ui.openProfile}
+                aria-haspopup="dialog"
+                aria-expanded={profileSheetOpen}
                 className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#0E1B38] text-[12px] font-black tracking-wide text-white ring-2 ring-blue-500 transition active:scale-90 dark:bg-slate-800"
               >
                 {avatarUrl ? (
@@ -2230,14 +2279,14 @@ export default function RelayPointPage() {
                 <button
                   type="button"
                   onClick={goBack}
-                  aria-label={locale === "en" ? "Back" : "Retour"}
-                  title={locale === "en" ? "Back" : "Retour"}
+                  aria-label={t("rl1_point_page.back")}
+                  title={t("rl1_point_page.back")}
                   className="tap-target inline-flex flex-shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition active:scale-90 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
                 >
                   <ArrowLeft size={18} />
                 </button>
                 <div className="min-w-0">
-                  <p className="truncate text-[10px] font-black uppercase tracking-[0.16em] text-blue-700 dark:text-blue-300 sm:text-[11px] sm:tracking-[0.18em]">{ui.space}</p>
+                  <p className="truncate text-[10px] font-black uppercase tracking-[0.16em] text-blue-700 dark:text-blue-300 sm:text-[11px] sm:tracking-[0.18em]">{t("rl1_point_page.space")}</p>
                   <h1 className="truncate text-[17px] font-black leading-tight tracking-tight sm:mt-1 sm:text-2xl">{activeLabel}</h1>
                 </div>
               </div>
@@ -2249,7 +2298,7 @@ export default function RelayPointPage() {
                   aria-haspopup="dialog"
                   aria-expanded={profileSheetOpen}
                   className="tap-target flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-700 transition active:scale-95 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
-                  title={ui.profile}
+                  title={t("rl1_point_page.profile")}
                 >
                   {avatarUrl ? <img src={avatarUrl} alt="" className="h-7 w-7 rounded-full object-cover" /> : <UserCircle size={17} />}
                   <span className="hidden max-w-[140px] truncate sm:inline">{user?.username || relayProfile.manager}</span>
@@ -2262,7 +2311,7 @@ export default function RelayPointPage() {
                   type="button"
                   onClick={switchLanguage}
                   className="hidden h-10 min-w-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 lg:inline-flex"
-                  title="Changer de langue"
+                  title={t("rl1_point_page.change_language")}
                 >
                   {locale === "fr" ? "FR" : "EN"}
                 </button>
@@ -2270,7 +2319,7 @@ export default function RelayPointPage() {
                   type="button"
                   onClick={toggleTheme}
                   className="hidden h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 lg:inline-flex"
-                  title={theme === "dark" ? "Mode clair" : "Mode sombre"}
+                  title={theme === "dark" ? t("rl1_point_page.light_mode") : t("rl1_point_page.dark_mode")}
                 >
                   {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
                 </button>
@@ -2278,13 +2327,13 @@ export default function RelayPointPage() {
                   type="button"
                   onClick={handleLogout}
                   className="hidden h-10 w-10 items-center justify-center rounded-xl border border-red-100 bg-red-50 text-red-700 transition hover:bg-red-100 lg:inline-flex"
-                  title="Se deconnecter"
+                  title={t("rl1_point_page.logout")}
                 >
                   <LogOut size={17} />
                 </button>
                 <div className="hidden flex-wrap items-center gap-2 xl:flex">
                   <StatusPill tone={statusTone}>{relayProfile.status}</StatusPill>
-                  <StatusPill tone="blue">{relayProfile.capacityUsed}/{relayProfile.capacityMax} places</StatusPill>
+                  <StatusPill tone="blue">{t("rl1_point_page.places_count", { used: relayProfile.capacityUsed, max: relayProfile.capacityMax })}</StatusPill>
                   <StatusPill tone="slate">{relayProfile.hours}</StatusPill>
                 </div>
               </div>
@@ -2336,15 +2385,14 @@ export default function RelayPointPage() {
             {operationMessage ? (
               <div className={`mb-5 flex items-start justify-between gap-3 rounded-[14px] border p-4 text-sm font-bold ${operationMessage.tone === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-800"}`}>
                 <span>{operationMessage.text}</span>
-                <button type="button" onClick={() => setOperationMessage(null)} className="rounded-lg p-1 hover:bg-black/5" title="Fermer"><X size={16} /></button>
+                <button type="button" onClick={() => setOperationMessage(null)} className="rounded-lg p-1 hover:bg-black/5" title={t("rl1_point_page.close")}><X size={16} /></button>
               </div>
             ) : null}
             <div className="mb-5 hidden rounded-[14px] border border-blue-100 bg-blue-50 p-4 lg:block">
               <div className="flex items-start gap-3">
                 <LockKeyhole className="mt-0.5 flex-shrink-0 text-blue-700" size={20} />
                 <p className="text-sm leading-6 text-blue-950/75">
-                  Interface point relais conforme a la vision BelivaY : anonymat vendeur, preuves de transfert, stockage par slot,
-                  code de retrait, litiges J+7, Trust Score public, paliers Starter/Confirme/Premium et finances MoMo.
+                  {t("rl1_point_page.interface_compliance_notice")}
                 </p>
               </div>
             </div>
@@ -2368,7 +2416,7 @@ export default function RelayPointPage() {
         }}
         labels={{ ...ui.tabs, ...ui.tabsShort }}
         badges={navBadges}
-        navLabel={ui.space}
+        navLabel={t("rl1_point_page.space")}
       />
 
       <RelayDrawer
@@ -2391,9 +2439,9 @@ export default function RelayPointPage() {
           manager: relayProfile.manager,
           avatarUrl: avatarUrl || undefined,
         }}
-        footer={ui.footer}
-        title={ui.space}
-        closeLabel={ui.close}
+        footer={footerLines}
+        title={t("rl1_point_page.space")}
+        closeLabel={t("rl1_point_page.close")}
       />
 
       {/* Feuille compte : ouverte par l'avatar, elle glisse depuis la droite —
@@ -2409,7 +2457,7 @@ export default function RelayPointPage() {
           onUploaded={(updatedUser) => {
             setAvatarUrl(updatedUser.avatar_url || "");
             setAvatarFile(null);
-            setOperationMessage({ tone: "success", text: locale === "en" ? "Profile photo updated." : "Photo de profil mise à jour." });
+            setOperationMessage({ tone: "success", text: t("rl1_point_page.avatar_updated") });
           }}
         />
       ) : null}

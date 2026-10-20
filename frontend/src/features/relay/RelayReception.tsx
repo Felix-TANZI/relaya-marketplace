@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ArrowRight,
   Camera,
@@ -43,11 +44,11 @@ export interface RefuseInput {
   photo: File;
 }
 
-const REFUSAL_REASONS: Array<[string, string]> = [
-  ["SEAL_BROKEN", "Scellé rompu ou absent"],
-  ["PACKAGE_DAMAGED", "Colis visiblement endommagé"],
-  ["WRONG_PARCEL", "Colis ne correspondant pas à l'annonce"],
-  ["OTHER", "Autre motif"],
+const REFUSAL_REASONS: Array<{ value: string; labelKey: string }> = [
+  { value: "SEAL_BROKEN", labelKey: "rl1_reception.reason_seal_broken" },
+  { value: "PACKAGE_DAMAGED", labelKey: "rl1_reception.reason_package_damaged" },
+  { value: "WRONG_PARCEL", labelKey: "rl1_reception.reason_wrong_parcel" },
+  { value: "OTHER", labelKey: "rl1_reception.reason_other" },
 ];
 
 /**
@@ -60,9 +61,9 @@ const REFUSAL_REASONS: Array<[string, string]> = [
 const RECEPTION_PHASES: Array<[string]> = [["Code"], ["Contrôler"], ["Valider"]];
 
 const PHOTO_SLOTS = [
-  { key: "face", label: "Face" },
-  { key: "back", label: "Dos" },
-  { key: "label", label: "Étiquette" },
+  { key: "face", labelKey: "rl1_reception.photo_face" },
+  { key: "back", labelKey: "rl1_reception.photo_back" },
+  { key: "label", labelKey: "rl1_reception.photo_label" },
 ] as const;
 
 type PhotoKey = (typeof PHOTO_SLOTS)[number]["key"];
@@ -101,6 +102,7 @@ function ScanDialog({
   onCancel: () => void;
   onConfirm: (missionId: number) => void;
 }) {
+  const { t } = useTranslation();
   const [detected, setDetected] = useState<number | null>(null);
   const [manualId, setManualId] = useState("");
   const manualRef = useRef<HTMLInputElement>(null);
@@ -121,14 +123,14 @@ function ScanDialog({
     <RelaySheet label="Scanner le QR du livreur" onClose={onCancel} size="sm">
       <RelaySheetHeader
         icon={Camera}
-        title="Scanner le QR du livreur"
-        subtitle="Présentez le QR code de la mission affiché par le livreur dans le viseur."
+        title={t("rl1_reception.scan_modal_label")}
+        subtitle={t("rl1_reception.scan_modal_subtitle")}
         onClose={onCancel}
       />
 
       {presetLabel ? (
-        <div className="mb-3 rounded-[14px] border border-blue-100 bg-blue-50 px-4 py-2 text-xs font-black text-blue-900 dark:border-blue-900 dark:bg-blue-950/60 dark:text-blue-100">
-          Arrivée sélectionnée · {presetLabel}
+        <div className="mb-3 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-2 text-xs font-black text-blue-900 dark:border-blue-900 dark:bg-blue-950/60 dark:text-blue-100">
+          {t("rl1_reception.selected_arrival", { label: presetLabel })}
         </div>
       ) : null}
 
@@ -140,7 +142,7 @@ function ScanDialog({
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-blue-200/70">
             <QrCode size={72} strokeWidth={1.2} />
             <span className="px-6 text-center text-xs font-bold">
-              {error ? "Caméra indisponible — utilisez la saisie manuelle" : "Activation de la caméra..."}
+              {error ? t("rl1_reception.camera_unavailable") : t("rl1_reception.camera_activating")}
             </span>
           </div>
         ) : null}
@@ -159,21 +161,21 @@ function ScanDialog({
         <span className={`h-2.5 w-2.5 rounded-full ${detected ? "bg-emerald-500" : "bg-slate-300 dark:bg-slate-600"}`} />
         {detected ? (
           <span className="inline-flex items-center gap-1 text-emerald-600">
-            <CheckCircle2 size={14} /> QR code détecté · mission {detected}
+            <CheckCircle2 size={14} /> {t("rl1_reception.qr_detected", { id: detected })}
           </span>
         ) : (
-          <span className="text-slate-500 dark:text-slate-400">Recherche du QR de mission...</span>
+          <span className="text-slate-500 dark:text-slate-400">{t("rl1_reception.qr_searching")}</span>
         )}
       </div>
 
       <label className="mt-4 block text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-        QR illisible ? Saisissez l'ID de mission
+        {t("rl1_reception.manual_id_label")}
         <input
           ref={manualRef}
           value={manualId}
           onChange={(event) => setManualId(event.target.value.replace(/\D/g, ""))}
           inputMode="numeric"
-          placeholder="Ex. 42"
+          placeholder={t("rl1_reception.manual_id_placeholder")}
           className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-base font-bold text-slate-950 outline-none transition focus:border-blue-600 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
         />
       </label>
@@ -186,7 +188,7 @@ function ScanDialog({
           onClick={onCancel}
           className="rounded-[14px] border border-slate-200 bg-white px-5 py-2.5 text-sm font-black text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
         >
-          Annuler
+          {t("rl1_reception.cancel")}
         </button>
         <button
           type="button"
@@ -194,7 +196,7 @@ function ScanDialog({
           onClick={() => resolved && onConfirm(resolved)}
           className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Continuer <ArrowRight size={16} />
+          {t("rl1_reception.continue")} <ArrowRight size={16} />
         </button>
       </div>
     </RelaySheet>
@@ -213,7 +215,8 @@ function RefusalDialog({
   onCancel: () => void;
   onConfirm: (input: { reason: string; note: string; photo: File }) => void;
 }) {
-  const [reason, setReason] = useState(REFUSAL_REASONS[0][0]);
+  const { t } = useTranslation();
+  const [reason, setReason] = useState(REFUSAL_REASONS[0].value);
   const [note, setNote] = useState("");
   const [photo, setPhoto] = useState<{ file: File; url: string } | null>(null);
   const [error, setError] = useState("");
@@ -228,7 +231,7 @@ function RefusalDialog({
       if (photo) URL.revokeObjectURL(photo.url);
       setPhoto({ file: optimized, url: URL.createObjectURL(optimized) });
     } catch {
-      setError("Cette image n'a pas pu être préparée. Reprenez la photo.");
+      setError(t("rl1_reception.photo_prepare_error"));
     }
   };
 
@@ -237,20 +240,20 @@ function RefusalDialog({
       <RelaySheetHeader icon={ShieldAlert} title="Refuser ce colis" subtitle={`Mission ${missionId} — le colis ne sera pas mis en stock.`} onClose={onCancel} />
 
       <label className="mt-1 block text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-        Motif du refus
+        {t("rl1_reception.refuse_reason_label")}
         <select
           value={reason}
           onChange={(event) => setReason(event.target.value)}
           className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-950 outline-none transition focus:border-red-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
         >
-          {REFUSAL_REASONS.map(([key, label]) => (
-            <option key={key} value={key}>{label}</option>
+          {REFUSAL_REASONS.map((option) => (
+            <option key={option.value} value={option.value}>{t(option.labelKey)}</option>
           ))}
         </select>
       </label>
 
       <label className="mt-4 block text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-        Précisions (optionnel)
+        {t("rl1_reception.refuse_notes_label")}
         <textarea
           value={note}
           onChange={(event) => setNote(event.target.value)}
@@ -260,16 +263,16 @@ function RefusalDialog({
       </label>
 
       <p className="mt-5 flex items-center gap-2 text-sm font-black text-slate-950 dark:text-white">
-        <Camera size={16} /> Photo du colis refusé <span className="text-red-600">(obligatoire)</span>
+        <Camera size={16} /> {t("rl1_reception.refused_photo_label")} <span className="text-red-600">{t("rl1_reception.mandatory")}</span>
       </p>
       {photo ? (
         <div className="relative mt-2 h-40 overflow-hidden rounded-2xl border-2 border-red-300 dark:border-red-800">
-          <img src={photo.url} alt="Colis refusé" className="h-full w-full object-cover" />
+          <img src={photo.url} alt={t("rl1_reception.refused_photo_alt")} className="h-full w-full object-cover" />
           <button
             type="button"
             onClick={() => setPhoto(null)}
-            aria-label="Retirer la photo"
-            className="absolute right-1.5 top-1.5 rounded-full bg-white/90 p-1 text-red-600 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] transition hover:bg-white"
+            aria-label={t("rl1_reception.remove_photo")}
+            className="absolute right-1.5 top-1.5 rounded-full bg-white/90 p-1 text-red-600 shadow-sm transition hover:bg-white"
           >
             <X size={14} />
           </button>
@@ -277,7 +280,7 @@ function RefusalDialog({
       ) : (
         <label className="mt-2 flex h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-300 bg-white text-red-700 transition hover:border-red-400 hover:bg-red-50/60 dark:border-slate-700 dark:bg-slate-950 dark:text-red-300">
           <Camera size={22} />
-          <span className="text-xs font-black text-slate-600 dark:text-slate-300">Prendre la photo</span>
+          <span className="text-xs font-black text-slate-600 dark:text-slate-300">{t("rl1_reception.take_photo")}</span>
           <input
             type="file"
             accept="image/*"
@@ -299,7 +302,7 @@ function RefusalDialog({
           disabled={busy}
           className="rounded-[14px] border border-slate-200 bg-white px-5 py-2.5 text-sm font-black text-slate-600 transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
         >
-          Annuler
+          {t("rl1_reception.cancel")}
         </button>
         <button
           type="button"
@@ -307,7 +310,7 @@ function RefusalDialog({
           onClick={() => photo && onConfirm({ reason, note: note.trim(), photo: photo.file })}
           className="inline-flex items-center gap-2 rounded-2xl bg-red-600 px-5 py-2.5 text-sm font-black text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <ShieldAlert size={16} /> {busy ? "Envoi..." : "Confirmer le refus"}
+          <ShieldAlert size={16} /> {busy ? t("rl1_reception.sending") : t("rl1_reception.confirm_refusal")}
         </button>
       </div>
     </RelaySheet>
@@ -334,6 +337,7 @@ function ReceptionDialog({
   onOpenRefusal: () => void;
   onValidate: (photos: PhotoMap, signatures: { manager: string | null; courier: string | null }) => void;
 }) {
+  const { t } = useTranslation();
   const [photos, setPhotos] = useState<PhotoMap>({});
   const [managerSignature, setManagerSignature] = useState<string | null>(null);
   const [courierSignature, setCourierSignature] = useState<string | null>(null);
@@ -360,7 +364,7 @@ function ReceptionDialog({
       setPhotos((current) => ({ ...current, [key]: { file: optimized, url: URL.createObjectURL(optimized) } }));
       if (replaced) URL.revokeObjectURL(replaced.url);
     } catch {
-      setPhotoError("Cette image n'a pas pu être préparée. Reprenez la photo.");
+      setPhotoError(t("rl1_reception.photo_prepare_error"));
     }
   };
 
@@ -384,8 +388,8 @@ function ReceptionDialog({
       <div className="flex items-start gap-3 rounded-[14px] border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/40">
         <CheckCircle2 className="mt-0.5 flex-shrink-0 text-emerald-600" size={18} />
         <p className="text-sm font-bold text-emerald-900 dark:text-emerald-100">
-          QR mission reconnu · Mission <strong>{missionId}</strong>
-          {arrival?.courierRef ? <> · Livreur <strong>{arrival.courierRef}</strong></> : null} · 1 colis
+          {t("rl1_reception.qr_recognized_prefix")} <strong>{missionId}</strong>
+          {arrival?.courierRef ? <> {t("rl1_reception.qr_recognized_courier_prefix")} <strong>{arrival.courierRef}</strong></> : null} {t("rl1_reception.qr_recognized_suffix")}
         </p>
       </div>
 
@@ -395,42 +399,42 @@ function ReceptionDialog({
         disabled={busy}
         className="mt-3 inline-flex items-center gap-1.5 text-xs font-black text-red-600 transition hover:text-red-700 disabled:opacity-50"
       >
-        <ShieldAlert size={14} /> Scellé rompu ou colis endommagé ? Refuser au contrôle
+        <ShieldAlert size={14} /> {t("rl1_reception.refuse_control_prompt")}
       </button>
 
       <div className="mt-4 rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/60">
         <dl className="space-y-2.5 text-sm">
           <div className="flex items-center justify-between gap-3">
-            <dt className="text-slate-500 dark:text-slate-400">Référence interne BelivaY</dt>
+            <dt className="text-slate-500 dark:text-slate-400">{t("rl1_reception.internal_ref_label")}</dt>
             <dd className="font-black text-slate-950 dark:text-white">{arrival?.internalRef || `BV-${missionId}`}</dd>
           </div>
           <div className="flex items-center justify-between gap-3">
-            <dt className="text-slate-500 dark:text-slate-400">Taille estimée</dt>
-            <dd><StatusPill tone="blue">{arrival?.sizeLabel || "Non renseignée"}</StatusPill></dd>
+            <dt className="text-slate-500 dark:text-slate-400">{t("rl1_reception.estimated_size_label")}</dt>
+            <dd><StatusPill tone="blue">{arrival?.sizeLabel || t("rl1_reception.size_not_specified")}</StatusPill></dd>
           </div>
           <div className="flex items-center justify-between gap-3">
-            <dt className="text-slate-500 dark:text-slate-400">Acheteur (anonymisé)</dt>
-            <dd className="font-black text-slate-950 dark:text-white">{arrival?.buyerRef || "BV-ACH-••••"} · code à 6 chiffres</dd>
+            <dt className="text-slate-500 dark:text-slate-400">{t("rl1_reception.buyer_anonymized_label")}</dt>
+            <dd className="font-black text-slate-950 dark:text-white">{arrival?.buyerRef || "BV-ACH-••••"} {t("rl1_reception.six_digit_code_suffix")}</dd>
           </div>
         </dl>
         <p className="mt-3 flex items-center gap-2 text-xs font-black text-blue-800 dark:text-blue-200">
-          <LockKeyhole size={14} /> Vendeur masqué — vous ne gérez que la référence BelivaY
+          <LockKeyhole size={14} /> {t("rl1_reception.seller_hidden_notice")}
         </p>
       </div>
 
       <label className="mt-4 block text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-        Slot de stockage attribué
+        {t("rl1_reception.slot_label")}
         <input
           value={slot}
           onChange={(event) => onSlotChange(event.target.value.toUpperCase())}
-          placeholder="Ex. A-12"
+          placeholder={t("rl1_reception.slot_placeholder")}
           className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-base font-bold text-slate-950 outline-none transition focus:border-blue-600 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
         />
       </label>
 
       <p className="mt-5 flex items-center gap-2 text-sm font-black text-slate-950 dark:text-white">
-        <Camera size={16} /> Photos preuve
-        <span className={photoCount === 3 ? "text-emerald-600" : "text-slate-400"}>({photoCount}/3 obligatoires)</span>
+        <Camera size={16} /> {t("rl1_reception.proof_photos_label")}
+        <span className={photoCount === 3 ? "text-emerald-600" : "text-slate-400"}>{t("rl1_reception.photo_count", { count: photoCount })}</span>
       </p>
       <div className="mt-2 grid gap-3 sm:grid-cols-3">
         {PHOTO_SLOTS.map((slotDef) => {
@@ -439,13 +443,13 @@ function ReceptionDialog({
             <div key={slotDef.key} className="relative">
               {photo ? (
                 <div className="relative h-36 overflow-hidden rounded-2xl border-2 border-emerald-300 dark:border-emerald-800">
-                  <img src={photo.url} alt={slotDef.label} className="h-full w-full object-cover" />
-                  <span className="absolute bottom-0 inset-x-0 bg-slate-950/65 py-1 text-center text-[11px] font-black text-white">{slotDef.label}</span>
+                  <img src={photo.url} alt={t(slotDef.labelKey)} className="h-full w-full object-cover" />
+                  <span className="absolute bottom-0 inset-x-0 bg-slate-950/65 py-1 text-center text-[11px] font-black text-white">{t(slotDef.labelKey)}</span>
                   <button
                     type="button"
                     onClick={() => removePhoto(slotDef.key)}
-                    aria-label={`Retirer la photo ${slotDef.label}`}
-                    className="absolute right-1.5 top-1.5 rounded-full bg-white/90 p-1 text-red-600 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] transition hover:bg-white"
+                    aria-label={t("rl1_reception.remove_photo_named", { label: t(slotDef.labelKey) })}
+                    className="absolute right-1.5 top-1.5 rounded-full bg-white/90 p-1 text-red-600 shadow-sm transition hover:bg-white"
                   >
                     <X size={14} />
                   </button>
@@ -453,7 +457,7 @@ function ReceptionDialog({
               ) : (
                 <label className="flex h-36 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-300 bg-white text-blue-700 transition hover:border-blue-400 hover:bg-blue-50/60 dark:border-slate-700 dark:bg-slate-950 dark:text-blue-300 dark:hover:bg-slate-800">
                   <Camera size={22} />
-                  <span className="text-xs font-black text-slate-600 dark:text-slate-300">{slotDef.label}</span>
+                  <span className="text-xs font-black text-slate-600 dark:text-slate-300">{t(slotDef.labelKey)}</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -473,13 +477,13 @@ function ReceptionDialog({
       {photoError ? <p className="mt-2 text-xs font-semibold text-red-600">{photoError}</p> : null}
 
       <div className="mt-5 space-y-5">
-        <SignaturePad label="Signature gérant PR" hint="acceptation de garde" onChange={setManagerSignature} disabled={busy} />
-        <SignaturePad label="Signature livreur" hint="transfert de responsabilité" onChange={setCourierSignature} disabled={busy} />
+        <SignaturePad label={t("rl1_reception.manager_signature_label")} hint={t("rl1_reception.manager_signature_hint")} onChange={setManagerSignature} disabled={busy} />
+        <SignaturePad label={t("rl1_reception.courier_signature_label")} hint={t("rl1_reception.courier_signature_hint")} onChange={setCourierSignature} disabled={busy} />
       </div>
 
       {!complete ? (
-        <p className="mt-4 rounded-[14px] border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs font-bold text-amber-800">
-          Les 3 photos et les deux signatures sont requises avant le transfert de responsabilité.
+        <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs font-bold text-amber-800">
+          {t("rl1_reception.incomplete_notice")}
         </p>
       ) : null}
 
@@ -490,7 +494,7 @@ function ReceptionDialog({
           disabled={busy}
           className="rounded-[14px] border border-slate-200 bg-white px-5 py-2.5 text-sm font-black text-slate-600 transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
         >
-          Annuler
+          {t("rl1_reception.cancel")}
         </button>
         <button
           type="button"
@@ -498,7 +502,7 @@ function ReceptionDialog({
           onClick={() => onValidate(photos, { manager: managerSignature, courier: courierSignature })}
           className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <CheckCircle2 size={16} /> {busy ? "Validation..." : "Valider la réception"}
+          <CheckCircle2 size={16} /> {busy ? t("rl1_reception.validating") : t("rl1_reception.validate_reception")}
         </button>
       </div>
     </RelaySheet>
@@ -659,6 +663,7 @@ export default function RelayReception({
   /** Ouvre l'ecran des sorties, livreur encore present. */
   onOpenOutbound: () => void;
 }) {
+  const { t } = useTranslation();
   const [codeOpen, setCodeOpen] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
   const [selected, setSelected] = useState<RelayArrival | null>(null);
@@ -758,7 +763,7 @@ export default function RelayReception({
 
   const validate = async (photos: PhotoMap, signatures: { manager: string | null; courier: string | null }) => {
     if (!missionId) return;
-    const captured = PHOTO_SLOTS.filter((slotDef) => photos[slotDef.key]).map((slotDef) => slotDef.label.toLowerCase());
+    const captured = PHOTO_SLOTS.filter((slotDef) => photos[slotDef.key]).map((slotDef) => t(slotDef.labelKey).toLowerCase());
     const proofNote = [
       `Réception V5 · mission ${missionId} · ${lot.length} colis`,
       `photos preuve : ${captured.join(", ")}`,

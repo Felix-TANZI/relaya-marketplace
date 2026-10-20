@@ -120,7 +120,7 @@ export default function ContactPage() {
         {/* Header */}
         <div className="mb-8 rounded-[2rem] border border-orange-100 bg-white p-6 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-            Contact
+            {t('cl5_contact.eyebrow')}
           </p>
           <h1 className="mt-3 text-4xl font-bold text-gray-900 dark:text-white">
             {t('contact.title')}

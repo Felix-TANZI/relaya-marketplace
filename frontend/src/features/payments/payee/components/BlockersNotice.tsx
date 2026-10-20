@@ -13,6 +13,7 @@
 // VERSEMENT qui attend, pas la creance.
 // ─────────────────────────────────────────────────────────────────────────
 
+import { useTranslation } from 'react-i18next';
 import { FT } from '../../shared/tokens';
 
 interface BlockersNoticeProps {
@@ -22,41 +23,45 @@ interface BlockersNoticeProps {
 }
 
 /** Traduit un blocage technique en phrase comprehensible et en action. */
-const AIDE: Array<{ motif: RegExp; texte: string; action?: string }> = [
+const AIDE: Array<{ motif: RegExp; texteKey: string; actionKey?: string }> = [
   {
     motif: /kyc/i,
-    texte: "Vos pièces d'identité ne sont pas encore vérifiées.",
-    action: 'Compléter mon dossier',
+    texteKey: 'sl2_payee_escrow.blocker_kyc_text',
+    actionKey: 'sl2_payee_escrow.blocker_kyc_action',
   },
   {
     motif: /refroidissement|cooling/i,
-    texte: 'Votre numéro Mobile Money a changé récemment. '
-      + 'Un délai de sécurité de 72 h s’applique.',
+    texteKey: 'sl2_payee_escrow.blocker_cooling_text',
   },
   {
     motif: /suspendu|hold/i,
-    texte: 'Les versements sont suspendus sur votre compte.',
+    texteKey: 'sl2_payee_escrow.blocker_suspended_text',
   },
   {
     motif: /numero|msisdn/i,
-    texte: "Aucun numéro Mobile Money n'est enregistré.",
-    action: 'Renseigner mon numéro',
+    texteKey: 'sl2_payee_escrow.blocker_msisdn_text',
+    actionKey: 'sl2_payee_escrow.blocker_msisdn_action',
   },
 ];
 
-function humaniser(blocage: string): { texte: string; action?: string } {
+function humaniser(
+  blocage: string,
+  t: (key: string) => string,
+): { texte: string; action?: string } {
   const trouve = AIDE.find((entree) => entree.motif.test(blocage));
   // On garde le message d'origine en repli : mieux vaut une phrase
   // technique qu'un partenaire sans explication.
-  return trouve ?? { texte: blocage };
+  if (!trouve) return { texte: blocage };
+  return { texte: t(trouve.texteKey), action: trouve.actionKey ? t(trouve.actionKey) : undefined };
 }
 
 export default function BlockersNotice({
   blockers, onResolve, resolveLabel,
 }: BlockersNoticeProps) {
+  const { t } = useTranslation();
   if (blockers.length === 0) return null;
 
-  const premier = humaniser(blockers[0]);
+  const premier = humaniser(blockers[0], t);
   const libelle = resolveLabel ?? premier.action;
 
   return (
@@ -65,11 +70,11 @@ export default function BlockersNotice({
         fontSize: 11, margin: '0 0 6px', letterSpacing: '0.08em',
         textTransform: 'uppercase', color: 'var(--text-muted, #B4B2A9)',
       }}>
-        Versement suspendu
+        {t('sl2_payee_escrow.payout_suspended')}
       </p>
 
       {blockers.map((blocage, index) => {
-        const detail = humaniser(blocage);
+        const detail = humaniser(blocage, t);
         return (
           <div
             key={blocage}

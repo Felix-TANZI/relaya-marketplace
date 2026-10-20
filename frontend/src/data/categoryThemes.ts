@@ -16,6 +16,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import type { TFunction } from "i18next";
 
 export interface CategoryTheme {
   slug: string;
@@ -266,8 +267,35 @@ export const HERO_MIN_HEIGHT = "min-h-[196px] sm:min-h-[300px]";
 
 const THEMES_BY_SLUG = new Map(CATEGORY_THEMES.map((theme) => [theme.slug, theme]));
 
-export function getCategoryTheme(slug: string | undefined): CategoryTheme | undefined {
-  return slug ? THEMES_BY_SLUG.get(slug) : undefined;
+/**
+ * Les champs texte de `THEME_SEEDS` sont la copie FR de référence (clé de repli
+ * et source du contenu importé dans `i18n/domains/hm1.fr.ts` / `hm1.en.ts` sous
+ * `category_theme.<slug>.*`). À l'affichage, on superpose toujours la traduction
+ * de la langue active sur le thème structurel (icône, couleur, photo, volumes).
+ */
+function translateTheme(seed: CategoryTheme, t: TFunction): CategoryTheme {
+  const base = `category_theme.${seed.slug}`;
+  const facets = t(`${base}.facets`, { returnObjects: true, defaultValue: seed.facets }) as string[];
+  return {
+    ...seed,
+    name: t(`${base}.name`, { defaultValue: seed.name }),
+    shortName: t(`${base}.shortName`, { defaultValue: seed.shortName }),
+    label: t(`${base}.label`, { defaultValue: seed.label }),
+    title: t(`${base}.title`, { defaultValue: seed.title }),
+    subtitle: t(`${base}.subtitle`, { defaultValue: seed.subtitle }),
+    description: t(`${base}.description`, { defaultValue: seed.description }),
+    facets: Array.isArray(facets) ? facets : seed.facets,
+  };
+}
+
+/** Les 11 thèmes, texte traduit dans la langue active — repli complet hors ligne. */
+export function getAllCategoryThemes(t: TFunction): CategoryTheme[] {
+  return CATEGORY_THEMES.map((theme) => translateTheme(theme, t));
+}
+
+export function getCategoryTheme(slug: string | undefined, t: TFunction): CategoryTheme | undefined {
+  const seed = slug ? THEMES_BY_SLUG.get(slug) : undefined;
+  return seed ? translateTheme(seed, t) : undefined;
 }
 
 /**
@@ -291,15 +319,19 @@ const CATEGORY_ALIASES: Record<string, string[]> = {
  * Thème visuel de secours pour une catégorie en base : même slug, sinon premier
  * thème dont un alias apparaît dans son slug ou son nom (« electronique » → tech).
  */
-export function findThemeForCategory(category: { slug: string; name: string }): CategoryTheme | undefined {
+export function findThemeForCategory(
+  category: { slug: string; name: string },
+  t: TFunction,
+): CategoryTheme | undefined {
   const exact = THEMES_BY_SLUG.get(category.slug);
-  if (exact) return exact;
+  if (exact) return translateTheme(exact, t);
 
   const haystack = `${category.slug} ${category.name}`.toLowerCase();
   const slug = Object.keys(CATEGORY_ALIASES).find((key) =>
     CATEGORY_ALIASES[key].some((alias) => haystack.includes(alias)),
   );
-  return slug ? THEMES_BY_SLUG.get(slug) : undefined;
+  const seed = slug ? THEMES_BY_SLUG.get(slug) : undefined;
+  return seed ? translateTheme(seed, t) : undefined;
 }
 
 interface CategoryLike {

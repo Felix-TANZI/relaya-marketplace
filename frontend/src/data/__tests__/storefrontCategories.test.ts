@@ -5,7 +5,13 @@ import {
   toStorefrontCategory,
 } from "@/data/storefrontCategories";
 import { CATEGORY_THEMES } from "@/data/categoryThemes";
+import i18n from "@/i18n";
 import type { CategoryTreeNode } from "@/services/api/categories";
+
+/* Les fonctions prennent `t` en paramètre explicite (même motif que
+   relaySettlements.ts) : on réutilise l'instance i18next réelle de l'app,
+   déjà chargée en FR par défaut. */
+const t = i18n.t.bind(i18n);
 
 function node(partial: Partial<CategoryTreeNode> & Pick<CategoryTreeNode, "id" | "name" | "slug">): CategoryTreeNode {
   return {
@@ -34,13 +40,13 @@ const inconnue = node({ id: 30, name: "Quincaillerie", slug: "quincaillerie", di
 
 describe("buildStorefrontCategories", () => {
   it("replie sur les thèmes statiques quand la base n'a rien renvoyé", () => {
-    const categories = buildStorefrontCategories([]);
-    expect(categories.map((c) => c.slug)).toEqual(CATEGORY_THEMES.map((t) => t.slug));
+    const categories = buildStorefrontCategories([], t);
+    expect(categories.map((c) => c.slug)).toEqual(CATEGORY_THEMES.map((theme) => theme.slug));
     expect(categories.every((c) => c.node === null)).toBe(true);
   });
 
   it("met « Tout voir » en tête puis les racines dans l'ordre de l'admin", () => {
-    const categories = buildStorefrontCategories([mode, inconnue, sport]);
+    const categories = buildStorefrontCategories([mode, inconnue, sport], t);
     expect(categories.map((c) => c.slug)).toEqual(["all", "sport-db", "mode-femme", "quincaillerie"]);
     expect(categories[0].count).toBe("");
   });
@@ -48,7 +54,7 @@ describe("buildStorefrontCategories", () => {
 
 describe("toStorefrontCategory", () => {
   it("affiche l'image de l'admin et ses sous-catégories", () => {
-    const category = toStorefrontCategory(mode);
+    const category = toStorefrontCategory(mode, 0, t);
     expect(category.image).toBe("https://cdn.test/mode.webp");
     expect(category.thumb).toBe("https://cdn.test/mode.webp");
     expect(category.hasOwnImage).toBe(true);
@@ -57,15 +63,15 @@ describe("toStorefrontCategory", () => {
   });
 
   it("emprunte la photo du thème rapproché tant que l'admin n'a pas d'image", () => {
-    const category = toStorefrontCategory(sport);
-    const theme = CATEGORY_THEMES.find((t) => t.slug === "sport");
+    const category = toStorefrontCategory(sport, 0, t);
+    const theme = CATEGORY_THEMES.find((theme) => theme.slug === "sport");
     expect(category.themeSlug).toBe("sport");
     expect(category.image).toBe(theme?.image);
     expect(category.hasOwnImage).toBe(false);
   });
 
   it("reste sans image quand aucun thème ne correspond", () => {
-    const category = toStorefrontCategory(inconnue);
+    const category = toStorefrontCategory(inconnue, 0, t);
     expect(category.themeSlug).toBeNull();
     expect(category.image).toBe("");
     expect(category.thumb).toBe("");
@@ -73,7 +79,7 @@ describe("toStorefrontCategory", () => {
 });
 
 describe("productInStorefrontCategory", () => {
-  const [, , modeCategory] = buildStorefrontCategories([sport, mode]);
+  const [, , modeCategory] = buildStorefrontCategories([sport, mode], t);
 
   it("inclut les produits des sous-catégories", () => {
     expect(productInStorefrontCategory({ category: { id: 11 } }, modeCategory)).toBe(true);
@@ -82,10 +88,10 @@ describe("productInStorefrontCategory", () => {
   });
 
   it("accepte tout pour « Tout voir » et rapproche la démo par thème", () => {
-    const all = buildStorefrontCategories([mode])[0];
+    const all = buildStorefrontCategories([mode], t)[0];
     expect(productInStorefrontCategory({ category: { id: 999 } }, all)).toBe(true);
 
-    const sportCategory = toStorefrontCategory(sport);
+    const sportCategory = toStorefrontCategory(sport, 0, t);
     expect(
       productInStorefrontCategory({ category: { id: 3, slug: "sport", name: "Sport" } }, sportCategory, { mock: true }),
     ).toBe(true);

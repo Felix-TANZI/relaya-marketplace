@@ -13,6 +13,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { adminFinanceApi } from '../../api/admin-finance.api';
 import { useAsync } from '../../hooks/useAsync';
@@ -63,6 +64,7 @@ function teinteScore(score: number): string {
 export default function RiskPage({
   basePath = '/admin/finance',
 }: RiskPageProps) {
+  const { t } = useTranslation();
   const [vue, setVue] = useState('assessments');
 
   const evaluations = useAsync<{ results: RiskRow[]; count: number }>(
@@ -73,8 +75,8 @@ export default function RiskPage({
   );
 
   const onglets: FilterTab[] = [
-    { key: 'assessments', label: 'Évaluations' },
-    { key: 'trust', label: 'Scores de confiance' },
+    { key: 'assessments', label: t('pm1_risk.tab_assessments') },
+    { key: 'trust', label: t('pm1_risk.tab_trust') },
   ];
 
   const chargement = vue === 'assessments'
@@ -83,8 +85,8 @@ export default function RiskPage({
 
   return (
     <AdminPageShell
-      title="Risque"
-      subtitle="Les scores alertent, ils ne bloquent pas."
+      title={t('pm1_risk.title')}
+      subtitle={t('pm1_risk.subtitle')}
       backTo={basePath}
       actions={(
         <FilterTabs tabs={onglets} active={vue} onChange={setVue} />
@@ -93,14 +95,14 @@ export default function RiskPage({
       <AdminCard>
         {chargement && (
           <div style={{ padding: '2.5rem', textAlign: 'center' }}>
-            <span style={{ fontSize: 13, color: FT.faint }}>Chargement…</span>
+            <span style={{ fontSize: 13, color: FT.faint }}>{t('pm1_risk.loading')}</span>
           </div>
         )}
 
         {!chargement && erreur && (
           <EmptyState
             icon="alert-circle"
-            title="Impossible d'afficher cette vue"
+            title={t('pm1_risk.error_title')}
             description={erreur}
           />
         )}
@@ -109,8 +111,8 @@ export default function RiskPage({
           (evaluations.data?.results ?? []).length === 0 ? (
             <EmptyState
               icon="shield-check"
-              title="Aucune évaluation"
-              description="Aucun signal de risque détecté."
+              title={t('pm1_risk.empty_assessments_title')}
+              description={t('pm1_risk.empty_assessments_description')}
             />
           ) : (evaluations.data?.results ?? []).map((ligne, index, tout) => (
             <div
@@ -168,8 +170,8 @@ export default function RiskPage({
           (scores.data?.results ?? []).length === 0 ? (
             <EmptyState
               icon="star"
-              title="Aucun score de confiance"
-              description="Les scores se calculent après quelques commandes."
+              title={t('pm1_risk.empty_trust_title')}
+              description={t('pm1_risk.empty_trust_description')}
             />
           ) : (scores.data?.results ?? []).map((ligne, index, tout) => (
             <div
@@ -189,9 +191,9 @@ export default function RiskPage({
                   {ligne.payee.display_label || ligne.payee.payee_code}
                 </p>
                 <p style={{ fontSize: 11.5, margin: '2px 0 0', color: FT.faint }}>
-                  {ligne.orders_count} commande{ligne.orders_count > 1 ? 's' : ''}
-                  {' · '}{ligne.disputes_count} litige
-                  {ligne.disputes_count > 1 ? 's' : ''}
+                  {t(ligne.orders_count > 1 ? 'pm1_risk.orders_count_plural' : 'pm1_risk.orders_count', { count: ligne.orders_count })}
+                  {' · '}
+                  {t(ligne.disputes_count > 1 ? 'pm1_risk.disputes_count_plural' : 'pm1_risk.disputes_count', { count: ligne.disputes_count })}
                   {' · '}{formatShortDate(ligne.computed_at)}
                 </p>
               </div>

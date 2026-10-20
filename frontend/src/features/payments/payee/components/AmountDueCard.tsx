@@ -18,6 +18,7 @@
 // un detenteur de monnaie electronique.
 // ─────────────────────────────────────────────────────────────────────────
 
+import { useTranslation } from 'react-i18next';
 import MaturityBar from '../../shared/MaturityBar';
 import type { MaturitySegment } from '../../shared/MaturityBar';
 import { MATURITY_COLORS } from '../../shared/format';
@@ -36,6 +37,7 @@ interface AmountDueCardProps {
 export default function AmountDueCard({
   due, msisdnMasked, operator, onResolveBlockers,
 }: AmountDueCardProps) {
+  const { t } = useTranslation();
   const bloque = due.blockers.length > 0;
   // La date vient desormais de l'API. Elle reste nulle pour un cycle au
   // seuil — on retombe alors sur la cle du cycle.
@@ -43,22 +45,22 @@ export default function AmountDueCard({
 
   const segments: MaturitySegment[] = [
     {
-      label: 'Sous séquestre',
-      hint: 'encore remboursable',
+      label: t('sl2_payee_escrow.segment_held_label'),
+      hint: t('sl2_payee_escrow.segment_held_hint'),
       amount: due.not_yet_due_xaf,
       color: MATURITY_COLORS.held,
     },
     {
-      label: 'En règlement',
-      hint: 'lot en préparation',
+      label: t('sl2_payee_escrow.segment_settling_label'),
+      hint: t('sl2_payee_escrow.segment_settling_hint'),
       amount: due.in_settlement_xaf,
       color: MATURITY_COLORS.settling,
     },
     {
-      label: 'Acquis',
+      label: t('sl2_payee_escrow.segment_earned_label'),
       hint: due.outstanding_debt_xaf > 0
-        ? `dont ${due.outstanding_debt_xaf.toLocaleString('fr-FR')} retenus`
-        : 'à verser au prochain cycle',
+        ? t('sl2_payee_escrow.segment_earned_hint_withheld', { amount: due.outstanding_debt_xaf.toLocaleString('fr-FR') })
+        : t('sl2_payee_escrow.segment_earned_hint_next_cycle'),
       amount: due.released_not_settled_xaf + due.pending_bonus_xaf,
       color: MATURITY_COLORS.earned,
     },
@@ -80,7 +82,7 @@ export default function AmountDueCard({
             fontSize: 11, margin: '0 0 10px', letterSpacing: '0.08em',
             textTransform: 'uppercase', color: 'var(--text-muted, #B4B2A9)',
           }}>
-            Disponible au prochain versement
+            {t('sl2_payee_escrow.available_next_payout')}
           </p>
           <p style={{
             fontSize: 44, fontWeight: 500, margin: 0, lineHeight: 1,
@@ -107,7 +109,7 @@ export default function AmountDueCard({
               fontSize: 11, margin: '0 0 6px', letterSpacing: '0.08em',
               textTransform: 'uppercase', color: 'var(--text-muted, #B4B2A9)',
             }}>
-              Versement
+              {t('sl2_payee_escrow.payout_label')}
             </p>
             <p style={{
               fontSize: 15, margin: 0, color: 'var(--text-primary, #1A1209)',

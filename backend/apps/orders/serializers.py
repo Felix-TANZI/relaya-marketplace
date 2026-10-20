@@ -62,7 +62,8 @@ def _weighted_commission_rate(order_items_data, settings):
     return (weighted / Decimal(total)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
-def _compute_delivery_price(order_items_data, delivery_mode, destination_zone):
+def _compute_delivery_price(order_items_data, delivery_mode, destination_zone,
+                            subtotal_xaf=0):
     """
     Grille de prix reelle (BelivaY_Regles_Systeme_DEV v2.0 §3.1), calculee
     cote serveur et figee au paiement (regle en dur #4) — remplace l'ancien
@@ -103,6 +104,8 @@ def _compute_delivery_price(order_items_data, delivery_mode, destination_zone):
         delivery_mode=delivery_mode,
         vendors=vendors_in_order,
         destination_zone=destination_zone,
+        # Sert au seuil de gratuite (tache D10) : « offerte des 50 000 F ».
+        subtotal_xaf=subtotal_xaf,
     )
 
 
@@ -326,7 +329,7 @@ class OrderCreateSerializer(serializers.Serializer):
     def create(self, validated_data):
         """Créer une nouvelle commande"""
         from .models import PlatformSettings
-        from apps.shipping.models import Shipment, ShipmentEvent
+        from apps.shipping.models import Shipment, ShipmentEvent, infer_actor_role
         from apps.orders.models import OrderHistory
         from apps.accounts.models import UserNotification
 
@@ -364,7 +367,9 @@ class OrderCreateSerializer(serializers.Serializer):
         from apps.shipping.models import Zone as _Zone
 
         destination_zone = _Zone.match(validated_data['city'], validated_data.get('district', ''))
-        delivery_fee = _compute_delivery_price(order_items_data, delivery_mode, destination_zone)
+        delivery_fee = _compute_delivery_price(
+            order_items_data, delivery_mode, destination_zone, subtotal_xaf=subtotal,
+        )
         commission_rate_snapshot = _weighted_commission_rate(order_items_data, settings)
 
         address = validated_data.get('address', '').strip()
@@ -487,11 +492,13 @@ class OrderCreateSerializer(serializers.Serializer):
                 order=order, vendor=vendor_user, status=Shipment.Status.CREATED,
             )
             created_shipments.append(shipment)
-            ShipmentEvent.objects.create(
+            ShipmentEvent.record(
                 shipment=shipment,
                 status=Shipment.Status.CREATED,
                 message="Commande recuee et en attente de prise en charge",
                 location=order.city,
+                actor=user,
+                actor_role=infer_actor_role(user),
             )
 
             if relay_point_obj is not None:

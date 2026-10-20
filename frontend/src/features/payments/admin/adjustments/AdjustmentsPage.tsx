@@ -13,6 +13,7 @@
 
 import { useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { adminFinanceApi } from '../../api/admin-finance.api';
 import type { ListParams } from '../../api/admin-finance.api';
@@ -38,6 +39,7 @@ const FILTRES: Record<string, string> = {
 export default function AdminAdjustmentsPage({
   basePath = '/admin/finance',
 }: AdminAdjustmentsPageProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const filtre = params.get('filter') ?? 'pending';
@@ -58,9 +60,9 @@ export default function AdminAdjustmentsPage({
   const lignes = data?.results ?? [];
 
   const onglets: FilterTab[] = [
-    { key: 'pending', label: 'À approuver', urgent: true },
-    { key: 'approved', label: 'Approuvés' },
-    { key: 'all', label: 'Tous' },
+    { key: 'pending', label: t('pm1_adjustments.tab_pending'), urgent: true },
+    { key: 'approved', label: t('pm1_adjustments.tab_approved') },
+    { key: 'all', label: t('pm1_adjustments.tab_all') },
   ];
 
   return (
@@ -75,7 +77,7 @@ export default function AdminAdjustmentsPage({
           aria-hidden="true"
           style={{ fontSize: 14, verticalAlign: -2, marginRight: 6 }}
         />
-        Centre financier
+        {t('pm1_adjustments.back_label')}
       </button>
 
       <div style={{
@@ -87,10 +89,10 @@ export default function AdminAdjustmentsPage({
           <p style={{
             fontSize: 19, margin: 0, color: 'var(--text-primary, #1A1209)',
           }}>
-            Ajustements
+            {t('pm1_adjustments.title')}
           </p>
           <p style={{ fontSize: 12.5, margin: '4px 0 0', color: FT.muted }}>
-            Retenues et compensations appliquées aux règlements.
+            {t('pm1_adjustments.subtitle')}
           </p>
         </div>
         <FilterTabs
@@ -113,20 +115,20 @@ export default function AdminAdjustmentsPage({
       }}>
         {loading && (
           <div style={{ padding: '2.5rem', textAlign: 'center' }}>
-            <span style={{ fontSize: 13, color: FT.faint }}>Chargement…</span>
+            <span style={{ fontSize: 13, color: FT.faint }}>{t('pm1_adjustments.loading')}</span>
           </div>
         )}
 
         {!loading && error && (
           <EmptyState
             icon="alert-circle"
-            title="Impossible d'afficher les ajustements"
+            title={t('pm1_adjustments.error_title')}
             description={error}
           />
         )}
 
         {!loading && !error && lignes.length === 0 && (
-          <EmptyState icon="adjustments" title="Aucun ajustement" />
+          <EmptyState icon="adjustments" title={t('pm1_adjustments.empty_title')} />
         )}
 
         {!loading && !error && lignes.map((ajustement, index) => {
@@ -160,11 +162,14 @@ export default function AdminAdjustmentsPage({
                   {ajustement.reason}
                 </p>
                 <p style={{ fontSize: 11.5, margin: '4px 0 0', color: FT.faint }}>
-                  {ajustement.direction_label}
-                  {' · '}{ajustement.payee.display_label
-                    || ajustement.payee.payee_code}
-                  {' · '}{formatShortDate(ajustement.created_at)}
-                  {contractuel && ' · autorisé par contrat'}
+                  {t(contractuel
+                    ? 'pm1_adjustments.meta_line_contractual'
+                    : 'pm1_adjustments.meta_line', {
+                    direction: ajustement.direction_label,
+                    payee: ajustement.payee.display_label
+                      || ajustement.payee.payee_code,
+                    date: formatShortDate(ajustement.created_at),
+                  })}
                 </p>
               </div>
 
@@ -176,7 +181,9 @@ export default function AdminAdjustmentsPage({
                 />
                 {ajustement.remaining_xaf !== ajustement.amount_xaf && (
                   <p style={{ fontSize: 11, margin: '2px 0 0', color: FT.faint }}>
-                    reste {ajustement.remaining_xaf.toLocaleString('fr-FR')}
+                    {t('pm1_adjustments.remaining_label', {
+                      amount: ajustement.remaining_xaf.toLocaleString('fr-FR'),
+                    })}
                   </p>
                 )}
               </div>
@@ -198,7 +205,7 @@ export default function AdminAdjustmentsPage({
                       borderColor: FT.green, color: FT.greenD,
                     }}
                   >
-                    Approuver
+                    {t('pm1_adjustments.approve')}
                   </button>
                 )}
               </div>

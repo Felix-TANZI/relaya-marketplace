@@ -58,6 +58,7 @@ export interface Product {
   reviews_count?: number;
   created_at: string;
   updated_at: string;
+  master?: number | null;
   master_slug?: string | null;
 }
 
@@ -102,6 +103,13 @@ export interface ProductListParams {
   in_stock?: boolean;
   is_active?: boolean;
   ordering?: string;
+  /**
+   * Tâche D5 — ne renvoyer qu'une offre par fiche produit. Plusieurs vendeurs
+   * peuvent vendre le même produit : le serveur retient alors celle au prix le
+   * plus bas, promotions comprises. Les écrans qui doivent voir chaque offre
+   * séparément n'envoient simplement pas ce paramètre.
+   */
+  group_by_master?: boolean;
 }
 
 export interface CategoryListParams {
@@ -230,8 +238,14 @@ export const productsApi = {
     return api.get<MasterListResponse>('/catalog/master-products/', { params: clean });
   },
 
-  getMaster: async (slugOrId: string | number): Promise<MasterFicheDetail> =>
-    api.get<MasterFicheDetail>(`/catalog/master-products/${slugOrId}/`),
+  /**
+   * `lang` (optionnel) : langue courante de l'app (i18n.language, ex. "fr"/"en").
+   * Transmise en `?lang=` pour que le backend traduise title/description à la
+   * lecture si elle diffère de la langue d'origine de la fiche. Omise = le
+   * backend retombe sur Accept-Language puis "fr" (voir request_language()).
+   */
+  getMaster: async (slugOrId: string | number, lang?: string): Promise<MasterFicheDetail> =>
+    api.get<MasterFicheDetail>(`/catalog/master-products/${slugOrId}/`, lang ? { params: { lang } } : undefined),
 
   getReviews: async (productId: number): Promise<ProductReview[]> =>
     api.get<ProductReview[]>(`/catalog/products/${productId}/reviews/`),
@@ -263,7 +277,7 @@ export const productsApi = {
     excludeVendorId?: number,
     limit: number = 5
   ): Promise<Product[]> => {
-    const params: any = { master_id: masterId, limit };
+    const params: Record<string, string | number> = { master_id: masterId, limit };
     if (excludeVendorId) params.exclude_vendor_id = excludeVendorId;
 
     // Cet endpoint renvoie un tableau brut (pas de pagination DRF), à la
@@ -282,7 +296,7 @@ export const productsApi = {
     userLon?: number,
     limit: number = 5
   ): Promise<Product[]> => {
-    const params: any = {
+    const params: Record<string, string | number> = {
       master_ids: masterIds.join(','),
       limit
     };
@@ -307,6 +321,7 @@ export const productsApi = {
       params: {
         user_lat: userLat,
         user_lon: userLon,
+        max_distance_km: maxDistanceKm,
         page_size: limit
       }
     });

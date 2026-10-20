@@ -2,6 +2,7 @@
 // Journal d'audit — BelivaY Admin
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import {
   ScrollText, RefreshCw, Search, Filter, Download,
@@ -57,17 +58,17 @@ interface AuditResponse {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const ENTITY_CFG: Record<string, {
-  label: string; color: string; bg: string;
+  labelKey: string; color: string; bg: string;
   icon: React.ElementType; link?: (id: number) => string;
 }> = {
-  order:        { label: 'Commande',    color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)', icon: ShoppingCart, link: (eid) => `/admin/orders/${eid}`        },
-  user:         { label: 'Utilisateur', color: '#3B82F6', bg: 'rgba(59,130,246,0.12)', icon: User,         link: (eid) => `/admin/users/${eid}`          },
-  vendor:       { label: 'Vendeur',     color: '#F47920', bg: 'rgba(244,121,32,0.12)', icon: Shield,       link: (eid) => `/admin/vendors/${eid}`        },
-  product:      { label: 'Produit',     color: '#10B981', bg: 'rgba(16,185,129,0.12)', icon: Package,      link: () => `/admin/catalogue`            },
-  review:       { label: 'Avis',        color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', icon: Star                                                     },
-  settings:     { label: 'Paramètres', color: '#9CA3AF', bg: 'rgba(156,163,175,0.12)', icon: Settings                                                 },
-  withdrawal:   { label: 'Retrait',     color: '#EF4444', bg: 'rgba(239,68,68,0.12)',  icon: DollarSign,  link: () => `/admin/vendors/withdrawals`   },
-  subscription: { label: 'Abonnement', color: '#06B6D4', bg: 'rgba(6,182,212,0.12)',   icon: CreditCard,  link: () => `/admin/vendors/subscriptions` },
+  order:        { labelKey: 'ad6_sys_audit.entity_order',        color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)', icon: ShoppingCart, link: (eid) => `/admin/orders/${eid}`        },
+  user:         { labelKey: 'ad6_sys_audit.entity_user',         color: '#3B82F6', bg: 'rgba(59,130,246,0.12)', icon: User,         link: (eid) => `/admin/users/${eid}`          },
+  vendor:       { labelKey: 'ad6_sys_audit.entity_vendor',       color: '#F47920', bg: 'rgba(244,121,32,0.12)', icon: Shield,       link: (eid) => `/admin/vendors/${eid}`        },
+  product:      { labelKey: 'ad6_sys_audit.entity_product',      color: '#10B981', bg: 'rgba(16,185,129,0.12)', icon: Package,      link: () => `/admin/catalogue`            },
+  review:       { labelKey: 'ad6_sys_audit.entity_review',       color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', icon: Star                                                     },
+  settings:     { labelKey: 'ad6_sys_audit.entity_settings',     color: '#9CA3AF', bg: 'rgba(156,163,175,0.12)', icon: Settings                                                 },
+  withdrawal:   { labelKey: 'ad6_sys_audit.entity_withdrawal',   color: '#EF4444', bg: 'rgba(239,68,68,0.12)',  icon: DollarSign,  link: () => `/admin/vendors/withdrawals`   },
+  subscription: { labelKey: 'ad6_sys_audit.entity_subscription', color: '#06B6D4', bg: 'rgba(6,182,212,0.12)',   icon: CreditCard,  link: () => `/admin/vendors/subscriptions` },
 };
 
 const ENTITY_KEYS = Object.keys(ENTITY_CFG);
@@ -139,6 +140,7 @@ function DiffViewer({ old_value, new_value, T }: {
 
 export default function AuditPage() {
   const T             = useAdminTheme();
+  const { t }          = useTranslation();
   const { showToast } = useToast();
   const toastRef      = useRef(showToast);
   useEffect(() => { toastRef.current = showToast; });
@@ -176,7 +178,7 @@ export default function AuditPage() {
       );
       setData(result);
     } catch {
-      toastRef.current("Erreur chargement du journal d'audit", 'error');
+      toastRef.current(t('ad6_sys_audit.toast_error_load'), 'error');
     } finally {
       setLoading(false);
     }
@@ -197,7 +199,7 @@ export default function AuditPage() {
       [e.id, e.created_at, e.admin_name, e.action, e.entity_type,
        e.entity_label, e.old_value ?? '', e.new_value ?? '', e.ip_address ?? ''].join(';')
     );
-    const csv  = `ID;Date;Admin;Action;Type;Entité;Ancienne valeur;Nouvelle valeur;IP\n${rows.join('\n')}`;
+    const csv  = `${t('ad6_sys_audit.csv_headers')}\n${rows.join('\n')}`;
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
@@ -215,20 +217,20 @@ export default function AuditPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: T.text, marginBottom: 4 }}>
-            Journal d'Audit
+            {t('ad6_sys_audit.title')}
           </h1>
           <p style={{ fontSize: 13, color: T.muted }}>
-            {data ? `${data.total.toLocaleString('fr-FR')} actions tracées` : '—'} · Admin le plus actif : <strong style={{ color: T.text }}>{data?.kpis.top_admin ?? '—'}</strong>
+            {data ? t('ad6_sys_audit.actions_tracked', { n: data.total.toLocaleString('fr-FR') }) : '—'} · {t('ad6_sys_audit.most_active_admin')} : <strong style={{ color: T.text }}>{data?.kpis.top_admin ?? '—'}</strong>
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={exportCSV} disabled={!data || data.entries.length === 0}
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 10, fontSize: 12, fontWeight: 600, background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}`, cursor: 'pointer' }}>
-            <Download size={12} /> Export CSV
+            <Download size={12} /> {t('ad6_sys_audit.export_csv')}
           </button>
           <button onClick={() => load()}
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 10, fontSize: 12, fontWeight: 600, background: 'rgba(220,38,38,0.1)', color: T.red, border: '1px solid rgba(220,38,38,0.25)', cursor: 'pointer' }}>
-            <RefreshCw size={12} className={loading ? 'animate-spin' : ''} /> Actualiser
+            <RefreshCw size={12} className={loading ? 'animate-spin' : ''} /> {t('ad6_sys_audit.refresh')}
           </button>
         </div>
       </div>
@@ -236,10 +238,10 @@ export default function AuditPage() {
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Aujourd'hui", value: data?.kpis.today,  accent: T.text,    icon: ScrollText  },
-          { label: 'Cette semaine', value: data?.kpis.week,  accent: '#3B82F6', icon: TrendingUp  },
-          { label: 'Ce mois',    value: data?.kpis.month, accent: '#F47920', icon: TrendingUp  },
-          { label: 'Total',      value: data?.total,       accent: T.muted,   icon: Eye         },
+          { label: t('ad6_sys_audit.kpi_today'), value: data?.kpis.today,  accent: T.text,    icon: ScrollText  },
+          { label: t('ad6_sys_audit.kpi_week'), value: data?.kpis.week,  accent: '#3B82F6', icon: TrendingUp  },
+          { label: t('ad6_sys_audit.kpi_month'),    value: data?.kpis.month, accent: '#F47920', icon: TrendingUp  },
+          { label: t('ad6_sys_audit.kpi_total'),      value: data?.total,       accent: T.muted,   icon: Eye         },
         ].map((k, i) => {
           const Icon = k.icon;
           return (
@@ -264,7 +266,7 @@ export default function AuditPage() {
           <div className="lg:col-span-2 rounded-2xl p-5" style={{ background: T.card, border: `1px solid ${T.border}` }}>
             <div className="flex items-center gap-2 mb-4">
               <TrendingUp size={14} style={{ color: T.red }} />
-              <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Activité 24h</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad6_sys_audit.activity_24h')}</span>
             </div>
             {data.by_hour.length > 0 ? (
               <ResponsiveContainer width="100%" height={130}>
@@ -280,15 +282,15 @@ export default function AuditPage() {
                   <YAxis tick={{ fontSize: 10, fill: T.muted }} axisLine={false} tickLine={false} />
                   <Tooltip
                     contentStyle={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, fontSize: 12 }}
-                    formatter={(v: number | undefined) => [v ?? 0, 'Actions']}
+                    formatter={(v: number | undefined) => [v ?? 0, t('ad6_sys_audit.chart_actions')]}
                     labelFormatter={(label) => typeof label === 'string' ? fmtHour(label) : ''} />
                   <Area type="monotone" dataKey="count" stroke={T.red}
-                    strokeWidth={2} fill="url(#aGrad)" dot={false} name="Actions" />
+                    strokeWidth={2} fill="url(#aGrad)" dot={false} name={t('ad6_sys_audit.chart_actions')} />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
               <div className="flex items-center justify-center" style={{ height: 130 }}>
-                <p style={{ fontSize: 13, color: T.muted }}>Aucune activité</p>
+                <p style={{ fontSize: 13, color: T.muted }}>{t('ad6_sys_audit.no_activity')}</p>
               </div>
             )}
           </div>
@@ -297,7 +299,7 @@ export default function AuditPage() {
           <div className="rounded-2xl p-5" style={{ background: T.card, border: `1px solid ${T.border}` }}>
             <div className="flex items-center gap-2 mb-4">
               <ScrollText size={14} style={{ color: T.red }} />
-              <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Par entité</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad6_sys_audit.by_entity')}</span>
             </div>
             {data.by_entity.length > 0 ? (
               <div className="grid grid-cols-2 gap-2">
@@ -321,7 +323,7 @@ export default function AuditPage() {
                       <div key={d.entity_type} className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5">
                           <div style={{ width: 7, height: 7, borderRadius: 2, background: cfg?.color ?? '#9CA3AF', flexShrink: 0 }} />
-                          <span style={{ fontSize: 11, color: T.muted }}>{cfg?.label ?? d.entity_type}</span>
+                          <span style={{ fontSize: 11, color: T.muted }}>{cfg ? t(cfg.labelKey) : d.entity_type}</span>
                         </div>
                         <span style={{ fontSize: 11.5, fontWeight: 700, color: cfg?.color ?? T.text }}>{d.count}</span>
                       </div>
@@ -331,7 +333,7 @@ export default function AuditPage() {
               </div>
             ) : (
               <div className="flex items-center justify-center" style={{ height: 110 }}>
-                <p style={{ fontSize: 12, color: T.muted }}>Aucune donnée</p>
+                <p style={{ fontSize: 12, color: T.muted }}>{t('ad6_sys_audit.no_data')}</p>
               </div>
             )}
           </div>
@@ -345,17 +347,17 @@ export default function AuditPage() {
           <div className="relative flex-1 min-w-[200px]">
             <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: T.muted }} />
             <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
-              placeholder="Rechercher action, admin, entité…"
+              placeholder={t('ad6_sys_audit.search_placeholder')}
               style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 10, padding: '9px 12px 9px 36px', fontSize: 13, outline: 'none' }} />
           </div>
           <button onClick={() => setShowFilters(v => !v)}
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', borderRadius: 10, fontSize: 12, fontWeight: 600, background: showFilters ? T.red + '15' : T.cardAlt, color: showFilters ? T.red : T.muted, border: `1px solid ${showFilters ? T.red + '40' : T.border}`, cursor: 'pointer' }}>
-            <Filter size={12} /> Filtres
+            <Filter size={12} /> {t('ad6_sys_audit.filters')}
             {hasFilters && <span style={{ fontSize: 10, fontWeight: 800, padding: '1px 5px', borderRadius: 5, background: T.red, color: '#fff', marginLeft: 2 }}>!</span>}
           </button>
           {hasFilters && (
             <button onClick={resetFilters} style={{ color: T.muted, display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, cursor: 'pointer', background: 'none', border: 'none' }}>
-              <X size={12} /> Réinitialiser
+              <X size={12} /> {t('ad6_sys_audit.reset')}
             </button>
           )}
         </div>
@@ -364,31 +366,31 @@ export default function AuditPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2" style={{ borderTop: `1px solid ${T.border}` }}>
             {/* Type entité */}
             <div>
-              <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Type d'entité</label>
+              <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>{t('ad6_sys_audit.filter_entity_type')}</label>
               <select value={entityF} onChange={e => { setEntityF(e.target.value); setPage(1); }}
                 style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '8px 10px', fontSize: 12, outline: 'none' }}>
-                <option value="">Tous</option>
-                {ENTITY_KEYS.map(k => <option key={k} value={k}>{ENTITY_CFG[k].label}</option>)}
+                <option value="">{t('ad6_sys_audit.filter_all')}</option>
+                {ENTITY_KEYS.map(k => <option key={k} value={k}>{t(ENTITY_CFG[k].labelKey)}</option>)}
               </select>
             </div>
             {/* Admin */}
             <div>
-              <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Admin</label>
+              <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>{t('ad6_sys_audit.filter_admin')}</label>
               <select value={adminF} onChange={e => { setAdminF(e.target.value); setPage(1); }}
                 style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '8px 10px', fontSize: 12, outline: 'none' }}>
-                <option value="">Tous les admins</option>
+                <option value="">{t('ad6_sys_audit.filter_all_admins')}</option>
                 {(data?.admins ?? []).map(a => <option key={a} value={a}>{a}</option>)}
               </select>
             </div>
             {/* Date depuis */}
             <div>
-              <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Depuis</label>
+              <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>{t('ad6_sys_audit.filter_from')}</label>
               <input type="datetime-local" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(1); }}
                 style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '8px 10px', fontSize: 12, outline: 'none' }} />
             </div>
             {/* Date jusqu'à */}
             <div>
-              <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Jusqu'à</label>
+              <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>{t('ad6_sys_audit.filter_to')}</label>
               <input type="datetime-local" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(1); }}
                 style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '8px 10px', fontSize: 12, outline: 'none' }} />
             </div>
@@ -406,7 +408,7 @@ export default function AuditPage() {
             <button key={k || 'all'} onClick={() => { setEntityF(k); setPage(1); }}
               style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 12px', borderRadius: 8, fontSize: 11.5, fontWeight: 600, cursor: 'pointer', background: active ? (cfg?.color ?? T.red) + '18' : T.card, color: active ? (cfg?.color ?? T.red) : T.muted, border: `1px solid ${active ? (cfg?.color ?? T.red) + '40' : T.border}` }}>
               {cfg && <cfg.icon size={11} />}
-              {k ? cfg?.label : 'Tous'}
+              {k ? (cfg ? t(cfg.labelKey) : k) : t('ad6_sys_audit.filter_all')}
               {k && count !== undefined && <span style={{ fontSize: 10, opacity: 0.7 }}>({count})</span>}
             </button>
           );
@@ -414,7 +416,7 @@ export default function AuditPage() {
         <div className="flex-1 flex justify-end">
           <select value={pageSize} onChange={e => { setPageSize(parseInt(e.target.value) as 20 | 50 | 100); setPage(1); }}
             style={{ background: T.card, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '5px 10px', fontSize: 11.5, outline: 'none', cursor: 'pointer' }}>
-            {PAGE_SIZES.map(s => <option key={s} value={s}>{s} / page</option>)}
+            {PAGE_SIZES.map(s => <option key={s} value={s}>{t('ad6_sys_audit.per_page', { count: s })}</option>)}
           </select>
         </div>
       </div>
@@ -423,7 +425,7 @@ export default function AuditPage() {
       <div className="rounded-2xl overflow-hidden" style={{ background: T.card, border: `1px solid ${T.border}` }}>
         {/* Header */}
         <div className="grid px-5 py-3" style={{ gridTemplateColumns: '180px 100px 1fr 1fr 110px', borderBottom: `1px solid ${T.border}`, background: T.cardAlt, gap: 12 }}>
-          {['Admin', 'Entité', 'Action', 'Changement', 'Date'].map((h, i) => (
+          {[t('ad6_sys_audit.th_admin'), t('ad6_sys_audit.th_entity'), t('ad6_sys_audit.th_action'), t('ad6_sys_audit.th_change'), t('ad6_sys_audit.th_date')].map((h, i) => (
             <span key={i} style={{ fontSize: 10.5, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '.04em' }}>{h}</span>
           ))}
         </div>
@@ -436,16 +438,19 @@ export default function AuditPage() {
           <div className="flex flex-col items-center py-14 gap-3">
             <ScrollText size={32} style={{ color: T.muted }} />
             <p style={{ fontSize: 14, color: T.muted }}>
-              {hasFilters ? 'Aucune action correspondant aux filtres.' : 'Aucune action enregistrée.'}
+              {hasFilters ? t('ad6_sys_audit.empty_filtered') : t('ad6_sys_audit.empty_none')}
             </p>
           </div>
         ) : (
           <div className="divide-y" style={{ borderColor: T.border }}>
             {data.entries.map(e => {
-              const cfg   = ENTITY_CFG[e.entity_type] ?? { label: e.entity_type, color: '#9CA3AF', bg: T.cardAlt, icon: ScrollText };
-              const Icon  = cfg.icon;
+              const cfg   = ENTITY_CFG[e.entity_type];
+              const entityLabel = cfg ? t(cfg.labelKey) : e.entity_type;
+              const entityColor = cfg?.color ?? '#9CA3AF';
+              const entityBg    = cfg?.bg ?? T.cardAlt;
+              const Icon  = cfg?.icon ?? ScrollText;
               const isExp = expanded === e.id;
-              const hasLink = cfg.link && e.entity_id;
+              const hasLink = cfg?.link && e.entity_id;
 
               return (
                 <div key={e.id} style={{ borderBottom: `1px solid ${T.border}` }}>
@@ -463,11 +468,11 @@ export default function AuditPage() {
                     {/* Entité */}
                     <div className="flex items-center gap-1.5">
                       <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
-                        style={{ background: cfg.bg }}>
-                        <Icon size={11} style={{ color: cfg.color }} />
+                        style={{ background: entityBg }}>
+                        <Icon size={11} style={{ color: entityColor }} />
                       </div>
                       <div>
-                        <span style={{ fontSize: 10.5, fontWeight: 700, color: cfg.color }}>{cfg.label}</span>
+                        <span style={{ fontSize: 10.5, fontWeight: 700, color: entityColor }}>{entityLabel}</span>
                         {e.entity_id && (
                           <p style={{ fontSize: 10, color: T.muted }}>#{e.entity_id}</p>
                         )}
@@ -493,10 +498,10 @@ export default function AuditPage() {
                     <div className="px-5 pb-4 pt-1" style={{ background: T.cardAlt + '60', borderTop: `1px solid ${T.border}` }}>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                         {[
-                          { label: 'ID entrée',   value: e.id },
-                          { label: 'IP',           value: e.ip_address || '—' },
-                          { label: 'Entité',       value: e.entity_label },
-                          { label: 'Horodatage',   value: fmtDateTime(e.created_at) },
+                          { label: t('ad6_sys_audit.detail_entry_id'),   value: e.id },
+                          { label: t('ad6_sys_audit.detail_ip'),           value: e.ip_address || '—' },
+                          { label: t('ad6_sys_audit.detail_entity'),       value: e.entity_label },
+                          { label: t('ad6_sys_audit.detail_timestamp'),   value: fmtDateTime(e.created_at) },
                         ].map(({ label, value }) => (
                           <div key={label}>
                             <p style={{ fontSize: 10.5, color: T.muted, marginBottom: 2 }}>{label}</p>
@@ -508,10 +513,10 @@ export default function AuditPage() {
                       {/* Lien vers l'entité */}
                       {hasLink && (
                         <div className="mt-3">
-                          <Link to={cfg.link!(e.entity_id!)}
+                          <Link to={cfg!.link!(e.entity_id!)}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold"
-                            style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.color}30` }}>
-                            <Eye size={11} /> Voir {cfg.label.toLowerCase()} #{e.entity_id}
+                            style={{ background: entityBg, color: entityColor, border: `1px solid ${entityColor}30` }}>
+                            <Eye size={11} /> {t('ad6_sys_audit.view_entity', { entity: entityLabel.toLowerCase(), id: e.entity_id })}
                           </Link>
                         </div>
                       )}
@@ -521,7 +526,7 @@ export default function AuditPage() {
                         <div className="mt-3 grid grid-cols-2 gap-3">
                           {e.old_value && (
                             <div>
-                              <p style={{ fontSize: 10.5, color: '#EF4444', marginBottom: 4, fontWeight: 700 }}>Avant</p>
+                              <p style={{ fontSize: 10.5, color: '#EF4444', marginBottom: 4, fontWeight: 700 }}>{t('ad6_sys_audit.diff_before')}</p>
                               <pre style={{ fontSize: 11.5, color: '#EF4444', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: 8, padding: '8px 10px', whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontFamily: 'monospace' }}>
                                 {e.old_value}
                               </pre>
@@ -529,7 +534,7 @@ export default function AuditPage() {
                           )}
                           {e.new_value && (
                             <div>
-                              <p style={{ fontSize: 10.5, color: '#10B981', marginBottom: 4, fontWeight: 700 }}>Après</p>
+                              <p style={{ fontSize: 10.5, color: '#10B981', marginBottom: 4, fontWeight: 700 }}>{t('ad6_sys_audit.diff_after')}</p>
                               <pre style={{ fontSize: 11.5, color: '#10B981', background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)', borderRadius: 8, padding: '8px 10px', whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontFamily: 'monospace' }}>
                                 {e.new_value}
                               </pre>
@@ -550,7 +555,7 @@ export default function AuditPage() {
           <div className="flex items-center justify-between px-5 py-3"
             style={{ borderTop: `1px solid ${T.border}`, background: T.cardAlt }}>
             <span style={{ fontSize: 12, color: T.muted }}>
-              {((page - 1) * pageSize + 1)}–{Math.min(page * pageSize, data.total)} sur {data.total.toLocaleString('fr-FR')}
+              {t('ad6_sys_audit.pagination_range', { from: (page - 1) * pageSize + 1, to: Math.min(page * pageSize, data.total), total: data.total.toLocaleString('fr-FR') })}
             </span>
             <div className="flex items-center gap-2">
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}

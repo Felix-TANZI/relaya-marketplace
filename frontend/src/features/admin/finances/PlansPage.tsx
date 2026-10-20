@@ -3,6 +3,7 @@
 // Lecture + édition inline de chaque plan (prix, commission, features, trial)
 
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   CreditCard, RefreshCw, Save, Plus, Trash2,
   Check, TrendingUp, Package, Zap, Award,
@@ -48,8 +49,8 @@ const PLAN_CFG: Record<string, { color: string; bg: string; icon: React.ElementT
 // HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 
-const fmtXaf = (n: number) =>
-  n === 0 ? 'Gratuit' : `${new Intl.NumberFormat('fr-FR').format(n)} FCFA`;
+const fmtXaf = (n: number, freeLabel: string) =>
+  n === 0 ? freeLabel : `${new Intl.NumberFormat('fr-FR').format(n)} FCFA`;
 
 const authHeader = () => ({
   'Content-Type': 'application/json',
@@ -68,6 +69,7 @@ function PlanCard({
   saving: number | null;
   T:      ReturnType<typeof useAdminTheme>;
 }) {
+  const { t } = useTranslation();
   const [edited, setEdited] = useState<Partial<Plan>>({});
   const [newFeature, setNewFeature] = useState('');
   const isDirty = Object.keys(edited).length > 0;
@@ -125,10 +127,10 @@ function PlanCard({
             </div>
             <div>
               <h3 style={{ fontFamily: "'Syne',sans-serif", fontSize: 16, fontWeight: 800, color: T.text }}>
-                Plan {plan.name}
+                {t('ad6_fin_plans.plan_prefix')} {plan.name}
               </h3>
               <p style={{ fontSize: 11.5, color: T.muted }}>
-                {plan.subscribers_count} abonné{plan.subscribers_count > 1 ? 's' : ''}
+                {plan.subscribers_count} {t(plan.subscribers_count > 1 ? 'ad6_fin_plans.subscriber_plural' : 'ad6_fin_plans.subscriber')}
               </p>
             </div>
           </div>
@@ -143,7 +145,7 @@ function PlanCard({
               }}
             >
               <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor' }} />
-              {(current('is_active') as boolean) ? 'Actif' : 'Inactif'}
+              {(current('is_active') as boolean) ? t('ad6_fin_plans.status_active') : t('ad6_fin_plans.status_inactive')}
             </div>
           </div>
         </div>
@@ -154,7 +156,7 @@ function PlanCard({
 
         {/* Description */}
         <div>
-          <label style={{ fontSize: 11.5, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 5 }}>Description</label>
+          <label style={{ fontSize: 11.5, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 5 }}>{t('ad6_fin_plans.field_description')}</label>
           <input
             type="text"
             value={current('description') as string ?? ''}
@@ -168,7 +170,7 @@ function PlanCard({
         {/* Prix */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label style={{ fontSize: 11.5, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 5 }}>Prix mensuel (FCFA)</label>
+            <label style={{ fontSize: 11.5, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 5 }}>{t('ad6_fin_plans.field_monthly_price')}</label>
             <input type="number" min="0" step="500"
               value={current('price_monthly_xaf') as number ?? 0}
               onChange={e => set('price_monthly_xaf', Number(e.target.value))}
@@ -176,11 +178,11 @@ function PlanCard({
               onFocus={e => (e.target.style.borderColor = cfg.color)}
               onBlur={e  => (e.target.style.borderColor = T.inputBorder)} />
             <p style={{ fontSize: 10.5, color: cfg.color, marginTop: 3 }}>
-              {fmtXaf(current('price_monthly_xaf') as number ?? 0)}
+              {fmtXaf(current('price_monthly_xaf') as number ?? 0, t('ad6_fin_plans.free'))}
             </p>
           </div>
           <div>
-            <label style={{ fontSize: 11.5, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 5 }}>Prix annuel (FCFA)</label>
+            <label style={{ fontSize: 11.5, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 5 }}>{t('ad6_fin_plans.field_annual_price')}</label>
             <input type="number" min="0" step="1000"
               value={current('price_annual_xaf') as number ?? 0}
               onChange={e => set('price_annual_xaf', Number(e.target.value))}
@@ -188,7 +190,7 @@ function PlanCard({
               onFocus={e => (e.target.style.borderColor = cfg.color)}
               onBlur={e  => (e.target.style.borderColor = T.inputBorder)} />
             <p style={{ fontSize: 10.5, color: T.muted, marginTop: 3 }}>
-              {fmtXaf(current('price_annual_xaf') as number ?? 0)}
+              {fmtXaf(current('price_annual_xaf') as number ?? 0, t('ad6_fin_plans.free'))}
             </p>
           </div>
         </div>
@@ -196,7 +198,7 @@ function PlanCard({
         {/* Commission + limites */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label style={{ fontSize: 11.5, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 5 }}>Commission (%)</label>
+            <label style={{ fontSize: 11.5, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 5 }}>{t('ad6_fin_plans.field_commission')}</label>
             <div className="relative">
               <input type="number" min="0" max="50" step="0.5"
                 value={current('commission_rate') as number ?? 0}
@@ -208,10 +210,10 @@ function PlanCard({
             </div>
           </div>
           <div>
-            <label style={{ fontSize: 11.5, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 5 }}>Max produits (vide = illimité)</label>
+            <label style={{ fontSize: 11.5, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 5 }}>{t('ad6_fin_plans.field_max_products')}</label>
             <input type="number" min="1"
               value={current('max_products') as number | null ?? ''}
-              placeholder="Illimité"
+              placeholder={t('ad6_fin_plans.unlimited')}
               onChange={e => set('max_products', e.target.value === '' ? null : Number(e.target.value))}
               style={inp}
               onFocus={e => (e.target.style.borderColor = cfg.color)}
@@ -222,7 +224,7 @@ function PlanCard({
         {/* Boosts + Essai */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label style={{ fontSize: 11.5, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 5 }}>Boosts max/mois</label>
+            <label style={{ fontSize: 11.5, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 5 }}>{t('ad6_fin_plans.field_max_boosts')}</label>
             <input type="number" min="0"
               value={current('max_boosts_month') as number ?? 0}
               onChange={e => set('max_boosts_month', Number(e.target.value))}
@@ -231,7 +233,7 @@ function PlanCard({
               onBlur={e  => (e.target.style.borderColor = T.inputBorder)} />
           </div>
           <div>
-            <label style={{ fontSize: 11.5, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 5 }}>Jours d'essai gratuit</label>
+            <label style={{ fontSize: 11.5, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 5 }}>{t('ad6_fin_plans.field_trial_days')}</label>
             <input type="number" min="0"
               value={current('trial_days') as number ?? 0}
               onChange={e => set('trial_days', Number(e.target.value))}
@@ -244,7 +246,7 @@ function PlanCard({
         {/* Features */}
         <div>
           <label style={{ fontSize: 11.5, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 8 }}>
-            Fonctionnalités incluses
+            {t('ad6_fin_plans.field_features')}
           </label>
           <div className="space-y-2 mb-3">
             {((current('features') as string[]) ?? []).map((f, i) => (
@@ -263,7 +265,7 @@ function PlanCard({
             <input type="text" value={newFeature}
               onChange={e => setNewFeature(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') addFeature(); }}
-              placeholder="Ajouter une fonctionnalité…"
+              placeholder={t('ad6_fin_plans.add_feature_placeholder')}
               style={{ ...inp, flex: 1 }}
               onFocus={e => (e.target.style.borderColor = cfg.color)}
               onBlur={e  => (e.target.style.borderColor = T.inputBorder)} />
@@ -284,7 +286,7 @@ function PlanCard({
             style={{ background: `linear-gradient(135deg, ${cfg.color}, ${cfg.color}cc)` }}
           >
             {saving === plan.id ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
-            Sauvegarder le plan {plan.name}
+            {t('ad6_fin_plans.save_plan', { name: plan.name })}
           </button>
         )}
       </div>
@@ -298,6 +300,7 @@ function PlanCard({
 
 export default function PlansPage() {
   const T             = useAdminTheme();
+  const { t }          = useTranslation();
   const { showToast } = useToast();
 
   const [plans,   setPlans]  = useState<Plan[]>([]);
@@ -310,7 +313,7 @@ export default function PlansPage() {
       const data = await http<Plan[]>('/api/vendors/admin/plans/', { headers: authHeader() });
       setPlans(data);
     } catch {
-      showToast('Erreur chargement des plans', 'error');
+      showToast(t('ad6_fin_plans.toast_error_load'), 'error');
     } finally {
       setLoading(false);
     }
@@ -324,9 +327,9 @@ export default function PlansPage() {
       await http(`/api/vendors/admin/plans/${planId}/`, {
         method: 'PATCH', headers: authHeader(), body: JSON.stringify(data),
       });
-      showToast('Plan mis à jour', 'success');
+      showToast(t('ad6_fin_plans.toast_update_success'), 'success');
       await load();
-    } catch { showToast('Erreur sauvegarde', 'error'); }
+    } catch { showToast(t('ad6_fin_plans.toast_save_error'), 'error'); }
     finally  { setSaving(null); }
   };
 
@@ -338,10 +341,10 @@ export default function PlansPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: T.text, marginBottom: 4 }}>
-            Plans & Abonnements
+            {t('ad6_fin_plans.title')}
           </h1>
           <p style={{ fontSize: 13, color: T.muted }}>
-            Configuration des offres vendeurs — prix, commission, limites et fonctionnalités
+            {t('ad6_fin_plans.subtitle')}
           </p>
         </div>
         <button onClick={() => load()}
@@ -350,7 +353,7 @@ export default function PlansPage() {
           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.18)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.1)')}>
           <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-          <span className="hidden sm:inline">Actualiser</span>
+          <span className="hidden sm:inline">{t('ad6_fin_plans.refresh')}</span>
         </button>
       </div>
 
@@ -370,7 +373,7 @@ export default function PlansPage() {
                   {p.subscribers_count}
                 </p>
                 <p style={{ fontSize: 11, color: cfg.color, marginTop: 4 }}>
-                  {fmtXaf(p.price_monthly_xaf)}/mois · {p.commission_rate}%
+                  {fmtXaf(p.price_monthly_xaf, t('ad6_fin_plans.free'))}{t('ad6_fin_plans.per_month_suffix')} · {p.commission_rate}%
                 </p>
               </div>
             );
@@ -396,8 +399,8 @@ export default function PlansPage() {
       <div className="flex items-start gap-3 p-4 rounded-2xl" style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.2)' }}>
         <CreditCard size={16} style={{ color: '#3B82F6', flexShrink: 0, marginTop: 1 }} />
         <p style={{ fontSize: 12.5, color: T.muted, lineHeight: 1.6 }}>
-          Les modifications de prix et de commission ne s'appliquent qu'aux <strong style={{ color: T.text }}>nouveaux abonnements</strong>.
-          Les vendeurs déjà abonnés conservent leur tarif jusqu'au renouvellement.
+          {t('ad6_fin_plans.info_prefix')} <strong style={{ color: T.text }}>{t('ad6_fin_plans.info_new_subscriptions')}</strong>.
+          {' '}{t('ad6_fin_plans.info_suffix')}
         </p>
       </div>
     </div>

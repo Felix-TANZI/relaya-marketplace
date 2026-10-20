@@ -87,6 +87,12 @@ docker-compose.override.yml
 # Deplaces vers ~/Bureau/rapport-belivay, hors du depot
 docs/
 assets/
+# Exception : ce dossier `assets/` est un vrai dossier source (logos, polices,
+# images d'écran du prototype) du paquet espace-client-belivay, pas un dossier
+# de captures d'écran — la règle générale ci-dessus l'excluait par erreur et
+# c'est pour ça que ces fichiers n'ont jamais atteint le dépôt.
+!espace-client-belivay/site/src/assets/
+!espace-client-belivay/site/src/assets/**
 
 
 #  Sauvegardes base de données

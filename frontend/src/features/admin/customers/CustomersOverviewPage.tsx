@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Users, RefreshCw, TrendingUp, ShoppingCart,
   Award, UserPlus, ChevronRight,
@@ -20,6 +21,7 @@ const fmtDate = (d: string) =>
 
 export default function CustomersOverviewPage() {
   const T             = useAdminTheme();
+  const { t }          = useTranslation();
   const { showToast } = useToast();
   const toastRef      = useRef(showToast);
   useEffect(() => { toastRef.current = showToast; });
@@ -33,11 +35,11 @@ export default function CustomersOverviewPage() {
       const result = await adminApi.getCustomerStats();
       setData(result);
     } catch {
-      toastRef.current('Erreur chargement vue clients', 'error');
+      toastRef.current(t('ad2_customers_overview.toast_error_loading'), 'error');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -52,10 +54,10 @@ export default function CustomersOverviewPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: T.text, marginBottom: 4 }}>
-            Vue d'ensemble — Clients
+            {t('ad2_customers_overview.heading')}
           </h1>
           <p style={{ fontSize: 13, color: T.muted }}>
-            Analyse globale de la base clients BelivaY
+            {t('ad2_customers_overview.subtitle')}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -63,12 +65,12 @@ export default function CustomersOverviewPage() {
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold"
             style={{ background: 'rgba(220,38,38,0.1)', color: T.red, border: '1px solid rgba(220,38,38,0.25)' }}>
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-            <span className="hidden sm:inline">Actualiser</span>
+            <span className="hidden sm:inline">{t('ad2_customers_overview.refresh')}</span>
           </button>
           <Link to="/admin/customers"
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold"
             style={{ background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}` }}>
-            Liste clients <ChevronRight size={13} />
+            {t('ad2_customers_overview.link_customers_list')} <ChevronRight size={13} />
           </Link>
         </div>
       </div>
@@ -76,10 +78,10 @@ export default function CustomersOverviewPage() {
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: 'Total clients',      value: kpis?.total,          accent: T.text,    icon: Users    },
-          { label: 'Actifs 30j',         value: kpis?.active_30d,     accent: '#10B981', icon: TrendingUp},
-          { label: 'Nouveaux ce mois',   value: kpis?.new_this_month, accent: '#3B82F6', icon: UserPlus },
-          { label: 'Avec commandes',     value: kpis?.vendors,        accent: '#F47920', icon: ShoppingCart },
+          { label: t('ad2_customers_overview.kpi_total_customers'),      value: kpis?.total,          accent: T.text,    icon: Users    },
+          { label: t('ad2_customers_overview.kpi_active_30d'),         value: kpis?.active_30d,     accent: '#10B981', icon: TrendingUp},
+          { label: t('ad2_customers_overview.kpi_new_this_month'),   value: kpis?.new_this_month, accent: '#3B82F6', icon: UserPlus },
+          { label: t('ad2_customers_overview.kpi_with_orders'),     value: kpis?.vendors,        accent: '#F47920', icon: ShoppingCart },
         ].map((k, i) => {
           const Icon = k.icon;
           return (
@@ -105,11 +107,11 @@ export default function CustomersOverviewPage() {
         <div className="lg:col-span-2 rounded-2xl p-5" style={{ background: T.card, border: `1px solid ${T.border}` }}>
           <div className="flex items-center gap-2 mb-4">
             <UserPlus size={14} style={{ color: T.red }} />
-            <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Nouvelles inscriptions (30j)</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad2_customers_overview.chart_registrations_title')}</span>
           </div>
           {loading || chart.length === 0 ? (
             <div className="flex items-center justify-center" style={{ height: 180 }}>
-              <div style={{ fontSize: 13, color: T.muted }}>Aucune donnée</div>
+              <div style={{ fontSize: 13, color: T.muted }}>{t('ad2_customers_overview.chart_no_data')}</div>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={180}>
@@ -125,7 +127,7 @@ export default function CustomersOverviewPage() {
                 <YAxis tick={{ fontSize: 10, fill: T.muted }} axisLine={false} tickLine={false} />
                 <Tooltip
                   contentStyle={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, fontSize: 12 }}
-                  formatter={(v: number | undefined) => [v ?? 0, 'Inscriptions']}
+                  formatter={(v: number | undefined) => [v ?? 0, t('ad2_customers_overview.tooltip_registrations_label')]}
                   labelFormatter={(d) => typeof d === 'string' ? fmtDate(d) : ''} />
                 <Area type="monotone" dataKey="count" stroke={T.red}
                   strokeWidth={2} fill="url(#cGrad)" dot={false} />
@@ -138,11 +140,11 @@ export default function CustomersOverviewPage() {
         <div className="rounded-2xl p-5" style={{ background: T.card, border: `1px solid ${T.border}` }}>
           <div className="flex items-center gap-2 mb-4">
             <Award size={14} style={{ color: T.red }} />
-            <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Répartition rôles</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad2_customers_overview.chart_roles_title')}</span>
           </div>
           {loading || loyalty.length === 0 ? (
             <div className="flex items-center justify-center" style={{ height: 160 }}>
-              <p style={{ fontSize: 12, color: T.muted }}>Aucune donnée</p>
+              <p style={{ fontSize: 12, color: T.muted }}>{t('ad2_customers_overview.chart_no_data')}</p>
             </div>
           ) : (
             <>
@@ -177,9 +179,9 @@ export default function CustomersOverviewPage() {
       {/* Accès rapides */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
-          { to: '/admin/customers',         label: 'Liste complète des clients', sub: `${kpis?.total ?? '—'} clients`, accent: T.red },
-          { to: '/admin/notifications',     label: 'Envoyer une notification',   sub: 'Broadcast ciblé',              accent: '#3B82F6' },
-          { to: '/admin/users',             label: 'Gestion utilisateurs',       sub: 'Bannir · Modifier · Supprimer', accent: '#8B5CF6' },
+          { to: '/admin/customers',         label: t('ad2_customers_overview.quick_link_list_label'), sub: t('ad2_customers_overview.quick_link_list_sub', { n: kpis?.total ?? '—' }), accent: T.red },
+          { to: '/admin/notifications',     label: t('ad2_customers_overview.quick_link_notify_label'),   sub: t('ad2_customers_overview.quick_link_notify_sub'),              accent: '#3B82F6' },
+          { to: '/admin/users',             label: t('ad2_customers_overview.quick_link_users_label'),       sub: t('ad2_customers_overview.quick_link_users_sub'), accent: '#8B5CF6' },
         ].map((a, i) => (
           <Link key={i} to={a.to}
             className="flex items-center justify-between p-4 rounded-2xl transition-all"

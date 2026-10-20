@@ -1,13 +1,36 @@
 # backend/tests/test_reject_reason.py
 import pytest
-from apps.catalog.models import Category, Product, MasterProduct
+
 from apps.accounts.models import UserNotification
+from apps.catalog.models import Category, MasterProduct, Product
 
 pytestmark = pytest.mark.django_db
 
 
+def _identite_vendeur_verifiee(user):
+    """
+    Dépose les trois pièces exigées par D19, déjà validées.
+
+    Depuis D19, approuver un produit exige que l'identité du vendeur soit
+    vérifiée. Ces tests portent sur le motif de rejet, pas sur le KYC : on met
+    donc le vendeur en règle pour qu'ils atteignent ce qu'ils vérifient.
+    """
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    from apps.accounts.models import ComplianceDocument
+    from apps.vendors.kyc import PIECES_EXIGEES
+
+    for piece in PIECES_EXIGEES:
+        ComplianceDocument.objects.create(
+            user=user, owner_role=ComplianceDocument.OwnerRole.VENDOR,
+            document_type=piece, file=SimpleUploadedFile(f"{piece}.jpg", b"x"),
+            status=ComplianceDocument.Status.APPROVED,
+        )
+
+
 def _setup(django_user_model, status="PENDING"):
     vendor = django_user_model.objects.create_user("vendeurx", password="p")
+    _identite_vendeur_verifiee(vendor)
     cat = Category.objects.create(name="Tel", slug="tel")
     master = MasterProduct.objects.create(title="iPhone", category=cat, moderation_status="APPROVED")
     product = Product.objects.create(title="A", category=cat, price_xaf=1, master=master,
@@ -41,7 +64,7 @@ def test_reject_sans_motif_notifie_quand_meme(api_client, django_user_model):
 
 def test_approve_efface_motif(api_client, django_user_model):
     admin = django_user_model.objects.create_superuser("adm3", "a3@a.co", "p")
-    vendor, product = _setup(django_user_model, status="REJECTED")
+    _, product = _setup(django_user_model, status="REJECTED")
     product.moderation_reason = "ancien motif"
     product.save(update_fields=["moderation_reason"])
     api_client.force_authenticate(user=admin)

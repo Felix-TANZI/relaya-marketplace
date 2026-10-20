@@ -2,6 +2,7 @@
 // Carte des boutiques — distribution géographique des vendeurs
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import {
   MapPin, RefreshCw, Store, Award,
@@ -95,6 +96,7 @@ const authHeader = () => ({
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function VendorsMapPage() {
+  const { t }          = useTranslation();
   const T             = useAdminTheme();
   const { showToast } = useToast();
   const toastRef      = useRef(showToast);
@@ -112,7 +114,7 @@ export default function VendorsMapPage() {
       const result = await http<MapData>('/api/vendors/admin/vendors/map/', { headers: authHeader() });
       setData(result);
     } catch {
-      toastRef.current('Erreur chargement de la carte', 'error');
+      toastRef.current(t('ad4_vendors_overview.load_error'), 'error');
     } finally {
       setLoading(false);
     }
@@ -130,7 +132,7 @@ export default function VendorsMapPage() {
       ? [location.latitude, location.longitude]
       : offsetPosition(resolveCameroonPosition(location.address, location.city, location.location_name), index + location.vendor_id, 0.006),
     title: location.location_name,
-    subtitle: `${location.business_name} · ${location.city || 'Ville à compléter'}`,
+    subtitle: `${location.business_name} · ${location.city || t('ad4_vendors_overview.city_to_complete')}`,
     color: location.id === selectedLocation?.id
       ? T.red
       : location.is_geocoded
@@ -144,13 +146,13 @@ export default function VendorsMapPage() {
         <div className="text-sm font-black text-slate-950">{location.location_name}</div>
         <div className="mt-1 text-xs font-semibold text-slate-600">{location.business_name}</div>
         <div className="mt-2 rounded-lg bg-slate-100 px-2 py-1 text-xs font-bold text-slate-700">
-          {location.address || location.city || 'Adresse à compléter'}
+          {location.address || location.city || t('ad4_vendors_overview.address_to_complete')}
         </div>
         <div className="mt-2 flex flex-wrap gap-2 text-xs">
           <span className="rounded-lg bg-orange-50 px-2 py-1 font-bold text-orange-700">{location.status}</span>
           <span className="rounded-lg bg-slate-100 px-2 py-1 font-bold text-slate-700">{location.certification_tier}</span>
           {!location.is_geocoded && (
-            <span className="rounded-lg bg-amber-50 px-2 py-1 font-bold text-amber-700">GPS à compléter</span>
+            <span className="rounded-lg bg-amber-50 px-2 py-1 font-bold text-amber-700">{t('ad4_vendors_overview.gps_to_complete')}</span>
           )}
         </div>
       </button>
@@ -165,13 +167,13 @@ export default function VendorsMapPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: T.text, marginBottom: 4 }}>
-            Carte des Boutiques
+            {t('ad4_vendors_overview.title')}
           </h1>
           <p style={{ fontSize: 13, color: T.muted }}>
-            {data?.total_approved ?? '—'} boutiques approuvées dans {data?.total_cities ?? '—'} villes
-            <span> · {data?.total_locations ?? 0} emplacement{(data?.total_locations ?? 0) > 1 ? 's' : ''}</span>
+            {t('ad4_vendors_overview.approved_in_cities', { approved: data?.total_approved ?? '—', cities: data?.total_cities ?? '—' })}
+            <span> · {t((data?.total_locations ?? 0) > 1 ? 'ad4_vendors_overview.locations_count_plural' : 'ad4_vendors_overview.locations_count', { count: data?.total_locations ?? 0 })}</span>
             {data?.top_city && (
-              <span> · Principale : <strong style={{ color: T.text }}>{data.top_city}</strong></span>
+              <span> · {t('ad4_vendors_overview.top_city_prefix')} <strong style={{ color: T.text }}>{data.top_city}</strong></span>
             )}
           </p>
         </div>
@@ -181,7 +183,7 @@ export default function VendorsMapPage() {
           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.18)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.1)')}>
           <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-          <span className="hidden sm:inline">Actualiser</span>
+          <span className="hidden sm:inline">{t('ad4_vendors_overview.refresh')}</span>
         </button>
       </div>
 
@@ -200,13 +202,13 @@ export default function VendorsMapPage() {
               style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
               <div className="flex items-center gap-2">
                 <MapPin size={14} style={{ color: T.red }} />
-                <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Emplacements physiques des boutiques</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad4_vendors_overview.physical_locations')}</span>
               </div>
               <div className="flex items-center gap-4">
                 {[
-                  { color: '#F47920', label: 'GPS précis' },
-                  { color: '#F59E0B', label: 'À géolocaliser' },
-                  { color: T.red, label: 'Sélection' },
+                  { color: '#F47920', label: t('ad4_vendors_overview.legend_gps_precise') },
+                  { color: '#F59E0B', label: t('ad4_vendors_overview.legend_to_geolocate') },
+                  { color: T.red, label: t('ad4_vendors_overview.legend_selection') },
                 ].map((l, i) => (
                   <div key={i} className="flex items-center gap-1.5">
                     <div style={{ width: 10, height: 10, borderRadius: '50%', background: l.color }} />
@@ -228,10 +230,10 @@ export default function VendorsMapPage() {
                     <span style={{ fontFamily: "'Syne',sans-serif", fontSize: 14, fontWeight: 800, color: T.text }}>{selectedLocation.location_name}</span>
                   </div>
                   {[
-                    { label: 'Boutique', value: selectedLocation.business_name },
-                    { label: 'Adresse', value: selectedLocation.address || selectedLocation.city || 'À compléter' },
-                    { label: 'Responsable', value: selectedLocation.representative_name || 'À compléter' },
-                    { label: 'Téléphone', value: selectedLocation.phone || 'À compléter', accent: T.red },
+                    { label: t('ad4_vendors_overview.field_shop'), value: selectedLocation.business_name },
+                    { label: t('ad4_vendors_overview.field_address'), value: selectedLocation.address || selectedLocation.city || t('ad4_vendors_overview.to_complete') },
+                    { label: t('ad4_vendors_overview.field_representative'), value: selectedLocation.representative_name || t('ad4_vendors_overview.to_complete') },
+                    { label: t('ad4_vendors_overview.field_phone'), value: selectedLocation.phone || t('ad4_vendors_overview.to_complete'), accent: T.red },
                   ].map((r, i) => (
                     <div key={i} className="flex items-center justify-between py-1.5"
                       style={{ borderBottom: i < 3 ? `1px solid ${T.border}` : 'none' }}>
@@ -250,13 +252,13 @@ export default function VendorsMapPage() {
             <div className="rounded-2xl overflow-hidden" style={{ background: T.card, border: `1px solid ${T.border}` }}>
               <div className="flex items-center gap-2 px-5 py-3.5" style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
                 <MapPin size={14} style={{ color: T.red }} />
-                <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Couverture boutiques</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad4_vendors_overview.shop_coverage')}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 p-4">
                 {[
-                  { label: 'Total', value: data?.total_locations ?? 0, color: T.text },
-                  { label: 'GPS OK', value: data?.geocoded_locations ?? 0, color: '#10B981' },
-                  { label: 'À corriger', value: data?.pending_geo_locations ?? 0, color: '#F59E0B' },
+                  { label: t('ad4_vendors_overview.stat_total'), value: data?.total_locations ?? 0, color: T.text },
+                  { label: t('ad4_vendors_overview.stat_gps_ok'), value: data?.geocoded_locations ?? 0, color: '#10B981' },
+                  { label: t('ad4_vendors_overview.stat_to_fix'), value: data?.pending_geo_locations ?? 0, color: '#F59E0B' },
                 ].map((item) => (
                   <div key={item.label} className="rounded-xl p-3 text-center" style={{ background: T.cardAlt, border: `1px solid ${T.border}` }}>
                     <p style={{ fontSize: 18, fontWeight: 900, color: item.color }}>{item.value}</p>
@@ -268,7 +270,7 @@ export default function VendorsMapPage() {
                 <div className="mx-4 mb-4 flex items-start gap-2 rounded-xl p-3" style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)' }}>
                   <AlertTriangle size={15} className="mt-0.5 text-amber-600" />
                   <p className="text-[11.5px] font-semibold leading-5" style={{ color: T.text }}>
-                    Les marqueurs jaunes utilisent une position estimée. Le vendeur doit compléter latitude et longitude dans ses emplacements.
+                    {t('ad4_vendors_overview.gps_warning')}
                   </p>
                 </div>
               )}
@@ -278,7 +280,7 @@ export default function VendorsMapPage() {
             <div className="rounded-2xl overflow-hidden" style={{ background: T.card, border: `1px solid ${T.border}` }}>
               <div className="flex items-center gap-2 px-5 py-3.5" style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
                 <TrendingUp size={14} style={{ color: T.red }} />
-                <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Classement villes</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad4_vendors_overview.city_ranking')}</span>
               </div>
               <div className="divide-y" style={{ borderColor: T.border }}>
                 {(data?.cities ?? []).slice(0, 8).map((c, i) => (
@@ -293,7 +295,7 @@ export default function VendorsMapPage() {
                       </div>
                       <div>
                         <p style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{c.city}</p>
-                        <p style={{ fontSize: 10.5, color: '#10B981' }}>{c.approved} approuvée{c.approved > 1 ? 's' : ''}</p>
+                        <p style={{ fontSize: 10.5, color: '#10B981' }}>{t(c.approved > 1 ? 'ad4_vendors_overview.approved_count_plural' : 'ad4_vendors_overview.approved_count', { count: c.approved })}</p>
                       </div>
                     </div>
                     <div className="text-right">
@@ -310,15 +312,15 @@ export default function VendorsMapPage() {
               <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
                 <div className="flex items-center gap-2">
                   <Store size={14} style={{ color: T.red }} />
-                  <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Emplacements</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad4_vendors_overview.locations')}</span>
                 </div>
                 <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
                   className="text-[12px] rounded-lg px-2 py-1 outline-none"
                   style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}` }}>
-                  <option value="all">Toutes</option>
-                  <option value="APPROVED">Approuvées</option>
-                  <option value="PENDING">En attente</option>
-                  <option value="SUSPENDED">Suspendues</option>
+                  <option value="all">{t('ad4_vendors_overview.filter_all')}</option>
+                  <option value="APPROVED">{t('ad4_vendors_overview.filter_approved')}</option>
+                  <option value="PENDING">{t('ad4_vendors_overview.filter_pending')}</option>
+                  <option value="SUSPENDED">{t('ad4_vendors_overview.filter_suspended')}</option>
                 </select>
               </div>
               <div className="max-h-56 overflow-y-auto divide-y" style={{ borderColor: T.border, scrollbarWidth: 'thin' }}>
@@ -340,13 +342,13 @@ export default function VendorsMapPage() {
                           className="truncate">
                           {location.location_name}
                         </Link>
-                        <p style={{ fontSize: 10.5, color: T.muted }}>{location.business_name} · {location.city || 'Ville à compléter'}</p>
+                        <p style={{ fontSize: 10.5, color: T.muted }}>{location.business_name} · {location.city || t('ad4_vendors_overview.city_to_complete')}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       {location.phone && <Phone size={11} style={{ color: T.muted }} />}
                       <span style={{ fontSize: 9.5, fontWeight: 700, padding: '1px 5px', borderRadius: 4, background: (STATUS_COLORS[location.status as keyof typeof STATUS_COLORS] ?? '#9CA3AF') + '18', color: STATUS_COLORS[location.status as keyof typeof STATUS_COLORS] ?? '#9CA3AF' }}>
-                        {location.status === 'APPROVED' ? 'OK' : location.status === 'PENDING' ? 'PEND.' : location.status.slice(0, 4)}
+                        {location.status === 'APPROVED' ? t('ad4_vendors_overview.status_ok') : location.status === 'PENDING' ? t('ad4_vendors_overview.status_pending_abbr') : location.status.slice(0, 4)}
                       </span>
                     </div>
                   </button>

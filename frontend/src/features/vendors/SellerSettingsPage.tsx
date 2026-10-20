@@ -72,6 +72,7 @@ function PhoneFieldInline({
   placeholder?: string;
   disabled?: boolean;
 }) {
+  const { t } = useTranslation();
   const national = toNationalNumber(value);
   const operator = detectOperator(national);
   const filled = national.length > 0;
@@ -99,7 +100,7 @@ function PhoneFieldInline({
       </div>
       {!valid && (
         <p style={{ fontSize: 11, marginTop: 4, color: T.red }}>
-          Numéro invalide — 9 chiffres et un préfixe opérateur valide requis.
+          {t('sl2_settings.invalid_phone')}
         </p>
       )}
     </>
@@ -126,15 +127,15 @@ interface TwoFAStatus {
 
 // ─── Utilitaires ──────────────────────────────────────────────────────────────
 
-function timeAgo(dateStr: string): string {
+function timeAgo(dateStr: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const m = Math.floor(diff / 60000);
-  if (m < 1)  return 'à l\'instant';
-  if (m < 60) return `il y a ${m} min`;
+  if (m < 1)  return t('sl2_settings.time_ago_now');
+  if (m < 60) return t('sl2_settings.time_ago_minutes', { count: m });
   const h = Math.floor(m / 60);
-  if (h < 24) return `il y a ${h}h`;
+  if (h < 24) return t('sl2_settings.time_ago_hours', { count: h });
   const d = Math.floor(h / 24);
-  return `il y a ${d} jour${d > 1 ? 's' : ''}`;
+  return t(d > 1 ? 'sl2_settings.time_ago_day_plural' : 'sl2_settings.time_ago_day', { count: d });
 }
 
 // ─── Indicateur de force du mot de passe ──────────────────────────────────────
@@ -242,9 +243,9 @@ function OTPModal({ email, purpose, onVerified, onClose }: {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ purpose }),
       });
-      showToast(`Code envoyé à ${email}`, 'success');
+      showToast(t('sl2_settings.code_sent_to', { email }), 'success');
       setCountdown(60);
-    } catch { showToast('Erreur lors de l\'envoi du code', 'error'); }
+    } catch { showToast(t('sl2_settings.error_sending_code'), 'error'); }
     finally  { setSending(false); }
   };
 
@@ -256,7 +257,7 @@ function OTPModal({ email, purpose, onVerified, onClose }: {
   }, [countdown]);
 
   const handleVerify = async () => {
-    if (code.length !== 6) { showToast('Entrez le code à 6 chiffres', 'error'); return; }
+    if (code.length !== 6) { showToast(t('sl2_settings.enter_6_digit_code'), 'error'); return; }
     try {
       setVerifying(true);
       onVerified(code);
@@ -274,7 +275,7 @@ function OTPModal({ email, purpose, onVerified, onClose }: {
           <div className="flex items-center gap-2">
             <Mail size={15} style={{ color: T.orange }}/>
             <p className="font-bold text-[14px]" style={{ color: T.text }}>
-              Vérification par email
+              {t('sl2_settings.email_verification_title')}
             </p>
           </div>
           <button type="button" onClick={onClose}
@@ -286,13 +287,13 @@ function OTPModal({ email, purpose, onVerified, onClose }: {
 
         <div className="px-5 py-5 space-y-4">
           <p className="text-[12.5px]" style={{ color: T.muted }}>
-            Un code à 6 chiffres a été envoyé à <strong style={{ color: T.text }}>{email}</strong>.
-            Vérifiez votre boîte de réception et vos spams.
+            {t('sl2_settings.code_sent_desc_before')} <strong style={{ color: T.text }}>{email}</strong>.
+            {' '}{t('sl2_settings.code_sent_desc_after')}
           </p>
 
           <div>
             <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>
-              Code de vérification
+              {t('sl2_settings.verification_code_label')}
             </label>
             <input
               value={code}
@@ -312,14 +313,14 @@ function OTPModal({ email, purpose, onVerified, onClose }: {
             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-[13.5px] text-white disabled:opacity-50"
             style={{ background: T.violet, boxShadow: '0 4px 14px rgba(124,58,237,0.35)' }}>
             {verifying
-              ? <><RefreshCw size={13} className="animate-spin"/>Vérification…</>
-              : <><Check size={13}/>Confirmer</>}
+              ? <><RefreshCw size={13} className="animate-spin"/>{t('sl2_settings.verifying_ellipsis')}</>
+              : <><Check size={13}/>{t('sl2_settings.confirm')}</>}
           </button>
 
           <div className="text-center">
             {countdown > 0 ? (
               <p className="text-[12px]" style={{ color: T.mutedL }}>
-                Renvoyer dans {countdown}s
+                {t('sl2_settings.resend_in', { count: countdown })}
               </p>
             ) : (
               <button type="button" onClick={sendCode} disabled={sending}
@@ -419,8 +420,9 @@ export default function SellerSettingsPage() {
       setBio((profileData as AuthUser & { bio?: string }).bio || '');
       setNewsletter(profileData.newsletter_subscribed ?? true);
       setSmsNotif(profileData.sms_notifications       ?? true);
-    } catch (e) { console.error(e); showToastRef.current('Erreur de chargement', 'error'); }
+    } catch (e) { console.error(e); showToastRef.current(t('sl2_settings.loading_error'), 'error'); }
     finally  { setLoading(false); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Dépendances vides — load est stable pour toute la durée de vie du composant
 
   const loadSessions = useCallback(async () => {
@@ -439,14 +441,14 @@ export default function SellerSettingsPage() {
     try {
       setSavingProfile(true);
       await authApi.updateProfile({ first_name: firstName, last_name: lastName, email, phone: phone||null, bio: bio||null });
-      showToast('Profil mis à jour', 'success');
-    } catch { showToast('Erreur lors de la mise à jour', 'error'); }
+      showToast(t('sl2_settings.profile_updated'), 'success');
+    } catch { showToast(t('sl2_settings.update_error'), 'error'); }
     finally  { setSavingProfile(false); }
   };
 
   const handleAvatarRemove = async () => {
-    try { await authApi.removeAvatar(); showToast('Photo supprimée', 'success'); await load(); }
-    catch { showToast('Erreur suppression avatar', 'error'); }
+    try { await authApi.removeAvatar(); showToast(t('sl2_settings.photo_removed'), 'success'); await load(); }
+    catch { showToast(t('sl2_settings.avatar_remove_error'), 'error'); }
   };
 
   // ── Notifications ────────────────────────────────────────────────────────────
@@ -454,16 +456,16 @@ export default function SellerSettingsPage() {
     try {
       setSavingNotif(true);
       await authApi.updateProfile({ newsletter_subscribed: newsletter, sms_notifications: smsNotif });
-      showToast('Notifications mises à jour', 'success');
-    } catch { showToast('Erreur lors de la mise à jour', 'error'); }
+      showToast(t('sl2_settings.notifications_updated'), 'success');
+    } catch { showToast(t('sl2_settings.update_error'), 'error'); }
     finally  { setSavingNotif(false); }
   };
 
   // ── Sécurité ─────────────────────────────────────────────────────────────────
   const handleChangePassword = async () => {
-    if (!oldPwd || !newPwd || !newPwd2) { showToast('Remplissez tous les champs', 'error'); return; }
-    if (newPwd !== newPwd2)             { showToast('Les mots de passe ne correspondent pas', 'error'); return; }
-    if (strength.score < 3)            { showToast('Choisissez un mot de passe plus fort', 'error'); return; }
+    if (!oldPwd || !newPwd || !newPwd2) { showToast(t('sl2_settings.fill_all_fields'), 'error'); return; }
+    if (newPwd !== newPwd2)             { showToast(t('sl2_settings.passwords_no_match'), 'error'); return; }
+    if (strength.score < 3)            { showToast(t('sl2_settings.password_too_weak'), 'error'); return; }
     try {
       setSavingPwd(true);
       const token = localStorage.getItem('access_token');
@@ -474,12 +476,12 @@ export default function SellerSettingsPage() {
       });
       const data = await res.json() as Record<string, unknown>;
       if (!res.ok) {
-        const msg = (data.old_password as string[])?.[0] || (data.new_password as string[])?.[0] || data.detail || 'Erreur';
+        const msg = (data.old_password as string[])?.[0] || (data.new_password as string[])?.[0] || data.detail || t('sl2_settings.generic_error');
         throw new Error(msg as string);
       }
-      showToast('Mot de passe modifié avec succès', 'success');
+      showToast(t('sl2_settings.password_changed_success'), 'success');
       setOldPwd(''); setNewPwd(''); setNewPwd2('');
-    } catch (e) { showToast(e instanceof Error ? e.message : 'Erreur', 'error'); }
+    } catch (e) { showToast(e instanceof Error ? e.message : t('sl2_settings.generic_error'), 'error'); }
     finally    { setSavingPwd(false); }
   };
 
@@ -492,30 +494,30 @@ export default function SellerSettingsPage() {
             method: 'POST',
             body: JSON.stringify({ code, method: twoFAMethod, phone: twoFAPhone }),
           });
-          showToast('Double authentification activée', 'success');
+          showToast(t('sl2_settings.twofa_enabled_toast'), 'success');
         } catch (e) {
-          showToast(e instanceof Error ? e.message : 'Code incorrect', 'error');
+          showToast(e instanceof Error ? e.message : t('sl2_settings.incorrect_code'), 'error');
           return;
         }
       }
       setShowOTPModal(false);
       load(); loadSessions();
-    } catch { showToast('Erreur lors de la vérification', 'error'); }
+    } catch { showToast(t('sl2_settings.verification_error'), 'error'); }
   };
 
   const handleDisable2FA = async () => {
-    if (!disablePwd) { showToast('Entrez votre mot de passe pour confirmer', 'error'); return; }
+    if (!disablePwd) { showToast(t('sl2_settings.enter_password_confirm'), 'error'); return; }
     try {
       setDisabling2FA(true);
       await http('/api/auth/2fa/disable/', {
         method: 'POST',
         body: JSON.stringify({ password: disablePwd }),
       });
-      showToast('Double authentification désactivée', 'success');
+      showToast(t('sl2_settings.twofa_disabled_toast'), 'success');
       setDisablePwd('');
       await load();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : 'Impossible de désactiver la double authentification', 'error');
+      showToast(e instanceof Error ? e.message : t('sl2_settings.twofa_disable_error'), 'error');
     }
     finally  { setDisabling2FA(false); }
   };
@@ -528,23 +530,23 @@ export default function SellerSettingsPage() {
       await http(`/api/auth/sessions/${jti}/revoke/`, {
         method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
       });
-      showToast('Session révoquée', 'success');
+      showToast(t('sl2_settings.session_revoked'), 'success');
       loadSessions();
-    } catch { showToast('Erreur révocation session', 'error'); }
+    } catch { showToast(t('sl2_settings.session_revoke_error'), 'error'); }
     finally  { setRevokingJti(null); }
   };
 
   const handleRevokeAll = async () => {
-    if (!window.confirm('Révoquer toutes les autres sessions ?')) return;
+    if (!window.confirm(t('sl2_settings.confirm_revoke_all'))) return;
     try {
       setRevokingAll(true);
       const token = localStorage.getItem('access_token');
       await http('/api/auth/sessions/revoke-all/', {
         method: 'POST', headers: { Authorization: `Bearer ${token}` },
       });
-      showToast('Toutes les autres sessions ont été révoquées', 'success');
+      showToast(t('sl2_settings.all_sessions_revoked'), 'success');
       loadSessions();
-    } catch { showToast('Erreur', 'error'); }
+    } catch { showToast(t('sl2_settings.generic_error'), 'error'); }
     finally  { setRevokingAll(false); }
   };
 
@@ -570,7 +572,7 @@ export default function SellerSettingsPage() {
     if (!vendor?.shop_slug) return;
     navigator.clipboard.writeText(`https://belivay.com?ref=${vendor.shop_slug}`);
     setCopiedSlug(true); setTimeout(() => setCopiedSlug(false), 2000);
-    showToast('Lien copié', 'success');
+    showToast(t('sl2_settings.link_copied'), 'success');
   };
 
   if (loading) return (
@@ -878,7 +880,7 @@ export default function SellerSettingsPage() {
             </p>
             <p className="text-[12px]" style={{ color: T.muted }}>
               {twoFA?.two_factor_enabled
-                ? `Via ${twoFA.two_factor_method === 'EMAIL' ? 'email' : twoFA.two_factor_method === 'SMS' ? 'SMS' : 'WhatsApp'}`
+                ? t('sl2_settings.via_method', { method: twoFA.two_factor_method === 'EMAIL' ? 'email' : twoFA.two_factor_method === 'SMS' ? 'SMS' : 'WhatsApp' })
                 : t('seller_settings.twofa_enable_cta')}
             </p>
           </div>
@@ -889,13 +891,13 @@ export default function SellerSettingsPage() {
             {/* Méthode */}
             <div>
               <p className="text-[12.5px] font-semibold mb-2" style={{ color: T.text }}>
-                Méthode de vérification
+                {t('sl2_settings.verification_method_label')}
               </p>
               <div className="space-y-2">
                 {[
-                  { value: 'EMAIL',    label: 'Email', desc: `Code envoyé à ${email}`, available: true },
-                  { value: 'SMS',      label: 'SMS',   desc: 'Bientôt disponible', available: false },
-                  { value: 'WHATSAPP', label: 'WhatsApp', desc: 'Bientôt disponible', available: false },
+                  { value: 'EMAIL',    label: t('sl2_settings.method_email_label'), desc: t('sl2_settings.code_sent_to', { email }), available: true },
+                  { value: 'SMS',      label: t('sl2_settings.method_sms_label'),   desc: t('sl2_settings.coming_soon_desc'), available: false },
+                  { value: 'WHATSAPP', label: t('sl2_settings.method_whatsapp_label'), desc: t('sl2_settings.coming_soon_desc'), available: false },
                 ].map(m => (
                   <label key={m.value}
                     className="flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all"
@@ -915,7 +917,7 @@ export default function SellerSettingsPage() {
                         {!m.available && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
                             style={{ background: T.amberL, color: T.amber }}>
-                            Bientôt
+                            {t('sl2_settings.coming_soon_badge')}
                           </span>
                         )}
                       </div>
@@ -930,15 +932,15 @@ export default function SellerSettingsPage() {
             {(twoFAMethod === 'SMS' || twoFAMethod === 'WHATSAPP') && (
               <div>
                 <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>
-                  Numéro {twoFAMethod === 'WHATSAPP' ? 'WhatsApp' : 'SMS'}
+                  {t('sl2_settings.number_label')} {twoFAMethod === 'WHATSAPP' ? 'WhatsApp' : 'SMS'}
                   <span className="ml-2 text-[11px] px-1.5 py-0.5 rounded-full font-bold"
                     style={{ background: T.amberL, color: T.amber }}>
-                    Vérification à venir
+                    {t('sl2_settings.verification_pending_badge')}
                   </span>
                 </label>
                 <PhoneFieldInline value={twoFAPhone} onChange={setTwoFAPhone} />
                 <p className="text-[11px] mt-1" style={{ color: T.mutedL }}>
-                  Ce numéro sera vérifié par code SMS lors de l'activation complète.
+                  {t('sl2_settings.number_will_be_verified')}
                 </p>
               </div>
             )}
@@ -948,7 +950,7 @@ export default function SellerSettingsPage() {
               disabled={!twoFAMethod}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-bold text-white disabled:opacity-50"
               style={{ background: T.green, boxShadow: '0 3px 10px rgba(22,163,74,0.3)' }}>
-              <ShieldCheck size={13}/> Activer la double authentification
+              <ShieldCheck size={13}/> {t('sl2_settings.enable_2fa_cta')}
             </button>
           </div>
         ) : (
@@ -956,13 +958,13 @@ export default function SellerSettingsPage() {
           <div className="space-y-3">
             <div className="rounded-xl p-3" style={{ background: T.redL, border: `1px solid rgba(220,38,38,0.2)` }}>
               <p className="text-[12px]" style={{ color: T.red }}>
-                Désactiver la 2FA réduit la sécurité de votre compte. Confirmez avec votre mot de passe.
+                {t('sl2_settings.disable_2fa_warning')}
               </p>
             </div>
             <div className="relative">
               <input value={disablePwd} onChange={e => setDisablePwd(e.target.value)}
                 type={showDisablePwd ? 'text' : 'password'}
-                placeholder="Votre mot de passe actuel"
+                placeholder={t('sl2_settings.current_password_placeholder')}
                 autoComplete="off"
                 style={{ ...inp, paddingRight: 42 }}/>
               <button type="button" onClick={() => setShowDisablePwd(!showDisablePwd)}
@@ -974,7 +976,7 @@ export default function SellerSettingsPage() {
               disabled={disabling2FA || !disablePwd}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-bold disabled:opacity-50"
               style={{ background: T.redL, border: `1px solid rgba(220,38,38,0.25)`, color: T.red }}>
-              {disabling2FA ? <><RefreshCw size={13} className="animate-spin"/>Désactivation…</> : <><ShieldOff size={13}/>Désactiver la 2FA</>}
+              {disabling2FA ? <><RefreshCw size={13} className="animate-spin"/>{t('sl2_settings.disabling_ellipsis')}</> : <><ShieldOff size={13}/>{t('sl2_settings.disable_2fa_cta')}</>}
             </button>
           </div>
         )}
@@ -987,7 +989,7 @@ export default function SellerSettingsPage() {
         <div className="space-y-3">
           <div className="flex items-start gap-3 p-4 rounded-2xl" style={{ background: T.creamAlt }}>
             <div className="flex-1">
-              <p className="text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: T.mutedL }}>Statut</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: T.mutedL }}>{t('sl2_settings.status_label')}</p>
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12.5px] font-bold"
                   style={{ background: statusCfg.bg, color: statusCfg.color }}>
@@ -996,7 +998,7 @@ export default function SellerSettingsPage() {
                 </span>
                 {vendor?.approved_at && (
                   <span className="text-[11.5px]" style={{ color: T.mutedL }}>
-                    Depuis le {new Date(vendor.approved_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    {t('sl2_settings.since_date', { date: new Date(vendor.approved_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) })}
                   </span>
                 )}
               </div>
@@ -1010,7 +1012,7 @@ export default function SellerSettingsPage() {
               <button type="button" onClick={handleCopySlug}
                 className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11.5px] font-bold flex-shrink-0"
                 style={{ background: copiedSlug ? T.greenL : T.creamAlt, color: copiedSlug ? T.green : T.muted }}>
-                {copiedSlug ? <><Check size={10}/>Copié</> : <><Copy size={10}/>Copier</>}
+                {copiedSlug ? <><Check size={10}/>{t('sl2_settings.copied')}</> : <><Copy size={10}/>{t('sl2_settings.copy')}</>}
               </button>
             </div>
           )}
@@ -1019,12 +1021,12 @@ export default function SellerSettingsPage() {
             <div className="flex items-center gap-2">
               <Award size={14} style={{ color: TIER_COLORS[tier] }}/>
               <div>
-                <p className="text-[12.5px] font-bold" style={{ color: T.text }}>Certification {t(TIER_LABEL_KEYS[tier] || 'seller_settings.tier_bronze')}</p>
-                <p className="text-[11.5px]" style={{ color: T.mutedL }}>{vendor?.total_points ?? 0} points</p>
+                <p className="text-[12.5px] font-bold" style={{ color: T.text }}>{t('sl2_settings.certification_label', { tier: t(TIER_LABEL_KEYS[tier] || 'seller_settings.tier_bronze') })}</p>
+                <p className="text-[11.5px]" style={{ color: T.mutedL }}>{t('sl2_settings.points_count', { count: vendor?.total_points ?? 0 })}</p>
               </div>
             </div>
             <Link to="/seller/certifications" className="flex items-center gap-1 text-[12px] font-bold" style={{ color: T.orange }}>
-              Voir <ChevronRight size={12}/>
+              {t('sl2_settings.see')} <ChevronRight size={12}/>
             </Link>
           </div>
 
@@ -1032,22 +1034,22 @@ export default function SellerSettingsPage() {
             <div className="flex items-center gap-2">
               <CreditCard size={14} style={{ color: T.orange }}/>
               <div>
-                <p className="text-[12.5px] font-bold" style={{ color: T.text }}>Plan {vendor?.current_plan_name || 'Gratuit'}</p>
+                <p className="text-[12.5px] font-bold" style={{ color: T.text }}>{t('sl2_settings.plan_label', { plan: vendor?.current_plan_name || t('sl2_settings.plan_free_fallback') })}</p>
                 <p className="text-[11.5px]" style={{ color: T.mutedL }}>
                   {vendor?.plan_expires_at
-                    ? `Expire le ${new Date(vendor.plan_expires_at).toLocaleDateString('fr-FR')}`
-                    : 'Aucune expiration'}
+                    ? t('sl2_settings.expires_on', { date: new Date(vendor.plan_expires_at).toLocaleDateString('fr-FR') })
+                    : t('sl2_settings.no_expiration')}
                 </p>
               </div>
             </div>
             <Link to="/seller/plans" className="flex items-center gap-1 text-[12px] font-bold" style={{ color: T.orange }}>
-              Gérer <ChevronRight size={12}/>
+              {t('sl2_settings.manage')} <ChevronRight size={12}/>
             </Link>
           </div>
 
           <div className="px-4 py-2.5 rounded-xl" style={{ background: T.cream }}>
             <p className="text-[11.5px]" style={{ color: T.muted }}>
-              Compte créé le{' '}
+              {t('sl2_settings.account_created_label')}{' '}
               <strong style={{ color: T.text }}>
                 {user?.date_joined ? new Date(user.date_joined).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}
               </strong>
@@ -1062,7 +1064,7 @@ export default function SellerSettingsPage() {
       <Section title={t('seller_settings.section_momo')} icon={<Smartphone size={15}/>} accent={T.green}>
         <div className="rounded-xl p-3 mb-4" style={{ background: T.greenL, border: `1px solid rgba(22,163,74,0.2)` }}>
           <p className="text-[12px]" style={{ color: T.green }}>
-            Ce numéro sert aux reversements BelivaY. Il doit être vérifié par code avant tout encaissement.
+            {t('sl2_settings.momo_notice')}
           </p>
         </div>
         <PayoutAccountVerificationCard ownerRole="VENDOR" accent={T.green} />
@@ -1077,22 +1079,22 @@ export default function SellerSettingsPage() {
         <div className="flex items-center justify-between mb-5 pb-5"
           style={{ borderBottom: `1px solid ${T.border}` }}>
           <div>
-            <p className="font-semibold text-[13.5px]" style={{ color: T.text }}>Session courante</p>
+            <p className="font-semibold text-[13.5px]" style={{ color: T.text }}>{t('sl2_settings.current_session')}</p>
             <p className="text-[12px] mt-0.5" style={{ color: T.muted }}>
-              @{user?.username} — Compte créé {user?.date_joined ? new Date(user.date_joined).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' }) : '—'}
+              {t('sl2_settings.account_created_short', { username: user?.username, date: user?.date_joined ? new Date(user.date_joined).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' }) : '—' })}
             </p>
           </div>
           <button type="button" onClick={handleLogout}
             className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12.5px] font-bold transition-all hover:opacity-80"
             style={{ background: T.redL, border: `1px solid rgba(220,38,38,0.25)`, color: T.red }}>
-            <LogOut size={13}/> Se déconnecter
+            <LogOut size={13}/> {t('sl2_settings.logout')}
           </button>
         </div>
 
         {/* Liste des appareils */}
         <div className="flex items-center justify-between mb-3">
           <p className="font-semibold text-[13px]" style={{ color: T.text }}>
-            Appareils connectés
+            {t('sl2_settings.connected_devices')}
             {sessions.length > 0 && (
               <span className="ml-2 text-[11px] px-2 py-0.5 rounded-full"
                 style={{ background: T.orangeB, color: T.orange }}>
@@ -1104,7 +1106,7 @@ export default function SellerSettingsPage() {
             <button type="button" onClick={handleRevokeAll} disabled={revokingAll}
               className="text-[12px] font-bold disabled:opacity-50"
               style={{ color: T.red }}>
-              {revokingAll ? 'Révocation…' : 'Tout révoquer'}
+              {revokingAll ? t('sl2_settings.revoking_ellipsis') : t('sl2_settings.revoke_all')}
             </button>
           )}
         </div>
@@ -1116,9 +1118,9 @@ export default function SellerSettingsPage() {
         ) : sessions.length === 0 ? (
           <div className="text-center py-6 rounded-2xl" style={{ background: T.creamAlt }}>
             <Wifi size={24} className="mx-auto mb-2" style={{ color: T.mutedL }}/>
-            <p className="text-[12.5px]" style={{ color: T.muted }}>Aucune session active retrouvée</p>
+            <p className="text-[12.5px]" style={{ color: T.muted }}>{t('sl2_settings.no_active_sessions')}</p>
             <p className="text-[11.5px] mt-0.5" style={{ color: T.mutedL }}>
-              Les sessions sont enregistrées à partir de maintenant
+              {t('sl2_settings.sessions_recorded_notice')}
             </p>
           </div>
         ) : (
@@ -1142,22 +1144,22 @@ export default function SellerSettingsPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="font-bold text-[13px]" style={{ color: T.text }}>
-                      {s.device_name || 'Appareil inconnu'}
+                      {s.device_name || t('sl2_settings.unknown_device')}
                     </p>
                     {s.is_current && (
                       <span className="text-[10.5px] px-2 py-0.5 rounded-full font-bold"
                         style={{ background: T.orange, color: T.white }}>
-                        Session actuelle
+                        {t('sl2_settings.current_session_badge')}
                       </span>
                     )}
                   </div>
                   <div className="flex items-center gap-3 mt-1 flex-wrap text-[11.5px]" style={{ color: T.mutedL }}>
-                    {s.ip_address && <span>IP : {s.ip_address}</span>}
+                    {s.ip_address && <span>{t('sl2_settings.ip_label', { ip: s.ip_address })}</span>}
                     <span className="flex items-center gap-1">
-                      <Clock size={10}/> {timeAgo(s.last_activity)}
+                      <Clock size={10}/> {timeAgo(s.last_activity, t)}
                     </span>
                     <span className="flex items-center gap-1">
-                      <Globe size={10}/> Connexion le {new Date(s.created_at).toLocaleDateString('fr-FR')}
+                      <Globe size={10}/> {t('sl2_settings.connected_on', { date: new Date(s.created_at).toLocaleDateString('fr-FR') })}
                     </span>
                   </div>
                 </div>
@@ -1170,7 +1172,7 @@ export default function SellerSettingsPage() {
                     style={{ background: T.redL, color: T.red, border: `1px solid rgba(220,38,38,0.2)` }}>
                     {revokingJti === s.jti
                       ? <RefreshCw size={11} className="animate-spin"/>
-                      : <><WifiOff size={11}/>Révoquer</>}
+                      : <><WifiOff size={11}/>{t('sl2_settings.revoke')}</>}
                   </button>
                 )}
               </div>
@@ -1183,15 +1185,14 @@ export default function SellerSettingsPage() {
           SECTION 9 — ZONE CRITIQUE
       ══════════════════════════════════════════════════════════════════════ */}
       <Section title={t('seller_settings.section_danger')} icon={<AlertTriangle size={15}/>} accent={T.red}>
-        <p className="font-semibold text-[13.5px] mb-1" style={{ color: T.text }}>Supprimer le compte vendeur</p>
+        <p className="font-semibold text-[13.5px] mb-1" style={{ color: T.text }}>{t('sl2_settings.delete_account_title')}</p>
         <p className="text-[12px] mb-3" style={{ color: T.muted }}>
-          La suppression est définitive. Vos données sont archivées selon la réglementation camerounaise.
-          Contactez le support pour initier la procédure.
+          {t('sl2_settings.delete_account_desc')}
         </p>
         <a href={`/contact?subject=Suppression%20compte%20vendeur&from=${encodeURIComponent(user?.username || '')}`}
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12.5px] font-bold transition-all hover:opacity-80"
           style={{ background: T.redL, border: `1px solid rgba(220,38,38,0.25)`, color: T.red }}>
-          <AlertTriangle size={13}/> Contacter le support pour supprimer
+          <AlertTriangle size={13}/> {t('sl2_settings.contact_support_delete')}
           <ExternalLink size={11}/>
         </a>
       </Section>
@@ -1213,7 +1214,7 @@ export default function SellerSettingsPage() {
           onClose={() => setAvatarFile(null)}
           onUploaded={async () => {
             setAvatarFile(null);
-            showToast('Photo rognée, compressée et enregistrée', 'success');
+            showToast(t('sl2_settings.avatar_saved'), 'success');
             await load();
           }}
         />

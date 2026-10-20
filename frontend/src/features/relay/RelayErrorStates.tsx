@@ -10,14 +10,14 @@
  * dit — « Choisissez un cas ».
  *
  * ─────────────────────────────────────────────────────────────────────────
- * DEUX CAS DÉCRIVENT UNE PROTECTION QUI N'EXISTE PAS
+ * UN SEUL CAS DÉCRIT ENCORE UNE PROTECTION QUI N'EXISTE PAS
  *
- * « Encore 2 essais » et « Colis bloqué 24 h » supposent un compteur
- * d'essais sur le code de retrait et un verrouillage temporaire. Ni l'un ni
- * l'autre n'est implémenté : aujourd'hui un code faux échoue, et on peut
- * réessayer indéfiniment. Ces deux fiches sont donc marquées « à venir » —
- * un catalogue qui enseigne une règle inappliquée formerait le gérant à
- * rassurer un client sur une protection absente.
+ * « Encore 2 essais » et « Colis bloqué 24 h » sont désormais appliqués
+ * cote serveur (RelayPickupAttempt, §8.2 Regles Systeme DEV v2.0 : 3 codes
+ * faux consecutifs bloquent le code 24 h, BelivaY est prevenu). Seul
+ * « Non remettable » reste une regle affichee mais pas appliquee : rien ne
+ * suspend `garde_fee_due()` pendant un constat, faute d'un etat « colis en
+ * constat » dans le modele — a construire avant de retirer son « à venir ».
  *
  * La règle commune, elle, vaut pour tous : un message dit ce qui s'est
  * passé, ce que le gérant peut faire, et ne montre jamais de code technique.
@@ -78,7 +78,6 @@ const CAS: Cas[] = [
       </>
     ),
     actions: [{ label: "Ressaisir le code", style: "bleu", cible: "retrait" }],
-    aVenir: true,
   },
   {
     key: "colis-bloque",
@@ -93,7 +92,6 @@ const CAS: Cas[] = [
       </>
     ),
     actions: [{ label: "Écrire au support", style: "blanc", cible: "messagerie" }],
-    aVenir: true,
   },
   {
     key: "paiement",
@@ -229,10 +227,9 @@ export default function RelayErrorStates({ onNavigate }: { onNavigate: (tab: Rel
           </p>
 
           {/*
-            La fiche decrit une protection que le serveur n'applique pas
-            encore : aucun compteur d'essais, aucun verrouillage 24 h sur un
-            colis. Le dire evite qu'un gerant rassure un client sur une
-            securite absente.
+            Seul « non-remettable » porte encore aVenir : rien ne suspend
+            garde_fee_due() pendant un constat. Le dire evite qu'un gerant
+            rassure un client sur une protection absente.
           */}
           {cas.aVenir ? (
             <p className="mt-3 rounded-[10px] bg-slate-100 px-3 py-2 text-[12.5px] font-semibold leading-snug text-slate-500 dark:bg-slate-800 dark:text-slate-400">

@@ -2,6 +2,7 @@
 // Vue d'ensemble vendeurs — admin BelivaY
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import {
   Store, RefreshCw, TrendingUp, Award,
@@ -36,6 +37,7 @@ const CERT_COLORS: Record<string, string> = {
 };
 
 export default function VendorsOverviewPage() {
+  const { t }          = useTranslation();
   const T             = useAdminTheme();
   const { showToast } = useToast();
   const toastRef      = useRef(showToast);
@@ -50,7 +52,7 @@ export default function VendorsOverviewPage() {
       const result = await adminApi.getVendorStats();
       setData(result);
     } catch {
-      toastRef.current('Erreur chargement vue vendeurs', 'error');
+      toastRef.current(t('ad4_vendors_map.load_error'), 'error');
     } finally {
       setLoading(false);
     }
@@ -67,10 +69,10 @@ export default function VendorsOverviewPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: T.text, marginBottom: 4 }}>
-            Vue d'ensemble — Vendeurs
+            {t('ad4_vendors_map.title')}
           </h1>
           <p style={{ fontSize: 13, color: T.muted }}>
-            Performance et santé du réseau de boutiques
+            {t('ad4_vendors_map.subtitle')}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -78,12 +80,12 @@ export default function VendorsOverviewPage() {
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold"
             style={{ background: 'rgba(220,38,38,0.1)', color: T.red, border: '1px solid rgba(220,38,38,0.25)' }}>
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-            <span className="hidden sm:inline">Actualiser</span>
+            <span className="hidden sm:inline">{t('ad4_vendors_map.refresh')}</span>
           </button>
           <Link to="/admin/vendors"
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold"
             style={{ background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}` }}>
-            Liste vendeurs <ChevronRight size={13} />
+            {t('ad4_vendors_map.vendors_list')} <ChevronRight size={13} />
           </Link>
         </div>
       </div>
@@ -91,10 +93,10 @@ export default function VendorsOverviewPage() {
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: 'Total boutiques',  value: kpis?.total,         accent: T.text,    icon: Store        },
-          { label: 'Approuvées',       value: kpis?.approved,      accent: '#10B981', icon: CheckCircle  },
-          { label: 'En attente KYC',  value: kpis?.pending,       accent: '#F59E0B', icon: Clock        },
-          { label: 'GMV ce mois',      value: fmtXaf(kpis?.gmv_month ?? 0) + ' FCFA', accent: T.red, icon: DollarSign },
+          { label: t('ad4_vendors_map.kpi_total'),    value: kpis?.total,         accent: T.text,    icon: Store        },
+          { label: t('ad4_vendors_map.kpi_approved'), value: kpis?.approved,      accent: '#10B981', icon: CheckCircle  },
+          { label: t('ad4_vendors_map.kpi_pending'),  value: kpis?.pending,       accent: '#F59E0B', icon: Clock        },
+          { label: t('ad4_vendors_map.kpi_gmv'),      value: fmtXaf(kpis?.gmv_month ?? 0) + ' FCFA', accent: T.red, icon: DollarSign },
         ].map((k, i) => {
           const Icon = k.icon;
           return (
@@ -122,16 +124,16 @@ export default function VendorsOverviewPage() {
         <div className="lg:col-span-2 rounded-2xl p-5" style={{ background: T.card, border: `1px solid ${T.border}` }}>
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp size={14} style={{ color: T.red }} />
-            <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>GMV 30 derniers jours</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad4_vendors_map.gmv_30_days')}</span>
             {kpis?.gmv_total && (
               <span style={{ fontSize: 11.5, color: T.muted, marginLeft: 'auto' }}>
-                Total : {fmtXaf(kpis.gmv_total)} FCFA
+                {t('ad4_vendors_map.total_label', { value: fmtXaf(kpis.gmv_total) })}
               </span>
             )}
           </div>
           {loading || !data?.gmv_chart.length ? (
             <div className="flex items-center justify-center" style={{ height: 180 }}>
-              <p style={{ fontSize: 13, color: T.muted }}>Aucune donnée</p>
+              <p style={{ fontSize: 13, color: T.muted }}>{t('ad4_vendors_map.no_data')}</p>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={180}>
@@ -161,11 +163,11 @@ export default function VendorsOverviewPage() {
         <div className="rounded-2xl p-5 space-y-4" style={{ background: T.card, border: `1px solid ${T.border}` }}>
           <div className="flex items-center gap-2">
             <Store size={14} style={{ color: T.red }} />
-            <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Statuts boutiques</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad4_vendors_map.shop_statuses')}</span>
           </div>
           {loading || !data?.status_distribution.length ? (
             <div className="flex items-center justify-center" style={{ height: 140 }}>
-              <p style={{ fontSize: 12, color: T.muted }}>Aucune donnée</p>
+              <p style={{ fontSize: 12, color: T.muted }}>{t('ad4_vendors_map.no_data')}</p>
             </div>
           ) : (
             <>
@@ -203,10 +205,10 @@ export default function VendorsOverviewPage() {
         <div className="rounded-2xl p-5" style={{ background: T.card, border: `1px solid ${T.border}` }}>
           <div className="flex items-center gap-2 mb-4">
             <DollarSign size={14} style={{ color: T.red }} />
-            <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Répartition par plan</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad4_vendors_map.plan_breakdown')}</span>
           </div>
           {loading || !data?.plan_distribution.length ? (
-            <p style={{ fontSize: 12, color: T.muted, textAlign: 'center', padding: '24px 0' }}>Aucune donnée</p>
+            <p style={{ fontSize: 12, color: T.muted, textAlign: 'center', padding: '24px 0' }}>{t('ad4_vendors_map.no_data')}</p>
           ) : (
             <ResponsiveContainer width="100%" height={140}>
               <BarChart data={data.plan_distribution} layout="vertical" margin={{ left: 16, right: 8 }}>
@@ -227,10 +229,10 @@ export default function VendorsOverviewPage() {
         <div className="rounded-2xl p-5" style={{ background: T.card, border: `1px solid ${T.border}` }}>
           <div className="flex items-center gap-2 mb-4">
             <Award size={14} style={{ color: T.red }} />
-            <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Répartition certifications</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad4_vendors_map.cert_breakdown')}</span>
           </div>
           {loading || !data?.cert_distribution.length ? (
-            <p style={{ fontSize: 12, color: T.muted, textAlign: 'center', padding: '24px 0' }}>Aucune donnée</p>
+            <p style={{ fontSize: 12, color: T.muted, textAlign: 'center', padding: '24px 0' }}>{t('ad4_vendors_map.no_data')}</p>
           ) : (
             <div className="space-y-3">
               {data.cert_distribution.map((d, i) => {
@@ -259,9 +261,9 @@ export default function VendorsOverviewPage() {
       {/* Accès rapides */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
-          { to: '/admin/vendors/kyc',           label: 'KYC en attente',       sub: `${kpis?.pending ?? '—'} à valider`,   accent: '#F59E0B' },
-          { to: '/admin/vendors/certifications', label: 'Certifications',       sub: 'Bronze → Diamant',                   accent: '#C8A000' },
-          { to: '/admin/vendors/map',            label: 'Carte des boutiques',  sub: 'Distribution géographique',          accent: '#3B82F6' },
+          { to: '/admin/vendors/kyc',           label: t('ad4_vendors_map.quick_kyc'),           sub: t('ad4_vendors_map.quick_kyc_sub', { n: kpis?.pending ?? '—' }),   accent: '#F59E0B' },
+          { to: '/admin/vendors/certifications', label: t('ad4_vendors_map.quick_certifications'), sub: t('ad4_vendors_map.quick_certifications_sub'),                   accent: '#C8A000' },
+          { to: '/admin/vendors/map',            label: t('ad4_vendors_map.quick_map'),           sub: t('ad4_vendors_map.quick_map_sub'),          accent: '#3B82F6' },
         ].map((a, i) => (
           <Link key={i} to={a.to}
             className="flex items-center justify-between p-4 rounded-2xl transition-all"

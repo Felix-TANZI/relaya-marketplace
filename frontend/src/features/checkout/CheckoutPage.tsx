@@ -138,7 +138,7 @@ export default function CheckoutPage() {
     if (isPickup) return true;
     const address = formData.address.trim();
     if (address.length < 4) {
-      showToast("Ajoutez un quartier ou un repère de livraison.", "error");
+      showToast(t('cl1_checkout.add_district_or_landmark'), "error");
       return false;
     }
     if (addressPrecision && addressPrecision.city === formData.city) return true;
@@ -148,14 +148,14 @@ export default function CheckoutPage() {
       const result = await locationApi.refine({ city: formData.city, address });
       setAddressPrecision(result);
       if (result.needsMoreDetail && result.precisionScore < 55) {
-        showToast(result.followUpQuestion || "Ajoutez un repère plus précis pour le livreur.", "error");
+        showToast(result.followUpQuestion || t('cl1_checkout.add_precise_landmark'), "error");
         return false;
       }
       const precisionText = result.precisionLabel === "moyen" ? "moyenne" : result.precisionLabel;
-      showToast(`Adresse ${precisionText} pour la livraison.`, "success");
+      showToast(t('cl1_checkout.address_precision_for_delivery', { precision: precisionText }), "success");
       return true;
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "Analyse de l'adresse indisponible.", "error");
+      showToast(error instanceof Error ? error.message : t('cl1_checkout.address_analysis_unavailable'), "error");
       return false;
     } finally {
       setAddressAnalyzing(false);
@@ -165,7 +165,7 @@ export default function CheckoutPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!localStorage.getItem('access_token')) {
-      showToast('Connectez-vous pour finaliser votre commande', 'error');
+      showToast(t('cl1_checkout.login_to_finalize'), 'error');
       navigate('/login');
       return;
     }
@@ -174,11 +174,11 @@ export default function CheckoutPage() {
       if (!ok) return;
     }
     if (allowThirdPartyPickup && (!thirdPartyPickup.name.trim() || !thirdPartyPickup.phone.trim())) {
-      showToast("Indiquez le nom et le téléphone de la personne autorisée à retirer le colis.", "error");
+      showToast(t('cl1_checkout.third_party_name_phone_required'), "error");
       return;
     }
     if (isPickup && !selectedRelay) {
-      showToast("Aucun point relais disponible pour le moment dans cette ville.", "error");
+      showToast(t('cl1_checkout.no_relay_point_available'), "error");
       return;
     }
     setLoading(true);
@@ -204,7 +204,7 @@ export default function CheckoutPage() {
       });
       setPayingOrderId(order.id);
     } catch (error) {
-      showToast(error instanceof Error ? `Commande refusée : ${error.message}` : "Commande refusée par le serveur.", "error");
+      showToast(error instanceof Error ? t('cl1_checkout.order_rejected_with_reason', { reason: error.message }) : t('cl1_checkout.order_rejected_by_server'), "error");
     } finally {
       setLoading(false);
     }
@@ -215,8 +215,8 @@ export default function CheckoutPage() {
     else checkoutItems.forEach((item) => removeItem(item.id));
     window.sessionStorage.removeItem(CHECKOUT_SELECTED_CART_IDS_KEY);
     window.dispatchEvent(new Event("belivay-new-notification"));
-    showToast("Paiement confirmé", {
-      description: `Commande #${tx.order} · ${tx.amount_xaf.toLocaleString(locale)} FCFA sous séquestre.`,
+    showToast(t('cl1_checkout.payment_confirmed'), {
+      description: t('cl1_checkout.order_amount_escrowed', { order: tx.order, amount: tx.amount_xaf.toLocaleString(locale) }),
       type: "success",
     });
     navigate(`/orders/${tx.order}`);
@@ -238,9 +238,9 @@ export default function CheckoutPage() {
   }
 
   const steps = [
-    { n: 1, label: isPickup ? "Retrait" : "Informations", done: infoDone },
-    { n: 2, label: isPickup ? "Centre" : "Livraison", done: placeDone },
-    { n: 3, label: "Paiement", done: false },
+    { n: 1, label: isPickup ? t('cl1_checkout.step_pickup') : t('cl1_checkout.step_information'), done: infoDone },
+    { n: 2, label: isPickup ? t('cl1_checkout.step_center') : t('cl1_checkout.step_delivery'), done: placeDone },
+    { n: 3, label: t('cl1_checkout.step_payment_label'), done: false },
   ];
 
   const stepBadge = (n: number, done: boolean) => (
@@ -265,9 +265,9 @@ export default function CheckoutPage() {
           <div className="pf-ident pf-anim">
             <span className="pf-notif-ic">{isPickup ? <Store size={20} /> : <Truck size={20} />}</span>
             <div style={{ flex: 1, minWidth: 220 }}>
-              <div className="pf-k">Paiement sécurisé</div>
+              <div className="pf-k">{t('cl1_checkout.secure_payment')}</div>
               <div className="pf-name" style={{ fontSize: 21, marginTop: 2 }}>
-                {isPickup ? "Payer et retirer au centre" : t('checkout.title')}
+                {isPickup ? t('cl1_checkout.pay_and_pickup_at_center') : t('checkout.title')}
               </div>
             </div>
 
@@ -292,7 +292,7 @@ export default function CheckoutPage() {
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
                   {stepBadge(1, infoDone)}
                   <div className="pf-card-title" style={{ fontSize: 16 }}>
-                    {isPickup ? "Qui vient retirer ?" : t('checkout.step_info')}
+                    {isPickup ? t('cl1_checkout.who_will_pick_up') : t('checkout.step_info')}
                   </div>
                 </div>
                 <div className="pf-form-grid">
@@ -310,31 +310,31 @@ export default function CheckoutPage() {
                   </div>
                   <div className="pf-field pf-col2">
                     <PhoneInput required
-                      label={isPickup ? "Numéro pour le retrait" : t('checkout.phone')}
+                      label={isPickup ? t('cl1_checkout.pickup_phone_number') : t('checkout.phone')}
                       value={formData.phone}
                       onChange={(phone) => setFormData({ ...formData, phone })}
-                      helperText={isPickup ? "Le code de retrait arrive par SMS sur ce numéro." : t('checkout.phone_helper')} />
+                      helperText={isPickup ? t('cl1_checkout.pickup_code_sms_hint') : t('checkout.phone_helper')} />
                   </div>
                   <div className="pf-field pf-col2">
                     <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
                       <input type="checkbox" checked={allowThirdPartyPickup}
                         onChange={(e) => setAllowThirdPartyPickup(e.target.checked)} />
                       <span className="pf-label" style={{ margin: 0 }}>
-                        Une autre personne viendra récupérer le colis à ma place
+                        {t('cl1_checkout.someone_else_will_pick_up')}
                       </span>
                     </label>
                     {allowThirdPartyPickup && (
                       <div className="pf-form-grid" style={{ marginTop: 12 }}>
                         <div className="pf-field">
-                          <label className="pf-label">Nom de cette personne</label>
+                          <label className="pf-label">{t('cl1_checkout.this_person_name')}</label>
                           <input className="pf-input" type="text" required={allowThirdPartyPickup}
                             value={thirdPartyPickup.name}
                             onChange={(e) => setThirdPartyPickup({ ...thirdPartyPickup, name: e.target.value })}
-                            placeholder="Nom et prénom" />
+                            placeholder={t('cl1_checkout.full_name_placeholder')} />
                         </div>
                         <div className="pf-field">
                           <PhoneInput required={allowThirdPartyPickup}
-                            label="Téléphone de cette personne"
+                            label={t('cl1_checkout.this_person_phone')}
                             value={thirdPartyPickup.phone}
                             onChange={(phone) => setThirdPartyPickup({ ...thirdPartyPickup, phone })} />
                         </div>
@@ -349,7 +349,7 @@ export default function CheckoutPage() {
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
                   {stepBadge(2, placeDone)}
                   <div className="pf-card-title" style={{ fontSize: 16 }}>
-                    {isPickup ? "Choisir le centre de retrait" : t('checkout.step_address')}
+                    {isPickup ? t('cl1_checkout.choose_pickup_center') : t('checkout.step_address')}
                   </div>
                 </div>
 
@@ -373,14 +373,14 @@ export default function CheckoutPage() {
                         marginBottom: 12, padding: "10px 14px", borderRadius: 12,
                         background: "#fff7ed", border: "1px solid #fed7aa", color: "#9a3412",
                       }}>
-                        Le(s) point(s) relais le(s) plus proche(s) sont complets — nous vous proposons celui-ci, un peu plus loin mais disponible.
+                        {t('cl1_checkout.nearest_relay_points_full')}
                       </div>
                     )}
                     {relayLoading ? (
-                      <div className="pf-muted-sm">Recherche des points relais…</div>
+                      <div className="pf-muted-sm">{t('cl1_checkout.searching_relay_points')}</div>
                     ) : relayPoints.length === 0 ? (
                       <div className="pf-muted-sm" style={{ color: "#dc2626" }}>
-                        Aucun point relais actif dans cette ville pour le moment.
+                        {t('cl1_checkout.no_active_relay_point')}
                       </div>
                     ) : (
                       <div className="pf-addr-grid">
@@ -392,8 +392,8 @@ export default function CheckoutPage() {
                             <div className="pf-addr-label">
                               <span className="pf-addr-ic"><Store size={14} /></span>
                               {r.name}
-                              {selectedRelay?.id === r.id && <span className="pf-badge-soft">Choisi</span>}
-                              {!r.has_space && <span className="pf-badge-soft" style={{ background: "#fee2e2", color: "#991b1b" }}>Complet</span>}
+                              {selectedRelay?.id === r.id && <span className="pf-badge-soft">{t('cl1_checkout.chosen')}</span>}
+                              {!r.has_space && <span className="pf-badge-soft" style={{ background: "#fee2e2", color: "#991b1b" }}>{t('cl1_checkout.full')}</span>}
                             </div>
                             <div className="pf-addr-line">{r.address}</div>
                             <div className="pf-k" style={{ marginTop: 8 }}>
@@ -408,10 +408,10 @@ export default function CheckoutPage() {
                 ) : (
                   <>
                     <div className="pf-field" style={{ marginBottom: 16 }}>
-                      <label className="pf-label">Quartier</label>
+                      <label className="pf-label">{t('cl1_checkout.district')}</label>
                       <input className="pf-input" type="text" required value={formData.district}
                         onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                        placeholder="Ex: Bastos" />
+                        placeholder={t('cl1_checkout.district_placeholder')} />
                     </div>
 
                     <button type="button" onClick={handleUseGps} disabled={gpsStatus === "loading"}
@@ -422,11 +422,11 @@ export default function CheckoutPage() {
                         fontWeight: 700, fontSize: 13, cursor: "pointer",
                       }}>
                       {gpsStatus === "found" ? <Check size={14} /> : <Lock size={14} style={{ opacity: 0 }} />}
-                      {gpsStatus === "found" ? "Position enregistrée" : gpsStatus === "loading" ? "Localisation en cours…" : "Utiliser ma position GPS"}
+                      {gpsStatus === "found" ? t('cl1_checkout.position_saved') : gpsStatus === "loading" ? t('cl1_checkout.locating_in_progress') : t('cl1_checkout.use_my_gps_position')}
                     </button>
                     {gpsStatus === "not_found" && (
                       <div className="pf-muted-sm" style={{ marginTop: -8, marginBottom: 16, color: "#dc2626" }}>
-                        Position indisponible — autorisez la géolocalisation ou décrivez précisément votre adresse ci-dessous.
+                        {t('cl1_checkout.position_unavailable')}
                       </div>
                     )}
 
@@ -442,14 +442,14 @@ export default function CheckoutPage() {
                 )}
                 {!isPickup && addressAnalyzing && (
                   <div className="rounded-lg border border-orange-100 bg-orange-50 p-4 text-sm font-semibold text-orange-800 dark:border-orange-900 dark:bg-orange-950/20 dark:text-orange-200" style={{ marginTop: 12 }}>
-                    Analyse de la zone en cours...
+                    {t('cl1_checkout.analyzing_zone')}
                   </div>
                 )}
                 {!isPickup && addressPrecision && (
                   <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/70" style={{ marginTop: 12 }}>
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
-                        <p className="text-xs font-bold uppercase tracking-[0.14em] text-gray-400">Précision adresse</p>
+                        <p className="text-xs font-bold uppercase tracking-[0.14em] text-gray-400">{t('cl1_checkout.address_precision')}</p>
                         <p className="mt-1 text-sm font-bold text-gray-900 dark:text-white">{addressPrecision.driverHint}</p>
                       </div>
                       <span className={`rounded-full px-3 py-1 text-xs font-black uppercase ${
@@ -492,14 +492,14 @@ export default function CheckoutPage() {
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18, flexWrap: "wrap" }}>
                   {stepBadge(3, false)}
                   <div className="pf-card-title" style={{ fontSize: 16 }}>{t('checkout.step_payment')}</div>
-                  <span className="pf-muted-sm" style={{ marginLeft: "auto" }}>Débit unique · aucun frais caché</span>
+                  <span className="pf-muted-sm" style={{ marginLeft: "auto" }}>{t('cl1_checkout.single_debit_no_hidden_fees')}</span>
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12 }}>
                   {([
-                    { p: "MTN_MOMO" as const, n: "MTN Mobile Money", d: "Validation par code secret" },
-                    { p: "ORANGE_MONEY" as const, n: "Orange Money", d: "Validation par code secret" },
-                    { p: "CARD" as const, n: "Carte bancaire", d: "Visa · Mastercard" },
+                    { p: "MTN_MOMO" as const, n: "MTN Mobile Money", d: t('cl1_checkout.secret_code_validation') },
+                    { p: "ORANGE_MONEY" as const, n: "Orange Money", d: t('cl1_checkout.secret_code_validation') },
+                    { p: "CARD" as const, n: t('cl1_checkout.bank_card'), d: "Visa · Mastercard" },
                   ]).map((m) => (
                     <div key={m.p} style={{ display: "flex", alignItems: "center", gap: 11, padding: 13, borderRadius: 16, background: "var(--pf-s3)", border: "1px solid var(--pf-border)" }}>
                       <OperatorLogo provider={m.p} size={38} />
@@ -514,14 +514,13 @@ export default function CheckoutPage() {
                 <div className="pf-info-note">
                   <span className="pf-info-ic"><ShieldCheck size={15} /></span>
                   <div className="pf-muted-sm" style={{ lineHeight: 1.6 }}>
-                    Vous choisirez votre opérateur juste après. Une demande de paiement arrivera sur votre téléphone :
-                    validez-la avec votre code secret, rien à recopier ici.
+                    {t('cl1_checkout.operator_choice_hint')}
                   </div>
                 </div>
               </section>
 
               <button type="submit" className="pf-btn-accent pf-btn-block" disabled={loading}>
-                <Lock size={16} />{loading ? "Création de la commande…" : `Payer ${fmt(finalTotal)}`}
+                <Lock size={16} />{loading ? t('cl1_checkout.creating_order') : t('cl1_checkout.pay_amount', { amount: fmt(finalTotal) })}
               </button>
             </form>
 
@@ -531,12 +530,12 @@ export default function CheckoutPage() {
               {/* Bloc montant — signature visuelle de la maquette */}
               <div className="pf-hero pf-anim">
                 <i />
-                <div className="pf-hero-k">Total à payer</div>
+                <div className="pf-hero-k">{t('cl1_checkout.total_to_pay')}</div>
                 <div className="pf-hero-v">{finalTotal.toLocaleString(locale)}<span>FCFA</span></div>
                 <div style={{ position: "relative", marginTop: 14, display: "flex", gap: 18, fontSize: 12, opacity: .88 }}>
-                  <span>Articles <b>{subtotal.toLocaleString(locale)}</b></span>
+                  <span>{t('cl1_checkout.items_label')} <b>{subtotal.toLocaleString(locale)}</b></span>
                   <span style={{ opacity: .4 }}>|</span>
-                  <span>{isPickup ? "Retrait " : "Livraison "}<b>{shipping === 0 ? "Gratuit" : shipping.toLocaleString(locale)}</b></span>
+                  <span>{isPickup ? `${t('cl1_checkout.pickup_label')} ` : `${t('cl1_checkout.delivery_label')} `}<b>{shipping === 0 ? t('cl1_checkout.free') : shipping.toLocaleString(locale)}</b></span>
                 </div>
               </div>
 
@@ -550,7 +549,7 @@ export default function CheckoutPage() {
                     </span>
                     <div className="pf-order-mid">
                       <div className="pf-order-id" style={{ fontSize: 12.5, fontWeight: 600 }}>{item.name}</div>
-                      <div className="pf-muted-sm">Qté {item.quantity}</div>
+                      <div className="pf-muted-sm">{t('cl1_checkout.quantity_short', { count: item.quantity })}</div>
                     </div>
                     <div className="pf-order-total" style={{ color: "var(--pf-text)" }}>{fmt(item.price * item.quantity)}</div>
                   </div>
@@ -559,8 +558,8 @@ export default function CheckoutPage() {
                 <div style={{ marginTop: 14, borderTop: "1px solid var(--pf-border)", paddingTop: 12 }}>
                   <div className="pf-summary-row"><span className="pf-muted-sm">{t('cart.subtotal')}</span><span className="pf-summary-v">{fmt(subtotal)}</span></div>
                   <div className="pf-summary-row">
-                    <span className="pf-muted-sm">{isPickup ? "Retrait boutique" : t('cart.shipping')}</span>
-                    <span className="pf-summary-v" style={isPickup ? { color: "#128a45" } : undefined}>{isPickup ? "Gratuit" : fmt(shipping)}</span>
+                    <span className="pf-muted-sm">{isPickup ? t('cl1_checkout.store_pickup') : t('cart.shipping')}</span>
+                    <span className="pf-summary-v" style={isPickup ? { color: "#128a45" } : undefined}>{isPickup ? t('cl1_checkout.free') : fmt(shipping)}</span>
                   </div>
                   <div className="pf-total-row" style={{ marginTop: 10, paddingTop: 12, borderTop: "1px dashed var(--pf-border)" }}>
                     <span className="pf-muted-sm">{t('cart.total')}</span><b>{fmt(finalTotal)}</b>
@@ -569,7 +568,7 @@ export default function CheckoutPage() {
 
                 <div className="pf-info-note">
                   <span className="pf-info-ic"><ShieldCheck size={15} /></span>
-                  <div className="pf-muted-sm">Le vendeur n'est payé qu'après votre confirmation de réception.</div>
+                  <div className="pf-muted-sm">{t('cl1_checkout.seller_paid_after_confirmation')}</div>
                 </div>
               </section>
             </aside>

@@ -114,7 +114,7 @@ cd relaya-marketplace
 # GENERAL
 ENV=dev
 DJANGO_DEBUG=1
-DJANGO_SECRET_KEY=relaya_dev_super_secret_key_2025_very_long_and_secure_12345678
+DJANGO_SECRET_KEY=
 
 # DB
 POSTGRES_DB=relaya

@@ -6,6 +6,7 @@
 // d'erreur inutile.
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { NUM } from './tokens';
 
@@ -18,6 +19,7 @@ interface TransactionReferenceProps {
 export default function TransactionReference({
   value, size = 12.5, muted = false,
 }: TransactionReferenceProps) {
+  const { t } = useTranslation();
   const [copie, setCopie] = useState(false);
 
   const copier = () => {
@@ -31,7 +33,9 @@ export default function TransactionReference({
     <button
       type="button"
       onClick={copier}
-      title={copie ? 'Copié' : 'Copier la référence'}
+      title={copie
+        ? t('pm2_shared_tx_reference.copied')
+        : t('pm2_shared_tx_reference.copy')}
       style={{
         ...NUM,
         fontSize: size, padding: 0, border: 'none', background: 'none',

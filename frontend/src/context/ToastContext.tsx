@@ -12,6 +12,7 @@
 // Max 4 toasts simultanés. Le plus ancien est retiré si la limite est dépassée.
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import Toast, { type ToastType, type ToastProps } from '@/components/ui/Toast';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -110,6 +111,7 @@ const MAX_TOASTS = 4;
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function ToastProvider({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   // Injecter les keyframes une fois apres le premier rendu.
   // L'insertion d'un <style> dans le <head> est un effet de bord : elle n'a
   // pas sa place pendant le rendu. `ensureKeyframes` porte deja son propre
@@ -208,7 +210,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <div
             id="belivay-toast-container"
             role="region"
-            aria-label="Notifications"
+            aria-label={t('misc1_toast.notifications_region_label')}
             aria-live="polite"
           >
             {toasts.map(toast => (

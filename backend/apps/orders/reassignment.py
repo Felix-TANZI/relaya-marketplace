@@ -89,19 +89,21 @@ def attempt_automatic_reassignment(order_item, *, reason: str = ""):
     if old_shipment is not None:
         old_shipment.status = Shipment.Status.CANCELLED
         old_shipment.save(update_fields=["status", "updated_at"])
-        ShipmentEvent.objects.create(
+        ShipmentEvent.record(
             shipment=old_shipment,
             status=Shipment.Status.CANCELLED,
             message=f"Réattribution automatique (cas 6.2) — article transféré à un autre vendeur. {reason}".strip(),
             location=order.city,
+            actor_role=ShipmentEvent.ACTOR_ROLE_SYSTEM,
         )
 
     new_shipment = Shipment.objects.create(order=order, vendor=replacement.vendor, status=Shipment.Status.CREATED)
-    ShipmentEvent.objects.create(
+    ShipmentEvent.record(
         shipment=new_shipment,
         status=Shipment.Status.CREATED,
         message="Colis créé par réattribution automatique (cas 6.2) — vendeur d'origine en retard.",
         location=order.city,
+        actor_role=ShipmentEvent.ACTOR_ROLE_SYSTEM,
     )
 
     if order.user_id:

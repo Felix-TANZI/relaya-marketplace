@@ -15,6 +15,8 @@
 // de REPLI quand elles ne sont pas fournies, jamais de source concurrente.
 // ─────────────────────────────────────────────────────────────────────────
 
+import type { TFunction } from 'i18next';
+
 export type ToneKey =
   | 'success' | 'progress' | 'waiting' | 'danger' | 'neutral' | 'held';
 
@@ -35,120 +37,134 @@ export interface StatusMeta {
   action?: string;
 }
 
-export const PAYOUT_STATUS: Record<string, StatusMeta> = {
-  DRAFT: { label: 'Brouillon', tone: 'neutral', meaning: 'Pas encore soumis.' },
+interface StatusMetaKeys {
+  labelKey: string;
+  tone: ToneKey;
+  meaningKey: string;
+  actionKey?: string;
+}
+
+const PAYOUT_STATUS_KEYS: Record<string, StatusMetaKeys> = {
+  DRAFT: { labelKey: 'cl7_payment_status.payout_draft_label', tone: 'neutral', meaningKey: 'cl7_payment_status.payout_draft_meaning' },
   PENDING_APPROVAL: {
-    label: "En attente d'approbation", tone: 'waiting',
-    meaning: 'Un tiers doit valider ce versement.',
-    action: 'Le demandeur ne peut pas approuver sa propre demande.',
+    labelKey: 'cl7_payment_status.payout_pending_approval_label', tone: 'waiting',
+    meaningKey: 'cl7_payment_status.payout_pending_approval_meaning',
+    actionKey: 'cl7_payment_status.payout_pending_approval_action',
   },
   APPROVED: {
-    label: 'Approuvé', tone: 'progress',
-    meaning: "L'argent partira au prochain passage de l'ordonnanceur.",
+    labelKey: 'cl7_payment_status.payout_approved_label', tone: 'progress',
+    meaningKey: 'cl7_payment_status.payout_approved_meaning',
   },
   PROCESSING: {
-    label: 'En cours', tone: 'progress',
-    meaning: 'Émission en cours auprès du prestataire.',
+    labelKey: 'cl7_payment_status.payout_processing_label', tone: 'progress',
+    meaningKey: 'cl7_payment_status.payout_processing_meaning',
   },
-  PAID: { label: 'Versé', tone: 'success', meaning: "L'argent est parti." },
+  PAID: { labelKey: 'cl7_payment_status.payout_paid_label', tone: 'success', meaningKey: 'cl7_payment_status.payout_paid_meaning' },
   FAILED: {
-    label: 'Refusé', tone: 'danger',
-    meaning: 'Le prestataire a refusé ce versement.',
-    action: 'Vérifier le motif, puis créer une NOUVELLE demande.',
+    labelKey: 'cl7_payment_status.payout_failed_label', tone: 'danger',
+    meaningKey: 'cl7_payment_status.payout_failed_meaning',
+    actionKey: 'cl7_payment_status.payout_failed_action',
   },
   UNKNOWN: {
-    label: 'Issue inconnue', tone: 'danger',
-    meaning: "On ignore si l'argent est parti.",
-    action: 'NE JAMAIS RETENTER. Seule la réconciliation tranche.',
+    labelKey: 'cl7_payment_status.payout_unknown_label', tone: 'danger',
+    meaningKey: 'cl7_payment_status.payout_unknown_meaning',
+    actionKey: 'cl7_payment_status.payout_unknown_action',
   },
-  REJECTED: { label: 'Rejeté', tone: 'neutral', meaning: 'Demande refusée.' },
-  CANCELLED: { label: 'Annulé', tone: 'neutral', meaning: 'Demande annulée.' },
-  REVERSED: { label: 'Contre-passé', tone: 'neutral', meaning: 'Écriture inversée.' },
+  REJECTED: { labelKey: 'cl7_payment_status.payout_rejected_label', tone: 'neutral', meaningKey: 'cl7_payment_status.payout_rejected_meaning' },
+  CANCELLED: { labelKey: 'cl7_payment_status.payout_cancelled_label', tone: 'neutral', meaningKey: 'cl7_payment_status.payout_cancelled_meaning' },
+  REVERSED: { labelKey: 'cl7_payment_status.payout_reversed_label', tone: 'neutral', meaningKey: 'cl7_payment_status.payout_reversed_meaning' },
 };
 
-export const ESCROW_STATUS: Record<string, StatusMeta> = {
-  PENDING: { label: 'En attente', tone: 'neutral', meaning: 'Paiement non confirmé.' },
+const ESCROW_STATUS_KEYS: Record<string, StatusMetaKeys> = {
+  PENDING: { labelKey: 'cl7_payment_status.escrow_pending_label', tone: 'neutral', meaningKey: 'cl7_payment_status.escrow_pending_meaning' },
   HELD: {
-    label: 'Sous séquestre', tone: 'held',
-    meaning: 'Fonds conservés par BelivaY. La commande est vivante.',
+    labelKey: 'cl7_payment_status.escrow_held_label', tone: 'held',
+    meaningKey: 'cl7_payment_status.escrow_held_meaning',
   },
   RELEASE_SCHEDULED: {
-    label: 'Libération programmée', tone: 'progress',
-    meaning: 'Les fonds seront libérés à échéance.',
+    labelKey: 'cl7_payment_status.escrow_release_scheduled_label', tone: 'progress',
+    meaningKey: 'cl7_payment_status.escrow_release_scheduled_meaning',
   },
   RELEASED: {
-    label: 'Libéré', tone: 'success',
-    meaning: 'La dette est devenue exigible.',
+    labelKey: 'cl7_payment_status.escrow_released_label', tone: 'success',
+    meaningKey: 'cl7_payment_status.escrow_released_meaning',
   },
   FROZEN: {
-    label: 'Gelé', tone: 'danger',
-    meaning: 'Un litige bloque ces fonds.',
-    action: 'Seul CE séquestre est gelé — les autres du même paiement ne le sont pas.',
+    labelKey: 'cl7_payment_status.escrow_frozen_label', tone: 'danger',
+    meaningKey: 'cl7_payment_status.escrow_frozen_meaning',
+    actionKey: 'cl7_payment_status.escrow_frozen_action',
   },
   REFUNDED: {
-    label: 'Remboursé', tone: 'neutral',
-    meaning: "Cet argent n'ira jamais au partenaire.",
+    labelKey: 'cl7_payment_status.escrow_refunded_label', tone: 'neutral',
+    meaningKey: 'cl7_payment_status.escrow_refunded_meaning',
   },
   PARTIALLY_REFUNDED: {
-    label: 'Partiellement remboursé', tone: 'progress',
-    meaning: 'Une partie a été rendue à l’acheteur.',
+    labelKey: 'cl7_payment_status.escrow_partially_refunded_label', tone: 'progress',
+    meaningKey: 'cl7_payment_status.escrow_partially_refunded_meaning',
   },
-  CANCELLED: { label: 'Annulé', tone: 'neutral', meaning: 'Séquestre annulé.' },
+  CANCELLED: { labelKey: 'cl7_payment_status.escrow_cancelled_label', tone: 'neutral', meaningKey: 'cl7_payment_status.escrow_cancelled_meaning' },
 };
 
-export const REFUND_STATUS: Record<string, StatusMeta> = {
+const REFUND_STATUS_KEYS: Record<string, StatusMetaKeys> = {
   PENDING_APPROVAL: {
-    label: "En attente d'approbation", tone: 'waiting',
-    meaning: 'Un tiers doit valider ce remboursement.',
-    action: "Sans cette barrière, ouvrir un litige et le faire trancher suffirait à encaisser.",
+    labelKey: 'cl7_payment_status.refund_pending_approval_label', tone: 'waiting',
+    meaningKey: 'cl7_payment_status.refund_pending_approval_meaning',
+    actionKey: 'cl7_payment_status.refund_pending_approval_action',
   },
-  APPROVED: { label: 'Approuvé', tone: 'progress', meaning: 'Le virement part sous peu.' },
-  PROCESSING: { label: 'En cours', tone: 'progress', meaning: 'Virement en cours.' },
+  APPROVED: { labelKey: 'cl7_payment_status.refund_approved_label', tone: 'progress', meaningKey: 'cl7_payment_status.refund_approved_meaning' },
+  PROCESSING: { labelKey: 'cl7_payment_status.refund_processing_label', tone: 'progress', meaningKey: 'cl7_payment_status.refund_processing_meaning' },
   PAID: {
-    label: 'Remboursé', tone: 'success',
-    meaning: "L'argent est retourné sur le numéro qui avait payé.",
+    labelKey: 'cl7_payment_status.refund_paid_label', tone: 'success',
+    meaningKey: 'cl7_payment_status.refund_paid_meaning',
   },
   FAILED: {
-    label: 'Refusé', tone: 'danger',
-    meaning: "Le virement n'a pas abouti.",
-    action: 'Créer une NOUVELLE demande.',
+    labelKey: 'cl7_payment_status.refund_failed_label', tone: 'danger',
+    meaningKey: 'cl7_payment_status.refund_failed_meaning',
+    actionKey: 'cl7_payment_status.refund_failed_action',
   },
   UNKNOWN: {
-    label: 'Issue inconnue', tone: 'danger',
-    meaning: "On ignore si l'argent est parti.",
-    action: 'NE JAMAIS RETENTER.',
+    labelKey: 'cl7_payment_status.refund_unknown_label', tone: 'danger',
+    meaningKey: 'cl7_payment_status.refund_unknown_meaning',
+    actionKey: 'cl7_payment_status.refund_unknown_action',
   },
   REJECTED: {
-    label: 'Rejeté', tone: 'neutral',
-    meaning: 'Le séquestre reste gelé : le litige n’est pas tranché pour autant.',
+    labelKey: 'cl7_payment_status.refund_rejected_label', tone: 'neutral',
+    meaningKey: 'cl7_payment_status.refund_rejected_meaning',
   },
 };
 
-export const SETTLEMENT_STATUS: Record<string, StatusMeta> = {
-  DRAFT: { label: 'Brouillon', tone: 'neutral', meaning: 'Lot en préparation.' },
-  CONFIRMED: { label: 'Confirmé', tone: 'progress', meaning: 'Montants figés.' },
+const SETTLEMENT_STATUS_KEYS: Record<string, StatusMetaKeys> = {
+  DRAFT: { labelKey: 'cl7_payment_status.settlement_draft_label', tone: 'neutral', meaningKey: 'cl7_payment_status.settlement_draft_meaning' },
+  CONFIRMED: { labelKey: 'cl7_payment_status.settlement_confirmed_label', tone: 'progress', meaningKey: 'cl7_payment_status.settlement_confirmed_meaning' },
   PAYOUT_REQUESTED: {
-    label: 'Versement demandé', tone: 'waiting',
-    meaning: 'En attente de validation.',
+    labelKey: 'cl7_payment_status.settlement_payout_requested_label', tone: 'waiting',
+    meaningKey: 'cl7_payment_status.settlement_payout_requested_meaning',
   },
-  PAID: { label: 'Versé', tone: 'success', meaning: 'Règlement effectué.' },
-  FAILED: { label: 'Échoué', tone: 'danger', meaning: 'Le versement a échoué.' },
-  CANCELLED: { label: 'Annulé', tone: 'neutral', meaning: 'Lot annulé.' },
+  PAID: { labelKey: 'cl7_payment_status.settlement_paid_label', tone: 'success', meaningKey: 'cl7_payment_status.settlement_paid_meaning' },
+  FAILED: { labelKey: 'cl7_payment_status.settlement_failed_label', tone: 'danger', meaningKey: 'cl7_payment_status.settlement_failed_meaning' },
+  CANCELLED: { labelKey: 'cl7_payment_status.settlement_cancelled_label', tone: 'neutral', meaningKey: 'cl7_payment_status.settlement_cancelled_meaning' },
 };
 
-const TABLES: Record<string, Record<string, StatusMeta>> = {
-  payout: PAYOUT_STATUS,
-  escrow: ESCROW_STATUS,
-  refund: REFUND_STATUS,
-  settlement: SETTLEMENT_STATUS,
+const TABLES: Record<string, Record<string, StatusMetaKeys>> = {
+  payout: PAYOUT_STATUS_KEYS,
+  escrow: ESCROW_STATUS_KEYS,
+  refund: REFUND_STATUS_KEYS,
+  settlement: SETTLEMENT_STATUS_KEYS,
 };
 
 export type StatusDomain = keyof typeof TABLES;
 
-const INCONNU: StatusMeta = { label: '—', tone: 'neutral', meaning: '' };
-
-export function statusMeta(domain: StatusDomain, status: string): StatusMeta {
-  return TABLES[domain]?.[status] ?? INCONNU;
+export function statusMeta(domain: StatusDomain, status: string, t: TFunction): StatusMeta {
+  const entry = TABLES[domain]?.[status];
+  if (!entry) {
+    return { label: '—', tone: 'neutral', meaning: '' };
+  }
+  return {
+    label: t(entry.labelKey),
+    tone: entry.tone,
+    meaning: t(entry.meaningKey),
+    action: entry.actionKey ? t(entry.actionKey) : undefined,
+  };
 }
 
 /** Gravite d'un signal -> teinte. */

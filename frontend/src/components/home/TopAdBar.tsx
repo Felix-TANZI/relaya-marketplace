@@ -1,12 +1,13 @@
+import { useTranslation } from "react-i18next";
 import { BadgeCheck, Gift, Lock, ShieldCheck, Truck } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-const MESSAGES: { icon: LucideIcon; grad: string; text: string }[] = [
-  { icon: Gift,       grad: "linear-gradient(135deg,#ffa04d,#f4610f)", text: "Gagnez des points à chaque achat · Programme Fidélité" },
-  { icon: Lock,       grad: "linear-gradient(135deg,#34d399,#059669)", text: "Paiement sécurisé via MoMo · Escrow BelivaY" },
-  { icon: BadgeCheck, grad: "linear-gradient(135deg,#5bb8ff,#2563eb)", text: "3 200+ Vendeurs certifiés sur BelivaY" },
-  { icon: Truck,      grad: "linear-gradient(135deg,#ffd45c,#f59e0b)", text: "Livraison 24–72h · Cameroun & CEMAC" },
-  { icon: ShieldCheck,grad: "linear-gradient(135deg,#6ee7b7,#059669)", text: "Remboursement sous 7 jours · Sans question" },
+const MESSAGES: { icon: LucideIcon; grad: string; textKey: string }[] = [
+  { icon: Gift,       grad: "linear-gradient(135deg,#ffa04d,#f4610f)", textKey: "home.ad_loyalty" },
+  { icon: Lock,       grad: "linear-gradient(135deg,#34d399,#059669)", textKey: "home.ad_secure_payment" },
+  { icon: BadgeCheck, grad: "linear-gradient(135deg,#5bb8ff,#2563eb)", textKey: "home.ad_certified_vendors" },
+  { icon: Truck,      grad: "linear-gradient(135deg,#ffd45c,#f59e0b)", textKey: "home.ad_delivery" },
+  { icon: ShieldCheck,grad: "linear-gradient(135deg,#6ee7b7,#059669)", textKey: "home.ad_refund" },
 ];
 
 /** Durée d'affichage par message (secondes). Cycle total = SLOT × nb messages. */
@@ -40,6 +41,7 @@ const CSS = `
  * Hauteur h-8 (32 px), compensée par le décalage du header (top-8) dans AppLayout.
  */
 export default function TopAdBar() {
+  const { t } = useTranslation();
   return (
     <div
       data-fixed-top-bar
@@ -68,7 +70,7 @@ export default function TopAdBar() {
           const Icon = message.icon;
           return (
             <div
-              key={message.text}
+              key={message.textKey}
               className="tab-msg"
               aria-hidden={index !== 0}
               style={{ animationDelay: `${index * SLOT}s` }}
@@ -82,7 +84,7 @@ export default function TopAdBar() {
                 <Icon size={13} className="text-white" />
               </span>
               <span className="text-[12px] font-semibold text-gray-100 sm:text-[12.5px]" style={{ whiteSpace: "nowrap" }}>
-                {message.text}
+                {t(message.textKey)}
               </span>
             </div>
           );

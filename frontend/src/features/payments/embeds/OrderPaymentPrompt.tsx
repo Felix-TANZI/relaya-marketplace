@@ -27,6 +27,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
 import { paymentsApi } from '../api/payments.api';
@@ -49,6 +50,7 @@ const EN_COURS = ['PROCESSING'];
 export default function OrderPaymentPrompt({
   orderId, paymentStatus,
 }: OrderPaymentPromptProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [intention, setIntention] = useState<PaymentIntent | null>(null);
   const [chargement, setChargement] = useState(true);
@@ -111,15 +113,13 @@ export default function OrderPaymentPrompt({
           color: 'var(--text-primary, #1A1209)',
         }}>
           {enCours
-            ? 'Un paiement est en cours'
-            : 'Cette commande n’est pas encore payée'}
+            ? t('pm2_embed_prompt.payment_in_progress')
+            : t('pm2_embed_prompt.not_paid_yet')}
         </p>
         <p style={{ fontSize: 12.5, margin: 0, lineHeight: 1.6, color: FT.muted }}>
           {enCours
-            ? 'Si vous avez déjà composé votre code, reprenez pour vérifier '
-              + 'auprès de votre opérateur.'
-            : 'Reprenez le paiement pour la valider. Votre commande est '
-              + 'conservée jusque-là.'}
+            ? t('pm2_embed_prompt.in_progress_hint')
+            : t('pm2_embed_prompt.resume_hint')}
         </p>
         {intention.status === 'FAILED' && intention.failure_reason && (
           // Le message de l'opérateur, tel quel.
@@ -139,7 +139,7 @@ export default function OrderPaymentPrompt({
             borderColor: FT.coral, color: '#993C1D',
           }}
         >
-          {enCours ? 'Reprendre' : 'Payer maintenant'}
+          {enCours ? t('pm2_embed_prompt.resume') : t('pm2_embed_prompt.pay_now')}
         </button>
       </div>
     </div>

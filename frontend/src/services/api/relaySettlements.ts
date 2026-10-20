@@ -14,6 +14,8 @@
 //  pouvoir le consulter.
 // =============================================================================
 
+import type { TFunction } from "i18next";
+
 import { http } from "@/services/api/http";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -205,7 +207,7 @@ export function formatCourt(value: string | null): string {
 }
 
 export function formatPeriode(
-  debut: string | null, fin: string | null,
+  debut: string | null, fin: string | null, t: TFunction,
 ): string {
   const a = debut ? new Date(debut) : null;
   const b = fin ? new Date(fin) : null;
@@ -214,13 +216,14 @@ export function formatPeriode(
   }
   const memeMois = a.getMonth() === b.getMonth()
     && a.getFullYear() === b.getFullYear();
+  const lien = t("misc1_relay_settlements.period_join");
   return memeMois
-    ? `${a.getDate()} au ${COURT.format(b)}`
-    : `${COURT.format(a)} au ${COURT.format(b)}`;
+    ? `${a.getDate()} ${lien} ${COURT.format(b)}`
+    : `${COURT.format(a)} ${lien} ${COURT.format(b)}`;
 }
 
 /** Une date informe ; un compte a rebours ENGAGE. */
-export function compteARebours(value: string | null): string {
+export function compteARebours(value: string | null, t: TFunction): string {
   if (!value) return "";
   const cible = new Date(value);
   if (Number.isNaN(cible.getTime())) return "";
@@ -232,10 +235,10 @@ export function compteARebours(value: string | null): string {
   const jours = Math.round(
     (cible.getTime() - aujourdhui.getTime()) / 86_400_000,
   );
-  if (jours < 0) return "en cours de traitement";
-  if (jours === 0) return "aujourd'hui";
-  if (jours === 1) return "demain";
-  return `dans ${jours} jours`;
+  if (jours < 0) return t("misc1_relay_settlements.processing");
+  if (jours === 0) return t("misc1_relay_settlements.today");
+  if (jours === 1) return t("misc1_relay_settlements.tomorrow");
+  return t("misc1_relay_settlements.in_days", { count: jours });
 }
 
 /**
@@ -244,17 +247,13 @@ export function compteARebours(value: string | null): string {
  * Le message d'origine reste en repli : mieux vaut une phrase technique
  * qu'un gerant sans explication.
  */
-export function humaniserBlocage(blocage: string): string {
+export function humaniserBlocage(blocage: string, t: TFunction): string {
   const regles: Array<[RegExp, string]> = [
-    [/kyc/i, "Vos pièces d'identité ne sont pas encore vérifiées."],
-    [/refroidissement|cooling/i,
-      "Votre numéro Mobile Money a changé récemment. "
-      + "Un délai de sécurité de 72 h s'applique."],
-    [/suspendu|hold/i, "Les versements sont suspendus sur votre compte."],
-    [/numero|msisdn|operateur/i,
-      "Aucun numéro Mobile Money n'est enregistré."],
-    [/montant|minimum/i,
-      "Le montant dû n'atteint pas encore le minimum de versement."],
+    [/kyc/i, t("misc1_relay_settlements.blocker_kyc")],
+    [/refroidissement|cooling/i, t("misc1_relay_settlements.blocker_cooling")],
+    [/suspendu|hold/i, t("misc1_relay_settlements.blocker_suspended")],
+    [/numero|msisdn|operateur/i, t("misc1_relay_settlements.blocker_no_number")],
+    [/montant|minimum/i, t("misc1_relay_settlements.blocker_below_minimum")],
   ];
   const trouve = regles.find(([motif]) => motif.test(blocage));
   return trouve ? trouve[1] : blocage;
@@ -267,18 +266,18 @@ export function humaniserBlocage(blocage: string): string {
  * « echoue » serait faux, et le gerant n'a de toute facon aucune action a
  * faire — la reconciliation tranchera.
  */
-export function libellePayout(status: string): {
+export function libellePayout(status: string, t: TFunction): {
   texte: string; couleur: string;
 } {
   const table: Record<string, { texte: string; couleur: string }> = {
-    PAID: { texte: "versé", couleur: "#10B981" },
-    PROCESSING: { texte: "en cours", couleur: "#F59E0B" },
-    APPROVED: { texte: "approuvé", couleur: "#F59E0B" },
-    PENDING_APPROVAL: { texte: "en attente", couleur: "#F59E0B" },
-    UNKNOWN: { texte: "en vérification", couleur: "#EF4444" },
-    FAILED: { texte: "non abouti", couleur: "#EF4444" },
-    REJECTED: { texte: "rejeté", couleur: "#94A3B8" },
-    CANCELLED: { texte: "annulé", couleur: "#94A3B8" },
+    PAID: { texte: t("misc1_relay_settlements.status_paid"), couleur: "#10B981" },
+    PROCESSING: { texte: t("misc1_relay_settlements.status_processing"), couleur: "#F59E0B" },
+    APPROVED: { texte: t("misc1_relay_settlements.status_approved"), couleur: "#F59E0B" },
+    PENDING_APPROVAL: { texte: t("misc1_relay_settlements.status_pending_approval"), couleur: "#F59E0B" },
+    UNKNOWN: { texte: t("misc1_relay_settlements.status_unknown"), couleur: "#EF4444" },
+    FAILED: { texte: t("misc1_relay_settlements.status_failed"), couleur: "#EF4444" },
+    REJECTED: { texte: t("misc1_relay_settlements.status_rejected"), couleur: "#94A3B8" },
+    CANCELLED: { texte: t("misc1_relay_settlements.status_cancelled"), couleur: "#94A3B8" },
   };
   return table[status] ?? { texte: status.toLowerCase(), couleur: "#94A3B8" };
 }

@@ -2,6 +2,7 @@
 // Lots de reglement — construction et confirmation.
 
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { adminFinanceApi } from '../../api/admin-finance.api';
 import type { ListParams } from '../../api/admin-finance.api';
@@ -32,6 +33,7 @@ const FILTRES: Record<string, string> = {
 export default function AdminSettlementsPage({
   basePath = '/admin/finance',
 }: SettlementsPageProps) {
+  const { t } = useTranslation();
   const [filtre, setFiltre] = useState('all');
   const [page, setPage] = useState(1);
 
@@ -47,16 +49,21 @@ export default function AdminSettlementsPage({
   const lignes = data?.results ?? [];
 
   const onglets: FilterTab[] = [
-    { key: 'all', label: 'Tous' },
-    { key: 'draft', label: 'Brouillons' },
-    { key: 'confirmed', label: 'Confirmés' },
-    { key: 'paid', label: 'Versés' },
+    { key: 'all', label: t('pm1_settlements.tab_all') },
+    { key: 'draft', label: t('pm1_settlements.tab_draft') },
+    { key: 'confirmed', label: t('pm1_settlements.tab_confirmed') },
+    { key: 'paid', label: t('pm1_settlements.tab_paid') },
   ];
 
   return (
     <AdminPageShell
-      title="Règlements"
-      subtitle={`${data?.count ?? 0} lot${(data?.count ?? 0) > 1 ? 's' : ''}`}
+      title={t('pm1_settlements.title')}
+      subtitle={t(
+        (data?.count ?? 0) > 1
+          ? 'pm1_settlements.subtitle_count_plural'
+          : 'pm1_settlements.subtitle_count',
+        { count: data?.count ?? 0 },
+      )}
       backTo={basePath}
       actions={(
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -71,12 +78,12 @@ export default function AdminSettlementsPage({
             onClick={() => {
               void action.run(
                 () => adminFinanceApi.buildSettlements({ confirm: true }),
-                'Lots construits et confirmés.',
+                t('pm1_settlements.build_success'),
               );
             }}
             style={{ fontSize: 12.5, padding: '7px 14px' }}
           >
-            {action.running ? 'Construction…' : 'Construire le cycle'}
+            {action.running ? t('pm1_settlements.building') : t('pm1_settlements.build_cycle')}
           </button>
         </div>
       )}
@@ -108,14 +115,14 @@ export default function AdminSettlementsPage({
       <AdminCard>
         {loading && (
           <div style={{ padding: '2.5rem', textAlign: 'center' }}>
-            <span style={{ fontSize: 13, color: FT.faint }}>Chargement…</span>
+            <span style={{ fontSize: 13, color: FT.faint }}>{t('pm1_settlements.loading')}</span>
           </div>
         )}
 
         {!loading && error && (
           <EmptyState
             icon="alert-circle"
-            title="Impossible d'afficher les règlements"
+            title={t('pm1_settlements.error_title')}
             description={error}
           />
         )}
@@ -123,8 +130,8 @@ export default function AdminSettlementsPage({
         {!loading && !error && lignes.length === 0 && (
           <EmptyState
             icon="receipt"
-            title="Aucun lot de règlement"
-            description="Construisez le cycle pour regrouper les séquestres libérés."
+            title={t('pm1_settlements.empty_title')}
+            description={t('pm1_settlements.empty_description')}
           />
         )}
 
@@ -151,11 +158,18 @@ export default function AdminSettlementsPage({
                 {/* La liste admin ne porte pas `lines` : seul le detail les
                     expose (AdminBatchDetailSerializer). On n'affiche donc le
                     compte que lorsqu'il est reellement disponible. */}
-                {!!lot.lines?.length && ` · ${lot.lines.length} ligne${
-                  lot.lines.length > 1 ? 's' : ''}`}
+                {!!lot.lines?.length && t(
+                  lot.lines.length > 1
+                    ? 'pm1_settlements.lines_count_plural'
+                    : 'pm1_settlements.lines_count',
+                  { count: lot.lines.length },
+                )}
                 {/* Un lot hors cycle est une derogation : elle doit se voir. */}
                 {lot.is_exceptional && (
-                  <span style={{ color: FT.amberD }}> · hors cycle</span>
+                  <span style={{ color: FT.amberD }}>
+                    {' '}
+                    {t('pm1_settlements.exceptional_label')}
+                  </span>
                 )}
               </p>
             </div>
@@ -181,12 +195,12 @@ export default function AdminSettlementsPage({
                   onClick={() => {
                     void action.run(
                       () => adminFinanceApi.confirmSettlement(lot.reference),
-                      'Lot confirmé.',
+                      t('pm1_settlements.confirm_success'),
                     );
                   }}
                   style={{ fontSize: 12, padding: '5px 12px' }}
                 >
-                  Confirmer
+                  {t('pm1_settlements.confirm_button')}
                 </button>
               )}
               {lot.status === 'CONFIRMED' && (
@@ -196,12 +210,12 @@ export default function AdminSettlementsPage({
                   onClick={() => {
                     void action.run(
                       () => adminFinanceApi.requestPayout(lot.reference),
-                      'Versement demandé.',
+                      t('pm1_settlements.payout_requested_success'),
                     );
                   }}
                   style={{ fontSize: 12, padding: '5px 12px' }}
                 >
-                  Demander
+                  {t('pm1_settlements.request_button')}
                 </button>
               )}
             </div>
@@ -214,7 +228,11 @@ export default function AdminSettlementsPage({
             pages={data.pages}
             count={data.count}
             onChange={setPage}
-            label="lot"
+            label={t(
+              data.count > 1
+                ? 'pm1_settlements.pagination_unit_plural'
+                : 'pm1_settlements.pagination_unit',
+            )}
           />
         )}
       </AdminCard>

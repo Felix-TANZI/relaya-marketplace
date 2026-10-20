@@ -1,0 +1,1627 @@
+[
+ {
+  "prototype": "272 579",
+  "site": "274 579",
+  "noeud": true,
+  "routes": [
+   "premiere-commande"
+  ],
+  "etats": [
+   "premiere-commande?st=domicile"
+  ],
+  "motif": "Première commande à domicile, panier de référence : Ram 1 380 + 3 remises à domicile 3 000 − offert 1 500 = 274 579 F (frais.calculer, DP-19)"
+ },
+ {
+  "prototype": "Payer 272 579 F",
+  "site": "Payer 274 579 F",
+  "noeud": true,
+  "routes": [
+   "premiere-commande"
+  ],
+  "etats": [
+   "premiere-commande?st=domicile"
+  ],
+  "motif": "Première commande à domicile, panier de référence : Ram 1 380 + 3 remises à domicile 3 000 − offert 1 500 = 274 579 F (frais.calculer, DP-19)"
+ },
+ {
+  "prototype": "272 579",
+  "site": "273 379",
+  "motif": "Panier de référence (3 boutiques, 3 colis) : remise par colis, DP-18 (moteurs/README.md)"
+ },
+ {
+  "prototype": "272 079",
+  "site": "272 479",
+  "motif": "« Changer d'offre » : mixeur par la boutique A, 2 colis ; DP-18 (moteurs/README.md)"
+ },
+ {
+  "prototype": "121 500",
+  "site": "121 900",
+  "motif": "Boutique A retirée (et commande carte B + C) : DP-18 (moteurs/README.md)"
+ },
+ {
+  "prototype": "190 500",
+  "site": "191 000",
+  "motif": "Téléviseur XL à domicile, 5,2 km : supplément 2 000 F de 5 à 10 km, DP-07 (moteurs/README.md)"
+ },
+ {
+  "prototype": "274 579",
+  "site": "275 379",
+  "motif": "Panier de référence, prix en hausse : DP-18 (moteurs/README.md)"
+ },
+ {
+  "prototype": "271 079",
+  "site": "271 879",
+  "motif": "Panier de référence, prix en baisse : DP-18 (moteurs/README.md)"
+ },
+ {
+  "prototype": "235 079",
+  "site": "235 479",
+  "motif": "Panier de référence, mixeur retiré : DP-18 (moteurs/README.md)"
+ },
+ {
+  "prototype": "220 579",
+  "site": "221 379",
+  "motif": "Panier de référence, sac cuir pris : DP-18 (moteurs/README.md)"
+ },
+ {
+  "prototype": "196 780",
+  "site": "197 580",
+  "motif": "BLV-52107 (3 colis) : DP-18 (moteurs/tests/test_comptoir_annulation_carte.py)"
+ },
+ {
+  "prototype": "84 380",
+  "site": "84 780",
+  "motif": "BLV-52107, annuler la boutique B : CAL-24 avec DP-18"
+ },
+ {
+  "prototype": "90 400",
+  "site": "90 800",
+  "motif": "BLV-52107, annuler A après B : CAL-24 avec DP-18"
+ },
+ {
+  "prototype": "90 280",
+  "site": "90 680",
+  "motif": "BLV-52107, annuler A d'abord : CAL-24 avec DP-18"
+ },
+ {
+  "prototype": "33 780",
+  "site": "34 180",
+  "motif": "BLV-52018 (2 colis) : DP-18 (moteurs/tests/test_garde.py)"
+ },
+ {
+  "prototype": "32 280",
+  "site": "32 680",
+  "motif": "BLV-52018, remboursé au renvoi : payé − 1 500 F retenus, DP-18"
+ },
+ {
+  "prototype": "123 930",
+  "site": "124 338",
+  "motif": "Carte, commande B + C : 121 900 + 2 % (carte.py)"
+ },
+ {
+  "prototype": "34 456",
+  "site": "34 864",
+  "motif": "BLV-52018 par Apple Pay : 34 180 + 2 % (carte.py)"
+ },
+ {
+  "prototype": "188,93",
+  "site": "189,55",
+  "texte": true,
+  "motif": "Carte B + C en euros : 124 338 F ÷ 655,957 (carte.py)"
+ },
+ {
+  "prototype": "188.93",
+  "site": "189.55",
+  "texte": true,
+  "motif": "idem, écrit à l'anglaise"
+ },
+ {
+  "prototype": "51,50",
+  "site": "52,11",
+  "texte": true,
+  "motif": "BLV-52018 en euros : 34 180 F ÷ 655,957 (carte.py)"
+ },
+ {
+  "prototype": "51.50",
+  "site": "52.11",
+  "texte": true,
+  "motif": "idem, écrit à l'anglaise"
+ },
+ {
+  "prototype": "52,53",
+  "site": "53,15",
+  "texte": true,
+  "motif": "BLV-52018 par Apple Pay en euros : 34 864 F ÷ 655,957 (carte.py)"
+ },
+ {
+  "prototype": "52.53",
+  "site": "53.15",
+  "texte": true,
+  "motif": "idem, écrit à l'anglaise"
+ },
+ {
+  "prototype": "Le même produit existe à Mvog-Ada — tu économiserais 500 F.",
+  "site": "Le même produit existe à Mvog-Ada — tu économiserais 900 F.",
+  "noeud": true,
+  "routes": [
+   "connexion",
+   "paiement-moyen",
+   "panier",
+   "panier-retrait",
+   "xp-pay"
+  ],
+  "motif": "DP-18 : en regroupant le mixeur chez la boutique A, le panier passe de 3 à 2 colis : Ram 1 380 → 880 F (−500 F) ET une remise de 400 F en moins. Moteur frais.gain_conseil(panier de référence, mixeur par A) = 273 379 − 272 479 = 900 F (spécification : 500 F)."
+ },
+ {
+  "prototype": " même Mixeur-blender 2 L · 600 W, livré depuis Mvog-Ada par la boutique A. Tu économises 500 F.",
+  "site": " même Mixeur-blender 2 L · 600 W, livré depuis Mvog-Ada par la boutique A. Tu économises 900 F.",
+  "noeud": true,
+  "routes": [
+   "panier"
+  ],
+  "motif": "DP-18 : en regroupant le mixeur chez la boutique A, le panier passe de 3 à 2 colis : Ram 1 380 → 880 F (−500 F) ET une remise de 400 F en moins. Moteur frais.gain_conseil(panier de référence, mixeur par A) = 273 379 − 272 479 = 900 F (spécification : 500 F). Variantes vérifiées au moteur : panier?st=retire (sac pris) et prix en hausse donnent aussi 900 F ; Camon 30 retiré : 120 F, inchangé."
+ },
+ {
+  "prototype": "1 500 F",
+  "site": "2 000 F",
+  "noeud": true,
+  "routes": [
+   "panier"
+  ],
+  "motif": "DP-07 / DP-46 : supplément XL selon la distance boutique → domicile ; téléviseur 43″ à 5,2 km = palier « 5 à 10 km » = 2 000 F. Moteur catalogue.prix_livre(189 000, XL, domicile, 5,2 km) : supplément 2 000 F, total 191 000 F (déjà affiché ; la ligne affichait encore 1 500 F, 189 000 + 500 + 1 000 − 1 500 + 1 500 = 190 500 ≠ 191 000)."
+ },
+ {
+  "prototype": "+ 1 200 F retrait",
+  "site": "+ 1 100 F retrait",
+  "noeud": true,
+  "routes": [
+   "accueil",
+   "cgu"
+  ],
+  "motif": "Ventilateur sur pied 16″ (24 500 F, L) et Riz parfumé 25 kg (18 500 F, L) : ancien 900 + 300 (colis L). DP-07 + DP-25 : plus de supplément de classe M ou L ; un colis L paie 600 F de remise au relais au lieu de 400 F. Moteur catalogue.prix_livre(prix, L, relais) : livraison 1 100 F, supplément 0 F, total 25 600 (ventilateur) et 19 600 (riz) F."
+ },
+ {
+  "prototype": "+ 1 100 F retrait",
+  "site": "+ 900 F retrait",
+  "noeud": true,
+  "routes": [
+   "accueil",
+   "cgu"
+  ],
+  "motif": "Huile d'arachide 5 L (9 800 F, M) : ancien 900 + 200 (colis M). DP-07 : aucun supplément M. Moteur catalogue.prix_livre(9 800, M, relais) : livraison 900 F, supplément 0 F, total 10 700 F."
+ },
+ {
+  "prototype": "25 700 F livré à ton relais",
+  "site": "25 600 F livré à ton relais",
+  "noeud": true,
+  "routes": [
+   "fiche"
+  ],
+  "motif": "Ventilateur : 24 500 + 500 (ramassage) + 600 (remise L, DP-25), sans supplément (DP-07). Moteur prix_livre total 25 600 F (prototype 24 500 + 900 + 300 = 25 700)."
+ },
+ {
+  "prototype": "+ 1 500 F",
+  "site": "+ 2 000 F",
+  "noeud": true,
+  "routes": [
+   "fiche"
+  ],
+  "motif": "Téléviseur LED 43″ (XL) : DP-07 / DP-46, supplément selon la distance boutique → domicile ; 5,2 km (distance du jeu d'essai, reprise par moteurs/README.md) → palier 5 à 10 km = 2 000 F. Moteur prix_livre(189 000, XL, domicile, 5,2) : supplément 2 000 F, total 191 000 F (= panier?st=xl)."
+ },
+ {
+  "prototype": "880 F",
+  "site": "1 680 F",
+  "noeud": true,
+  "routes": [
+   "annuler-confirmer",
+   "rentree-liste",
+   "reseau"
+  ],
+  "motif": "Ligne « Livraison · 3 colis » du panier de référence hors ligne : DP-18, Ram 1 380 + Rem 1 200 − Off 900 = 1 680 F (moteur frais.calculer) ; 271 699 + 1 680 = 273 379 F (total déjà affiché)."
+ },
+ {
+  "prototype": "Payer 400 F",
+  "site": "Payer 300 F",
+  "noeud": true,
+  "routes": [
+   "code",
+   "code-partage",
+   "commandes",
+   "comptoir",
+   "comptoir-payer",
+   "reseau"
+  ],
+  "motif": "DP-08, grille 0, 100, 100, 100, 200, 500, 1 000 F. Moteur garde.etat(BLV-52018, J0 lun. 21, relais fermé le dimanche) : jeu. 24 (4e jour) 300 F dus, 500 F demain (prototype 400 et 600)."
+ },
+ {
+  "prototype": "400",
+  "site": "300",
+  "noeud": true,
+  "routes": [
+   "code",
+   "code-partage",
+   "commandes",
+   "comptoir-payer",
+   "garde",
+   "reseau"
+  ],
+  "motif": "DP-08, grille 0, 100, 100, 100, 200, 500, 1 000 F. Moteur garde.etat(BLV-52018, J0 lun. 21, relais fermé le dimanche) : jeu. 24 (4e jour) 300 F dus, 500 F demain (prototype 400 et 600). Grand montant « Montant dû » (le « F » est un nœud à part)."
+ },
+ {
+  "prototype": "Montant dû : 400 F",
+  "site": "Montant dû : 300 F",
+  "noeud": true,
+  "routes": [
+   "commande",
+   "suivi"
+  ],
+  "motif": "DP-08, grille 0, 100, 100, 100, 200, 500, 1 000 F. Moteur garde.etat(BLV-52018, J0 lun. 21, relais fermé le dimanche) : jeu. 24 (4e jour) 300 F dus, 500 F demain (prototype 400 et 600)."
+ },
+ {
+  "prototype": "Avec ton code et le montant dû (400 F)",
+  "site": "Avec ton code et le montant dû (300 F)",
+  "noeud": true,
+  "routes": [
+   "commande"
+  ],
+  "motif": "DP-08, grille 0, 100, 100, 100, 200, 500, 1 000 F. Moteur garde.etat(BLV-52018, J0 lun. 21, relais fermé le dimanche) : jeu. 24 (4e jour) 300 F dus, 500 F demain (prototype 400 et 600)."
+ },
+ {
+  "prototype": "600 F demain",
+  "site": "500 F demain",
+  "noeud": true,
+  "routes": [
+   "commandes",
+   "lien-court"
+  ],
+  "motif": "DP-08, grille 0, 100, 100, 100, 200, 500, 1 000 F. Moteur garde.etat(BLV-52018, J0 lun. 21, relais fermé le dimanche) : jeu. 24 (4e jour) 300 F dus, 500 F demain (prototype 400 et 600)."
+ },
+ {
+  "prototype": "Garde de tes 2 colis au Relais Mvog-Ada · 600 F demain",
+  "site": "Garde de tes 2 colis au Relais Mvog-Ada · 500 F demain",
+  "noeud": true,
+  "routes": [
+   "commandes"
+  ],
+  "motif": "DP-08, grille 0, 100, 100, 100, 200, 500, 1 000 F. Moteur garde.etat(BLV-52018, J0 lun. 21, relais fermé le dimanche) : jeu. 24 (4e jour) 300 F dus, 500 F demain (prototype 400 et 600)."
+ },
+ {
+  "prototype": "Paie le montant dû sur ton téléphone : 400 F",
+  "site": "Paie le montant dû sur ton téléphone : 300 F",
+  "noeud": true,
+  "routes": [
+   "comptoir"
+  ],
+  "motif": "DP-08, grille 0, 100, 100, 100, 200, 500, 1 000 F. Moteur garde.etat(BLV-52018, J0 lun. 21, relais fermé le dimanche) : jeu. 24 (4e jour) 300 F dus, 500 F demain (prototype 400 et 600)."
+ },
+ {
+  "prototype": "400 F payés en MoMo à 10 h 30. Photo de remise prise par Mme Ngo Bassong.",
+  "site": "300 F payés en MoMo à 10 h 30. Photo de remise prise par Mme Ngo Bassong.",
+  "noeud": true,
+  "routes": [
+   "comptoir"
+  ],
+  "motif": "DP-08, grille 0, 100, 100, 100, 200, 500, 1 000 F. Moteur garde.etat(BLV-52018, J0 lun. 21, relais fermé le dimanche) : jeu. 24 (4e jour) 300 F dus, 500 F demain (prototype 400 et 600). Retrait à 10 h 32 le jeudi 24 (comptoir.montant_du_au_retrait(0, 300) = 300 F, test du moteur)."
+ },
+ {
+  "prototype": "Tu as validé les 400 F sur ton téléphone à 12 h 08.",
+  "site": "Tu as validé les 300 F sur ton téléphone à 12 h 08.",
+  "noeud": true,
+  "routes": [
+   "comptoir"
+  ],
+  "motif": "DP-08, grille 0, 100, 100, 100, 200, 500, 1 000 F. Moteur garde.etat(BLV-52018, J0 lun. 21, relais fermé le dimanche) : jeu. 24 (4e jour) 300 F dus, 500 F demain (prototype 400 et 600). (retrait par un tiers, même jour)."
+ },
+ {
+  "prototype": "400 F",
+  "site": "300 F",
+  "noeud": true,
+  "routes": [
+   "comptoir-payer",
+   "lien-court"
+  ],
+  "motif": "DP-08, grille 0, 100, 100, 100, 200, 500, 1 000 F. Moteur garde.etat(BLV-52018, J0 lun. 21, relais fermé le dimanche) : jeu. 24 (4e jour) 300 F dus, 500 F demain (prototype 400 et 600). Ligne « Frais de garde · 2 colis »."
+ },
+ {
+  "prototype": " · dû 400 F aujourd’hui",
+  "site": " · dû 300 F aujourd’hui",
+  "noeud": true,
+  "routes": [
+   "reseau"
+  ],
+  "motif": "DP-08, grille 0, 100, 100, 100, 200, 500, 1 000 F. Moteur garde.etat(BLV-52018, J0 lun. 21, relais fermé le dimanche) : jeu. 24 (4e jour) 300 F dus, 500 F demain (prototype 400 et 600)."
+ },
+ {
+  "prototype": "600",
+  "site": "500",
+  "noeud": true,
+  "routes": [
+   "garde"
+  ],
+  "motif": "DP-08 : vendredi 25 (5e jour), dû = 100 + 100 + 100 + 200 = 500 F (moteur garde.etat ; prototype 600 F)."
+ },
+ {
+  "prototype": " que la valeur de tes colis ; au plus 1 400 F de garde, 1 900 F avec le renvoi.",
+  "site": " que la valeur de tes colis ; au plus 2 000 F de garde, 2 500 F avec le renvoi.",
+  "noeud": true,
+  "routes": [
+   "garde"
+  ],
+  "motif": "DP-08 : plafond = somme de la grille 0 + 100 + 100 + 100 + 200 + 500 + 1 000 = 2 000 F, + 500 F de renvoi = 2 500 F (textes-messages.md, « Plafond » ; prototype 1 400 / 1 900 F)."
+ },
+ {
+  "prototype": "Sinon, lundi 28 : tes colis repartent chez le vendeur, avec 500 F de frais de renvoi. 1 300 F seraient retenus sur ton remboursement.",
+  "site": "Sinon, lundi 28 : tes colis repartent chez le vendeur, avec 500 F de frais de renvoi. 1 400 F seraient retenus sur ton remboursement.",
+  "noeud": true,
+  "routes": [
+   "garde"
+  ],
+  "motif": "DP-08, variante relais fermé le jeudi 24 : garde 900 F + renvoi 500 F = 1 400 F (moteur garde.renvoi ; test test_variante_fermeture_jeudi ; prototype 1 300 F)."
+ },
+ {
+  "prototype": "Sinon, jeudi 1er oct. : tes colis repartent chez le vendeur, avec 500 F de frais de renvoi. 1 700 F seraient retenus sur ton remboursement.",
+  "site": "Sinon, jeudi 1er oct. : tes colis repartent chez le vendeur, avec 500 F de frais de renvoi. 2 400 F seraient retenus sur ton remboursement.",
+  "noeud": true,
+  "routes": [
+   "garde"
+  ],
+  "motif": "DP-08, variante « avis non vu » (J0 = jeu. 24, 7e jour mer. 30 ouvert) : garde 1 900 F + renvoi 500 F = 2 400 F (moteur garde.renvoi ; prototype 1 700 F). Remboursé : 34 180 − 2 400 = 31 780 F."
+ },
+ {
+  "prototype": "Montant dû : 100 F. 100 F par jour jusqu’au mer. 23, puis 200 F. Retrait avant sam. 26 au soir, sinon renvoi (+ 500 F).",
+  "site": "Montant dû : 100 F. 100 F par jour jusqu’au jeu. 24, puis 200 F. Retrait avant sam. 26 au soir, sinon renvoi (+ 500 F).",
+  "noeud": true,
+  "routes": [
+   "push"
+  ],
+  "motif": "DP-08 / DP-34 : rappel S0 (mar. 22) recalculé, texte de logique-metier/textes-messages.md (119 / 120 car.) : le 4e jour coûte 100 F, le tarif passe à 200 F le vendredi 25.",
+  "en": "Amount due: 100 F. 100 F per day until Thu 24, then 200 F. Pick up by Sat 26 evening, or it goes back (+ 500 F)."
+ },
+ {
+  "prototype": "Montant dû : 400 F, dans l’application et au comptoir.",
+  "site": "Montant dû : 300 F, dans l’application et au comptoir.",
+  "noeud": true,
+  "routes": [
+   "push"
+  ],
+  "motif": "DP-08, grille 0, 100, 100, 100, 200, 500, 1 000 F. Moteur garde.etat(BLV-52018, J0 lun. 21, relais fermé le dimanche) : jeu. 24 (4e jour) 300 F dus, 500 F demain (prototype 400 et 600)."
+ },
+ {
+  "prototype": "BLV-52018, Relais Mvog-Ada. Montant du : 600 F. 400 F par jour des demain (sam. 26). Retrait avant le sam. 26 au soir, sinon renvoi au vendeur (+500 F).",
+  "site": "BLV-52018, Relais Mvog-Ada. Montant du : 500 F. 500 F demain (sam. 26). Retrait avant le sam. 26 au soir, sinon renvoi au vendeur (+500 F).",
+  "noeud": true,
+  "routes": [
+   "push"
+  ],
+  "motif": "DP-08 / DP-34 : SMS S2 (ven. 25) recalculé, texte de textes-messages.md (139 / 160 car.) ; moteur garde.rappels : S2 dû 500 F, samedi 500 F.",
+  "en": "BLV-52018, Relais Mvog-Ada. Amount due: 500 F. 500 F tomorrow (Sat 26). Pick up before Sat 26 evening, or it goes back to the seller (+500 F)."
+ },
+ {
+  "prototype": "Relais Mvog-Ada, 8h-19h. Montant du aujourd'hui : 400 F. Code de retrait BLV-52018 (renvoi 1 sur 3) : 604318, QR : ",
+  "site": "Relais Mvog-Ada, 8h-19h. Montant du aujourd'hui : 300 F. Code de retrait BLV-52018 (renvoi 1 sur 3) : 604318, QR : ",
+  "noeud": true,
+  "routes": [
+   "sms"
+  ],
+  "motif": "DP-08, grille 0, 100, 100, 100, 200, 500, 1 000 F. Moteur garde.etat(BLV-52018, J0 lun. 21, relais fermé le dimanche) : jeu. 24 (4e jour) 300 F dus, 500 F demain (prototype 400 et 600). Renvoi du code le jeudi 24 à 10 h 15."
+ },
+ {
+  "prototype": "Après le 7e jour, il repart chez le vendeur le premier jour d’ouverture du relais. Frais : la garde plus 500 F, 1 900 F au plus, retenus sur ton remboursement. Le reste t’est remboursé.",
+  "site": "Après le 7e jour, il repart chez le vendeur le premier jour d’ouverture du relais. Frais : la garde plus 500 F, 2 500 F au plus, retenus sur ton remboursement. Le reste t’est remboursé.",
+  "noeud": true,
+  "routes": [
+   "faq"
+  ],
+  "motif": "DP-08 : plafond 2 000 F de garde + 500 F de renvoi = 2 500 F."
+ },
+ {
+  "prototype": "Jour d’arrivée gratuit, puis de 100 F à 400 F par jour.",
+  "site": "Jour d’arrivée gratuit, puis de 100 F à 1 000 F par jour.",
+  "noeud": true,
+  "routes": [
+   "legal-doc"
+  ],
+  "motif": "DP-08 : le tarif du 7e jour est 1 000 F."
+ },
+ {
+  "prototype": "Après le 7e jour, le colis repart chez le vendeur : la garde et 500 F de renvoi sont retenus sur ton remboursement, 1 900 F au plus.",
+  "site": "Après le 7e jour, le colis repart chez le vendeur : la garde et 500 F de renvoi sont retenus sur ton remboursement, 2 500 F au plus.",
+  "noeud": true,
+  "routes": [
+   "legal-doc"
+  ],
+  "motif": "DP-08 : 2 000 + 500 = 2 500 F."
+ },
+ {
+  "prototype": "Transfert 400 F",
+  "site": "Transfert 800 F",
+  "noeud": true,
+  "routes": [
+   "changer-relais"
+  ],
+  "motif": "DP-37 : le transfert coûte la remise au relais DE CHAQUE COLIS (400 F S/M, 600 F L). BLV-52018 = 2 colis S arrivés : 2 × 400 = 800 F ; garde du jeudi 300 F (DP-08). Moteur annulation.changer_de_relais : transfert 800, garde 300, montant dû 1 100 F (prototype : 400 + 400 = 800 F). (prix affiché sur chaque relais proposé)."
+ },
+ {
+  "prototype": "Montant dû : 800 F",
+  "site": "Montant dû : 1 100 F",
+  "noeud": true,
+  "routes": [
+   "changer-relais"
+  ],
+  "motif": "DP-37 : le transfert coûte la remise au relais DE CHAQUE COLIS (400 F S/M, 600 F L). BLV-52018 = 2 colis S arrivés : 2 × 400 = 800 F ; garde du jeudi 300 F (DP-08). Moteur annulation.changer_de_relais : transfert 800, garde 300, montant dû 1 100 F (prototype : 400 + 400 = 800 F)."
+ },
+ {
+  "prototype": "Jours 1 à 4 : gratuit, 100 F, 100 F, 200 F",
+  "site": "Jours 1 à 4 : gratuit, 100 F, 100 F, 100 F",
+  "noeud": true,
+  "routes": [
+   "changer-relais"
+  ],
+  "motif": "DP-37 : le transfert coûte la remise au relais DE CHAQUE COLIS (400 F S/M, 600 F L). BLV-52018 = 2 colis S arrivés : 2 × 400 = 800 F ; garde du jeudi 300 F (DP-08). Moteur annulation.changer_de_relais : transfert 800, garde 300, montant dû 1 100 F (prototype : 400 + 400 = 800 F)."
+ },
+ {
+  "prototype": "800 F",
+  "site": "1 100 F",
+  "noeud": true,
+  "routes": [
+   "changer-relais"
+  ],
+  "motif": "DP-37 : le transfert coûte la remise au relais DE CHAQUE COLIS (400 F S/M, 600 F L). BLV-52018 = 2 colis S arrivés : 2 × 400 = 800 F ; garde du jeudi 300 F (DP-08). Moteur annulation.changer_de_relais : transfert 800, garde 300, montant dû 1 100 F (prototype : 400 + 400 = 800 F). Total « Montant dû »."
+ },
+ {
+  "prototype": "Payer 800 F avec MTN MoMo",
+  "site": "Payer 1 100 F avec MTN MoMo",
+  "noeud": true,
+  "routes": [
+   "changer-relais"
+  ],
+  "motif": "DP-37 : le transfert coûte la remise au relais DE CHAQUE COLIS (400 F S/M, 600 F L). BLV-52018 = 2 colis S arrivés : 2 × 400 = 800 F ; garde du jeudi 300 F (DP-08). Moteur annulation.changer_de_relais : transfert 800, garde 300, montant dû 1 100 F (prototype : 400 + 400 = 800 F)."
+ },
+ {
+  "prototype": "800 F payés avec MTN MoMo · ",
+  "site": "1 100 F payés avec MTN MoMo · ",
+  "noeud": true,
+  "routes": [
+   "changer-relais"
+  ],
+  "motif": "DP-37 : le transfert coûte la remise au relais DE CHAQUE COLIS (400 F S/M, 600 F L). BLV-52018 = 2 colis S arrivés : 2 × 400 = 800 F ; garde du jeudi 300 F (DP-08). Moteur annulation.changer_de_relais : transfert 800, garde 300, montant dû 1 100 F (prototype : 400 + 400 = 800 F)."
+ },
+ {
+  "prototype": "22 500 F",
+  "site": "22 900 F",
+  "noeud": true,
+  "routes": [
+   "annuler",
+   "annuler-confirmer",
+   "modifier"
+  ],
+  "motif": "CAL-24 avec DP-18 : annuler la boutique C rend 22 000 F + la différence de frais (Ram 1 380 → 880 : 500 F ; Rem 1 200 → 800 : 400 F) = 22 900 F. Moteur annulation.annuler(BLV-52107, « C ») = 22 900 F ; même montant après l'annulation de B (frais A + C 900 F → A seule 0 F, Off conservé : 22 000 + 900 = 22 900 F). Prototype 22 500 F."
+ },
+ {
+  "prototype": "22 500",
+  "site": "22 900",
+  "noeud": true,
+  "routes": [
+   "annuler"
+  ],
+  "motif": "CAL-24 avec DP-18 : annuler la boutique C rend 22 000 F + la différence de frais (Ram 1 380 → 880 : 500 F ; Rem 1 200 → 800 : 400 F) = 22 900 F. Moteur annulation.annuler(BLV-52107, « C ») = 22 900 F ; même montant après l'annulation de B (frais A + C 900 F → A seule 0 F, Off conservé : 22 000 + 900 = 22 900 F). Prototype 22 500 F."
+ },
+ {
+  "prototype": "Ramassages 1 380 + remise 400 − offert 900",
+  "site": "Ramassages 1 380 + remises 1 200 − offert 900",
+  "noeud": true,
+  "routes": [
+   "annuler-confirmer"
+  ],
+  "motif": "DP-18 : frais payés pour BLV-52107 (3 colis) : 1 380 + 3 × 400 − 900 = 1 680 F (trace du moteur annuler : « F avant = 1 680 F »).",
+  "en": "Pickups 1 380 + relay drop-offs 1 200 − free 900"
+ },
+ {
+  "prototype": "Ramassages 1 000 + remise 400 − offert 900",
+  "site": "Ramassages 1 000 + remises 800 − offert 900",
+  "noeud": true,
+  "routes": [
+   "annuler-confirmer"
+  ],
+  "motif": "DP-18 : sans la boutique B, restent A (Mvog-Ada) et C (Mvan) : 2 colis, 1 000 + 800 − 900 = 900 F (moteur : « F après, Off conservé = 900 F »).",
+  "en": "Pickups 1 000 + relay drop-offs 800 − free 900"
+ },
+ {
+  "prototype": "500 F",
+  "site": "900 F",
+  "noeud": true,
+  "routes": [
+   "annuler-confirmer",
+   "payeur"
+  ],
+  "motif": "DP-18 : frais recalculés sans B = 900 F (ligne « Frais recalculés sans la boutique B » et, après l'annulation, ligne « Frais de livraison recalculés »)."
+ },
+ {
+  "prototype": "84 000 + (880 − 500)",
+  "site": "84 000 + (1 680 − 900)",
+  "noeud": true,
+  "routes": [
+   "annuler-confirmer"
+  ],
+  "motif": "DP-18 : 84 000 + (1 680 − 900) = 84 780 F (montant déjà affiché ; moteur annuler B = 84 780)."
+ },
+ {
+  "prototype": "112 400 F",
+  "site": "112 800 F",
+  "noeud": true,
+  "routes": [
+   "annuler-confirmer"
+  ],
+  "motif": "DP-18 : total payé après l'annulation de B = 197 580 − 84 780 = 112 800 F (= 89 900 + 22 000 + 900, moteur : reste de la commande 112 800 F)."
+ },
+ {
+  "prototype": "Dont 676 F de frais de service carte. Validé par Face ID, argent bloqué jusqu’au retrait.",
+  "site": "Dont 684 F de frais de service carte. Validé par Face ID, argent bloqué jusqu’au retrait.",
+  "noeud": true,
+  "routes": [
+   "paiement-moyen",
+   "xp-pay"
+  ],
+  "motif": "DP-18 + carte.py : BLV-52018 coûte 34 180 F ; frais de service 2 % = 683,6 → 684 F (frais_de_service(34 180) = 684) ; 34 180 + 684 = 34 864 F (déjà affiché). Prototype 676 F = 2 % de 33 780."
+ },
+ {
+  "prototype": "Ton solde passera à 11 220 F. L’argent reste bloqué jusqu’à ton retrait.",
+  "site": "Ton solde passera à 10 820 F. L’argent reste bloqué jusqu’à ton retrait.",
+  "noeud": true,
+  "routes": [
+   "paiement-moyen"
+  ],
+  "motif": "DP-18 : paiement de BLV-52018 par le solde : 45 000 − 34 180 = 10 820 F (prototype 45 000 − 33 780 = 11 220). Écran du portefeuille, fermé au lancement (FF-WALLET, DP-17)."
+ },
+ {
+  "prototype": "Il fait 278 031 F avec les frais de service ; une carte paie 150 000 F au plus par paiement, frais compris. Paie-le en plusieurs commandes.",
+  "site": "Il fait 278 847 F avec les frais de service ; une carte paie 150 000 F au plus par paiement, frais compris. Paie-le en plusieurs commandes.",
+  "noeud": true,
+  "routes": [
+   "payeur"
+  ],
+  "motif": "DP-18 + carte.py : 273 379 + 2 % (5 467,58 → 5 468 F, frais_de_service(273 379) = 5 468) = 278 847 F (prototype 272 579 + 5 452 = 278 031)."
+ },
+ {
+  "prototype": "2 430 F",
+  "site": "2 438 F",
+  "noeud": true,
+  "routes": [
+   "payeur"
+  ],
+  "motif": "carte.py : frais de service 2 % de 121 900 = 2 438 F (payer_par_carte : service 2 438 ; prototype 2 % de 121 500)."
+ },
+ {
+  "prototype": "Code Wallet à 4 chiffres pour chaque paiement au-delà de 50 000 F. Plafond du solde : 500 000 F. Le Wallet est un moyen de paiement de BelivaY, pas un compte bancaire : il ne rapporte pas d’intérêts.",
+  "site": "Code Wallet à 4 chiffres pour chaque paiement au-delà de 50 000 F. Plafond du solde : 2 500 000 F. Le Wallet est un moyen de paiement de BelivaY, pas un compte bancaire : il ne rapporte pas d’intérêts.",
+  "noeud": true,
+  "routes": [
+   "wallet"
+  ],
+  "motif": "DP-06 / DP-16 / DP-47 : WALLET-PLAFOND = 2 500 000 F (prototype 500 000 F). « Wallet » en français : DP-44 (5) impose « Portefeuille », hors sujet montants."
+ },
+ {
+  "prototype": "Tu valides sur ton téléphone avec ton code MoMo. Plafond du Wallet : 500 000 F.",
+  "site": "Tu valides sur ton téléphone avec ton code MoMo. Plafond du Wallet : 2 500 000 F.",
+  "noeud": true,
+  "routes": [
+   "wallet"
+  ],
+  "motif": "DP-06 / DP-16 / DP-47 : plafond du solde 2 500 000 F."
+ },
+ {
+  "prototype": "Tes nouveaux colis ont 5 jours de garde gratuits (1 + 4). Les colis commandés avant gardent leurs conditions : BLV-52018 reste à 400 F aujourd’hui.",
+  "site": "Tes nouveaux colis ont 5 jours de garde gratuits (1 + 4). Les colis commandés avant gardent leurs conditions : BLV-52018 reste à 300 F aujourd’hui.",
+  "noeud": true,
+  "routes": [
+   "abonnement-resilier",
+   "mon-abonnement"
+  ],
+  "motif": "DP-08, grille 0, 100, 100, 100, 200, 500, 1 000 F. Moteur garde.etat(BLV-52018, J0 lun. 21, relais fermé le dimanche) : jeu. 24 (4e jour) 300 F dus, 500 F demain (prototype 400 et 600)."
+ },
+ {
+  "prototype": "400 F aujourd’hui",
+  "site": "300 F aujourd’hui",
+  "noeud": true,
+  "routes": [
+   "assistant"
+  ],
+  "motif": "DP-08, grille 0, 100, 100, 100, 200, 500, 1 000 F. Moteur garde.etat(BLV-52018, J0 lun. 21, relais fermé le dimanche) : jeu. 24 (4e jour) 300 F dus, 500 F demain (prototype 400 et 600)."
+ },
+ {
+  "prototype": ", 600 F demain.",
+  "site": ", 500 F demain.",
+  "noeud": true,
+  "routes": [
+   "assistant"
+  ],
+  "motif": "DP-08, grille 0, 100, 100, 100, 200, 500, 1 000 F. Moteur garde.etat(BLV-52018, J0 lun. 21, relais fermé le dimanche) : jeu. 24 (4e jour) 300 F dus, 500 F demain (prototype 400 et 600)."
+ },
+ {
+  "prototype": "400 F dus aujourd’hui, 600 F demain",
+  "site": "300 F dus aujourd’hui, 500 F demain",
+  "noeud": true,
+  "routes": [
+   "assistant"
+  ],
+  "motif": "DP-08, grille 0, 100, 100, 100, 200, 500, 1 000 F. Moteur garde.etat(BLV-52018, J0 lun. 21, relais fermé le dimanche) : jeu. 24 (4e jour) 300 F dus, 500 F demain (prototype 400 et 600)."
+ },
+ {
+  "prototype": "+ 900 F de retrait",
+  "site": "+ 1 100 F de retrait",
+  "noeud": true,
+  "routes": [
+   "assistant"
+  ],
+  "motif": "Ventilateur sur pied 16″ (24 500 F, L) : DP-07 + DP-25 : plus de supplément de classe M ou L ; un colis L paie 600 F de remise au relais au lieu de 400 F. Moteur catalogue.prix_livre(prix, L, relais) : livraison 1 100 F, supplément 0 F, total 25 600 F."
+ },
+ {
+  "prototype": "84 000 F d’articles et 380 F de livraison en moins. Les colis 1 et 3 continuent.",
+  "site": "84 000 F d’articles et 780 F de livraison en moins. Les colis 1 et 3 continuent.",
+  "noeud": true,
+  "routes": [
+   "assistant-confirmer"
+  ],
+  "motif": "DP-18 : annuler B rend 84 000 + (1 680 − 900) = 84 780 F (moteur annuler) ; la part livraison est 780 F (prototype 380 F, pour 84 380 F)."
+ },
+ {
+  "prototype": "8 articles · 34 500 F livré au relais",
+  "site": "8 articles · 34 400 F livré au relais",
+  "noeud": true,
+  "routes": [
+   "famille"
+  ],
+  "motif": "DP-07 + DP-25 : panier famille d'une boutique, 1 colis L, articles 34 200 F ≥ 30 000 : Ram 500 + remise L 600 − Off 900 = 200 F dus, plus de supplément L de 300 F. Moteur frais.calculer : 34 400 F ; carte (carte.py) : 2 % de 34 400 = 688 F, 35 088 F = 53,49 € (prototype 34 500 / 690 / 35 190 / 53,65 €)."
+ },
+ {
+  "prototype": "300 F",
+  "site": "200 F",
+  "noeud": true,
+  "routes": [
+   "famille",
+   "famille-mensuel",
+   "famille-payer"
+  ],
+  "motif": "DP-07 + DP-25 : panier famille d'une boutique, 1 colis L, articles 34 200 F ≥ 30 000 : Ram 500 + remise L 600 − Off 900 = 200 F dus, plus de supplément L de 300 F. Moteur frais.calculer : 34 400 F ; carte (carte.py) : 2 % de 34 400 = 688 F, 35 088 F = 53,49 € (prototype 34 500 / 690 / 35 190 / 53,65 €)."
+ },
+ {
+  "prototype": "34 500",
+  "site": "34 400",
+  "noeud": true,
+  "routes": [
+   "famille"
+  ],
+  "motif": "DP-07 + DP-25 : panier famille d'une boutique, 1 colis L, articles 34 200 F ≥ 30 000 : Ram 500 + remise L 600 − Off 900 = 200 F dus, plus de supplément L de 300 F. Moteur frais.calculer : 34 400 F ; carte (carte.py) : 2 % de 34 400 = 688 F, 35 088 F = 53,49 € (prototype 34 500 / 690 / 35 190 / 53,65 €)."
+ },
+ {
+  "prototype": "Continuer · 34 500 F",
+  "site": "Continuer · 34 400 F",
+  "noeud": true,
+  "routes": [
+   "famille"
+  ],
+  "motif": "DP-07 + DP-25 : panier famille d'une boutique, 1 colis L, articles 34 200 F ≥ 30 000 : Ram 500 + remise L 600 − Off 900 = 200 F dus, plus de supplément L de 300 F. Moteur frais.calculer : 34 400 F ; carte (carte.py) : 2 % de 34 400 = 688 F, 35 088 F = 53,49 € (prototype 34 500 / 690 / 35 190 / 53,65 €)."
+ },
+ {
+  "prototype": "690 F",
+  "site": "688 F",
+  "noeud": true,
+  "routes": [
+   "famille-payer"
+  ],
+  "motif": "DP-07 + DP-25 : panier famille d'une boutique, 1 colis L, articles 34 200 F ≥ 30 000 : Ram 500 + remise L 600 − Off 900 = 200 F dus, plus de supplément L de 300 F. Moteur frais.calculer : 34 400 F ; carte (carte.py) : 2 % de 34 400 = 688 F, 35 088 F = 53,49 € (prototype 34 500 / 690 / 35 190 / 53,65 €)."
+ },
+ {
+  "prototype": "35 190",
+  "site": "35 088",
+  "noeud": true,
+  "routes": [
+   "famille-payer"
+  ],
+  "motif": "DP-07 + DP-25 : panier famille d'une boutique, 1 colis L, articles 34 200 F ≥ 30 000 : Ram 500 + remise L 600 − Off 900 = 200 F dus, plus de supplément L de 300 F. Moteur frais.calculer : 34 400 F ; carte (carte.py) : 2 % de 34 400 = 688 F, 35 088 F = 53,49 € (prototype 34 500 / 690 / 35 190 / 53,65 €)."
+ },
+ {
+  "prototype": "Payer 35 190 F · 53,65 €",
+  "site": "Payer 35 088 F · 53,49 €",
+  "noeud": true,
+  "routes": [
+   "famille-payer"
+  ],
+  "motif": "DP-07 + DP-25 : panier famille d'une boutique, 1 colis L, articles 34 200 F ≥ 30 000 : Ram 500 + remise L 600 − Off 900 = 200 F dus, plus de supplément L de 300 F. Moteur frais.calculer : 34 400 F ; carte (carte.py) : 2 % de 34 400 = 688 F, 35 088 F = 53,49 € (prototype 34 500 / 690 / 35 190 / 53,65 €)."
+ },
+ {
+  "prototype": "35 190 F · Visa ···· 4821",
+  "site": "35 088 F · Visa ···· 4821",
+  "noeud": true,
+  "routes": [
+   "famille-preuve"
+  ],
+  "motif": "DP-07 + DP-25 : panier famille d'une boutique, 1 colis L, articles 34 200 F ≥ 30 000 : Ram 500 + remise L 600 − Off 900 = 200 F dus, plus de supplément L de 300 F. Moteur frais.calculer : 34 400 F ; carte (carte.py) : 2 % de 34 400 = 688 F, 35 088 F = 53,49 € (prototype 34 500 / 690 / 35 190 / 53,65 €)."
+ },
+ {
+  "prototype": "35 190 F",
+  "site": "35 088 F",
+  "noeud": true,
+  "routes": [
+   "famille-mensuel"
+  ],
+  "motif": "DP-07 + DP-25 : panier famille d'une boutique, 1 colis L, articles 34 200 F ≥ 30 000 : Ram 500 + remise L 600 − Off 900 = 200 F dus, plus de supplément L de 300 F. Moteur frais.calculer : 34 400 F ; carte (carte.py) : 2 % de 34 400 = 688 F, 35 088 F = 53,49 € (prototype 34 500 / 690 / 35 190 / 53,65 €)."
+ },
+ {
+  "prototype": "lun. 21 sept. · 35 190 F",
+  "site": "lun. 21 sept. · 35 088 F",
+  "noeud": true,
+  "routes": [
+   "famille-mensuel"
+  ],
+  "motif": "DP-07 + DP-25 : panier famille d'une boutique, 1 colis L, articles 34 200 F ≥ 30 000 : Ram 500 + remise L 600 − Off 900 = 200 F dus, plus de supplément L de 300 F. Moteur frais.calculer : 34 400 F ; carte (carte.py) : 2 % de 34 400 = 688 F, 35 088 F = 53,49 € (prototype 34 500 / 690 / 35 190 / 53,65 €)."
+ },
+ {
+  "prototype": "Le mer. 21 oct., ton panier coûtera 35 598 F (+408 F). Suspends-le si besoin.",
+  "site": "Le mer. 21 oct., ton panier coûtera 35 496 F (+408 F). Suspends-le si besoin.",
+  "noeud": true,
+  "routes": [
+   "famille-mensuel"
+  ],
+  "motif": "DP-07 + DP-25 : panier famille d'une boutique, 1 colis L, articles 34 200 F ≥ 30 000 : Ram 500 + remise L 600 − Off 900 = 200 F dus, plus de supplément L de 300 F. Moteur frais.calculer : 34 400 F ; carte (carte.py) : 2 % de 34 400 = 688 F, 35 088 F = 53,49 € (prototype 34 500 / 690 / 35 190 / 53,65 €)."
+ },
+ {
+  "prototype": "698 F",
+  "site": "696 F",
+  "noeud": true,
+  "routes": [
+   "famille-mensuel"
+  ],
+  "motif": "DP-07 + DP-25 : panier famille d'une boutique, 1 colis L, articles 34 200 F ≥ 30 000 : Ram 500 + remise L 600 − Off 900 = 200 F dus, plus de supplément L de 300 F. Moteur frais.calculer : 34 400 F ; carte (carte.py) : 2 % de 34 400 = 688 F, 35 088 F = 53,49 € (prototype 34 500 / 690 / 35 190 / 53,65 €)."
+ },
+ {
+  "prototype": "35 598",
+  "site": "35 496",
+  "noeud": true,
+  "routes": [
+   "famille-mensuel"
+  ],
+  "motif": "DP-07 + DP-25 : panier famille d'une boutique, 1 colis L, articles 34 200 F ≥ 30 000 : Ram 500 + remise L 600 − Off 900 = 200 F dus, plus de supplément L de 300 F. Moteur frais.calculer : 34 400 F ; carte (carte.py) : 2 % de 34 400 = 688 F, 35 088 F = 53,49 € (prototype 34 500 / 690 / 35 190 / 53,65 €)."
+ },
+ {
+  "prototype": "≈ 54,27 €",
+  "site": "≈ 54,11 €",
+  "noeud": true,
+  "routes": [
+   "famille-mensuel"
+  ],
+  "motif": "DP-07 + DP-25 : panier famille d'une boutique, 1 colis L, articles 34 200 F ≥ 30 000 : Ram 500 + remise L 600 − Off 900 = 200 F dus, plus de supplément L de 300 F. Moteur frais.calculer : 34 400 F ; carte (carte.py) : 2 % de 34 400 = 688 F, 35 088 F = 53,49 € (prototype 34 500 / 690 / 35 190 / 53,65 €)."
+ },
+ {
+  "prototype": "48 680",
+  "site": "49 480",
+  "noeud": true,
+  "routes": [
+   "rentree-liste"
+  ],
+  "motif": "DP-18 : liste CE1 = 3 boutiques, 3 colis : Ram 500 + 380 + 500, Rem 3 × 400, Off 900 → livraison 1 680 F ; 47 800 + 1 680 = 49 480 F (moteur frais.calculer ; prototype 880 F et 48 680 F)."
+ },
+ {
+  "prototype": "Tout mettre au panier · 48 680 F",
+  "site": "Tout mettre au panier · 49 480 F",
+  "noeud": true,
+  "routes": [
+   "rentree-liste"
+  ],
+  "motif": "DP-18 : liste CE1 = 3 boutiques, 3 colis : Ram 500 + 380 + 500, Rem 3 × 400, Off 900 → livraison 1 680 F ; 47 800 + 1 680 = 49 480 F (moteur frais.calculer ; prototype 880 F et 48 680 F)."
+ },
+ {
+  "prototype": "48 280",
+  "site": "49 080",
+  "noeud": true,
+  "routes": [
+   "rentree-liste"
+  ],
+  "motif": "DP-18 : liste CE1 = 3 boutiques, 3 colis : Ram 500 + 380 + 500, Rem 3 × 400, Off 900 → livraison 1 680 F ; 47 800 + 1 680 = 49 480 F (moteur frais.calculer ; prototype 880 F et 48 680 F)."
+ },
+ {
+  "prototype": "380 F",
+  "site": "780 F",
+  "noeud": true,
+  "routes": [
+   "rentree-liste"
+  ],
+  "motif": "DP-18 : sans le cartable, 2 boutiques de Mvog-Ada, 2 colis : 500 + 380 + 2 × 400 − 900 = 780 F ; 35 300 + 780 = 36 080 F (moteur ; prototype 380 F et 35 680 F)."
+ },
+ {
+  "prototype": "35 680",
+  "site": "36 080",
+  "noeud": true,
+  "routes": [
+   "rentree-liste",
+   "rentree-panier"
+  ],
+  "motif": "DP-18 : sans le cartable, 2 boutiques de Mvog-Ada, 2 colis : 500 + 380 + 2 × 400 − 900 = 780 F ; 35 300 + 780 = 36 080 F (moteur ; prototype 380 F et 35 680 F)."
+ },
+ {
+  "prototype": "Tout mettre au panier · 35 680 F",
+  "site": "Tout mettre au panier · 36 080 F",
+  "noeud": true,
+  "routes": [
+   "rentree-liste"
+  ],
+  "motif": "DP-18 : sans le cartable, 2 boutiques de Mvog-Ada, 2 colis : 500 + 380 + 2 × 400 − 900 = 780 F ; 35 300 + 780 = 36 080 F (moteur ; prototype 380 F et 35 680 F)."
+ },
+ {
+  "prototype": "Passer commande · 35 680 F",
+  "site": "Passer commande · 36 080 F",
+  "noeud": true,
+  "routes": [
+   "rentree-panier"
+  ],
+  "motif": "DP-18 : sans le cartable, 2 boutiques de Mvog-Ada, 2 colis : 500 + 380 + 2 × 400 − 900 = 780 F ; 35 300 + 780 = 36 080 F (moteur ; prototype 380 F et 35 680 F)."
+ },
+ {
+  "prototype": "Mettre de côté · acompte 7 136 F",
+  "site": "Mettre de côté · acompte 7 216 F",
+  "noeud": true,
+  "routes": [
+   "rentree-panier"
+  ],
+  "motif": "DP-18 : sans le cartable, 2 boutiques de Mvog-Ada, 2 colis : 500 + 380 + 2 × 400 − 900 = 780 F ; 35 300 + 780 = 36 080 F (moteur ; prototype 380 F et 35 680 F)."
+ },
+ {
+  "prototype": "35 680 F",
+  "site": "36 080 F",
+  "noeud": true,
+  "routes": [
+   "rentree-suivi"
+  ],
+  "motif": "DP-18 : sans le cartable, 2 boutiques de Mvog-Ada, 2 colis : 500 + 380 + 2 × 400 − 900 = 780 F ; 35 300 + 780 = 36 080 F (moteur ; prototype 380 F et 35 680 F)."
+ },
+ {
+  "prototype": "Prix livré : 25 700 F",
+  "site": "Prix livré : 25 600 F",
+  "noeud": true,
+  "routes": [
+   "cote-suivre"
+  ],
+  "motif": "DP-07 + DP-25 : prix livré du ventilateur (L) = 24 500 + 1 100 = 25 600 F (catalogue.prix_livre ; prototype 25 700 avec « + 300 F colis L »). Échéancier recalculé avec la règle du prototype (acompte 20 %, puis deux versements de 40 %, forfait d'annulation 5 % du prix livré, 5 000 F au plus) : 5 120 F, 10 240 F, 10 240 F ; après deux paiements 15 360 F ; forfait 1 280 F ; rendu à l'annulation 5 120 − 1 280 = 3 840 F. Aucun moteur ne porte cette règle : à confirmer."
+ },
+ {
+  "prototype": "25 700",
+  "site": "25 600",
+  "noeud": true,
+  "routes": [
+   "cote-fini"
+  ],
+  "motif": "DP-07 + DP-25 : prix livré du ventilateur (L) = 24 500 + 1 100 = 25 600 F (catalogue.prix_livre ; prototype 25 700 avec « + 300 F colis L »). Échéancier recalculé avec la règle du prototype (acompte 20 %, puis deux versements de 40 %, forfait d'annulation 5 % du prix livré, 5 000 F au plus) : 5 120 F, 10 240 F, 10 240 F ; après deux paiements 15 360 F ; forfait 1 280 F ; rendu à l'annulation 5 120 − 1 280 = 3 840 F. Aucun moteur ne porte cette règle : à confirmer."
+ },
+ {
+  "prototype": "800 F",
+  "site": "900 F",
+  "noeud": true,
+  "routes": [
+   "garde"
+  ],
+  "motif": "DP-08, tableau « Jour par jour » (colonne « Cumul », jour(s) 6, 7) : grille 0, 100, 100, 100, 200, 500, 1 000 F ; moteur garde.etat / garde.renvoi sur BLV-52018 (J0 lun. 21 ; variante relais fermé jeu. 24 : cumuls 200, 400, 900, renvoi 1 400 ; variante avis non vu, J0 jeu. 24 : cumuls 200, 400, 900, 1 900, renvoi 2 400). Seules les lignes listées changent (le même texte ailleurs dans l'écran reste)."
+ },
+ {
+  "prototype": "1 300 F",
+  "site": "1 400 F",
+  "noeud": true,
+  "routes": [
+   "garde"
+  ],
+  "motif": "DP-08, tableau « Jour par jour » (cumul de la ligne « Renvoi au vendeur … retenus », jour(s) renvoi) : grille 0, 100, 100, 100, 200, 500, 1 000 F ; moteur garde.etat / garde.renvoi sur BLV-52018 (J0 lun. 21 ; variante relais fermé jeu. 24 : cumuls 200, 400, 900, renvoi 1 400 ; variante avis non vu, J0 jeu. 24 : cumuls 200, 400, 900, 1 900, renvoi 2 400). Seules les lignes listées changent (le même texte ailleurs dans l'écran reste)."
+ },
+ {
+  "prototype": "1 200 F",
+  "site": "1 900 F",
+  "noeud": true,
+  "routes": [
+   "garde"
+  ],
+  "motif": "DP-08, tableau « Jour par jour » (colonne « Cumul », jour(s) 7) : grille 0, 100, 100, 100, 200, 500, 1 000 F ; moteur garde.etat / garde.renvoi sur BLV-52018 (J0 lun. 21 ; variante relais fermé jeu. 24 : cumuls 200, 400, 900, renvoi 1 400 ; variante avis non vu, J0 jeu. 24 : cumuls 200, 400, 900, 1 900, renvoi 2 400). Seules les lignes listées changent (le même texte ailleurs dans l'écran reste)."
+ },
+ {
+  "prototype": "1 700 F",
+  "site": "2 400 F",
+  "noeud": true,
+  "routes": [
+   "garde"
+  ],
+  "motif": "DP-08, tableau « Jour par jour » (cumul de la ligne « Renvoi au vendeur … retenus », jour(s) renvoi) : grille 0, 100, 100, 100, 200, 500, 1 000 F ; moteur garde.etat / garde.renvoi sur BLV-52018 (J0 lun. 21 ; variante relais fermé jeu. 24 : cumuls 200, 400, 900, renvoi 1 400 ; variante avis non vu, J0 jeu. 24 : cumuls 200, 400, 900, 1 900, renvoi 2 400). Seules les lignes listées changent (le même texte ailleurs dans l'écran reste)."
+ },
+ {
+  "prototype": "+ 200 F",
+  "site": "+ 100 F",
+  "noeud": true,
+  "routes": [
+   "garde"
+  ],
+  "motif": "DP-08, grille 0, 100, 100, 100, 200, 500, 1 000 F (garde.py, BLV-52018)",
+  "dans": "Jour 4"
+ },
+ {
+  "prototype": "400 F",
+  "site": "300 F",
+  "noeud": true,
+  "routes": [
+   "garde"
+  ],
+  "motif": "DP-08, grille 0, 100, 100, 100, 200, 500, 1 000 F (garde.py, BLV-52018)",
+  "dans": "Jour 4"
+ },
+ {
+  "prototype": "600 F",
+  "site": "500 F",
+  "noeud": true,
+  "routes": [
+   "garde"
+  ],
+  "motif": "DP-08, grille 0, 100, 100, 100, 200, 500, 1 000 F (garde.py, BLV-52018)",
+  "dans": "Jour 5"
+ },
+ {
+  "prototype": "+ 400 F",
+  "site": "+ 500 F",
+  "noeud": true,
+  "routes": [
+   "garde"
+  ],
+  "motif": "DP-08, grille 0, 100, 100, 100, 200, 500, 1 000 F (garde.py, BLV-52018)",
+  "dans": "Jour 6"
+ },
+ {
+  "prototype": "+ 400 F",
+  "site": "+ 1 000 F",
+  "noeud": true,
+  "routes": [
+   "garde"
+  ],
+  "motif": "DP-08, grille 0, 100, 100, 100, 200, 500, 1 000 F (garde.py, BLV-52018)",
+  "dans": "Jour 7"
+ },
+ {
+  "prototype": "600 F",
+  "site": "500 F",
+  "noeud": true,
+  "routes": [
+   "garde"
+  ],
+  "motif": "DP-08 : dû demain 500 F (garde.etat)",
+  "dans": "Demain · ven. 25 sept."
+ },
+ {
+  "prototype": "400 F",
+  "site": "300 F",
+  "noeud": true,
+  "routes": [
+   "changer-relais"
+  ],
+  "motif": "DP-08 : garde due le jeudi 300 F",
+  "dans": "Montant dû ici aujourd’hui",
+  "dansEn": "Amount due here today"
+ },
+ {
+  "prototype": "400 F",
+  "site": "800 F",
+  "noeud": true,
+  "routes": [
+   "changer-relais"
+  ],
+  "motif": "DP-37 : 2 colis × 400 F",
+  "dans": "Transfert de tes 2 colis"
+ },
+ {
+  "prototype": "400 F",
+  "site": "300 F",
+  "noeud": true,
+  "routes": [
+   "changer-relais"
+  ],
+  "motif": "DP-08 : garde due le jeudi 300 F",
+  "dans": "Garde au Relais Mvog-Ada"
+ },
+ {
+  "prototype": "+ 900 F de retrait",
+  "site": "+ 1 100 F de retrait",
+  "noeud": true,
+  "routes": [
+   "liste",
+   "selection",
+   "recherche-zero",
+   "liste-envoyer"
+  ],
+  "motif": "DP-07 + DP-25 : plus de supplément M ou L ; un colis L paie 600 F de remise (catalogue.prix_livre)",
+  "dans": "Riz parfumé 25",
+  "dansEn": "Fragrant rice 25"
+ },
+ {
+  "prototype": "+ 900 F de retrait",
+  "site": "+ 1 100 F de retrait",
+  "noeud": true,
+  "routes": [
+   "recherche-zero",
+   "liste-envoyer"
+  ],
+  "motif": "DP-07 + DP-25 : plus de supplément M ou L ; un colis L paie 600 F de remise (catalogue.prix_livre)",
+  "dans": "Ventilateur sur pied",
+  "dansEn": "standing fan"
+ },
+ {
+  "prototype": "900 F",
+  "site": "1 100 F",
+  "noeud": true,
+  "routes": [
+   "fiche"
+  ],
+  "etats": [
+   "fiche?p=ventilo"
+  ],
+  "motif": "Ventilateur (colis L) : retrait 500 + 600 F (DP-25, catalogue.prix_livre)"
+ },
+ {
+  "prototype": "+ 900 F de retrait · + 300 F colis L",
+  "site": "+ 1 100 F de retrait",
+  "en": "+ 1 100 F pickup fee",
+  "noeud": true,
+  "routes": [
+   "fiche"
+  ],
+  "motif": "audit des montants (DP-07, DP-08, DP-18, DP-25, DP-37)"
+ },
+ {
+  "prototype": "BLV-52018, Relais Mvog-Ada. Montant du : 200 F. 200 F par jour des demain (jeu. 24). Retrait avant sam. 26 au soir, sinon renvoi au vendeur (+500 F).",
+  "site": "BLV-52018, Relais Mvog-Ada. Montant du : 200 F. 100 F demain (jeu. 24), puis 200 F. Retrait avant sam. 26 au soir, sinon renvoi au vendeur (+500 F).",
+  "en": "BLV-52018, Relais Mvog-Ada. Amount due: 200 F. 100 F tomorrow (Thu 24), then 200 F. Pick up before Sat 26 evening, or it goes back to the seller (+500 F).",
+  "noeud": true,
+  "routes": [
+   "push"
+  ],
+  "motif": "audit des montants (DP-07, DP-08, DP-18, DP-25, DP-37)"
+ },
+ {
+  "prototype": "BLV-52018, Relais Mvog-Ada. Montant du : 200 F. 200 F par jour des demain (jeu. 24). Retrait avant sam. 26 au soir, sinon renvoi au vendeur (+500 F).",
+  "site": "BLV-52018, Relais Mvog-Ada. Montant du : 200 F. 100 F demain (jeu. 24), puis 200 F. Retrait avant sam. 26 au soir, sinon renvoi au vendeur (+500 F).",
+  "en": "BLV-52018, Relais Mvog-Ada. Amount due: 200 F. 100 F tomorrow (Thu 24), then 200 F. Pick up before Sat 26 evening, or it goes back to the seller (+500 F).",
+  "noeud": true,
+  "routes": [
+   "sms"
+  ],
+  "motif": "audit des montants (DP-07, DP-08, DP-18, DP-25, DP-37)"
+ },
+ {
+  "prototype": "Montant dû : 200 F. 200 F par jour dès demain (jeu. 24). Retrait avant sam. 26 au soir, sinon renvoi (+ 500 F).",
+  "site": "Montant dû : 200 F. 100 F demain (jeu. 24), puis 200 F. Retrait avant sam. 26 au soir, sinon renvoi (+ 500 F).",
+  "en": "Amount due: 200 F. 100 F tomorrow (Thu 24), then 200 F. Pick up by Sat 26 evening, or it goes back (+ 500 F).",
+  "noeud": true,
+  "routes": [
+   "notifications"
+  ],
+  "motif": "audit des montants (DP-07, DP-08, DP-18, DP-25, DP-37)"
+ },
+ {
+  "prototype": " Gratuite le jour de l’arrivée ; puis 100 F par jour aux 2e et 3e jours, 200 F aux 4e et 5e, 400 F aux 6e et 7e. Elle s’ajoute au montant dû.",
+  "site": " Gratuite le jour de l’arrivée ; puis 100 F par jour aux 2e, 3e et 4e jours, 200 F le 5e, 500 F le 6e et 1 000 F le 7e. Elle s’ajoute au montant dû.",
+  "en": "Free on the day it arrives; then 100 F a day on days 2, 3 and 4, 200 F on day 5, 500 F on day 6 and 1 000 F on day 7. It is added to the amount due.",
+  "noeud": true,
+  "routes": [
+   "validee"
+  ],
+  "motif": "audit des montants (DP-07, DP-08, DP-18, DP-25, DP-37)"
+ },
+ {
+  "prototype": "Le jour d’arrivée est gratuit. Ensuite, 100 F par jour les 2e et 3e jours, 200 F les 4e et 5e, 400 F les 6e et 7e. Au plus 1 400 F.",
+  "site": "Le jour d’arrivée est gratuit. Ensuite, 100 F par jour les 2e, 3e et 4e jours, 200 F le 5e, 500 F le 6e, 1 000 F le 7e. Au plus 2 000 F.",
+  "en": "The day of arrival is free. Then 100 F per day on days 2, 3 and 4, 200 F on day 5, 500 F on day 6, 1 000 F on day 7. 2 000 F at most.",
+  "noeud": true,
+  "routes": [
+   "faq"
+  ],
+  "motif": "audit des montants (DP-07, DP-08, DP-18, DP-25, DP-37)"
+ },
+ {
+  "prototype": "100 F par jour les 2e et 3e jours, 200 F les 4e et 5e, 400 F les 6e et 7e : 1 400 F au plus.",
+  "site": "100 F par jour les 2e, 3e et 4e jours, 200 F le 5e, 500 F le 6e, 1 000 F le 7e : 2 000 F au plus.",
+  "en": "100 F per day on days 2, 3 and 4, 200 F on day 5, 500 F on day 6, 1 000 F on day 7: 2 000 F at most.",
+  "noeud": true,
+  "routes": [
+   "legal-doc"
+  ],
+  "motif": "audit des montants (DP-07, DP-08, DP-18, DP-25, DP-37)"
+ },
+ {
+  "prototype": " Tes 2 colis sont déjà au Relais Mvog-Ada : le transfert vers un autre relais coûte 400 F.",
+  "site": " Tes 2 colis sont déjà au Relais Mvog-Ada : le transfert vers un autre relais coûte 800 F (400 F par colis).",
+  "en": "Your 2 parcels are already at Relais Mvog-Ada: a transfer to another relay point costs 800 F (400 F per parcel).",
+  "noeud": true,
+  "routes": [
+   "changer-relais"
+  ],
+  "motif": "audit des montants (DP-07, DP-08, DP-18, DP-25, DP-37)"
+ },
+ {
+  "prototype": "Dès leur arrivée, tu pourras les faire transférer vers un autre relais : 400 F.",
+  "site": "Dès leur arrivée, tu pourras les faire transférer vers un autre relais : 1 200 F (400 F par colis).",
+  "en": "As soon as they arrive, you can have them transferred to another relay point: 1 200 F (400 F per parcel).",
+  "noeud": true,
+  "routes": [
+   "changer-relais"
+  ],
+  "motif": "audit des montants (DP-07, DP-08, DP-18, DP-25, DP-37)"
+ },
+ {
+  "prototype": "Retrait recalculé pour cette commande : ramassages 500 + 500 F, remise 400 F, livraison de base offerte −900 F.",
+  "site": "Retrait recalculé pour cette commande : ramassages 500 + 500 F, remises 400 + 400 F, livraison de base offerte −900 F.",
+  "en": "Pickup recalculated for this order: pickups 500 + 500 F, relay drop-offs 400 + 400 F, free basic delivery −900 F.",
+  "noeud": true,
+  "routes": [
+   "payeur"
+  ],
+  "motif": "audit des montants (DP-07, DP-08, DP-18, DP-25, DP-37)"
+ },
+ {
+  "prototype": "Ventilateur 24 500 F + retrait au Relais Mvog-Ada 900 F + supplément colis L 300 F.",
+  "site": "Ventilateur 24 500 F + retrait au Relais Mvog-Ada 1 100 F (colis L).",
+  "en": "Fan 24 500 F + pickup at Relais Mvog-Ada 1 100 F (L parcel).",
+  "noeud": true,
+  "routes": [
+   "cote-suivre"
+  ],
+  "motif": "audit des montants (DP-07, DP-08, DP-18, DP-25, DP-37)"
+ },
+ {
+  "prototype": "Colis M ou L : un supplément s’ajoute à la livraison, même offerte.",
+  "site": "Colis L : la remise au relais coûte 600 F, la livraison offerte en couvre 400 F.",
+  "noeud": true,
+  "routes": [
+   "recherche-resultats"
+  ],
+  "motif": "DP-07 (aucun supplément M ou L) et DP-25 (remise L 600 F, Off couvre un colis S). L'ancienne phrase devient fausse. Rédaction proposée, à valider ; le titre « Colis M, L et XL » (ligne 1455) pourrait devenir « Colis L et XL ».",
+  "en": "Size L parcel: the relay drop-off costs 600 F, free delivery covers 400 F of it."
+ },
+ {
+  "prototype": "600 F demain · 400 F par jour dès samedi · retrait avant samedi 26 au soir",
+  "site": "500 F demain · 500 F de plus samedi · retrait avant samedi 26 au soir",
+  "noeud": true,
+  "routes": [
+   "code"
+  ],
+  "motif": "DP-08, grille 0, 100, 100, 100, 200, 500, 1 000 F. Moteur garde.etat(BLV-52018, J0 lun. 21, relais fermé le dimanche) : jeu. 24 (4e jour) 300 F dus, 500 F demain (prototype 400 et 600). Le 2e élément était le tarif des jours 6–7 de l'ancienne grille (400 F par jour) ; avec DP-08, samedi (6e jour) coûte 500 F et dimanche est fermé : « par jour » ne s'applique plus. Rédaction proposée, à valider.",
+  "en": "500 F tomorrow · 500 F more on Saturday · pick up before Saturday 26 evening"
+ },
+ {
+  "prototype": "600 F demain · 400 F par jour dès samedi · retrait avant samedi 26 au soir",
+  "site": "500 F demain · 500 F de plus samedi · retrait avant samedi 26 au soir",
+  "noeud": true,
+  "routes": [
+   "code-partage"
+  ],
+  "motif": "DP-08, grille 0, 100, 100, 100, 200, 500, 1 000 F. Moteur garde.etat(BLV-52018, J0 lun. 21, relais fermé le dimanche) : jeu. 24 (4e jour) 300 F dus, 500 F demain (prototype 400 et 600). Le 2e élément était le tarif des jours 6–7 de l'ancienne grille (400 F par jour) ; avec DP-08, samedi (6e jour) coûte 500 F et dimanche est fermé : « par jour » ne s'applique plus. Rédaction proposée, à valider.",
+  "en": "500 F tomorrow · 500 F more on Saturday · pick up before Saturday 26 evening"
+ },
+ {
+  "prototype": " · 600 F demain · 400 F par jour dès samedi.",
+  "site": " · 500 F demain · 500 F de plus samedi.",
+  "noeud": true,
+  "routes": [
+   "suivi"
+  ],
+  "motif": "DP-08, grille 0, 100, 100, 100, 200, 500, 1 000 F. Moteur garde.etat(BLV-52018, J0 lun. 21, relais fermé le dimanche) : jeu. 24 (4e jour) 300 F dus, 500 F demain (prototype 400 et 600). Le 2e élément était le tarif des jours 6–7 de l'ancienne grille (400 F par jour) ; avec DP-08, samedi (6e jour) coûte 500 F et dimanche est fermé : « par jour » ne s'applique plus. Rédaction proposée, à valider.",
+  "en": "· 500 F tomorrow · 500 F more on Saturday."
+ },
+ {
+  "prototype": "400 F par jour dès samedi 26",
+  "site": "500 F samedi 26",
+  "noeud": true,
+  "routes": [
+   "garde"
+  ],
+  "motif": "DP-08 : « Palier suivant » ; même logique que le prototype (prochain tarif au-delà de demain) : samedi 26 = 6e jour = 500 F (le dimanche 27 est fermé). Variante relais fermé jeudi : vendredi 200 F (cumul 400), samedi 500 F (cumul 900). Rédaction à valider : la grille n'a plus de palier de plusieurs jours après le 4e jour.",
+  "en": "500 F on Saturday 26"
+ },
+ {
+  "prototype": "200 F par jour dès jeudi 24",
+  "site": "200 F vendredi 25",
+  "noeud": true,
+  "routes": [
+   "garde"
+  ],
+  "motif": "DP-08 : vus lundi 21 ou mardi 22, le tarif reste 100 F jusqu'au jeudi 24 (4e jour) et passe à 200 F le vendredi 25 (5e jour), puis 500 F samedi (S0 de textes-messages.md : « 100 F par jour jusqu'au jeu. 24, puis 200 F »). Rédaction à valider (200 F ne vaut que pour un jour).",
+  "en": "200 F on Friday 25"
+ },
+ {
+  "prototype": "400 F par jour dès demain",
+  "site": "500 F demain",
+  "noeud": true,
+  "routes": [
+   "garde"
+  ],
+  "motif": "DP-08 : vu le vendredi 25, demain samedi 26 = 6e jour = 500 F (prototype : 400 F par jour aux 6e et 7e jours ; le 7e est un dimanche fermé).",
+  "en": "500 F tomorrow"
+ },
+ {
+  "prototype": "200 F par jour dès lundi 28",
+  "site": "200 F lundi 28",
+  "noeud": true,
+  "routes": [
+   "garde"
+  ],
+  "motif": "DP-08, variante « avis non vu » (J0 = jeu. 24) : ven. 25 et sam. 26 à 100 F, dim. 27 fermé, lun. 28 (5e jour) 200 F, mar. 29 500 F, mer. 30 1 000 F (moteur garde.etat). Rédaction à valider.",
+  "en": "200 F on Monday 28"
+ },
+ {
+  "prototype": "Pour BLV-52018 : 400 F dus aujourd’hui, 600 F demain, puis 400 F par jour dès samedi. Retire tes colis avant samedi 26 au soir.",
+  "site": "Pour BLV-52018 : 300 F dus aujourd’hui, 500 F demain, puis 500 F de plus samedi. Retire tes colis avant samedi 26 au soir.",
+  "noeud": true,
+  "routes": [
+   "faq"
+  ],
+  "motif": "DP-08, grille 0, 100, 100, 100, 200, 500, 1 000 F. Moteur garde.etat(BLV-52018, J0 lun. 21, relais fermé le dimanche) : jeu. 24 (4e jour) 300 F dus, 500 F demain (prototype 400 et 600). Le 2e élément était le tarif des jours 6–7 de l'ancienne grille (400 F par jour) ; avec DP-08, samedi (6e jour) coûte 500 F et dimanche est fermé : « par jour » ne s'applique plus. Rédaction proposée, à valider.",
+  "en": "For BLV-52018: 300 F due today, 500 F tomorrow, then 500 F more on Saturday. Pick up your parcels before Saturday 26 evening."
+ },
+ {
+  "prototype": "Pourquoi 400 F ?",
+  "site": "Pourquoi 400 F par colis ?",
+  "noeud": true,
+  "routes": [
+   "changer-relais"
+  ],
+  "motif": "DP-37 : le transfert coûte la remise au relais DE CHAQUE COLIS (400 F S/M, 600 F L). BLV-52018 = 2 colis S arrivés : 2 × 400 = 800 F ; garde du jeudi 300 F (DP-08). Moteur annulation.changer_de_relais : transfert 800, garde 300, montant dû 1 100 F (prototype : 400 + 400 = 800 F). Le texte qui suit (« C'est le prix d'une remise au relais… ») reste juste au singulier « par colis ». Rédaction à valider.",
+  "en": "Why 400 F per parcel?"
+ },
+ {
+  "prototype": "Colis déjà arrivé au relais ? Le transfert vers un autre relais coûte 400 F.",
+  "site": "Colis déjà arrivé au relais ? Le transfert vers un autre relais coûte 400 F par colis.",
+  "noeud": true,
+  "routes": [
+   "changer-relais"
+  ],
+  "motif": "DP-37 : prix par colis (400 F S/M, 600 F L ; les 3 colis de BLV-52107 sont S). Rédaction à valider.",
+  "en": "Parcel already at the relay point? A transfer to another relay point costs 400 F per parcel."
+ },
+ {
+  "prototype": " Le colis repart chez le vendeur. Les 900 F de livraison ne sont pas remboursés et la garde déjà comptée reste due.",
+  "site": " Le colis repart chez le vendeur. Les 900 F de livraison ne sont pas remboursés ; la garde déjà comptée est prise sur ces 900 F, jamais au-delà.",
+  "noeud": true,
+  "routes": [
+   "validee"
+  ],
+  "motif": "DP-24 : la garde due est retenue SUR la livraison payée d'avance et la retenue ne dépasse jamais la livraison payée (comptoir.retenue_apres_refus(900, garde)). « reste due » laisse croire à un montant en plus. Rédaction à valider.",
+  "en": " The parcel goes back to the seller. The 900 F delivery is not refunded; the storage already counted is taken from these 900 F, never more."
+ },
+ {
+  "prototype": "Un gros colis garde son supplément : la livraison offerte couvre le tarif d’un petit colis (S).",
+  "site": "Un gros colis garde son supplément : la livraison offerte couvre le tarif d’un petit colis (S).",
+  "noeud": true,
+  "routes": [
+   "fiche"
+  ],
+  "motif": "DP-07 / DP-25 : toujours vrai pour un colis XL (supplément jamais offert) ; pour un colis L, ce n'est plus un supplément mais 200 F de remise non couverts. À garder tel quel ou à préciser ; aucun montant."
+ },
+ {
+  "prototype": "Chaque prix montre aussi le coût de retrait à ton relais. Livraison de base : 900 F au relais, offerte dès 30 000 F d’articles ; 1 500 F à domicile, offerte dès 50 000 F.",
+  "site": "Chaque prix montre aussi le coût de retrait à ton relais. Livraison de base : 900 F au relais par colis S ou M (1 100 F pour un colis L), offerte dès 30 000 F d’articles pour un colis ; 1 500 F à domicile, offerte dès 50 000 F.",
+  "noeud": true,
+  "routes": [
+   "legal-doc"
+  ],
+  "motif": "DP-18, DP-19, DP-25 : 900 F n'est la livraison que d'une commande d'un seul colis S/M ; chaque colis en plus ajoute sa remise. Rédaction à valider (texte juridique).",
+  "en": "Every price also shows the pickup cost at your relay point. Basic delivery: 900 F at the relay per size S or M parcel (1 100 F for a size L parcel), free from 30 000 F of items for one parcel; 1 500 F to your home, free from 50 000 F."
+ },
+ {
+  "prototype": "En dessous, la livraison au relais coûte 900 F.",
+  "site": "En dessous, la livraison au relais coûte 900 F par colis.",
+  "noeud": true,
+  "routes": [
+   "categories"
+  ],
+  "motif": "DP-18 / DP-25 : 900 F pour un colis S ou M d'une seule boutique ; 1 100 F pour un colis L ; ramassage partagé et remise par colis dans un panier de plusieurs boutiques. Rédaction à valider.",
+  "en": "Below that, relay delivery costs 900 F per parcel."
+ },
+ {
+  "prototype": "Il offre la livraison de base : premier ramassage et remise, au tarif d’un colis S. Jamais les ramassages supplémentaires (380 F ou 500 F par boutique en plus) ni les suppléments de colis M et L.",
+  "site": "Il offre la livraison de base : premier ramassage et remise, au tarif d’un colis S. Jamais les ramassages supplémentaires (380 F ou 500 F par boutique en plus), ni la remise des autres colis (400 F, 600 F pour un colis L), ni le supplément d’un colis XL.",
+  "noeud": true,
+  "routes": [
+   "abonnements"
+  ],
+  "motif": "DP-07 (plus de supplément M ou L), DP-18 / DP-25 (remise par colis, 600 F pour un L). Rédaction à valider.",
+  "en": "It covers basic delivery: the first pickup and drop-off, at the size S rate. Never the extra pickups (380 F or 500 F per extra shop), nor the drop-off of the other parcels (400 F, 600 F for a size L parcel), nor the surcharge of a size XL parcel."
+ },
+ {
+  "prototype": "Supplément colis L",
+  "site": "Remise du colis L, non couverte",
+  "noeud": true,
+  "routes": [
+   "famille",
+   "famille-payer"
+  ],
+  "motif": "DP-07 + DP-25 : panier famille d'une boutique, 1 colis L, articles 34 200 F ≥ 30 000 : Ram 500 + remise L 600 − Off 900 = 200 F dus, plus de supplément L de 300 F. Moteur frais.calculer : 34 400 F ; carte (carte.py) : 2 % de 34 400 = 688 F, 35 088 F = 53,49 € (prototype 34 500 / 690 / 35 190 / 53,65 €).",
+  "en": "Size L parcel drop-off, not covered"
+ },
+ {
+  "prototype": "Supplément colis L",
+  "site": "Remise du colis L, non couverte",
+  "noeud": true,
+  "routes": [
+   "famille-mensuel"
+  ],
+  "motif": "DP-07 + DP-25 : panier famille d'une boutique, 1 colis L, articles 34 200 F ≥ 30 000 : Ram 500 + remise L 600 − Off 900 = 200 F dus, plus de supplément L de 300 F. Moteur frais.calculer : 34 400 F ; carte (carte.py) : 2 % de 34 400 = 688 F, 35 088 F = 53,49 € (prototype 34 500 / 690 / 35 190 / 53,65 €).",
+  "en": "Size L parcel drop-off, not covered"
+ },
+ {
+  "prototype": "48 680",
+  "site": "49 480",
+  "noeud": true,
+  "routes": [
+   "rentree-classe"
+  ],
+  "motif": "DP-18 : liste CE1 = 3 boutiques, 3 colis : Ram 500 + 380 + 500, Rem 3 × 400, Off 900 → livraison 1 680 F ; 47 800 + 1 680 = 49 480 F (moteur frais.calculer ; prototype 880 F et 48 680 F)."
+ },
+ {
+  "prototype": "payés sur 25 700 F · sans intérêts, sans frais",
+  "site": "payés sur 25 600 F · sans intérêts, sans frais",
+  "noeud": true,
+  "routes": [
+   "cote-suivre"
+  ],
+  "motif": "DP-07 + DP-25 : prix livré du ventilateur (L) = 24 500 + 1 100 = 25 600 F (catalogue.prix_livre ; prototype 25 700 avec « + 300 F colis L »). Échéancier recalculé avec la règle du prototype (acompte 20 %, puis deux versements de 40 %, forfait d'annulation 5 % du prix livré, 5 000 F au plus) : 5 120 F, 10 240 F, 10 240 F ; après deux paiements 15 360 F ; forfait 1 280 F ; rendu à l'annulation 5 120 − 1 280 = 3 840 F. Aucun moteur ne porte cette règle : à confirmer."
+ },
+ {
+  "prototype": "payés sur 25 700 F · sans intérêts, sans frais",
+  "site": "payés sur 25 600 F · sans intérêts, sans frais",
+  "noeud": true,
+  "routes": [
+   "cote-annuler"
+  ],
+  "motif": "DP-07 + DP-25 : prix livré du ventilateur (L) = 24 500 + 1 100 = 25 600 F (catalogue.prix_livre ; prototype 25 700 avec « + 300 F colis L »). Échéancier recalculé avec la règle du prototype (acompte 20 %, puis deux versements de 40 %, forfait d'annulation 5 % du prix livré, 5 000 F au plus) : 5 120 F, 10 240 F, 10 240 F ; après deux paiements 15 360 F ; forfait 1 280 F ; rendu à l'annulation 5 120 − 1 280 = 3 840 F. Aucun moteur ne porte cette règle : à confirmer."
+ },
+ {
+  "prototype": "5 140",
+  "site": "5 120",
+  "noeud": true,
+  "routes": [
+   "cote-suivre"
+  ],
+  "motif": "DP-07 + DP-25 : prix livré du ventilateur (L) = 24 500 + 1 100 = 25 600 F (catalogue.prix_livre ; prototype 25 700 avec « + 300 F colis L »). Échéancier recalculé avec la règle du prototype (acompte 20 %, puis deux versements de 40 %, forfait d'annulation 5 % du prix livré, 5 000 F au plus) : 5 120 F, 10 240 F, 10 240 F ; après deux paiements 15 360 F ; forfait 1 280 F ; rendu à l'annulation 5 120 − 1 280 = 3 840 F. Aucun moteur ne porte cette règle : à confirmer."
+ },
+ {
+  "prototype": "5 140 F",
+  "site": "5 120 F",
+  "noeud": true,
+  "routes": [
+   "cote-suivre"
+  ],
+  "motif": "DP-07 + DP-25 : prix livré du ventilateur (L) = 24 500 + 1 100 = 25 600 F (catalogue.prix_livre ; prototype 25 700 avec « + 300 F colis L »). Échéancier recalculé avec la règle du prototype (acompte 20 %, puis deux versements de 40 %, forfait d'annulation 5 % du prix livré, 5 000 F au plus) : 5 120 F, 10 240 F, 10 240 F ; après deux paiements 15 360 F ; forfait 1 280 F ; rendu à l'annulation 5 120 − 1 280 = 3 840 F. Aucun moteur ne porte cette règle : à confirmer."
+ },
+ {
+  "prototype": "10 280 F",
+  "site": "10 240 F",
+  "noeud": true,
+  "routes": [
+   "cote-suivre"
+  ],
+  "motif": "DP-07 + DP-25 : prix livré du ventilateur (L) = 24 500 + 1 100 = 25 600 F (catalogue.prix_livre ; prototype 25 700 avec « + 300 F colis L »). Échéancier recalculé avec la règle du prototype (acompte 20 %, puis deux versements de 40 %, forfait d'annulation 5 % du prix livré, 5 000 F au plus) : 5 120 F, 10 240 F, 10 240 F ; après deux paiements 15 360 F ; forfait 1 280 F ; rendu à l'annulation 5 120 − 1 280 = 3 840 F. Aucun moteur ne porte cette règle : à confirmer."
+ },
+ {
+  "prototype": "Payer 10 280 F",
+  "site": "Payer 10 240 F",
+  "noeud": true,
+  "routes": [
+   "cote-suivre"
+  ],
+  "motif": "DP-07 + DP-25 : prix livré du ventilateur (L) = 24 500 + 1 100 = 25 600 F (catalogue.prix_livre ; prototype 25 700 avec « + 300 F colis L »). Échéancier recalculé avec la règle du prototype (acompte 20 %, puis deux versements de 40 %, forfait d'annulation 5 % du prix livré, 5 000 F au plus) : 5 120 F, 10 240 F, 10 240 F ; après deux paiements 15 360 F ; forfait 1 280 F ; rendu à l'annulation 5 120 − 1 280 = 3 840 F. Aucun moteur ne porte cette règle : à confirmer."
+ },
+ {
+  "prototype": "5 140",
+  "site": "5 120",
+  "noeud": true,
+  "routes": [
+   "cote-annuler"
+  ],
+  "motif": "DP-07 + DP-25 : prix livré du ventilateur (L) = 24 500 + 1 100 = 25 600 F (catalogue.prix_livre ; prototype 25 700 avec « + 300 F colis L »). Échéancier recalculé avec la règle du prototype (acompte 20 %, puis deux versements de 40 %, forfait d'annulation 5 % du prix livré, 5 000 F au plus) : 5 120 F, 10 240 F, 10 240 F ; après deux paiements 15 360 F ; forfait 1 280 F ; rendu à l'annulation 5 120 − 1 280 = 3 840 F. Aucun moteur ne porte cette règle : à confirmer."
+ },
+ {
+  "prototype": "5 140 F",
+  "site": "5 120 F",
+  "noeud": true,
+  "routes": [
+   "cote-annuler"
+  ],
+  "motif": "DP-07 + DP-25 : prix livré du ventilateur (L) = 24 500 + 1 100 = 25 600 F (catalogue.prix_livre ; prototype 25 700 avec « + 300 F colis L »). Échéancier recalculé avec la règle du prototype (acompte 20 %, puis deux versements de 40 %, forfait d'annulation 5 % du prix livré, 5 000 F au plus) : 5 120 F, 10 240 F, 10 240 F ; après deux paiements 15 360 F ; forfait 1 280 F ; rendu à l'annulation 5 120 − 1 280 = 3 840 F. Aucun moteur ne porte cette règle : à confirmer."
+ },
+ {
+  "prototype": "5 140 F",
+  "site": "5 120 F",
+  "noeud": true,
+  "routes": [
+   "cote-versement"
+  ],
+  "motif": "DP-07 + DP-25 : prix livré du ventilateur (L) = 24 500 + 1 100 = 25 600 F (catalogue.prix_livre ; prototype 25 700 avec « + 300 F colis L »). Échéancier recalculé avec la règle du prototype (acompte 20 %, puis deux versements de 40 %, forfait d'annulation 5 % du prix livré, 5 000 F au plus) : 5 120 F, 10 240 F, 10 240 F ; après deux paiements 15 360 F ; forfait 1 280 F ; rendu à l'annulation 5 120 − 1 280 = 3 840 F. Aucun moteur ne porte cette règle : à confirmer."
+ },
+ {
+  "prototype": " pour le payer, sans frais. Ensuite, la mise de côté est annulée : tes 5 140 F te reviennent, moins le forfait de 1 285 F.",
+  "site": " pour le payer, sans frais. Ensuite, la mise de côté est annulée : tes 5 120 F te reviennent, moins le forfait de 1 280 F.",
+  "noeud": true,
+  "routes": [
+   "cote-suivre"
+  ],
+  "motif": "DP-07 + DP-25 : prix livré du ventilateur (L) = 24 500 + 1 100 = 25 600 F (catalogue.prix_livre ; prototype 25 700 avec « + 300 F colis L »). Échéancier recalculé avec la règle du prototype (acompte 20 %, puis deux versements de 40 %, forfait d'annulation 5 % du prix livré, 5 000 F au plus) : 5 120 F, 10 240 F, 10 240 F ; après deux paiements 15 360 F ; forfait 1 280 F ; rendu à l'annulation 5 120 − 1 280 = 3 840 F. Aucun moteur ne porte cette règle : à confirmer."
+ },
+ {
+  "prototype": "15 420",
+  "site": "15 360",
+  "noeud": true,
+  "routes": [
+   "cote-suivre"
+  ],
+  "motif": "DP-07 + DP-25 : prix livré du ventilateur (L) = 24 500 + 1 100 = 25 600 F (catalogue.prix_livre ; prototype 25 700 avec « + 300 F colis L »). Échéancier recalculé avec la règle du prototype (acompte 20 %, puis deux versements de 40 %, forfait d'annulation 5 % du prix livré, 5 000 F au plus) : 5 120 F, 10 240 F, 10 240 F ; après deux paiements 15 360 F ; forfait 1 280 F ; rendu à l'annulation 5 120 − 1 280 = 3 840 F. Aucun moteur ne porte cette règle : à confirmer."
+ },
+ {
+  "prototype": "10 280",
+  "site": "10 240",
+  "noeud": true,
+  "routes": [
+   "cote-versement"
+  ],
+  "motif": "DP-07 + DP-25 : prix livré du ventilateur (L) = 24 500 + 1 100 = 25 600 F (catalogue.prix_livre ; prototype 25 700 avec « + 300 F colis L »). Échéancier recalculé avec la règle du prototype (acompte 20 %, puis deux versements de 40 %, forfait d'annulation 5 % du prix livré, 5 000 F au plus) : 5 120 F, 10 240 F, 10 240 F ; après deux paiements 15 360 F ; forfait 1 280 F ; rendu à l'annulation 5 120 − 1 280 = 3 840 F. Aucun moteur ne porte cette règle : à confirmer."
+ },
+ {
+  "prototype": "15 420 F sur 25 700 F",
+  "site": "15 360 F sur 25 600 F",
+  "noeud": true,
+  "routes": [
+   "cote-versement"
+  ],
+  "motif": "DP-07 + DP-25 : prix livré du ventilateur (L) = 24 500 + 1 100 = 25 600 F (catalogue.prix_livre ; prototype 25 700 avec « + 300 F colis L »). Échéancier recalculé avec la règle du prototype (acompte 20 %, puis deux versements de 40 %, forfait d'annulation 5 % du prix livré, 5 000 F au plus) : 5 120 F, 10 240 F, 10 240 F ; après deux paiements 15 360 F ; forfait 1 280 F ; rendu à l'annulation 5 120 − 1 280 = 3 840 F. Aucun moteur ne porte cette règle : à confirmer."
+ },
+ {
+  "prototype": "10 280 F · jeu. 8 oct.",
+  "site": "10 240 F · jeu. 8 oct.",
+  "noeud": true,
+  "routes": [
+   "cote-versement"
+  ],
+  "motif": "DP-07 + DP-25 : prix livré du ventilateur (L) = 24 500 + 1 100 = 25 600 F (catalogue.prix_livre ; prototype 25 700 avec « + 300 F colis L »). Échéancier recalculé avec la règle du prototype (acompte 20 %, puis deux versements de 40 %, forfait d'annulation 5 % du prix livré, 5 000 F au plus) : 5 120 F, 10 240 F, 10 240 F ; après deux paiements 15 360 F ; forfait 1 280 F ; rendu à l'annulation 5 120 − 1 280 = 3 840 F. Aucun moteur ne porte cette règle : à confirmer."
+ },
+ {
+  "prototype": "Valider 10 280 F",
+  "site": "Valider 10 240 F",
+  "noeud": true,
+  "routes": [
+   "cote-versement"
+  ],
+  "motif": "DP-07 + DP-25 : prix livré du ventilateur (L) = 24 500 + 1 100 = 25 600 F (catalogue.prix_livre ; prototype 25 700 avec « + 300 F colis L »). Échéancier recalculé avec la règle du prototype (acompte 20 %, puis deux versements de 40 %, forfait d'annulation 5 % du prix livré, 5 000 F au plus) : 5 120 F, 10 240 F, 10 240 F ; après deux paiements 15 360 F ; forfait 1 280 F ; rendu à l'annulation 5 120 − 1 280 = 3 840 F. Aucun moteur ne porte cette règle : à confirmer."
+ },
+ {
+  "prototype": "15 420 F",
+  "site": "15 360 F",
+  "noeud": true,
+  "routes": [
+   "cote-versement"
+  ],
+  "motif": "DP-07 + DP-25 : prix livré du ventilateur (L) = 24 500 + 1 100 = 25 600 F (catalogue.prix_livre ; prototype 25 700 avec « + 300 F colis L »). Échéancier recalculé avec la règle du prototype (acompte 20 %, puis deux versements de 40 %, forfait d'annulation 5 % du prix livré, 5 000 F au plus) : 5 120 F, 10 240 F, 10 240 F ; après deux paiements 15 360 F ; forfait 1 280 F ; rendu à l'annulation 5 120 − 1 280 = 3 840 F. Aucun moteur ne porte cette règle : à confirmer."
+ },
+ {
+  "prototype": "25 700 F sur 25 700 F",
+  "site": "25 600 F sur 25 600 F",
+  "noeud": true,
+  "routes": [
+   "cote-versement"
+  ],
+  "motif": "DP-07 + DP-25 : prix livré du ventilateur (L) = 24 500 + 1 100 = 25 600 F (catalogue.prix_livre ; prototype 25 700 avec « + 300 F colis L »). Échéancier recalculé avec la règle du prototype (acompte 20 %, puis deux versements de 40 %, forfait d'annulation 5 % du prix livré, 5 000 F au plus) : 5 120 F, 10 240 F, 10 240 F ; après deux paiements 15 360 F ; forfait 1 280 F ; rendu à l'annulation 5 120 − 1 280 = 3 840 F. Aucun moteur ne porte cette règle : à confirmer."
+ },
+ {
+  "prototype": "−1 285 F",
+  "site": "−1 280 F",
+  "noeud": true,
+  "routes": [
+   "cote-annuler"
+  ],
+  "motif": "DP-07 + DP-25 : prix livré du ventilateur (L) = 24 500 + 1 100 = 25 600 F (catalogue.prix_livre ; prototype 25 700 avec « + 300 F colis L »). Échéancier recalculé avec la règle du prototype (acompte 20 %, puis deux versements de 40 %, forfait d'annulation 5 % du prix livré, 5 000 F au plus) : 5 120 F, 10 240 F, 10 240 F ; après deux paiements 15 360 F ; forfait 1 280 F ; rendu à l'annulation 5 120 − 1 280 = 3 840 F. Aucun moteur ne porte cette règle : à confirmer."
+ },
+ {
+  "prototype": "3 855",
+  "site": "3 840",
+  "noeud": true,
+  "routes": [
+   "cote-annuler"
+  ],
+  "motif": "DP-07 + DP-25 : prix livré du ventilateur (L) = 24 500 + 1 100 = 25 600 F (catalogue.prix_livre ; prototype 25 700 avec « + 300 F colis L »). Échéancier recalculé avec la règle du prototype (acompte 20 %, puis deux versements de 40 %, forfait d'annulation 5 % du prix livré, 5 000 F au plus) : 5 120 F, 10 240 F, 10 240 F ; après deux paiements 15 360 F ; forfait 1 280 F ; rendu à l'annulation 5 120 − 1 280 = 3 840 F. Aucun moteur ne porte cette règle : à confirmer."
+ },
+ {
+  "prototype": "Annuler et récupérer 3 855 F",
+  "site": "Annuler et récupérer 3 840 F",
+  "noeud": true,
+  "routes": [
+   "cote-annuler"
+  ],
+  "motif": "DP-07 + DP-25 : prix livré du ventilateur (L) = 24 500 + 1 100 = 25 600 F (catalogue.prix_livre ; prototype 25 700 avec « + 300 F colis L »). Échéancier recalculé avec la règle du prototype (acompte 20 %, puis deux versements de 40 %, forfait d'annulation 5 % du prix livré, 5 000 F au plus) : 5 120 F, 10 240 F, 10 240 F ; après deux paiements 15 360 F ; forfait 1 280 F ; rendu à l'annulation 5 120 − 1 280 = 3 840 F. Aucun moteur ne porte cette règle : à confirmer."
+ },
+ {
+  "prototype": "900 F — offert dès 30 000 F",
+  "site": "1 100 F — 200 F dès 30 000 F",
+  "en": "1 100 F — 200 F from 30 000 F",
+  "noeud": true,
+  "routes": [
+   "fiche"
+  ],
+  "etats": [
+   "fiche?p=ventilo"
+  ],
+  "motif": "Ventilateur (colis L) : 1 100 F ; au-delà de 30 000 F, l'offert couvre 900 F, 200 F restent dus (DP-25, catalogue.prix_livre)"
+ },
+ {
+  "prototype": "53,65",
+  "site": "53,49",
+  "texte": true,
+  "routes": [
+   "famille-payer",
+   "famille-mensuel",
+   "famille-preuve"
+  ],
+  "motif": "Panier famille, euros : 35 088 F ÷ 655,957 = 53,49 € (prototype 35 190 F = 53,65 €) ; DP-07 + DP-25, carte.py (revue indépendante du 3 oct.)"
+ },
+ {
+  "prototype": "53.65",
+  "site": "53.49",
+  "texte": true,
+  "routes": [
+   "famille-payer",
+   "famille-mensuel",
+   "famille-preuve"
+  ],
+  "motif": "Panier famille, euros : 35 088 F ÷ 655,957 = 53,49 € (prototype 35 190 F = 53,65 €) ; DP-07 + DP-25, carte.py (revue indépendante du 3 oct.)"
+ },
+ {
+  "prototype": "Retours : un article abîmé de moins de 3 000 F est remboursé sans que tu le rapportes au relais.",
+  "site": "Retours : tout article se rapporte à ton relais, même à petit prix ; le remboursement part quand le vendeur l’a reçu et vérifié.",
+  "en": "Returns: every item goes back through your relay point, even a low-priced one; the refund leaves once the seller has received and checked it.",
+  "noeud": true,
+  "routes": [
+   "cgu"
+  ],
+  "motif": "DP-10 : un retour passe toujours par le dépôt au relais, plus de remboursement sans renvoi (RET-SANS-RETOUR supprimé) ; alignement confirmé par le porteur le 3 oct."
+ },
+ {
+  "prototype": "Disponible : 45 000 F · sans frais",
+  "site": "Disponible : 27 340 F · sans frais",
+  "noeud": true,
+  "routes": [
+   "wallet"
+  ],
+  "motif": "WALLET-RECHARGE-ATTENTE (72 h, moteurs/portefeuille.py, CWL-08) : le jeudi 24 sept. du jeu d'essai, la recharge du mar. 22 sept. à 18 h 05 (17 660 F restants) n'a servi à rien et ne se retire qu'à partir du ven. 25 sept. à 18 h 05 ; retirable : 3 740 F remboursés + 23 600 F de la recharge du 18 sept. = 27 340 F (DP-53, règles d'abord).",
+  "en": "Available: 27 340 F · no fees"
+ },
+ {
+  "prototype": "Mer. 23 sept.",
+  "site": "Hier · mer. 23 sept.",
+  "noeud": true,
+  "routes": [
+   "fil"
+  ],
+  "etats": [
+   "fil?id=support"
+  ],
+  "motif": "Le jeudi 24 sept. du jeu d'essai, le 23 est « hier » : le prototype l'écrit « Hier · mer. 23 sept. » dans le dossier LIT-3042 et « Mer. 23 sept. » dans la conversation du support ; le site suit une seule règle (DP-53).",
+  "en": "Yesterday · Wed 23 Sept"
+ },
+ {
+  "prototype": "Retour avec un motif, dans les 7 jours après le retrait. Remboursement sur le moyen qui a payé.",
+  "site": "Retour avec un motif, dans les 7 jours après le retrait. Remboursement sur ton Wallet BelivaY, ou sur la carte qui a payé.",
+  "en": "Returns need a reason, within 7 days after pickup. Refunds go to your BelivaY Wallet, or to the card that paid.",
+  "noeud": true,
+  "routes": [
+   "legal-doc"
+  ],
+  "motif": "DP-06 : tout remboursement crédite le Wallet BelivaY ; DP-23 : un paiement par carte est remboursé sur la même carte."
+ },
+ {
+  "prototype": "Remboursement quand le vendeur a reçu et vérifié l’article, sous 48 h, sur le moyen qui a payé.",
+  "site": "Remboursement quand le vendeur a reçu et vérifié l’article, sous 48 h, sur ton Wallet BelivaY, ou sur la carte qui a payé.",
+  "en": "Refund once the seller has received and checked the item, within 48 hours, to your BelivaY Wallet, or to the card that paid.",
+  "noeud": true,
+  "routes": [
+   "legal-doc"
+  ],
+  "motif": "DP-06 : tout remboursement crédite le Wallet BelivaY ; DP-23 : un paiement par carte est remboursé sur la même carte."
+ }
+]

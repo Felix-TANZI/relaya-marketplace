@@ -1,16 +1,49 @@
-# Robots.txt pour Relaya - belivay.com
+# robots.txt — belivay.com
+#
+# Regle de lecture : tout ce qui exige une connexion, ou qui expose des
+# donnees personnelles ou financieres, ne doit JAMAIS etre explore.
+# Un blocage ici n'est pas une protection : c'est une demande polie aux
+# robots. La securite reelle reste assuree par ProtectedRoute et RoleRoute.
 
 User-agent: *
 Allow: /
+
+# ── Espaces metier reserves (portails dedies) ───────────────────────────
 Disallow: /admin/
-Disallow: /api/
-Disallow: /checkout/
-Disallow: /profile/
-Disallow: /orders/
 Disallow: /seller/
+Disallow: /courier/
+Disallow: /driver/
+Disallow: /relay-point/
+Disallow: /delivery-organization/
 
-# Sitemap
+# ── Espace personnel de l'acheteur ──────────────────────────────────────
+Disallow: /profile
+Disallow: /orders
+Disallow: /notifications
+Disallow: /checkout
+Disallow: /cart
+Disallow: /wishlist
+
+# ── Parcours financier de l'acheteur (montants, references, sequestres) ─
+Disallow: /payments
+Disallow: /wallet
+Disallow: /refunds
+Disallow: /escrow
+Disallow: /finance/
+
+# ── API et pages sans valeur de referencement ───────────────────────────
+Disallow: /api/
+Disallow: /login
+Disallow: /register
+# La recherche interne genere une infinite d'URL parametrees : on evite de
+# gaspiller le budget d'exploration, les produits etant deja atteignables
+# par le catalogue et les categories.
+Disallow: /search?
+
+# Les sitemaps sont volontairement declares APRES les regles ci-dessus et
+# ne sont soumis a aucune d'entre elles : une directive Sitemap est
+# independante des User-agent et des Disallow.
 Sitemap: https://belivay.com/sitemap.xml
-
-# Crawl-delay (optionnel)
-Crawl-delay: 1
+Sitemap: https://belivay.com/sitemap-pages.xml
+Sitemap: https://belivay.com/sitemap-products.xml
+Sitemap: https://belivay.com/sitemap-categories.xml

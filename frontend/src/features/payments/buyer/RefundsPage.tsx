@@ -12,6 +12,9 @@
 // Et sans l'explication, il verrait une ligne sans savoir quand.
 // ─────────────────────────────────────────────────────────────────────────
 
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+
 import { useMyRefunds } from '../hooks/useMyPayments';
 import EmptyState from '../shared/EmptyState';
 import Money from '../shared/Money';
@@ -21,20 +24,21 @@ import { FT } from '../shared/tokens';
 import { formatShortDate } from '../shared/dates';
 import type { BuyerRefund } from '../model/refund.types';
 
-function titre(refund: BuyerRefund): string {
+function titre(refund: BuyerRefund, t: TFunction): string {
   if (refund.orders.length === 1) {
-    return `Remboursement de la commande #${refund.orders[0]}`;
+    return t('pm2_buyer_refunds.title_single_order', { id: refund.orders[0] });
   }
   if (refund.orders.length > 1) {
-    return `Remboursement de ${refund.orders.length} commandes`;
+    return t('pm2_buyer_refunds.title_multiple_orders', { count: refund.orders.length });
   }
-  return 'Remboursement';
+  return t('pm2_buyer_refunds.title_generic');
 }
 
 function Ligne({ refund, showBorder }: {
   refund: BuyerRefund; showBorder: boolean;
 }) {
-  const meta = statusMeta('refund', refund.status);
+  const { t } = useTranslation();
+  const meta = statusMeta('refund', refund.status, t);
   const abouti = refund.status === 'PAID';
 
   return (
@@ -52,7 +56,7 @@ function Ligne({ refund, showBorder }: {
         <p style={{
           fontSize: 13.5, margin: 0, color: 'var(--text-primary, #1A1209)',
         }}>
-          {titre(refund)}
+          {titre(refund, t)}
         </p>
         {refund.explanation && (
           <p style={{
@@ -80,6 +84,7 @@ function Ligne({ refund, showBorder }: {
 }
 
 export default function RefundsPage() {
+  const { t } = useTranslation();
   const { data, loading, error } = useMyRefunds();
   const remboursements = data ?? [];
 
@@ -88,10 +93,10 @@ export default function RefundsPage() {
       <p style={{
         fontSize: 19, margin: '0 0 4px', color: 'var(--text-primary, #1A1209)',
       }}>
-        Mes remboursements
+        {t('pm2_buyer_refunds.title')}
       </p>
       <p style={{ fontSize: 12.5, margin: '0 0 1.25rem', color: FT.muted }}>
-        L’argent retourne toujours sur le numéro qui a payé.
+        {t('pm2_buyer_refunds.subtitle')}
       </p>
 
       <div style={{
@@ -101,14 +106,16 @@ export default function RefundsPage() {
       }}>
         {loading && (
           <div style={{ padding: '2.5rem', textAlign: 'center' }}>
-            <span style={{ fontSize: 13, color: FT.faint }}>Chargement…</span>
+            <span style={{ fontSize: 13, color: FT.faint }}>
+              {t('pm2_buyer_refunds.loading')}
+            </span>
           </div>
         )}
 
         {!loading && error && (
           <EmptyState
             icon="alert-circle"
-            title="Impossible d'afficher vos remboursements"
+            title={t('pm2_buyer_refunds.error_title')}
             description={error}
           />
         )}
@@ -116,11 +123,8 @@ export default function RefundsPage() {
         {!loading && !error && remboursements.length === 0 && (
           <EmptyState
             icon="arrow-back-up"
-            title="Aucun remboursement"
-            description={
-              'Si une commande vous est remboursée, elle apparaîtra ici avec '
-              + 'son suivi.'
-            }
+            title={t('pm2_buyer_refunds.empty_title')}
+            description={t('pm2_buyer_refunds.empty_description')}
           />
         )}
 

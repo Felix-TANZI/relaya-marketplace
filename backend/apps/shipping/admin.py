@@ -3,16 +3,22 @@
 
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import RelayParcel, Shipment, ShipmentEvent, ShipmentMessage, Zone
+from .models import DemandeAdresse, RelayParcel, Shipment, ShipmentEvent, ShipmentMessage, Zone
 
 
 @admin.register(Zone)
 class ZoneAdmin(admin.ModelAdmin):
-    list_display = ('name', 'city', 'tier', 'is_active', 'is_bootstrapping', 'surcharge_xaf')
+    list_display = ('name', 'code', 'city', 'tier', 'contour_trace', 'is_active', 'is_bootstrapping')
     list_filter = ('city', 'tier', 'is_active', 'is_bootstrapping')
-    search_fields = ('name', 'city')
+    search_fields = ('name', 'city', 'code')
+    # Nom, vague et quartiers des zones Z1 à Z12 suivent t_zones et t_quartiers (réglages) : on les change là-bas.
+    readonly_fields = ('code',)
     fieldsets = (
-        (None, {'fields': ('name', 'city', 'tier', 'districts', 'is_active')}),
+        (None, {'fields': ('code', 'name', 'city', 'tier', 'districts', 'is_active')}),
+        ('Contour (R75.2, R76.4)', {
+            'fields': ('contour',),
+            'description': "GeoJSON Polygon ou MultiPolygon, coordonnées [longitude, latitude], tracé par l'équipe logistique.",
+        }),
         ('Majoration Vague 3', {'fields': ('surcharge_xaf',)}),
         ('Créneaux (§5.1)', {'fields': (
             'morning_slot_start', 'morning_slot_end', 'afternoon_slot_start', 'afternoon_slot_end',
@@ -21,6 +27,21 @@ class ZoneAdmin(admin.ModelAdmin):
             'is_bootstrapping', 'bootstrap_budget_xaf', 'bootstrap_target_colis_per_tournee', 'bootstrap_started_at',
         )}),
     )
+
+    @admin.display(boolean=True, description='Contour tracé')
+    def contour_trace(self, obj):
+        return bool(obj.contour)
+
+
+@admin.register(DemandeAdresse)
+class DemandeAdresseAdmin(admin.ModelAdmin):
+    """Demandes non servies (R76.5) et quartiers à rattacher (R76.2) pour l'équipe logistique."""
+
+    list_display = ('cree_le', 'type', 'quartier_saisi', 'latitude', 'longitude', 'quartier_rattache', 'traitee')
+    list_filter = ('type', 'traitee')
+    search_fields = ('quartier_saisi', 'quartier_rattache')
+    readonly_fields = ('type', 'user', 'quartier_saisi', 'latitude', 'longitude', 'precision_m', 'cree_le')
+    list_editable = ('traitee',)
 
 
 # ─── INLINE : Événements d'une livraison ─────────────────────────────────────

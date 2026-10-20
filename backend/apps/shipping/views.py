@@ -2099,3 +2099,60 @@ class AdminSupervisionDashboardView(APIView):
             "unclaimed_tournees_count": len(unclaimed_payload),
             "subsidy_by_zone": subsidy_by_zone,
         })
+
+
+# ── Zones et quartiers, spécification v2.1 (BV-DEV-04, apps/shipping/zones.py) ───────────────────────────
+
+def _quartier_public(q):
+    from apps.shipping import zones
+
+    return {"quartier": q["quartier"], "commune": q["commune"], "zone": q["zone"],
+            "niveau": q["niveau"], "zoneExploitee": zones.zone_exploitee(q["zone"])}
+
+
+@extend_schema(
+    tags=["Shipping"], summary="Quartiers de Yaoundé (recherche R76.2)",
+    parameters=[OpenApiParameter(name="q", required=False, type=str)],
+)
+class QuartiersView(APIView):
+    """Sans `q` : les quartiers de t_quartiers. Avec `q` : ceux que désigne le texte (accents, tirets, espaces et
+    majuscules ignorés, appellations de t_alias acceptées ; un nom ambigu donne tous ses quartiers)."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        from apps.shipping import zones
+
+        texte = (request.query_params.get("q") or "").strip()
+        lignes = zones.chercher_quartiers(texte) if texte else zones.quartiers()
+        return Response({"quartiers": [_quartier_public(q) for q in lignes]})
+
+
+@extend_schema(tags=["Shipping"], summary="Vérifier une adresse avant de l'enregistrer (A9, étapes 1 à 4)")
+class VerifierAdresseView(APIView):
+    """{quartier, lat, lon, precision} → zone, niveau, zone exploitée ; ou le refus de A9 et ses propositions."""
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        from apps.shipping import zones
+
+        d = request.data
+
+        def nombre(cle):
+            try:
+                return float(d.get(cle)) if d.get(cle) not in (None, "") else None
+            except (TypeError, ValueError):
+                return None
+
+        r = zones.resoudre_adresse(str(d.get("quartier") or ""), nombre("lat"), nombre("lon"), nombre("precision"))
+        return Response({
+            "ok": not r.refus,
+            "refus": r.refus or None,
+            "message": r.message or None,
+            "propositions": r.propositions,
+            "quartier": r.quartier["quartier"] if r.quartier else None,
+            "zone": r.zone,
+            "niveau": r.niveau,
+            "zoneExploitee": r.exploitee,
+        })

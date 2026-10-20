@@ -303,7 +303,9 @@ def test_adresses_zone_servie_chiffree_et_principale():
     assert b"portail" not in bytes(brut.reperes_chiffre)
     assert services.adresse_principale(u).libelle == "Maison · Bastos" and brut.lat is not None
     d = c.get("/api/me/adresses").json()
-    assert d["zonesServies"] == ["Bastos", "Mokolo", "Melen", "Biyem-Assi"] and d["domicile"] == {"prix": 1500, "offertDes": 50000}
+    # Quartiers des zones exploitées au lancement, Z1, Z3, Z6 et Z7 (R73.2, t_quartiers)
+    assert {"Bastos", "Mokolo", "Melen", "Biyem-Assi"} <= set(d["zonesServies"]) and "Tsinga" not in d["zonesServies"]
+    assert d["domicile"] == {"prix": 1500, "offertDes": 50000}
     r2 = c.post("/api/me/adresses", {"a": {**ADRESSE, "nom": "Bureau", "quartier": "Melen"}}, format="json").json()["adresse"]
     assert r2["principale"] is False
     assert c.put(f"/api/me/adresses/{r2['id']}", {"principale": True}, format="json").json()["adresse"]["principale"] is True
@@ -313,9 +315,10 @@ def test_adresses_zone_servie_chiffree_et_principale():
 
 
 def test_adresse_hors_zone_422():
+    # Un quartier hors de la liste de Yaoundé (t_quartiers) : le client passe par « Autre quartier » (R76.2).
     r = client_connecte(creer_client()).post("/api/me/adresses", {"a": {**ADRESSE, "quartier": "Akwa, Douala"}}, format="json")
     assert r.status_code == 422
-    assert r.json()["error"]["code"] == "zone_non_servie" and r.json()["error"]["data"] == {"ville": "Douala"}
+    assert r.json()["error"]["code"] == "quartier_inconnu"
 
 
 def test_adresse_d_un_autre_client_404():

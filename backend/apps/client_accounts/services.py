@@ -213,8 +213,11 @@ def fermer_toutes_sessions(user) -> int:
 # ── Adresses (CCO-10, CCO-11, DP-09) ────────────────────────────────────────────────────────────────────
 
 
-def zones() -> list[tuple[str, str]]:
-    return [(z.code, z.nom) for z in parametres.geo().zones]
+def quartiers_servis() -> list[str]:
+    """Quartiers des zones exploitées (R73.2), dans l'ordre de t_quartiers."""
+    from apps.shipping import zones
+
+    return [q["quartier"] for q in zones.quartiers() if zones.zone_exploitee(q["zone"])]
 
 
 def adresse(user, adresse_id) -> Adresse | None:
@@ -241,12 +244,15 @@ def adresse_principale(user) -> Adresse | None:
 
 
 def adresse_en_dict(a: Adresse) -> dict:
-    servies = {nom for _, nom in zones()}
+    from apps.shipping.zones import zone_exploitee
+
     d = {
         "id": str(a.pk),
         "nom": a.nom,
         "quartier": a.quartier,
-        "zoneServie": a.quartier in servies,
+        "zone": a.zone or None,
+        "niveau": a.niveau or None,
+        "zoneServie": bool(a.zone) and zone_exploitee(a.zone),
         "reperes": a.reperes,
         "position": a.position,
         "creneau": a.creneau or None,
@@ -262,14 +268,43 @@ def adresse_en_dict(a: Adresse) -> dict:
     return d
 
 
-def enregistrer_adresse(user, donnees: dict, adresse_id=None) -> Adresse:
-    """Crée ou modifie une adresse ; 422 zone_non_servie {ville} hors des zones exploitées (le relais continue)."""
-    from belivay_moteurs.geo import zone_exploitee
+# R74.1, mot pour mot : zone non exploitée (sans entreprise active qui la couvre).
+MESSAGE_DOMICILE_INDISPONIBLE = "La livraison à domicile n'est pas encore disponible à cette adresse. Choisissez un relais proche."
 
-    trouvee = regles.zone_du_quartier(donnees["quartier"], zones())
-    if trouvee is None or zone_exploitee(trouvee[0], parametres.geo()) is None:
-        ville = regles.ville_de(donnees["quartier"])
-        raise refus("zone_non_servie", f"BelivaY ne livre pas encore à {ville}. Le retrait au relais reste possible.", {"ville": ville})
+
+def _lieu(user, donnees: dict) -> tuple[str, str, str]:
+    """(quartier, zone, niveau) de l'adresse selon A9 (BV-DEV-04), ou refus 422."""
+    from apps.shipping import zones
+    from apps.shipping.models import DemandeAdresse
+
+    c = donnees.get("coords") or {}
+    lat, lon = (float(c["lat"]), float(c["lon"])) if c else (None, None)
+    precision = float(c["precision"]) if c and c.get("precision") else None
+    saisi = donnees["quartier"].strip()
+
+    if donnees.get("autreQuartier"):  # R76.2 : épingle obligatoire, l'équipe logistique rattache le nom
+        if lat is None:
+            raise refus("epingle", "Posez l'épingle sur votre porte.")
+        if precision is None or precision > zones.regles.reglage("r_epingle_precision_m"):
+            raise refus("precision", "Position trop imprécise : rapprochez l'épingle de votre porte.")
+        DemandeAdresse.objects.create(type=DemandeAdresse.Type.AUTRE_QUARTIER, user=user, quartier_saisi=saisi[:120],
+                                      latitude=lat, longitude=lon, precision_m=precision)
+        return saisi, zones.zone_de_position(lat, lon) or "", ""
+
+    r = zones.resoudre_adresse(saisi, lat, lon, precision)
+    if r.refus == "hors_zone":  # R76.5 : la demande non servie est gardée
+        DemandeAdresse.objects.create(type=DemandeAdresse.Type.HORS_ZONE, user=user, quartier_saisi=saisi[:120],
+                                      latitude=lat, longitude=lon, precision_m=precision)
+    if r.refus:
+        raise refus(r.refus, r.message, {"propositions": r.propositions} if r.propositions else None)
+    if not r.exploitee:  # R74.1 (les entreprises actives qui couvrent une zone arrivent avec BV-DEV-05)
+        raise refus("zone_non_servie", MESSAGE_DOMICILE_INDISPONIBLE, {"zone": r.zone})
+    return r.quartier["quartier"], r.zone, r.niveau
+
+
+def enregistrer_adresse(user, donnees: dict, adresse_id=None) -> Adresse:
+    """Crée ou modifie une adresse (A9) ; 422 si le quartier, l'épingle ou la zone ne conviennent pas."""
+    quartier, zone, niveau = _lieu(user, donnees)
     with transaction.atomic():
         if adresse_id is not None:
             a = Adresse.objects.select_for_update().filter(user=user, pk=adresse_id).first()
@@ -280,7 +315,7 @@ def enregistrer_adresse(user, donnees: dict, adresse_id=None) -> Adresse:
         else:
             a = Adresse(user=user, principale=not Adresse.objects.filter(user=user).exists())
         a.nom = donnees["nom"].strip()
-        a.quartier = trouvee[1]
+        a.quartier, a.zone, a.niveau = quartier, zone, niveau
         a.reperes_chiffre = chiffrer(donnees["reperes"].strip())
         a.instructions_chiffre = chiffrer(donnees["instructions"].strip()) if (donnees.get("instructions") or "").strip() else None
         a.destinataire_chiffre = chiffrer(donnees["destinataire"].strip()) if (donnees.get("destinataire") or "").strip() else None
@@ -317,7 +352,7 @@ def donnees_adresses(user) -> dict:
     r = relais_habituel(user)
     return {
         "adresses": [adresse_en_dict(a) for a in Adresse.objects.filter(user=user)],
-        "zonesServies": [nom for _, nom in zones()],
+        "zonesServies": quartiers_servis(),
         "relais": r.nom if r is not None else "",
         "domicile": {"prix": parametres.entier("LIV-DOM-BASE"), "offertDes": parametres.livraison().seuil_domicile},
     }

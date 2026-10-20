@@ -106,7 +106,9 @@ class Adresse(models.Model):
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="adresses_client")
     nom = models.CharField(max_length=60, help_text="« Maison », « Bureau »")
-    quartier = models.CharField(max_length=80, help_text="nom d'une zone exploitée (ZONES-EXPLOITEES)")
+    quartier = models.CharField(max_length=120, help_text="quartier de t_quartiers (R76.2), ou nom saisi pour « Autre quartier »")
+    zone = models.CharField(max_length=4, blank=True, default="", help_text="zone_dest de l'épingle, Z1 à Z12 (R76.4) ; vide : à rattacher")
+    niveau = models.CharField(max_length=12, blank=True, default="", help_text="niv_client : centre, peripherie ou periurbain (R06.1)")
     reperes_chiffre = models.BinaryField(help_text="repères écrits comme dans la rue, chiffrés (CAP-21)")
     instructions_chiffre = models.BinaryField(null=True, blank=True)
     destinataire_chiffre = models.BinaryField(null=True, blank=True)

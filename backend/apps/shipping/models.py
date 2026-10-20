@@ -64,6 +64,17 @@ class Zone(models.Model):
         VAGUE_2 = "VAGUE_2", "Vague 2"
         VAGUE_3 = "VAGUE_3", "Vague 3 (périphérie)"
 
+    # Spécification v2.1 (R73) : les 12 zones de Yaoundé, Z1 à Z12, créées et tenues à jour depuis t_zones et
+    # t_quartiers (apps/shipping/zones.py, synchroniser_zones) ; nom, vague et quartiers suivent ces tables.
+    code = models.CharField(
+        max_length=4, unique=True, null=True, blank=True,
+        help_text="Z1 à Z12 (t_zones). Vide : ancienne zone hors référentiel v2.1.",
+    )
+    contour = models.JSONField(
+        null=True, blank=True,
+        help_text="Contour GeoJSON (Polygon ou MultiPolygon, coordonnées [longitude, latitude]) tracé par l'équipe "
+                  "logistique (R75.2) ; l'épingle du client doit y tomber (R76.4).",
+    )
     name = models.CharField(max_length=120, unique=True)
     city = models.CharField(max_length=80)
     tier = models.CharField(max_length=20, choices=Tier.choices, default=Tier.STANDARD)
@@ -106,7 +117,19 @@ class Zone(models.Model):
 
     @classmethod
     def match(cls, city: str, district: str):
-        """Résout la zone d'un quartier par correspondance texte. None si aucune zone ne le couvre."""
+        """Résout la zone d'un quartier. None si aucune zone ne le couvre.
+
+        Un quartier du référentiel v2.1 (t_quartiers, alias compris, sans tenir compte des accents, tirets,
+        espaces ni majuscules : R76.2) donne sa zone Z1 à Z12 ; un nom qui mène à deux quartiers de zones
+        différentes ne donne aucune zone. Sinon, ancienne correspondance texte sur `districts`.
+        """
+        from apps.shipping.zones import chercher_quartiers
+
+        trouves = {q["zone"] for q in chercher_quartiers(district)}
+        if len(trouves) == 1:
+            zone = cls.objects.filter(code=trouves.pop(), is_active=True).first()
+            if zone is not None:
+                return zone
         district_norm = (district or "").strip().lower()
         if not district_norm:
             return None
@@ -765,3 +788,33 @@ class RelayPointReview(models.Model):
         if not initiales:
             initiales = [f"{(self.author.username or '?')[0].upper()}."]
         return " ".join(initiales)
+
+
+class DemandeAdresse(models.Model):
+    """Adresse que BelivaY ne sait pas encore servir (BV-DEV-04) : épingle hors des 12 zones (R76.5, demande non
+    servie) ou quartier absent de la liste (R76.2, « Autre quartier », que l'équipe logistique rattache)."""
+
+    class Type(models.TextChoices):
+        HORS_ZONE = "HORS_ZONE", "Hors des 12 zones (R76.5)"
+        AUTRE_QUARTIER = "AUTRE_QUARTIER", "Autre quartier à rattacher (R76.2)"
+
+    type = models.CharField(max_length=20, choices=Type.choices)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
+    quartier_saisi = models.CharField(max_length=120, blank=True, default="")
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
+    precision_m = models.FloatField(null=True, blank=True)
+    quartier_rattache = models.CharField(
+        max_length=120, blank=True, default="",
+        help_text="Quartier de t_quartiers auquel l'équipe logistique rattache ce nom (R76.2).",
+    )
+    traitee = models.BooleanField(default=False)
+    cree_le = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["traitee", "-cree_le"]
+        verbose_name = "Demande d'adresse non servie"
+        verbose_name_plural = "Demandes d'adresse non servies"
+
+    def __str__(self):
+        return f"{self.get_type_display()} · {self.quartier_saisi or '—'}"

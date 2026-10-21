@@ -35,6 +35,8 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
+from apps.common.demonstration import exiger_demonstration_autorisee
+
 
 class SeedError(Exception):
     """Le jeu de donnees ne peut pas etre genere."""
@@ -72,6 +74,8 @@ class Command(BaseCommand):
                             help="Graine aleatoire, pour un jeu reproductible.")
 
     def handle(self, *args, **options):
+        # Tache D31 : jeux de demonstration fermes par defaut.
+        exiger_demonstration_autorisee()
         try:
             if options["purge"]:
                 self._purger()
@@ -207,7 +211,8 @@ class Command(BaseCommand):
 
         try:
             from apps.accounts.models import (
-                CourierProfile, DeliveryOrganizationProfile,
+                CourierProfile,
+                DeliveryOrganizationProfile,
             )
         except ImportError:
             return []
@@ -268,12 +273,13 @@ class Command(BaseCommand):
     # ── Commandes et paiements ───────────────────────────────────────────────
 
     def _commandes(self, contexte: dict, jours: int, nombre: int):
+        from apps.orders.models import Order, OrderItem
         from apps.payments.application.collect import (
-            initiate_collect, poll_attempt,
+            initiate_collect,
+            poll_attempt,
         )
         from apps.payments.bridge.checkout import checkout
         from apps.payments.infrastructure.providers.mock import reset_mock_state
-        from apps.orders.models import Order, OrderItem
         from apps.payments.intents.models import PaymentIntent
 
         self.stdout.write(self.style.HTTP_INFO("\n── Paiements ──"))
@@ -482,8 +488,12 @@ class Command(BaseCommand):
         from apps.payments.payees.models import KycStatus, PayeeAccount
         from apps.payments.settlements.models import PayoutRequest
         from apps.payments.settlements.services import (
-            SettlementError, approve_payout, build_batch, confirm_batch,
-            execute_payout, request_payout,
+            SettlementError,
+            approve_payout,
+            build_batch,
+            confirm_batch,
+            execute_payout,
+            request_payout,
         )
 
         self.stdout.write(self.style.HTTP_INFO("\n── Règlements ──"))
@@ -613,7 +623,8 @@ class Command(BaseCommand):
         from apps.payments.ledger.balances import trial_balance_total
         from apps.payments.ledger.invariants import run_all
         from apps.payments.settlements.models import (
-            PayoutRequest, SettlementBatch,
+            PayoutRequest,
+            SettlementBatch,
         )
 
         self.stdout.write(self.style.HTTP_INFO("\n── Bilan ──"))

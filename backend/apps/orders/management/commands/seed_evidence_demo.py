@@ -6,9 +6,21 @@ from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from apps.accounts.models import CourierProfile, DeliveryOrganizationProfile, RelayPointProfile
+from apps.accounts.models import (
+    CourierProfile,
+    DeliveryOrganizationProfile,
+    RelayPointProfile,
+)
 from apps.catalog.models import Category, Product
-from apps.orders.models import Dispute, DisputeEvidence, DisputeEvidenceRequest, DisputeMessage, Order, OrderItem
+from apps.common.demonstration import exiger_demonstration_autorisee
+from apps.orders.models import (
+    Dispute,
+    DisputeEvidence,
+    DisputeEvidenceRequest,
+    DisputeMessage,
+    Order,
+    OrderItem,
+)
 from apps.shipping.models import RelayParcel, Shipment
 from apps.vendors.models import VendorProfile
 
@@ -17,6 +29,8 @@ class Command(BaseCommand):
     help = "Crée le scénario visuel du workflow de preuves de litige."
 
     def handle(self, *args, **options):
+        # Tache D31 : jeux de demonstration fermes par defaut.
+        exiger_demonstration_autorisee()
         admin = self._user("preuve_admin", "PreuveAdmin2026!", is_staff=True, is_superuser=True)
         client = self._user("preuve_client", "PreuveClient2026!")
         vendor = self._user("preuve_vendeur", "PreuveVendeur2026!")

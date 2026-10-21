@@ -507,6 +507,23 @@ COMPTES_DEMO_AUTORISES = os.getenv("COMPTES_DEMO_AUTORISES", "0").strip().lower(
     "1", "true", "yes", "on",
 }
 
+# ── Jeux de donnees de demonstration (tache D31) ────────────────────────────
+# Douze commandes `seed_*_demo` peuplent la base de boutiques, de relais,
+# d'avis et de commandes fictifs. D31 demande qu'« aucune donnee inventee »
+# n'atteigne le visiteur : « Relais : aucun relais de demonstration (par
+# exemple "Relais Mvog-Ada") ».
+#
+# On ne supprime pas ces jeux — ils servent a juger les ecrans, et le serveur
+# de test de D23 en aura besoin. On les ferme par defaut, comme les comptes de
+# D27 : il faut poser la variable explicitement, ce que la production ne fait
+# jamais. Voir apps/common/demonstration.py.
+#
+# Reglage distinct de COMPTES_DEMO_AUTORISES : on peut vouloir des comptes de
+# test sur un serveur sans y deverser un faux catalogue.
+DONNEES_DEMO_AUTORISEES = os.getenv("DONNEES_DEMO_AUTORISEES", "0").strip().lower() in {
+    "1", "true", "yes", "on",
+}
+
 
 # ========================================
 # PRODUCTION HTTPS & CSRF CONFIGURATION

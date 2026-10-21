@@ -131,6 +131,7 @@ export default {
     more_items_plural: '+ {{count}} more items',
     payment_pending_warning: 'Payment not yet confirmed — you cannot process this order',
     gross_commission: 'Gross {{gross}} · commission {{rate}} %',
+    net_label: 'You receive',
     stat_pending: 'Pending',
     stat_preparing: 'Preparing',
     stat_shipped: 'Shipped',

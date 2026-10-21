@@ -63,13 +63,6 @@ const C = {
   sidebar:  '#1C1209',
 };
 
-const PLANS = [
-  { id: 'gratuit',  nameKey: 'sl1_dashboard.plan_free',     price: 0,    commission: 20, color: '#7C6E5A' },
-  { id: 'starter',  nameKey: 'sl1_dashboard.plan_starter',  price: 4900, commission: 18, color: '#2563EB' },
-  { id: 'pro',      nameKey: 'sl1_dashboard.plan_pro',      price: 9900, commission: 10, color: '#7C3AED' },
-  { id: 'business', nameKey: 'sl1_dashboard.plan_business', price: 24900,commission: 7,  color: '#D97706' },
-] as const;
-
 const FULFILL: Record<string, { labelKey: string; color: string; bg: string }> = {
   PENDING:    { labelKey: 'sl1_dashboard.fulfill_pending',    color: C.amber,  bg: C.amberL },
   PROCESSING: { labelKey: 'sl1_dashboard.fulfill_processing', color: C.blue,   bg: C.blueL  },
@@ -256,57 +249,6 @@ function HCell({ intensity, tooltip }: { intensity: number; tooltip: string }) {
 }
 
 
-// PLAN SIMULATOR
-
-
-function PlanSim({ totalRevenue }: { totalRevenue: number }) {
-  const { t } = useTranslation();
-  const [sel, setSel] = useState<string>('gratuit');
-  const plan = PLANS.find(p => p.id === sel) ?? PLANS[0];
-  const net  = Math.round(totalRevenue * (1 - plan.commission / 100));
-  const save = Math.round(totalRevenue * (PLANS[0].commission - plan.commission) / 100);
-  return (
-    <div className="mt-5 pt-4" style={{ borderTop: `1px solid ${C.border}` }}>
-      <p className="text-[9.5px] font-black uppercase tracking-[0.16em] mb-3" style={{ color: C.mutedL }}>
-        {t('sl1_dashboard.plan_sim_title')}
-      </p>
-      <div className="grid grid-cols-4 gap-2 mb-4">
-        {PLANS.map(p => (
-          <button key={p.id} onClick={() => setSel(p.id)}
-            className="rounded-xl p-2.5 text-center transition-all"
-            style={{
-              background: sel === p.id ? `${p.color}12` : C.cream,
-              border: sel === p.id ? `1.5px solid ${p.color}50` : `1px solid ${C.border}`,
-            }}>
-            <p className="text-[11.5px] font-extrabold"
-              style={{ color: sel === p.id ? p.color : C.muted }}>
-              {t(p.nameKey)}
-            </p>
-            <p className="text-[9.5px] mt-0.5" style={{ color: C.mutedL }}>
-              {p.price === 0 ? t('sl1_dashboard.plan_free') : `${(p.price / 1000).toFixed(1)}K/m`}
-            </p>
-          </button>
-        ))}
-      </div>
-      <div className="grid grid-cols-3 gap-2">
-        {[
-          { l: t('sl1_dashboard.sim_revenue_label'), v: `${fmtXAF(net)} XAF`, color: C.orange },
-          { l: t('sl1_dashboard.sim_commission_label'), v: `${plan.commission}%`, color: plan.color },
-          { l: t('sl1_dashboard.sim_savings_label'), v: save > 0 ? `+${fmtXAF(save)} XAF` : '—', color: C.green },
-        ].map(s => (
-          <div key={s.l} className="rounded-xl p-3 text-center" style={{ background: C.cream }}>
-            <p className="text-[9px] font-bold uppercase tracking-wide mb-1" style={{ color: C.mutedL }}>{s.l}</p>
-            <p className="text-[13.5px] font-extrabold" style={{ color: s.color }}>
-              {s.v}
-            </p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-
 // COMPOSANT PRINCIPAL
 
 
@@ -465,7 +407,6 @@ export default function SellerDashboardPage() {
 
   const s           = fullStats;
   const monthlyRev  = s?.monthly_revenue      ?? 0;
-  const totalRev    = s?.total_revenue         ?? 0;
   const monthlyOrds = s?.monthly_orders        ?? 0;
   const totalOrds   = s?.total_orders          ?? 0;
   const pendingOrds = s?.pending_orders_count  ?? 0;
@@ -781,7 +722,6 @@ export default function SellerDashboardPage() {
       <div className="flex gap-2 flex-wrap">
         {[
           { label: t(totalProds > 1 ? 'sl1_dashboard.chip_products_plural' : 'sl1_dashboard.chip_products', { count: totalProds }), ok: true },
-          { label: t('sl1_dashboard.chip_commission'), ok: false },
           { label: t('sl1_dashboard.chip_boost'),        ok: false },
           { label: t('sl1_dashboard.chip_analytics_ai'),   locked: true },
           { label: t('sl1_dashboard.chip_heatmap'),        locked: true },
@@ -961,7 +901,7 @@ export default function SellerDashboardPage() {
           </div>
         )}
 
-        <PlanSim totalRevenue={totalRev} />
+        {/* R18.2 : aucun taux promis — le simulateur par taux de commission est retiré. */}
       </Card>
 
       {/*  HEATMAP  */}

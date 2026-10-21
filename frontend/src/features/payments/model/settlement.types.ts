@@ -48,8 +48,9 @@ export interface SettlementLine {
   reference: string;
   component: string;
   order_id: number | null;
-  gross_xaf: number;
-  commission_xaf: number;
+  /** R26.1 : absent pour un vendeur (il ne voit que le net). */
+  gross_xaf?: number;
+  commission_xaf?: number;
   net_xaf: number;
   released_at: string | null;
 }
@@ -70,7 +71,7 @@ export interface SettlementBatch {
   status_label: string;
   period_start: string;
   period_end: string;
-  gross_amount_xaf: number;
+  gross_amount_xaf?: number;
   adjustments_xaf: number;
   net_amount_xaf: number;
   is_exceptional: boolean;

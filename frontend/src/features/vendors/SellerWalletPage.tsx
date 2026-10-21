@@ -590,7 +590,6 @@ export default function SellerWalletPage() {
                 {[
                   { l: t('sl4_wallet.cumulative_withdrawn'),                     v: approved.reduce((s, w) => s + w.net_amount_xaf, 0), c: '#fff' },
                   { l: t('sl4_wallet.cumulative_fees_paid'),     v: approved.reduce((s, w) => s + w.fee_amount_xaf, 0), c: T.amber },
-                  { l: t('sl4_wallet.cumulative_commission_retained'), v: Math.round(summary.projection_monthly_xaf * (parseFloat(String(summary.commission_rate)) / 100)), c: T.orange },
                 ].map((x, i) => (
                   <div key={x.l}>
                     {i > 0 && <div style={{ height: 1, background: 'rgba(255,255,255,.1)', marginBottom: 14 }} />}

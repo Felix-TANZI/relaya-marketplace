@@ -62,28 +62,19 @@ def boutique(django_user_model):
 
 # ── « Afficher la ligne "Paye par le client" sur le recu » ───────────────────
 
-def test_le_recu_affiche_paye_par_le_client_et_la_commission():
+def test_le_recu_affiche_paye_par_le_client_et_jamais_la_commission():
     """
-    Le recu montrait « Prix de vente » puis « Vous gardez », sans ligne de
-    commission : le vendeur voyait une retenue que rien n'expliquait.
+    D20 demandait la ligne « Paye par le client ». La spec v2.1 (R26.1) ajoute que l'espace vendeur montre net_b et
+    NE DOIT JAMAIS montrer ce qui est retenu : aucune ligne de commission (RCU-01).
 
     On verifie les lignes, pas le PDF : le flux d'un PDF reportlab est
     compresse, chercher le texte dans les octets produits ne prouverait rien.
     """
-    lignes = lignes_totaux_recu(
-        paye_par_client=20000, taux_commission=10, commission=2000, net=18000,
-    )
+    lignes = lignes_totaux_recu(paye_par_client=20000, net=18000)
 
-    libelles = [libelle for libelle, _, _ in lignes]
-    assert libelles[0] == "Paye par le client"
-    assert "Commission" in libelles[1]
-    assert libelles[2] == "Vous gardez"
-
-    # La chaine doit se verifier a l'oeil : paye - commission = garde.
-    montants = {libelle: montant for libelle, montant, _ in lignes}
-    assert montants["Paye par le client"] - montants[libelles[1]] == montants["Vous gardez"]
-    # Et la commission s'affiche en negatif.
-    assert [negatif for _, _, negatif in lignes] == [False, True, False]
+    assert [libelle for libelle, _, _ in lignes] == ["Paye par le client", "Vous recevez"]
+    assert not any("ommission" in libelle for libelle, _, _ in lignes)
+    assert [negatif for _, _, negatif in lignes] == [False, False]
 
 
 def test_le_recu_ne_montre_que_les_articles_du_vendeur(api_client, boutique):
@@ -116,9 +107,7 @@ def test_le_recu_ne_montre_que_les_articles_du_vendeur(api_client, boutique):
     # Le recu se genere (la dependance reportlab est bien la) ...
     assert reponse.status_code == 200
     # ... et la ligne porte le sous-total vendeur, jamais les 97 531 payes.
-    lignes = lignes_totaux_recu(
-        paye_par_client=20000, taux_commission=10, commission=2000, net=18000,
-    )
+    lignes = lignes_totaux_recu(paye_par_client=20000, net=18000)
     assert lignes[0][1] == 20000
     assert 97531 not in [montant for _, montant, _ in lignes]
 

@@ -70,9 +70,10 @@ export default function EscrowCard({
 
       <div style={{ textAlign: 'right' }}>
         <Money value={hold.payable_xaf} size={15} />
-        {hold.commission_xaf > 0 && (
+        {/* R26.1 : un vendeur ne reçoit pas commission_xaf (il ne voit que le net) ; relais et livreurs la voient. */}
+        {(hold.commission_xaf ?? 0) > 0 && (
           <p style={{ fontSize: 11, margin: '2px 0 0', color: FT.faint }}>
-            {t('sl2_payee_escrow.after_commission', { amount: hold.commission_xaf.toLocaleString('fr-FR') })}
+            {t('sl2_payee_escrow.after_commission', { amount: (hold.commission_xaf ?? 0).toLocaleString('fr-FR') })}
           </p>
         )}
       </div>

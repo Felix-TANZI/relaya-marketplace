@@ -11,10 +11,11 @@
 # leur identité.
 #
 # Commission :
-#   Calculée depuis Order.commission_rate_snapshot (jamais codée en dur).
+#   Calculée par apps.orders.commission.net_vendeur : net_b figé à la commande (spec v2.1, R22.1, R26.1).
 #   Tout vient de PlatformSettings, modifiable par l'admin.
 
 import hashlib
+from apps.orders.commission import net_vendeur
 from rest_framework import serializers
 from apps.orders.models import Order, OrderItem
 from apps.orders.serializers import DisputeEvidenceRequestSerializer
@@ -238,19 +239,15 @@ class VendorOrderSerializer(serializers.ModelSerializer):
       - customer_phone → "Confidentiel"
       - customer_email → non exposé
 
-    Finances vendeur :
-      - vendor_subtotal   : total des articles du vendeur avant commission
-      - commission_rate   : taux snapshot de la commande (ex : 12.0)
-      - commission_amount : BelivaY prélève ce montant
-      - vendor_net_amount : ce que le vendeur recevra = vendor_subtotal - commission_amount
+    Finances vendeur (spec v2.1, R26.1 : le vendeur voit net_b, jamais ce qui est retenu) :
+      - vendor_subtotal   : total des articles du vendeur, prix payés
+      - vendor_net_amount : ce que le vendeur recevra (net_b figé à la commande, R22.1)
     """
 
     items                    = serializers.SerializerMethodField()
     customer_name            = serializers.SerializerMethodField()
     customer_phone           = serializers.SerializerMethodField()
     vendor_subtotal          = serializers.SerializerMethodField()
-    commission_rate          = serializers.SerializerMethodField()
-    commission_amount        = serializers.SerializerMethodField()
     vendor_net_amount        = serializers.SerializerMethodField()
     shipment                 = serializers.SerializerMethodField()
 
@@ -276,9 +273,8 @@ class VendorOrderSerializer(serializers.ModelSerializer):
             'fulfillment_status', 'fulfillment_status_display',
             'escrow_status',      'escrow_status_display',
             'vendor_reply_deadline',
-            'commission_rate_snapshot',
             'subtotal_xaf', 'delivery_fee_xaf', 'total_xaf',
-            'vendor_subtotal', 'commission_rate', 'commission_amount', 'vendor_net_amount',
+            'vendor_subtotal', 'vendor_net_amount',
             'items', 'shipment',
             'is_paid', 'can_be_fulfilled',
             'created_at', 'updated_at',
@@ -312,14 +308,9 @@ class VendorOrderSerializer(serializers.ModelSerializer):
     def get_vendor_subtotal(self, obj) -> int:
         return sum(item.line_total_xaf for item in self._vendor_items(obj))
 
-    def get_commission_rate(self, obj) -> float:
-        return float(obj.commission_rate_snapshot)
-
-    def get_commission_amount(self, obj) -> int:
-        return round(self.get_vendor_subtotal(obj) * float(obj.commission_rate_snapshot) / 100)
-
     def get_vendor_net_amount(self, obj) -> int:
-        return self.get_vendor_subtotal(obj) - self.get_commission_amount(obj)
+        from apps.orders.commission import net_vendeur
+        return net_vendeur(obj, self.context.get('vendor'), self.get_vendor_subtotal(obj))
 
     # ── Articles ─────────────────────────────────────────────────────────────
 
@@ -1239,7 +1230,7 @@ class AdminOrderListSerializer(serializers.ModelSerializer):
         return list(obj.items.values_list('product__vendor__username', flat=True).distinct())
 
     def get_commission_amount(self, obj):
-        return round(obj.subtotal_xaf * float(obj.commission_rate_snapshot) / 100)
+        return commission_console(obj)
 
     def get_courier_info(self, obj):
         shipment = getattr(obj, 'shipment', None)
@@ -1250,6 +1241,15 @@ class AdminOrderListSerializer(serializers.ModelSerializer):
             'courier_phone': shipment.courier_phone or None,
             'status':        shipment.status,
         }
+
+
+def commission_console(order) -> int:
+    """Console (R26.2) : somme des commissions figées des sous-commandes (spec v2.1, R14.1) ; une commande antérieure
+    garde le calcul par son taux."""
+    figees = [c.commission_b for c in order.commissions.all()]
+    if figees:
+        return sum(figees)
+    return round(order.subtotal_xaf * float(order.commission_rate_snapshot) / 100)
 
 
 class AdminOrderDetailSerializer(serializers.ModelSerializer):
@@ -1268,7 +1268,8 @@ class AdminOrderDetailSerializer(serializers.ModelSerializer):
             'city', 'address', 'note',
             'payment_status', 'fulfillment_status', 'escrow_status',
             'subtotal_xaf', 'delivery_fee_xaf', 'total_xaf',
-            'commission_rate_snapshot', 'commission_amount',
+            'commission_rate_snapshot', 'commission_amount', 'commissions',
+            'couverture_xaf', 'frais_momo_xaf', 'total_a_payer_xaf',
             'vendor_reply_deadline',
             'items', 'history', 'payment_transactions',
             'courier_info',
@@ -1280,8 +1281,19 @@ class AdminOrderDetailSerializer(serializers.ModelSerializer):
             return f"{obj.user.first_name} {obj.user.last_name}".strip() or obj.user.username
         return "Invité"
 
+    commissions = serializers.SerializerMethodField()
+
+    def get_commissions(self, obj):
+        """Console (R26.2) : commission_b, tva_b et net_b de chaque sous-commande, avec ce qui les a fixés."""
+        return [
+            {"vendeur": c.vendor_id, "vendeur_nom": c.vendor.username, "st_b": c.st_b, "commission_b": c.commission_b,
+             "tva_b": c.tva_b, "net_b": c.net_b, "plancher_retenu": c.plancher_retenu, "palier": c.palier,
+             "decouverte": c.decouverte, "reste_b": c.reste_b, "exigence": c.exigence, "objectif": c.objectif}
+            for c in obj.commissions.select_related("vendor")
+        ]
+
     def get_commission_amount(self, obj):
-        return round(obj.subtotal_xaf * float(obj.commission_rate_snapshot) / 100)
+        return commission_console(obj)
 
     def get_items(self, obj):
         items_data = []
@@ -1493,17 +1505,11 @@ class VendorPaymentSummarySerializer(serializers.Serializer):
     # Revenus bruts totaux (tous statuts, hors annulés/remboursés)
     total_gross_xaf            = serializers.IntegerField()
 
-    # Commission totale prélevée (toutes commandes libérées)
-    total_commission_xaf       = serializers.IntegerField()
-
     # Nombre de commandes libérées
     released_orders_count      = serializers.IntegerField()
 
     # Nombre de commandes en escrow
     blocked_orders_count       = serializers.IntegerField()
-
-    # Taux de commission actuel (depuis PlatformSettings)
-    commission_rate            = serializers.DecimalField(max_digits=5, decimal_places=2)
 
     # Frais de retrait MoMo actuels (depuis PlatformSettings)
     withdrawal_fee_percent     = serializers.DecimalField(max_digits=4, decimal_places=2)
@@ -1702,10 +1708,8 @@ class VendorDisputeListSerializer(serializers.ModelSerializer):
         vendor = self.context.get('vendor')
         if not vendor:
             return 0
-        items    = obj.order.items.filter(product__vendor=vendor)
-        subtotal = sum(i.line_total_xaf for i in items)
-        rate     = float(obj.order.commission_rate_snapshot)
-        return round(subtotal * (1 - rate / 100))
+        from apps.orders.commission import net_vendeur
+        return net_vendeur(obj.order, vendor)  # net_b (R22.1, R26.1)
 
     def get_vendor_reply_display(self, obj):
         if not obj.vendor_reply_type:
@@ -2157,7 +2161,7 @@ def build_commande(order, vendor_profile) -> dict:
     ramassage = _ramassage_for_shipment(shipment) if shipment else None
     livreur = _livreur_for_shipment(shipment) if shipment else None
 
-    garde = None if probleme else (vendor_subtotal - round(vendor_subtotal * float(order.commission_rate_snapshot) / 100))
+    garde = None if probleme else (net_vendeur(order, vendor_profile.user, vendor_subtotal))
     gele = order.frozen_amount_xaf
 
     from apps.orders.models import PlatformSettings
@@ -2360,7 +2364,7 @@ def build_bon_preparation(order, vendor_profile) -> dict:
         }
 
     vendor_subtotal = sum(i.line_total_xaf for i in items)
-    garde = vendor_subtotal - round(vendor_subtotal * float(order.commission_rate_snapshot) / 100)
+    garde = net_vendeur(order, vendor_profile.user, vendor_subtotal)
     from apps.orders.models import PlatformSettings
     liberation_jours = round((getattr(PlatformSettings.get_settings(), 'escrow_release_h', 72) or 72) / 24) or 1
 
@@ -2424,7 +2428,7 @@ def build_remise(order, vendor_profile) -> dict:
         livreur = {**livreur_base, 'debut': ramassage['debut'], 'fin': ramassage['fin'], 'niveau': niveau}
 
     vendor_subtotal = sum(i.line_total_xaf for i in items)
-    garde = vendor_subtotal - round(vendor_subtotal * float(order.commission_rate_snapshot) / 100)
+    garde = net_vendeur(order, vendor_profile.user, vendor_subtotal)
     from apps.orders.models import PlatformSettings
     liberation_jours = round((getattr(PlatformSettings.get_settings(), 'escrow_release_h', 72) or 72) / 24) or 1
 
@@ -2478,7 +2482,7 @@ def build_recu(order, vendor_profile) -> dict:
     vendor_user = vendor_profile.user
     items = list(order.items.filter(product__vendor=vendor_user))
     vendor_subtotal = sum(i.line_total_xaf for i in items)
-    garde = vendor_subtotal - round(vendor_subtotal * float(order.commission_rate_snapshot) / 100)
+    garde = net_vendeur(order, vendor_profile.user, vendor_subtotal)
     moyen = _moyen_paiement_for_order(order)
     encaisse_a = None
     if order.payment_status == Order.PaymentStatus.PAID:
@@ -2505,7 +2509,7 @@ def build_recu_resume(order, vendor_profile) -> dict:
     vendor_user = vendor_profile.user
     items = list(order.items.filter(product__vendor=vendor_user))
     vendor_subtotal = sum(i.line_total_xaf for i in items)
-    garde = vendor_subtotal - round(vendor_subtotal * float(order.commission_rate_snapshot) / 100)
+    garde = net_vendeur(order, vendor_profile.user, vendor_subtotal)
     encaisse_a = _oh.dt_to_ms(order.created_at) if order.payment_status == Order.PaymentStatus.PAID else None
     article = _article_vendu(items[0]) if items else {'titre': '', 'dessin': ''}
     return {

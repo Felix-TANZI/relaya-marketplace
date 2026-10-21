@@ -38,8 +38,9 @@ export interface PartnerEscrowHold {
   order_id: number | null;
   status: EscrowStatus;
   status_label: string;
-  gross_amount_xaf: number;
-  commission_xaf: number;
+  /** R26.1 : absent pour un vendeur (il ne voit que le net). */
+  gross_amount_xaf?: number;
+  commission_xaf?: number;
   net_amount_xaf: number;
   payable_xaf: number;
   release_trigger: string;

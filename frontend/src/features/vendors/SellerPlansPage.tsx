@@ -53,59 +53,6 @@ function errorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback;
 }
 
-// ─── CALCULATEUR ROI ─────────────────────────────────────────────────────────
-
-function RoiCalculator({ plans }: { plans: PlanData[] }) {
-  const { t } = useTranslation();
-  const [sales, setSales] = useState(150000);
-  const freePlan = plans.find(p => p.code === 'FREE');
-  const proPlan  = plans.find(p => p.code === 'PRO');
-  const freeComm = freePlan ? sales * (Number(freePlan.commission_rate) / 100) : sales * 0.10;
-  const proComm  = proPlan  ? sales * (Number(proPlan.commission_rate)  / 100) : sales * 0.05;
-  const proCost  = proPlan  ? proPlan.price_monthly_xaf : 9900;
-  const saving   = freeComm - proComm - proCost;
-
-  return (
-    <div className="rounded-2xl p-5 space-y-4"
-      style={{ background: `linear-gradient(135deg,${T.text},#2A1C0E)`, color: T.white }}>
-      <div>
-        <p className="font-black text-[16px]" style={{  }}>
-          {t('sl4_plans.roi_title')}
-        </p>
-        <p className="text-[12px] mt-0.5" style={{ color: 'rgba(255,255,255,0.55)' }}>
-          {t('sl4_plans.roi_subtitle')}
-        </p>
-      </div>
-      <div>
-        <div className="flex justify-between text-[12px] mb-2" style={{ color: 'rgba(255,255,255,0.7)' }}>
-          <span>{t('sl4_plans.roi_sales_label')}</span>
-          <span className="font-black" style={{ color: T.violet }}>{fmtXAF(sales)}</span>
-        </div>
-        <input type="range" min={10000} max={1000000} step={5000} value={sales}
-          onChange={e => setSales(parseInt(e.target.value))}
-          className="w-full cursor-pointer" style={{ accentColor: T.orange }}/>
-      </div>
-      <div className="rounded-xl p-4 space-y-2.5" style={{ background: 'rgba(255,255,255,0.08)' }}>
-        <div className="flex justify-between text-[12.5px]">
-          <span style={{ color: 'rgba(255,255,255,0.7)' }}>{t('sl4_plans.roi_free_commission_label', { rate: freePlan?.commission_rate || 10 })}</span>
-          <span className="font-bold" style={{ color: T.red }}>-{fmtXAF(freeComm)}</span>
-        </div>
-        <div className="flex justify-between text-[12.5px]">
-          <span style={{ color: 'rgba(255,255,255,0.7)' }}>{t('sl4_plans.roi_pro_commission_label', { rate: proPlan?.commission_rate || 5 })}</span>
-          <span className="font-bold" style={{ color: T.amber }}>-{fmtXAF(proComm + proCost)}</span>
-        </div>
-        <div className="h-px" style={{ background: 'rgba(255,255,255,0.12)' }}/>
-        <div className="flex justify-between items-center">
-          <span className="text-[12.5px]" style={{ color: 'rgba(255,255,255,0.7)' }}>{t('sl4_plans.roi_monthly_saving_label')}</span>
-          <span className="font-black text-[16px]" style={{ color: saving > 0 ? T.green : T.red }}>
-            {saving > 0 ? '+' : ''}{fmtXAF(saving)}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ─── MODALE SOUSCRIPTION ─────────────────────────────────────────────────────
 
 function SubscribeModal({ plan, cycle, onClose, onSuccess }: {
@@ -288,10 +235,6 @@ function TrialModal({ plan, onClose, onSuccess }: {
                 {f}
               </div>
             ))}
-            <div className="flex items-center gap-2 text-[12.5px]" style={{ color: T.muted }}>
-              <Check size={12} style={{ color: isViolet ? T.violet : T.orange, flexShrink: 0 }}/>
-              {t('sl4_plans.trial_reduced_commission', { rate: plan.commission_rate })}
-            </div>
           </div>
 
           <div className="rounded-xl p-4" style={{ background: T.amberL, border: `1px solid rgba(217,119,6,0.2)` }}>
@@ -361,7 +304,6 @@ function PlanCard({ plan, cycle, isCurrent, onSubscribe, onTrial }: {
 
         <div className="grid grid-cols-2 gap-2">
           {[
-            { label: t('sl4_plans.stat_commission_label'), value: `${plan.commission_rate}%`, color: isViolet?T.violet:T.orange },
             { label: t('sl4_plans.stat_max_products_label'), value: plan.max_products === null ? '∞' : String(plan.max_products), color: T.text },
           ].map((row, i) => (
             <div key={i} className="rounded-xl p-2.5 text-center"
@@ -525,7 +467,7 @@ export default function SellerPlansPage() {
       )}
 
       {/* ROI */}
-      <RoiCalculator plans={plans}/>
+      {/* R18.2 : aucun taux de commission n'est promis ; plus de calculateur fondé sur un taux par plan. */}
 
       {/* TOGGLE MENSUEL/ANNUEL */}
       <div className="flex items-center justify-center gap-4">

@@ -42,9 +42,10 @@ export default function SettlementBreakdown({
             <span style={{ fontSize: 12.5, flex: 1, color: FT.muted }}>
               {ligne.order_id ? t('sl2_payee_settlements.order_hash', { id: ligne.order_id }) : ligne.component}
             </span>
-            {ligne.commission_xaf > 0 && (
+            {/* R26.1 : absente pour un vendeur, qui ne voit que le net. */}
+            {(ligne.commission_xaf ?? 0) > 0 && (
               <span style={{ width: 90, textAlign: 'right' }}>
-                <Money value={-ligne.commission_xaf} size={12} tone="muted" />
+                <Money value={-(ligne.commission_xaf ?? 0)} size={12} tone="muted" />
               </span>
             )}
             <span style={{ width: 80, textAlign: 'right' }}>

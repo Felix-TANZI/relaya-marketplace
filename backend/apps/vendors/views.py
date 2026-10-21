@@ -782,9 +782,11 @@ def vendor_order_note(request, order_id):
         )
 
 
-def lignes_totaux_recu(*, paye_par_client, taux_commission, commission, net):
+def lignes_totaux_recu(*, paye_par_client, net):
     """
-    Les trois lignes du pied du recu vendeur — tache D20.
+    Les lignes du pied du recu vendeur — tache D20, revue par la spec v2.1 (R26.1) : l'espace vendeur montre net_b
+    et NE DOIT JAMAIS montrer ce qui est retenu ; la ligne de commission est donc retiree (RCU-01 : « aucune ligne
+    de commission »).
 
     « Afficher la ligne "Paye par le client" sur le recu. » Le recu montrait
     « Prix de vente » puis « Vous gardez », sans dire d'ou venait l'ecart : la
@@ -802,8 +804,7 @@ def lignes_totaux_recu(*, paye_par_client, taux_commission, commission, net):
     """
     return [
         ("Paye par le client", paye_par_client, False),
-        (f"Commission BelivaY ({taux_commission} %)", commission, True),
-        ("Vous gardez", net, False),
+        ("Vous recevez", net, False),
     ]
 
 
@@ -854,8 +855,8 @@ def vendor_order_receipt_pdf(request, order_id):
 
     items = list(order.items.filter(product__vendor=request.user))
     vendor_subtotal = sum(item.line_total_xaf for item in items)
-    commission_amount = round(vendor_subtotal * float(order.commission_rate_snapshot) / 100)
-    vendor_net_amount = vendor_subtotal - commission_amount
+    from apps.orders.commission import net_vendeur
+    vendor_net_amount = net_vendeur(order, request.user, vendor_subtotal)  # R22.1, R26.1
     order_ref = f"BLV-{order.id:05d}"
 
     def fmt_xaf(amount):
@@ -932,8 +933,6 @@ def vendor_order_receipt_pdf(request, order_id):
             [libelle, (f'- {fmt_xaf(montant)}' if negatif else fmt_xaf(montant))]
             for libelle, montant, negatif in lignes_totaux_recu(
                 paye_par_client=vendor_subtotal,
-                taux_commission=order.commission_rate_snapshot,
-                commission=commission_amount,
                 net=vendor_net_amount,
             )
         ],
@@ -1000,30 +999,16 @@ def vendor_payment_summary(request):
         # ── Commandes du vendeur (contient au moins un de ses articles) ─────
         qs = Order.objects.filter(items__product__vendor=vendor).distinct()
  
+        from apps.orders.commission import net_vendeur
+
         def vendor_net(order_qs):
-            """Somme des vendor_net_amount pour les commandes du queryset."""
-            total = 0
-            for o in order_qs.prefetch_related('items__product'):
-                items = o.items.filter(product__vendor=vendor)
-                subtotal = sum(i.line_total_xaf for i in items)
-                rate     = float(o.commission_rate_snapshot)
-                comm     = round(subtotal * rate / 100)
-                total   += subtotal - comm
-            return total
+            """Somme des net_b du vendeur (R22.1) pour les commandes du queryset."""
+            return sum(net_vendeur(o, vendor) for o in order_qs.prefetch_related('items__product', 'commissions'))
  
         def vendor_gross(order_qs):
             total = 0
             for o in order_qs.prefetch_related('items__product'):
                 total += sum(i.line_total_xaf for i in o.items.filter(product__vendor=vendor))
-            return total
- 
-        def vendor_commission(order_qs):
-            total = 0
-            for o in order_qs.prefetch_related('items__product'):
-                items    = o.items.filter(product__vendor=vendor)
-                subtotal = sum(i.line_total_xaf for i in items)
-                rate     = float(o.commission_rate_snapshot)
-                total   += round(subtotal * rate / 100)
             return total
  
         # ── KPIs principaux ────────────────────────────────────────────────
@@ -1036,7 +1021,6 @@ def vendor_payment_summary(request):
         total_release_pending  = vendor_net(pending_qs)
  
         total_gross      = vendor_gross(released_qs)
-        total_commission = vendor_commission(released_qs)
  
         # ── Projection mensuelle (moyenne des 3 derniers mois) ─────────────
         three_months_ago  = now - timedelta(days=90)
@@ -1091,10 +1075,8 @@ def vendor_payment_summary(request):
             'total_blocked_xaf':         total_blocked,
             'total_release_pending_xaf': total_release_pending,
             'total_gross_xaf':           total_gross,
-            'total_commission_xaf':      total_commission,
             'released_orders_count':     released_qs.count(),
             'blocked_orders_count':      blocked_qs.count(),
-            'commission_rate':           settings.platform_commission_percent,
             'withdrawal_fee_percent':    settings.withdrawal_fee_percent,
             'minimum_withdrawal_xaf':    settings.minimum_withdrawal_amount_xaf,
             'projection_monthly_xaf':    projection_monthly,
@@ -3684,8 +3666,9 @@ def admin_finances_stats(request):
     # Commission totale = SUM(subtotal_xaf * commission_rate_snapshot / 100)
     def commission_sum(qs):
         total = 0
-        for o in qs.only('subtotal_xaf', 'commission_rate_snapshot'):
-            total += round(o.subtotal_xaf * float(o.commission_rate_snapshot) / 100)
+        from apps.vendors.serializers import commission_console
+        for o in qs.only('subtotal_xaf', 'commission_rate_snapshot').prefetch_related('commissions'):
+            total += commission_console(o)  # commissions figées (spec v2.1, R14.1)
         return total
  
     total_commission  = commission_sum(paid_orders)
@@ -3739,7 +3722,11 @@ def admin_finances_stats(request):
         # sans vendeur n'a de toute facon aucune commission a attribuer.
         if vendor is None:
             continue
-        commission = round(item.line_total_xaf * float(item.order.commission_rate_snapshot) / 100)
+        figee = next((c for c in item.order.commissions.all() if c.vendor_id == vendor.id), None)
+        if figee is not None and figee.st_b:  # part de l'article dans la commission figée (spec v2.1, R14.1)
+            commission = round(figee.commission_b * item.line_total_xaf / figee.st_b)
+        else:
+            commission = round(item.line_total_xaf * float(item.order.commission_rate_snapshot) / 100)
         key = vendor.id
         if key not in vendor_commissions:
             profile = getattr(vendor, 'vendor_profile', None)
@@ -4649,8 +4636,9 @@ def admin_account_stats(request):
  
     # Commissions = SUM(subtotal_xaf * commission_rate_snapshot / 100)
     total_commissions = 0
-    for o in paid_orders.only('subtotal_xaf', 'commission_rate_snapshot'):
-        total_commissions += round(o.subtotal_xaf * float(o.commission_rate_snapshot) / 100)
+    from apps.vendors.serializers import commission_console
+    for o in paid_orders.only('subtotal_xaf', 'commission_rate_snapshot').prefetch_related('commissions'):
+        total_commissions += commission_console(o)  # commissions figées (spec v2.1, R14.1)
  
     # Escrow
     escrow_blocked = Order.objects.filter(
@@ -6572,10 +6560,11 @@ def vendor_certifications(request):
         TIER_LABELS   = {'BRONZE': 'Bronze', 'SILVER': 'Argent', 'GOLD': 'Or', 'DIAMOND': 'Diamant'}
         TIER_NEXT     = {'BRONZE': 'SILVER', 'SILVER': 'GOLD', 'GOLD': 'DIAMOND', 'DIAMOND': None}
         TIER_BENEFITS = {
-            'BRONZE':  ['Vente sur BelivaY', 'QR Code boutique', 'Support standard', 'Commission standard'],
-            'SILVER':  ['Badge Argent visible', 'Commission -1%', 'Support prioritaire', '2 boosts/mois offerts'],
-            'GOLD':    ['Badge Or visible', 'Commission -2%', 'Support dedie', '5 boosts/mois offerts', 'Mise en avant catalogue'],
-            'DIAMOND': ['Badge Diamant exclusif', 'Commission -3%', 'Support VIP 24/7', 'Boosts illimites', 'Page boutique Premium'],
+            # Spec v2.1, R18.2 : aucun taux particulier NE DOIT être promis à un vendeur.
+            'BRONZE':  ['Vente sur BelivaY', 'QR Code boutique', 'Support standard'],
+            'SILVER':  ['Badge Argent visible', 'Support prioritaire', '2 boosts/mois offerts'],
+            'GOLD':    ['Badge Or visible', 'Support dedie', '5 boosts/mois offerts', 'Mise en avant catalogue'],
+            'DIAMOND': ['Badge Diamant exclusif', 'Support VIP 24/7', 'Boosts illimites', 'Page boutique Premium'],
         }
  
         tiers_info = []
@@ -6669,7 +6658,7 @@ def vendor_list_plans(request):
             'description':      p.description,
             'price_monthly_xaf': p.price_monthly_xaf,
             'price_annual_xaf': p.price_annual_xaf,
-            'commission_rate':  float(p.commission_rate),
+            # Pas de commission_rate : aucun taux n'est promis au vendeur (R18.2), il ne voit que net_b (R26.1).
             'max_products':     p.max_products,
             'max_boosts_month': p.max_boosts_month,
             'features':         p.features,
@@ -8837,13 +8826,23 @@ def _vd_category_names(category):
     return categorie, rayon
 
 
-def _vd_commission_kept(vendor, price_xaf):
-    """Montant gardé par le vendeur à price_xaf : réutilise LE calcul réellement appliqué aux
-    commandes (apps.orders.serializers._commission_rate_for_product), jamais un barème recalculé
-    séparément — cohérence garantie avec ce que le checkout facture vraiment."""
+def _vd_commission_kept(vendor, price_xaf, master=None):
+    """(gardé, retenu, taux) pour une vente d'un article à price_xaf : le service de commission de la spec v2.1
+    (moteur BV-DEV-09, A7), avec l'univers de la fiche, le palier et l'offre de découverte du vendeur, sans
+    livraison offerte. Seul « gardé » (net_b) peut être montré au vendeur (R26.1). Sans univers sur la fiche,
+    l'ancien taux de la commande s'applique."""
     from decimal import Decimal
     if not price_xaf:
         return 0, 0, 0.0
+    if master is not None and getattr(master, 'univers', ''):
+        from apps.orders.commission import decouverte, palier_vendeur
+        from apps.regles import services as regles
+        r = regles.moteur().commission(
+            [dict(prix_i=price_xaf, q_i=1, univers_i=master.univers, mic_i=master.made_in_cameroon)],
+            palier_vendeur(vendor), decouverte(vendor), 0,
+        )
+        retenu = r['commission_b'] + r['tva_b']
+        return r['net_b'], retenu, round(retenu / price_xaf * 100, 2)
     try:
         from apps.orders.models import PlatformSettings
         from apps.orders.serializers import _commission_rate_for_product
@@ -8876,8 +8875,8 @@ def _vd_offer_etat(product):
 
 
 def _vd_offer_month_stats(product):
-    """Ventes, gardé et litiges réels du mois en cours (OrderItem, Dispute) — gardeCeMois utilise
-    order.commission_rate_snapshot, le taux réellement appliqué à chaque commande."""
+    """Ventes, gardé et litiges réels du mois en cours (OrderItem, Dispute) — gardeCeMois est la part de l'article
+    dans le net_b figé de sa sous-commande (spec v2.1, R22.1) ; une commande antérieure garde son taux."""
     from django.utils import timezone
     now = timezone.now()
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -8888,10 +8887,15 @@ def _vd_offer_month_stats(product):
             product=product, order__created_at__gte=month_start,
         ).select_related('order')
         ventes = items.count()
+        from apps.orders.models import CommissionSousCommande
         garde = 0
         for item in items:
-            rate = float(item.order.commission_rate_snapshot or 0)
-            garde += int(round(float(item.line_total_xaf) * (1 - rate / 100)))
+            figee = CommissionSousCommande.objects.filter(order=item.order, vendor=product.vendor).first()
+            if figee is not None and figee.st_b:
+                garde += int(round(figee.net_b * item.line_total_xaf / figee.st_b))
+            else:
+                rate = float(item.order.commission_rate_snapshot or 0)
+                garde += int(round(float(item.line_total_xaf) * (1 - rate / 100)))
     except Exception:
         ventes, garde = 0, None
     try:
@@ -8927,7 +8931,7 @@ def _vd_offer_dict(product, request):
     except Exception:
         stock = 0
     seuil = product.get_effective_stock_threshold()
-    kept, _commission, _rate = _vd_commission_kept(product.vendor, product.price_xaf)
+    kept, _commission, _rate = _vd_commission_kept(product.vendor, product.price_xaf, product.master)
     categorie, rayon = _vd_category_names(product.category)
     images = list(product.images.all())
     primary = next((i for i in images if i.is_primary), images[0] if images else None)
@@ -9037,7 +9041,7 @@ def _vd_fiche_dict(master, request):
     part = None
     if prices:
         prix_ref = min(prices)
-        kept, _c, _r = _vd_commission_kept(request.user, prix_ref)
+        kept, _c, _r = _vd_commission_kept(request.user, prix_ref, master)
         part = {'pourCent': round(kept / prix_ref * 100, 1) if prix_ref else 0, 'prixRef': prix_ref}
     try:
         img = master.images.filter(is_primary=True).first() or master.images.first()
@@ -9690,27 +9694,26 @@ def vd_offers_quote(request):
         return Response({'detail': 'Paramètre "prix" requis (entier).'}, status=400)
     offre_id = request.query_params.get('offre')
     product = Product.objects.filter(pk=offre_id, vendor=request.user).first() if offre_id else None
-    # Réglages de l'admin (spécification v2.1) : prix minimum publiable (R19.1), commission minimale
-    # (R19.2), seuil et points « petit prix » (R17.1).
+    # Réglages de l'admin (spécification v2.1) : prix minimum publiable (R19.1), seuil et points « petit prix »
+    # (R17.1). La commission minimale n'est plus renvoyée : le vendeur ne voit jamais ce qui est retenu (R26.1).
     from apps.regles import services as regles
     MINIMUM = regles.reglage('r_prix_min_publiable')
-    COMMISSION_MIN = regles.reglage('r_com_min')
     SEUIL_PETIT_PRIX = regles.reglage('r_petit_prix')
     POINTS_PETIT_PRIX = regles.reglage('r_pts_petit_prix')
     if prix < MINIMUM:
         return Response({
             'prix': prix, 'garde': None, 'partPourCent': None,
             'petitPrix': prix < SEUIL_PETIT_PRIX, 'points': 0,
-            'minimum': MINIMUM, 'plagesMinimale': [], 'commissionMinimale': COMMISSION_MIN,
+            'minimum': MINIMUM, 'plagesMinimale': [], 'commissionMinimale': None,  # R26.1
             'seuilPetitPrix': SEUIL_PETIT_PRIX, 'plafond': None, 'refus': 'minimum',
         })
     vendor = product.vendor if product else request.user
-    garde, _commission, _rate = _vd_commission_kept(vendor, prix)
+    garde, _commission, _rate = _vd_commission_kept(vendor, prix, product.master if product else None)
     part = round(garde / prix * 100, 1) if prix else None
     return Response({
         'prix': prix, 'garde': garde, 'partPourCent': part,
         'petitPrix': prix < SEUIL_PETIT_PRIX, 'points': POINTS_PETIT_PRIX if prix < SEUIL_PETIT_PRIX else 0,
-        'minimum': MINIMUM, 'plagesMinimale': [], 'commissionMinimale': COMMISSION_MIN,
+        'minimum': MINIMUM, 'plagesMinimale': [], 'commissionMinimale': None,  # R26.1
         'seuilPetitPrix': SEUIL_PETIT_PRIX, 'plafond': None, 'refus': None,
     })
 
@@ -9778,7 +9781,7 @@ def vd_offer_price_advice(request, offer_id):
     conseille = min(conseille, prix_saisi)
     conseille = max(conseille, 0)
 
-    garde_conseille, _commission, _rate = _vd_commission_kept(product.vendor, conseille)
+    garde_conseille, _commission, _rate = _vd_commission_kept(product.vendor, conseille, product.master)
     part_conseille = round(garde_conseille / conseille * 100, 1) if conseille else 0.0
     moins_cher = min(autres_prix_tries)
     economie_client = max(0, moins_cher - conseille)
@@ -10179,10 +10182,10 @@ def vd_promotions_quote(request):
     if reference <= promo_price:
         return Response({'ok': False, 'raison': 'prix'}, status=200)
     remise_pct = round((1 - promo_price / reference) * 100, 1)
-    garde, commission, _rate = _vd_commission_kept(product.vendor, promo_price)
+    garde, _commission, _rate = _vd_commission_kept(product.vendor, promo_price, product.master)
     return Response({
         'ok': True, 'prixReference': reference, 'prixPromo': promo_price,
-        'remisePourCent': remise_pct, 'garde': garde, 'commission': commission,
+        'remisePourCent': remise_pct, 'garde': garde,  # R26.1 : jamais ce qui est retenu
         'remiseValide': 15 <= remise_pct <= 70,
     })
 
@@ -10846,21 +10849,31 @@ def _document_content(profile, doc_type, period):
                 Order.FulfillmentStatus.RELEASED_TO_VENDOR,
             ],
         )
+        from apps.orders.commission import net_vendeur
         lignes = []
         total_vente = total_commission = total_garde = 0
         for order in qs.order_by('updated_at'):
             items = order.items.filter(product__vendor=vendor)
             subtotal = sum(i.line_total_xaf for i in items)
-            rate = float(order.commission_rate_snapshot)
-            commission = round(subtotal * rate / 100)
-            garde = subtotal - commission
+            garde = net_vendeur(order, vendor, subtotal)  # net_b (R22.1)
+            commission = subtotal - garde
             total_vente += subtotal
             total_commission += commission
             total_garde += garde
-            lignes.append([_vendor_ref(order.id), order.updated_at.strftime('%d/%m/%Y'), subtotal, commission, garde])
-        titre = "Relevé de commission" if doc_type == 'facture' else "Relevé de ventes"
-        colonnes = ['Commande', 'Date', 'Prix de vente (FCFA)', 'Commission (FCFA)', 'Vous gardez (FCFA)']
-        totaux = ['Total', '', total_vente, total_commission, total_garde]
+            if doc_type == 'facture':
+                lignes.append([_vendor_ref(order.id), order.updated_at.strftime('%d/%m/%Y'), subtotal, commission, garde])
+            else:
+                lignes.append([_vendor_ref(order.id), order.updated_at.strftime('%d/%m/%Y'), subtotal, garde])
+        if doc_type == 'facture':
+            # Facture mensuelle de commission (R13.5) : document comptable, distinct de l'espace vendeur (R26.1).
+            titre = "Relevé de commission"
+            colonnes = ['Commande', 'Date', 'Prix de vente (FCFA)', 'Commission (FCFA)', 'Vous gardez (FCFA)']
+            totaux = ['Total', '', total_vente, total_commission, total_garde]
+        else:
+            # R26.1 : le relevé de ventes montre net_b, jamais ce qui est retenu.
+            titre = "Relevé de ventes"
+            colonnes = ['Commande', 'Date', 'Prix de vente (FCFA)', 'Vous recevez (FCFA)']
+            totaux = ['Total', '', total_vente, total_garde]
         mentions = ["Ceci n'est pas une facture fiscale." if not lignes else "Montants en francs CFA (XAF)."]
         return (f"{titre} · {period}", profile.business_name, colonnes, lignes, totaux, mentions)
 

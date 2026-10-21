@@ -421,6 +421,17 @@ class OrderCreateSerializer(serializers.Serializer):
         for item_data in order_items_data:
             OrderItem.objects.create(order=order, **item_data)
 
+        # Commission de chaque sous-commande, figée maintenant (A7, A8 ; R13.2, R13.5). Le taux de la commande en
+        # garde l'équivalent, pour les écrans qui le lisent encore.
+        from . import commission as commission_v21
+        commissions = commission_v21.calculer(
+            order, [(d['product'], d['price_xaf_snapshot'], d['qty']) for d in order_items_data], devis.detail,
+        )
+        retenu = sum(c.commission_b for c in commissions)
+        if subtotal:
+            order.commission_rate_snapshot = (Decimal(retenu) * 100 / Decimal(subtotal)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            order.save(update_fields=['commission_rate_snapshot'])
+
         vendor_users = {
             item_data['product'].vendor
             for item_data in order_items_data

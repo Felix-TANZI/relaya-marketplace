@@ -127,6 +127,13 @@ def prepare_payment(order, *, payer_msisdn: str, payer_operator: str,
                 f"Aucun compte financier pour le vendeur {vendeur_user}."
             )
 
+        # Spec v2.1 : la commission de la sous-commande est celle que le service de commission a figee a la
+        # commande (A7, R13.2) ; avec la TVA, c'est ce que le vendeur ne recoit pas (net_b, R22.1). Une commande
+        # anterieure, sans commission figee, garde son taux d'origine.
+        from apps.orders.models import CommissionSousCommande
+        figee = CommissionSousCommande.objects.filter(order=order, vendor=vendeur_user).first()
+        retenue = Money(figee.commission_b + figee.tva_b) if figee is not None else None
+
         # Chaque composant porte SON beneficiaire : sans cela, la
         # repartition attribuerait tout au dernier vendeur rencontre.
         composants.append(ComponentInput(
@@ -135,6 +142,7 @@ def prepare_payment(order, *, payer_msisdn: str, payer_operator: str,
             order_id=order.pk,
             payee_code=compte.payee_code,
             commission_rate=commission,
+            commission_amount=retenue,
         ))
         types[compte.payee_code] = DomainPayeeType.VENDOR
         codes.setdefault(DomainPayeeType.VENDOR, compte.payee_code)

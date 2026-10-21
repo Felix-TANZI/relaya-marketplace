@@ -254,12 +254,7 @@ class RelayPointNearbyView(APIView):
         if city:
             qs = qs.filter(city__in=_city_variants(city) or [city])
 
-        occupancy_by_relay = dict(
-            RelayParcel.objects.filter(
-                relay_point__in=qs,
-                status__in=[RelayParcel.Status.EXPECTED, RelayParcel.Status.RECEIVED, RelayParcel.Status.STORED],
-            ).values("relay_point").annotate(count=Count("id")).values_list("relay_point", "count")
-        )
+        from apps.shipping.garde import places_occupees, relais_sature
 
         try:
             buyer_lat = float(lat) if lat is not None else None
@@ -269,9 +264,10 @@ class RelayPointNearbyView(APIView):
 
         results = []
         for relay in qs:
-            occupancy = occupancy_by_relay.get(relay.id, 0)
+            # Spec v2.1, R41.3 : places occupées (places(format), R40.2) sous r_relais_saturation des places.
+            occupancy = places_occupees(relay)
             capacity = relay.storage_capacity or 0
-            has_space = capacity == 0 or occupancy < capacity
+            has_space = not relais_sature(relay, occupancy)
             distance_km = None
             if buyer_lat is not None and buyer_lng is not None and relay.latitude is not None and relay.longitude is not None:
                 distance_km = round(_haversine_km(buyer_lat, buyer_lng, relay.latitude, relay.longitude), 2)

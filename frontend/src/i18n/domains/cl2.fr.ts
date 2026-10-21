@@ -115,6 +115,7 @@ export default {
     relay_pickup_instructions_pre: 'Présentez ce code (ou le QR) au point relais',
     relay_pickup_instructions_post: 'pour récupérer votre colis.',
     pickup_qr_alt: 'QR code de retrait',
+    garde_cash_at_pickup: 'Garde par colis, à payer en espèces au gérant au moment du retrait.',
     garde_title: 'Garde au point relais',
     garde_overdue: 'Le délai de garde est dépassé. Votre colis va être retourné au vendeur ; un remboursement partiel (frais de livraison et de garde déduits) vous sera versé.',
     garde_free_remaining: 'Garde gratuite pendant {{count}} jour encore.',

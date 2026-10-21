@@ -640,6 +640,8 @@ class RelayParcelPickupSerializer(serializers.Serializer):
     proof_note = serializers.CharField(required=False, allow_blank=True, default="")
     picked_up_by_name = serializers.CharField(required=False, allow_blank=True, default="")
     picked_up_by_id_reference = serializers.CharField(required=False, allow_blank=True, default="")
+    # Spec v2.1, R36.3 : montant de garde encaissé en espèces, confirmé par le gérant avant la remise.
+    garde_encaissee_xaf = serializers.IntegerField(required=False, min_value=0, allow_null=True, default=None)
 
     # ── Inspection au comptoir ────────────────────────────────────────────
     #
@@ -698,10 +700,34 @@ class RelayParcelPickupSerializer(serializers.Serializer):
                 "picked_up_by_id_reference": "Cette commande est retiree par un tiers autorise : renseignez sa piece d'identite avant de valider.",
             })
 
+        # R36.3 : la garde (R36.2, une ligne par colis) se paie en espèces au gérant, en une fois, au retrait ; la
+        # remise reste bloquée tant qu'il n'a pas confirmé l'encaissement ; chaque encaissement est journalisé.
+        from apps.shipping.garde import garde_commande
+        now = timezone.now()
+        garde = garde_commande(parcels[0].shipment.order, now)
+        if garde["total"] > 0 and self.validated_data.get("garde_encaissee_xaf") != garde["total"]:
+            raise serializers.ValidationError({
+                "garde_encaissee_xaf": f"Encaissez la garde en espèces ({garde['total']} F), puis confirmez l'encaissement.",
+                "garde_due_xaf": garde["total"],
+            })
+
         proof_note = self.validated_data.get("proof_note", "")
         picked_up_by_name = self.validated_data.get("picked_up_by_name", "")
-        now = timezone.now()
         for parcel in parcels:
+            if garde["total"] > 0:
+                parcel.garde_encaissee_xaf = garde["colis"].get(parcel.pk, 0)
+                parcel.garde_encaissee_at = now
+                parcel.garde_encaissee_par = self.context.get("user")
+                from django.contrib.contenttypes.models import ContentType
+
+                from apps.common.models import AuditLog
+                AuditLog.objects.create(
+                    action=AuditLog.Action.UPDATE, content_type=ContentType.objects.get_for_model(RelayParcel),
+                    object_id=str(parcel.pk), object_repr=f"Garde encaissée · colis {parcel.pk}",
+                    actor=self.context.get("user") if getattr(self.context.get("user"), "is_authenticated", False) else None,
+                    changes={"garde_encaissee_xaf": parcel.garde_encaissee_xaf, "j": garde["j"],
+                             "relais": relay_point.pk, "regle": "R36.3"},
+                )
             parcel.status = RelayParcel.Status.PICKED_UP
             parcel.proof_note = proof_note or parcel.proof_note
             parcel.picked_up_at = now

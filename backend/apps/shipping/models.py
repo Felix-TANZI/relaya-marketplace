@@ -566,48 +566,46 @@ class RelayParcel(models.Model):
         help_text="Type + numero de piece d'identite du tiers ayant retire le colis, loggue par le relais.",
     )
 
-    # Garde au relais / non-retrait (Addendum Décisions v1.0 §3.2) : gratuite
-    # J0->J+3, 200F/jour de J+3 a J+7, prolongeable UNE fois par l'acheteur.
+    # Garde au relais (spec v2.1, A4 : apps/shipping/garde.py). La prolongation gratuite de l'ancienne règle
+    # (Addendum v1.0 §3.2) n'existe plus dans la spec : le champ est gardé pour l'historique, sans effet.
     garde_extended = models.BooleanField(
         default=False,
-        help_text="L'acheteur a utilise sa prolongation unique de garde (repousse l'echeance J+7).",
+        help_text="Ancienne prolongation de garde (Addendum v1.0) : sans effet depuis la spec v2.1.",
     )
     non_retrait_processed_at = models.DateTimeField(
         null=True, blank=True,
         help_text="Date a laquelle le non-retrait a ete traite (retour vendeur + remboursement partiel).",
     )
+    # R36.3 : la garde se paie en espèces au gérant ; il confirme l'encaissement avant la remise.
+    garde_encaissee_xaf = models.PositiveIntegerField(null=True, blank=True, help_text="garde_colis encaissée (R36.2)")
+    garde_encaissee_at = models.DateTimeField(null=True, blank=True)
+    garde_encaissee_par = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
+    # R50.2 : rappels par SMS aux jours r_rappel_j1 et r_rappel_j2 de garde.
+    rappel_j1_at = models.DateTimeField(null=True, blank=True)
+    rappel_j2_at = models.DateTimeField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    GARDE_FREE_DAYS = 3
-    GARDE_DEADLINE_DAYS = 7
-    GARDE_EXTENSION_DAYS = 4
-    GARDE_DAILY_FEE_XAF = 200
-
     @property
     def garde_free_until(self):
-        if not self.received_at:
-            return None
-        return self.received_at + timezone.timedelta(days=self.GARDE_FREE_DAYS)
+        """Fin du jour 1, sans garde (t_garde) ; compté depuis l'arrivée du dernier colis de la commande (R37.1)."""
+        from apps.shipping.garde import fin_du_jour_1
+
+        return fin_du_jour_1(self.shipment.order)
 
     @property
     def garde_deadline(self):
-        if not self.received_at:
-            return None
-        days = self.GARDE_DEADLINE_DAYS + (self.GARDE_EXTENSION_DAYS if self.garde_extended else 0)
-        return self.received_at + timezone.timedelta(days=days)
+        """Renvoi au vendeur quand j dépasse r_garde_jours (R37.2)."""
+        from apps.shipping.garde import echeance_renvoi
+
+        return echeance_renvoi(self.shipment.order)
 
     def garde_fee_due(self, at=None):
-        """Frais de garde accumules a la date donnee (200F/jour au-dela de J+3)."""
-        if not self.received_at:
-            return 0
-        moment = min(at or timezone.now(), self.garde_deadline)
-        free_until = self.garde_free_until
-        if moment <= free_until:
-            return 0
-        days_over = (moment - free_until).days + (1 if (moment - free_until).seconds else 0)
-        return max(0, days_over) * self.GARDE_DAILY_FEE_XAF
+        """garde_colis de ce colis (R36.2) : grille t_garde au jour j de la commande, plafonnée à sa valeur."""
+        from apps.shipping.garde import garde_colis, jour
+
+        return garde_colis(self, jour(self.shipment.order, at))
 
     class Meta:
         ordering = ["-updated_at"]

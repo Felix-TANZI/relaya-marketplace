@@ -341,7 +341,6 @@ class OrderCreateSerializer(serializers.Serializer):
         relay_point_id = validated_data.get('relay_point_id')
         if delivery_mode == 'PICKUP' and relay_point_id:
             from apps.accounts.models import RelayPointProfile
-            from apps.shipping.models import RelayParcel as _RelayParcel
 
             try:
                 relay_point_obj = RelayPointProfile.objects.get(
@@ -350,11 +349,8 @@ class OrderCreateSerializer(serializers.Serializer):
             except RelayPointProfile.DoesNotExist:
                 raise serializers.ValidationError({'relay_point_id': "Ce point relais n'est plus disponible."})
 
-            occupancy = _RelayParcel.objects.filter(
-                relay_point=relay_point_obj,
-                status__in=[_RelayParcel.Status.EXPECTED, _RelayParcel.Status.RECEIVED, _RelayParcel.Status.STORED],
-            ).count()
-            if relay_point_obj.storage_capacity and occupancy >= relay_point_obj.storage_capacity:
+            from apps.shipping.garde import relais_sature
+            if relais_sature(relay_point_obj):  # spec v2.1, R41.3
                 raise serializers.ValidationError({
                     'relay_point_id': "Ce point relais vient d'atteindre sa capacité — choisissez-en un autre.",
                 })

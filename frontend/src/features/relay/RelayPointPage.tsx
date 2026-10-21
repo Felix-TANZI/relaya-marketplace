@@ -945,6 +945,8 @@ export default function RelayPointPage() {
               : "Remise au comptoir sans ouverture",
           picked_up_by_name: input.authorizedName,
           picked_up_by_id_reference: input.idReference,
+          // Spec v2.1, R36.3 : garde encaissée en espèces, confirmée par le gérant.
+          garde_encaissee_xaf: input.gardeEncaisseeXaf,
         }),
       });
 

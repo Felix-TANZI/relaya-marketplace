@@ -173,8 +173,6 @@ export default function OrderDetailPage() {
   const [reviewDrafts, setReviewDrafts] = useState<Record<number, { rating: number; title: string; comment: string }>>({});
   const [reviewStatus, setReviewStatus] = useState<Record<number, "idle" | "saving" | "saved" | "error" | "exists">>({});
   const [pickupQrDataUrl, setPickupQrDataUrl] = useState<string | null>(null);
-  const [extendingGarde, setExtendingGarde] = useState(false);
-  const [gardeExtendError, setGardeExtendError] = useState<string | null>(null);
   const [showConfirmReceipt, setShowConfirmReceipt] = useState(false);
   const [showQrScanner, setShowQrScanner] = useState(false);
   const [receiptCode, setReceiptCode] = useState("");
@@ -429,21 +427,6 @@ export default function OrderDetailPage() {
       );
     } finally {
       setReceiptSubmitting(false);
-    }
-  };
-
-  const handleExtendGarde = async () => {
-    if (!order) return;
-    setExtendingGarde(true);
-    setGardeExtendError(null);
-    try {
-      await ordersApi.extendRelayGarde(order.id);
-      const shipment = await customerApi.getOrderTracking(order.id);
-      setTracking(shipment);
-    } catch (err) {
-      setGardeExtendError(err instanceof Error ? err.message : t("cl2_order_detail.garde_extend_error"));
-    } finally {
-      setExtendingGarde(false);
     }
   };
 
@@ -918,20 +901,10 @@ export default function OrderDetailPage() {
                         {t("cl2_order_detail.garde_fee_in_progress_pre")} <strong>{parcel.garde_fee_due_xaf.toLocaleString("fr-FR")} FCFA</strong>. {t(daysLeft > 1 ? "cl2_order_detail.garde_days_before_return_plural" : "cl2_order_detail.garde_days_before_return", { count: daysLeft })}
                       </p>
                     )}
-                    {!overdue && !parcel.garde_extended && !stillFree && (
-                      <button
-                        type="button"
-                        onClick={() => void handleExtendGarde()}
-                        disabled={extendingGarde}
-                        className="mt-3 inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {extendingGarde ? t("cl2_order_detail.garde_extend_loading") : t("cl2_order_detail.garde_extend_cta")}
-                      </button>
+                    {/* Spec v2.1 : plus de prolongation (R36, R37) ; la garde se paie en espèces au retrait (R36.3). */}
+                    {!overdue && (
+                      <p className="mt-2 text-xs font-semibold text-gray-500 dark:text-gray-400">{t("cl2_order_detail.garde_cash_at_pickup")}</p>
                     )}
-                    {parcel.garde_extended && !overdue && (
-                      <p className="mt-2 text-xs font-semibold text-gray-500 dark:text-gray-400">{t("cl2_order_detail.garde_extend_used")}</p>
-                    )}
-                    {gardeExtendError && <p className="mt-2 text-xs font-semibold text-red-600">{gardeExtendError}</p>}
                   </div>
                 );
               })()}

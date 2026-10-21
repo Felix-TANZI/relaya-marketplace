@@ -115,6 +115,7 @@ export default {
     relay_pickup_instructions_pre: 'Show this code (or the QR) at the relay point',
     relay_pickup_instructions_post: 'to collect your parcel.',
     pickup_qr_alt: 'Pickup QR code',
+    garde_cash_at_pickup: 'Storage per parcel, paid in cash to the manager at pickup.',
     garde_title: 'Relay point holding',
     garde_overdue: 'The holding period has expired. Your parcel will be returned to the seller; a partial refund (delivery and holding fees deducted) will be paid to you.',
     garde_free_remaining: 'Free holding for {{count}} more day.',

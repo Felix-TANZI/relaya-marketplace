@@ -93,6 +93,8 @@ export interface HandOverInput {
   signature: string;
   idReference: string;
   authorizedName: string;
+  /** Spec v2.1, R36.3 : garde encaissée en espèces et confirmée par le gérant (0 si aucune garde n'est due). */
+  gardeEncaisseeXaf: number;
 }
 
 export interface CounterIssueInput {
@@ -211,12 +213,14 @@ function SummaryRow({ label, value, tone }: { label: string; value: string; tone
 function HandOverSheet({
   inspection,
   parcels,
+  gardeTotal,
   busy,
   onCancel,
   onConfirm,
 }: {
   inspection: BuyerInspection;
   parcels: RelayPickupParcel[];
+  gardeTotal: number;
   busy: boolean;
   onCancel: () => void;
   onConfirm: (input: { photo: File; signature: string; idReference: string }) => void;
@@ -225,12 +229,14 @@ function HandOverSheet({
   const [signature, setSignature] = useState<string | null>(null);
   const [idReference, setIdReference] = useState("");
   const [error, setError] = useState("");
+  // R36.3 : la remise reste bloquée tant que le gérant n'a pas confirmé l'encaissement de la garde.
+  const [gardeEncaissee, setGardeEncaissee] = useState(false);
 
   useEffect(() => () => { if (photo) URL.revokeObjectURL(photo.url); }, [photo]);
 
   const authorized = parcels.find((parcel) => parcel.authorizedName);
   const needsId = Boolean(authorized);
-  const ready = Boolean(photo && signature && (!needsId || idReference.trim()));
+  const ready = Boolean(photo && signature && (!needsId || idReference.trim()) && (gardeTotal === 0 || gardeEncaissee));
 
   const addPhoto = async (file: File | null) => {
     if (!file) return;
@@ -290,6 +296,13 @@ function HandOverSheet({
             className="mt-2 w-full rounded-xl border border-amber-300 bg-white px-3 py-2.5 text-sm font-semibold outline-none transition focus:border-amber-500 dark:border-amber-800 dark:bg-slate-950 dark:text-white"
           />
         </div>
+      ) : null}
+
+      {gardeTotal > 0 ? (
+        <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-[14px] border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+          <input type="checkbox" checked={gardeEncaissee} onChange={(event) => setGardeEncaissee(event.target.checked)} className="mt-0.5" />
+          <span>J&apos;ai encaissé {nf(gardeTotal)} F de garde en espèces (garde par colis).</span>
+        </label>
       ) : null}
 
       <label className="mt-4 flex cursor-pointer items-center justify-center gap-2 rounded-[14px] border border-dashed border-slate-300 bg-white px-4 py-3.5 text-sm font-black text-slate-600 transition active:scale-[.98] dark:border-slate-600 dark:bg-slate-950 dark:text-slate-200">
@@ -630,6 +643,7 @@ export default function RelayPickup({
       code: code.toUpperCase(),
       inspection,
       authorizedName: matched.find((parcel) => parcel.authorizedName)?.authorizedName || "",
+      gardeEncaisseeXaf: gardeTotal,
       ...input,
     });
     if (success) {
@@ -1002,6 +1016,7 @@ export default function RelayPickup({
         <HandOverSheet
           inspection={sheet}
           parcels={matched}
+          gardeTotal={gardeTotal}
           busy={busy}
           onCancel={() => setSheet(null)}
           onConfirm={(input) => void submitHandOver(sheet, input)}

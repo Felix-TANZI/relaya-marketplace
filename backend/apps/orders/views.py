@@ -503,29 +503,17 @@ class ConfirmReceiptView(APIView):
     summary="Prolonger une fois la garde d'un colis en attente de retrait au relais",
 )
 class ExtendRelayGardeView(APIView):
+    """Ancienne prolongation gratuite de la garde (Addendum v1.0) : la spec v2.1 ne la prévoit pas (R36, R37) —
+    la garde suit t_garde et le colis repart au vendeur quand j dépasse r_garde_jours. La route répond donc 410."""
+
     permission_classes = [IsAuthenticated]
 
     def post(self, request, id):
-        from apps.shipping.models import RelayParcel
-
-        order = get_user_order_or_404(request, id)
-        parcel = RelayParcel.objects.filter(
-            shipment__order=order,
-            status__in=[RelayParcel.Status.RECEIVED, RelayParcel.Status.STORED],
-        ).first()
-        if not parcel:
-            return Response({"detail": "Aucun colis en attente de retrait pour cette commande."}, status=status.HTTP_404_NOT_FOUND)
-        if parcel.garde_extended:
-            return Response({"detail": "La prolongation de garde a deja ete utilisee pour ce colis."}, status=status.HTTP_400_BAD_REQUEST)
-        if timezone.now() >= parcel.garde_deadline:
-            return Response({"detail": "Le delai de garde est deja depasse."}, status=status.HTTP_400_BAD_REQUEST)
-
-        parcel.garde_extended = True
-        parcel.save(update_fields=["garde_extended", "updated_at"])
-
-        from apps.shipping.serializers import RelayParcelSerializer
-        return Response(RelayParcelSerializer(parcel, context={"request": request}).data)
-
+        get_user_order_or_404(request, id)
+        return Response(
+            {"detail": "La prolongation de garde n'existe plus : la garde se paie par jour au retrait."},
+            status=status.HTTP_410_GONE,
+        )
 
 @extend_schema(tags=["Orders"], summary="Lister ou ouvrir un litige pour une commande")
 class OrderDisputeListCreateView(generics.ListCreateAPIView):

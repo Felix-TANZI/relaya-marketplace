@@ -53,6 +53,8 @@ export interface DevisPanier {
     /** R07.6 : ce qui manque au panier pour obtenir la livraison offerte. */
     manque_livraison_offerte?: number;
   } | null;
+  /** Heure promise (R45.6), à montrer avant le paiement (R12.1) : « Livré demain avant 13 h ». */
+  promesse?: { texte: string; a: string } | null;
 }
 
 export type DevisPanierData = Pick<OrderCreateData,

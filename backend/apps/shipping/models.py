@@ -257,6 +257,9 @@ class Shipment(models.Model):
         help_text="Vendeur de ce colis — un Shipment = un colis = un vendeur (règle mère).",
     )
     status = models.CharField(max_length=32, choices=Status.choices, default=Status.CREATED)
+    # Spec v2.1 (A3), figés au paiement : « C'est prêt » attendu (R44.1, R45.2) et échéance du vendeur (R44.2).
+    pret_prevu = models.DateTimeField(null=True, blank=True, help_text="pret : debut + delai_h heures ouvrées (R45.2)")
+    echeance_vendeur = models.DateTimeField(null=True, blank=True, help_text="echeance (R44.2) ; au-delà, la bascule s'applique (R35.1)")
 
     # Infos livreur (V1 simple)
     courier = models.ForeignKey(

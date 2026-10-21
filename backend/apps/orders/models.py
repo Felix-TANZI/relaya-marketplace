@@ -221,6 +221,9 @@ class Order(TimeStampedModel):
     # dans les PDF de référence) : rappel à 4h, alerte admin à 6h,
     # réattribution signalée après 2 créneaux supplémentaires.
     prep_deadline = models.DateTimeField(null=True, blank=True, verbose_name="Délai de préparation (bon de préparation)")
+    # Spec v2.1 (A3) : heure promise au client, figée au paiement et qui fait foi pour lui (R45.7).
+    promesse_at = models.DateTimeField(null=True, blank=True, help_text="promesse (R45.3, R45.4)")
+    promesse_texte = models.CharField(max_length=80, blank=True, default="", help_text="Texte de R45.6")
     prep_reminder_sent_at = models.DateTimeField(null=True, blank=True)
     prep_admin_alert_sent_at = models.DateTimeField(null=True, blank=True)
     prep_reassignment_flagged_at = models.DateTimeField(null=True, blank=True)
@@ -320,6 +323,8 @@ class Order(TimeStampedModel):
         hours = getattr(settings, "vendor_reply_h", 72)
         self.vendor_reply_deadline = timezone.now() + timedelta(hours=hours)
         self.save()
+        from apps.orders.delais import figer_au_paiement
+        figer_au_paiement(self, timezone.now())
 
     def vendor_acknowledge(self) -> None:
         self.fulfillment_status = self.FulfillmentStatus.VENDOR_ACKNOWLEDGED

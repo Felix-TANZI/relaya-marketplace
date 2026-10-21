@@ -129,14 +129,26 @@ def mirror_payment_confirmed(intent) -> int:
         if not commandes:
             return 0
 
-        modifiees = Order.objects.filter(
+        a_payer = Order.objects.filter(
             pk__in=[c.pk for c in commandes],
             payment_status=Order.PaymentStatus.PENDING,
-        ).update(
+        )
+        payees = list(a_payer.values_list("pk", flat=True))
+        modifiees = a_payer.update(
             payment_status=Order.PaymentStatus.PAID,
             fulfillment_status=Order.FulfillmentStatus.PAID_IN_ESCROW,
             escrow_status=Order.EscrowStatus.BLOCKED,
         )
+        # Spec v2.1 (A3) : heure promise et echeances figees au paiement (R45.7). Un echec n'annule jamais le
+        # miroir : la commande est payee, quoi qu'il arrive au calcul de la promesse.
+        from django.utils import timezone
+
+        from apps.orders.delais import figer_au_paiement
+        for commande in Order.objects.filter(pk__in=payees):
+            try:
+                figer_au_paiement(commande, intent.confirmed_at or timezone.now())
+            except Exception:
+                logger.exception("Promesse non figee pour la commande #%s.", commande.pk)
         return modifiees
     except Exception:
         logger.exception(

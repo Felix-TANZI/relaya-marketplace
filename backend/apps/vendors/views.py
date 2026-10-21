@@ -8350,7 +8350,8 @@ def ev_order_ready(request, order_id):
         # confirmation attendue côté vendeur sur ce frontend (PRE-01).
         from .business_hours import add_business_hours
         order.vendor_acknowledged_at = now
-        order.prep_deadline = add_business_hours(now, 4, profile.closed_days)
+        if order.prep_deadline is None:  # spec v2.1 : déjà posé au paiement (R44.1, R44.3)
+            order.prep_deadline = add_business_hours(now, 4, profile.closed_days)
     order.fulfillment_status = FS.READY_FOR_PICKUP
     order.save()
 

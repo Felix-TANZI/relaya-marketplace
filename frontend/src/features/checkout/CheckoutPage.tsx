@@ -609,6 +609,9 @@ export default function CheckoutPage() {
                   {frais?.libelle_livraison ? (
                     <div className="pf-muted-sm" style={{ color: "#128a45", fontWeight: 700 }}>{frais.libelle_livraison}</div>
                   ) : null}
+                  {devis?.ok && devis.promesse?.texte ? (
+                    <div className="pf-muted-sm" style={{ fontWeight: 700 }}>{devis.promesse.texte}</div>
+                  ) : null}
                   {frais && frais.frais_momo > 0 && (
                     <div className="pf-summary-row">
                       <span className="pf-muted-sm">{t('cl1_checkout.momo_fees')}</span>

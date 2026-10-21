@@ -1,6 +1,6 @@
 # backend/apps/vendors/business_hours.py
 #
-# Heures ouvrées vendeur — decision produit verrouillee : 8h-18h, du lundi
+# Heures ouvrées vendeur — heures de service des réglages (R46.1, 8 h-18 h au lancement), du lundi
 # au samedi, dimanche et jours de fermeture du vendeur exclus. Pas
 # d'horaires individuels au lancement (rendrait le triage automatique du
 # bon de preparation intestable) — seul le jour de fermeture varie par
@@ -10,9 +10,15 @@ from datetime import datetime, time, timedelta
 
 from django.utils import timezone
 
-BUSINESS_START = time(8, 0)
-BUSINESS_END = time(18, 0)
 SUNDAY_WEEKDAY = 6  # datetime.weekday() : lundi=0 ... dimanche=6
+
+
+def _heures_de_service():
+    """R46.1 : r_ouverture et r_fermeture des réglages de l'admin (spec v2.1), jamais en dur."""
+    from apps.orders.delais import _heure
+    from apps.regles import services as regles
+
+    return _heure(regles.reglage("r_ouverture")), _heure(regles.reglage("r_fermeture"))
 
 
 def _is_open_day(date, closed_days) -> bool:
@@ -20,11 +26,11 @@ def _is_open_day(date, closed_days) -> bool:
 
 
 def _day_start(date, tz):
-    return timezone.make_aware(datetime.combine(date, BUSINESS_START), tz)
+    return timezone.make_aware(datetime.combine(date, _heures_de_service()[0]), tz)
 
 
 def _day_end(date, tz):
-    return timezone.make_aware(datetime.combine(date, BUSINESS_END), tz)
+    return timezone.make_aware(datetime.combine(date, _heures_de_service()[1]), tz)
 
 
 def add_business_hours(start, hours, closed_days=()):

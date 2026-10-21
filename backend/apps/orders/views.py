@@ -901,4 +901,11 @@ class DevisPanierView(APIView):
             devis = frais.calculer(lignes, destination, d.get("moyen") or "momo")
         except frais.FraisImpossibles as exc:
             return Response({"ok": False, "refus": {"refus": exc.code}, "messages": [exc.message]})
-        return Response({"ok": devis.ok, "refus": devis.refus or None, "messages": devis.messages, "frais": devis.detail or None})
+        # R12.1 : l'heure promise est montrée avant le paiement (A3), calculée comme si le paiement avait lieu maintenant.
+        from django.utils import timezone as _tz
+
+        from .delais import promesse_commande
+        vendeurs = list({p.vendor_id: p.vendor for p, _ in lignes if p.vendor_id}.values())
+        promesse = promesse_commande(_tz.now(), destination.mode, vendeurs)
+        return Response({"ok": devis.ok, "refus": devis.refus or None, "messages": devis.messages, "frais": devis.detail or None,
+                         "promesse": {"texte": promesse["texte"], "a": promesse["promesse"]}})

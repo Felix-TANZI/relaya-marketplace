@@ -459,10 +459,10 @@ class UpdateFulfillmentStatusSerializer(serializers.Serializer):
 
         instance.fulfillment_status = new_status
 
-        # Bon de préparation (proposition validée) : 4h ouvrées entre l'accusé
-        # de réception vendeur et "prêt pour enlèvement". Le compteur démarre
-        # ici, jamais à la création de la commande.
-        if new_status == Order.FulfillmentStatus.VENDOR_ACKNOWLEDGED:
+        # Spec v2.1 : le délai de préparation part du paiement (R45.1, R44.1), figé par apps.orders.delais ; il
+        # n'y a pas d'étape d'acceptation (R44.3). L'accusé de réception ne le pose que pour une commande
+        # antérieure, qui n'en a pas.
+        if new_status == Order.FulfillmentStatus.VENDOR_ACKNOWLEDGED and instance.prep_deadline is None:
             from django.utils import timezone as _tz
 
             from apps.vendors.business_hours import add_business_hours

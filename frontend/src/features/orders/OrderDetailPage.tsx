@@ -1708,10 +1708,19 @@ export default function OrderDetailPage() {
                     {order.delivery_fee_xaf === 0 ? "0 FCFA" : `${order.delivery_fee_xaf.toLocaleString()} FCFA`}
                   </span>
                 </div>
+                {(order.frais_momo_xaf ?? 0) > 0 && (
+                  <div className="flex justify-between text-gray-500 dark:text-gray-400">
+                    <span>{t('cl1_checkout.momo_fees')}</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">{(order.frais_momo_xaf ?? 0).toLocaleString()} FCFA</span>
+                  </div>
+                )}
                 <div className="flex justify-between border-t border-gray-100 pt-3 font-semibold dark:border-gray-800">
                   <span className="text-gray-900 dark:text-white">{t('order.detail.total')}</span>
-                  <span className="text-xl text-primary">{order.total_xaf.toLocaleString()} FCFA</span>
+                  <span className="text-xl text-primary">{(order.total_a_payer_xaf || order.total_xaf).toLocaleString()} FCFA</span>
                 </div>
+                {order.promesse_texte ? (
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{order.promesse_texte}</p>
+                ) : null}
               </div>
             </section>
 

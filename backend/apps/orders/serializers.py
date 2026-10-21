@@ -213,6 +213,10 @@ class OrderCreateSerializer(serializers.Serializer):
         allow_blank=True,
         help_text="Téléphone du tiers autorisé au retrait (optionnel)",
     )
+    total_attendu = serializers.IntegerField(
+        required=False, allow_null=True, default=None,
+        help_text="Total affiché au client avant le paiement ; s'il a changé, refus « Un prix a changé » (R93.6).",
+    )
     moyen = serializers.ChoiceField(
         choices=['momo', 'wallet'], required=False, default='momo',
         help_text="Moyen de paiement (R01.1) ; le Wallet seulement s'il est ouvert (R03).",
@@ -308,21 +312,25 @@ class OrderCreateSerializer(serializers.Serializer):
             except Product.DoesNotExist:
                 product = self._get_or_create_demo_product(item)
             lignes.append((product, item['qty']))
-        prix_payes = frais_v21._prix_payes([p for p, _ in lignes])
 
-        subtotal = 0
-        order_items_data = []
-        for product, qty in lignes:
-            prix = int(prix_payes.get(product.pk, product.price_xaf))
-            line_total = prix * qty
-            subtotal += line_total
-            order_items_data.append({
-                'product': product,
-                'title_snapshot': product.title,
-                'price_xaf_snapshot': prix,
-                'qty': qty,
-                'line_total_xaf': line_total
-            })
+        def composer(lignes):
+            prix_payes = frais_v21._prix_payes([p for p, _ in lignes])
+            subtotal = 0
+            order_items_data = []
+            for product, qty in lignes:
+                prix = int(prix_payes.get(product.pk, product.price_xaf))
+                line_total = prix * qty
+                subtotal += line_total
+                order_items_data.append({
+                    'product': product,
+                    'title_snapshot': product.title,
+                    'price_xaf_snapshot': prix,
+                    'qty': qty,
+                    'line_total_xaf': line_total
+                })
+            return subtotal, order_items_data
+
+        subtotal, order_items_data = composer(lignes)
 
         delivery_mode = validated_data.get('delivery_mode', 'DELIVERY')
         settings = PlatformSettings.get_settings()
@@ -369,11 +377,24 @@ class OrderCreateSerializer(serializers.Serializer):
                     validated_data.get('district', ''),
                     validated_data.get('delivery_latitude'), validated_data.get('delivery_longitude'),
                 )
+            # R93.2 : au clic sur « Payer », la sélection des offres est refaite pour le panier entier et la
+            # destination de la commande (A12) ; chaque article va à l'offre retenue.
+            from apps.catalog.meilleure_offre import selectionner_panier
+            selection = selectionner_panier(lignes, destination)
+            lignes = selection['lignes']
+            subtotal, order_items_data = composer(lignes)
+            commission_rate_snapshot = _weighted_commission_rate(order_items_data, settings)
             devis = frais_v21.calculer(lignes, destination, validated_data.get('moyen', 'momo'))
         except frais_v21.FraisImpossibles as exc:
             raise serializers.ValidationError({'frais': {'refus': exc.code, 'messages': [exc.message]}})
         if not devis.ok:
             raise serializers.ValidationError({'frais': {**devis.refus, 'messages': devis.messages}})
+        # R93.6 : le total a changé depuis l'affichage → l'écran « Un prix a changé » avant le paiement.
+        attendu = validated_data.get('total_attendu')
+        if attendu is not None and attendu != devis.detail['total_a_payer']:
+            raise serializers.ValidationError({
+                'prix_change': "Un prix a changé", 'total_a_payer': devis.detail['total_a_payer'], 'total_affiche': attendu,
+            })
         if destination.zone_dest:
             destination_zone = _Zone.objects.filter(code=destination.zone_dest).first() or destination_zone
 
@@ -429,6 +450,15 @@ class OrderCreateSerializer(serializers.Serializer):
             order, [(d['product'], d['price_xaf_snapshot'], d['qty']) for d in order_items_data], devis.detail,
         )
         retenu = sum(c.commission_b for c in commissions)
+
+        # R27.7 : chaque sélection est journalisée (A12, raison « panier »).
+        from apps.catalog.meilleure_offre import journaliser
+        for produit, _qty in lignes:
+            cle = f"{produit.master_id}-{produit.variant_id or 0}"
+            if cle in selection['selections']:
+                # l'offre retenue est celle du panier (A12), pas celle du produit seul (A6)
+                journaliser(produit.master, destination, {**selection['selections'].pop(cle), 'retenue': produit.pk},
+                            'panier', order)
         if subtotal:
             order.commission_rate_snapshot = (Decimal(retenu) * 100 / Decimal(subtotal)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
             order.save(update_fields=['commission_rate_snapshot'])

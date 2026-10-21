@@ -142,6 +142,7 @@ export default {
     pickup_label: 'Retrait',
     delivery_label: 'Livraison',
     relay_delivery: 'Livraison au relais',
+    price_changed_hint: 'Vérifiez le nouveau total avant de payer.',
     momo_fees: 'Frais Mobile Money',
     missing_for_free_delivery: 'Encore {{amount}} pour la livraison offerte',
     fees_pending: 'Choisissez le lieu pour voir le total',

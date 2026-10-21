@@ -31,6 +31,8 @@ export interface OrderCreateData {
   authorized_pickup_name?: string;
   authorized_pickup_phone?: string;
   cart_items: OrderItem[];
+  /** Total affiché au client ; s'il a changé au paiement, refus « Un prix a changé » (R93.6). */
+  total_attendu?: number | null;
 }
 
 /** Frais et total d'un panier avant le paiement (POST /orders/frais/, spec v2.1 A1 et A2). */
@@ -55,6 +57,8 @@ export interface DevisPanier {
   } | null;
   /** Heure promise (R45.6), à montrer avant le paiement (R12.1) : « Livré demain avant 13 h ». */
   promesse?: { texte: string; a: string } | null;
+  /** Sélection du panier (R93.2) : {offre mise au panier: offre retenue}. */
+  offres_retenues?: Record<string, number>;
 }
 
 export type DevisPanierData = Pick<OrderCreateData,

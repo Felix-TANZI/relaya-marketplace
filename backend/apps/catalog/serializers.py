@@ -828,9 +828,25 @@ class MasterProductListSerializer(serializers.ModelSerializer):
 class MasterProductDetailSerializer(MasterProductListSerializer):
     images = serializers.SerializerMethodField()
     offers = serializers.SerializerMethodField()
+    meilleure_offre = serializers.SerializerMethodField()
 
     class Meta(MasterProductListSerializer.Meta):
-        fields = MasterProductListSerializer.Meta.fields + ['description', 'images', 'offers']
+        fields = MasterProductListSerializer.Meta.fields + ['description', 'images', 'offers', 'meilleure_offre']
+
+    def get_meilleure_offre(self, obj):
+        """Spec v2.1, R93.1 : l'offre retenue pour ce produit seul (A6) et son ctl, vers la destination du client
+        (R27.3) ; R32.4 : sans offre éligible, « Indisponible pour le moment »."""
+        from apps.catalog.meilleure_offre import destination_par_defaut, meilleure_offre
+
+        request = self.context.get('request')
+        offres = list(obj.offers.filter(is_active=True, moderation_status='APPROVED')
+                      .select_related('vendor', 'master', 'inventory'))
+        r = meilleure_offre(offres, destination_par_defaut(getattr(request, 'user', None)))
+        if r is None:
+            return {'disponible': False, 'message': 'Indisponible pour le moment'}
+        retenue = next(o for o in r['en_course'] if o['id'] == r['retenue'])
+        return {'disponible': True, 'offre': retenue['id'], 'prix': retenue['prix'], 'ctl': int(retenue['ctl']),
+                'livraison_des': int(retenue['ctl']) - retenue['prix'], 'offres_en_course': len(r['en_course'])}
 
     def to_representation(self, instance):
         # super() (MasterProductListSerializer.to_representation) traduit deja 'title'.

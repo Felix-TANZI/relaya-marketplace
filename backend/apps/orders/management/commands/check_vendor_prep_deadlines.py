@@ -75,7 +75,12 @@ class Command(BaseCommand):
                 order.save(update_fields=["prep_admin_alert_sent_at"])
                 alerts += 1
 
-            if order.zone_id:
+            # Spec v2.1, R35.1 : la bascule se déclenche quand l'échéance du vendeur (R44.2), figée au paiement sur son
+            # colis, est dépassée. Commande antérieure sans échéance : l'ancien calcul (créneaux supplémentaires).
+            echeances = [e for e in order.shipments.values_list("echeance_vendeur", flat=True) if e is not None]
+            if echeances:
+                reassignment_at = min(echeances)
+            elif order.zone_id:
                 boundaries = _slot_boundaries(order.zone, admin_alert_at, admin_alert_at + timezone.timedelta(days=3))
                 reassignment_at = boundaries[1] if len(boundaries) >= 2 else None
             else:
@@ -88,7 +93,7 @@ class Command(BaseCommand):
                     if not item.product.vendor_id or item.product.vendor_id not in late_vendor_ids:
                         continue
                     replacement = attempt_automatic_reassignment(
-                        item, reason="Bon de préparation dépassé (2 créneaux supplémentaires).",
+                        item, reason="Échéance du vendeur dépassée (R35.1, R44.2).",
                     )
                     if replacement is None:
                         manual_items.append(item)
@@ -100,10 +105,9 @@ class Command(BaseCommand):
                             user=admin_user,
                             title=f"Réattribution manuelle nécessaire — commande #{order.id}",
                             message=(
-                                f"Le vendeur de la commande #{order.id} n'a toujours pas préparé le colis "
-                                f"après deux créneaux supplémentaires, et aucun remplaçant ne remplit les "
-                                f"4 conditions strictes (même Master Produit, même état, prix ≤, même zone) "
-                                f"pour : {labels}. Proposez une alternative au client, ne l'imposez pas."
+                                f"Le vendeur de la commande #{order.id} a dépassé son échéance sans préparer le colis, "
+                                f"et aucune offre en course ne peut le remplacer (R35.2 : trust ≥ 75, prix ≤ prix payé) "
+                                f"pour : {labels}. Sans remplaçant, R35.4 prévoit le remboursement intégral le jour même."
                             ),
                             notification_type=UserNotification.NotificationType.SYSTEM,
                             action_url=f"/admin/operations/orders/{order.id}",

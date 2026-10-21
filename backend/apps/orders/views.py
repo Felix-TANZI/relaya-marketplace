@@ -886,6 +886,11 @@ class DevisPanierView(APIView):
                 destination = frais.destination_relais(relais)
             else:
                 destination = frais.destination_domicile(d.get("district", ""), d.get("delivery_latitude"), d.get("delivery_longitude"))
+            # R93.2 : la sélection des offres est refaite pour le panier entier et la destination (A12).
+            from apps.catalog.meilleure_offre import selectionner_panier
+            selection = selectionner_panier(lignes, destination)
+            remplacees = {str(avant.pk): apres.pk for (avant, _), (apres, _) in zip(lignes, selection["lignes"]) if avant.pk != apres.pk}
+            lignes = selection["lignes"]
             devis = frais.calculer(lignes, destination, d.get("moyen") or "momo")
         except frais.FraisImpossibles as exc:
             return Response({"ok": False, "refus": {"refus": exc.code}, "messages": [exc.message]})
@@ -896,4 +901,6 @@ class DevisPanierView(APIView):
         vendeurs = list({p.vendor_id: p.vendor for p, _ in lignes if p.vendor_id}.values())
         promesse = promesse_commande(_tz.now(), destination.mode, vendeurs)
         return Response({"ok": devis.ok, "refus": devis.refus or None, "messages": devis.messages, "frais": devis.detail or None,
-                         "promesse": {"texte": promesse["texte"], "a": promesse["promesse"]}})
+                         "promesse": {"texte": promesse["texte"], "a": promesse["promesse"]},
+                         # Offres retenues par la sélection du panier : {offre du panier: offre retenue} (R93.2)
+                         "offres_retenues": remplacees})

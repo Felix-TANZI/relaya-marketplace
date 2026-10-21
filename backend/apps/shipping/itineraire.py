@@ -42,8 +42,18 @@ def distance_route_km(a: tuple, b: tuple) -> tuple[Fraction, str]:
     """(km, source) de a à b, points (lat, lon) ; source « cartes » ou « vol_oiseau » (R83.3)."""
     service = _service()
     if service is not None:
+        # Une même paire de points (au mètre près) n'est demandée au service qu'une fois par jour : le devis du panier
+        # se recalcule à chaque changement (R84.3), le service de cartes est payant.
+        from django.core.cache import cache
+
+        cle = "itineraire:" + ":".join(f"{float(x):.5f}" for x in (*a, *b))
+        km = cache.get(cle)
+        if km is not None:
+            return Fraction(km), "cartes"
         try:
-            return Fraction(str(service(a[0], a[1], b[0], b[1]))), "cartes"
+            km = str(service(a[0], a[1], b[0], b[1]))
+            cache.set(cle, km, timeout=24 * 3600)
+            return Fraction(km), "cartes"
         except Exception:  # panne du service : R83.3
             logger.warning("Service de cartes indisponible : distance à vol d'oiseau (R83.3).", exc_info=True)
     km = Fraction(str(round(vol_d_oiseau_km(a[0], a[1], b[0], b[1]), 6)))

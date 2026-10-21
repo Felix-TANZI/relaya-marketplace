@@ -232,6 +232,7 @@ export default function CheckoutPage() {
         delivery_longitude: isPickup ? undefined : formData.deliveryLongitude,
         authorized_pickup_name: allowThirdPartyPickup ? thirdPartyPickup.name.trim() : '',
         authorized_pickup_phone: allowThirdPartyPickup ? thirdPartyPickup.phone.trim() : '',
+        total_attendu: finalTotal,
         cart_items: checkoutItems.map((item) => ({
           product_id: item.id, qty: item.quantity, title: item.name,
           price_xaf: item.price, image_url: item.image, is_demo: item.isDemo,
@@ -239,6 +240,22 @@ export default function CheckoutPage() {
       });
       setPayingOrderId(order.id);
     } catch (error) {
+      // R93.6 : le total a changé entre l'affichage et le paiement — « Un prix a changé », puis le nouveau devis.
+      if (error instanceof Error && error.message === "Un prix a changé") {
+        setDevis(null);
+        try {
+          setDevis(await ordersApi.devis({
+            delivery_mode: isPickup ? 'PICKUP' : 'DELIVERY',
+            district: isPickup ? undefined : formData.district,
+            delivery_latitude: isPickup ? undefined : formData.deliveryLatitude,
+            delivery_longitude: isPickup ? undefined : formData.deliveryLongitude,
+            relay_point_id: isPickup ? selectedRelay!.id : undefined,
+            cart_items: checkoutItems.filter((i) => !i.isDemo).map((item) => ({ product_id: item.id, qty: item.quantity })),
+          }));
+        } catch { /* le devis se recalculera au prochain changement */ }
+        showToast("Un prix a changé", { description: t('cl1_checkout.price_changed_hint'), type: "warning" });
+        return;
+      }
       showToast(error instanceof Error ? t('cl1_checkout.order_rejected_with_reason', { reason: error.message }) : t('cl1_checkout.order_rejected_by_server'), "error");
     } finally {
       setLoading(false);

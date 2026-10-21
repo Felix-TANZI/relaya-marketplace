@@ -142,6 +142,7 @@ export default {
     pickup_label: 'Pickup',
     delivery_label: 'Delivery',
     relay_delivery: 'Relay delivery',
+    price_changed_hint: 'Check the new total before paying.',
     momo_fees: 'Mobile Money fees',
     missing_for_free_delivery: '{{amount}} more for offered delivery',
     fees_pending: 'Choose the place to see the total',

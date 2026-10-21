@@ -1788,3 +1788,33 @@ class StockMovement(TimeStampedModel):
     def __str__(self):
         signe = "+" if self.delta >= 0 else ""
         return f"{self.product.title} — {signe}{self.delta} ({self.get_reason_display()})"
+
+
+class SelectionOffre(models.Model):
+    """Journal de chaque sélection de l'offre qui reçoit une commande (spec v2.1, R27.7) : offre retenue, phase,
+    ctl_min, tol, offres en course avec score, part_cible et part_reelle, et la raison du choix."""
+
+    class Raison(models.TextChoices):
+        REPARTITION = "repartition", "Répartition (A6)"
+        PANIER = "panier", "Sélection du panier (A12)"
+        BASCULE = "bascule", "Bascule (R35)"
+
+    cree_le = models.DateTimeField(auto_now_add=True, db_index=True)
+    master = models.ForeignKey(MasterProduct, on_delete=models.CASCADE, related_name="selections")
+    order = models.ForeignKey("orders.Order", on_delete=models.SET_NULL, null=True, blank=True, related_name="selections_offres")
+    mode = models.CharField(max_length=10)
+    zone_dest = models.CharField(max_length=4)
+    raison = models.CharField(max_length=12, choices=Raison.choices)
+    phase = models.CharField(max_length=20, blank=True, default="")
+    ctl_min = models.IntegerField(default=0)
+    tol = models.IntegerField(default=0)
+    retenue = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
+    en_course = models.JSONField(default=list)
+
+    class Meta:
+        ordering = ["-cree_le"]
+        verbose_name = "Sélection d'offre"
+        verbose_name_plural = "Journal des sélections d'offres"
+
+    def __str__(self):
+        return f"{self.get_raison_display()} · {self.master} → {self.retenue_id}"

@@ -26,7 +26,9 @@ TRAJET = {"status": "OK", "rows": [{"elements": [{"status": "OK", "distance": {"
 
 @pytest.fixture(autouse=True)
 def _cache_vide():
-    regles.cache.delete(regles.CLE_CACHE)
+    from django.core.cache import cache
+
+    cache.clear()  # réglages et distances mises en cache
 
 
 @GOOGLE

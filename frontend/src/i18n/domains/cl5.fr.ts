@@ -119,7 +119,6 @@ export default {
 
     feature_theme: "Thème violet premium exclusif",
     feature_map: "Carte livreur temps réel",
-    feature_delivery: "Livraison gratuite toutes commandes",
     feature_flash: "Flash Sales 1h avant tout le monde",
     feature_points: "Points fidélité ×3 accélérés",
     feature_coupons: "Coupons exclusifs chaque mois",
@@ -135,13 +134,10 @@ export default {
     calculator_estimated_savings: "Économies estimées",
     calculator_yearly_roi: "soit {{yearly}} F/an · ROI ×{{roi}}",
 
-    gain_delivery: "Livraison gratuite illimitée",
     gain_points: "Points fidélité ×3",
     gain_support: "Support 24/7 prioritaire",
 
     advantages_heading: "Tous les avantages Premium",
-    advantage_delivery_title: "Livraison gratuite illimitée",
-    advantage_delivery_text: "Plus aucun frais de livraison, sur toutes vos commandes, dans toute la zone CEMAC. Économie moyenne : 2 500 FCFA par commande.",
     advantage_flash_title: "Accès Flash Sales en avant-première",
     advantage_flash_text: "Les meilleures offres flash vous sont réservées 1h avant tout le monde. Plus de produits ratés.",
     advantage_points_title: "Points fidélité multipliés par 3",
@@ -166,9 +162,6 @@ export default {
     cmp_tracking_label: "Suivi commande",
     cmp_tracking_free: "Statuts texte",
     cmp_tracking_plus: "Carte livreur live",
-    cmp_delivery_label: "Livraison gratuite",
-    cmp_delivery_free: "Dès 30 000 FCFA",
-    cmp_delivery_plus: "Toutes les commandes",
     cmp_flash_label: "Flash Sales",
     cmp_flash_free: "Accès standard",
     cmp_flash_plus: "1h avant tout le monde",
@@ -215,7 +208,7 @@ export default {
 
     testimonials_heading: "Ils ont choisi BelivaY+",
     testimonial1_meta: "Yaoundé · Membre depuis 8 mois",
-    testimonial1_quote: "Depuis BelivaY+, je commande 3 fois plus. La livraison gratuite et les flash deals me font économiser facilement 15 000 FCFA par mois.",
+    testimonial1_quote: "Depuis BelivaY+, je commande 3 fois plus. Les flash deals et les points me font économiser facilement 15 000 FCFA par mois.",
     testimonial2_meta: "Douala · Membre depuis 4 mois",
     testimonial2_quote: "Le support 24/7 m'a sauvé pour un cadeau urgent. La carte livreur en temps réel est géniale, je ne perds plus mon temps à attendre.",
     testimonial3_meta: "Bafoussam · Membre depuis 1 an",

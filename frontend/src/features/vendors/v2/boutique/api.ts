@@ -25,9 +25,16 @@ export interface VendorLocation {
   // nombre — convertir explicitement cote consommateur (voir EmplacementPage).
   latitude: string | null;
   longitude: string | null;
+  /** Quartier de Yaoundé (t_quartiers) : donne la zone et le niveau de prix de la boutique (spec v2.1, R06.1). */
+  quartier: string;
   is_active: boolean;
   is_main: boolean;
   created_at: string;
+}
+
+/** Quartiers de Yaoundé du référentiel (GET /api/shipping/quartiers/). */
+export async function getQuartiers(): Promise<{ quartier: string; zone: string }[]> {
+  return (await http<{ quartiers: { quartier: string; zone: string }[] }>('/api/shipping/quartiers/')).quartiers;
 }
 
 export async function getVendorLocations(): Promise<VendorLocation[]> {
@@ -36,7 +43,7 @@ export async function getVendorLocations(): Promise<VendorLocation[]> {
 
 export async function updateVendorLocation(
   id: number,
-  patch: Partial<Pick<VendorLocation, 'description' | 'latitude' | 'longitude'>>,
+  patch: Partial<Pick<VendorLocation, 'description' | 'latitude' | 'longitude' | 'quartier'>>,
 ): Promise<VendorLocation> {
   return http<VendorLocation>(`/api/vendors/locations/${id}/update/`, {
     method: 'PATCH',

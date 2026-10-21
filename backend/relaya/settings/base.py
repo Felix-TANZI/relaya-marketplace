@@ -33,6 +33,11 @@ GOOGLE_EXTRA_CLIENT_IDS = [
 # statique frontend, qui ne lit jamais cette cle.
 GOOGLE_TRANSLATE_API_KEY = os.getenv("GOOGLE_TRANSLATE_API_KEY", "").strip()
 
+# Distance par la route des frais de livraison (spec v2.1, R83.2) : Google Maps Distance Matrix. Sans clé, ou si le
+# service ne répond pas, distance à vol d'oiseau × r_vol_oiseau (R83.3) — apps/shipping/itineraire.py.
+GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "").strip()
+BELIVAY_ITINERAIRE = os.getenv("BELIVAY_ITINERAIRE", "apps.shipping.cartes_google.distance_km" if GOOGLE_MAPS_API_KEY else "")
+
 # Identifiants Apple acceptés dans l'audience ("aud") du jeton "Sign in with
 # Apple" : le Bundle ID de l'app native (flux natif iOS) et/ou le Services ID
 # (flux web), séparés par des virgules si plusieurs.

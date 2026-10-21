@@ -95,13 +95,29 @@ DISTRIBUTION_RULES = [
             "composant RELAY_HANDLING — meme raison que dist-goods-vendor."
         ),
     },
+    {
+        "target_key": "dist-payment-fee-platform",
+        "payload": {
+            "name": "Frais Mobile Money payes par le client",
+            "component": "PAYMENT_FEE",
+            "payee_type": "PLATFORM",
+            "basis": "REMAINDER",
+            "value": "0",
+            "priority": 10,
+        },
+        "justification": (
+            "Spec v2.1, R02.2 et R02.3 : le client paie les frais Mobile Money en plus de base_paiement ; "
+            "sans cette regle, toute commande qui en porte est refusee par la repartition "
+            "(IncompleteDistribution). A approuver AVANT d'ouvrir les achats."
+        ),
+    },
 ]
 
 
 class Command(BaseCommand):
     help = (
         "Cree les ConfigChangeRequest (statut PENDING) pour verrouiller EscrowPolicy "
-        "et les DistributionRule GOODS/TRANSPORT/RELAY_HANDLING. N'approuve rien : "
+        "et les DistributionRule GOODS/TRANSPORT/RELAY_HANDLING/PAYMENT_FEE. N'approuve rien : "
         "un second compte doit approuver dans /admin/."
     )
 

@@ -4,7 +4,7 @@
 #
 # Cette commande cree des ConfigChangeRequest (maker) pour EscrowPolicy et les
 # DistributionRule GOODS/TRANSPORT/RELAY_HANDLING — aucune ligne n'existait en
-# base avant elle. On verifie qu'elle cree bien 5 demandes PENDING, sans rien
+# base avant elle. On verifie qu'elle cree bien 6 demandes PENDING, sans rien
 # appliquer, et que la separation des roles reste en vigueur (le demandeur ne
 # peut pas approuver lui-meme via le flux normal).
 
@@ -28,14 +28,15 @@ def approbateur():
     return User.objects.create_user("approbateur_finance", "approbateur@belivay.cm", "x")
 
 
-def test_cree_cinq_demandes_pending_sans_rien_appliquer(demandeur):
+def test_cree_six_demandes_pending_sans_rien_appliquer(demandeur):
     assert EscrowPolicy.objects.count() == 0
     assert DistributionRule.objects.count() == 0
 
     call_command("request_locked_financial_config", username=demandeur.username)
 
     demandes = ConfigChangeRequest.objects.filter(status=ConfigChangeRequest.Status.PENDING)
-    assert demandes.count() == 5  # 1 EscrowPolicy + 4 DistributionRule (goods, transport-carrier, transport-platform, relay)
+    # 1 EscrowPolicy + 5 DistributionRule (goods, transport-carrier, transport-platform, relay, payment-fee)
+    assert demandes.count() == 6
     # Aucune version reelle n'existe tant que personne n'a approuve.
     assert EscrowPolicy.objects.count() == 0
     assert DistributionRule.objects.count() == 0

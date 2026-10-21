@@ -147,6 +147,15 @@ DISTRIBUTION_RULES = [
         "basis": DistributionRule.Basis.REMAINDER,
         "priority": 10,
     },
+    {
+        "config_key": "dist-payment-fee-platform",
+        "name": "Frais Mobile Money payes par le client",
+        "component": DistributionRule.Component.PAYMENT_FEE,
+        "payee_type": DistributionRule.PayeeType.PLATFORM,
+        "basis": DistributionRule.Basis.REMAINDER,
+        "priority": 10,
+        "notes": "Spec v2.1, R02.2 et R02.3 : couvre les frais du prestataire de paiement.",
+    },
 ]
 
 # ── Politiques de sequestre — referentiel §9.5 ───────────────────────────────

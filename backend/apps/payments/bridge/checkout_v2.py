@@ -150,6 +150,13 @@ def prepare_payment(order, *, payer_msisdn: str, payer_operator: str,
         # comportement nominal, pas une anomalie.
         _resoudre_transporteur(order, codes, types)
 
+    # ── Les frais Mobile Money payes par le client (spec v2.1, R02.2, R02.3) ──
+    # L'intention vaut alors total_a_payer = base_paiement + frais_momo : BelivaY recoit au moins base_paiement
+    # apres les frais du prestataire. Toute la part va a la plateforme, sans sequestre.
+    frais_momo = int(getattr(order, "frais_momo_xaf", 0) or 0)
+    if frais_momo > 0:
+        composants.append(ComponentInput(EconomicComponent.PAYMENT_FEE, Money(frais_momo)))
+
     if not composants:
         raise CheckoutError(
             f"La commande #{order.pk} ne contient aucun montant a repartir."

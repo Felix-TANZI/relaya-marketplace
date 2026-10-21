@@ -3,7 +3,7 @@
 
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import DemandeAdresse, RelayParcel, Shipment, ShipmentEvent, ShipmentMessage, Zone
+from .models import DemandeAdresse, GrilleAchat, LigneGrille, RelayParcel, Shipment, ShipmentEvent, ShipmentMessage, Zone
 
 
 @admin.register(Zone)
@@ -150,3 +150,22 @@ class RelayParcelAdmin(admin.ModelAdmin):
     search_fields = ("shipment__order__id", "relay_point__name", "slot_code", "pickup_code")
     readonly_fields = ("created_at", "updated_at", "received_at", "picked_up_at", "returned_at")
     ordering = ("-updated_at",)
+
+
+class LigneGrilleInline(admin.TabularInline):
+    """Chaque ligne est contrôlée contre son plafond d'achat à l'enregistrement (spec v2.1, A10, R54)."""
+
+    model = LigneGrille
+    extra = 0
+    fields = ('numero', 'prestation', 'type', 'param', 'petit_paquet', 'tarif', 'plafond_achat', 'controle', 'controle_note')
+    readonly_fields = ('plafond_achat', 'controle', 'controle_note')
+
+
+@admin.register(GrilleAchat)
+class GrilleAchatAdmin(admin.ModelAdmin):
+    list_display = ('organisation', 'signee_le', 'entree_en_vigueur', 'lignes_bloquees')
+    inlines = [LigneGrilleInline]
+
+    @admin.display(description='Lignes bloquées (R54.3)')
+    def lignes_bloquees(self, obj):
+        return obj.lignes.filter(controle='bloquee').count()

@@ -21,8 +21,14 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture(autouse=True)
 def _referentiel():
+    from apps.accounts.models import DeliveryOrganizationProfile
+
     regles.cache.delete(regles.CLE_CACHE)
     zones.synchroniser_zones()
+    # R74 : une entreprise active couvre Yaoundé (sans elle, aucune offre n'est éligible)
+    DeliveryOrganizationProfile.objects.create(
+        user=User.objects.create_user(username="entreprise", password="p"), company_name="Wink", phone="1",
+        city="YAOUNDE", zones=["Yaoundé"], status=DeliveryOrganizationProfile.Status.APPROVED, is_active=True)
     yield
     regles.cache.delete(regles.CLE_CACHE)
 

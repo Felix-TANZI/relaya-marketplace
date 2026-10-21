@@ -254,7 +254,10 @@ class RelayPointNearbyView(APIView):
         if city:
             qs = qs.filter(city__in=_city_variants(city) or [city])
 
+        from apps.orders.frais import FraisImpossibles, destination_relais
+        from apps.shipping.entreprises import zones_couvertes
         from apps.shipping.garde import places_occupees, relais_sature
+        couvertes = zones_couvertes()
 
         try:
             buyer_lat = float(lat) if lat is not None else None
@@ -264,7 +267,13 @@ class RelayPointNearbyView(APIView):
 
         results = []
         for relay in qs:
-            # Spec v2.1, R41.3 : places occupées (places(format), R40.2) sous r_relais_saturation des places.
+            # Spec v2.1, R74.3 : un relais n'est proposé que si une entreprise active couvre sa zone.
+            try:
+                if destination_relais(relay).zone_dest not in couvertes:
+                    continue
+            except FraisImpossibles:
+                continue
+            # R41.3 : places occupées (places(format), R40.2) sous r_relais_saturation des places.
             occupancy = places_occupees(relay)
             capacity = relay.storage_capacity or 0
             has_space = not relais_sature(relay, occupancy)

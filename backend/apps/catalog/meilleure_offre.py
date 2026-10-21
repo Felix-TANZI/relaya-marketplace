@@ -11,9 +11,8 @@
 #   delai_h       r_prep_h ; stock (R30.4) ; note des avis (R30.5) ; mic de la fiche (R30.6)
 #
 # et applique les conditions d'éligibilité que le moteur ne connaît pas (R32.1) : offre publiée, pièce d'identité du
-# vendeur vérifiée, boutique ni en pause ni « Fermé aujourd'hui », position GPS renseignée. La couverture de la zone
-# par une entreprise active (R74.4) arrive avec les entreprises de livraison (BV-DEV-05) : en attendant, une zone est
-# couverte.
+# vendeur vérifiée, boutique ni en pause ni « Fermé aujourd'hui », position GPS renseignée ; zone_couverte : une
+# entreprise active couvre la zone de la boutique et celle de la destination (R74.2, R74.3, R74.4).
 
 from datetime import timedelta
 
@@ -101,6 +100,9 @@ def mesurer(offres, destination, maintenant=None) -> list[dict]:
         servies[pid] = quand
     rangs = {pid: rang for rang, (pid, _) in enumerate(sorted(servies.items(), key=lambda x: x[1]), start=1)}
 
+    from apps.shipping.entreprises import zones_couvertes
+    couvertes = zones_couvertes()
+
     mesures = []
     for o in offres:
         if not _boutique_eligible(o.vendor):
@@ -120,7 +122,8 @@ def mesurer(offres, destination, maintenant=None) -> list[dict]:
             "format": colis["format"], "trust": _trust(o.vendor), "nouveau": _nouveau(o.vendor),
             "part_reelle": recues / len(commandes) if commandes else 0.0, "dernier_service": rangs.get(o.pk),
             "delai_h": regles.reglage("r_prep_h"), "stock": stock,
-            "note": sum(avis) / len(avis) if avis else None, "mic": master.made_in_cameroon, "zone_couverte": True,
+            "note": sum(avis) / len(avis) if avis else None, "mic": master.made_in_cameroon,
+            "zone_couverte": zone_b in couvertes and destination.zone_dest in couvertes,
             "vendeur": o.vendor_id,
         })
     return mesures

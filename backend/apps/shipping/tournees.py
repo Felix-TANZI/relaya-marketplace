@@ -22,9 +22,14 @@ from django.utils import timezone
 from apps.accounts.models import CourierProfile, TrustScoreProfile
 from apps.accounts.trust_score import get_trust_score_profile
 from .assignment import ACTIVE_STATUSES, coverage_q, organization_covers
+from .entreprises import plafond_effectif
 from .models import Shipment, ShipmentEvent, Tournee, Zone
 
-TOURNEE_THRESHOLD = 4  # Addendum §3 : "4 colis (provisoire, à confirmer au test à blanc)"
+def _seuil_tournee():
+    """Spec v2.1, R49.3 : un paquet part à son créneau s'il compte au moins r_depart_colis colis."""
+    from apps.regles import services as regles
+
+    return regles.reglage("r_depart_colis")
 MAX_SLOTS_WAITED = 2   # règle n°10 : sortie forcée après deux créneaux d'attente
 
 # Cas 3 (gros colis) : "Jamais publié sur la bourse — négociation dirigée
@@ -81,65 +86,6 @@ def current_slot(zone: Zone, now=None):
     return local.date(), Tournee.Period.AFTERNOON
 
 
-def choose_courier_for_zone(zone: Zone, shipments):
-    """Un seul livreur pour toute la tournée — il enchaîne les arrêts (cas 4)."""
-    city = (zone.city or "").strip()
-    covered_orgs = organization_covers(city)
-    if not covered_orgs.exists():
-        return None
-
-    max_value = max((s.order.total_xaf or 0) for s in shipments)
-
-    org_ids = []
-    for org in covered_orgs.annotate(
-        active_shipments_count=Count(
-            "couriers__shipments",
-            filter=Q(couriers__shipments__status__in=ACTIVE_STATUSES),
-        )
-    ):
-        if org.max_active_shipments and org.active_shipments_count >= org.max_active_shipments:
-            continue
-        org_ids.append(org.id)
-    if not org_ids:
-        return None
-
-    couriers = (
-        CourierProfile.objects.filter(
-            is_active=True,
-            is_approved=True,
-            is_online=True,
-            delivery_organization_id__in=org_ids,
-        )
-        .filter(coverage_q(city))
-        .annotate(active_shipments_count=Count("shipments", filter=Q(shipments__status__in=ACTIVE_STATUSES)))
-        .select_related("user", "delivery_organization")
-    )
-
-    available = [
-        c for c in couriers
-        if not c.max_active_shipments or c.active_shipments_count < c.max_active_shipments
-    ]
-    if not available:
-        return None
-
-    eligible = []
-    throttled_ids = set()
-    for courier in available:
-        trust = get_trust_score_profile(courier.user, TrustScoreProfile.Role.COURIER)
-        cap = trust.parcel_value_cap_xaf
-        if cap is None and not courier.delivery_organization.transport_insurance_verified:
-            cap = 250000
-        if cap is None or max_value <= cap:
-            eligible.append(courier)
-        if trust.is_throttled:
-            throttled_ids.add(courier.id)
-    if not eligible:
-        return None
-
-    eligible.sort(key=lambda c: (c.id in throttled_ids, c.active_shipments_count, c.updated_at))
-    return eligible[0]
-
-
 def _depart_tournee(tournee: Tournee, shipments, courier):
     for index, shipment in enumerate(shipments):
         shipment.tournee = tournee
@@ -183,12 +129,14 @@ def compose_tournees_for_zone(zone: Zone, now=None) -> Tournee | None:
         return None
 
     max_wait = max(slots_waited(zone, s.created_at, now) for s in shipments)
-    should_compose = len(shipments) >= TOURNEE_THRESHOLD
+    should_compose = len(shipments) >= _seuil_tournee()
     forced_exit = not should_compose and max_wait >= MAX_SLOTS_WAITED
     if not should_compose and not forced_exit:
         return None
 
-    courier = choose_courier_for_zone(zone, shipments)
+    # Spec v2.1, R52.2 : BelivaY publie le paquet ; l'entreprise le prend et affecte son livreur. Aucun livreur
+    # n'est choisi ici : le paquet va toujours à la bourse (ou, en sortie forcée, chaque colis à la file des missions).
+    courier = None
     slot_date, period = current_slot(zone, now)
     tournee = Tournee.objects.create(
         zone=zone, slot_date=slot_date, period=period, courier=courier,
@@ -283,9 +231,7 @@ def claim_tournee_for_organization(tournee_id: int, organization):
         if courier.max_active_shipments and courier.active_shipments_count >= courier.max_active_shipments:
             continue
         trust = get_trust_score_profile(courier.user, TrustScoreProfile.Role.COURIER)
-        cap = trust.parcel_value_cap_xaf
-        if cap is None and not organization.transport_insurance_verified:
-            cap = 250000
+        cap = plafond_effectif(trust.tier, organization.transport_insurance_verified)  # R56.2
         if cap is None or max_value <= cap:
             eligible.append(courier)
         if trust.is_throttled:

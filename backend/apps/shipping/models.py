@@ -623,9 +623,6 @@ class RelayPickupAttempt(models.Model):
     pour ce relais — seul le support peut lever le blocage.
     """
 
-    MAX_ATTEMPTS = 3
-    LOCK_HOURS = 24
-
     relay_point = models.ForeignKey(
         "accounts.RelayPointProfile",
         on_delete=models.CASCADE,
@@ -645,6 +642,20 @@ class RelayPickupAttempt(models.Model):
         etat = "ok" if self.success else "echec"
         return f"RelayPickupAttempt(relay={self.relay_point_id}, code={self.code}, {etat})"
 
+    @staticmethod
+    def max_essais() -> int:
+        """Spec v2.1, R66.1 : r_code_essais essais faux bloquent le code."""
+        from apps.regles import services as regles
+
+        return regles.reglage("r_code_essais")
+
+    @staticmethod
+    def heures_blocage() -> int:
+        """Spec v2.1, R66.1 : blocage de r_code_blocage_h heures."""
+        from apps.regles import services as regles
+
+        return regles.reglage("r_code_blocage_h")
+
     @classmethod
     def register(cls, relay_point, code, success):
         return cls.objects.create(relay_point=relay_point, code=(code or "").strip().upper(), success=success)
@@ -653,7 +664,7 @@ class RelayPickupAttempt(models.Model):
     def _recent_failures(cls, relay_point, code):
         """Les echecs consecutifs les plus recents pour ce code, du plus recent au plus ancien."""
         code = (code or "").strip().upper()
-        recent = cls.objects.filter(relay_point=relay_point, code=code).order_by("-created_at")[: cls.MAX_ATTEMPTS]
+        recent = cls.objects.filter(relay_point=relay_point, code=code).order_by("-created_at")[: cls.max_essais()]
         failures = []
         for attempt in recent:
             if attempt.success:
@@ -665,15 +676,15 @@ class RelayPickupAttempt(models.Model):
     def locked_until(cls, relay_point, code):
         """Date de levee du blocage si ce code vient de subir 3 echecs consecutifs, sinon None."""
         failures = cls._recent_failures(relay_point, code)
-        if len(failures) < cls.MAX_ATTEMPTS:
+        if len(failures) < cls.max_essais():
             return None
-        until = failures[0].created_at + timezone.timedelta(hours=cls.LOCK_HOURS)
+        until = failures[0].created_at + timezone.timedelta(hours=cls.heures_blocage())
         return until if timezone.now() < until else None
 
     @classmethod
     def attempts_left(cls, relay_point, code):
         """Essais encore disponibles avant blocage (0 si deja au seuil)."""
-        return max(0, cls.MAX_ATTEMPTS - len(cls._recent_failures(relay_point, code)))
+        return max(0, cls.max_essais() - len(cls._recent_failures(relay_point, code)))
 
 
 class ShipmentMessage(models.Model):
@@ -819,3 +830,72 @@ class DemandeAdresse(models.Model):
 
     def __str__(self):
         return f"{self.get_type_display()} · {self.quartier_saisi or '—'}"
+
+
+class GrilleAchat(models.Model):
+    """Grille d'achat signée par une entreprise de livraison (spec v2.1, R53) ; chaque ligne est contrôlée contre son
+    plafond d'achat (R54, A10 : apps/shipping/grille.py)."""
+
+    organisation = models.ForeignKey("accounts.DeliveryOrganizationProfile", on_delete=models.CASCADE, related_name="grilles_achat")
+    signee_le = models.DateField(help_text="Date de signature (départ de l'exception R86)")
+    annoncee_le = models.DateField(help_text="Annonce de la grille (R61.1 : préavis de r_preavis_grille_j jours)")
+    entree_en_vigueur = models.DateField()
+    note = models.TextField(blank=True, default="")
+    cree_le = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-entree_en_vigueur"]
+        verbose_name = "Grille d'achat d'une entreprise"
+        verbose_name_plural = "Grilles d'achat des entreprises"
+
+    def __str__(self):
+        return f"{self.organisation} · en vigueur le {self.entree_en_vigueur:%d/%m/%Y}"
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        from apps.shipping.grille import entree_en_vigueur_min
+
+        if self.annoncee_le and self.entree_en_vigueur and self.entree_en_vigueur < entree_en_vigueur_min(self.annoncee_le):
+            raise ValidationError({"entree_en_vigueur": "R61.1 : une grille est annoncée au moins 30 jours avant d'entrer en vigueur."})
+
+
+class LigneGrille(models.Model):
+    class Type(models.TextChoices):
+        DOMICILE = "DOMICILE", "Course à domicile (paramètre : niveau)"
+        XL = "XL", "Course XL (paramètre : niveau)"
+        RELAIS = "RELAIS", "Tournée relais, par colis (paramètre : format)"
+        AUTRE_ZONE_TOURNEE = "AUTRE_ZONE_TOURNEE", "Tournée qui part d'une autre zone, par colis (R55)"
+        SUPPLEMENT_FORMAT = "SUPPLEMENT_FORMAT", "Supplément de format (paramètre : C1, C2)"
+        KM = "KM", "Km au-delà de r_km_inclus"
+        BOUTIQUE_EN_PLUS = "BOUTIQUE_EN_PLUS", "Boutique en plus (paramètre : meme_zone, autre_zone)"
+        RETOUR = "RETOUR", "Course de retour"
+        TRANSFERT = "TRANSFERT", "Transfert entre relais"
+        AGENCE_RELAIS = "AGENCE_RELAIS", "Agence qui sert de relais"
+        INCIDENT = "INCIDENT", "Supplément d'incident (absence, refus, déplacement inutile)"
+
+    grille = models.ForeignKey(GrilleAchat, on_delete=models.CASCADE, related_name="lignes")
+    numero = models.PositiveSmallIntegerField()
+    prestation = models.CharField(max_length=160)
+    type = models.CharField(max_length=24, choices=Type.choices)
+    param = models.CharField(max_length=20, blank=True, default="", help_text="Niveau, format ou zone selon le type")
+    petit_paquet = models.BooleanField(default=False, help_text="Paquet de moins de r_depart_colis colis (ligne 5, R86, R55.2)")
+    tarif = models.PositiveIntegerField()
+    plafond_achat = models.PositiveIntegerField(null=True, blank=True, editable=False)
+    controle = models.CharField(max_length=16, blank=True, default="", editable=False)
+    controle_note = models.CharField(max_length=200, blank=True, default="", editable=False)
+
+    class Meta:
+        ordering = ["grille", "numero"]
+        unique_together = [("grille", "numero")]
+        verbose_name = "Ligne de grille d'achat"
+        verbose_name_plural = "Lignes de grille d'achat"
+
+    def __str__(self):
+        return f"{self.numero}. {self.prestation} : {self.tarif} F ({self.controle})"
+
+    def save(self, *args, **kwargs):
+        from apps.shipping.grille import controler
+
+        self.controle, self.plafond_achat, self.controle_note = controler(self, self.grille.signee_le)
+        super().save(*args, **kwargs)

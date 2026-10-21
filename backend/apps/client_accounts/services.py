@@ -297,7 +297,8 @@ def _lieu(user, donnees: dict) -> tuple[str, str, str]:
                                       latitude=lat, longitude=lon, precision_m=precision)
     if r.refus:
         raise refus(r.refus, r.message, {"propositions": r.propositions} if r.propositions else None)
-    if not r.exploitee:  # R74.1 (les entreprises actives qui couvrent une zone arrivent avec BV-DEV-05)
+    from apps.shipping.entreprises import zones_couvertes
+    if not r.exploitee and r.zone not in zones_couvertes():  # R74.1 : zone non exploitée sans entreprise active
         raise refus("zone_non_servie", MESSAGE_DOMICILE_INDISPONIBLE, {"zone": r.zone})
     return r.quartier["quartier"], r.zone, r.niveau
 

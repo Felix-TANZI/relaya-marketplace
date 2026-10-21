@@ -871,11 +871,10 @@ class TrustScoreProfile(models.Model):
 
     @property
     def parcel_value_cap_xaf(self):
-        if self.tier in (self.Tier.GOLD, self.Tier.PLATINUM):
-            return None
-        if self.tier == self.Tier.CONFIRMED:
-            return 250000
-        return 75000
+        """Spec v2.1, R56.1 : valeur maximale d'un colis du palier, lue dans t_paliers_entreprise (None : sans plafond)."""
+        from apps.shipping.entreprises import plafond_palier
+
+        return plafond_palier(self.tier)
 
     def get_role_tier_display(self, tier=None):
         tier = tier or self.tier

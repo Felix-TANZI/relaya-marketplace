@@ -1492,7 +1492,11 @@ def delivery_organization_mission_queue(request):
         .prefetch_related("events", "locations", "order__items__product__vendor__vendor_profile")
         .order_by("created_at")
     )
-    return Response([_mission_payload(shipment) for shipment in queue])
+    # Spec v2.1, R56.3 : un colis dont la valeur dépasse ce que l'entreprise peut transporter ne lui est jamais montré.
+    from apps.shipping.entreprises import plafond_organisation, valeur_colis
+    plafond = plafond_organisation(organization)
+    visibles = [s for s in queue if plafond is None or valeur_colis(s) <= plafond]
+    return Response([_mission_payload(shipment) for shipment in visibles])
 
 
 @extend_schema(tags=["Delivery organization"], summary="Assign a queued mission to an available courier")
@@ -1521,15 +1525,14 @@ def delivery_organization_assign_mission(request, shipment_id):
     from .trust_score import calculate_trust_score, trust_score_payload
 
     trust = calculate_trust_score(courier.user, TrustScoreProfile.Role.COURIER)
-    value_cap = trust.parcel_value_cap_xaf
-    if value_cap is None and not organization.transport_insurance_verified:
-        value_cap = 250000
-    if value_cap is not None and shipment.order.total_xaf > value_cap:
+    from apps.shipping.entreprises import plafond_effectif, valeur_colis
+    value_cap = plafond_effectif(trust.tier, organization.transport_insurance_verified)  # R56.2, R56.3
+    if value_cap is not None and valeur_colis(shipment) > value_cap:
         trust_data = trust_score_payload(trust)
         return Response(
             {
                 "courier_id": [
-                    f"Mission refusée : colis de {shipment.order.total_xaf} FCFA, plafond {value_cap} FCFA pour le palier {trust.get_tier_display()}."
+                    f"Mission refusée : colis de {valeur_colis(shipment)} FCFA, plafond {value_cap} FCFA pour le palier {trust.get_tier_display()}."
                 ],
                 "code": "VALUE_LIMIT_EXCEEDED",
                 "trust_score": trust_data,

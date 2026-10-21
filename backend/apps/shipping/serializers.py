@@ -1,3 +1,4 @@
+import secrets
 from datetime import timedelta
 
 from rest_framework import serializers
@@ -30,6 +31,15 @@ PARCEL_SIZE_LABELS = {
     "BULKY": "Encombrant",
 }
 
+
+
+
+def nouveau_code_de_retrait() -> str:
+    """Spec v2.1, R66.1 : code de r_code_chiffres chiffres, tiré au hasard (secrets)."""
+    from apps.regles import services as regles
+
+    n = regles.reglage("r_code_chiffres")
+    return f"{secrets.randbelow(10 ** n):0{n}d}"
 
 class ShipmentEventSerializer(serializers.ModelSerializer):
     class Meta:
@@ -554,7 +564,7 @@ class RelayParcelReceiveSerializer(serializers.Serializer):
         siblings = list(RelayParcel.objects.filter(shipment__order=shipment.order))
         still_pending = [p for p in siblings if p.id != parcel.id and p.status == RelayParcel.Status.EXPECTED]
         if not still_pending:
-            code = next((p.pickup_code for p in siblings if p.pickup_code), "") or secrets.token_hex(3).upper()
+            code = next((p.pickup_code for p in siblings if p.pickup_code), "") or nouveau_code_de_retrait()
             RelayParcel.objects.filter(id__in=[p.id for p in siblings]).exclude(pickup_code=code).update(pickup_code=code)
             parcel.refresh_from_db(fields=["pickup_code"])
             if shipment.order.user_id:
@@ -614,7 +624,7 @@ class RelayPickupCodeCheckSerializer(serializers.Serializer):
             return {
                 "locked": False,
                 "locked_until": None,
-                "attempts_left": RelayPickupAttempt.MAX_ATTEMPTS,
+                "attempts_left": RelayPickupAttempt.max_essais(),
                 "parcels": parcels,
             }
 

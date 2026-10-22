@@ -35,6 +35,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.accounts.models import RelayPointProfile
+from apps.common.demonstration import exiger_demonstration_autorisee
 from apps.payments.api.permissions import partner_payee_for_user
 from apps.payments.settlements.models import SettlementBatch
 
@@ -56,6 +57,8 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, *args, **options):
+        # Tache D31 : jeux de demonstration fermes par defaut.
+        exiger_demonstration_autorisee()
         self._garde_fou()
 
         relay_point = self._relay_point(options.get("relay"))

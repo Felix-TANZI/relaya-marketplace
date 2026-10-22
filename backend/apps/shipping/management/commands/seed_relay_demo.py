@@ -11,9 +11,14 @@ from apps.accounts.models import (
     RelayPointProfile,
     RelayTrainingCompletion,
 )
-from apps.orders.models import Order
-from apps.orders.models import Dispute
-from apps.shipping.models import RelayParcel, RelayPointReview, Shipment, ShipmentEvidence
+from apps.common.demonstration import exiger_demonstration_autorisee
+from apps.orders.models import Dispute, Order
+from apps.shipping.models import (
+    RelayParcel,
+    RelayPointReview,
+    Shipment,
+    ShipmentEvidence,
+)
 
 DEMO_PASSWORD = "Demo12345!"
 DEMO_BUYER = "acheteur_demo"
@@ -90,6 +95,8 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        # Tache D31 : jeux de demonstration fermes par defaut.
+        exiger_demonstration_autorisee()
         wanted = max(1, min(options["arrivals"], len(DEMO_SIZES)))
 
         relay = self._relay_point()

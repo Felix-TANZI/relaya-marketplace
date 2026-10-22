@@ -6,7 +6,14 @@ from django.utils import timezone
 from django.utils.text import slugify
 
 from apps.accounts.models import TrustScoreProfile
-from apps.catalog.models import Category, Inventory, MasterProduct, Product, ProductReview
+from apps.catalog.models import (
+    Category,
+    Inventory,
+    MasterProduct,
+    Product,
+    ProductReview,
+)
+from apps.common.demonstration import exiger_demonstration_autorisee
 from apps.vendors.models import VendorLocation, VendorProfile
 
 # Reference : agence BelivaY a Akwa, Douala (centre-ville).
@@ -57,6 +64,8 @@ class Command(BaseCommand):
     )
 
     def handle(self, *args, **options):
+        # Tache D31 : jeux de demonstration fermes par defaut.
+        exiger_demonstration_autorisee()
         cat_audio, _ = Category.objects.get_or_create(
             slug="audio-demo-recommandations",
             defaults={"name": "Audio (demo recommandations)", "is_active": True},

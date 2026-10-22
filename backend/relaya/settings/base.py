@@ -513,6 +513,39 @@ COMPTES_DEMO_AUTORISES = os.getenv("COMPTES_DEMO_AUTORISES", "0").strip().lower(
     "1", "true", "yes", "on",
 }
 
+# ── Jeux de donnees de demonstration (tache D31) ────────────────────────────
+# Douze commandes `seed_*_demo` peuplent la base de boutiques, de relais,
+# d'avis et de commandes fictifs. D31 demande qu'« aucune donnee inventee »
+# n'atteigne le visiteur : « Relais : aucun relais de demonstration (par
+# exemple "Relais Mvog-Ada") ».
+#
+# On ne supprime pas ces jeux — ils servent a juger les ecrans, et le serveur
+# de test de D23 en aura besoin. On les ferme par defaut, comme les comptes de
+# D27 : il faut poser la variable explicitement, ce que la production ne fait
+# jamais. Voir apps/common/demonstration.py.
+#
+# Reglage distinct de COMPTES_DEMO_AUTORISES : on peut vouloir des comptes de
+# test sur un serveur sans y deverser un faux catalogue.
+DONNEES_DEMO_AUTORISEES = os.getenv("DONNEES_DEMO_AUTORISEES", "0").strip().lower() in {
+    "1", "true", "yes", "on",
+}
+
+# ── Catégories trop vides (tâche D29) ───────────────────────────────────────
+# « N'afficher que les catégories assez remplies ; masquer celles qui sont
+# presque vides. » Une catégorie vide est une promesse non tenue : le visiteur
+# clique, arrive sur une page sans rien, et doute du reste du site.
+#
+# 1 par défaut : on masque ce qui est strictement vide, et rien d'autre. C'est
+# le seul choix qui ne demande aucun arbitrage. Monter le seuil (3, 5…) est une
+# décision produit — d'où ce réglage, modifiable sans toucher au code.
+#
+# Le compte porte sur la catégorie ET sa descendance : « Téléphonie » peut
+# n'avoir aucune offre en propre et trois smartphones dans sa sous-catégorie.
+# Voir apps/catalog/vitrine.py.
+CATALOGUE_OFFRES_MINIMUM_PAR_CATEGORIE = int(
+    os.getenv("CATALOGUE_OFFRES_MINIMUM_PAR_CATEGORIE", "1")
+)
+
 
 # ========================================
 # PRODUCTION HTTPS & CSRF CONFIGURATION

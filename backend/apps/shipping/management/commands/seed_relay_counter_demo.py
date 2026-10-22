@@ -26,6 +26,7 @@ from django.utils import timezone
 
 from apps.accounts.models import RelayPointProfile
 from apps.catalog.models import Category, Product
+from apps.common.demonstration import exiger_demonstration_autorisee
 from apps.orders.models import Dispute, DisputeEvidenceRequest, Order, OrderItem, Return
 from apps.shipping.models import RelayParcel, Shipment
 
@@ -42,6 +43,8 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, *args, **options):
+        # Tache D31 : jeux de demonstration fermes par defaut.
+        exiger_demonstration_autorisee()
         relay_point = self._relay_point(options.get("relay"))
         self.stdout.write(f"Point relais : {relay_point.name} ({relay_point.user.username})")
 

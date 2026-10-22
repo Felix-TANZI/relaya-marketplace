@@ -70,6 +70,30 @@ PROVIDERS = [
             "A confirmer par un appel reel : python manage.py campay_selftest"
         ),
     },
+    {
+        "config_key": "provider-cinetpay",
+        "provider_code": "CINETPAY",
+        "mode": ProviderConfig.Mode.SANDBOX,
+        "is_enabled": False,
+        "is_payout_enabled": False,
+        "priority": 50,
+        "supported_operators": [],
+        "min_amount_xaf": 100,
+        "max_amount_xaf": 1_000_000,
+        "collect_timeout_s": 30,
+        "retry_policy": {"max_attempts": 3, "backoff_seconds": [1, 5, 15]},
+        "circuit_breaker_threshold": 5,
+        "exposes_balance_per_operator": False,
+        "notes": (
+            "Carte bancaire par page hebergee (create_checkout), pas "
+            "d'encaissement direct par numero ni de versement — "
+            "withdraw()/balance() non implementes. Contrat d'API confirme "
+            "empiriquement le 30/09/2026 sur le bac a sable pour "
+            "l'initiation et la consultation (voir infrastructure/providers/"
+            "cinetpay/), mais pas les statuts terminaux reels. "
+            "A confirmer par un appel reel : python manage.py cinetpay_selftest"
+        ),
+    },
 ]
 
 # ── Frais ────────────────────────────────────────────────────────────────────

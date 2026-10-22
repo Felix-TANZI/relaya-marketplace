@@ -113,6 +113,37 @@ class WithdrawResult:
 
 
 @dataclass(frozen=True)
+class CheckoutRequest:
+    """
+    Paiement par page hebergee (carte bancaire) — le prestataire renvoie une
+    URL de redirection, jamais un debit direct par numero (voir CollectRequest).
+    """
+    external_reference: str
+    amount_xaf: int
+    description: str = ""
+    customer_name: str = ""
+    customer_surname: str = ""
+    customer_email: str = ""
+    customer_phone: str = ""
+    return_url: str = ""
+    failed_url: str = ""
+    notify_url: str = ""
+
+
+@dataclass(frozen=True)
+class CheckoutResult:
+    accepted: bool
+    payment_url: str = ""
+    payment_token: str = ""
+    provider_reference: str = ""
+    status: ProviderStatus = ProviderStatus.PENDING
+    raw_status: str = ""
+    error_code: str = ""
+    error_message: str = ""
+    raw_response: dict = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
 class ProviderBalance:
     total_xaf: int
     per_operator: dict = field(default_factory=dict)

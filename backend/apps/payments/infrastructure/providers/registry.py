@@ -9,12 +9,15 @@ from __future__ import annotations
 
 from .base import PaymentProvider, ProviderUnavailable
 from .campay.provider import CampayProvider
+from .cinetpay.provider import CinetPayProvider
 from .mock import MockProvider
 
-#: Classes disponibles. CamPay s'ajoute au Lot 6, Fapshi apres benchmark.
+#: Classes disponibles. CamPay s'ajoute au Lot 6, CinetPay (carte) en parallele,
+#: Fapshi apres benchmark.
 _CLASSES: dict[str, type[PaymentProvider]] = {
     MockProvider.code: MockProvider,
     CampayProvider.code: CampayProvider,
+    CinetPayProvider.code: CinetPayProvider,
 }
 
 

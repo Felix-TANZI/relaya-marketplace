@@ -980,8 +980,6 @@ class PayoutAccount(models.Model):
     operator = models.CharField(max_length=20)
     status = models.CharField(max_length=30, choices=Status.choices, default=Status.PENDING_VERIFICATION)
     is_primary = models.BooleanField(default=False)
-    verification_code_hash = models.CharField(max_length=160, blank=True, default="")
-    verification_expires_at = models.DateTimeField(null=True, blank=True)
     verified_at = models.DateTimeField(null=True, blank=True)
     last_sent_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -1007,24 +1005,10 @@ class PayoutAccount(models.Model):
     def __str__(self):
         return f"{self.user.username} · {self.owner_role} · {self.phone_e164}"
 
-    def set_verification_code(self, code: str, minutes: int = 10):
-        self.verification_code_hash = make_password(code)
-        self.verification_expires_at = timezone.now() + timezone.timedelta(minutes=minutes)
-        self.last_sent_at = timezone.now()
-
-    def check_verification_code(self, code: str) -> bool:
-        if not self.verification_code_hash or not self.verification_expires_at:
-            return False
-        if self.verification_expires_at < timezone.now():
-            return False
-        return check_password(code, self.verification_code_hash)
-
     def mark_verified(self):
         self.status = self.Status.VERIFIED
         self.verified_at = timezone.now()
-        self.verification_code_hash = ""
-        self.verification_expires_at = None
-        self.save(update_fields=["status", "verified_at", "verification_code_hash", "verification_expires_at", "updated_at"])
+        self.save(update_fields=["status", "verified_at", "updated_at"])
 
 
 class UserSession(models.Model):
@@ -1051,38 +1035,6 @@ class UserSession(models.Model):
         return f"{self.user.username} — {self.device_name} ({self.ip_address})"
  
  
-class OTPCode(models.Model):
-    """
-    Code OTP à 6 chiffres, usage unique, valide 10 minutes.
-    Utilisé pour la 2FA (connexion, activation, désactivation).
-    """
-    PURPOSE_CHOICES = [
-        ('2FA_LOGIN',   'Connexion 2FA'),
-        ('2FA_ENABLE',  'Activation 2FA'),
-        ('2FA_DISABLE', 'Désactivation 2FA'),
-    ]
- 
-    user       = models.ForeignKey(User, on_delete=models.CASCADE, related_name='otp_codes')
-    code       = models.CharField(max_length=6)
-    purpose    = models.CharField(max_length=15, choices=PURPOSE_CHOICES)
-    created_at = models.DateTimeField(auto_now_add=True)
-    expires_at = models.DateTimeField()
-    is_used    = models.BooleanField(default=False)
- 
-    class Meta:
-        ordering = ['-created_at']
-        verbose_name = "Code OTP"
-        verbose_name_plural = "Codes OTP"
- 
-    def __str__(self):
-        return f"{self.user.username} — {self.purpose} — {self.code}"
- 
-    @property
-    def is_valid(self) -> bool:
-        from django.utils import timezone
-        return not self.is_used and self.expires_at > timezone.now()
-
-
 class RelayTrainingCompletion(models.Model):
     """
     Module de formation valide par un point relais.

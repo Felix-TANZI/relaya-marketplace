@@ -9,6 +9,10 @@
 #
 # Paramètres (registre) : OTP-LONG (6 chiffres), OTP-DUREE (10 minutes), OTP-ESSAIS (5, puis 15 minutes),
 # OTP-RENVOI (60 s entre deux envois, 3 envois par heure).
+#
+# Feuille de route D6 : c'est le seul système de codes du projet (2FA, PIN relais, compte de versement, connexion et
+# gestes sensibles du vendeur). Quand le code se retrouve par autre chose que son numéro (un appareil, une boutique),
+# `cle` le range sous cette clé tandis qu'il part toujours vers `destination`.
 
 import hashlib
 import hmac
@@ -59,9 +63,13 @@ def _regles():
     return duree, essais, attente, entre, par_heure, longueur
 
 
+def _cle(destination: str, cle: str | None) -> str:
+    return f"cle:{cle}" if cle else _normaliser(destination)
+
+
 def envoyer(
     *, objet: str, destination: str, utilisateur=None, canal: str = "sms",
-    exiger_utilisateur: bool = False,
+    exiger_utilisateur: bool = False, cle: str | None = None,
 ) -> dict:
     """Crée et envoie un code ; 429 trop_tot / trop_d_envois selon OTP-RENVOI."""
     dest = _normaliser(destination)
@@ -71,7 +79,8 @@ def envoyer(
         canal = CodeOtp.Canal.EMAIL
     duree, _, _, entre, par_heure, longueur = _regles()
     maintenant = timezone.now()
-    empreinte_dest = _empreinte(dest)
+    rangement = _cle(dest, cle)
+    empreinte_dest = _empreinte(rangement)
     recents = CodeOtp.objects.filter(objet=objet, destination_empreinte=empreinte_dest, cree_le__gte=maintenant - timedelta(hours=1))
     dernier = recents.order_by("-cree_le").first()
     if dernier is not None and dernier.cree_le > maintenant - timedelta(seconds=entre):
@@ -100,7 +109,7 @@ def envoyer(
             canal=canal,
             destination_empreinte=empreinte_dest,
             destination_masquee=_masquer(dest),
-            code_empreinte=_empreinte(f"{objet}:{dest}:{code}"),
+            code_empreinte=_empreinte(f"{objet}:{rangement}:{code}"),
             expire_le=maintenant + timedelta(minutes=duree),
         )
     texte = f"BelivaY : ton code est {code}. Il est valable {duree} minutes. Ne le donne à personne."
@@ -112,8 +121,8 @@ def envoyer(
 
 
 def verifier(
-    *, objet: str, code: str, destination: str, utilisateur=None,
-    consommer: bool = True, exiger_utilisateur: bool = False,
+    *, objet: str, code: str, destination: str = "", utilisateur=None,
+    consommer: bool = True, exiger_utilisateur: bool = False, cle: str | None = None,
 ) -> dict:
     """Vérifie et consomme le code (consommer=False : le code juste reste valable, pour un contrôle refait plus tard,
     ex. l'inscription diaspora). Ne lève pas pour un code faux : le résultat le dit (ResultatCode du site).
@@ -129,7 +138,7 @@ def verifier(
     partageraient alors l'espace des codes, et le code de l'un validerait la
     connexion de l'autre. Le drapeau reste à False par défaut pour ne rien
     changer aux parcours anonymes du kit, où le code est créé sans compte."""
-    dest = _normaliser(destination)
+    dest = _cle(destination, cle)
     _, essais_max, attente_min, _, _, _ = _regles()
     maintenant = timezone.now()
     with transaction.atomic():
@@ -162,6 +171,23 @@ def verifier(
             return {"ok": False, "bloqueJusqua": ms(c.bloque_jusqua)}
         c.save(update_fields=["essais"])
         return {"ok": False, "essaisRestants": essais_max - c.essais}
+
+
+def en_cours(*, objet: str, cle: str):
+    """Le code encore valable rangé sous `cle` (connexion par appareil : l'écran demande s'il en attend un)."""
+    return (
+        CodeOtp.objects.filter(objet=objet, destination_empreinte=_empreinte(_cle("", cle)), utilise_le__isnull=True,
+                               expire_le__gt=timezone.now())
+        .order_by("-cree_le").first()
+    )
+
+
+def dernier_utilise(*, objet: str, cle: str):
+    """Le dernier code vérifié rangé sous `cle` (pour retrouver le compte après une connexion par appareil)."""
+    return (
+        CodeOtp.objects.filter(objet=objet, destination_empreinte=_empreinte(_cle("", cle)), utilise_le__isnull=False)
+        .order_by("-utilise_le").first()
+    )
 
 
 def etape_validee(*, objet: str, utilisateur, apres=None, fenetres: int = 1) -> bool:

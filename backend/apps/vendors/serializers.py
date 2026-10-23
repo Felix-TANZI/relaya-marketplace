@@ -134,22 +134,19 @@ class VendorApplicationSerializer(serializers.ModelSerializer):
         model = VendorProfile
         fields = ['business_name', 'business_description', 'phone', 'address', 'city', 'id_document']
 
-    def validate(self, data):
-        if VendorProfile.objects.filter(user=self.context['request'].user).exists():
-            raise serializers.ValidationError("Vous avez déjà une demande vendeur.")
-
-        # Bannissement niveau 4 (V5.5 §8) : une CNI ou un numéro Mobile Money
-        # bloqué ne doit pas pouvoir revenir sous un nouveau compte.
-        from apps.accounts.models import PartnerBlacklist
-
-        if PartnerBlacklist.is_blacklisted(PartnerBlacklist.IdentifierType.CNI, data.get('id_document', '')):
-            raise serializers.ValidationError("Cette pièce d'identité ne peut pas être utilisée pour créer un compte partenaire.")
-        if PartnerBlacklist.is_blacklisted(PartnerBlacklist.IdentifierType.MOMO, data.get('phone', '')):
-            raise serializers.ValidationError("Ce numéro Mobile Money ne peut pas être utilisé pour créer un compte partenaire.")
-        return data
-
     def create(self, validated_data):
-        return VendorProfile.objects.create(user=self.context['request'].user, **validated_data)
+        # Feuille de route D19 : une seule règle d'ouverture pour tous les écrans (apps.vendors.ouverture).
+        from apps.vendors.ouverture import Refus, ouvrir_boutique
+
+        try:
+            return ouvrir_boutique(
+                self.context['request'].user, nom=validated_data.get('business_name', ''),
+                telephone=validated_data.get('phone', ''), description=validated_data.get('business_description', ''),
+                adresse=validated_data.get('address', ''), ville=validated_data.get('city', ''),
+                id_document=validated_data.get('id_document', ''),
+            )
+        except Refus as refus:
+            raise serializers.ValidationError(refus.message)
 
 
 class VendorStatsSerializer(serializers.Serializer):

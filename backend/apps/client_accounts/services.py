@@ -106,6 +106,11 @@ def enregistrer_numero(user, numero: str) -> ProfilClient:
             p.save()
     except IntegrityError:
         raise conflit("utilise", "Ce numéro est déjà vérifié sur un autre compte.") from None
+    # Feuille de route D6 : un seul socle de comptes (accounts). Le numéro vérifié devient aussi celui du profil
+    # relaya, lu par le front de production, les paiements et les notifications.
+    from apps.accounts.models import UserProfile
+
+    UserProfile.objects.update_or_create(user=user, defaults={"phone": n})
     return p
 
 
@@ -726,16 +731,16 @@ def ouvrir_boutique(user, nom: str, categorie: str, type_: str) -> dict:
         Vendeur = pont.modele("vendeur")
         v = Vendeur.objects.filter(user=user).first()
         if v is None:
-            champs = {f.name for f in Vendeur._meta.get_fields()}
-            valeurs = {
-                "business_name": propre,
-                "business_description": categorie.strip(),
-                "phone": numero_verifie(user) or "",
-                "address": "",
-                "city": "Yaoundé",
-                "status": "PENDING",
-            }
-            v = Vendeur.objects.create(user=user, **{k: x for k, x in valeurs.items() if k in champs})
+            # Feuille de route D19 : une seule règle d'ouverture pour tous les écrans (apps.vendors.ouverture).
+            from apps.vendors.ouverture import Refus, ouvrir_boutique
+
+            try:
+                v = ouvrir_boutique(user, nom=propre, telephone=numero_verifie(user) or "",
+                                    description=categorie.strip(), ville="Yaoundé")
+            except Refus as r:
+                if r.raison == "nom_pris":
+                    raise conflit("nom_pris", "Ce nom de boutique est déjà pris.")
+                raise refus(r.raison, r.message)
         b.vendor_id = v.pk
         b.save()
     return {"ok": True, "boutique": {"nom": b.nom, "categorie": b.categorie, "type": b.type, "code": b.code, "piece": b.piece}}

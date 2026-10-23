@@ -588,7 +588,8 @@ class OrderCreateSerializer(serializers.Serializer):
         for shipment in created_shipments:
             zone_covered = order.zone_id is not None
             oversized = shipment.parcel_size in OVERSIZED_PARCEL_SIZES
-            if zone_covered and not oversized:
+            vers_relais = order.relay_point_id is not None  # R52.1 : à domicile, une course par client, publiée tout de suite
+            if zone_covered and not oversized and vers_relais:
                 continue  # attend le composeur de tournees
 
             before_courier_id = shipment.courier_id

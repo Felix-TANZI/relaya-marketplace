@@ -1631,23 +1631,10 @@ class CourierAvailableShipmentsView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        courier = _get_active_courier(self.request.user)
-        city = (courier.city or "").strip()
-        qs = Shipment.objects.filter(
-            status=Shipment.Status.CREATED,
-            courier=None,
-            order__delivery_method=Order.DeliveryMethod.DELIVERY,
-        ).exclude(order__user=self.request.user).select_related("order", "order__user")
-
-        if city:
-            from django.db.models import Q
-
-            city_filter = Q()
-            for variant in _city_variants(city):
-                city_filter |= Q(order__city__iexact=variant)
-            qs = qs.filter(city_filter)
-
-        return qs.order_by("created_at")
+        # Spec v2.1, R52.2 (feuille de route D11) : BelivaY publie aux entreprises de livraison, qui affectent leur
+        # livreur ; un livreur ne se sert jamais lui-même. La liste reste en place pour les écrans, toujours vide.
+        _get_active_courier(self.request.user)
+        return Shipment.objects.none()
 
 
 @extend_schema(tags=["Shipping"], summary="Réclamer une livraison disponible (auto-assignement)")
@@ -1656,50 +1643,13 @@ class CourierClaimShipmentView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, id):
-        _release_overdue_accepted_shipments()
-        courier = _get_active_courier(request.user)
-
-        full_name = request.user.get_full_name().strip() or request.user.username
-        updated_count = Shipment.objects.filter(
-            id=id,
-            status=Shipment.Status.CREATED,
-            courier=None,
-        ).exclude(order__user=request.user).update(
-            courier=courier,
-            courier_name=full_name,
-            courier_phone=courier.phone or "",
-            status=Shipment.Status.ASSIGNED,
+        # Spec v2.1, R52.2 (feuille de route D11) : c'est l'entreprise de livraison qui prend la course et affecte son
+        # livreur (file des missions, bourse des tournées) ; le livreur ne peut pas se l'attribuer.
+        _get_active_courier(request.user)
+        return Response(
+            {"detail": "Les courses sont affectées par votre entreprise de livraison (R52.2)."},
+            status=status.HTTP_403_FORBIDDEN,
         )
-
-        if updated_count == 0:
-            return Response(
-                {"detail": "Livraison déjà prise en charge, introuvable ou liée à votre propre commande."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        shipment = Shipment.objects.select_related("order", "courier", "courier__user").get(id=id)
-
-        ShipmentEvent.record(
-            shipment=shipment,
-            status=Shipment.Status.ASSIGNED,
-            message="Mission acceptée par le livreur",
-            location=courier.city or "",
-            actor=request.user,
-            actor_role="COURIER",
-        )
-
-        order = shipment.order
-        order.assign_driver()
-
-        UserNotification.objects.create(
-            user=courier.user,
-            title=f"Livraison #{order.id} prise en charge",
-            message=f"Vous avez accepté la livraison vers {order.city} - {order.address}.",
-            notification_type=UserNotification.NotificationType.ORDER,
-            action_url="/courier",
-        )
-
-        return Response(ShipmentSerializer(shipment, context={"request": request}).data, status=status.HTTP_200_OK)
 
 
 @extend_schema(

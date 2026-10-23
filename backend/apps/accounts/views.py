@@ -1317,6 +1317,8 @@ def _mission_payload(shipment):
         "address_precision": shipment.order.address_precision or {},
         "order_total_xaf": shipment.order.total_xaf,
         "relay_point": shipment.relay_point,
+        # D11 : groupées vers les relais, individuelles à domicile (R52.1)
+        "delivery_mode": "relais" if shipment.order.relay_point_id else "domicile",
         "vendor_names": _shipment_vendor_names(shipment),
         "courier": {
             "id": courier.id,
@@ -1486,16 +1488,16 @@ def delivery_organization_mission_queue(request):
                 Shipment.Status.CAPACITY_BLOCKED,
                 Shipment.Status.VALUE_LIMIT_EXCEEDED,
             ],
-            order__city__iexact=organization.city,
         )
-        .select_related("order")
+        .select_related("order", "order__zone")
         .prefetch_related("events", "locations", "order__items__product__vendor__vendor_profile")
         .order_by("created_at")
     )
-    # Spec v2.1, R56.3 : un colis dont la valeur dépasse ce que l'entreprise peut transporter ne lui est jamais montré.
-    from apps.shipping.entreprises import plafond_organisation, valeur_colis
+    # Spec v2.1, R52.1 : publication par zone (celles que l'entreprise déclare) ; R56.3 : un colis dont la valeur dépasse
+    # ce que l'entreprise peut transporter ne lui est jamais montré.
+    from apps.shipping.entreprises import couvre, plafond_organisation, valeur_colis
     plafond = plafond_organisation(organization)
-    visibles = [s for s in queue if plafond is None or valeur_colis(s) <= plafond]
+    visibles = [s for s in queue if couvre(organization, s) and (plafond is None or valeur_colis(s) <= plafond)]
     return Response([_mission_payload(shipment) for shipment in visibles])
 
 
@@ -1545,8 +1547,8 @@ def delivery_organization_assign_mission(request, shipment_id):
     if Shipment.objects.filter(courier__delivery_organization=organization, status__in=active_statuses).count() >= organization.max_active_shipments:
         return Response({"detail": "La capacité active de l'organisation est atteinte."}, status=status.HTTP_409_CONFLICT)
 
-    coverage_text = f"{shipment.order.city} {shipment.order.address}".casefold()
-    if organization.zones and not any(str(zone).casefold() in coverage_text for zone in organization.zones):
+    from apps.shipping.entreprises import couvre
+    if not couvre(organization, shipment):  # R52.1, R74
         return Response({"detail": "La destination n'appartient pas aux zones déclarées par l'organisation."}, status=status.HTTP_400_BAD_REQUEST)
 
     shipment.courier = courier

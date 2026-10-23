@@ -139,7 +139,8 @@ interface RelayParcel {
   order_id: number;
   status: string;
   slot_code: string;
-  pickup_code: string;
+  /** D12, R66.1 : le relais ne voit jamais le code de retrait, seulement qu'il existe (colis pret a remettre). */
+  pickup_ready: boolean;
   customer_phone: string;
   delivery_address: string;
   city: string;
@@ -346,6 +347,15 @@ function anonymizedBuyerRef(parcel: RelayParcel) {
   return `BV-ACH-${seed}`;
 }
 
+/**
+ * Cle de retrait d'un colis, cote relais : la commande (§8.3, un code remet
+ * tous les colis de la commande), jamais le code lui-meme (D12, R66.1).
+ * Vide tant que le colis n'est pas pret a remettre.
+ */
+function retraitKey(parcel: RelayParcel) {
+  return parcel.pickup_ready ? `BV-${parcel.order_id}` : "";
+}
+
 export default function RelayPointPage() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
@@ -524,7 +534,7 @@ export default function RelayPointPage() {
           vehicleLabel: parcel.courier_vehicle_label || "",
           sizeLabel: parcel.parcel_size_label || t("rl1_point_page.size_not_specified"),
           buyerRef: anonymizedBuyerRef(parcel),
-          pickupCode: parcel.pickup_code || "",
+          pickupCode: retraitKey(parcel),
         })),
     [relayParcels, t],
   );
@@ -542,7 +552,7 @@ export default function RelayPointPage() {
     () => ({
       reception: arrivals.length,
       stock: parcels.length,
-      retrait: relayParcels.filter((parcel) => ["RECEIVED", "STORED"].includes(parcel.status) && parcel.pickup_code).length,
+      retrait: relayParcels.filter((parcel) => ["RECEIVED", "STORED"].includes(parcel.status) && parcel.pickup_ready).length,
       notifications: notifications.filter((notification) => !notification.is_read).length,
       litiges: relayDisputes.length,
     }),
@@ -655,7 +665,7 @@ export default function RelayPointPage() {
       .sort()[0] ?? null;
 
     return {
-      readyForPickup: inStock.filter((parcel) => parcel.pickup_code).length,
+      readyForPickup: inStock.filter((parcel) => parcel.pickup_ready).length,
       lastDay: lastDayParcels.length,
       // Ce qui doit QUITTER le local au prochain passage du livreur. Un colis
       // deja parti porte une date de retour : il ne compte plus.
@@ -1300,7 +1310,7 @@ export default function RelayPointPage() {
           sizeLabel: parcel.parcel_size_label || "Taille non renseignée",
           buyerRef: anonymizedBuyerRef(parcel),
           status: parcel.status,
-          pickupCode: parcel.pickup_code || "",
+          pickupCode: retraitKey(parcel),
           receivedAt: parcel.received_at,
           gardeFreeUntil: parcel.garde_free_until,
           gardeDeadline: parcel.garde_deadline,
@@ -1453,7 +1463,7 @@ export default function RelayPointPage() {
     ref: `BV-${parcel.order_id}`,
     slot: parcel.slot_code || "à définir",
     sizeLabel: parcel.parcel_size_label || "Taille non renseignée",
-    pickupCode: parcel.pickup_code,
+    pickupCode: retraitKey(parcel),
     authorizedName: parcel.authorized_pickup_name || "",
     authorizedPhone: parcel.authorized_pickup_phone || "",
     gardeFeeXaf: parcel.garde_fee_due_xaf || 0,
@@ -1586,7 +1596,7 @@ export default function RelayPointPage() {
         ref: `BV-${parcel.order_id}`,
         slot: parcel.slot_code || "",
         sizeLabel: parcel.parcel_size_label || "Taille non renseignée",
-        pickupCode: parcel.pickup_code || "",
+        pickupCode: retraitKey(parcel),
         pickedUpAt: parcel.picked_up_at,
       })),
     [relayParcels],

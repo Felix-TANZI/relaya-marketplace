@@ -289,7 +289,12 @@ class ShipmentSerializer(serializers.ModelSerializer):
         parcel = getattr(obj, "relay_parcel", None)
         if not parcel:
             return None
-        return RelayParcelSerializer(parcel).data
+        data = RelayParcelSerializer(parcel).data
+        # D12 et R66.1 : le code de retrait n'est montré qu'au client de la commande, jamais au relais ni au livreur.
+        request = self.context.get("request")
+        if request and request.user.is_authenticated and request.user.id == obj.order.user_id:
+            data["pickup_code"] = parcel.pickup_code
+        return data
 
     def _tracking_locations(self, obj):
         cache = getattr(obj, "_tracking_locations_cache", None)
@@ -434,6 +439,12 @@ class RelayParcelSerializer(serializers.ModelSerializer):
     garde_free_until = serializers.DateTimeField(read_only=True)
     garde_deadline = serializers.DateTimeField(read_only=True)
     garde_fee_due_xaf = serializers.SerializerMethodField()
+    # D12 et R66.1 : le relais ne voit jamais le code de retrait, seulement qu'il existe (colis prêt à remettre) ;
+    # c'est le client qui le présente au comptoir, et le serveur le vérifie (RelayParcelPickupSerializer).
+    pickup_ready = serializers.SerializerMethodField()
+
+    def get_pickup_ready(self, obj):
+        return bool(obj.pickup_code)
 
     def get_garde_fee_due_xaf(self, obj):
         return obj.garde_fee_due()
@@ -448,7 +459,7 @@ class RelayParcelSerializer(serializers.ModelSerializer):
             "relay_point_name",
             "status",
             "slot_code",
-            "pickup_code",
+            "pickup_ready",
             "proof_note",
             "customer_phone",
             "delivery_address",

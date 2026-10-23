@@ -38,9 +38,12 @@ OVERSIZED_PARCEL_SIZES = {"LARGE", "BULKY"}
 
 
 def eligible_shipments_for_zone(zone: Zone):
+    # Spec v2.1, R52.1 : seuls les colis à destination d'un relais partent en paquet ; une commande à domicile est
+    # une course par client, publiée tout de suite (D10 : pas de groupage à domicile au lancement).
     return (
         Shipment.objects.filter(
             order__zone=zone,
+            order__relay_point__isnull=False,
             status=Shipment.Status.CREATED,
             tournee__isnull=True,
             courier__isnull=True,

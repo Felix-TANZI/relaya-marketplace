@@ -1127,6 +1127,8 @@ class AdminDisputeDetailSerializer(serializers.ModelSerializer):
     messages         = DisputeMessageSerializer(many=True, read_only=True)
     evidences        = DisputeEvidenceSerializer(many=True, read_only=True)
     evidence_requests = DisputeEvidenceRequestSerializer(many=True, read_only=True)
+    # D15 : chaîne de garde de chaque colis et responsable quand une preuve manque (R60, R66.3)
+    chaine_de_garde  = serializers.SerializerMethodField()
 
     class Meta:
         from apps.orders.models import Dispute
@@ -1137,9 +1139,14 @@ class AdminDisputeDetailSerializer(serializers.ModelSerializer):
             'resolution', 'resolution_note', 'resolved_by', 'resolved_by_name', 'resolved_at',
             'refund_amount_xaf',
             'vendor_can_reply', 'courier_can_reply',
-            'messages', 'evidences', 'evidence_requests',
+            'messages', 'evidences', 'evidence_requests', 'chaine_de_garde',
             'created_at', 'updated_at',
         ]
+
+    def get_chaine_de_garde(self, obj):
+        from apps.shipping.preuves import chaine_de_garde
+
+        return [chaine_de_garde(s) for s in obj.order.shipments.select_related("order")]
 
     def get_order_detail(self, obj):
         return {

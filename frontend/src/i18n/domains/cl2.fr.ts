@@ -112,6 +112,8 @@ export default {
     dispute_protected_title: 'Litige protégé',
     dispute_protected_body: "En cas de problème, le paiement reste piloté par l'escrow et le litige est arbitré par BelivaY.",
     pickup_code_label: 'Code de retrait',
+    delivery_code_label: 'Code de livraison',
+    delivery_code_hint: 'Donnez ce code au livreur à la remise du colis. Ne le communiquez à personne d\'autre.',
     relay_pickup_instructions_pre: 'Présentez ce code (ou le QR) au point relais',
     relay_pickup_instructions_post: 'pour récupérer votre colis.',
     pickup_qr_alt: 'QR code de retrait',

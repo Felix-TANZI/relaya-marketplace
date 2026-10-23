@@ -559,6 +559,7 @@ class RelayPointParcelEvidenceUploadView(APIView):
         ShipmentEvidence.Stage.RELAY_RECEIVED,
         ShipmentEvidence.Stage.RELAY_RELEASED,
         ShipmentEvidence.Stage.RELAY_RELEASED_SIGNATURE,
+        ShipmentEvidence.Stage.RELAY_UNPACKING,  # D15 : déballage contesté, photographié devant le client
     }
 
     def post(self, request):
@@ -1539,30 +1540,19 @@ class CourierShipmentScanView(generics.GenericAPIView):
 
         shipment = _resolve_scan_target(serializer.validated_data["code"], courier)
         action = serializer.validated_data["action"]
-        order = shipment.order
+        event_message = {"PICKED_UP": "Colis scanne et pris en charge",
+                         "OUT_FOR_DELIVERY": "Colis scanne et mis en livraison"}.get(action, "Colis scanne et livre")
 
-        if action == "PICKED_UP":
-            shipment.status = Shipment.Status.PICKED_UP
-            order.mark_picked_up()
-            event_message = "Colis scanne et pris en charge"
-        elif action == "OUT_FOR_DELIVERY":
-            shipment.status = Shipment.Status.OUT_FOR_DELIVERY
-            order.mark_out_for_delivery()
-            event_message = "Colis scanne et mis en livraison"
-        else:
-            shipment.status = Shipment.Status.DELIVERED
-            order.mark_delivered()
-            event_message = "Colis scanne et livre"
-
-        shipment.save(update_fields=["status", "updated_at"])
-        ShipmentEvent.record(
-            shipment=shipment,
-            status=shipment.status,
-            message=event_message,
-            location=order.city,
-            actor=request.user,
-            actor_role="COURIER",
+        # Spec v2.1, R66.1 (feuille de route D11) : le scan suit les memes regles que les boutons de l'application,
+        # code de remise au ramassage et code du client a domicile compris ; il ne contourne aucun code.
+        action_serializer = CourierShipmentActionSerializer(
+            data={"action": action, "message": event_message, "location": shipment.order.city,
+                  "pickup_code": request.data.get("pickup_code", ""),
+                  "delivery_code": request.data.get("delivery_code", "")},
+            context={"shipment": shipment, "request": request},
         )
+        action_serializer.is_valid(raise_exception=True)
+        shipment = action_serializer.save()
         ShipmentMessage.objects.create(
             shipment=shipment,
             sender=request.user,

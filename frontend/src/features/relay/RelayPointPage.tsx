@@ -862,18 +862,41 @@ export default function RelayPointPage() {
     shipmentId,
     slotCode,
     proofNote,
+    depotCode,
+    photos,
+    signatures,
   }: {
     shipmentId: number;
     slotCode: string;
     proofNote: string;
+    depotCode: string;
+    photos: File[];
+    signatures: string[];
   }): Promise<boolean> => {
     setOperationBusy(true);
     setOperationMessage(null);
     try {
-      await http<RelayParcel>("/api/shipping/relay-point/receive/", {
+      // R66.1 : le serveur verifie le code de depot du colis avant de le mettre en stock.
+      const parcel = await http<RelayParcel>("/api/shipping/relay-point/receive/", {
         method: "POST",
-        body: JSON.stringify({ shipment_id: shipmentId, slot_code: slotCode, proof_note: proofNote }),
+        body: JSON.stringify({ shipment_id: shipmentId, slot_code: slotCode, proof_note: proofNote, depot_code: depotCode }),
       });
+      // D15 : photos et signatures de la reception, rattachees au colis (lieu fixe, presume connecte).
+      for (const [index, photo] of photos.entries()) {
+        const form = new FormData();
+        form.append("parcel_id", String(parcel.id));
+        form.append("stage", "RELAY_RECEIVED");
+        form.append("file", photo, photo.name || `reception-${index + 1}.jpg`);
+        await http("/api/shipping/relay-point/evidence/", { method: "POST", body: form });
+      }
+      for (const [index, signature] of signatures.entries()) {
+        const form = new FormData();
+        form.append("parcel_id", String(parcel.id));
+        form.append("stage", "RELAY_RECEIVED");
+        form.append("description", index === 0 ? "Signature du gérant" : "Signature du livreur");
+        form.append("file", dataUrlToBlob(signature), `signature-${index + 1}.png`);
+        await http("/api/shipping/relay-point/evidence/", { method: "POST", body: form });
+      }
       setOperationMessage({
         tone: "success",
         text: slotCode
@@ -995,7 +1018,7 @@ export default function RelayPointPage() {
       for (const [index, photo] of input.photos.entries()) {
         const form = new FormData();
         form.append("parcel_id", String(input.parcelId));
-        form.append("stage", "RELAY_RELEASED");
+        form.append("stage", "RELAY_UNPACKING"); // D15 : deballage photographie devant le client
         form.append("file", photo, photo.name || `constat-${index + 1}.jpg`);
         form.append("description", `Constat au comptoir — ${input.description}`);
         await http("/api/shipping/relay-point/evidence/", { method: "POST", body: form });

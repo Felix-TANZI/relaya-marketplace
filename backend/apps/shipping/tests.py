@@ -184,7 +184,8 @@ class ShipmentTrackingTests(APITestCase):
             status=RelayParcel.Status.EXPECTED,
         )
         serializer = RelayParcelReceiveSerializer(
-            data={"shipment_id": self.shipment.id, "slot_code": "A-07", "proof_note": "3 photos + double signature"},
+            data={"shipment_id": self.shipment.id, "slot_code": "A-07", "proof_note": "3 photos + double signature",
+                  "depot_code": self.shipment.ensure_depot_code()},  # R66.1
             context={"relay_point": self.relay_point},
         )
         serializer.is_valid(raise_exception=True)

@@ -36,10 +36,9 @@ PARCEL_SIZE_LABELS = {
 
 def nouveau_code_de_retrait() -> str:
     """Spec v2.1, R66.1 : code de r_code_chiffres chiffres, tiré au hasard (secrets)."""
-    from apps.regles import services as regles
+    from apps.shipping.codes import nouveau_code
 
-    n = regles.reglage("r_code_chiffres")
-    return f"{secrets.randbelow(10 ** n):0{n}d}"
+    return nouveau_code()
 
 class ShipmentEventSerializer(serializers.ModelSerializer):
     class Meta:
@@ -147,6 +146,9 @@ class ShipmentSerializer(serializers.ModelSerializer):
     latest_location = serializers.SerializerMethodField()
     location_history = serializers.SerializerMethodField()
     receipt_confirmation_code = serializers.SerializerMethodField()
+    depot_code = serializers.SerializerMethodField()
+    delivery_code = serializers.SerializerMethodField()
+    delivery_mode = serializers.SerializerMethodField()
     delivery_evidences = serializers.SerializerMethodField()
     estimated_availability_at = serializers.SerializerMethodField()
 
@@ -196,6 +198,9 @@ class ShipmentSerializer(serializers.ModelSerializer):
             "latest_location",
             "location_history",
             "receipt_confirmation_code",
+            "depot_code",
+            "delivery_code",
+            "delivery_mode",
             "delivery_evidences",
             "estimated_availability_at",
             "created_at",
@@ -310,6 +315,33 @@ class ShipmentSerializer(serializers.ModelSerializer):
     def get_location_history(self, obj):
         locations = list(reversed(self._tracking_locations(obj)))
         return ShipmentLocationSerializer(locations, many=True).data
+
+    def _demandeur(self):
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        return user if user is not None and user.is_authenticated else None
+
+    def get_delivery_mode(self, obj):
+        # R52.1 : groupées vers les relais, une course par client à domicile
+        return "relais" if obj.order.relay_point_id else "domicile"
+
+    def get_depot_code(self, obj):
+        # R66.1, R66.2 : seul le livreur affecté le voit ; il le présente au relais dans le QR du colis.
+        user = self._demandeur()
+        if not user or not obj.order.relay_point_id or not obj.courier or obj.courier.user_id != user.id:
+            return None
+        if obj.status not in (Shipment.Status.PICKED_UP, Shipment.Status.OUT_FOR_DELIVERY):
+            return None
+        return obj.ensure_depot_code()
+
+    def get_delivery_code(self, obj):
+        # D11 : seul le client de la commande le voit ; il le donne au livreur à la porte.
+        user = self._demandeur()
+        if not user or obj.order.relay_point_id or user.id != obj.order.user_id:
+            return None
+        if obj.status not in (Shipment.Status.PICKED_UP, Shipment.Status.OUT_FOR_DELIVERY):
+            return None
+        return obj.ensure_delivery_code()
 
     def get_receipt_confirmation_code(self, obj):
         # Le code de remise ne doit jamais fuiter vers le client : seul le
@@ -490,6 +522,8 @@ class RelayParcelReceiveSerializer(serializers.Serializer):
     order_id = serializers.IntegerField(required=False)
     slot_code = serializers.CharField(required=False, allow_blank=True, default="")
     proof_note = serializers.CharField(required=False, allow_blank=True, default="")
+    # Spec v2.1, R66.1 et R66.2 : code de dépôt du colis, lu dans le QR montré par le livreur (ou saisi)
+    depot_code = serializers.CharField(required=False, allow_blank=True, default="")
     # ─────────────────────────────────────────────────────────────────────
     # LA CATEGORIE N'EST PAS CHOISIE PAR LE GERANT
     #
@@ -540,6 +574,12 @@ class RelayParcelReceiveSerializer(serializers.Serializer):
                 raise serializers.ValidationError(
                     {"shipment_id": "Ce colis a deja ete retire ou retourne et ne peut plus etre receptionne."}
                 )
+
+        # R66.1 : la responsabilité passe du livreur au relais avec le code de dépôt (et la photo de réception, D15).
+        from apps.shipping import codes
+
+        codes.verifier(shipment, "depot", shipment.ensure_depot_code(), self.validated_data.get("depot_code"),
+                       "depot_code")
 
         active_count = RelayParcel.objects.filter(
             relay_point=relay_point,
@@ -924,6 +964,8 @@ class CourierShipmentActionSerializer(serializers.Serializer):
     message = serializers.CharField(required=False, allow_blank=True, default="")
     location = serializers.CharField(required=False, allow_blank=True, default="")
     pickup_code = serializers.CharField(required=False, allow_blank=True, default="")
+    # D11 : à domicile, code que le client lit dans son suivi et donne au livreur à la porte
+    delivery_code = serializers.CharField(required=False, allow_blank=True, default="")
 
     def validate(self, attrs):
         if attrs.get("action") == "INCIDENT" and not attrs.get("message", "").strip():
@@ -963,18 +1005,35 @@ class CourierShipmentActionSerializer(serializers.Serializer):
             # Code de remise (§8.2, vendeur -> livreur) : controle C1 de
             # conformite au ramassage. Le vendeur lit le code affiche dans
             # son espace ; le livreur le saisit ici pour valider le transfert.
-            expected = shipment.ensure_pickup_confirmation_code()
-            submitted = (self.validated_data.get("pickup_code") or "").strip()
-            if submitted != expected:
-                raise serializers.ValidationError(
-                    {"pickup_code": "Code de remise incorrect — demandez-le au vendeur."}
-                )
+            from apps.shipping import codes
+
+            codes.verifier(shipment, "remise", shipment.ensure_pickup_confirmation_code(),
+                           self.validated_data.get("pickup_code"), "pickup_code")  # R66.1
             shipment.status = Shipment.Status.PICKED_UP
             order.mark_picked_up()
+            if order.relay_point_id:
+                shipment.ensure_depot_code()  # R66.1 : code de dépôt, montré au relais dans le QR du colis
         elif action == "OUT_FOR_DELIVERY":
             shipment.status = Shipment.Status.OUT_FOR_DELIVERY
             order.mark_out_for_delivery()
+            if not order.relay_point_id and order.user_id:
+                # D11 : le client reçoit le code qu'il donnera au livreur à la porte
+                UserNotification.objects.create(
+                    user=order.user,
+                    title=f"Votre colis arrive · commande #{order.id}",
+                    message=f"Code de livraison à donner au livreur : {shipment.ensure_delivery_code()}.",
+                    notification_type=UserNotification.NotificationType.ORDER,
+                    action_url=f"/orders/{order.id}",
+                )
         elif action == "DELIVERED":
+            from apps.shipping import codes
+
+            if order.relay_point_id:
+                # R66.1 : au relais, c'est le gérant qui réceptionne avec le code de dépôt (RelayParcelReceiveSerializer)
+                raise serializers.ValidationError(
+                    {"action": "Colis pour un point relais : il est réceptionné par le gérant avec le code de dépôt."})
+            codes.verifier(shipment, "livraison", shipment.ensure_delivery_code(),
+                           self.validated_data.get("delivery_code"), "delivery_code")  # D11
             shipment.status = Shipment.Status.DELIVERED
             order.mark_delivered()
         elif action == "INCIDENT":

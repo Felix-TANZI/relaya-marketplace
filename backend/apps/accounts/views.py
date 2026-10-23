@@ -576,8 +576,9 @@ def bootstrap_admin(request):
 @permission_classes([AllowAny])
 def bootstrap_demo_accounts(request):
     # Tache D27 — « Retirer toutes les simulations de connexion de la version
-    # en ligne ». Cette vue cree admin_demo / vendeur_demo / livreur_demo avec
-    # un mot de passe par defaut : elle n'a rien a faire sur le site public.
+    # en ligne ». Cette vue cree admin_demo / vendeur_demo / livreur_demo /
+    # client_demo / relais_demo avec un mot de passe par defaut : elle n'a
+    # rien a faire sur le site public.
     #
     # Le jeton seul ne protegeait pas : deploy.yml le transmet a la
     # production. Il faut maintenant AUSSI l'interrupteur, ferme par defaut
@@ -666,6 +667,35 @@ def bootstrap_demo_accounts(request):
         },
     )
 
+    client_user, client_created = ensure_user(
+        "client_demo",
+        "client.demo@belivay.com",
+        "Client",
+        "Demo",
+    )
+
+    relais_user, relais_created = ensure_user(
+        "relais_demo",
+        "relais.demo@belivay.com",
+        "Relais",
+        "Demo",
+    )
+    relais_profile, relais_profile_created = RelayPointProfile.objects.update_or_create(
+        user=relais_user,
+        defaults={
+            "name": "Point Relais Demo",
+            "manager_name": "Relais Demo",
+            "phone": "+237690000003",
+            "city": "Douala",
+            "zones": ["Akwa", "Bonapriso", "Deido"],
+            "address": "Akwa, Douala",
+            "opening_hours": "Lun-Sam 8h-18h",
+            "storage_capacity": 100,
+            "status": RelayPointProfile.Status.APPROVED,
+            "is_active": True,
+        },
+    )
+
     return Response(
         {
             "password": default_password,
@@ -682,6 +712,13 @@ def bootstrap_demo_accounts(request):
                     "created": courier_created,
                     "profile_created": courier_profile_created,
                     "is_approved": courier_profile.is_approved,
+                },
+                "client": {"username": client_user.username, "created": client_created},
+                "relay_point": {
+                    "username": relais_user.username,
+                    "created": relais_created,
+                    "profile_created": relais_profile_created,
+                    "status": relais_profile.status,
                 },
             },
         },

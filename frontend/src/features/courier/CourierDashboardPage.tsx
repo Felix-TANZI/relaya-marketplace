@@ -245,14 +245,17 @@ function MetricCard({
 function InfoPill({
   icon: Icon,
   children,
-  tone = "border-white/10 bg-white/5 text-white",
+  tone,
 }: {
   icon: React.ComponentType<{ size?: number; className?: string }>;
   children: ReactNode;
   tone?: string;
 }) {
+  const { theme } = useTheme();
+  const resolvedTone =
+    tone ?? (theme === "dark" ? "border-white/10 bg-white/5 text-white" : "border-slate-200 bg-slate-100 text-slate-700");
   return (
-    <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] font-bold ${tone}`}>
+    <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] font-bold ${resolvedTone}`}>
       <Icon size={13} />
       {children}
     </div>
@@ -981,7 +984,12 @@ export default function CourierDashboardPage() {
         activeShipments.length > 0
           ? t("cr1_dashboard.tournee.insight_field_body", { completed: completedToday, active: activeShipments.length })
           : t("cr1_dashboard.tournee.insight_field_empty"),
-      tone: activeShipments.length > 0 ? "border-emerald-500/20 bg-emerald-500/5" : "border-white/10 bg-white/[0.03]",
+      tone:
+        activeShipments.length > 0
+          ? "border-emerald-500/20 bg-emerald-500/5"
+          : theme === "dark"
+            ? "border-white/10 bg-white/[0.03]"
+            : "border-slate-200 bg-slate-50",
     },
   ];
 
@@ -1087,7 +1095,7 @@ export default function CourierDashboardPage() {
               </div>
             </div>
           </div>
-          <div className="rounded-[20px] border border-white/5 bg-white/[0.03] p-4">
+          <div className={theme === "dark" ? "rounded-[20px] border border-white/5 bg-white/[0.03] p-4" : "rounded-[20px] border border-slate-200 bg-slate-50 p-4"}>
             <div className="mb-3 text-[12px] font-black uppercase tracking-[0.15em] text-green-300">{t("cr1_dashboard.briefing.checklist_title")}</div>
             <div className="space-y-3">
               {[
@@ -1121,7 +1129,7 @@ export default function CourierDashboardPage() {
         {liveHeaderStats.map((item) => (
           <article
             key={item.label}
-            className="rounded-[20px] border border-white/5 bg-[linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.02))] px-5 py-4 shadow-[0_18px_38px_rgba(0,0,0,.2)]"
+            className={theme === "dark" ? "rounded-[20px] border border-white/5 bg-[linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.02))] px-5 py-4 shadow-[0_18px_38px_rgba(0,0,0,.2)]" : "rounded-[20px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.02))] px-5 py-4 shadow-[0_18px_38px_rgba(0,0,0,.2)]"}
           >
             <div className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-500 dark:text-white/45">{item.label}</div>
             <div className={`mt-2 text-[24px] font-extrabold ${item.tone}`}>{item.value}</div>
@@ -1152,24 +1160,24 @@ export default function CourierDashboardPage() {
           <div className="space-y-3">
             {leaderboard.length ? (
               leaderboard.map((item, index) => (
-                <div key={item.name} className="flex items-center justify-between rounded-[18px] border border-white/5 bg-white/[0.03] px-4 py-4">
+                <div key={item.name} className={theme === "dark" ? "flex items-center justify-between rounded-[18px] border border-white/5 bg-white/[0.03] px-4 py-4" : "flex items-center justify-between rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-4"}>
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 font-extrabold text-white">
+                    <div className={theme === "dark" ? "flex h-10 w-10 items-center justify-center rounded-full bg-white/10 font-extrabold text-white" : "flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 font-extrabold text-slate-900"}>
                       {index + 1}
                     </div>
                     <div>
-                      <div className="font-bold text-white">{item.name}</div>
+                      <div className={theme === "dark" ? "font-bold text-white" : "font-bold text-slate-900"}>{item.name}</div>
                       <div className={`text-[12px] font-semibold ${item.tone}`}>{item.badge}</div>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-[18px] font-extrabold text-white">{item.score}</div>
-                    <div className="text-[11px] uppercase tracking-[0.14em] text-white/50">{t("cr1_dashboard.leaderboard.performance")}</div>
+                    <div className={theme === "dark" ? "text-[18px] font-extrabold text-white" : "text-[18px] font-extrabold text-slate-900"}>{item.score}</div>
+                    <div className={theme === "dark" ? "text-[11px] uppercase tracking-[0.14em] text-white/50" : "text-[11px] uppercase tracking-[0.14em] text-slate-500"}>{t("cr1_dashboard.leaderboard.performance")}</div>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]">
+              <div className={theme === "dark" ? "rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]" : "rounded-[18px] border border-dashed border-slate-200 p-6 text-[13px] text-slate-500"}>
                 {t("cr1_dashboard.leaderboard.empty")}
               </div>
             )}
@@ -1201,17 +1209,17 @@ export default function CourierDashboardPage() {
             <div className="grid gap-4 md:grid-cols-3">
               {dashboard?.zone_heatmap?.length ? (
                 dashboard.zone_heatmap.map((item) => (
-                  <div key={item.zone} className="rounded-[20px] border border-white/5 bg-[linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.025))] p-4 backdrop-blur-sm">
+                  <div key={item.zone} className={theme === "dark" ? "rounded-[20px] border border-white/5 bg-[linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.025))] p-4 backdrop-blur-sm" : "rounded-[20px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.025))] p-4 backdrop-blur-sm"}>
                     <div className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.15em] text-emerald-300">
                       <MapPin size={13} />
                       {item.zone}
                     </div>
-                    <div className="mt-3 text-[28px] font-extrabold text-white">{item.demand_percent}%</div>
-                    <div className="mt-1 text-[12px] text-[#8B949E]">{item.hint}</div>
+                    <div className={theme === "dark" ? "mt-3 text-[28px] font-extrabold text-white" : "mt-3 text-[28px] font-extrabold text-slate-900"}>{item.demand_percent}%</div>
+                    <div className={theme === "dark" ? "mt-1 text-[12px] text-[#8B949E]" : "mt-1 text-[12px] text-slate-500"}>{item.hint}</div>
                   </div>
                 ))
               ) : (
-                <div className="rounded-[20px] border border-dashed border-white/10 p-4 text-[13px] text-[#8B949E] md:col-span-3">
+                <div className={theme === "dark" ? "rounded-[20px] border border-dashed border-white/10 p-4 text-[13px] text-[#8B949E] md:col-span-3" : "rounded-[20px] border border-dashed border-slate-200 p-4 text-[13px] text-slate-500 md:col-span-3"}>
                   {t("cr1_dashboard.hotzone.empty")}
                 </div>
               )}
@@ -1229,24 +1237,24 @@ export default function CourierDashboardPage() {
                   setTab("courses");
                   setSelectedShipmentId(shipment.id);
                 }}
-                className="w-full rounded-[18px] border border-white/5 bg-white/[0.03] p-4 text-left transition hover:-translate-y-0.5 hover:bg-white/[0.06]"
+                className={theme === "dark" ? "w-full rounded-[18px] border border-white/5 bg-white/[0.03] p-4 text-left transition hover:-translate-y-0.5 hover:bg-white/[0.06]" : "w-full rounded-[18px] border border-slate-200 bg-slate-50 p-4 text-left transition hover:-translate-y-0.5 hover:bg-slate-100"}
               >
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <div className="font-extrabold text-white">{t("cr1_dashboard.common.order_number", { order: shipment.order })}</div>
-                    <div className="mt-1 text-[12px] text-[#8B949E]">{shipment.delivery_address}</div>
+                    <div className={theme === "dark" ? "font-extrabold text-white" : "font-extrabold text-slate-900"}>{t("cr1_dashboard.common.order_number", { order: shipment.order })}</div>
+                    <div className={theme === "dark" ? "mt-1 text-[12px] text-[#8B949E]" : "mt-1 text-[12px] text-slate-500"}>{shipment.delivery_address}</div>
                   </div>
                   <div className="text-right">
                     <div className="text-[15px] font-extrabold text-emerald-300">
                       {shipment.city || currentCourierCity}
                     </div>
-                    <div className="text-[11px] uppercase tracking-[0.14em] text-white/45">{t("cr1_dashboard.common.zone")}</div>
+                    <div className={theme === "dark" ? "text-[11px] uppercase tracking-[0.14em] text-white/45" : "text-[11px] uppercase tracking-[0.14em] text-slate-400"}>{t("cr1_dashboard.common.zone")}</div>
                   </div>
                 </div>
               </button>
             ))}
             {!availableShipments.length && !activeShipments.length ? (
-              <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] leading-6 text-[#8B949E]">
+              <div className={theme === "dark" ? "rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] leading-6 text-[#8B949E]" : "rounded-[18px] border border-dashed border-slate-200 p-6 text-[13px] leading-6 text-slate-500"}>
                 {t("cr1_dashboard.available.empty")}
               </div>
             ) : null}
@@ -1268,7 +1276,7 @@ export default function CourierDashboardPage() {
               <InfoPill icon={Clock3}>{formatDuration(estimatedTourMinutes)}</InfoPill>
               <InfoPill icon={Navigation}>{activeDistanceKm.toFixed(1)} km</InfoPill>
             </div>
-            <p className="mt-3 text-[14px] leading-7 text-white/80">
+            <p className={theme === "dark" ? "mt-3 text-[14px] leading-7 text-white/80" : "mt-3 text-[14px] leading-7 text-slate-700"}>
               {nextTourStop
                 ? t("cr1_dashboard.tournee.next_stop", { address: nextTourStop.delivery_address })
                 : t("cr1_dashboard.tournee.no_active_mission")}
@@ -1283,7 +1291,7 @@ export default function CourierDashboardPage() {
                   setSelectedShipmentId(shipment.id);
                   setTab("courses");
                 }}
-                className="flex w-full gap-4 rounded-[18px] border border-white/5 bg-white/[0.03] p-4 text-left transition hover:bg-white/[0.05]"
+                className={theme === "dark" ? "flex w-full gap-4 rounded-[18px] border border-white/5 bg-white/[0.03] p-4 text-left transition hover:bg-white/[0.05]" : "flex w-full gap-4 rounded-[18px] border border-slate-200 bg-slate-50 p-4 text-left transition hover:bg-slate-100"}
               >
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 font-extrabold text-emerald-300">
                   {index + 1}
@@ -1291,15 +1299,15 @@ export default function CourierDashboardPage() {
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <div className="font-bold text-white">{t("cr1_dashboard.tournee.order_client")}</div>
-                      <div className="mt-1 text-[12px] text-[#8B949E]">{t("cr1_dashboard.common.order_number", { order: shipment.order })}</div>
+                      <div className={theme === "dark" ? "font-bold text-white" : "font-bold text-slate-900"}>{t("cr1_dashboard.tournee.order_client")}</div>
+                      <div className={theme === "dark" ? "mt-1 text-[12px] text-[#8B949E]" : "mt-1 text-[12px] text-slate-500"}>{t("cr1_dashboard.common.order_number", { order: shipment.order })}</div>
                     </div>
                     <span className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${statusTone(shipment.status)}`}>
                       {statusLabel(t, shipment.status)}
                     </span>
                   </div>
-                  <div className="mt-1 text-[12px] text-[#8B949E]">{shipment.delivery_address}</div>
-                  <div className="mt-2 flex flex-wrap items-center gap-3 text-[12px] text-white/60">
+                  <div className={theme === "dark" ? "mt-1 text-[12px] text-[#8B949E]" : "mt-1 text-[12px] text-slate-500"}>{shipment.delivery_address}</div>
+                  <div className={theme === "dark" ? "mt-2 flex flex-wrap items-center gap-3 text-[12px] text-white/60" : "mt-2 flex flex-wrap items-center gap-3 text-[12px] text-slate-500"}>
                     <span>{shipment.city || courierProfile?.city || t("cr1_dashboard.common.zone_unspecified")}</span>
                     <span>•</span>
                     <span>
@@ -1332,8 +1340,8 @@ export default function CourierDashboardPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
-                        <div className="font-bold text-white">{t("cr1_dashboard.common.order_number", { order: shipment.order })}</div>
-                        <div className="mt-1 text-[12px] text-[#8B949E]">{t("cr1_dashboard.common.client_hidden")}</div>
+                        <div className={theme === "dark" ? "font-bold text-white" : "font-bold text-slate-900"}>{t("cr1_dashboard.common.order_number", { order: shipment.order })}</div>
+                        <div className={theme === "dark" ? "mt-1 text-[12px] text-[#8B949E]" : "mt-1 text-[12px] text-slate-500"}>{t("cr1_dashboard.common.client_hidden")}</div>
                       </div>
                       <button
                         type="button"
@@ -1344,13 +1352,13 @@ export default function CourierDashboardPage() {
                         {actionLoading === "CLAIM" ? t("cr1_dashboard.common.claiming") : t("cr1_dashboard.common.claim")}
                       </button>
                     </div>
-                    <div className="mt-2 text-[12px] leading-6 text-[#8B949E]">{shipment.delivery_address}</div>
+                    <div className={theme === "dark" ? "mt-2 text-[12px] leading-6 text-[#8B949E]" : "mt-2 text-[12px] leading-6 text-slate-500"}>{shipment.delivery_address}</div>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]">
+            <div className={theme === "dark" ? "rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]" : "rounded-[18px] border border-dashed border-slate-200 p-6 text-[13px] text-slate-500"}>
               {t("cr1_dashboard.tournee.empty_steps", { city: currentCourierCity })}
             </div>
           )}
@@ -1361,11 +1369,11 @@ export default function CourierDashboardPage() {
         <div className="space-y-4">
           {tourInsights.map((item) => (
             <div key={item.title} className={`rounded-[18px] border p-4 ${item.tone}`}>
-              <div className="font-bold text-white">{item.title}</div>
-              <div className="mt-2 text-[13px] leading-6 text-white/75">{item.body}</div>
+              <div className={theme === "dark" ? "font-bold text-white" : "font-bold text-slate-900"}>{item.title}</div>
+              <div className={theme === "dark" ? "mt-2 text-[13px] leading-6 text-white/75" : "mt-2 text-[13px] leading-6 text-slate-600"}>{item.body}</div>
             </div>
           ))}
-          <div className="rounded-[18px] border border-emerald-500/15 bg-[#0f1722] p-4">
+          <div className={theme === "dark" ? "rounded-[18px] border border-emerald-500/15 bg-[#0f1722] p-4" : "rounded-[18px] border border-emerald-500/15 bg-white p-4"}>
             <div className="mb-3 text-[12px] font-black uppercase tracking-[0.15em] text-[#6EE7B7]">{t("cr1_dashboard.tournee.next_action")}</div>
             <button
               type="button"
@@ -1388,7 +1396,11 @@ export default function CourierDashboardPage() {
           {[
             { label: t("cr1_dashboard.courses.pill_active"), count: activeShipments.length, tone: "border-emerald-500/20 bg-emerald-500/10 text-emerald-300" },
             { label: t("cr1_dashboard.courses.pill_available"), count: availableShipments.length, tone: "border-sky-500/20 bg-sky-500/10 text-sky-300" },
-            { label: t("cr1_dashboard.courses.pill_history"), count: completedShipments.length, tone: "border-white/10 bg-white/5 text-white" },
+            {
+              label: t("cr1_dashboard.courses.pill_history"),
+              count: completedShipments.length,
+              tone: theme === "dark" ? "border-white/10 bg-white/5 text-white" : "border-slate-200 bg-slate-100 text-slate-700",
+            },
           ].map((pill) => (
             <div key={pill.label} className={`rounded-full border px-4 py-2 text-[12px] font-bold ${pill.tone}`}>
               {pill.label} · {pill.count}
@@ -1406,19 +1418,21 @@ export default function CourierDashboardPage() {
               className={`w-full rounded-[18px] border p-4 text-left transition ${
                 selectedShipment?.id === shipment.id
                   ? "border-orange-500/35 bg-orange-500/8"
-                  : "border-white/5 bg-white/[0.03] hover:bg-white/[0.06]"
+                  : theme === "dark"
+                    ? "border-white/5 bg-white/[0.03] hover:bg-white/[0.06]"
+                    : "border-slate-200 bg-slate-50 hover:bg-slate-100"
               }`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <div className="text-[13px] font-extrabold text-white">{t("cr1_dashboard.common.order_number", { order: shipment.order })}</div>
-                  <div className="mt-1 text-[12px] text-[#8B949E]">{t("cr1_dashboard.common.client_hidden")}</div>
-                  <div className="mt-2 inline-flex items-center gap-2 text-[12px] text-[#8B949E]">
+                  <div className={theme === "dark" ? "text-[13px] font-extrabold text-white" : "text-[13px] font-extrabold text-slate-900"}>{t("cr1_dashboard.common.order_number", { order: shipment.order })}</div>
+                  <div className={theme === "dark" ? "mt-1 text-[12px] text-[#8B949E]" : "mt-1 text-[12px] text-slate-500"}>{t("cr1_dashboard.common.client_hidden")}</div>
+                  <div className={theme === "dark" ? "mt-2 inline-flex items-center gap-2 text-[12px] text-[#8B949E]" : "mt-2 inline-flex items-center gap-2 text-[12px] text-slate-500"}>
                     <MapPin size={12} />
                     {shipment.delivery_address}
                   </div>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-bold text-white/70">
+                    <span className={theme === "dark" ? "rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-bold text-white/70" : "rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-[11px] font-bold text-slate-600"}>
                       {shipment.vendor_names?.join(", ") || t("cr1_dashboard.courses.vendor_unspecified")}
                     </span>
                   </div>
@@ -1431,7 +1445,7 @@ export default function CourierDashboardPage() {
             );
           })}
           {!visibleCourseShipments.length ? (
-            <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] leading-6 text-[#8B949E]">
+            <div className={theme === "dark" ? "rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] leading-6 text-[#8B949E]" : "rounded-[18px] border border-dashed border-slate-200 p-6 text-[13px] leading-6 text-slate-500"}>
               {t("cr1_dashboard.courses.empty", { city: currentCourierCity })}
             </div>
           ) : null}
@@ -1446,15 +1460,15 @@ export default function CourierDashboardPage() {
         {selectedShipment ? (
           <>
             <div className="grid gap-3 md:grid-cols-2">
-              <div className="rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
-                <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">{t("cr1_dashboard.courses.client_label")}</div>
-                <div className="mt-2 font-semibold text-white">{t("cr1_dashboard.courses.coordinates_hidden")}</div>
-                <div className="mt-1 text-[12px] text-[#8B949E]">{t("cr1_dashboard.courses.use_chat_hint")}</div>
+              <div className={theme === "dark" ? "rounded-[18px] border border-white/5 bg-white/[0.03] p-4" : "rounded-[18px] border border-slate-200 bg-slate-50 p-4"}>
+                <div className={theme === "dark" ? "text-[11px] uppercase tracking-[0.16em] text-[#8B949E]" : "text-[11px] uppercase tracking-[0.16em] text-slate-500"}>{t("cr1_dashboard.courses.client_label")}</div>
+                <div className={theme === "dark" ? "mt-2 font-semibold text-white" : "mt-2 font-semibold text-slate-900"}>{t("cr1_dashboard.courses.coordinates_hidden")}</div>
+                <div className={theme === "dark" ? "mt-1 text-[12px] text-[#8B949E]" : "mt-1 text-[12px] text-slate-500"}>{t("cr1_dashboard.courses.use_chat_hint")}</div>
               </div>
-              <div className="rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
-                <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">{t("cr1_dashboard.courses.mission_label")}</div>
+              <div className={theme === "dark" ? "rounded-[18px] border border-white/5 bg-white/[0.03] p-4" : "rounded-[18px] border border-slate-200 bg-slate-50 p-4"}>
+                <div className={theme === "dark" ? "text-[11px] uppercase tracking-[0.16em] text-[#8B949E]" : "text-[11px] uppercase tracking-[0.16em] text-slate-500"}>{t("cr1_dashboard.courses.mission_label")}</div>
                 <div className="mt-2 text-[20px] font-extrabold text-emerald-300">{statusLabel(t, selectedShipment.status)}</div>
-                <div className="mt-1 text-[12px] text-white/55">{selectedShipment.city || currentCourierCity}</div>
+                <div className={theme === "dark" ? "mt-1 text-[12px] text-white/55" : "mt-1 text-[12px] text-slate-500"}>{selectedShipment.city || currentCourierCity}</div>
               </div>
             </div>
 
@@ -1520,7 +1534,11 @@ export default function CourierDashboardPage() {
                     inputMode="numeric"
                     placeholder={t("cr1_dashboard.courses.pickup_code_placeholder")}
                     maxLength={6}
-                    className="w-[168px] rounded-full border border-amber-500/25 bg-[#0D1117] px-4 py-3 text-center text-[13px] font-black tracking-widest text-amber-300 outline-none placeholder:text-[10px] placeholder:font-bold placeholder:tracking-normal placeholder:text-amber-300/50"
+                    className={
+                      theme === "dark"
+                        ? "w-[168px] rounded-full border border-amber-500/25 bg-[#0D1117] px-4 py-3 text-center text-[13px] font-black tracking-widest text-amber-300 outline-none placeholder:text-[10px] placeholder:font-bold placeholder:tracking-normal placeholder:text-amber-300/50"
+                        : "w-[168px] rounded-full border border-amber-300 bg-white px-4 py-3 text-center text-[13px] font-black tracking-widest text-amber-700 outline-none placeholder:text-[10px] placeholder:font-bold placeholder:tracking-normal placeholder:text-amber-400"
+                    }
                   />
                   <button
                     type="button"
@@ -1592,7 +1610,7 @@ export default function CourierDashboardPage() {
                 type="button"
                 onClick={handleContactClient}
                 disabled={contactLoading}
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-3 text-[12px] font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                className={theme === "dark" ? "inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-3 text-[12px] font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60" : "inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-5 py-3 text-[12px] font-extrabold text-slate-900 transition hover:-translate-y-0.5 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"}
               >
                 {contactLoading ? <LoaderCircle size={14} className="animate-spin" /> : <Phone size={14} />}
                 {contactLoading ? t("cr1_dashboard.courses.sending") : t("cr1_dashboard.courses.notify_client")}
@@ -1610,8 +1628,8 @@ export default function CourierDashboardPage() {
               </div>
             )}
 
-            <div className="mt-5 rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
-              <div className="mb-3 text-[12px] font-extrabold uppercase tracking-[0.16em] text-[#8B949E]">
+            <div className={theme === "dark" ? "mt-5 rounded-[18px] border border-white/5 bg-white/[0.03] p-4" : "mt-5 rounded-[18px] border border-slate-200 bg-slate-50 p-4"}>
+              <div className={theme === "dark" ? "mb-3 text-[12px] font-extrabold uppercase tracking-[0.16em] text-[#8B949E]" : "mb-3 text-[12px] font-extrabold uppercase tracking-[0.16em] text-slate-500"}>
                 {t("cr1_dashboard.courses.order_details")}
               </div>
               <div className="grid gap-3 md:grid-cols-2">
@@ -1646,23 +1664,25 @@ export default function CourierDashboardPage() {
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
                   <div className="text-[12px] font-extrabold uppercase tracking-[0.16em] text-sky-300">{t("cr1_dashboard.courses.client_chat")}</div>
-                  <div className="mt-1 text-[12px] text-white/60">{t("cr1_dashboard.courses.client_chat_hint")}</div>
+                  <div className={theme === "dark" ? "mt-1 text-[12px] text-white/60" : "mt-1 text-[12px] text-slate-500"}>{t("cr1_dashboard.courses.client_chat_hint")}</div>
                 </div>
                 <span className="rounded-full border border-sky-500/20 bg-sky-500/10 px-3 py-1 text-[11px] font-bold text-sky-300">
                   {t(clientMessages.length > 1 ? "cr1_dashboard.courses.message_count_plural" : "cr1_dashboard.courses.message_count", { count: clientMessages.length })}
                 </span>
               </div>
-              <div className="max-h-64 space-y-3 overflow-y-auto rounded-[16px] bg-[#0D1117] p-3">
+              <div className={theme === "dark" ? "max-h-64 space-y-3 overflow-y-auto rounded-[16px] bg-[#0D1117] p-3" : "max-h-64 space-y-3 overflow-y-auto rounded-[16px] bg-white p-3"}>
                 {clientMessages.length ? clientMessages.map((message) => (
                   <div
                     key={message.id}
                     className={`max-w-[86%] rounded-[16px] px-4 py-3 text-[13px] leading-6 ${
                       message.sender_role === "COURIER"
                         ? "ml-auto bg-emerald-500 text-white"
-                        : "bg-white/8 text-white"
+                        : theme === "dark"
+                          ? "bg-white/8 text-white"
+                          : "bg-slate-100 text-slate-900"
                     }`}
                   >
-                    <div className={`mb-1 text-[10px] font-black uppercase tracking-[0.14em] ${message.sender_role === "COURIER" ? "text-white/70" : "text-white/45"}`}>
+                    <div className={`mb-1 text-[10px] font-black uppercase tracking-[0.14em] ${message.sender_role === "COURIER" ? "text-white/70" : theme === "dark" ? "text-white/45" : "text-slate-500"}`}>
                       {message.sender_name} · {new Date(message.created_at).toLocaleString("fr-FR")}
                       {message.message_translated ? (
                         <span className="ml-2 normal-case tracking-normal opacity-70">
@@ -1673,7 +1693,7 @@ export default function CourierDashboardPage() {
                     {message.message_translated || message.message}
                   </div>
                 )) : (
-                  <div className="rounded-[16px] border border-dashed border-white/10 p-4 text-center text-[13px] text-white/55">
+                  <div className={theme === "dark" ? "rounded-[16px] border border-dashed border-white/10 p-4 text-center text-[13px] text-white/55" : "rounded-[16px] border border-dashed border-slate-200 p-4 text-center text-[13px] text-slate-500"}>
                     {t("cr1_dashboard.courses.no_client_message")}
                   </div>
                 )}
@@ -1687,7 +1707,7 @@ export default function CourierDashboardPage() {
                     if (event.key === "Enter") void handleReplyClient();
                   }}
                   placeholder={t("cr1_dashboard.courses.reply_client_placeholder")}
-                  className="min-w-0 flex-1 rounded-[14px] border border-white/10 bg-[#0D1117] px-4 py-3 text-[13px] text-white outline-none placeholder:text-[#6B7280]"
+                  className={theme === "dark" ? "min-w-0 flex-1 rounded-[14px] border border-white/10 bg-[#0D1117] px-4 py-3 text-[13px] text-white outline-none placeholder:text-[#6B7280]" : "min-w-0 flex-1 rounded-[14px] border border-slate-200 bg-white px-4 py-3 text-[13px] text-slate-900 outline-none placeholder:text-slate-400"}
                 />
                 <button
                   type="button"
@@ -1701,8 +1721,8 @@ export default function CourierDashboardPage() {
               </div>
             </div>
 
-            <div className="mt-5 rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
-              <div className="mb-3 text-[12px] font-extrabold uppercase tracking-[0.16em] text-[#8B949E]">
+            <div className={theme === "dark" ? "mt-5 rounded-[18px] border border-white/5 bg-white/[0.03] p-4" : "mt-5 rounded-[18px] border border-slate-200 bg-slate-50 p-4"}>
+              <div className={theme === "dark" ? "mb-3 text-[12px] font-extrabold uppercase tracking-[0.16em] text-[#8B949E]" : "mb-3 text-[12px] font-extrabold uppercase tracking-[0.16em] text-slate-500"}>
                 {t("cr1_dashboard.courses.add_note_title")}
               </div>
               <div className="flex flex-col gap-3 md:flex-row">
@@ -1710,7 +1730,7 @@ export default function CourierDashboardPage() {
                   value={noteDraft}
                   onChange={(event) => setNoteDraft(event.target.value)}
                   placeholder={t("cr1_dashboard.courses.add_note_placeholder")}
-                  className="flex-1 rounded-[14px] border border-white/10 bg-[#0D1117] px-4 py-3 text-[13px] text-white outline-none placeholder:text-[#6B7280]"
+                  className={theme === "dark" ? "flex-1 rounded-[14px] border border-white/10 bg-[#0D1117] px-4 py-3 text-[13px] text-white outline-none placeholder:text-[#6B7280]" : "flex-1 rounded-[14px] border border-slate-200 bg-white px-4 py-3 text-[13px] text-slate-900 outline-none placeholder:text-slate-400"}
                 />
                 <button
                   type="button"
@@ -1735,7 +1755,7 @@ export default function CourierDashboardPage() {
             </div>
           </>
         ) : (
-          <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]">
+          <div className={theme === "dark" ? "rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]" : "rounded-[18px] border border-dashed border-slate-200 p-6 text-[13px] text-slate-500"}>
             {t("cr1_dashboard.courses.no_selected_course")}
           </div>
         )}
@@ -1747,14 +1767,14 @@ export default function CourierDashboardPage() {
     <div className="space-y-5">
     {receiptCode && (
       <SectionShell kicker={t("cr1_dashboard.scanner.receipt_kicker")} title={t("cr1_dashboard.scanner.receipt_title")} accent="text-emerald-300">
-        <div className="flex flex-col items-center gap-4 rounded-[28px] border border-emerald-500/20 bg-[#0d1520] p-6 text-center sm:flex-row sm:text-left">
+        <div className={theme === "dark" ? "flex flex-col items-center gap-4 rounded-[28px] border border-emerald-500/20 bg-[#0d1520] p-6 text-center sm:flex-row sm:text-left" : "flex flex-col items-center gap-4 rounded-[28px] border border-emerald-500/20 bg-white p-6 text-center sm:flex-row sm:text-left"}>
           {receiptQrDataUrl ? (
             <img src={receiptQrDataUrl} alt={t("cr1_dashboard.scanner.receipt_qr_alt")} className="h-[140px] w-[140px] rounded-2xl bg-white p-2" />
           ) : null}
           <div>
             <div className="text-[12px] font-bold uppercase tracking-[0.14em] text-emerald-300">{t("cr1_dashboard.common.order_number", { order: mapShipment?.order })}</div>
-            <div className="mt-2 text-3xl font-black tracking-[0.3em] text-white">{receiptCode}</div>
-            <p className="mt-2 text-[12px] leading-5 text-[#8B949E]">
+            <div className={theme === "dark" ? "mt-2 text-3xl font-black tracking-[0.3em] text-white" : "mt-2 text-3xl font-black tracking-[0.3em] text-slate-900"}>{receiptCode}</div>
+            <p className={theme === "dark" ? "mt-2 text-[12px] leading-5 text-[#8B949E]" : "mt-2 text-[12px] leading-5 text-slate-500"}>
               {t("cr1_dashboard.scanner.receipt_hint")}
             </p>
           </div>
@@ -1763,12 +1783,18 @@ export default function CourierDashboardPage() {
     )}
     <section className="grid gap-5 xl:grid-cols-[1fr_0.9fr]">
       <SectionShell kicker={t("cr1_dashboard.scanner.kicker")} title={t("cr1_dashboard.scanner.title")}>
-        <div className="rounded-[28px] border border-emerald-500/20 bg-[radial-gradient(circle_at_center,_rgba(16,185,129,.18),_transparent_55%),#0d1520] p-6">
-          <div className="mx-auto flex h-[280px] max-w-[320px] items-center justify-center rounded-[28px] border-2 border-dashed border-emerald-400/40 bg-black/20">
+        <div
+          className={
+            theme === "dark"
+              ? "rounded-[28px] border border-emerald-500/20 bg-[radial-gradient(circle_at_center,_rgba(16,185,129,.18),_transparent_55%),#0d1520] p-6"
+              : "rounded-[28px] border border-emerald-200 bg-[radial-gradient(circle_at_center,rgba(16,185,129,.08),transparent_55%),#ffffff] p-6"
+          }
+        >
+          <div className={theme === "dark" ? "mx-auto flex h-[280px] max-w-[320px] items-center justify-center rounded-[28px] border-2 border-dashed border-emerald-400/40 bg-black/20" : "mx-auto flex h-[280px] max-w-[320px] items-center justify-center rounded-[28px] border-2 border-dashed border-emerald-400/40 bg-slate-200"}>
             <div className="text-center">
               <QrCode size={80} className="mx-auto text-emerald-300" />
-              <div className="mt-4 text-[14px] font-bold text-white">{t("cr1_dashboard.scanner.place_qr")}</div>
-              <div className="mt-2 text-[12px] text-[#8B949E]">{t("cr1_dashboard.scanner.confirms")}</div>
+              <div className={theme === "dark" ? "mt-4 text-[14px] font-bold text-white" : "mt-4 text-[14px] font-bold text-slate-900"}>{t("cr1_dashboard.scanner.place_qr")}</div>
+              <div className={theme === "dark" ? "mt-2 text-[12px] text-[#8B949E]" : "mt-2 text-[12px] text-slate-500"}>{t("cr1_dashboard.scanner.confirms")}</div>
             </div>
           </div>
           <div className="mt-5 grid gap-3 md:grid-cols-[1fr_auto]">
@@ -1776,7 +1802,7 @@ export default function CourierDashboardPage() {
               value={scanCode}
               onChange={(event) => setScanCode(event.target.value)}
               placeholder={t("cr1_dashboard.scanner.code_placeholder")}
-              className="rounded-[14px] border border-white/10 bg-[#0D1117] px-4 py-3 text-[13px] text-white outline-none placeholder:text-[#6B7280]"
+              className={theme === "dark" ? "rounded-[14px] border border-white/10 bg-[#0D1117] px-4 py-3 text-[13px] text-white outline-none placeholder:text-[#6B7280]" : "rounded-[14px] border border-slate-200 bg-white px-4 py-3 text-[13px] text-slate-900 outline-none placeholder:text-slate-400"}
             />
             <div className="flex flex-wrap gap-2">
               {[
@@ -1791,7 +1817,9 @@ export default function CourierDashboardPage() {
                   className={`rounded-full border px-4 py-2 text-[12px] font-bold ${
                     scanAction === value
                       ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
-                      : "border-white/10 bg-white/5 text-white"
+                      : theme === "dark"
+                        ? "border-white/10 bg-white/5 text-white"
+                        : "border-slate-200 bg-slate-100 text-slate-700"
                   }`}
                 >
                   {label}
@@ -1817,17 +1845,17 @@ export default function CourierDashboardPage() {
       <SectionShell kicker={t("cr1_dashboard.scanner.history_kicker")} title={t("cr1_dashboard.scanner.history_title")} accent="text-sky-300">
         <div className="space-y-3">
           {(selectedShipment ? [selectedShipment] : shipments.slice(0, 1)).concat(shipments.slice(1, 4)).map((shipment, index) => (
-            <div key={`${shipment.id}-${index}`} className="rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
+            <div key={`${shipment.id}-${index}`} className={theme === "dark" ? "rounded-[18px] border border-white/5 bg-white/[0.03] p-4" : "rounded-[18px] border border-slate-200 bg-slate-50 p-4"}>
               <div className="flex items-center justify-between gap-3">
-                <div className="font-bold text-white">{t("cr1_dashboard.scanner.qr_order", { order: shipment.order })}</div>
+                <div className={theme === "dark" ? "font-bold text-white" : "font-bold text-slate-900"}>{t("cr1_dashboard.scanner.qr_order", { order: shipment.order })}</div>
                 <span className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${statusTone(shipment.status)}`}>
                   {statusLabel(t, shipment.status)}
                 </span>
               </div>
-              <div className="mt-2 text-[12px] text-[#8B949E]">{new Date().toLocaleString("fr-FR")}</div>
+              <div className={theme === "dark" ? "mt-2 text-[12px] text-[#8B949E]" : "mt-2 text-[12px] text-slate-500"}>{new Date().toLocaleString("fr-FR")}</div>
             </div>
           ))}
-          <div className="rounded-[18px] border border-orange-500/20 bg-orange-500/5 p-4 text-[13px] leading-6 text-white/80">
+          <div className={theme === "dark" ? "rounded-[18px] border border-orange-500/20 bg-orange-500/5 p-4 text-[13px] leading-6 text-white/80" : "rounded-[18px] border border-orange-500/20 bg-orange-500/5 p-4 text-[13px] leading-6 text-slate-700"}>
             {t("cr1_dashboard.scanner.tip")}
           </div>
         </div>
@@ -1877,13 +1905,13 @@ export default function CourierDashboardPage() {
               </button>
             </div>
           )}
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-emerald-500/15 bg-emerald-500/5 px-4 py-3 text-[12px] text-white/80">
+          <div className={theme === "dark" ? "flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-emerald-500/15 bg-emerald-500/5 px-4 py-3 text-[12px] text-white/80" : "flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-emerald-500/15 bg-emerald-500/5 px-4 py-3 text-[12px] text-slate-700"}>
             <span>{trackingFeedback || (mapShipment?.latest_location
               ? t("cr1_dashboard.map.last_position", { time: new Date(mapShipment.latest_location.captured_at).toLocaleString("fr-FR") })
               : t("cr1_dashboard.map.enable_gps_hint"))}</span>
             <span className="flex items-center gap-3">
               {lastLocationAt != null && (
-                <span className="text-white/60">{formatElapsedMinutes(t, lastLocationAt)}</span>
+                <span className={theme === "dark" ? "text-white/60" : "text-slate-500"}>{formatElapsedMinutes(t, lastLocationAt)}</span>
               )}
               <span className="font-black text-emerald-300">
                 {t(
@@ -1897,10 +1925,10 @@ export default function CourierDashboardPage() {
           </div>
           <div className="grid gap-3 md:grid-cols-3">
             {zones.map((zone, index) => (
-              <div key={zone} className="rounded-[20px] border border-white/5 bg-[linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02))] p-4">
+              <div key={zone} className={theme === "dark" ? "rounded-[20px] border border-white/5 bg-[linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02))] p-4" : "rounded-[20px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02))] p-4"}>
                 <div className="text-[12px] font-black uppercase tracking-[0.16em] text-emerald-300">{zone}</div>
-                <div className="mt-3 text-[24px] font-extrabold text-white">{t("cr1_dashboard.map.hotspots", { count: index + 3 })}</div>
-                <div className="mt-1 text-[12px] text-[#8B949E]">{t("cr1_dashboard.map.optimal_time", { start: 11 + index, end: 15 + index })}</div>
+                <div className={theme === "dark" ? "mt-3 text-[24px] font-extrabold text-white" : "mt-3 text-[24px] font-extrabold text-slate-900"}>{t("cr1_dashboard.map.hotspots", { count: index + 3 })}</div>
+                <div className={theme === "dark" ? "mt-1 text-[12px] text-[#8B949E]" : "mt-1 text-[12px] text-slate-500"}>{t("cr1_dashboard.map.optimal_time", { start: 11 + index, end: 15 + index })}</div>
               </div>
             ))}
           </div>
@@ -1915,9 +1943,9 @@ export default function CourierDashboardPage() {
             t("cr1_dashboard.map.tip_tunnel"),
             t("cr1_dashboard.map.tip_rain"),
           ].map((item) => (
-            <div key={item} className="flex gap-3 rounded-[16px] border border-white/5 bg-white/[0.03] p-4">
+            <div key={item} className={theme === "dark" ? "flex gap-3 rounded-[16px] border border-white/5 bg-white/[0.03] p-4" : "flex gap-3 rounded-[16px] border border-slate-200 bg-slate-50 p-4"}>
               <Navigation size={16} className="mt-0.5 shrink-0 text-emerald-300" />
-              <div className="text-[13px] leading-6 text-white/80">{item}</div>
+              <div className={theme === "dark" ? "text-[13px] leading-6 text-white/80" : "text-[13px] leading-6 text-slate-700"}>{item}</div>
             </div>
           ))}
         </div>
@@ -1934,15 +1962,15 @@ export default function CourierDashboardPage() {
         <SectionShell kicker={t("cr1_dashboard.reseau.kicker")} title={t("cr1_dashboard.reseau.title")}>
           <div className="mb-4 grid gap-3 md:grid-cols-3">
             <div className="rounded-[18px] border border-emerald-500/15 bg-emerald-500/5 p-4">
-              <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">{t("cr1_dashboard.reseau.shops")}</div>
+              <div className={theme === "dark" ? "text-[11px] uppercase tracking-[0.16em] text-[#8B949E]" : "text-[11px] uppercase tracking-[0.16em] text-slate-500"}>{t("cr1_dashboard.reseau.shops")}</div>
               <div className="mt-2 text-[24px] font-extrabold text-emerald-300">{shops.length}</div>
             </div>
             <div className="rounded-[18px] border border-sky-500/15 bg-sky-500/5 p-4">
-              <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">{t("cr1_dashboard.reseau.relay_points")}</div>
+              <div className={theme === "dark" ? "text-[11px] uppercase tracking-[0.16em] text-[#8B949E]" : "text-[11px] uppercase tracking-[0.16em] text-slate-500"}>{t("cr1_dashboard.reseau.relay_points")}</div>
               <div className="mt-2 text-[24px] font-extrabold text-sky-300">{relayPoints.length}</div>
             </div>
             <div className="rounded-[18px] border border-orange-500/15 bg-orange-500/5 p-4">
-              <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">{t("cr1_dashboard.reseau.shops_online")}</div>
+              <div className={theme === "dark" ? "text-[11px] uppercase tracking-[0.16em] text-[#8B949E]" : "text-[11px] uppercase tracking-[0.16em] text-slate-500"}>{t("cr1_dashboard.reseau.shops_online")}</div>
               <div className="mt-2 text-[24px] font-extrabold text-orange-300">
                 {shops.filter((item) => item.is_online).length}
               </div>
@@ -1952,10 +1980,10 @@ export default function CourierDashboardPage() {
           <div className="space-y-3">
             {shops.length ? (
               shops.map((shop) => (
-                <div key={`${shop.vendor_id}-${shop.location_name || shop.address}`} className="rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
+                <div key={`${shop.vendor_id}-${shop.location_name || shop.address}`} className={theme === "dark" ? "rounded-[18px] border border-white/5 bg-white/[0.03] p-4" : "rounded-[18px] border border-slate-200 bg-slate-50 p-4"}>
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <div className="font-bold text-white">{shop.vendor_name}</div>
+                      <div className={theme === "dark" ? "font-bold text-white" : "font-bold text-slate-900"}>{shop.vendor_name}</div>
                       <div className="mt-1 text-[12px] text-emerald-300">
                         {shop.location_name || t("cr1_dashboard.reseau.main_shop")}
                       </div>
@@ -1964,27 +1992,29 @@ export default function CourierDashboardPage() {
                       className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${
                         shop.is_online
                           ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
-                          : "border-white/10 bg-white/5 text-white/65"
+                          : theme === "dark"
+                            ? "border-white/10 bg-white/5 text-white/65"
+                            : "border-slate-200 bg-slate-100 text-slate-500"
                       }`}
                     >
                       {shop.is_online ? t("cr1_dashboard.common.online") : t("cr1_dashboard.common.offline")}
                     </span>
                   </div>
                   <div className="mt-3 grid gap-3 md:grid-cols-2">
-                    <div className="rounded-[14px] bg-black/10 px-4 py-3 text-[13px] text-white/80">
-                      <div className="text-[11px] uppercase tracking-[0.14em] text-[#8B949E]">{t("cr1_dashboard.reseau.address")}</div>
+                    <div className={theme === "dark" ? "rounded-[14px] bg-black/10 px-4 py-3 text-[13px] text-white/80" : "rounded-[14px] bg-white/70 px-4 py-3 text-[13px] text-slate-700"}>
+                      <div className={theme === "dark" ? "text-[11px] uppercase tracking-[0.14em] text-[#8B949E]" : "text-[11px] uppercase tracking-[0.14em] text-slate-500"}>{t("cr1_dashboard.reseau.address")}</div>
                       <div className="mt-1">{shop.address || t("cr1_dashboard.reseau.address_unspecified")}</div>
                     </div>
-                    <div className="rounded-[14px] bg-black/10 px-4 py-3 text-[13px] text-white/80">
-                      <div className="text-[11px] uppercase tracking-[0.14em] text-[#8B949E]">{t("cr1_dashboard.reseau.city")}</div>
+                    <div className={theme === "dark" ? "rounded-[14px] bg-black/10 px-4 py-3 text-[13px] text-white/80" : "rounded-[14px] bg-white/70 px-4 py-3 text-[13px] text-slate-700"}>
+                      <div className={theme === "dark" ? "text-[11px] uppercase tracking-[0.14em] text-[#8B949E]" : "text-[11px] uppercase tracking-[0.14em] text-slate-500"}>{t("cr1_dashboard.reseau.city")}</div>
                       <div className="mt-1">{shop.city || t("cr1_dashboard.reseau.city_unspecified")}</div>
                     </div>
-                    <div className="rounded-[14px] bg-black/10 px-4 py-3 text-[13px] text-white/80">
-                      <div className="text-[11px] uppercase tracking-[0.14em] text-[#8B949E]">{t("cr1_dashboard.reseau.phone")}</div>
+                    <div className={theme === "dark" ? "rounded-[14px] bg-black/10 px-4 py-3 text-[13px] text-white/80" : "rounded-[14px] bg-white/70 px-4 py-3 text-[13px] text-slate-700"}>
+                      <div className={theme === "dark" ? "text-[11px] uppercase tracking-[0.14em] text-[#8B949E]" : "text-[11px] uppercase tracking-[0.14em] text-slate-500"}>{t("cr1_dashboard.reseau.phone")}</div>
                       <div className="mt-1">{shop.phone || t("cr1_dashboard.common.unspecified")}</div>
                     </div>
-                    <div className="rounded-[14px] bg-black/10 px-4 py-3 text-[13px] text-white/80">
-                      <div className="text-[11px] uppercase tracking-[0.14em] text-[#8B949E]">{t("cr1_dashboard.reseau.gps_coordinates")}</div>
+                    <div className={theme === "dark" ? "rounded-[14px] bg-black/10 px-4 py-3 text-[13px] text-white/80" : "rounded-[14px] bg-white/70 px-4 py-3 text-[13px] text-slate-700"}>
+                      <div className={theme === "dark" ? "text-[11px] uppercase tracking-[0.14em] text-[#8B949E]" : "text-[11px] uppercase tracking-[0.14em] text-slate-500"}>{t("cr1_dashboard.reseau.gps_coordinates")}</div>
                       <div className="mt-1">
                         {shop.latitude !== null && shop.longitude !== null
                           ? `${shop.latitude}, ${shop.longitude}`
@@ -1995,7 +2025,7 @@ export default function CourierDashboardPage() {
                 </div>
               ))
             ) : (
-              <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]">
+              <div className={theme === "dark" ? "rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]" : "rounded-[18px] border border-dashed border-slate-200 p-6 text-[13px] text-slate-500"}>
                 {t("cr1_dashboard.reseau.no_shops")}
               </div>
             )}
@@ -2006,23 +2036,23 @@ export default function CourierDashboardPage() {
           <div className="space-y-3">
             {relayPoints.length ? (
               relayPoints.map((relay) => (
-                <div key={`${relay.name}-${relay.city}`} className="rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
+                <div key={`${relay.name}-${relay.city}`} className={theme === "dark" ? "rounded-[18px] border border-white/5 bg-white/[0.03] p-4" : "rounded-[18px] border border-slate-200 bg-slate-50 p-4"}>
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="font-bold text-white">{relay.name}</div>
-                      <div className="mt-1 text-[12px] text-[#8B949E]">{relay.city || t("cr1_dashboard.reseau.city_unspecified")}</div>
+                      <div className={theme === "dark" ? "font-bold text-white" : "font-bold text-slate-900"}>{relay.name}</div>
+                      <div className={theme === "dark" ? "mt-1 text-[12px] text-[#8B949E]" : "mt-1 text-[12px] text-slate-500"}>{relay.city || t("cr1_dashboard.reseau.city_unspecified")}</div>
                     </div>
                     <div className="rounded-full border border-sky-500/20 bg-sky-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-sky-300">
                       {t(relay.shipments_count > 1 ? "cr1_dashboard.reseau.missions_plural" : "cr1_dashboard.reseau.missions", { count: relay.shipments_count })}
                     </div>
                   </div>
-                  <div className="mt-3 rounded-[14px] bg-black/10 px-4 py-3 text-[13px] text-white/80">
+                  <div className={theme === "dark" ? "mt-3 rounded-[14px] bg-black/10 px-4 py-3 text-[13px] text-white/80" : "mt-3 rounded-[14px] bg-white/70 px-4 py-3 text-[13px] text-slate-700"}>
                     {relay.address || relay.name}
                   </div>
                 </div>
               ))
             ) : (
-              <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]">
+              <div className={theme === "dark" ? "rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]" : "rounded-[18px] border border-dashed border-slate-200 p-6 text-[13px] text-slate-500"}>
                 {t("cr1_dashboard.reseau.no_relay_points")}
               </div>
             )}
@@ -2036,7 +2066,7 @@ export default function CourierDashboardPage() {
     <section className="grid gap-5 lg:grid-cols-[1fr_0.9fr]">
       <SectionShell kicker={t("cr1_dashboard.profil.kicker")} title={t("cr1_dashboard.profil.title")}>
         <div className="mb-5 flex flex-col gap-4 rounded-[18px] border border-emerald-500/15 bg-emerald-500/5 p-4 sm:flex-row sm:items-center">
-          <div className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-full border-2 border-emerald-400/50 bg-[#07130f] text-2xl font-black text-emerald-300">
+          <div className={theme === "dark" ? "grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-full border-2 border-emerald-400/50 bg-[#07130f] text-2xl font-black text-emerald-300" : "grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-full border-2 border-emerald-400/50 bg-white text-2xl font-black text-emerald-300"}>
             {user?.avatar_url ? (
               <img src={user.avatar_url} alt={t("cr1_dashboard.profil.photo_alt")} className="h-full w-full object-cover" />
             ) : (
@@ -2044,8 +2074,8 @@ export default function CourierDashboardPage() {
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="font-extrabold text-white">{t("cr1_dashboard.profil.photo_title")}</div>
-            <p className="mt-1 text-[12px] leading-5 text-[#8B949E]">{t("cr1_dashboard.profil.photo_hint")}</p>
+            <div className={theme === "dark" ? "font-extrabold text-white" : "font-extrabold text-slate-900"}>{t("cr1_dashboard.profil.photo_title")}</div>
+            <p className={theme === "dark" ? "mt-1 text-[12px] leading-5 text-[#8B949E]" : "mt-1 text-[12px] leading-5 text-slate-500"}>{t("cr1_dashboard.profil.photo_hint")}</p>
           </div>
           <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-[12px] font-black text-[#022c22] transition hover:bg-emerald-400">
             <Camera size={16} />
@@ -2072,12 +2102,12 @@ export default function CourierDashboardPage() {
           ].map((item) => {
             const Icon = item.icon;
             return (
-              <div key={item.label} className="rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
-                <div className="mb-2 flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.14em] text-[#8B949E]">
+              <div key={item.label} className={theme === "dark" ? "rounded-[18px] border border-white/5 bg-white/[0.03] p-4" : "rounded-[18px] border border-slate-200 bg-slate-50 p-4"}>
+                <div className={theme === "dark" ? "mb-2 flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.14em] text-[#8B949E]" : "mb-2 flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.14em] text-slate-500"}>
                   <Icon size={13} className="text-[#6EE7B7]" />
                   {item.label}
                 </div>
-                <div className="text-[14px] font-semibold text-white">{item.value}</div>
+                <div className={theme === "dark" ? "text-[14px] font-semibold text-white" : "text-[14px] font-semibold text-slate-900"}>{item.value}</div>
               </div>
             );
           })}
@@ -2093,7 +2123,7 @@ export default function CourierDashboardPage() {
             t("cr1_dashboard.profil.power_add_note"),
             t("cr1_dashboard.profil.power_contact"),
           ].map((item) => (
-            <div key={item} className="flex gap-3 rounded-[16px] border border-emerald-500/15 bg-emerald-500/5 p-4 text-[13px] text-white">
+            <div key={item} className={theme === "dark" ? "flex gap-3 rounded-[16px] border border-emerald-500/15 bg-emerald-500/5 p-4 text-[13px] text-white" : "flex gap-3 rounded-[16px] border border-emerald-500/15 bg-emerald-500/5 p-4 text-[13px] text-slate-900"}>
               <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-[#6EE7B7]" />
               {item}
             </div>
@@ -2103,7 +2133,7 @@ export default function CourierDashboardPage() {
             t("cr1_dashboard.profil.restriction_orders"),
             t("cr1_dashboard.profil.restriction_escrow"),
           ].map((item) => (
-            <div key={item} className="flex gap-3 rounded-[16px] border border-red-500/15 bg-red-500/5 p-4 text-[13px] text-white">
+            <div key={item} className={theme === "dark" ? "flex gap-3 rounded-[16px] border border-red-500/15 bg-red-500/5 p-4 text-[13px] text-white" : "flex gap-3 rounded-[16px] border border-red-500/15 bg-red-500/5 p-4 text-[13px] text-slate-900"}>
               <XCircle size={16} className="mt-0.5 shrink-0 text-red-300" />
               {item}
             </div>
@@ -2120,11 +2150,11 @@ export default function CourierDashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-[12px] font-black uppercase tracking-[0.15em] text-[#6EE7B7]">{t("cr1_dashboard.formation.progress")}</div>
-              <div className="mt-1 text-[26px] font-extrabold text-white">72%</div>
+              <div className={theme === "dark" ? "mt-1 text-[26px] font-extrabold text-white" : "mt-1 text-[26px] font-extrabold text-slate-900"}>72%</div>
             </div>
             <BookOpen size={28} className="text-emerald-300" />
           </div>
-          <div className="mt-4 h-3 rounded-full bg-black/20">
+          <div className={theme === "dark" ? "mt-4 h-3 rounded-full bg-black/20" : "mt-4 h-3 rounded-full bg-slate-200"}>
             <div className="h-full w-[72%] rounded-full bg-[linear-gradient(90deg,#10B981,#6EE7B7)]" />
           </div>
         </div>
@@ -2135,9 +2165,9 @@ export default function CourierDashboardPage() {
             t("cr1_dashboard.formation.module_incidents"),
             t("cr1_dashboard.formation.module_safety"),
           ].map((item, index) => (
-            <div key={item} className="flex items-center justify-between rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
-              <div className="font-semibold text-white">{item}</div>
-              <div className="text-[12px] font-bold text-[#8B949E]">{index < 2 ? t("cr1_dashboard.formation.validated") : t("cr1_dashboard.formation.to_complete")}</div>
+            <div key={item} className={theme === "dark" ? "flex items-center justify-between rounded-[18px] border border-white/5 bg-white/[0.03] p-4" : "flex items-center justify-between rounded-[18px] border border-slate-200 bg-slate-50 p-4"}>
+              <div className={theme === "dark" ? "font-semibold text-white" : "font-semibold text-slate-900"}>{item}</div>
+              <div className={theme === "dark" ? "text-[12px] font-bold text-[#8B949E]" : "text-[12px] font-bold text-slate-500"}>{index < 2 ? t("cr1_dashboard.formation.validated") : t("cr1_dashboard.formation.to_complete")}</div>
             </div>
           ))}
         </div>
@@ -2150,7 +2180,7 @@ export default function CourierDashboardPage() {
             t("cr1_dashboard.formation.badge_communication"),
             t("cr1_dashboard.formation.badge_safety"),
           ].map((item) => (
-            <div key={item} className="rounded-[16px] border border-white/5 bg-white/[0.03] p-4 text-[14px] font-semibold text-white">
+            <div key={item} className={theme === "dark" ? "rounded-[16px] border border-white/5 bg-white/[0.03] p-4 text-[14px] font-semibold text-white" : "rounded-[16px] border border-slate-200 bg-slate-50 p-4 text-[14px] font-semibold text-slate-900"}>
               {item}
             </div>
           ))}
@@ -2162,7 +2192,7 @@ export default function CourierDashboardPage() {
   const renderNotifications = () => (
     <SectionShell kicker={t("cr1_dashboard.notifications.kicker")} title={t("cr1_dashboard.notifications.title")}>
       <div className="mb-4 flex items-center justify-between gap-3">
-        <div className="text-[12px] text-[#8B949E]">
+        <div className={theme === "dark" ? "text-[12px] text-[#8B949E]" : "text-[12px] text-slate-500"}>
           {t(notifications.length > 1 ? "cr1_dashboard.notifications.count_plural" : "cr1_dashboard.notifications.count", { count: notifications.length })}
           {" · "}
           {t(unreadNotifications > 1 ? "cr1_dashboard.notifications.unread_plural" : "cr1_dashboard.notifications.unread", { count: unreadNotifications })}
@@ -2171,7 +2201,7 @@ export default function CourierDashboardPage() {
           <button
             type="button"
             onClick={handleMarkAllNotificationsRead}
-            className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[12px] font-bold text-white"
+            className={theme === "dark" ? "rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[12px] font-bold text-white" : "rounded-full border border-slate-200 bg-slate-100 px-4 py-2 text-[12px] font-bold text-slate-900"}
           >
             {t("cr1_dashboard.notifications.mark_all_read")}
           </button>
@@ -2184,20 +2214,24 @@ export default function CourierDashboardPage() {
               key={item.id}
               type="button"
               onClick={() => handleNotificationClick(item)}
-              className={`flex w-full gap-4 rounded-[18px] border p-4 text-left transition hover:bg-white/[0.05] ${
-                item.is_read ? "border-white/5 bg-white/[0.03]" : "border-emerald-500/15 bg-emerald-500/5"
+              className={`flex w-full gap-4 rounded-[18px] border p-4 text-left transition ${
+                item.is_read
+                  ? theme === "dark"
+                    ? "border-white/5 bg-white/[0.03] hover:bg-white/[0.05]"
+                    : "border-slate-200 bg-slate-50 hover:bg-slate-100"
+                  : "border-emerald-500/15 bg-emerald-500/5 hover:bg-emerald-500/10"
               }`}
             >
               <Bell size={18} className={`mt-0.5 shrink-0 ${notificationTone(item.notification_type)}`} />
               <div className="flex-1">
                 <div className="flex items-center justify-between gap-3">
-                  <div className="font-bold text-white">{item.title}</div>
-                  <div className="text-[11px] text-[#8B949E]">
+                  <div className={theme === "dark" ? "font-bold text-white" : "font-bold text-slate-900"}>{item.title}</div>
+                  <div className={theme === "dark" ? "text-[11px] text-[#8B949E]" : "text-[11px] text-slate-500"}>
                     {new Date(item.created_at).toLocaleString("fr-FR")}
                   </div>
                 </div>
-                <div className="mt-1 text-[13px] leading-6 text-white/75">{item.message}</div>
-                <div className="mt-2 text-[11px] uppercase tracking-[0.14em] text-[#8B949E]">
+                <div className={theme === "dark" ? "mt-1 text-[13px] leading-6 text-white/75" : "mt-1 text-[13px] leading-6 text-slate-600"}>{item.message}</div>
+                <div className={theme === "dark" ? "mt-2 text-[11px] uppercase tracking-[0.14em] text-[#8B949E]" : "mt-2 text-[11px] uppercase tracking-[0.14em] text-slate-500"}>
                   {item.notification_type}
                   {!item.is_read ? ` · ${t("cr1_dashboard.notifications.new")}` : ""}
                 </div>
@@ -2205,7 +2239,7 @@ export default function CourierDashboardPage() {
             </button>
           ))
         ) : (
-          <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]">
+          <div className={theme === "dark" ? "rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]" : "rounded-[18px] border border-dashed border-slate-200 p-6 text-[13px] text-slate-500"}>
             {t("cr1_dashboard.notifications.empty")}
           </div>
         )}
@@ -2224,8 +2258,8 @@ export default function CourierDashboardPage() {
             t("cr1_dashboard.incidents.case_road_blocked"),
           ].map((item) => (
             <div key={item} className="rounded-[18px] border border-red-500/15 bg-red-500/5 p-4">
-              <div className="font-bold text-white">{item}</div>
-              <div className="mt-2 text-[13px] text-white/75">
+              <div className={theme === "dark" ? "font-bold text-white" : "font-bold text-slate-900"}>{item}</div>
+              <div className={theme === "dark" ? "mt-2 text-[13px] text-white/75" : "mt-2 text-[13px] text-slate-600"}>
                 {t("cr1_dashboard.incidents.protocol_hint")}
               </div>
             </div>
@@ -2240,9 +2274,9 @@ export default function CourierDashboardPage() {
             t("cr1_dashboard.incidents.advice_geolocated_photo"),
             t("cr1_dashboard.incidents.advice_report_vendor"),
           ].map((item) => (
-            <div key={item} className="flex gap-3 rounded-[16px] border border-white/5 bg-white/[0.03] p-4">
+            <div key={item} className={theme === "dark" ? "flex gap-3 rounded-[16px] border border-white/5 bg-white/[0.03] p-4" : "flex gap-3 rounded-[16px] border border-slate-200 bg-slate-50 p-4"}>
               <AlertTriangle size={16} className="mt-0.5 shrink-0 text-orange-300" />
-              <div className="text-[13px] leading-6 text-white/80">{item}</div>
+              <div className={theme === "dark" ? "text-[13px] leading-6 text-white/80" : "text-[13px] leading-6 text-slate-700"}>{item}</div>
             </div>
           ))}
         </div>
@@ -2273,14 +2307,14 @@ export default function CourierDashboardPage() {
                     <div className="text-[12px] font-bold text-orange-300">{item.status_display}</div>
                   </div>
                   <div className="mt-1 text-[13px] leading-6 text-slate-600 dark:text-white/75">{item.detail}</div>
-                  <div className="mt-2 text-[11px] uppercase tracking-[0.14em] text-[#8B949E]">
+                  <div className={theme === "dark" ? "mt-2 text-[11px] uppercase tracking-[0.14em] text-[#8B949E]" : "mt-2 text-[11px] uppercase tracking-[0.14em] text-slate-500"}>
                     {item.reason_display} · {new Date(item.updated_at).toLocaleString("fr-FR")}
                   </div>
                 </div>
               </button>
             ))
           ) : (
-            <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]">
+            <div className={theme === "dark" ? "rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]" : "rounded-[18px] border border-dashed border-slate-200 p-6 text-[13px] text-slate-500"}>
               {t("cr1_dashboard.litiges.empty")}
             </div>
           )}
@@ -2320,7 +2354,7 @@ export default function CourierDashboardPage() {
                     value={disputeReplyDraft}
                     onChange={(event) => setDisputeReplyDraft(event.target.value)}
                     placeholder={t("cr1_dashboard.litiges.reply_placeholder")}
-                    className="min-w-0 flex-1 rounded-[14px] border border-white/10 bg-[#0D1117] px-4 py-3 text-[13px] text-white outline-none placeholder:text-[#6B7280]"
+                    className={theme === "dark" ? "min-w-0 flex-1 rounded-[14px] border border-white/10 bg-[#0D1117] px-4 py-3 text-[13px] text-white outline-none placeholder:text-[#6B7280]" : "min-w-0 flex-1 rounded-[14px] border border-slate-200 bg-white px-4 py-3 text-[13px] text-slate-900 outline-none placeholder:text-slate-400"}
                   />
                   <button
                     type="button"
@@ -2344,7 +2378,7 @@ export default function CourierDashboardPage() {
               )}
 
               {disputeFeedback ? (
-                <div className="mt-3 rounded-[14px] border border-white/10 bg-white/5 px-4 py-3 text-[12px] font-semibold text-white/70">
+                <div className={theme === "dark" ? "mt-3 rounded-[14px] border border-white/10 bg-white/5 px-4 py-3 text-[12px] font-semibold text-white/70" : "mt-3 rounded-[14px] border border-slate-200 bg-slate-100 px-4 py-3 text-[12px] font-semibold text-slate-600"}>
                   {disputeFeedback}
                 </div>
               ) : null}
@@ -2378,7 +2412,7 @@ export default function CourierDashboardPage() {
               <InfoPill icon={FileBadge2}>{t("cr1_dashboard.preuves.photos_signature")}</InfoPill>
               <InfoPill icon={Store}>{t("cr1_dashboard.preuves.relay_hidden_vendor")}</InfoPill>
             </div>
-            <p className="mt-3 text-[13px] leading-6 text-white/75">
+            <p className={theme === "dark" ? "mt-3 text-[13px] leading-6 text-white/75" : "mt-3 text-[13px] leading-6 text-slate-600"}>
               {t("cr1_dashboard.preuves.intro")}
             </p>
           </div>
@@ -2388,13 +2422,13 @@ export default function CourierDashboardPage() {
             ["2", t("cr1_dashboard.preuves.step2_title"), t("cr1_dashboard.preuves.step2_body")],
             ["3", t("cr1_dashboard.preuves.step3_title"), t("cr1_dashboard.preuves.step3_body")],
           ].map(([step, title, body]) => (
-            <div key={step} className="flex gap-4 rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
+            <div key={step} className={theme === "dark" ? "flex gap-4 rounded-[18px] border border-white/5 bg-white/[0.03] p-4" : "flex gap-4 rounded-[18px] border border-slate-200 bg-slate-50 p-4"}>
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 font-extrabold text-emerald-300">
                 {step}
               </div>
               <div>
-                <div className="font-bold text-white">{title}</div>
-                <div className="mt-1 text-[13px] leading-6 text-[#8B949E]">{body}</div>
+                <div className={theme === "dark" ? "font-bold text-white" : "font-bold text-slate-900"}>{title}</div>
+                <div className={theme === "dark" ? "mt-1 text-[13px] leading-6 text-[#8B949E]" : "mt-1 text-[13px] leading-6 text-slate-500"}>{body}</div>
               </div>
             </div>
           ))}
@@ -2415,9 +2449,9 @@ export default function CourierDashboardPage() {
                 [t("cr1_dashboard.common.zone"), selectedShipment.city || currentCourierCity],
                 [t("cr1_dashboard.preuves.relay"), selectedShipment.relay_point || t("cr1_dashboard.preuves.relay_tbd")],
               ].map(([label, value]) => (
-                <div key={label} className="rounded-[16px] border border-white/5 bg-white/[0.03] p-4">
-                  <div className="text-[11px] font-black uppercase tracking-[0.14em] text-[#8B949E]">{label}</div>
-                  <div className="mt-2 text-[14px] font-bold text-white">{value}</div>
+                <div key={label} className={theme === "dark" ? "rounded-[16px] border border-white/5 bg-white/[0.03] p-4" : "rounded-[16px] border border-slate-200 bg-slate-50 p-4"}>
+                  <div className={theme === "dark" ? "text-[11px] font-black uppercase tracking-[0.14em] text-[#8B949E]" : "text-[11px] font-black uppercase tracking-[0.14em] text-slate-500"}>{label}</div>
+                  <div className={theme === "dark" ? "mt-2 text-[14px] font-bold text-white" : "mt-2 text-[14px] font-bold text-slate-900"}>{value}</div>
                 </div>
               ))}
             </div>
@@ -2431,10 +2465,10 @@ export default function CourierDashboardPage() {
                 <button
                   key={item}
                   type="button"
-                  className="rounded-[16px] border border-dashed border-white/12 bg-white/[0.03] px-4 py-6 text-center text-[12px] font-extrabold text-white/70"
+                  className={theme === "dark" ? "rounded-[16px] border border-dashed border-white/12 bg-white/[0.03] px-4 py-6 text-center text-[12px] font-extrabold text-white/70" : "rounded-[16px] border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-[12px] font-extrabold text-slate-600"}
                 >
                   {item}
-                  <span className="mt-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-[#8B949E]">
+                  <span className={theme === "dark" ? "mt-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-[#8B949E]" : "mt-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500"}>
                     {t("cr1_dashboard.preuves.to_connect")}
                   </span>
                 </button>
@@ -2442,7 +2476,7 @@ export default function CourierDashboardPage() {
             </div>
           </div>
         ) : (
-          <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] leading-6 text-[#8B949E]">
+          <div className={theme === "dark" ? "rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] leading-6 text-[#8B949E]" : "rounded-[18px] border border-dashed border-slate-200 p-6 text-[13px] leading-6 text-slate-500"}>
             {t("cr1_dashboard.preuves.select_course_hint")}
           </div>
         )}
@@ -2462,12 +2496,12 @@ export default function CourierDashboardPage() {
             [t("cr1_dashboard.parametres.gps"), currentGpsGranted ? t("cr1_dashboard.common.authorized") : t("cr1_dashboard.common.not_authorized"), Navigation],
             [t("cr1_dashboard.parametres.camera"), currentCameraGranted ? t("cr1_dashboard.common.authorized_f") : t("cr1_dashboard.common.not_authorized_f"), ScanLine],
           ] as Array<[string, string, ComponentType<{ size?: number; className?: string }>]>) .map(([label, value, Icon]) => (
-            <div key={String(label)} className="rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
-              <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.14em] text-[#8B949E]">
+            <div key={String(label)} className={theme === "dark" ? "rounded-[18px] border border-white/5 bg-white/[0.03] p-4" : "rounded-[18px] border border-slate-200 bg-slate-50 p-4"}>
+              <div className={theme === "dark" ? "flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.14em] text-[#8B949E]" : "flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500"}>
                 <Icon size={14} />
                 {label}
               </div>
-              <div className="mt-2 text-[18px] font-extrabold text-white">{value}</div>
+              <div className={theme === "dark" ? "mt-2 text-[18px] font-extrabold text-white" : "mt-2 text-[18px] font-extrabold text-slate-900"}>{value}</div>
             </div>
           ))}
         </div>
@@ -2478,7 +2512,7 @@ export default function CourierDashboardPage() {
           <button
             type="button"
             onClick={() => updateCourierSettings("online", { is_online: !currentIsOnline })}
-            className="flex w-full items-center justify-between rounded-[16px] border border-white/5 bg-white/[0.03] p-4 text-left text-[13px] text-white/80 transition hover:bg-white/[0.06]"
+            className={theme === "dark" ? "flex w-full items-center justify-between rounded-[16px] border border-white/5 bg-white/[0.03] p-4 text-left text-[13px] text-white/80 transition hover:bg-white/[0.06]" : "flex w-full items-center justify-between rounded-[16px] border border-slate-200 bg-slate-50 p-4 text-left text-[13px] text-slate-700 transition hover:bg-slate-100"}
           >
             <span>{currentIsOnline ? t("cr1_dashboard.parametres.disable_available_mode") : t("cr1_dashboard.parametres.enable_available_mode")}</span>
             {settingsSaving === "online" ? <LoaderCircle size={15} className="animate-spin" /> : <ChevronRight size={15} />}
@@ -2492,15 +2526,17 @@ export default function CourierDashboardPage() {
                 className={`rounded-[16px] border p-4 text-left text-[13px] font-bold transition ${
                   currentCourierLanguage === language
                     ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
-                    : "border-white/5 bg-white/[0.03] text-white/80 hover:bg-white/[0.06]"
+                    : theme === "dark"
+                      ? "border-white/5 bg-white/[0.03] text-white/80 hover:bg-white/[0.06]"
+                      : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
                 }`}
               >
                 {t("cr1_dashboard.parametres.interface_language", { language: language.toUpperCase() })}
               </button>
             ))}
           </div>
-          <div className="rounded-[16px] border border-white/5 bg-white/[0.03] p-4">
-            <label className="text-[11px] font-black uppercase tracking-[0.14em] text-[#8B949E]">{t("cr1_dashboard.parametres.main_zone")}</label>
+          <div className={theme === "dark" ? "rounded-[16px] border border-white/5 bg-white/[0.03] p-4" : "rounded-[16px] border border-slate-200 bg-slate-50 p-4"}>
+            <label className={theme === "dark" ? "text-[11px] font-black uppercase tracking-[0.14em] text-[#8B949E]" : "text-[11px] font-black uppercase tracking-[0.14em] text-slate-500"}>{t("cr1_dashboard.parametres.main_zone")}</label>
             <div className="mt-3 flex gap-2">
               <input
                 defaultValue={currentCourierCity}
@@ -2510,7 +2546,7 @@ export default function CourierDashboardPage() {
                     updateCourierSettings("city", { city, zones: [city, ...currentCourierZones.filter((zone) => zone !== city)] });
                   }
                 }}
-                className="min-w-0 flex-1 rounded-[12px] border border-white/10 bg-[#0D1117] px-3 py-2 text-[13px] text-white outline-none"
+                className={theme === "dark" ? "min-w-0 flex-1 rounded-[12px] border border-white/10 bg-[#0D1117] px-3 py-2 text-[13px] text-white outline-none" : "min-w-0 flex-1 rounded-[12px] border border-slate-200 bg-white px-3 py-2 text-[13px] text-slate-900 outline-none"}
               />
               {settingsSaving === "city" ? <LoaderCircle size={18} className="mt-2 animate-spin text-orange-300" /> : null}
             </div>
@@ -2519,14 +2555,14 @@ export default function CourierDashboardPage() {
             <button
               type="button"
               onClick={() => updateCourierSettings("gps", { gps_permission_granted: !currentGpsGranted })}
-              className="rounded-[16px] border border-white/5 bg-white/[0.03] p-4 text-left text-[13px] text-white/80 transition hover:bg-white/[0.06]"
+              className={theme === "dark" ? "rounded-[16px] border border-white/5 bg-white/[0.03] p-4 text-left text-[13px] text-white/80 transition hover:bg-white/[0.06]" : "rounded-[16px] border border-slate-200 bg-slate-50 p-4 text-left text-[13px] text-slate-700 transition hover:bg-slate-100"}
             >
               {t("cr1_dashboard.parametres.gps_summary", { status: currentGpsGranted ? t("cr1_dashboard.common.authorized") : t("cr1_dashboard.parametres.to_verify") })}
             </button>
             <button
               type="button"
               onClick={() => updateCourierSettings("camera", { camera_permission_granted: !currentCameraGranted })}
-              className="rounded-[16px] border border-white/5 bg-white/[0.03] p-4 text-left text-[13px] text-white/80 transition hover:bg-white/[0.06]"
+              className={theme === "dark" ? "rounded-[16px] border border-white/5 bg-white/[0.03] p-4 text-left text-[13px] text-white/80 transition hover:bg-white/[0.06]" : "rounded-[16px] border border-slate-200 bg-slate-50 p-4 text-left text-[13px] text-slate-700 transition hover:bg-slate-100"}
             >
               {t("cr1_dashboard.parametres.camera_summary", { status: currentCameraGranted ? t("cr1_dashboard.common.authorized_f") : t("cr1_dashboard.parametres.to_verify") })}
             </button>
@@ -2537,7 +2573,11 @@ export default function CourierDashboardPage() {
 
       <div className="xl:col-span-2">
         <SectionShell kicker={t("cr1_dashboard.parametres.payouts_kicker")} title={t("cr1_dashboard.parametres.payouts_title")} accent="text-emerald-300">
-          <PayoutAccountVerificationCard ownerRole="COURIER" accent="#10B981" surfaceClassName="border-white/10 bg-white/[0.04] text-white dark:bg-white/[0.04]" />
+          <PayoutAccountVerificationCard
+            ownerRole="COURIER"
+            accent="#10B981"
+            surfaceClassName={theme === "dark" ? "border-white/10 bg-white/[0.04] text-white dark:bg-white/[0.04]" : ""}
+          />
         </SectionShell>
       </div>
     </section>
@@ -2593,7 +2633,7 @@ export default function CourierDashboardPage() {
 
   return (
     <div className={theme === "dark" ? "belivay-portal min-h-screen bg-[radial-gradient(circle_at_top,#101828_0%,#070b14_55%,#04070d_100%)] text-[#E6EDF3]" : "belivay-portal min-h-screen bg-[#F4F7F5] text-slate-950"}>
-      <div className="fixed inset-x-0 top-0 z-[1000] h-1 bg-white/5">
+      <div className={theme === "dark" ? "fixed inset-x-0 top-0 z-[1000] h-1 bg-white/5" : "fixed inset-x-0 top-0 z-[1000] h-1 bg-slate-100"}>
         <div
           className="h-full bg-[linear-gradient(90deg,#10B981,#6EE7B7)] transition-all duration-200"
           style={{ width: `${progress}%` }}
@@ -2694,13 +2734,13 @@ export default function CourierDashboardPage() {
         </div>
 
         <div className="ml-auto hidden items-center gap-2 lg:flex">
-          <div className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-bold text-white">
+          <div className={`rounded-full border px-3 py-1.5 text-[11px] font-bold ${headerButton}`}>
             {currentIsOnline ? t("cr1_dashboard.common.available") : t("cr1_dashboard.common.offline")}
           </div>
           <button
             type="button"
             onClick={() => setTab("notifications")}
-            className="relative flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:bg-white/15"
+            className={`relative flex h-10 w-10 items-center justify-center rounded-full border transition ${headerButton}`}
             aria-label={t("cr1_dashboard.header.notifications")}
           >
             <Bell size={16} />
@@ -2713,7 +2753,7 @@ export default function CourierDashboardPage() {
           <button
             type="button"
             onClick={() => i18n.changeLanguage(i18n.language === "fr" ? "en" : "fr")}
-            className="flex h-10 items-center justify-center rounded-full border border-white/15 bg-white/10 px-3 text-[11px] font-black tracking-[0.14em] text-white transition hover:bg-white/15"
+            className={`flex h-10 items-center justify-center rounded-full border px-3 text-[11px] font-black tracking-[0.14em] transition ${headerButton}`}
             aria-label={t("cr1_dashboard.header.toggle_language")}
           >
             {i18n.language.startsWith("fr") ? "FR" : "EN"}
@@ -2721,7 +2761,7 @@ export default function CourierDashboardPage() {
           <button
             type="button"
             onClick={toggleTheme}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:bg-white/15"
+            className={`flex h-10 w-10 items-center justify-center rounded-full border transition ${headerButton}`}
             aria-label={t("cr1_dashboard.header.toggle_theme")}
           >
             {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
@@ -2738,7 +2778,7 @@ export default function CourierDashboardPage() {
           <button
             type="button"
             onClick={() => setTab("profil")}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:bg-white/15"
+            className={`flex h-10 w-10 items-center justify-center rounded-full border transition ${headerButton}`}
             aria-label={t("cr1_dashboard.header.user_account")}
           >
             <User size={16} />
@@ -2746,7 +2786,7 @@ export default function CourierDashboardPage() {
           <button
             type="button"
             onClick={() => navigate("/profile")}
-            className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-[12px] font-bold text-white transition hover:bg-white/15"
+            className={`rounded-full border px-4 py-2 text-[12px] font-bold transition ${headerButton}`}
           >
             {t("cr1_dashboard.header.client_account")}
           </button>
@@ -2755,31 +2795,35 @@ export default function CourierDashboardPage() {
 
       {selectedNotification ? (
         <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-[520px] rounded-[24px] border border-emerald-500/15 bg-[#0D1117] p-5 shadow-[0_28px_80px_rgba(0,0,0,.45)]">
+          <div className={theme === "dark" ? "w-full max-w-[520px] rounded-[24px] border border-emerald-500/15 bg-[#0D1117] p-5 shadow-[0_28px_80px_rgba(0,0,0,.45)]" : "w-full max-w-[520px] rounded-[24px] border border-emerald-500/15 bg-white p-5 shadow-[0_28px_80px_rgba(0,0,0,.45)]"}>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className={`mb-2 inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] ${notificationTone(selectedNotification.notification_type)}`}>
+                <div
+                  className={`mb-2 inline-flex rounded-full border px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] ${
+                    theme === "dark" ? "border-white/10 bg-white/5" : "border-slate-200 bg-slate-100"
+                  } ${notificationTone(selectedNotification.notification_type)}`}
+                >
                   {selectedNotification.notification_type}
                 </div>
-                <h3 className="text-[22px] font-extrabold text-white">{selectedNotification.title}</h3>
-                <div className="mt-1 text-[12px] text-[#8B949E]">
+                <h3 className={theme === "dark" ? "text-[22px] font-extrabold text-white" : "text-[22px] font-extrabold text-slate-900"}>{selectedNotification.title}</h3>
+                <div className={theme === "dark" ? "mt-1 text-[12px] text-[#8B949E]" : "mt-1 text-[12px] text-slate-500"}>
                   {new Date(selectedNotification.created_at).toLocaleString("fr-FR")}
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedNotification(null)}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
+                className={theme === "dark" ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white transition hover:bg-white/10" : "flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-slate-900 transition hover:bg-slate-200"}
                 aria-label={t("cr1_dashboard.header.close_notification")}
               >
                 <XCircle size={18} />
               </button>
             </div>
-            <div className="mt-5 rounded-[18px] border border-white/5 bg-white/[0.03] p-4 text-[14px] leading-7 text-white/85">
+            <div className={theme === "dark" ? "mt-5 rounded-[18px] border border-white/5 bg-white/[0.03] p-4 text-[14px] leading-7 text-white/85" : "mt-5 rounded-[18px] border border-slate-200 bg-slate-50 p-4 text-[14px] leading-7 text-slate-700"}>
               {selectedNotification.message}
             </div>
             {selectedNotification.action_url ? (
-              <div className="mt-4 rounded-[16px] border border-white/5 bg-white/[0.03] p-3 text-[12px] text-[#8B949E]">
+              <div className={theme === "dark" ? "mt-4 rounded-[16px] border border-white/5 bg-white/[0.03] p-3 text-[12px] text-[#8B949E]" : "mt-4 rounded-[16px] border border-slate-200 bg-slate-50 p-3 text-[12px] text-slate-500"}>
                 {t("cr1_dashboard.header.backend_reference", { reference: selectedNotification.action_url })}
               </div>
             ) : null}
@@ -2789,30 +2833,30 @@ export default function CourierDashboardPage() {
 
       {selectedDispute ? (
         <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-[520px] rounded-[24px] border border-orange-500/15 bg-[#0D1117] p-5 shadow-[0_28px_80px_rgba(0,0,0,.45)]">
+          <div className={theme === "dark" ? "w-full max-w-[520px] rounded-[24px] border border-orange-500/15 bg-[#0D1117] p-5 shadow-[0_28px_80px_rgba(0,0,0,.45)]" : "w-full max-w-[520px] rounded-[24px] border border-orange-500/15 bg-white p-5 shadow-[0_28px_80px_rgba(0,0,0,.45)]"}>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="mb-2 inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-orange-300">
+                <div className={theme === "dark" ? "mb-2 inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-orange-300" : "mb-2 inline-flex rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-orange-300"}>
                   {selectedDispute.status_display}
                 </div>
-                <h3 className="text-[22px] font-extrabold text-white">{selectedDispute.ref} · {selectedDispute.label}</h3>
-                <div className="mt-1 text-[12px] text-[#8B949E]">
+                <h3 className={theme === "dark" ? "text-[22px] font-extrabold text-white" : "text-[22px] font-extrabold text-slate-900"}>{selectedDispute.ref} · {selectedDispute.label}</h3>
+                <div className={theme === "dark" ? "mt-1 text-[12px] text-[#8B949E]" : "mt-1 text-[12px] text-slate-500"}>
                   {new Date(selectedDispute.updated_at).toLocaleString("fr-FR")}
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedDispute(null)}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
+                className={theme === "dark" ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white transition hover:bg-white/10" : "flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-slate-900 transition hover:bg-slate-200"}
                 aria-label={t("cr1_dashboard.header.close_dispute")}
               >
                 <XCircle size={18} />
               </button>
             </div>
-            <div className="mt-5 rounded-[18px] border border-white/5 bg-white/[0.03] p-4 text-[14px] leading-7 text-white/85">
+            <div className={theme === "dark" ? "mt-5 rounded-[18px] border border-white/5 bg-white/[0.03] p-4 text-[14px] leading-7 text-white/85" : "mt-5 rounded-[18px] border border-slate-200 bg-slate-50 p-4 text-[14px] leading-7 text-slate-700"}>
               {selectedDispute.detail}
             </div>
-            <div className="mt-4 rounded-[16px] border border-white/5 bg-white/[0.03] p-3 text-[12px] text-[#8B949E]">
+            <div className={theme === "dark" ? "mt-4 rounded-[16px] border border-white/5 bg-white/[0.03] p-3 text-[12px] text-[#8B949E]" : "mt-4 rounded-[16px] border border-slate-200 bg-slate-50 p-3 text-[12px] text-slate-500"}>
               {t("cr1_dashboard.header.dispute_reason", { reason: selectedDispute.reason_display })}
             </div>
           </div>
@@ -2831,13 +2875,13 @@ export default function CourierDashboardPage() {
       <main className="px-4 pb-24 pt-[84px] lg:ml-[232px] lg:pb-12 lg:px-6">
         {booting ? (
           <div className="mx-auto max-w-[1180px] animate-pulse space-y-4">
-            <div className="h-32 rounded-[24px] bg-white/5" />
+            <div className={theme === "dark" ? "h-32 rounded-[24px] bg-white/5" : "h-32 rounded-[24px] bg-slate-100"} />
             <div className="grid gap-4 md:grid-cols-4">
               {Array.from({ length: 4 }).map((_, index) => (
-                <div key={index} className="h-28 rounded-[20px] bg-white/5" />
+                <div key={index} className={theme === "dark" ? "h-28 rounded-[20px] bg-white/5" : "h-28 rounded-[20px] bg-slate-100"} />
               ))}
             </div>
-            <div className="h-[420px] rounded-[24px] bg-white/5" />
+            <div className={theme === "dark" ? "h-[420px] rounded-[24px] bg-white/5" : "h-[420px] rounded-[24px] bg-slate-100"} />
           </div>
         ) : (
           <div className="mx-auto max-w-[1180px] space-y-5">
@@ -2847,17 +2891,23 @@ export default function CourierDashboardPage() {
                 rangee — pour ne pas repousser le contenu du jour sous la ligne
                 de flottaison. Rien n'est retire : tout reste lisible, en plus
                 dense. */}
-            <section className="overflow-hidden rounded-[22px] border border-emerald-500/10 bg-[linear-gradient(135deg,#0E1522,#10251d_58%,#111827)] p-4 shadow-[0_20px_56px_rgba(0,0,0,.32)] sm:rounded-[28px] sm:p-6">
+            <section
+              className={
+                theme === "dark"
+                  ? "overflow-hidden rounded-[22px] border border-emerald-500/10 bg-[linear-gradient(135deg,#0E1522,#10251d_58%,#111827)] p-4 shadow-[0_20px_56px_rgba(0,0,0,.32)] sm:rounded-[28px] sm:p-6"
+                  : "overflow-hidden rounded-[22px] border border-emerald-100 bg-white p-4 shadow-[0_20px_56px_rgba(15,23,42,.08)] sm:rounded-[28px] sm:p-6"
+              }
+            >
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
                 <div className="min-w-0">
                   <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-emerald-300 sm:text-[11px] sm:tracking-[0.16em]">
                     <ShieldCheck size={13} />
                     {t("cr1_dashboard.header.actor_badge")}
                   </div>
-                  <h1 className="text-[22px] font-extrabold leading-tight tracking-tight text-white sm:text-[30px]">
+                  <h1 className={theme === "dark" ? "text-[22px] font-extrabold leading-tight tracking-tight text-white sm:text-[30px]" : "text-[22px] font-extrabold leading-tight tracking-tight text-slate-900 sm:text-[30px]"}>
                     {t(TAB_LABEL_KEYS[tab])}
                   </h1>
-                  <p className="mt-2 max-w-[760px] text-[12.5px] leading-6 text-[#8B949E] sm:text-[14px] sm:leading-7">
+                  <p className={theme === "dark" ? "mt-2 max-w-[760px] text-[12.5px] leading-6 text-[#8B949E] sm:text-[14px] sm:leading-7" : "mt-2 max-w-[760px] text-[12.5px] leading-6 text-slate-500 sm:text-[14px] sm:leading-7"}>
                     {t("cr1_dashboard.header.description")}
                   </p>
                 </div>
@@ -2875,8 +2925,13 @@ export default function CourierDashboardPage() {
                       "border-emerald-500/10",
                     ],
                   ] as Array<[string, string, string, string]>).map(([label, value, tone, border]) => (
-                    <div key={label} className={`rounded-[16px] border bg-white/5 p-3 sm:rounded-[20px] sm:p-4 ${border}`}>
-                      <div className="text-[9px] uppercase leading-tight tracking-[0.1em] text-[#8B949E] sm:text-[11px] sm:tracking-[0.16em]">
+                    <div
+                      key={label}
+                      className={`rounded-[16px] border p-3 sm:rounded-[20px] sm:p-4 ${
+                        theme === "dark" ? "bg-white/5" : "bg-slate-50"
+                      } ${border}`}
+                    >
+                      <div className={theme === "dark" ? "text-[9px] uppercase leading-tight tracking-[0.1em] text-[#8B949E] sm:text-[11px] sm:tracking-[0.16em]" : "text-[9px] uppercase leading-tight tracking-[0.1em] text-slate-500 sm:text-[11px] sm:tracking-[0.16em]"}>
                         {label}
                       </div>
                       <div className={`mt-1.5 break-words text-[14px] font-extrabold leading-tight sm:mt-2 sm:text-[22px] ${tone}`}>

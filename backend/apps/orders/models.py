@@ -535,8 +535,8 @@ class Dispute(models.Model):
     )
     vendor_replied_at      = models.DateTimeField(null=True, blank=True, verbose_name="Date réponse vendeur")
     vendor_reply_deadline  = models.DateTimeField(
-        null=True, blank=True, verbose_name="Délai de réponse vendeur (48h)",
-        help_text="Démarre au contact vendeur (vendor_contacted=True), pas à l'ouverture du litige.",
+        null=True, blank=True, verbose_name="Délai de réponse vendeur (r_litige_reponse_h)",
+        help_text="Spec v2.1, R70.1 : r_litige_reponse_h après l'ouverture du litige.",
     )
     silence_flagged_at     = models.DateTimeField(
         null=True, blank=True, verbose_name="Signalé pour arbitrage sur silence",
@@ -816,6 +816,12 @@ class Return(models.Model):
         User, on_delete=models.SET_NULL, null=True, blank=True, related_name="inspected_returns",
     )
     refund_amount_xaf = models.IntegerField(null=True, blank=True)
+    # Spec v2.1, R69.1 : course de retour (r_retour) attribuée après l'arbitrage à la partie en tort.
+    frais_retour_xaf = models.PositiveIntegerField(null=True, blank=True, verbose_name="Course de retour (F)")
+    frais_retour_partie = models.CharField(
+        max_length=20, blank=True, default="", verbose_name="Course de retour payée par",
+        help_text="vendeur, transporteur, relais ou client (R69.1) ; gratuite pour le client si le problème est validé.",
+    )
 
     # ── Brouillon d'inspection (gardé sur l'appareil, sync best-effort) ─────
     draft_inspection = models.JSONField(

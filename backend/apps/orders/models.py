@@ -325,6 +325,8 @@ class Order(TimeStampedModel):
         self.save()
         from apps.orders.delais import figer_au_paiement
         figer_au_paiement(self, timezone.now())
+        from apps.orders import sms
+        sms.paiement_protege(self)  # D7, R78.1
 
     def vendor_acknowledge(self) -> None:
         self.fulfillment_status = self.FulfillmentStatus.VENDOR_ACKNOWLEDGED
@@ -1119,3 +1121,21 @@ class CommissionSousCommande(TimeStampedModel):
 
     def __str__(self):
         return f"Commande #{self.order_id} · {self.vendor} · {self.commission_b} F"
+
+
+class SmsCommande(models.Model):
+    """Un SMS parti pour une commande (feuille de route D7 ; R78.1 : r_sms_max au plus, jamais de promotion)."""
+
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="sms")
+    sorte = models.CharField(max_length=20)
+    ok = models.BooleanField(default=False)
+    reference = models.CharField(max_length=120, blank=True, default="")
+    le = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["le"]
+        verbose_name = "SMS de commande"
+        verbose_name_plural = "SMS de commande"
+
+    def __str__(self):
+        return f"Commande #{self.order_id} · {self.sorte}"

@@ -16,6 +16,8 @@ class CodeOtp(models.Model):
         VERIFY = "verify", "Premier numéro"
         NUMERO_ANCIEN = "numero-ancien", "Changement de numéro : ancien"
         NUMERO_NOUVEAU = "numero-nouveau", "Changement de numéro : nouveau"
+        # D7 : « Ce n'est plus mon numéro » — l'ancien numéro ne reçoit plus rien, le code part à l'e-mail du compte
+        NUMERO_PERDU = "numero-perdu", "Changement de numéro : ancien numéro perdu"
         # Profil et e-mail (DP-52)
         PROFIL = "profil", "Profil"
         EMAIL_SMS = "email-sms", "Changement d'e-mail : code par SMS"

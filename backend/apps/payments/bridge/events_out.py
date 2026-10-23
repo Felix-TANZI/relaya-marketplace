@@ -149,6 +149,9 @@ def mirror_payment_confirmed(intent) -> int:
                 figer_au_paiement(commande, intent.confirmed_at or timezone.now())
             except Exception:
                 logger.exception("Promesse non figee pour la commande #%s.", commande.pk)
+            # Feuille de route D7, R78.1 : SMS « paiement protege » (ne bloque jamais le miroir).
+            from apps.orders import sms
+            sms.paiement_protege(commande)
         return modifiees
     except Exception:
         logger.exception(

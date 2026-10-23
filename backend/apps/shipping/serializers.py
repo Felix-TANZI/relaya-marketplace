@@ -618,6 +618,10 @@ class RelayParcelReceiveSerializer(serializers.Serializer):
             code = next((p.pickup_code for p in siblings if p.pickup_code), "") or nouveau_code_de_retrait()
             RelayParcel.objects.filter(id__in=[p.id for p in siblings]).exclude(pickup_code=code).update(pickup_code=code)
             parcel.refresh_from_db(fields=["pickup_code"])
+            # Feuille de route D7, R78.1 : le code de retrait part aussi par SMS (commandes sans compte comprises).
+            from apps.orders import sms
+
+            sms.code_retrait(shipment.order, code, relay_point.name)
             if shipment.order.user_id:
                 UserNotification.objects.create(
                     user=shipment.order.user,
@@ -815,6 +819,10 @@ class RelayParcelPickupSerializer(serializers.Serializer):
 
         if self.validated_data.get("buyer_inspection") == self.ACCEPTED:
             self._confirm_at_counter(order, parcels, relay_point, now)
+        # Feuille de route D7, R78.1 : SMS de remerciement au retrait.
+        from apps.orders import sms
+
+        sms.remerciement(parcels[0].shipment.order)
         return parcels[0]
 
     def _confirm_at_counter(self, order, parcels, relay_point, now):
@@ -1051,6 +1059,15 @@ class CourierShipmentActionSerializer(serializers.Serializer):
             actor=request.user,
             actor_role="COURIER",
         )
+
+        if action in ("INCIDENT", "DELIVERED"):
+            # Feuille de route D7, R78.1 : SMS d'incident et de remerciement.
+            from apps.orders import sms
+
+            if action == "INCIDENT":
+                sms.incident(order, message)
+            else:
+                sms.remerciement(order)
 
         if action == "INCIDENT" and order.user_id:
             UserNotification.objects.create(

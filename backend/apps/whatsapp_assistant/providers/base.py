@@ -101,6 +101,10 @@ class WhatsAppProvider(ABC):
     def send_location(self, to: str, latitude: float, longitude: float, name: str = "", address: str = "") -> str | None:
         """Épingle GPS qui s'ouvre dans Google Maps / Plans."""
 
+    def send_code(self, to: str, code: str, language: str = "fr") -> str | None:
+        """Code à usage unique par le modèle « Authentification » (D7). Facultatif."""
+        raise ProviderError(f"Le fournisseur {self.name} n'envoie pas de code.")
+
     def create_template(self, definition: dict) -> dict:
         """Soumet un modèle au fournisseur pour validation. Facultatif."""
         raise ProviderError(f"Le fournisseur {self.name} ne gère pas les modèles.")

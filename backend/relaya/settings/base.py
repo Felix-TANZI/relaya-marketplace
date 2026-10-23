@@ -349,7 +349,9 @@ SPECTACULAR_SETTINGS = {
 BELIVAY_PARAMETRES_JSON = BASE_DIR / "apps" / "client_core" / "donnees" / "parametres-en-vigueur.json"
 BELIVAY_INTERRUPTEURS_JSON = BASE_DIR / "apps" / "client_core" / "donnees" / "interrupteurs.json"
 BELIVAY_SITE_URL = os.getenv("BELIVAY_SITE_URL", "https://belivay.com")
-BELIVAY_SMS = "apps.otp.prestataires.SmsConsole"
+# Feuille de route D7 : aiguillage SMS / WhatsApp, prestataire SMS reel a brancher a la signature du contrat (R78.2).
+BELIVAY_SMS = os.getenv("BELIVAY_SMS", "apps.otp.prestataires.Aiguillage")
+BELIVAY_SMS_FOURNISSEUR = os.getenv("BELIVAY_SMS_FOURNISSEUR", "apps.otp.prestataires.SmsConsole")
 # BELIVAY_PUSH et FCM_CREDENTIALS_PATH : console par defaut (journal seulement,
 # aucun compte Firebase requis). Pour activer un vrai envoi (D21) une fois le
 # projet Firebase cree : poser FCM_CREDENTIALS_PATH vers le fichier JSON du

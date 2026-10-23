@@ -1387,6 +1387,15 @@ def update_fulfillment_status(request, order_id):
                 status=status.HTTP_404_NOT_FOUND,
             )
  
+        # Feuille de route D8 ; spec v2.1, R35.1 : un vendeur qui annule une commande payée la REFUSE ; elle bascule
+        # vers une autre offre ou le client est remboursé (R35.4), jamais une annulation sèche de toute la commande.
+        if request.data.get('fulfillment_status') == Order.FulfillmentStatus.CANCELLED and order.is_paid:
+            from apps.orders.bascule import REFUS, declencher
+
+            declencher(order, request.user, REFUS)
+            order.refresh_from_db()
+            return Response(VendorOrderSerializer(order, context={'request': request, 'vendor': request.user}).data)
+
         serializer = UpdateFulfillmentStatusSerializer(
             order,
             data=request.data,
@@ -8379,20 +8388,36 @@ def ev_order_stockout(request, order_id):
         return Response({'ok': False, 'raison': 'introuvable'})
     if order.fulfillment_status == Order.FulfillmentStatus.READY_FOR_PICKUP:
         return Response({'ok': False, 'raison': 'deja_prete'})
+    return _ev_bascule(request, order, 'rupture', 'Rupture de stock signalée (espace vendeur)')
 
-    order.fulfillment_status = Order.FulfillmentStatus.CANCELLED
-    order.cancellation_reason = Order.CancellationReason.STOCKOUT
-    order.cancelled_at = timezone.now()
-    if order.is_paid:
-        order.escrow_status = Order.EscrowStatus.REFUNDED
-    order.save()
 
+def _ev_bascule(request, order, motif, libelle):
+    """Feuille de route D8 ; spec v2.1, R35.1 : rupture ou refus du vendeur. La commande n'est plus annulée d'office :
+    chaque article bascule vers une autre offre (R35.2, R35.3) ou le client est remboursé le jour même (R35.4)."""
+    from apps.orders.bascule import declencher
     from apps.orders.models import OrderHistory
+
+    resultat = declencher(order, request.user, motif)
     OrderHistory.objects.create(
-        order=order, user=request.user, action='Rupture de stock signalée (espace vendeur)',
-        field_name='fulfillment_status', old_value='', new_value='CANCELLED',
+        order=order, user=request.user, action=libelle,
+        field_name='fulfillment_status', old_value='', new_value=order.fulfillment_status,
     )
-    return Response({'ok': True})
+    return Response({'ok': True, **resultat})
+
+
+@extend_schema(tags=["Vendors"], summary="(Espace vendeur) Refuser la commande — bascule vers un autre vendeur (R35.1)")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def ev_order_refuse(request, order_id):
+    profile, err = _ev_active_vendor(request)
+    if err:
+        return err
+    order = _ev_vendor_order(order_id, request.user)
+    if not order:
+        return Response({'ok': False, 'raison': 'introuvable'})
+    if order.fulfillment_status == Order.FulfillmentStatus.READY_FOR_PICKUP:
+        return Response({'ok': False, 'raison': 'deja_prete'})
+    return _ev_bascule(request, order, 'refus', 'Commande refusée par le vendeur (espace vendeur)')
 
 
 @extend_schema(

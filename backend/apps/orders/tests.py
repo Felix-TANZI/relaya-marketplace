@@ -388,9 +388,10 @@ class AutomaticReassignmentCas62Tests(TestCase):
         self.assertEqual(result, replacement)
         self.item.refresh_from_db()
         self.assertEqual(self.item.product_id, replacement.id)
-        self.assertEqual(self.item.price_xaf_snapshot, 9000)
+        # Spec v2.1, R35.3 : le client paie toujours le prix payé ; la différence lui est remboursée.
+        self.assertEqual(self.item.price_xaf_snapshot, 10000)
         self.order.refresh_from_db()
-        self.assertEqual(self.order.total_xaf, 9000)
+        self.assertEqual(self.order.total_xaf, 10000)
         self.shipment.refresh_from_db()
         self.assertEqual(self.shipment.status, Shipment.Status.CANCELLED)
         self.assertTrue(Shipment.objects.filter(order=self.order, vendor=self.replacement_vendor).exists())
@@ -446,5 +447,5 @@ class AutomaticReassignmentCas62Tests(TestCase):
 
         self.assertIsNotNone(result)
         self.assertTrue(
-            UserNotification.objects.filter(user=admin, title__icontains="Écart de prix").exists()
+            UserNotification.objects.filter(user=admin, message__icontains="2000 F à rembourser au client").exists()
         )

@@ -97,6 +97,8 @@ INSTALLED_APPS = [
     "apps.otp",
     "apps.client_accounts",
     "apps.notifications_client",
+    # Feuille de route D6 (option A, 23/10) : messagerie client sur le socle accounts/orders.
+    "apps.messaging",
 ]
 
 MIDDLEWARE = [

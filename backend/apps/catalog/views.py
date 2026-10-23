@@ -415,6 +415,25 @@ class CategoryViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_class = CategoryFilter
 
+    def get_queryset(self):
+        """
+        Tache D29 : la vitrine ne montre pas les categories presque vides.
+
+        Le filtre est DEMANDE par l'appelant (`?vitrine=1`), il n'est pas pose
+        d'office : cette liste sert aussi a choisir une categorie au depot
+        d'une offre, et la filtrer empecherait de remplir une categorie neuve.
+        Voir apps/catalog/vitrine.py.
+        """
+        queryset = super().get_queryset()
+        demande = self.request.query_params.get("vitrine", "false").lower()
+        if demande not in ("1", "true", "yes", "on"):
+            return queryset
+
+        from apps.catalog.vitrine import masquees_pour
+
+        masquees = masquees_pour(self.request.user)
+        return queryset.exclude(id__in=masquees) if masquees else queryset
+
 
 @extend_schema(tags=["Catalog"], summary="Fiches produits maîtres avec leurs offres")
 class MasterProductViewSet(viewsets.ReadOnlyModelViewSet):
@@ -578,7 +597,30 @@ def categories_tree(request):
         qs = qs.filter(is_deprecated=False)
     if not include_inactive:
         qs = qs.filter(is_active=True)
- 
+
+    # Tache D29 : « n'afficher que les categories assez remplies ; masquer
+    # celles qui sont presque vides ». Une categorie vide est une promesse non
+    # tenue — le visiteur clique, arrive sur une page sans rien, et doute du
+    # reste.
+    #
+    # Le filtre est DEMANDE par l'appelant, il n'est pas pose d'office, et
+    # c'est important : cet arbre sert aussi de selecteur de categorie au
+    # vendeur. Filtre d'office, un vendeur ne pourrait jamais deposer la
+    # PREMIERE offre d'une categorie neuve — qui ne sortirait donc jamais de
+    # son vide. Meme raison que pour `categories_flat`.
+    #
+    # La vitrine passe `vitrine=1` ; le selecteur du vendeur et
+    # l'administration ne passent rien. Voir apps/catalog/vitrine.py.
+    vitrine = request.query_params.get("vitrine", "false").lower() in (
+        "1", "true", "yes", "on",
+    )
+    if vitrine:
+        from apps.catalog.vitrine import masquees_pour
+
+        masquees = masquees_pour(request.user)
+        if masquees:
+            qs = qs.exclude(id__in=masquees)
+
     all_cats = list(qs.order_by("level", "display_order", "name"))
  
     # Construction du dict parent_id → [children]

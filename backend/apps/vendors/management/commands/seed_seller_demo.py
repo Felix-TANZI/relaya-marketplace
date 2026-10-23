@@ -14,6 +14,7 @@ from django.utils import timezone
 from django.utils.text import slugify
 
 from apps.catalog.models import Category, Product
+from apps.common.demonstration import exiger_demonstration_autorisee
 from apps.vendors.models import VendorProfile
 
 DEMO_PASSWORD = "Demo12345!"
@@ -58,6 +59,8 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, *args, **options):
+        # Tache D31 : jeux de demonstration fermes par defaut.
+        exiger_demonstration_autorisee()
         wanted = max(1, min(options["products"], len(DEMO_PRODUCTS)))
 
         user = self._account()

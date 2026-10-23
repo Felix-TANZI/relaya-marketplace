@@ -8,12 +8,22 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.text import slugify
 
-from apps.accounts.models import CourierProfile, DeliveryOrganizationProfile, RelayPointProfile
+from apps.accounts.models import (
+    CourierProfile,
+    DeliveryOrganizationProfile,
+    RelayPointProfile,
+)
 from apps.catalog.models import Category, Product
+from apps.common.demonstration import exiger_demonstration_autorisee
 from apps.orders.models import Order, OrderHistory, OrderItem
-from apps.shipping.models import RelayParcel, Shipment, ShipmentEvent, ShipmentLocation, Zone
+from apps.shipping.models import (
+    RelayParcel,
+    Shipment,
+    ShipmentEvent,
+    ShipmentLocation,
+    Zone,
+)
 from apps.vendors.models import VendorLocation, VendorProfile
-
 
 DEMO_PASSWORD = "BelivayMaps2026!"
 USERNAMES = {
@@ -31,6 +41,8 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, *args, **options):
+        # Tache D31 : jeux de demonstration fermes par defaut.
+        exiger_demonstration_autorisee()
         actors = self._actors()
         zone = self._zone()
         vendor = self._vendor(actors["seller"], zone)

@@ -455,8 +455,6 @@ OPENROUTER_MAX_TOKENS = int(os.getenv("OPENROUTER_MAX_TOKENS", 700))
 OPENROUTER_TEMPERATURE = float(os.getenv("OPENROUTER_TEMPERATURE", 0.25))
 OPENROUTER_TIMEOUT_SECONDS = int(os.getenv("OPENROUTER_TIMEOUT_SECONDS", 30))
 
-SUPPORT_EMAIL = "support@belivay.com"
-
 # ── PAIEMENTS — chiffrement des donnees sensibles ────────────────────────────
 # La cle vit UNIQUEMENT en variable d'environnement. Jamais en base,
 # jamais lisible depuis l'administration.
@@ -552,9 +550,15 @@ CATALOGUE_OFFRES_MINIMUM_PAR_CATEGORIE = int(
 # ========================================
 
 # CSRF Configuration pour HTTPS
+#
+# belivay.com reste le defaut (comportement inchange pour la production),
+# mais un autre deploiement (ex. main2 sur un autre domaine) ajoute son
+# origine via CSRF_TRUSTED_ORIGINS_EXTRA, sans toucher au code.
 CSRF_TRUSTED_ORIGINS = [
     'https://belivay.com',
     'https://www.belivay.com',
+] + [
+    origin for origin in os.getenv("CSRF_TRUSTED_ORIGINS_EXTRA", "").split(",") if origin
 ]
 
 # Sécurité HTTPS en production
@@ -564,8 +568,10 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = False  # Géré par nginx
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# CORS pour production
+# CORS pour production — meme logique : belivay.com par defaut, plus
+# frontend_url/CORS_EXTRA_ORIGINS (deja lus plus haut) pour un autre domaine.
 CORS_ALLOWED_ORIGINS += [
-    'https://belivay.com',
-    'https://www.belivay.com',
+    origin
+    for origin in ['https://belivay.com', 'https://www.belivay.com', frontend_url]
+    if origin and origin not in CORS_ALLOWED_ORIGINS
 ]

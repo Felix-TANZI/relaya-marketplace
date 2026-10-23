@@ -627,13 +627,13 @@ def bootstrap_demo_accounts(request):
         superuser=True,
     )
     vendor_user, vendor_created = ensure_user(
-        "vendeur_demo",
+        "vendeur",
         "vendeur.demo@belivay.com",
         "Vendeur",
         "Demo",
     )
     courier_user, courier_created = ensure_user(
-        "livreur_demo",
+        "livreur",
         "livreur.demo@belivay.com",
         "Livreur",
         "Demo",
@@ -668,14 +668,14 @@ def bootstrap_demo_accounts(request):
     )
 
     client_user, client_created = ensure_user(
-        "client_demo",
+        "client",
         "client.demo@belivay.com",
         "Client",
         "Demo",
     )
 
     relais_user, relais_created = ensure_user(
-        "relais_demo",
+        "relais",
         "relais.demo@belivay.com",
         "Relais",
         "Demo",

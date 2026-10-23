@@ -1,6 +1,33 @@
 import { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
+import { SocialLogin } from '@capgo/capacitor-social-login';
+
+// Identifiants OAuth Google des apps natives. Le client "web" sert a Android
+// (Credential Manager) et d'audience serveur ; le client iOS est celui dont le
+// schema inverse figure dans ios/App/App/Info.plist (CFBundleURLSchemes). Le
+// backend accepte les deux (GOOGLE_CLIENT_ID + GOOGLE_EXTRA_CLIENT_IDS).
+const GOOGLE_WEB_CLIENT_ID = '582094155516-insnk09ptfqa6faunktufc5nhrrihsmj.apps.googleusercontent.com';
+const GOOGLE_IOS_CLIENT_ID = '582094155516-m8somr2pbk9292ulebgo6338s8a0to0c.apps.googleusercontent.com';
+
+// initialize() ne doit etre appele qu'une fois par lancement de l'app, meme si
+// plusieurs boutons Google sont montes (connexion, inscription, portail).
+let nativeInit: Promise<void> | null = null;
+function initNativeGoogle(): Promise<void> {
+  if (!nativeInit) {
+    nativeInit = SocialLogin.initialize({
+      google: {
+        webClientId: GOOGLE_WEB_CLIENT_ID,
+        iOSClientId: GOOGLE_IOS_CLIENT_ID,
+        iOSServerClientId: GOOGLE_WEB_CLIENT_ID,
+        mode: 'online',
+      },
+    }).catch((error) => {
+      nativeInit = null; // permet un nouvel essai au prochain montage
+      throw error;
+    });
+  }
+  return nativeInit;
+}
 
 type GoogleCredentialResponse = {
   credential?: string;
@@ -66,15 +93,19 @@ function NativeGoogleButton({ onCredential, disabled, label, onError }: {
     if (disabled || pending) return;
     setPending(true);
     try {
-      const user = await GoogleAuth.signIn();
-      const idToken = user?.authentication?.idToken;
+      await initNativeGoogle();
+      const { result } = await SocialLogin.login({
+        provider: 'google',
+        options: { scopes: ['email', 'profile'] },
+      });
+      const idToken = result.responseType === 'online' ? result.idToken : null;
       if (idToken) {
         await onCredential(idToken);
       } else {
-        // signIn() a reussi (compte choisi) mais sans idToken exploitable :
-        // typiquement un client OAuth Android mal configure (package name /
-        // empreinte SHA-1 non enregistres cote Google Cloud Console).
-        console.error('GoogleAuth.signIn() a reussi mais sans idToken', user);
+        // login() a reussi (compte choisi) mais sans idToken exploitable :
+        // typiquement un client OAuth mal configure (Android : package name /
+        // empreinte SHA-1 non enregistres ; iOS : client iOS ou URL scheme).
+        console.error('SocialLogin.login(google) a reussi mais sans idToken', result);
         onError?.('Connexion Google impossible (configuration invalide). Reessayez ou utilisez un autre mode de connexion.');
       }
     } catch (error) {
@@ -82,7 +113,7 @@ function NativeGoogleButton({ onCredential, disabled, label, onError }: {
       const message = error instanceof Error ? error.message : String(error);
       const cancelled = /cancel/i.test(message);
       if (!cancelled) {
-        console.error('GoogleAuth.signIn() a echoue', error);
+        console.error('SocialLogin.login(google) a echoue', error);
         onError?.('Connexion Google indisponible pour le moment. Reessayez ou utilisez un autre mode de connexion.');
       }
     } finally {
@@ -125,10 +156,10 @@ export default function GoogleAuthButton({
 
   useEffect(() => {
     const initNative = () => {
-      // Sur mobile, GoogleAuth.initialize() lit sa config (serverClientId,
-      // scopes) depuis capacitor.config.ts — rien a initialiser ici avec un
-      // client_id web, qui ne fonctionnerait pas dans une WebView native.
-      GoogleAuth.initialize();
+      // Sur mobile, la connexion passe par le SDK Google natif (le client_id
+      // web ne fonctionnerait pas dans une WebView). Initialisation anticipee
+      // pour que le premier clic soit immediat ; un echec ici est retente au clic.
+      initNativeGoogle().catch((error) => console.error('SocialLogin.initialize(google) a echoue', error));
       setReady(true);
     };
 

@@ -263,10 +263,8 @@ def retirer(user, *, montant: int, numero_masque: str = "", cle: str = ""):
     Le client retire `montant` de la part retirable ; il recoit montant - frais sur un numero qui a recharge.
     Meme chemin et memes garde-fous qu'un versement : jamais de reessai, une issue inconnue reste a reconcilier.
     """
-    from apps.payments.bridge.actors import payee_for_buyer
-    from apps.payments.infrastructure.providers.base import ProviderTimeout, WithdrawRequest
-    from apps.payments.infrastructure.providers.registry import get_active_provider
     from apps.payments.settlements.models import PayoutRequest
+    from apps.payments.settlements.services import verser_a_un_client
 
     _exiger_ouvert()
     montant = int(montant)
@@ -287,67 +285,21 @@ def retirer(user, *, montant: int, numero_masque: str = "", cle: str = ""):
     mouvement = _mouvement(p, MouvementPortefeuille.Sorte.RETRAIT, reference, retirable=-montant, frais_xaf=frais,
                            libelle="Retrait vers Mobile Money")
 
-    prestataire = get_active_provider()
-    beneficiaire = payee_for_buyer(user, create=True)
-    beneficiaire.set_momo_number(source.payer_msisdn, source.payer_operator or "MTN")
-    beneficiaire.save(update_fields=["momo_number_enc", "momo_number_masked", "momo_fingerprint", "momo_operator",
-                                     "updated_at"])
-    versement = PayoutRequest(
-        batch=None, payee=beneficiaire, amount_xaf=montant - frais, required_approvals=0,
-        payee_msisdn_masked=source.payer_msisdn_masked, payee_operator=source.payer_operator, requested_by=user,
-        justification=f"Retrait du Wallet {reference} — R03.4", provider_code=prestataire.code,
-        status=PayoutRequest.Status.DRAFT)
-    versement.save()
-    for etat in (PayoutRequest.Status.PENDING_APPROVAL, PayoutRequest.Status.APPROVED,
-                 PayoutRequest.Status.PROCESSING):
-        versement.transition_to(etat, save=False)
-    versement.executed_at = timezone.now()
-    versement.save()
+    versement, etat = verser_a_un_client(
+        user=user, msisdn=source.payer_msisdn, operator=source.payer_operator or "",
+        masque=source.payer_msisdn_masked, montant=montant - frais, reference=reference,
+        justification=f"Retrait du Wallet {reference} vers {source.payer_msisdn_masked} — R03.4",
+        debits=[debit(coa.WALLET_LIABILITY, montant, label=f"Retrait {reference}")],
+        autres_credits=[credit(coa.REVENUE_WALLET_WITHDRAWAL_FEE, frais, label="Frais de retrait (R03.4)")]
+        if frais else [])
     mouvement.payout_reference = versement.reference
     mouvement.save(update_fields=["payout_reference"])
-
-    tresorerie = coa.psp_account_for(source.payer_operator, degraded=True)
-    try:
-        resultat = prestataire.withdraw(WithdrawRequest(
-            external_reference=versement.provider_external_reference, amount_xaf=montant - frais,
-            msisdn=source.payer_msisdn, operator=source.payer_operator or "", description=f"BelivaY {reference}"))
-    except Exception as exc:  # ProviderTimeout ou incident : on ne sait pas si l'argent est parti
-        message = str(exc) if isinstance(exc, ProviderTimeout) else f"Incident technique : {type(exc).__name__} — {exc}"
-        logger.error("Issue INCONNUE sur le retrait %s : %s. Ne JAMAIS retenter sans reconciliation.",
-                     reference, message)
-        versement.error_message = message
-        versement.transition_to(PayoutRequest.Status.UNKNOWN, save=False)
-        versement.save(update_fields=["status", "error_message"])
-        post(kind=LedgerTransaction.Kind.PAYOUT,
-             lines=[debit(coa.PSP_IN_TRANSIT, montant - frais, label=f"Retrait a issue inconnue {reference}"),
-                    credit(tresorerie, montant - frais, label="Sortie presumee")],
-             description=f"Retrait du Wallet {reference} — issue INCONNUE. Reconciliation obligatoire.",
-             source_type="PayoutRequest", source_ref=versement.reference,
-             created_by_label="wallet.services.retirer")
-        return mouvement
-
-    versement.provider_reference = resultat.provider_reference
-    versement.provider_status_raw = resultat.raw_status
-    versement.response_payload = resultat.raw_response or {}
-    versement.error_code, versement.error_message = resultat.error_code, resultat.error_message
-    if not resultat.accepted:
-        versement.transition_to(PayoutRequest.Status.FAILED, save=False)
-        versement.save()
+    if etat == PayoutRequest.Status.FAILED:
         # Rien n'est parti : la part retirable est rendue, aucune ecriture au grand livre.
         return _mouvement(p, MouvementPortefeuille.Sorte.RETRAIT_ANNULE, f"{reference}-annule", retirable=montant,
                           payout_reference=versement.reference,
-                          libelle=(resultat.error_message or "Retrait refusé par l'opérateur")[:200])
-    versement.save()
-    lignes = [debit(coa.WALLET_LIABILITY, montant, label=f"Retrait {reference}"),
-              credit(tresorerie, montant - frais, label="Sortie de tresorerie")]
-    if frais:
-        lignes.append(credit(coa.REVENUE_WALLET_WITHDRAWAL_FEE, frais, label="Frais de retrait (R03.4)"))
-    post(kind=LedgerTransaction.Kind.PAYOUT, lines=lignes,
-         description=f"Retrait du Wallet {reference} vers {source.payer_msisdn_masked} — R03.4",
-         source_type="PayoutRequest", source_ref=versement.reference, created_by_label="wallet.services.retirer")
-    versement.transition_to(PayoutRequest.Status.PAID, save=False)
-    versement.settled_at = timezone.now()
-    versement.save(update_fields=["status", "settled_at"])
+                          libelle=(versement.error_message or "Retrait refusé par l'opérateur")[:200])
+    # UNKNOWN : la part reste debitee du Wallet, le compte 2050 attend la reconciliation (voir suivi()).
     return mouvement
 
 

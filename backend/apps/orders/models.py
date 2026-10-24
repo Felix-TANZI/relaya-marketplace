@@ -1156,3 +1156,60 @@ class SmsCommande(models.Model):
 
     def __str__(self):
         return f"Commande #{self.order_id} · {self.sorte}"
+
+
+class RemboursementAuto(models.Model):
+    """
+    Feuille de route D32 ; spec v2.1, R71 : chaque demande examinée est journalisée, accordée ou non. Un refus n'est
+    pas un rejet du client : sa demande suit le traitement normal, avec retour du colis.
+    """
+
+    class Statut(models.TextChoices):
+        REFUSE = "REFUSE", "Non éligible : traitement normal"
+        VERSE = "VERSE", "Remboursé"
+        INCONNU = "INCONNU", "Versement à issue inconnue"
+        ECHEC = "ECHEC", "Versement refusé : traitement normal"
+
+    dispute = models.OneToOneField(Dispute, on_delete=models.PROTECT, related_name="remboursement_auto")
+    order = models.ForeignKey(Order, on_delete=models.PROTECT, related_name="remboursements_auto")
+    order_item = models.ForeignKey(OrderItem, on_delete=models.PROTECT, related_name="remboursements_auto")
+    client = models.ForeignKey(User, on_delete=models.PROTECT, related_name="remboursements_auto")
+    vendor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
+                               related_name="remboursements_auto_vendeur")
+    statut = models.CharField(max_length=10, choices=Statut.choices)
+    raison = models.CharField(max_length=40, blank=True, default="", help_text="condition R71 non remplie")
+    article_xaf = models.PositiveIntegerField(default=0, help_text="R71.1 : article, livraison exclue")
+    frais_momo_xaf = models.PositiveIntegerField(default=0, help_text="R72.1 : part des frais Mobile Money")
+    total_xaf = models.PositiveIntegerField(default=0)
+    # R71.2 : une « personne » = son compte, son numéro Mobile Money, son téléphone.
+    empreinte_numero = models.CharField(max_length=64, blank=True, default="")
+    telephone = models.CharField(max_length=20, blank=True, default="")
+    relais = models.ForeignKey("accounts.RelayPointProfile", on_delete=models.SET_NULL, null=True, blank=True)
+    payout_reference = models.CharField(max_length=48, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Remboursement automatique"
+        verbose_name_plural = "Remboursements automatiques"
+
+    def __str__(self):
+        return f"Commande #{self.order_id} · {self.get_statut_display()}"
+
+
+class RetraitDroitRemboursementAuto(models.Model):
+    """D32 : le client pris en abus perd définitivement le remboursement automatique, après validation humaine
+    (proposé par un membre de l'équipe, validé par un autre) ; il garde le retour normal."""
+
+    client = models.OneToOneField(User, on_delete=models.PROTECT, related_name="retrait_rembt_auto")
+    motif = models.CharField(max_length=255)
+    propose_par = models.ForeignKey(User, on_delete=models.PROTECT, related_name="retraits_rembt_auto_proposes")
+    valide_par = models.ForeignKey(User, on_delete=models.PROTECT, null=True, blank=True,
+                                   related_name="retraits_rembt_auto_valides")
+    valide_le = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Retrait du remboursement automatique"
+        verbose_name_plural = "Retraits du remboursement automatique"
+

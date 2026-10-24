@@ -1408,6 +1408,7 @@
     // Security
     section_security:     'Sécurité',
     security:             'Sécurité & Fraude',
+    auto_refunds:         'Remboursements automatiques',
  
     // System
     section_system:       'Système',

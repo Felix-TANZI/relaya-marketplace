@@ -14,6 +14,12 @@ FICHIER_MOTEUR = DOSSIER / "moteur_reference.py"
 EMPREINTE_DONNEES = "e9df827bb756d58f11ecb233a396011354c1029615edc1cb27072732bfcfd9dc"
 EMPREINTE_MOTEUR = "21095446406de1570010586917913ce70c820ff50e851efc41ddcd0e7c63aa91"
 
+# Réglages demandés par la feuille de route V2 Élite mais absents de BV-DEV-07 (fichier verrouillé) : créés par
+# migration, modifiables dans l'admin comme les autres. Toute autre différence avec la référence est une anomalie.
+REGLAGES_FEUILLE_DE_ROUTE = {
+    "r_auto_rmb_plafond_mois",  # D32 : plafond mensuel global du remboursement automatique (0 = fermé)
+}
+
 
 def empreinte_fichier(chemin: Path) -> str:
     """sha256 du fichier, fins de ligne ramenées à LF (git les convertit en CRLF sous Windows)."""

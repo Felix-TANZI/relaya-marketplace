@@ -116,6 +116,9 @@ CHART = [
     _a("5020", "Pertes et abandons de creance", EXPENSE, DEBIT),
     _a("5030", "Gestes commerciaux", EXPENSE, DEBIT,
        description="R03.6 : gestes credites par BelivaY sur un Wallet ; ils ne se retirent jamais."),
+    _a("5040", "Remboursements automatiques", EXPENSE, DEBIT,
+       description="R71.3 (feuille de route D32) : rembourse par BelivaY sans retour du colis ; le vendeur est "
+                   "paye normalement."),
 ]
 
 #: Index par code
@@ -157,6 +160,7 @@ EXPENSE_PSP_COLLECT = "5010"
 EXPENSE_PSP_PAYOUT = "5011"
 EXPENSE_WRITEOFF = "5020"
 EXPENSE_COMMERCIAL_GESTURE = "5030"
+EXPENSE_AUTO_REFUND = "5040"
 REVENUE_WALLET_WITHDRAWAL_FEE = "4030"
 PSP_AVAILABLE = "1010"
 PSP_AVAILABLE_MTN = "1011"

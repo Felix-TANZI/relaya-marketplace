@@ -660,7 +660,27 @@ class OrderDisputeListCreateView(generics.ListCreateAPIView):
                 dispute.order_id,
             )
 
-        return Response(DisputeSerializer(dispute, context={"request": request}).data, status=status.HTTP_201_CREATED)
+        # Feuille de route D32, R71 : une demande éligible est remboursée tout de suite par BelivaY, sans retour ;
+        # sinon elle suit le traitement normal. Un incident ici ne bloque jamais l'ouverture du litige.
+        remboursement_auto = None
+        from .retours import DEFAUT_CACHE, MOTIFS_RETOUR
+
+        if reason in MOTIFS_RETOUR or reason == DEFAUT_CACHE:
+            try:
+                from . import remboursement_auto as rmb
+
+                journal = rmb.tenter(dispute, old_status)
+                remboursement_auto = {"accorde": journal.statut in rmb.COMPTES, "montant_xaf": journal.total_xaf,
+                                      "raison": rmb.RAISONS.get(journal.raison, "")}
+                dispute.refresh_from_db()
+            except Exception:
+                import logging
+                logging.getLogger("apps.orders").exception(
+                    "Remboursement automatique non examiné pour le litige #%s.", dispute.id)
+
+        donnees = dict(DisputeSerializer(dispute, context={"request": request}).data)
+        donnees["remboursement_auto"] = remboursement_auto
+        return Response(donnees, status=status.HTTP_201_CREATED)
 
 
 @extend_schema(tags=["Orders"], summary="Lister/creer un retour pour une commande")

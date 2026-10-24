@@ -1430,6 +1430,7 @@
     ia:                   'AI Advisor',
     section_security:     'Security',
     security:             'Security & Fraud',
+    auto_refunds:         'Automatic refunds',
     section_system:       'System',
     notifications:        'Notifications',
     support:              'Support & Tickets',

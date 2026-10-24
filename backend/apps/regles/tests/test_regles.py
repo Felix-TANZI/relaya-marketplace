@@ -14,6 +14,7 @@ from apps.regles.reference import (
     EMPREINTE_MOTEUR,
     FICHIER_DONNEES,
     FICHIER_MOTEUR,
+    REGLAGES_FEUILLE_DE_ROUTE,
     donnees_reference,
     empreinte_fichier,
 )
@@ -40,7 +41,7 @@ def test_la_base_contient_tous_les_reglages_et_tables():
     ref = donnees_reference()
     if not Reglage.objects.exists():  # SQLite sans migrations : la migration 0002 n'a pas tourné
         pytest.skip("base sans migrations")
-    assert set(Reglage.objects.values_list("nom", flat=True)) == set(ref["reglages"])
+    assert set(Reglage.objects.values_list("nom", flat=True)) == set(ref["reglages"]) | REGLAGES_FEUILLE_DE_ROUTE
     assert set(TableReglee.objects.values_list("nom", flat=True)) == set(ref["tables"])
     assert Reglage.objects.get(nom="r_campay").exact == "1/50"
 

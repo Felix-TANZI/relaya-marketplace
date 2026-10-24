@@ -1072,6 +1072,74 @@ def execute_refund(refund):
     return refund
 
 
+@db_transaction.atomic
+def verser_a_un_client(*, user, msisdn: str, operator: str, masque: str, montant: int, reference: str,
+                       justification: str, debits: list, autres_credits: list | None = None):
+    """
+    Envoie `montant` par Mobile Money sur le numero d'un client, par le meme chemin qu'un remboursement : une
+    PayoutRequest sans approbation (la regle metier a deja tranche), JAMAIS de reessai, une issue inconnue portee
+    en transit et laissee a la reconciliation.
+
+    `debits` (et `autres_credits`) sont les lignes a ecrire en cas de succes, avec CREDIT tresorerie `montant`.
+    Retourne (versement, etat) ; etat vaut PAID, FAILED ou UNKNOWN.
+    Feuille de route D16 (retrait du Wallet, R03.4) et D32 (remboursement automatique, R71).
+    """
+    from apps.payments.bridge.actors import payee_for_buyer
+
+    prestataire = get_active_provider()
+    beneficiaire = payee_for_buyer(user, create=True)
+    beneficiaire.set_momo_number(msisdn, operator or "MTN")
+    beneficiaire.save(update_fields=["momo_number_enc", "momo_number_masked", "momo_fingerprint", "momo_operator",
+                                     "updated_at"])
+    versement = PayoutRequest(
+        batch=None, payee=beneficiaire, amount_xaf=montant, required_approvals=0, payee_msisdn_masked=masque,
+        payee_operator=operator, requested_by=user, justification=justification[:255],
+        provider_code=prestataire.code, status=PayoutRequest.Status.DRAFT)
+    versement.save()
+    for etat in (PayoutRequest.Status.PENDING_APPROVAL, PayoutRequest.Status.APPROVED,
+                 PayoutRequest.Status.PROCESSING):
+        versement.transition_to(etat, save=False)
+    versement.executed_at = timezone.now()
+    versement.save()
+
+    tresorerie = coa.psp_account_for(operator, degraded=True)
+    try:
+        resultat = prestataire.withdraw(WithdrawRequest(
+            external_reference=versement.provider_external_reference, amount_xaf=montant, msisdn=msisdn,
+            operator=operator or "", description=f"BelivaY {reference}"))
+    except Exception as exc:  # ProviderTimeout ou incident : on ne sait pas si l'argent est parti
+        message = str(exc) if isinstance(exc, ProviderTimeout) else f"Incident technique : {type(exc).__name__} — {exc}"
+        logger.error("Issue INCONNUE sur %s : %s. Ne JAMAIS retenter sans reconciliation.", reference, message)
+        versement.error_message = message
+        versement.transition_to(PayoutRequest.Status.UNKNOWN, save=False)
+        versement.save(update_fields=["status", "error_message"])
+        post(kind=LedgerTransaction.Kind.PAYOUT,
+             lines=[debit(coa.PSP_IN_TRANSIT, montant, label=f"Versement a issue inconnue {reference}"),
+                    credit(tresorerie, montant, label="Sortie presumee")],
+             description=f"{justification} — issue INCONNUE. Reconciliation obligatoire.",
+             source_type="PayoutRequest", source_ref=versement.reference,
+             created_by_label="settlements.services.verser_a_un_client")
+        return versement, PayoutRequest.Status.UNKNOWN
+
+    versement.provider_reference = resultat.provider_reference
+    versement.provider_status_raw = resultat.raw_status
+    versement.response_payload = resultat.raw_response or {}
+    versement.error_code, versement.error_message = resultat.error_code, resultat.error_message
+    if not resultat.accepted:
+        versement.transition_to(PayoutRequest.Status.FAILED, save=False)
+        versement.save()
+        return versement, PayoutRequest.Status.FAILED
+    versement.save()
+    post(kind=LedgerTransaction.Kind.PAYOUT,
+         lines=[*debits, credit(tresorerie, montant, label="Sortie de tresorerie"), *(autres_credits or [])],
+         description=justification, source_type="PayoutRequest", source_ref=versement.reference,
+         created_by_label="settlements.services.verser_a_un_client")
+    versement.transition_to(PayoutRequest.Status.PAID, save=False)
+    versement.settled_at = timezone.now()
+    versement.save(update_fields=["status", "settled_at"])
+    return versement, PayoutRequest.Status.PAID
+
+
 def _solder_sequestres(refund) -> None:
     """
     Marque les sequestres rembourses : cet argent n'ira jamais au partenaire.

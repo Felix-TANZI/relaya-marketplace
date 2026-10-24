@@ -18,10 +18,16 @@ from .views import (
     OrderReturnListCreateView,
     DevisPanierView,
 )
+from .remboursement_auto_admin import ProposerRetraitView, SuiviRemboursementAutoView, ValiderRetraitView
 
 urlpatterns = [
     path("", OrderCreateView.as_view(), name="order-create"),  # Create a new order
     path("frais/", DevisPanierView.as_view(), name="order-devis-panier"),  # Frais et total avant le paiement (A1, A2)
+    # Feuille de route D32 : suivi des remboursements automatiques sans retour (R71)
+    path("admin/remboursements-auto/", SuiviRemboursementAutoView.as_view(), name="admin-rembt-auto"),
+    path("admin/remboursements-auto/retraits/", ProposerRetraitView.as_view(), name="admin-rembt-auto-retrait"),
+    path("admin/remboursements-auto/retraits/<int:pk>/valider/", ValiderRetraitView.as_view(),
+         name="admin-rembt-auto-retrait-valider"),
     path("my-orders/", MyOrdersView.as_view(), name="my-orders"), # List orders for the authenticated user
     path("<int:id>/", OrderDetailView.as_view(), name="order-detail"), # Retrieve order details by ID
     path("<int:id>/tracking/", OrderTrackingView.as_view(), name="order-tracking"),

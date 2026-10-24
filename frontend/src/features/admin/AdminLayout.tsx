@@ -171,6 +171,7 @@ const SECTIONS: NavSection[] = [
     key: 'section_security',
     items: [
       { key: 'security', path: '/admin/security', icon: Shield },
+      { key: 'auto_refunds', path: '/admin/auto-refunds', icon: Undo2 },
     ],
   },
   {

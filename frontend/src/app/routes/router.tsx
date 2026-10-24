@@ -177,6 +177,7 @@ const VendorDetailPage = lazy(() => import('@/features/admin/vendors/VendorDetai
 const KYCPage = lazy(() => import('@/features/admin/d24/KycPiecesPage'));
 const SupportPage = lazy(() => import('@/features/admin/system/SupportPage'));
 const FraudPage = lazy(() => import('@/features/admin/d24/FraudPage'));
+const RemboursementsAutoPage = lazy(() => import('@/features/admin/d24/RemboursementsAutoPage'));
 const CouriersOverviewPage = lazy(() => import('@/features/admin/d24/CouriersOverviewPage'));
 const WithdrawalsPage = lazy(() => import('@/features/admin/vendors/WithdrawalsPage'));
 const ModificationsPage = lazy(() => import('@/features/admin/vendors/ModificationsPage'));
@@ -514,6 +515,8 @@ export const router = createBrowserRouter([
 
       // ── SECURITY (SOON) ─────────────────────────────────────────────────
       { path: 'security', element: <FraudPage /> },
+      // Feuille de route D32 : remboursements automatiques sans retour (R71).
+      { path: 'auto-refunds', element: <RemboursementsAutoPage /> },
 
       // ── SYSTEM ──────────────────────────────────────────────────────────
       { path: 'notifications', element: <NotificationsAdminPage /> },

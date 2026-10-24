@@ -310,13 +310,17 @@ def test_l_echeance_est_rendue_au_deposant(api_client, vendeur):
 
 # ── « Exiger les documents complets avant le premier versement » ────────────
 
-def test_le_versement_est_refuse_tant_que_les_pieces_manquent(api_client, vendeur):
-    api_client.force_authenticate(vendeur)
+def test_le_versement_est_refuse_tant_que_les_pieces_manquent(vendeur):
+    # Feuille de route D20 : le vendeur est versé chaque vendredi, sans demande ; le versement du vendredi saute
+    # celui dont les pièces ne sont pas validées (D19).
+    from apps.payments.bridge.actors import payee_for_vendor
+    from apps.payments.bridge.vendredi import refus_metier
 
-    reponse = api_client.post(RETRAIT, {"amount_xaf": 5000}, format="json")
-
-    assert reponse.status_code == 403
-    assert "piece_identite" in reponse.data
+    compte = payee_for_vendor(vendeur.vendor_profile, create=True)
+    assert "D19" in refus_metier(compte)
+    for piece in (CNI_RECTO, CNI_VERSO, SELFIE_VIDEO):
+        _deposer(vendeur, piece)
+    assert refus_metier(compte) is None
 
 
 # ── La regle elle-meme ──────────────────────────────────────────────────────

@@ -101,6 +101,13 @@ def build_settlements(cycle_key: str = "", confirm: bool = True) -> dict:
         SettlementError, build_batches_for_cycle, confirm_batch, exceptional_share,
     )
 
+    if not cycle_key:
+        # Spec v2.1, R22.2 et R43.1 (feuille de route D11, D13, D20) : un seul versement par semaine, le vendredi
+        # avant r_versement_heure, pour les vendeurs, les relais (R40.4) et les entreprises de livraison.
+        from apps.payments.bridge import vendredi
+
+        return vendredi.executer()
+
     lots = build_batches_for_cycle(cycle_key=cycle_key)
     confirmes, erreurs = 0, []
     if confirm:
@@ -396,9 +403,8 @@ SCHEDULE = [
     {"task": "verify_ledger_integrity", "every_minutes": 1440, "group": "daily"},
     {"task": "recompute_trust_scores", "every_minutes": 1440, "group": "daily"},
     {"task": "purge_technical_retention", "every_minutes": 1440, "group": "daily"},
-    # Reglements : cadence portee par le CYCLE CONTRACTUEL, pas par l'horloge.
-    # La tache s'execute quotidiennement et ne produit un lot que si le cycle
-    # du beneficiaire l'exige.
+    # Reglements : spec v2.1, R22.2 et R43.1 — la tache tourne chaque jour et ne
+    # verse que le vendredi avant r_versement_heure (bridge.vendredi).
     {"task": "build_settlements", "every_minutes": 1440, "group": "settlement"},
     {"task": "execute_payouts", "every_minutes": 10, "group": "payout"},
     {"task": "execute_refunds", "every_minutes": 10, "group": "payout"},

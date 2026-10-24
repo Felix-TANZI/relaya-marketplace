@@ -42,9 +42,11 @@
 from __future__ import annotations
 
 import logging
+from datetime import timedelta
 
 from django.db import transaction
 from django.db.models.signals import post_save
+from django.utils import timezone
 from django.dispatch import receiver
 
 logger = logging.getLogger("apps.payments.signals")
@@ -174,6 +176,42 @@ def _signaler_livraison(expedition) -> None:
         event_id=f"proof-{expedition.pk}",
         emitter="apps.shipping (signal)",
     )
+    if not getattr(expedition.order, "relay_point_id", None):
+        # Spec v2.1, R23.1 : à domicile, la remise au client est le retrait ; le droit de retour court de là.
+        ouvrir_le_droit_de_retour(expedition.order_id, expedition.vendor_id, timezone.now())
+
+
+def ouvrir_le_droit_de_retour(order_id: int, vendeur_id, retire_le) -> None:
+    """
+    Spec v2.1, R23 (feuille de route D17) : la marchandise d'une boutique se
+    libère à la fermeture du droit de retour — retrait + r_retour_j, ou plus
+    tôt sur confirmation du client — puis + r_lib_j_standard (Bronze, Argent)
+    ou + r_lib_j_rapide (Or, Platine). Fixé ici, au retrait réel, sur les
+    séquestres GOODS de cette boutique : l'auto-confirmation devient la
+    fermeture du droit de retour, et le délai de libération celui du palier.
+    """
+    try:
+        from apps.orders.commission import palier_vendeur
+        from apps.payments.escrow.models import EscrowHold
+        from apps.regles import services as regles
+
+        from .models import PayeeLink
+
+        lien = PayeeLink.objects.filter(vendor__user_id=vendeur_id).select_related("vendor__user").first()
+        if lien is None:
+            return
+        palier = palier_vendeur(lien.vendor.user)
+        jours = regles.reglage("r_lib_j_rapide" if palier in ("Or", "Platine") else "r_lib_j_standard")
+        fermeture = retire_le + timedelta(days=regles.reglage("r_retour_j"))
+        for hold in EscrowHold.objects.filter(order_id=order_id, payee_id=lien.payee_account_id,
+                                              component=EscrowHold.Component.GOODS,
+                                              status=EscrowHold.Status.HELD):
+            snapshot = dict(hold.policy_snapshot or {})
+            snapshot["release_delay_hours"] = 24 * jours
+            snapshot["regle"] = f"spec v2.1 R23.2, palier {palier}"
+            EscrowHold.objects.filter(pk=hold.pk).update(auto_confirm_at=fermeture, policy_snapshot=snapshot)
+    except Exception:
+        logger.exception("Droit de retour non ouvert pour la commande #%s.", order_id)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -269,41 +307,7 @@ def _signaler_remise(colis) -> None:
         emitter="apps.shipping (signal relais)",
     )
 
-    # ── Remuneration contractuelle ───────────────────────────────────────
-    # Le point relais est paye selon SON CONTRAT, pas sur les frais de
-    # livraison. C'est une charge de la plateforme, sans lien avec ce que
-    # l'acheteur a paye.
-    _remunerer_relais(colis, commande)
-
-
-def _remunerer_relais(colis, order_id: int) -> None:
-    """
-    Cree la remuneration due pour ce colis remis.
-
-    Echec ABSORBE : une remuneration manquee se rattrape, un point relais
-    empeche de rendre son colis, non.
-    """
-    relais = getattr(colis, "relay_point", None)
-    if relais is None:
-        return
-
-    try:
-        from apps.payments.settlements.services import compensate_relay_parcel
-
-        from .actors import payee_for_relay_point
-
-        # La categorie du colis vient de l'EXPEDITION : c'est le domaine
-        # livraison qui la determine, pas le financier (principe P9).
-        categorie = getattr(colis.shipment, "parcel_size", "") or ""
-
-        compte = payee_for_relay_point(relais, create=True)
-        compensate_relay_parcel(
-            compte, order_id=order_id,
-            parcel_reference=f"RELAY-PARCEL-{colis.pk}",
-            parcel_size=categorie,
-        )
-    except Exception:
-        logger.exception(
-            "Remuneration du point relais impossible pour le colis #%s. "
-            "La remise reste valide ; a rattraper manuellement.", colis.pk,
-        )
+    # Spec v2.1, R23.1 : le retrait au relais ouvre le droit de retour de cette boutique.
+    ouvrir_le_droit_de_retour(commande, colis.shipment.vendor_id, colis.picked_up_at or timezone.now())
+    # La part du relais (R40.1) n'est plus versée colis par colis : elle entre dans son versement du vendredi,
+    # calculé par la formule R40.4 (bridge.vendredi).

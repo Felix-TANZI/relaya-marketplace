@@ -80,3 +80,6 @@ def attribuer_frais_de_retour(ret) -> None:
     ret.frais_retour_xaf = regles.reglage("r_retour")
     ret.frais_retour_partie = partie
     ret.save(update_fields=["frais_retour_xaf", "frais_retour_partie", "updated_at"])
+    from apps.payments.bridge.retours import facturer_course_de_retour
+
+    facturer_course_de_retour(ret)  # créance sur la partie en tort, approuvée par un tiers

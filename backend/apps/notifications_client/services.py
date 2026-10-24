@@ -15,6 +15,7 @@
 #   4. repli SMS (ou WhatsApp, avec FF-WHATSAPP-CANAL et le consentement) : seulement pour une alerte critique
 #      quand aucun appareil n'a reçu le push.
 
+import contextvars
 import hashlib
 import logging
 from datetime import timedelta
@@ -167,25 +168,57 @@ def _raison_sans_push(user, r: ReglagesNotifications, type_: str, critique: bool
     return ""
 
 
+# Feuille de route D21 : une notification créée ailleurs dans le centre (étapes de commande) part aussi en push, par
+# le signal de apps.py ; pendant envoyer_notification, qui pousse elle-même, le signal se tait.
+_EN_COURS = contextvars.ContextVar("notification_en_cours", default=False)
+
+
+def _pousser(user, titre: str, texte: str, lien: str) -> int:
+    pousses = 0
+    p = push()
+    for a in appareils_actifs(user):
+        try:
+            envoi = p.envoyer(a, titre, texte, lien)
+        except Exception:  # un prestataire en panne ne bloque pas l'action métier
+            logger.exception("Push vers l'appareil %s échoué", a.pk)
+            continue
+        if envoi.expire:
+            a.revoque_le = timezone.now()
+            a.save(update_fields=["revoque_le"])
+        elif envoi.ok:
+            pousses += 1
+    return pousses
+
+
+def pousser_etape(user, titre: str, texte: str, lien: str = "", type: str = "suivi") -> int:  # noqa: A002
+    """D21 : pousse une notification déjà inscrite au centre (étape de commande), selon les choix du client. Un texte
+    qui porte un code (CAP-19 : jamais de code dans un push) part sans son détail."""
+    if _EN_COURS.get():
+        return 0
+    try:
+        verifier_texte(titre, texte)
+    except ValueError:
+        texte = "Ouvre l'application pour voir le détail."
+    r = reglages(user)
+    raison = _raison_sans_push(user, r, type, False)
+    pousses = 0 if raison else _pousser(user, titre, texte, lien)
+    JournalNotification.objects.create(user=user, type=type, titre=titre[:160], critique=False, centre=True,
+                                       pousses=pousses, sms="", raison=raison or ("" if pousses else "aucun_appareil"))
+    return pousses
+
+
 def envoyer_notification(user, type: str, titre: str, texte: str, lien: str = "", critique: bool = False) -> dict:  # noqa: A002 - nom du contrat
     verifier_texte(titre, texte)  # CAP-19 : lève TexteInterdit
     r = reglages(user)
-    centre = _centre(user, type, titre, texte, lien)
+    jeton = _EN_COURS.set(True)
+    try:
+        centre = _centre(user, type, titre, texte, lien)
+    finally:
+        _EN_COURS.reset(jeton)
     raison = _raison_sans_push(user, r, type, critique)
     pousses = 0
     if not raison:
-        p = push()
-        for a in appareils_actifs(user):
-            try:
-                envoi = p.envoyer(a, titre, texte, lien)
-            except Exception:  # un prestataire en panne ne bloque pas l'action métier
-                logger.exception("Push vers l'appareil %s échoué", a.pk)
-                continue
-            if envoi.expire:
-                a.revoque_le = timezone.now()
-                a.save(update_fields=["revoque_le"])
-            elif envoi.ok:
-                pousses += 1
+        pousses = _pousser(user, titre, texte, lien)
         if not pousses:
             raison = "aucun_appareil"
     sms = ""

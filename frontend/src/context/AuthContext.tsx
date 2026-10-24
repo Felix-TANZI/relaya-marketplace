@@ -4,6 +4,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authApi, type User, type RegisterData } from '@/services/api/auth';
 import { clearOfflineCache } from '@/lib/offlineCache';
+import { enregistrerNotificationsPush } from '@/lib/pushNotifications';
 
 type LoginOutcome =
   | { twoFactorRequired: false }
@@ -47,6 +48,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     loadUser();
   }, []);
+
+  // Feuille de route D21 : une fois connecte, l'application native s'abonne aux notifications push.
+  useEffect(() => {
+    if (!user) return;
+    void enregistrerNotificationsPush((lien) => {
+      window.location.assign(lien);
+    });
+  }, [user]);
 
   const applyTokens = async (access: string, refresh: string) => {
     clearOfflineCache();

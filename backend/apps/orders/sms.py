@@ -49,6 +49,15 @@ def envoyer(order, sorte: str, texte: str) -> bool:
 
 
 def paiement_protege(order) -> bool:
+    # Feuille de route D21 : l'étape « paiement confirmé » entre aussi au centre de notifications (et part en push).
+    if order.user_id:
+        from apps.accounts.models import UserNotification
+
+        UserNotification.objects.create(
+            user_id=order.user_id, title=f"Paiement confirmé · commande #{order.pk}",
+            message="Ton argent reste protégé jusqu'à la livraison. Le vendeur prépare ta commande.",
+            notification_type=UserNotification.NotificationType.ORDER, action_url=f"/orders/{order.pk}",
+        )
     return envoyer(order, PAIEMENT_PROTEGE,
                    f"paiement reçu pour la commande #{order.pk}. Ton argent reste protégé jusqu'à la livraison.")
 

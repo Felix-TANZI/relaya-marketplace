@@ -542,6 +542,72 @@ class RelayPointParcelPickupView(APIView):
         return Response(RelayParcelSerializer(parcel).data, status=status.HTTP_200_OK)
 
 
+def _colis_a_payer(request):
+    """Le colis de ce relais dont la commande attend le paiement du reste au comptoir (D14, R42.4)."""
+    relay_point = _get_active_relay_point(request.user)
+    _exiger_permission(request.user, "can_hand_over")
+    parcel = get_object_or_404(
+        RelayParcel.objects.select_related("shipment__order", "relay_point"),
+        id=request.data.get("parcel_id"), relay_point=relay_point,
+        status__in=[RelayParcel.Status.RECEIVED, RelayParcel.Status.STORED],
+    )
+    order = parcel.shipment.order
+    if order.payment_status != order.PaymentStatus.VALIDATED:
+        return parcel, Response({"code": "rien_a_payer", "detail": "Cette commande n'a rien à payer au comptoir."},
+                                status=status.HTTP_409_CONFLICT)
+    return parcel, None
+
+
+@extend_schema(
+    tags=["Relay Point"],
+    summary="Point relais : encaisser par Mobile Money le reste à payer au comptoir (D14, R42.4)",
+    description="Envoie la demande de paiement au téléphone du client ; jamais d'espèces. Le code de retrait part au "
+                "client dès que le paiement est confirmé.",
+)
+class RelayPointComptoirCollectView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        from apps.payments.application.collect import CollectError, initiate_collect
+        from apps.payments.bridge.checkout_v2 import CheckoutError, prepare_payment_comptoir
+
+        parcel, refus = _colis_a_payer(request)
+        if refus:
+            return refus
+        order = parcel.shipment.order
+        telephone = (request.data.get("payer_msisdn") or order.customer_phone or "").replace(" ", "")
+        try:
+            intent = prepare_payment_comptoir(order, payer_msisdn=telephone,
+                                              payer_operator=request.data.get("payer_operator") or "")
+            issue = initiate_collect(intent)
+        except (CheckoutError, CollectError) as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"reference": issue.intent.reference, "status": issue.status, "message": issue.message,
+                         "montant_xaf": issue.intent.amount_xaf})
+
+
+@extend_schema(
+    tags=["Relay Point"],
+    summary="Point relais : le client refuse de payer le reste au comptoir (D14, R42.5)",
+    description="L'avance est gardée, le refus compte pour le client et le colis repart au vendeur.",
+)
+class RelayPointComptoirRefusalView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        from apps.orders import comptoir
+
+        parcel, refus = _colis_a_payer(request)
+        if refus:
+            return refus
+        colis = list(RelayParcel.objects.select_related("shipment", "relay_point").filter(
+            shipment__order=parcel.shipment.order, relay_point=parcel.relay_point,
+            status__in=[RelayParcel.Status.RECEIVED, RelayParcel.Status.STORED]))
+        comptoir.refuser(parcel.shipment.order, colis, comptoir.REFUS_AU_COMPTOIR, actor=request.user)
+        parcel.refresh_from_db()
+        return Response(RelayParcelSerializer(parcel).data)
+
+
 @extend_schema(
     tags=["Relay Point"],
     summary="Point relais : deposer une preuve (reception colis / remise client)",

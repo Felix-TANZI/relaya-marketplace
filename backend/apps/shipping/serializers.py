@@ -296,8 +296,10 @@ class ShipmentSerializer(serializers.ModelSerializer):
             return None
         data = RelayParcelSerializer(parcel).data
         # D12 et R66.1 : le code de retrait n'est montré qu'au client de la commande, jamais au relais ni au livreur.
+        # D14, R42.4 : invisible aussi tant que le reste n'est pas payé au comptoir.
         request = self.context.get("request")
-        if request and request.user.is_authenticated and request.user.id == obj.order.user_id:
+        if (request and request.user.is_authenticated and request.user.id == obj.order.user_id
+                and obj.order.payment_status != obj.order.PaymentStatus.VALIDATED):
             data["pickup_code"] = parcel.pickup_code
         return data
 
@@ -474,9 +476,17 @@ class RelayParcelSerializer(serializers.ModelSerializer):
     # D12 et R66.1 : le relais ne voit jamais le code de retrait, seulement qu'il existe (colis prêt à remettre) ;
     # c'est le client qui le présente au comptoir, et le serveur le vérifie (RelayParcelPickupSerializer).
     pickup_ready = serializers.SerializerMethodField()
+    # D14, R42.4 : ce que le client paie par Mobile Money au comptoir avant la remise (0 : rien à payer).
+    a_payer_comptoir_xaf = serializers.SerializerMethodField()
 
     def get_pickup_ready(self, obj):
-        return bool(obj.pickup_code)
+        return bool(obj.pickup_code) and not self.get_a_payer_comptoir_xaf(obj)
+
+    def get_a_payer_comptoir_xaf(self, obj):
+        order = obj.shipment.order
+        if order.payment_status != order.PaymentStatus.VALIDATED:
+            return 0
+        return int(order.reste_comptoir_xaf or 0) + int(order.frais_momo_comptoir_xaf or 0)
 
     def get_garde_fee_due_xaf(self, obj):
         return obj.garde_fee_due()
@@ -492,6 +502,7 @@ class RelayParcelSerializer(serializers.ModelSerializer):
             "status",
             "slot_code",
             "pickup_ready",
+            "a_payer_comptoir_xaf",
             "proof_note",
             "customer_phone",
             "delivery_address",
@@ -618,18 +629,11 @@ class RelayParcelReceiveSerializer(serializers.Serializer):
             code = next((p.pickup_code for p in siblings if p.pickup_code), "") or nouveau_code_de_retrait()
             RelayParcel.objects.filter(id__in=[p.id for p in siblings]).exclude(pickup_code=code).update(pickup_code=code)
             parcel.refresh_from_db(fields=["pickup_code"])
-            # Feuille de route D7, R78.1 : le code de retrait part aussi par SMS (commandes sans compte comprises).
-            from apps.orders import sms
+            # Feuille de route D7, R78.1 : le code de retrait part aussi par SMS (commandes sans compte comprises) ;
+            # D14, R42.4 : pas avant le paiement du reste au comptoir.
+            from apps.orders import comptoir
 
-            sms.code_retrait(shipment.order, code, relay_point.name)
-            if shipment.order.user_id:
-                UserNotification.objects.create(
-                    user=shipment.order.user,
-                    title=f"Colis prêt au retrait · commande #{shipment.order_id}",
-                    message=f"Votre commande est arrivée au point relais {relay_point.name}. Code de retrait : {code}.",
-                    notification_type=UserNotification.NotificationType.ORDER,
-                    action_url=f"/orders/{shipment.order_id}",
-                )
+            comptoir.annoncer_retrait(shipment.order, code, relay_point.name)
 
         shipment.relay_point = relay_point.name
         shipment.status = Shipment.Status.IN_TRANSIT
@@ -755,6 +759,12 @@ class RelayParcelPickupSerializer(serializers.Serializer):
             RelayPickupAttempt.register(relay_point, code, success=False)
             raise serializers.ValidationError({"pickup_code": "Code de retrait incorrect ou colis deja retire."})
         RelayPickupAttempt.register(relay_point, code, success=True)
+
+        # D14, R42.4 : jamais de remise avant le paiement du reste au comptoir, par Mobile Money.
+        if any(p.shipment.order.payment_status == Order.PaymentStatus.VALIDATED for p in parcels):
+            raise serializers.ValidationError({
+                "comptoir": "Le reste de cette commande n'est pas payé : encaissez-le par Mobile Money avant la remise.",
+            })
 
         # Retrait par un tiers : si l'acheteur a designe une personne
         # autorisee, le relais doit loguer sa piece d'identite avant de

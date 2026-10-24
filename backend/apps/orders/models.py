@@ -60,6 +60,8 @@ class Order(TimeStampedModel):
     class PaymentStatus(models.TextChoices):
         PENDING  = "PENDING",  "En attente de paiement"
         PAID     = "PAID",     "Payé"
+        # Spec v2.1, R42.4 (feuille de route D14) : avance payée, reste à payer au comptoir du relais
+        VALIDATED = "VALIDATED", "Validée — reste à payer au comptoir"
         FAILED   = "FAILED",   "Échec du paiement"
         REFUNDED = "REFUNDED", "Remboursé"
 
@@ -195,6 +197,13 @@ class Order(TimeStampedModel):
     couverture_xaf   = models.PositiveIntegerField(default=0, help_text="Livraison offerte prise par BelivaY (R07.3)")
     frais_momo_xaf   = models.PositiveIntegerField(default=0, help_text="Frais Mobile Money payés par le client (R02.3)")
     total_a_payer_xaf = models.PositiveIntegerField(default=0, help_text="total_momo (R02.2), ou base_paiement par le Wallet (R02.5)")
+    # Spec v2.1, R42 (feuille de route D14) : paiement au comptoir du relais, en deux fois par Mobile Money.
+    paiement_comptoir = models.BooleanField(default=False, help_text="avance à la commande, reste au comptoir (R42)")
+    avance_xaf = models.PositiveIntegerField(default=0, help_text="avance (R42.3), hors frais Mobile Money")
+    reste_comptoir_xaf = models.PositiveIntegerField(default=0, help_text="au_comptoir (R42.4), hors frais Mobile Money")
+    frais_momo_comptoir_xaf = models.PositiveIntegerField(default=0, help_text="frais Mobile Money du reste (R02.6)")
+    comptoir_paye_le = models.DateTimeField(null=True, blank=True)
+    comptoir_refuse_le = models.DateTimeField(null=True, blank=True, help_text="refus au comptoir (R42.5, R39.3)")
     frais_detail     = models.JSONField(
         default=dict, blank=True,
         help_text="Calcul des frais figé au paiement (R12.3, R83.3) : boutiques, colis, distances, empreinte des réglages.",
@@ -295,7 +304,9 @@ class Order(TimeStampedModel):
 
     @property
     def is_paid(self) -> bool:
-        return self.payment_status == self.PaymentStatus.PAID
+        # Spec v2.1, R42.4 : une commande « Validée » (avance payée) se prépare et se livre comme une commande payée ;
+        # seul son code de retrait attend le paiement au comptoir.
+        return self.payment_status in (self.PaymentStatus.PAID, self.PaymentStatus.VALIDATED)
 
     @property
     def can_be_fulfilled(self) -> bool:

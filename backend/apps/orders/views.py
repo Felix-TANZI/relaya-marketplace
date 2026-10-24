@@ -890,7 +890,7 @@ class DevisPanierView(APIView):
             selection = selectionner_panier(lignes, destination)
             remplacees = {str(avant.pk): apres.pk for (avant, _), (apres, _) in zip(lignes, selection["lignes"]) if avant.pk != apres.pk}
             lignes = selection["lignes"]
-            devis = frais.calculer(lignes, destination, d.get("moyen") or "momo")
+            devis = frais.calculer(lignes, destination, d.get("moyen") or "momo", user=request.user)
         except frais.FraisImpossibles as exc:
             return Response({"ok": False, "refus": {"refus": exc.code}, "messages": [exc.message]})
         # R12.1 : l'heure promise est montrée avant le paiement (A3), calculée comme si le paiement avait lieu maintenant.

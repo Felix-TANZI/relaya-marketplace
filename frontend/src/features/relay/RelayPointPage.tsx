@@ -41,6 +41,7 @@ import RelayPickup, {
   type PickupCodeCheck,
   type RelayPickupParcel,
 } from "./RelayPickup";
+import RelayComptoir, { type ComptoirParcel } from "./RelayComptoir";
 import RelayReviews from "./RelayReviews";
 import RelayTrust, { type RelayTrustScore } from "./RelayTrust";
 import RelayTraining from "./RelayTraining";
@@ -141,6 +142,8 @@ interface RelayParcel {
   slot_code: string;
   /** D12, R66.1 : le relais ne voit jamais le code de retrait, seulement qu'il existe (colis pret a remettre). */
   pickup_ready: boolean;
+  /** D14, R42.4 : reste a payer par Mobile Money au comptoir avant la remise (0 : rien a payer). */
+  a_payer_comptoir_xaf?: number;
   customer_phone: string;
   delivery_address: string;
   city: string;
@@ -1523,7 +1526,70 @@ export default function RelayPointPage() {
     }
   };
 
+  /** D14, R42.4 : le reste se paie par Mobile Money, sur le telephone du client, avant la remise. */
+  const collectAtCounter = async (parcelId: number, phone: string, operator: string): Promise<boolean> => {
+    setOperationBusy(true);
+    setOperationMessage(null);
+    try {
+      const data = await http<{ status: string; message: string; montant_xaf: number }>(
+        "/api/shipping/relay-point/comptoir/encaisser/",
+        {
+          method: "POST",
+          body: JSON.stringify({ parcel_id: parcelId, payer_msisdn: phone.replace(/\s/g, ""), payer_operator: operator }),
+        },
+      );
+      setOperationMessage({
+        tone: "success",
+        text: `Demande de ${data.montant_xaf.toLocaleString("fr-FR")} F envoyée au téléphone du client. Il valide, puis présente son code de retrait.`,
+      });
+      await refreshRelayData();
+      return true;
+    } catch (error) {
+      showOperationError(error);
+      return false;
+    } finally {
+      setOperationBusy(false);
+    }
+  };
+
+  /** D14, R42.5 : refus au comptoir — l'avance est gardee, le colis repart au vendeur. */
+  const refuseAtCounter = async (parcelId: number): Promise<boolean> => {
+    setOperationBusy(true);
+    setOperationMessage(null);
+    try {
+      await http("/api/shipping/relay-point/comptoir/refus/", {
+        method: "POST",
+        body: JSON.stringify({ parcel_id: parcelId }),
+      });
+      setOperationMessage({ tone: "success", text: "Refus enregistré. Le colis repart au vendeur." });
+      await refreshRelayData();
+      return true;
+    } catch (error) {
+      showOperationError(error);
+      return false;
+    } finally {
+      setOperationBusy(false);
+    }
+  };
+
+  const comptoirParcels: ComptoirParcel[] = relayParcels
+    .filter((parcel) => ["RECEIVED", "STORED"].includes(parcel.status) && (parcel.a_payer_comptoir_xaf || 0) > 0)
+    .map((parcel) => ({
+      id: parcel.id,
+      ref: `BV-${parcel.order_id}`,
+      slot: parcel.slot_code || "à définir",
+      amountXaf: parcel.a_payer_comptoir_xaf || 0,
+      customerPhone: parcel.customer_phone || "",
+    }));
+
   const renderRetrait = () => (
+    <>
+    <RelayComptoir
+      parcels={comptoirParcels}
+      busy={operationBusy}
+      onCollect={collectAtCounter}
+      onRefuse={refuseAtCounter}
+    />
     <RelayPickup
       busy={operationBusy}
       onCheckCode={checkPickupCode}
@@ -1539,6 +1605,7 @@ export default function RelayPointPage() {
       }}
       onContactSupport={() => setTab("messagerie")}
     />
+    </>
   );
 
   const renderTrust = () => <RelayTrust onError={showOperationError} onNavigate={setTab} />;

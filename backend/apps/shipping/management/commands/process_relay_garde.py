@@ -68,6 +68,14 @@ class Command(BaseCommand):
 
     def _renvoyer(self, order, colis, now):
         au_relais = [c for c in colis if c.status in garde.AU_RELAIS]
+        if order.payment_status == order.PaymentStatus.VALIDATED:
+            # R39.3 (feuille de route D14) : colis à payer au comptoir non retiré, compté comme un refus ; seule
+            # l'avance a été payée et elle est gardée (R42.5) : rien à rembourser.
+            from apps.orders import comptoir
+
+            comptoir.refuser(order, au_relais, comptoir.NON_RETIRE)
+            RelayParcel.objects.filter(pk__in=[c.pk for c in au_relais]).update(non_retrait_processed_at=now)
+            return
         rembourse = garde.rembourse_non_retire(order, au_relais)                         # R39.2
         for parcel in au_relais:
             parcel.status = RelayParcel.Status.RETURNED_TO_VENDOR

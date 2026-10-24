@@ -139,7 +139,7 @@ class Devis:
         return self.detail.get("frais_client", 0)
 
 
-def calculer(lignes: list[tuple], destination: Destination, moyen: str = "momo") -> Devis:
+def calculer(lignes: list[tuple], destination: Destination, moyen: str = "momo", user=None) -> Devis:
     """Frais et total d'un panier ; `lignes` : [(Product, quantité)] dans l'ordre du panier."""
     m = regles.moteur()
     mode = destination.mode
@@ -147,7 +147,7 @@ def calculer(lignes: list[tuple], destination: Destination, moyen: str = "momo")
     # R01.1, R03.2 : le Wallet n'est un moyen de paiement que s'il est ouvert.
     if moyen == "wallet" and not regles.reglage("r_wallet_ouvert"):
         return Devis(False, {"refus": "wallet_ferme"}, ["Le paiement par le Wallet n'est pas encore ouvert."])
-    if moyen not in ("momo", "wallet"):
+    if moyen not in ("momo", "wallet", "comptoir"):
         return Devis(False, {"refus": "moyen"}, ["Moyen de paiement non disponible."])
 
     prix = _prix_payes([p for p, _ in lignes])
@@ -198,7 +198,17 @@ def calculer(lignes: list[tuple], destination: Destination, moyen: str = "momo")
         libelle_livraison=libelle_livraison(r, mode),
         reglages=regles.empreinte(),
     )
-    if moyen == "wallet":  # R02.5
+    if moyen == "comptoir":  # R42 (feuille de route D14) : avance maintenant, reste au comptoir du relais
+        from . import comptoir
+
+        bs = [dict(zone_b=e["zone_b"], niv_b=e["niv_b"], km_b=e["km_b"], detour_b=e["detour_b"], colis_b=c, st_b=b["st_b"])
+              for b, e, c in zip(boutiques, entrees, r["colis_b"])]
+        rc = m.comptoir(dest, bs, comptoir.compte(user), mode=mode)
+        if "refus" in rc:
+            return Devis(False, rc, [comptoir.MESSAGES.get(rc["refus"], "").format(**rc)])
+        c = {k: int(rc[k]) for k in ("avance", "frais_momo_avance", "au_comptoir", "frais_momo_comptoir")}
+        detail.update(comptoir=c, frais_momo=c["frais_momo_avance"], total_a_payer=c["avance"] + c["frais_momo_avance"])
+    elif moyen == "wallet":  # R02.5
         detail.update(frais_momo=0, total_a_payer=r["base_paiement"])
     else:
         detail["total_a_payer"] = r["total_momo"]

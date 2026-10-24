@@ -258,7 +258,7 @@ def commandes_en_cours(user) -> list[str]:
 
     termines = (Shipment.Status.DELIVERED, Shipment.Status.CANCELLED, Shipment.Status.FAILED)
     en_cours = (
-        Order.objects.filter(user=user, payment_status=Order.PaymentStatus.PAID)
+        Order.objects.filter(user=user, payment_status__in=[Order.PaymentStatus.PAID, Order.PaymentStatus.VALIDATED])
         .exclude(shipments__status__in=termines).values_list("pk", flat=True).distinct()
     )
     return [pont.ref_commande(i) for i in sorted(set(en_cours), reverse=True)]

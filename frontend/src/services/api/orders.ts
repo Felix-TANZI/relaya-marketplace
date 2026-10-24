@@ -33,6 +33,8 @@ export interface OrderCreateData {
   cart_items: OrderItem[];
   /** Total affiché au client ; s'il a changé au paiement, refus « Un prix a changé » (R93.6). */
   total_attendu?: number | null;
+  /** R01.1 ; « comptoir » : avance maintenant, reste par Mobile Money au relais (R42, feuille de route D14). */
+  moyen?: 'momo' | 'comptoir';
 }
 
 /** Frais et total d'un panier avant le paiement (POST /orders/frais/, spec v2.1 A1 et A2). */
@@ -54,6 +56,8 @@ export interface DevisPanier {
     libelle_livraison: string;
     /** R07.6 : ce qui manque au panier pour obtenir la livraison offerte. */
     manque_livraison_offerte?: number;
+    /** R42.3, R42.4 : avance payée maintenant et reste payé au comptoir du relais, avec leurs frais Mobile Money. */
+    comptoir?: { avance: number; frais_momo_avance: number; au_comptoir: number; frais_momo_comptoir: number };
   } | null;
   /** Heure promise (R45.6), à montrer avant le paiement (R12.1) : « Livré demain avant 13 h ». */
   promesse?: { texte: string; a: string } | null;
@@ -62,7 +66,7 @@ export interface DevisPanier {
 }
 
 export type DevisPanierData = Pick<OrderCreateData,
-  'delivery_mode' | 'district' | 'delivery_latitude' | 'delivery_longitude' | 'relay_point_id' | 'cart_items'>;
+  'delivery_mode' | 'district' | 'delivery_latitude' | 'delivery_longitude' | 'relay_point_id' | 'cart_items' | 'moyen'>;
 
 // Ré-exporter le type Order depuis types/order.ts
 export type { Order };

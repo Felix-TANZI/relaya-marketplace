@@ -80,6 +80,11 @@ def materialize_holds(intent: PaymentIntent) -> list[EscrowHold]:
 
     plan = intent.distribution_plan or {}
     lignes = plan.get("holds") or []
+    if not lignes and "holds" in plan and plan.get("total_distributed") and \
+            plan.get("platform_revenue") == plan.get("total_distributed"):
+        # Spec v2.1, R42.3 (D14) : une avance de comptoir sans livraison offerte n'est que transport et frais Mobile
+        # Money, tout a la plateforme ; l'encaissement est deja passe en produit, il n'y a rien a sequestrer.
+        return []
     if not lignes:
         raise EscrowError(
             f"L'intention {intent.reference} n'a aucun plan de repartition."

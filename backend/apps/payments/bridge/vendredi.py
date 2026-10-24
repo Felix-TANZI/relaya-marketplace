@@ -44,9 +44,10 @@ def montant_relais(relais, debut, fin) -> tuple[int, str]:
         jours.append(garde.jour(parcel.shipment.order, parcel.picked_up_at) or 0)
     formats += ["P"] * retours  # R40.1 : un retour déposé compte comme un colis (format inconnu : pochette)
     especes = sum(p.garde_encaissee_xaf or 0 for p in remis)
-    nb_comptoir = 0  # R40.4 : colis payés au comptoir (D14) ; aucun paiement au comptoir n'est encore ouvert
+    nb_comptoir = sum(1 for p in remis if p.shipment.order.comptoir_paye_le)  # R40.4 : colis payés au comptoir (D14)
     v = regles.moteur().versement_relais(formats, [int(j) for j in jours], nb_comptoir, especes)
-    detail = (f"{len(remis)} colis remis, {retours} retour(s) déposé(s), espèces de garde encaissées {especes} F.")
+    detail = (f"{len(remis)} colis remis dont {nb_comptoir} payé(s) au comptoir, {retours} retour(s) déposé(s), "
+              f"espèces de garde encaissées {especes} F.")
     return int(v["montant"]), detail
 
 

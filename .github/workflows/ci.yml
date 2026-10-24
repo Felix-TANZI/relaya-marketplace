@@ -5,7 +5,8 @@ on:
     # `dev` est la branche d'integration de l'equipe : sans elle, le CI ne
     # tournait qu'a la fusion vers main, trop tard pour rattraper une
     # migration en conflit ou une dependance cassee.
-    branches: [ main, dev ]
+    # `dev1` : branche de travail de la feuille de route V2 Elite (tache D25, tests a chaque envoi).
+    branches: [ main, dev, dev1 ]
   pull_request:
 
 jobs:

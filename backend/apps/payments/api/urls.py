@@ -9,6 +9,8 @@
 
 from django.urls import path
 
+from apps.payments.wallet import views as wv
+
 from .views import (
     CheckPaymentView, InitiatePaymentView, MyAdjustmentsView, MyDueView,
     MyEscrowView, MyOrderEscrowView, MyPaymentDetailView, MyPaymentsView,
@@ -30,6 +32,14 @@ urlpatterns = [
     path("me/orders/<int:order_id>/protection/", MyOrderEscrowView.as_view(),
          name="my-order-protection"),
     path("me/refunds/", MyRefundsView.as_view(), name="my-refunds"),
+
+    # ── Wallet (feuille de route D16, R03 ; ferme tant que r_wallet_ouvert = 0) ──
+    path("me/wallet/", wv.MonWalletView.as_view(), name="my-wallet"),
+    path("me/wallet/topups/", wv.RechargeView.as_view(), name="my-wallet-topup"),
+    path("me/wallet/code/", wv.CodeView.as_view(), name="my-wallet-code"),
+    path("me/wallet/withdrawal-quote/", wv.DevisRetraitView.as_view(), name="my-wallet-withdrawal-quote"),
+    path("me/wallet/withdrawals/", wv.RetraitView.as_view(), name="my-wallet-withdrawal"),
+    path("me/payments/<str:reference>/pay-with-wallet/", wv.PayerView.as_view(), name="pay-with-wallet"),
 
     # ── Partenaire ──────────────────────────────────────────────────────────
     path("partner/due/", MyDueView.as_view(), name="partner-due"),

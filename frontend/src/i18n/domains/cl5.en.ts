@@ -119,7 +119,6 @@ export default {
 
     feature_theme: "Exclusive premium purple theme",
     feature_map: "Real-time courier map",
-    feature_delivery: "Free delivery on all orders",
     feature_flash: "Flash Sales 1h before everyone else",
     feature_points: "×3 accelerated loyalty points",
     feature_coupons: "Exclusive coupons every month",
@@ -135,13 +134,10 @@ export default {
     calculator_estimated_savings: "Estimated savings",
     calculator_yearly_roi: "i.e. {{yearly}} F/year · ROI ×{{roi}}",
 
-    gain_delivery: "Unlimited free delivery",
     gain_points: "×3 loyalty points",
     gain_support: "24/7 priority support",
 
     advantages_heading: "All Premium benefits",
-    advantage_delivery_title: "Unlimited free delivery",
-    advantage_delivery_text: "No more delivery fees, on all your orders, across the entire CEMAC zone. Average savings: 2,500 FCFA per order.",
     advantage_flash_title: "Early access to Flash Sales",
     advantage_flash_text: "The best flash deals are reserved for you 1h before everyone else. Never miss a product again.",
     advantage_points_title: "Loyalty points multiplied by 3",
@@ -166,9 +162,6 @@ export default {
     cmp_tracking_label: "Order tracking",
     cmp_tracking_free: "Text statuses",
     cmp_tracking_plus: "Live courier map",
-    cmp_delivery_label: "Free delivery",
-    cmp_delivery_free: "From 30,000 FCFA",
-    cmp_delivery_plus: "All orders",
     cmp_flash_label: "Flash Sales",
     cmp_flash_free: "Standard access",
     cmp_flash_plus: "1h before everyone else",
@@ -215,7 +208,7 @@ export default {
 
     testimonials_heading: "They chose BelivaY+",
     testimonial1_meta: "Yaoundé · Member for 8 months",
-    testimonial1_quote: "Since BelivaY+, I order 3 times more. Free delivery and flash deals easily save me 15,000 FCFA a month.",
+    testimonial1_quote: "Since BelivaY+, I order 3 times more. Flash deals and points easily save me 15,000 FCFA a month.",
     testimonial2_meta: "Douala · Member for 4 months",
     testimonial2_quote: "24/7 support saved me for an urgent gift. The real-time courier map is great, I no longer waste time waiting.",
     testimonial3_meta: "Bafoussam · Member for 1 year",

@@ -76,7 +76,7 @@ export default {
     subtitle: "Où en est chaque franc que vous avez gagné",
     export_csv_button: "Relevé CSV",
     refresh: "Actualiser",
-    csv_header: "Référence,Date,CA Brut (FCFA),Commission (FCFA),Net Vendeur (FCFA),Statut Escrow",
+    csv_header: "Référence,Date,Prix de vente (FCFA),Vous recevez (FCFA),Statut Escrow",
     toast_load_error: "Erreur de chargement",
     chart_bar_tooltip: "{{date}} · libéré {{released}} · escrow {{blocked}}",
     chart_today: "Aujourd'hui",

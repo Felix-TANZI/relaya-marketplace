@@ -33,6 +33,11 @@ GOOGLE_EXTRA_CLIENT_IDS = [
 # statique frontend, qui ne lit jamais cette cle.
 GOOGLE_TRANSLATE_API_KEY = os.getenv("GOOGLE_TRANSLATE_API_KEY", "").strip()
 
+# Distance par la route des frais de livraison (spec v2.1, R83.2) : Google Maps Distance Matrix. Sans clé, ou si le
+# service ne répond pas, distance à vol d'oiseau × r_vol_oiseau (R83.3) — apps/shipping/itineraire.py.
+GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "").strip()
+BELIVAY_ITINERAIRE = os.getenv("BELIVAY_ITINERAIRE", "apps.shipping.cartes_google.distance_km" if GOOGLE_MAPS_API_KEY else "")
+
 # Identifiants Apple acceptés dans l'audience ("aud") du jeton "Sign in with
 # Apple" : le Bundle ID de l'app native (flux natif iOS) et/ou le Services ID
 # (flux web), séparés par des virgules si plusieurs.
@@ -81,6 +86,7 @@ INSTALLED_APPS = [
     "apps.contact",
     # Module détachable : voir apps/whatsapp_assistant/README.md (activation, retrait).
     "apps.whatsapp_assistant",
+    "apps.regles",
 
     # Espace client (kit espace-client-belivay/backend-kit, socle uniquement pour
     # l'instant : client_core/otp/client_accounts/notifications_client — voir
@@ -91,6 +97,8 @@ INSTALLED_APPS = [
     "apps.otp",
     "apps.client_accounts",
     "apps.notifications_client",
+    # Feuille de route D6 (option A, 23/10) : messagerie client sur le socle accounts/orders.
+    "apps.messaging",
 ]
 
 MIDDLEWARE = [
@@ -343,7 +351,9 @@ SPECTACULAR_SETTINGS = {
 BELIVAY_PARAMETRES_JSON = BASE_DIR / "apps" / "client_core" / "donnees" / "parametres-en-vigueur.json"
 BELIVAY_INTERRUPTEURS_JSON = BASE_DIR / "apps" / "client_core" / "donnees" / "interrupteurs.json"
 BELIVAY_SITE_URL = os.getenv("BELIVAY_SITE_URL", "https://belivay.com")
-BELIVAY_SMS = "apps.otp.prestataires.SmsConsole"
+# Feuille de route D7 : aiguillage SMS / WhatsApp, prestataire SMS reel a brancher a la signature du contrat (R78.2).
+BELIVAY_SMS = os.getenv("BELIVAY_SMS", "apps.otp.prestataires.Aiguillage")
+BELIVAY_SMS_FOURNISSEUR = os.getenv("BELIVAY_SMS_FOURNISSEUR", "apps.otp.prestataires.SmsConsole")
 # BELIVAY_PUSH et FCM_CREDENTIALS_PATH : console par defaut (journal seulement,
 # aucun compte Firebase requis). Pour activer un vrai envoi (D21) une fois le
 # projet Firebase cree : poser FCM_CREDENTIALS_PATH vers le fichier JSON du

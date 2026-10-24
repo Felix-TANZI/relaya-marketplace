@@ -62,53 +62,6 @@ def _weighted_commission_rate(order_items_data, settings):
     return (weighted / Decimal(total)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
-def _compute_delivery_price(order_items_data, delivery_mode, destination_zone,
-                            subtotal_xaf=0):
-    """
-    Grille de prix reelle (BelivaY_Regles_Systeme_DEV v2.0 §3.1), calculee
-    cote serveur et figee au paiement (regle en dur #4) — remplace l'ancien
-    forfait plat par ville.
-
-    Base : 500F (retrait relais) / 1000F (livraison domicile) — couvre 1
-    ramassage. +500F par vendeur supplementaire dans la MEME zone que les
-    precedents, +1000F par vendeur supplementaire dans une zone DIFFERENTE.
-    + majoration si la destination est en zone Vague 3.
-    """
-    seen_vendor_ids = set()
-    vendors_in_order = []
-    for item in order_items_data:
-        vendor = item['product'].vendor
-        vid = vendor.id if vendor else None
-        if vid in seen_vendor_ids:
-            continue
-        seen_vendor_ids.add(vid)
-        vendors_in_order.append(vendor)
-
-    if not vendors_in_order:
-        return 0
-
-    # ─────────────────────────────────────────────────────────────────────
-    # LE BAREME VIENT DU MODULE FINANCIER
-    #
-    # Les montants vivaient ici en dur : 500 pour un retrait, 1000 pour une
-    # livraison, plus les supplements par vendeur. Un changement tarifaire
-    # exigeait un developpeur, et personne ne pouvait verifier ce qui etait
-    # applique.
-    #
-    # Ils sont desormais portes par DeliveryPricingRule, editable depuis
-    # l'administration.
-    # ─────────────────────────────────────────────────────────────────────
-    from apps.payments.bridge import queries
-
-    return queries.delivery_fee_xaf(
-        delivery_mode=delivery_mode,
-        vendors=vendors_in_order,
-        destination_zone=destination_zone,
-        # Sert au seuil de gratuite (tache D10) : « offerte des 50 000 F ».
-        subtotal_xaf=subtotal_xaf,
-    )
-
-
 class OrderItemSerializer(serializers.ModelSerializer):
     """Serializer pour les articles d'une commande"""
     
@@ -164,6 +117,11 @@ class OrderDetailSerializer(serializers.ModelSerializer):
             'subtotal_xaf',
             'delivery_fee_xaf',
             'total_xaf',
+            'couverture_xaf',
+            'frais_momo_xaf',
+            'total_a_payer_xaf',
+            'promesse_at',
+            'promesse_texte',
             'items',
             'is_paid',
             'can_be_fulfilled',
@@ -255,6 +213,15 @@ class OrderCreateSerializer(serializers.Serializer):
         allow_blank=True,
         help_text="Téléphone du tiers autorisé au retrait (optionnel)",
     )
+    total_attendu = serializers.IntegerField(
+        required=False, allow_null=True, default=None,
+        help_text="Total affiché au client avant le paiement ; s'il a changé, refus « Un prix a changé » (R93.6).",
+    )
+    moyen = serializers.ChoiceField(
+        choices=['momo', 'wallet', 'comptoir'], required=False, default='momo',
+        help_text="Moyen de paiement (R01.1) ; le Wallet seulement s'il est ouvert (R03) ; « comptoir » : avance "
+                  "maintenant, reste par Mobile Money au relais (R42, feuille de route D14).",
+    )
 
     def validate_cart_items(self, value):
         """Valider les articles du panier"""
@@ -336,40 +303,41 @@ class OrderCreateSerializer(serializers.Serializer):
         cart_items = validated_data.pop('cart_items')
         user = self.context['request'].user if self.context['request'].user.is_authenticated else None
         
-        # Calculer le sous-total
-        subtotal = 0
-        order_items_data = []
-        
+        from . import frais as frais_v21
+
+        # Sous-total au prix payé : flash, sinon promotion, sinon normal (R27.2) — le st du moteur.
+        lignes = []
         for item in cart_items:
             try:
-                product = Product.objects.get(id=item['product_id'])
+                product = Product.objects.select_related('master', 'vendor').get(id=item['product_id'])
             except Product.DoesNotExist:
                 product = self._get_or_create_demo_product(item)
-            
-            qty = item['qty']
-            line_total = product.price_xaf * qty
-            subtotal += line_total
-            
-            order_items_data.append({
-                'product': product,
-                'title_snapshot': product.title,
-                'price_xaf_snapshot': product.price_xaf,
-                'qty': qty,
-                'line_total_xaf': line_total
-            })
-        
-        delivery_mode = validated_data.get('delivery_mode', 'DELIVERY')
+            lignes.append((product, item['qty']))
 
-        # Calculer les frais de livraison — grille reelle §3.1, jamais un
-        # forfait plat par ville (regle en dur #4 : calcul cote serveur,
-        # fige au paiement).
+        def composer(lignes):
+            prix_payes = frais_v21._prix_payes([p for p, _ in lignes])
+            subtotal = 0
+            order_items_data = []
+            for product, qty in lignes:
+                prix = int(prix_payes.get(product.pk, product.price_xaf))
+                line_total = prix * qty
+                subtotal += line_total
+                order_items_data.append({
+                    'product': product,
+                    'title_snapshot': product.title,
+                    'price_xaf_snapshot': prix,
+                    'qty': qty,
+                    'line_total_xaf': line_total
+                })
+            return subtotal, order_items_data
+
+        subtotal, order_items_data = composer(lignes)
+
+        delivery_mode = validated_data.get('delivery_mode', 'DELIVERY')
         settings = PlatformSettings.get_settings()
         from apps.shipping.models import Zone as _Zone
 
         destination_zone = _Zone.match(validated_data['city'], validated_data.get('district', ''))
-        delivery_fee = _compute_delivery_price(
-            order_items_data, delivery_mode, destination_zone, subtotal_xaf=subtotal,
-        )
         commission_rate_snapshot = _weighted_commission_rate(order_items_data, settings)
 
         address = validated_data.get('address', '').strip()
@@ -382,7 +350,6 @@ class OrderCreateSerializer(serializers.Serializer):
         relay_point_id = validated_data.get('relay_point_id')
         if delivery_mode == 'PICKUP' and relay_point_id:
             from apps.accounts.models import RelayPointProfile
-            from apps.shipping.models import RelayParcel as _RelayParcel
 
             try:
                 relay_point_obj = RelayPointProfile.objects.get(
@@ -391,19 +358,46 @@ class OrderCreateSerializer(serializers.Serializer):
             except RelayPointProfile.DoesNotExist:
                 raise serializers.ValidationError({'relay_point_id': "Ce point relais n'est plus disponible."})
 
-            occupancy = _RelayParcel.objects.filter(
-                relay_point=relay_point_obj,
-                status__in=[_RelayParcel.Status.EXPECTED, _RelayParcel.Status.RECEIVED, _RelayParcel.Status.STORED],
-            ).count()
-            if relay_point_obj.storage_capacity and occupancy >= relay_point_obj.storage_capacity:
+            from apps.shipping.garde import relais_sature
+            if relais_sature(relay_point_obj):  # spec v2.1, R41.3
                 raise serializers.ValidationError({
                     'relay_point_id': "Ce point relais vient d'atteindre sa capacité — choisissez-en un autre.",
                 })
 
             address = f"{relay_point_obj.name} - {relay_point_obj.address}"
 
-        if delivery_mode == 'PICKUP' and not address:
-            address = f"Retrait en boutique - {validated_data['city']}"
+        if delivery_mode == 'PICKUP' and relay_point_obj is None:
+            raise serializers.ValidationError({'relay_point_id': "Choisissez un point relais."})
+
+        # Frais de livraison et total à payer : A1 et A2 (BV-DEV-01), calculés une seule fois ici et figés (R12.3).
+        try:
+            if delivery_mode == 'PICKUP':
+                destination = frais_v21.destination_relais(relay_point_obj)
+            else:
+                destination = frais_v21.destination_domicile(
+                    validated_data.get('district', ''),
+                    validated_data.get('delivery_latitude'), validated_data.get('delivery_longitude'),
+                )
+            # R93.2 : au clic sur « Payer », la sélection des offres est refaite pour le panier entier et la
+            # destination de la commande (A12) ; chaque article va à l'offre retenue.
+            from apps.catalog.meilleure_offre import selectionner_panier
+            selection = selectionner_panier(lignes, destination)
+            lignes = selection['lignes']
+            subtotal, order_items_data = composer(lignes)
+            commission_rate_snapshot = _weighted_commission_rate(order_items_data, settings)
+            devis = frais_v21.calculer(lignes, destination, validated_data.get('moyen', 'momo'), user=user)
+        except frais_v21.FraisImpossibles as exc:
+            raise serializers.ValidationError({'frais': {'refus': exc.code, 'messages': [exc.message]}})
+        if not devis.ok:
+            raise serializers.ValidationError({'frais': {**devis.refus, 'messages': devis.messages}})
+        # R93.6 : le total a changé depuis l'affichage → l'écran « Un prix a changé » avant le paiement.
+        attendu = validated_data.get('total_attendu')
+        if attendu is not None and attendu != devis.detail['total_a_payer']:
+            raise serializers.ValidationError({
+                'prix_change': "Un prix a changé", 'total_a_payer': devis.detail['total_a_payer'], 'total_affiche': attendu,
+            })
+        if destination.zone_dest:
+            destination_zone = _Zone.objects.filter(code=destination.zone_dest).first() or destination_zone
 
         address_precision = validated_data.get('address_precision') or {}
         if not isinstance(address_precision, dict):
@@ -435,8 +429,17 @@ class OrderCreateSerializer(serializers.Serializer):
             authorized_pickup_name=validated_data.get('authorized_pickup_name', '').strip(),
             authorized_pickup_phone=validated_data.get('authorized_pickup_phone', '').strip(),
             subtotal_xaf=subtotal,
-            delivery_fee_xaf=delivery_fee,
-            total_xaf=subtotal + delivery_fee,
+            delivery_fee_xaf=devis.frais_client,
+            total_xaf=devis.detail['base_paiement'],
+            couverture_xaf=devis.detail['couverture'],
+            frais_momo_xaf=devis.detail['frais_momo'],
+            total_a_payer_xaf=devis.detail['total_a_payer'],
+            # R42 (D14) : avance maintenant, reste au comptoir
+            paiement_comptoir='comptoir' in devis.detail,
+            avance_xaf=devis.detail.get('comptoir', {}).get('avance', 0),
+            reste_comptoir_xaf=devis.detail.get('comptoir', {}).get('au_comptoir', 0),
+            frais_momo_comptoir_xaf=devis.detail.get('comptoir', {}).get('frais_momo_comptoir', 0),
+            frais_detail=devis.detail,
             commission_rate_snapshot=commission_rate_snapshot,
             payment_status=Order.PaymentStatus.PENDING,
             fulfillment_status=Order.FulfillmentStatus.CREATED,
@@ -445,6 +448,26 @@ class OrderCreateSerializer(serializers.Serializer):
         # Créer les articles de la commande
         for item_data in order_items_data:
             OrderItem.objects.create(order=order, **item_data)
+
+        # Commission de chaque sous-commande, figée maintenant (A7, A8 ; R13.2, R13.5). Le taux de la commande en
+        # garde l'équivalent, pour les écrans qui le lisent encore.
+        from . import commission as commission_v21
+        commissions = commission_v21.calculer(
+            order, [(d['product'], d['price_xaf_snapshot'], d['qty']) for d in order_items_data], devis.detail,
+        )
+        retenu = sum(c.commission_b for c in commissions)
+
+        # R27.7 : chaque sélection est journalisée (A12, raison « panier »).
+        from apps.catalog.meilleure_offre import journaliser
+        for produit, _qty in lignes:
+            cle = f"{produit.master_id}-{produit.variant_id or 0}"
+            if cle in selection['selections']:
+                # l'offre retenue est celle du panier (A12), pas celle du produit seul (A6)
+                journaliser(produit.master, destination, {**selection['selections'].pop(cle), 'retenue': produit.pk},
+                            'panier', order)
+        if subtotal:
+            order.commission_rate_snapshot = (Decimal(retenu) * 100 / Decimal(subtotal)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            order.save(update_fields=['commission_rate_snapshot'])
 
         vendor_users = {
             item_data['product'].vendor
@@ -571,7 +594,8 @@ class OrderCreateSerializer(serializers.Serializer):
         for shipment in created_shipments:
             zone_covered = order.zone_id is not None
             oversized = shipment.parcel_size in OVERSIZED_PARCEL_SIZES
-            if zone_covered and not oversized:
+            vers_relais = order.relay_point_id is not None  # R52.1 : à domicile, une course par client, publiée tout de suite
+            if zone_covered and not oversized and vers_relais:
                 continue  # attend le composeur de tournees
 
             before_courier_id = shipment.courier_id

@@ -1,36 +1,30 @@
 /**
- * La grille de garde, affichée au gérant.
+ * La grille de garde, affichée au gérant — celle de la spécification v2.1 (R36.1), lue dans les réglages de l'admin
+ * (t_garde) : le montant affiché est celui que le serveur calcule (apps/shipping/garde.py), jamais une autre grille.
  *
- * ─────────────────────────────────────────────────────────────────────────
- * POURQUOI ELLE EST SUR L'ÉCRAN STOCK
- *
- * C'est la question qu'un client pose au comptoir, et la seule à laquelle le
- * gérant doit savoir répondre sans appeler personne : « ça me coûte combien
- * si je viens jeudi ? ». Une grille affichée sous les colis en garde met la
- * réponse là où la question se pose.
- *
- * ─────────────────────────────────────────────────────────────────────────
- * ⚠ CETTE GRILLE EST UN AFFICHAGE, PAS LE CALCUL
- *
- * Le montant réellement facturé vient du serveur — `RelayParcel.garde_fee_due()`
- * dans `apps/shipping/models.py`, qui applique aujourd'hui : gratuit jusqu'à
- * J+3, puis 200 F par jour jusqu'à J+7.
- *
- * Les paliers ci-dessous décrivent un barème progressif différent. Tant que
- * les constantes du serveur n'ont pas été alignées, ce tableau annonce autre
- * chose que ce qui sera prélevé — et un gérant qui l'a lu donnera une réponse
- * fausse à son client. Les deux doivent être réconciliés.
+ * C'est la question qu'un client pose au comptoir : « ça me coûte combien si je viens jeudi ? ». La garde se compte
+ * par colis (R36.4), plafonnée à la valeur du colis (R36.2), payée en espèces au retrait (R36.3) ; après le dernier
+ * jour, le colis repart au vendeur (R37.2).
  */
 
-/** Les paliers, tels qu'ils s'affichent. */
-const PALIERS: Array<{ jours: string; montant: string; tone: string }> = [
-  { jours: "J1", montant: "0 F", tone: "text-[#5EF2B5]" },
-  { jours: "J2–J3", montant: "100 F", tone: "text-white" },
-  { jours: "J4–J5", montant: "200 F", tone: "text-white" },
-  { jours: "J6–J7", montant: "400 F", tone: "text-[#E8A10E]" },
-];
+import { useEffect, useState } from "react";
+
+import { http } from "@/services/api/http";
+
+type Jour = { jour: number; montant: number };
 
 export default function RelayGardeGrid() {
+  const [jours, setJours] = useState<Jour[]>([]);
+
+  useEffect(() => {
+    http<{ lignes: Jour[] }>("/api/regles/tables/t_garde/")
+      .then((r) => setJours([...r.lignes].sort((a, b) => a.jour - b.jour)))
+      .catch(() => setJours([]));
+  }, []);
+
+  const total = jours.reduce((s, j) => s + j.montant, 0);
+  const dernier = jours.length;
+
   return (
     <section
       className="overflow-hidden rounded-[18px] px-[18px] py-[18px] text-white shadow-[0_6px_18px_rgba(14,27,56,.28)]"
@@ -41,33 +35,29 @@ export default function RelayGardeGrid() {
       }}
     >
       <p className="text-[12.5px] font-black uppercase leading-none tracking-[0.09em] text-[#E8A10E]">
-        La grille de garde
+        La grille de garde · garde par colis
       </p>
 
-      {/* Les quatre paliers dans un meme cadre : c'est une progression, pas
-          quatre tarifs independants. Les separer en cartes ferait croire a un
-          choix, alors que le client les traverse tous. */}
-      <div className="mt-3 grid grid-cols-4 gap-1 rounded-[12px] bg-white/[.07] p-3">
-        {PALIERS.map(({ jours, montant, tone }) => (
-          <div key={jours} className="text-center">
-            <div className="text-[11.5px] font-semibold leading-none text-white/55">{jours}</div>
-            <div className={`mt-2 text-[17px] font-black leading-none ${tone}`}>{montant}</div>
+      <div className="mt-3 grid gap-1 rounded-[12px] bg-white/[.07] p-3" style={{ gridTemplateColumns: `repeat(${Math.max(dernier, 1)}, minmax(0, 1fr))` }}>
+        {jours.map(({ jour, montant }) => (
+          <div key={jour} className="text-center">
+            <div className="text-[11.5px] font-semibold leading-none text-white/55">J{jour}</div>
+            <div className={`mt-2 text-[15px] font-black leading-none ${montant === 0 ? "text-[#5EF2B5]" : "text-white"}`}>{montant} F</div>
           </div>
         ))}
       </div>
 
-      {/* J8 sort du cadre : ce n'est plus un tarif de garde, c'est la fin de
-          la garde. Le colis repart. */}
-      <div className="mt-2 rounded-[12px] bg-white/[.07] px-3 py-3 text-center">
-        <div className="text-[11.5px] font-semibold leading-none text-white/55">J8</div>
-        <div className="mt-2 text-[17px] font-black leading-none text-[#E8A10E]">renvoi + 500 F</div>
-      </div>
+      {dernier > 0 && (
+        <div className="mt-2 rounded-[12px] bg-white/[.07] px-3 py-3 text-center">
+          <div className="text-[11.5px] font-semibold leading-none text-white/55">J{dernier + 1}</div>
+          <div className="mt-2 text-[15px] font-black leading-none text-[#E8A10E]">le colis repart au vendeur</div>
+        </div>
+      )}
 
       <p className="mt-4 text-[13px] font-medium leading-[1.55] text-white/80">
-        Vous touchez <strong className="font-black text-white">100 F par jour facturé</strong>, jours offerts
-        aux abonnés compris (payés par BelivaY). Encombrant : garde doublée, pas le renvoi. Jamais
-        facturés : fermeture, avis non vu, dossier en cours, groupage ; garde plafonnée à la valeur du
-        colis. Rappel daté au client à la fin des J1, J3 et J5, puis le J7.
+        {total > 0 && <>Sur {dernier} jours : <strong className="font-black text-white">{total} F</strong> par colis au plus, jamais plus que la valeur du colis. </>}
+        La garde se paie en espèces, en une fois, au retrait : confirmez l&apos;encaissement avant de remettre le colis.
+        Rappels envoyés au client aux jours 3 et 5.
       </p>
     </section>
   );

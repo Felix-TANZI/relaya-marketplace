@@ -13,7 +13,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Optional, Sequence
 
 from .enums import (
@@ -61,6 +61,9 @@ class ComponentInput:
     order_id: Optional[int] = None
     payee_code: Optional[str] = None       # beneficiaire principal identifie
     commission_rate: Decimal = Decimal("0")
+    # Spec v2.1 (R14.1, R13.5) : commission exacte de la sous-commande, calculee une fois par le service de
+    # commission (apps/orders/commission.py). Fournie, elle remplace commission_rate.
+    commission_amount: Optional[Money] = None
     delivery_mode: Optional[str] = None
     city: Optional[str] = None
 
@@ -446,7 +449,14 @@ def build_distribution_plan(
                 )
 
             code = _resolve_payee_code(rule, comp, payee_codes)
-            commission = part.percent(comp.commission_rate)
+            if comp.commission_amount is not None:
+                # Une part qui ne couvre pas tout le composant porte la commission au prorata.
+                commission = comp.commission_amount if part == comp.amount else Money(
+                    int((Decimal(comp.commission_amount.amount) * part.amount / comp.amount.amount)
+                        .quantize(Decimal("1"), rounding=ROUND_HALF_UP)) if comp.amount.amount else 0,
+                    part.currency)
+            else:
+                commission = part.percent(comp.commission_rate)
             net = part - commission
             net.require_non_negative(f"net beneficiaire {code}")
 

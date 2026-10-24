@@ -397,6 +397,7 @@ class DistributionRule(VersionedConfig):
         GOODS = "GOODS", "Marchandise"
         TRANSPORT = "TRANSPORT", "Transport"
         RELAY_HANDLING = "RELAY_HANDLING", "Remise en point relais"
+        PAYMENT_FEE = "PAYMENT_FEE", "Frais Mobile Money payes par le client"
 
     class PayeeType(models.TextChoices):
         VENDOR = "VENDOR", "Vendeur"

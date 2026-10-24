@@ -78,17 +78,11 @@ RELEASE_DELAY_DAYS_BY_TIER = {
 
 
 def _vendor_kept_for_order(order: Order, vendor: User) -> int:
-    """Montant gardé par le vendeur sur cette commande (ses articles uniquement),
-    avec le taux de commission actuel (commission_rate_snapshot) — même logique
-    que vendor_payment_summary(), pas le nouveau barème M01 (les commandes
-    existantes n'ont pas de famille produit ni de palier figés au paiement)."""
-    items = order.items.filter(product__vendor=vendor)
-    subtotal = sum(i.line_total_xaf for i in items)
-    if not subtotal:
-        return 0
-    rate = float(order.commission_rate_snapshot)
-    commission = round(subtotal * rate / 100)
-    return subtotal - commission
+    """Montant gardé par le vendeur sur cette commande (ses articles uniquement) : net_b figé à la commande (spec
+    v2.1, R22.1) ; une commande antérieure garde le calcul par son taux d'origine."""
+    from apps.orders.commission import net_vendeur
+
+    return net_vendeur(order, vendor)
 
 
 def _order_has_active_freeze(order: Order, vendor: User) -> bool:

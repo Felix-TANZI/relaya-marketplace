@@ -409,14 +409,18 @@ def confirm_payment(attempt: PaymentAttempt, *, provider_status=None) -> Collect
         )
 
     plan = intent.distribution_plan or {}
-    if not plan.get("holds") and not plan.get("platform_revenue"):
+    if not plan.get("holds") and not plan.get("platform_revenue") and not plan.get("wallet"):
         raise CollectError(
             f"L'intention {intent.reference} n'a pas de plan de repartition. "
             "Impossible de ventiler l'encaissement."
         )
 
     montant = intent.amount_xaf
-    frais = _collect_fee_amount(intent)
+    from apps.payments.wallet import services as wallet
+
+    # Feuille de route D16, R03.3 : un paiement par le Wallet est sans frais et sort du compte 2050.
+    par_wallet = attempt.provider_code == wallet.PRESTATAIRE
+    frais = 0 if par_wallet else _collect_fee_amount(intent)
     net_encaisse = montant - frais
     if net_encaisse <= 0:
         raise CollectError(
@@ -425,10 +429,12 @@ def confirm_payment(attempt: PaymentAttempt, *, provider_status=None) -> Collect
 
     sequestre = sum(h["net"] for h in plan.get("holds", []))
     produits = plan.get("platform_revenue", 0)
+    recharge = int(plan.get("wallet", 0) or 0)  # R03.3 : recharge, tout au Wallet
 
+    compte_debite = (coa.WALLET_LIABILITY if par_wallet
+                     else coa.psp_account_for(intent.payer_operator, degraded=True))
     lignes = [
-        debit(coa.psp_account_for(intent.payer_operator, degraded=True),
-              net_encaisse, label=f"Encaissement {intent.reference}"),
+        debit(compte_debite, net_encaisse, label=f"Encaissement {intent.reference}"),
     ]
     if frais > 0:
         lignes.append(debit(coa.EXPENSE_PSP_COLLECT, frais,
@@ -439,8 +445,10 @@ def confirm_payment(attempt: PaymentAttempt, *, provider_status=None) -> Collect
     if produits > 0:
         lignes.append(credit(coa.REVENUE_COMMISSION, produits,
                              label="Commission et part plateforme"))
+    if recharge > 0:
+        lignes.append(credit(coa.WALLET_LIABILITY, recharge, label="Recharge du Wallet"))
 
-    ecart = montant - (sequestre + produits)
+    ecart = montant - (sequestre + produits + recharge)
     if ecart != 0:
         raise CollectError(
             f"Plan de repartition incoherent pour {intent.reference} : "
@@ -475,6 +483,11 @@ def confirm_payment(attempt: PaymentAttempt, *, provider_status=None) -> Collect
     intent.save(update_fields=[
         "status", "amount_captured_xaf", "confirmed_at", "updated_at",
     ])
+
+    if recharge > 0:
+        # Le Wallet est credite dans la meme transaction que l'ecriture : jamais l'un sans l'autre.
+        wallet.crediter_recharge(intent)
+        return CollectOutcome(intent=intent, attempt=attempt, status="SUCCEEDED", message="Wallet recharge.")
 
     # ── Materialisation des sequestres (Lot 7) ───────────────────────────────
     # Depuis le plan FIGE, jamais recalcule. Un echec ici ne doit pas annuler

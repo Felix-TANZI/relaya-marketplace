@@ -38,6 +38,7 @@ urlpatterns = [
     path('api/vendors/', include('apps.vendors.urls')),
     path('api/vendors/', include('apps.vendor_team.urls')),
     path('api/contact/', include('apps.contact.urls')),
+    path("api/regles/", include("apps.regles.urls")),
     path("api/whatsapp/", include("apps.whatsapp_assistant.urls")),  # module détachable
 
     path('api/boutique/<slug:slug>/', vendors_views.public_shop, name='public-shop'),

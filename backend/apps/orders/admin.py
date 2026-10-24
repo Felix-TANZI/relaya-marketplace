@@ -14,7 +14,36 @@ from .models import (
     DisputeMessage,
     DisputeEvidence,
     PlatformSettings,
+    CommissionSousCommande,
 )
+
+
+# ─── Commission figée de chaque sous-commande (spec v2.1, A7 et A8 ; console R26.2) ───────────────────
+class CommissionSousCommandeInline(admin.TabularInline):
+    model = CommissionSousCommande
+    extra = 0
+    can_delete = False
+    fields = ('vendor', 'st_b', 'commission_b', 'tva_b', 'net_b', 'plancher_retenu', 'palier', 'decouverte',
+              'reste_b', 'exigence', 'objectif')
+    readonly_fields = fields
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(CommissionSousCommande)
+class CommissionSousCommandeAdmin(admin.ModelAdmin):
+    list_display = ('order', 'vendor', 'st_b', 'commission_b', 'tva_b', 'net_b', 'plancher_retenu', 'palier',
+                    'decouverte', 'exigence', 'objectif', 'created_at')
+    list_filter = ('palier', 'decouverte', 'plancher_retenu', 'exigence', 'objectif')
+    search_fields = ('order__id', 'vendor__username')
+    readonly_fields = [f.name for f in CommissionSousCommande._meta.fields]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False  # figée au paiement (R13.2)
 
 
 # ─── INLINE : Articles d'une commande ────────────────────────────────────────
@@ -57,7 +86,7 @@ class OrderAdmin(admin.ModelAdmin):
         'commission_rate_snapshot', 'vendor_reply_deadline',
         'created_at', 'updated_at',
     )
-    inlines       = [OrderItemInline, OrderHistoryInline]
+    inlines       = [OrderItemInline, CommissionSousCommandeInline, OrderHistoryInline]
     ordering      = ('-created_at',)
 
     fieldsets = (

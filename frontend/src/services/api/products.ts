@@ -160,6 +160,15 @@ export interface MasterFicheDetail extends MasterFicheCard {
   description: string;
   images: MasterImage[];
   offers: MasterOffer[];
+  /** Spec v2.1 : offre retenue pour ce produit seul (A6, R93.1) ; disponible = false → « Indisponible pour le moment » (R32.4). */
+  meilleure_offre?: {
+    disponible: boolean;
+    message?: string;
+    offre?: number;
+    prix?: number;
+    ctl?: number;
+    livraison_des?: number;
+  } | null;
 }
 
 export interface MasterListResponse {

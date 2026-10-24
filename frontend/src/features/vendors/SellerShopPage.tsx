@@ -78,6 +78,8 @@ interface Location {
   description: string;
   representative_name: string; representative_phone: string;
   latitude: string; longitude: string; is_active: boolean; is_main: boolean;
+  /** Quartier de Yaoundé (t_quartiers) : zone et niveau de prix de la boutique (spec v2.1, R06.1). */
+  quartier?: string;
 }
 
 interface DocType { id: number; name: string; description: string; }
@@ -100,7 +102,7 @@ const SENSITIVE_FIELD_LABEL_KEYS: Record<string, string> = {
 const EMPTY_LOCATION: Location = {
   name: '', address: '', description: '', phone: '', email: '',
   representative_name: '', representative_phone: '',
-  latitude: '', longitude: '', is_active: true, is_main: false,
+  latitude: '', longitude: '', is_active: true, is_main: false, quartier: '',
 };
 
 // ─── MARQUEUR PERSONNALISÉ BelivaY ────────────────────────────────────────────
@@ -556,6 +558,12 @@ function LocationModal({
 }) {
   const { t } = useTranslation();
   const [form, setForm]     = useState<Location>({ ...EMPTY_LOCATION, ...(initial || {}) });
+  // Quartiers de Yaoundé du référentiel (spec v2.1, t_quartiers), proposés à la saisie.
+  const [quartiers, setQuartiers] = useState<{ quartier: string; zone: string }[]>([]);
+  useEffect(() => {
+    http<{ quartiers: { quartier: string; zone: string }[] }>('/api/shipping/quartiers/')
+      .then(r => setQuartiers(r.quartiers)).catch(() => setQuartiers([]));
+  }, []);
   const [geoStatus, setGeoStatus] = useState<GeoStatus>(
     initial?.latitude && initial?.longitude ? 'found' : 'idle'
   );
@@ -765,6 +773,18 @@ function LocationModal({
               <p className="text-[11.5px] mt-1.5" style={{ color: hasCoords || hasAccessDescription ? T.mutedL : T.red }}>
                 {t('sl1_shop.access_description_hint')}
               </p>
+            </div>
+
+            <div>
+              <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>
+                {t('sl1_shop.quartier_label')}
+              </label>
+              <input value={form.quartier ?? ''} onChange={e => set('quartier', e.target.value)}
+                list="quartiers-yaounde-boutique" placeholder={t('sl1_shop.quartier_placeholder')} style={inp}/>
+              <datalist id="quartiers-yaounde-boutique">
+                {quartiers.map(q => <option key={q.quartier} value={q.quartier}>{q.zone}</option>)}
+              </datalist>
+              <p className="text-[11.5px] mt-1.5" style={{ color: T.mutedL }}>{t('sl1_shop.quartier_hint')}</p>
             </div>
 
             {/* Téléphone + Email */}

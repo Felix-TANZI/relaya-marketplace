@@ -50,6 +50,7 @@ class EscrowHold(models.Model):
         GOODS = EconomicComponent.GOODS.value, "Marchandise"
         TRANSPORT = EconomicComponent.TRANSPORT.value, "Transport"
         RELAY_HANDLING = EconomicComponent.RELAY_HANDLING.value, "Remise en point relais"
+        PAYMENT_FEE = EconomicComponent.PAYMENT_FEE.value, "Frais Mobile Money payes par le client"
 
     class Status(models.TextChoices):
         PENDING = EscrowHoldStatus.PENDING.value, "En attente de paiement"

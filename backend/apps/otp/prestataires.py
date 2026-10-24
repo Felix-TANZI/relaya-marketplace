@@ -1,11 +1,13 @@
 # backend/apps/otp/prestataires.py
 # Envoi des SMS (et WhatsApp) : codes à 6 chiffres, rappels de garde, alertes.
 #
-# settings.BELIVAY_SMS = chemin pointé de la classe :
-#   "apps.otp.prestataires.SmsConsole"  — développement et essais : le message va dans le journal et dans
-#                                         ENVOYES (tests), rien ne part ;
-#   à écrire : un prestataire réel (SMS-SECOURS « à désigner » au registre ; Orange SMS API, Africa's Talking,
-#   Twilio…), même interface. Voir REPRISE-BACKEND.md, « Prestataires ».
+# Feuille de route D7 :
+#   settings.BELIVAY_SMS = "apps.otp.prestataires.Aiguillage" (défaut) : un code demandé par WhatsApp part par
+#     l'assistant WhatsApp (modèle « Authentification ») quand il est ouvert, sinon par SMS ;
+#   settings.BELIVAY_SMS_FOURNISSEUR = le prestataire SMS réel, même interface, à brancher à la signature du contrat
+#     (R78.2 : un agrégateur qui couvre les numéros +237) ; en attendant "apps.otp.prestataires.SmsConsole" :
+#     le message va dans le journal et dans ENVOYES (tests), rien ne part.
+# Les deux se règlent par variables d'environnement du même nom.
 #
 # Règle CAP-19 : jamais un code dans une notification push ni sur l'écran verrouillé ; le SMS du code ne contient
 # que le code et sa validité.
@@ -44,5 +46,44 @@ class SmsConsole(Sms):
         return Envoi(True, f"console-{len(SmsConsole.ENVOYES)}")
 
 
+def international(numero: str) -> str:
+    """Numéro au format international (+237…) pour le prestataire : 9 chiffres = numéro camerounais ; sinon le
+    numéro porte déjà son indicatif (numéros étrangers, D7)."""
+    chiffres = re.sub(r"\D", "", numero or "")
+    if chiffres.startswith("00"):
+        chiffres = chiffres[2:]
+    if len(chiffres) == 9:
+        chiffres = "237" + chiffres
+    return f"+{chiffres}" if chiffres else ""
+
+
+class Aiguillage(Sms):
+    """D7 : WhatsApp quand le client le choisit pour un code et que l'assistant est ouvert ; sinon le SMS."""
+
+    def envoyer(self, numero: str, texte: str, canal: str = "sms") -> Envoi:
+        if canal == "whatsapp":
+            code = re.search(r"\b(\d{4,8})\b", texte)
+            envoi = _whatsapp_code(numero, code.group(1)) if code else None
+            if envoi is not None and envoi.ok:
+                return envoi
+        fournisseur = import_string(getattr(settings, "BELIVAY_SMS_FOURNISSEUR", "apps.otp.prestataires.SmsConsole"))
+        return fournisseur().envoyer(numero, texte, canal)
+
+
+def _whatsapp_code(numero: str, code: str) -> Envoi | None:
+    from apps.whatsapp_assistant.conf import get_config
+    from apps.whatsapp_assistant.providers import get_provider
+
+    config = get_config()
+    if not config.enabled:
+        return None
+    try:
+        reference = get_provider(config).send_code(international(numero).lstrip("+"), code)
+    except Exception:  # un fournisseur en panne retombe sur le SMS
+        logger.exception("Code par WhatsApp impossible, repli sur le SMS")
+        return None
+    return Envoi(bool(reference), reference or "")
+
+
 def sms() -> Sms:
-    return import_string(getattr(settings, "BELIVAY_SMS", "apps.otp.prestataires.SmsConsole"))()
+    return import_string(getattr(settings, "BELIVAY_SMS", "apps.otp.prestataires.Aiguillage"))()

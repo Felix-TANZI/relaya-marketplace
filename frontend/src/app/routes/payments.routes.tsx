@@ -21,6 +21,7 @@ import {
   AdminSettlementsPage, EscrowDetailPage, FinanceAnalyticsPage,
   FinanceDashboardPage, IntentDetailPage, IntentsPage, PayeesPage,
   PayoutDetailPage, PayoutsPage, ReconciliationPage, RiskPage, SchedulerPage,
+  WalletAdminPage,
 } from '@/features/payments/admin';
 import FinanceConfigEditPage from '@/features/admin/FinanceConfigEditPage';
 import FinanceConfigPage from '@/features/admin/FinanceConfigPage';
@@ -137,6 +138,8 @@ const ECRANS: Array<{ path: string; element: React.ReactNode }> = [
   { path: 'finance/risk', element: <RiskPage /> },
   { path: 'finance/payees', element: <PayeesPage /> },
   { path: 'finance/scheduler', element: <SchedulerPage /> },
+  // Feuille de route D16 : suivi du Wallet des clients et gestes commerciaux (R03).
+  { path: 'finance/wallet', element: <WalletAdminPage /> },
   // La configuration financiere : huit reglages, sans passer par Django.
   { path: 'finance/configuration', element: <FinanceConfigPage /> },
   // Une page par reglage : une grille tarifaire a quatre categories ne se

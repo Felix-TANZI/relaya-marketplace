@@ -484,10 +484,7 @@ class PayoutAccountListCreateView(APIView):
         serializer = PayoutAccountCreateSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         account = serializer.save()
-        data = PayoutAccountSerializer(account).data
-        if django_settings.DEBUG:
-            data["dev_code"] = getattr(account, "dev_code", None)
-        return Response(data, status=status.HTTP_201_CREATED)
+        return Response(PayoutAccountSerializer(account).data, status=status.HTTP_201_CREATED)
 
 
 @extend_schema(tags=["Payments"], summary="Verifier le code d'un numero de versement")
@@ -499,7 +496,13 @@ class PayoutAccountVerifyView(APIView):
         account = get_object_or_404(PayoutAccount, id=pk, user=request.user)
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        if not account.check_verification_code(serializer.validated_data["code"]):
+        from apps.otp import services as codes
+        from apps.otp.models import CodeOtp
+
+        # D6 : moteur de codes unique (essais limites, empreinte seule, envoi reel au numero a verifier).
+        resultat = codes.verifier(objet=CodeOtp.Objet.MOYEN, code=serializer.validated_data["code"],
+                                  destination=account.phone_e164, utilisateur=request.user, exiger_utilisateur=True)
+        if not resultat.get("ok"):
             return Response(
                 {"code": "Code invalide ou expire."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -1317,6 +1320,8 @@ def _mission_payload(shipment):
         "address_precision": shipment.order.address_precision or {},
         "order_total_xaf": shipment.order.total_xaf,
         "relay_point": shipment.relay_point,
+        # D11 : groupées vers les relais, individuelles à domicile (R52.1)
+        "delivery_mode": "relais" if shipment.order.relay_point_id else "domicile",
         "vendor_names": _shipment_vendor_names(shipment),
         "courier": {
             "id": courier.id,
@@ -1486,13 +1491,17 @@ def delivery_organization_mission_queue(request):
                 Shipment.Status.CAPACITY_BLOCKED,
                 Shipment.Status.VALUE_LIMIT_EXCEEDED,
             ],
-            order__city__iexact=organization.city,
         )
-        .select_related("order")
+        .select_related("order", "order__zone")
         .prefetch_related("events", "locations", "order__items__product__vendor__vendor_profile")
         .order_by("created_at")
     )
-    return Response([_mission_payload(shipment) for shipment in queue])
+    # Spec v2.1, R52.1 : publication par zone (celles que l'entreprise déclare) ; R56.3 : un colis dont la valeur dépasse
+    # ce que l'entreprise peut transporter ne lui est jamais montré.
+    from apps.shipping.entreprises import couvre, plafond_organisation, valeur_colis
+    plafond = plafond_organisation(organization)
+    visibles = [s for s in queue if couvre(organization, s) and (plafond is None or valeur_colis(s) <= plafond)]
+    return Response([_mission_payload(shipment) for shipment in visibles])
 
 
 @extend_schema(tags=["Delivery organization"], summary="Assign a queued mission to an available courier")
@@ -1521,15 +1530,14 @@ def delivery_organization_assign_mission(request, shipment_id):
     from .trust_score import calculate_trust_score, trust_score_payload
 
     trust = calculate_trust_score(courier.user, TrustScoreProfile.Role.COURIER)
-    value_cap = trust.parcel_value_cap_xaf
-    if value_cap is None and not organization.transport_insurance_verified:
-        value_cap = 250000
-    if value_cap is not None and shipment.order.total_xaf > value_cap:
+    from apps.shipping.entreprises import plafond_effectif, valeur_colis
+    value_cap = plafond_effectif(trust.tier, organization.transport_insurance_verified)  # R56.2, R56.3
+    if value_cap is not None and valeur_colis(shipment) > value_cap:
         trust_data = trust_score_payload(trust)
         return Response(
             {
                 "courier_id": [
-                    f"Mission refusée : colis de {shipment.order.total_xaf} FCFA, plafond {value_cap} FCFA pour le palier {trust.get_tier_display()}."
+                    f"Mission refusée : colis de {valeur_colis(shipment)} FCFA, plafond {value_cap} FCFA pour le palier {trust.get_tier_display()}."
                 ],
                 "code": "VALUE_LIMIT_EXCEEDED",
                 "trust_score": trust_data,
@@ -1542,8 +1550,8 @@ def delivery_organization_assign_mission(request, shipment_id):
     if Shipment.objects.filter(courier__delivery_organization=organization, status__in=active_statuses).count() >= organization.max_active_shipments:
         return Response({"detail": "La capacité active de l'organisation est atteinte."}, status=status.HTTP_409_CONFLICT)
 
-    coverage_text = f"{shipment.order.city} {shipment.order.address}".casefold()
-    if organization.zones and not any(str(zone).casefold() in coverage_text for zone in organization.zones):
+    from apps.shipping.entreprises import couvre
+    if not couvre(organization, shipment):  # R52.1, R74
         return Response({"detail": "La destination n'appartient pas aux zones déclarées par l'organisation."}, status=status.HTTP_400_BAD_REQUEST)
 
     shipment.courier = courier
@@ -2178,20 +2186,24 @@ class RelayPinRequestCodeView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        user = _relay_user_par_telephone(request.data.get("phone"))
+        from apps.otp import services as codes
+        from apps.otp.models import CodeOtp
+
+        telephone = str(request.data.get("phone") or "").strip()
+        user = _relay_user_par_telephone(telephone)
         envoye = False
         if user is not None:
+            # D6 : moteur de codes unique ; le code part au numero du relais, celui qu'il vient de prouver detenir.
             try:
-                _create_and_send_otp(user, "2FA_LOGIN")
+                codes.envoyer(objet=CodeOtp.Objet.RELAIS_PIN, destination=telephone, utilisateur=user,
+                              exiger_utilisateur=True)
                 envoye = True
             except Exception:
                 logger.exception("Envoi du code de verification relais impossible")
 
         return Response({
             "sent": envoye,
-            # Le canal REEL. La maquette annonce un SMS ; aucun envoi SMS
-            # n'existe, et l'ecran doit pouvoir le dire.
-            "channel": "email",
+            "channel": "sms",
             "detail": "Si ce numero correspond a un point relais, un code vient de lui etre envoye.",
         })
 
@@ -2208,9 +2220,13 @@ class RelayPinSetView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        from .models import OTPCode, RelayAccessPin
+        from apps.otp import services as codes
+        from apps.otp.models import CodeOtp
 
-        user = _relay_user_par_telephone(request.data.get("phone"))
+        from .models import RelayAccessPin
+
+        telephone = str(request.data.get("phone") or "").strip()
+        user = _relay_user_par_telephone(telephone)
         code = str(request.data.get("code") or "").strip()
         pin = str(request.data.get("pin") or "").strip()
 
@@ -2229,17 +2245,12 @@ class RelayPinSetView(APIView):
         if user is None or not code:
             return refus
 
-        otp = (
-            OTPCode.objects
-            .filter(user=user, purpose="2FA_LOGIN", is_used=False)
-            .order_by("-created_at")
-            .first()
-        )
-        if otp is None or otp.code != code or otp.expires_at <= timezone.now():
+        # D6 : un seul systeme de codes. L'ancien `OTPCode` etait lu ici alors que le code etait emis par le moteur
+        # unique : la pose du PIN echouait toujours.
+        resultat = codes.verifier(objet=CodeOtp.Objet.RELAIS_PIN, code=code, destination=telephone, utilisateur=user,
+                                  exiger_utilisateur=True)
+        if not resultat.get("ok"):
             return refus
-
-        otp.is_used = True
-        otp.save(update_fields=["is_used"])
 
         acces, _ = RelayAccessPin.objects.get_or_create(user=user, defaults={"pin_hash": ""})
         acces.set_pin(pin)
@@ -2481,14 +2492,6 @@ class ComplianceDocumentListCreateView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
 
-    #: Un selfie video ne tient pas dans les formats d'une piece scannee, ni
-    #: dans 10 Mo (tache D19). On garde donc deux jeux de regles plutot que
-    #: d'elargir la limite pour tout le monde.
-    FORMATS_IMAGE = {".pdf", ".jpg", ".jpeg", ".png", ".webp"}
-    FORMATS_VIDEO = {".mp4", ".mov", ".webm", ".m4v", ".3gp"}
-    TAILLE_MAX_IMAGE = 10 * 1024 * 1024
-    TAILLE_MAX_VIDEO = 50 * 1024 * 1024
-
     def _roles_possibles(self, user):
         """Tous les roles sous lesquels ce compte peut deposer une piece."""
         roles = []
@@ -2558,34 +2561,12 @@ class ComplianceDocumentListCreateView(APIView):
         if not document_type or not uploaded_file:
             return Response({"detail": "Le type de document et le fichier sont obligatoires."}, status=status.HTTP_400_BAD_REQUEST)
 
-        extension = os.path.splitext(uploaded_file.name)[1].lower()
-        est_video = extension in self.FORMATS_VIDEO
-        if extension not in self.FORMATS_IMAGE and not est_video:
-            return Response(
-                {"file": ["Formats acceptés : PDF, JPG, PNG, WEBP, ou MP4, MOV, WEBM, 3GP pour un selfie vidéo."]},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        taille_max = self.TAILLE_MAX_VIDEO if est_video else self.TAILLE_MAX_IMAGE
-        if uploaded_file.size > taille_max:
-            return Response(
-                {"file": [f"Le fichier ne doit pas dépasser {taille_max // (1024 * 1024)} Mo."]},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        from .compliance import FichierRefuse, deposer_piece
 
-        document, created = ComplianceDocument.objects.get_or_create(
-            user=request.user,
-            owner_role=owner_role,
-            document_type=document_type[:60],
-            defaults={"file": uploaded_file},
-        )
-        if not created:
-            old_file = document.file
-            document.file = uploaded_file
-            document.status = ComplianceDocument.Status.PENDING
-            document.review_note = ""
-            document.save(update_fields=["file", "status", "review_note", "updated_at"])
-            if old_file and old_file.name != document.file.name:
-                old_file.delete(save=False)
+        try:
+            document, created = deposer_piece(request.user, owner_role, document_type, uploaded_file)
+        except FichierRefuse as erreur:
+            return Response({"file": [erreur.message]}, status=status.HTTP_400_BAD_REQUEST)
         return Response(self._payload(document, request), status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
 
@@ -2888,25 +2869,43 @@ def _create_and_send_otp(user, purpose: str) -> None:
     """
     from apps.otp import services as codes
 
-    if not user.email:
-        raise ValueError("Aucune adresse email n'est associee a ce compte.")
-
+    destination, canal = _destination_2fa(user)
     codes.envoyer(
         objet=OBJETS_2FA[purpose],
-        destination=user.email,
+        destination=destination,
+        canal=canal,
         utilisateur=user,
         exiger_utilisateur=True,
     )
+
+
+def _destination_2fa(user) -> tuple[str, str]:
+    """
+    Ou part le code de double authentification : la methode choisie par
+    l'utilisateur (e-mail, SMS ou WhatsApp, D6), sinon l'e-mail du compte.
+    """
+    profil = getattr(user, "profile", None)
+    methode = (getattr(profil, "two_factor_method", "") or "EMAIL").upper()
+    telephone = (getattr(profil, "phone", "") or "").strip()
+    if methode in ("SMS", "WHATSAPP") and telephone:
+        return telephone, methode.lower()
+    if not user.email:
+        raise ValueError("Aucune adresse email n'est associee a ce compte.")
+    return user.email, "email"
 
 
 def _verifier_code_2fa(user, purpose: str, code: str) -> bool:
     """Vrai si `code` est le code en cours de ce compte, pour cet usage."""
     from apps.otp import services as codes
 
+    try:
+        destination, _canal = _destination_2fa(user)
+    except ValueError:
+        return False
     resultat = codes.verifier(
         objet=OBJETS_2FA[purpose],
         code=code,
-        destination=user.email or "",
+        destination=destination,
         utilisateur=user,
         exiger_utilisateur=True,
     )

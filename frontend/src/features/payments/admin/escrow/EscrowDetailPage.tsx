@@ -127,10 +127,10 @@ export default function EscrowDetailPage({
             )}
           />
           <Ligne label={t('pm1_escrow_detail.field_gross_amount')} value={
-            <Money value={hold.gross_amount_xaf} size={13} />
+            <Money value={hold.gross_amount_xaf ?? 0} size={13} />
           } />
           <Ligne label={t('pm1_escrow_detail.field_commission')} value={
-            <Money value={-hold.commission_xaf} size={13} tone="muted" />
+            <Money value={-(hold.commission_xaf ?? 0)} size={13} tone="muted" />
           } />
           <Ligne label={t('pm1_escrow_detail.field_net_to_partner')} value={
             <Money value={hold.net_amount_xaf} size={13} />

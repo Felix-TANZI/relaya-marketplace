@@ -501,41 +501,31 @@ def dispute_answer(request, ref):
     ]
 
     if posture == 'accepte':
-        # VD07-R13 (src/donnees/domaines/litiges.ts) : "J'accepte" clôt aussitôt, remboursement
-        # au dépôt de l'article, sans nouvelle inspection. Le montant est une PROXY (part
-        # vendeur de la commande) — le montant exact et sa ventilation appartiennent au domaine
-        # argent/commandes ; cette valeur sert seulement à déclencher l'événement d'escrow
-        # existant (events_in.dispute_resolved), pas à fixer un nouveau calcul financier.
-        montant = _vendor_amount_at_stake(dispute.order, vendor)
+        # Feuille de route D18 : « Déclencher le remboursement quand le colis est récupéré et contrôlé, pas à la
+        # demande. » L'acceptation ouvre un retour approuvé, déposé au point relais par défaut ; le remboursement
+        # part à l'inspection, ou d'office r_inspection_h après la réception (R68.1, commande traiter_retours).
+        from apps.orders.models import Return
+
+        Return.objects.get_or_create(
+            order=dispute.order, order_item=dispute.order_item, requested_by=dispute.opened_by,
+            defaults={'vendor': vendor, 'reason': dispute.reason if dispute.reason in Return.Reason.values else
+                      Return.Reason.NOT_AS_DESCRIBED, 'description': dispute.description,
+                      'status': Return.Status.AWAITING_DROPOFF, 'reviewed_by': vendor, 'reviewed_at': timezone.now(),
+                      'review_note': "Litige accepté par le vendeur (R70.1)."},
+        )
         dispute.status = 'RESOLVED'
         dispute.resolution = 'REFUND'
-        dispute.resolution_note = "Acceptation du vendeur (espace vendeur VD-07)."
+        dispute.resolution_note = "Accepté par le vendeur : remboursement au retour du colis inspecté (R68.1)."
         dispute.resolved_at = timezone.now()
         dispute.resolved_by = vendor
-        dispute.refund_amount_xaf = montant
         issue = 'accepte'
-        fields += ['status', 'resolution', 'resolution_note', 'resolved_at', 'resolved_by', 'refund_amount_xaf']
+        fields += ['status', 'resolution', 'resolution_note', 'resolved_at', 'resolved_by']
     else:
         # conteste / arrangement : la décision finale reste BelivaY (DP-35) — pas d'arbitrage
         # automatique ici. admin_resolve_dispute (existant, inchangé) tranche ensuite.
         dispute.status = 'IN_PROGRESS'
 
     dispute.save(update_fields=list(dict.fromkeys(fields)))
-
-    if posture == 'accepte':
-        try:
-            from apps.payments.bridge import events_in
-            events_in.dispute_resolved(
-                order_id=dispute.order_id, resolution='REFUND',
-                refund_amount_xaf=dispute.refund_amount_xaf or 0,
-                event_id=f"dispute-{dispute.id}-vendor-accept",
-                emitter="apps.vendors.vd07_litiges.dispute_answer",
-            )
-        except Exception:
-            logger.exception(
-                "Evenement dispute_resolved (acceptation vendeur) non transmis — litige #%s.",
-                dispute.id,
-            )
 
     return Response({'ok': True, 'issue': issue})
 

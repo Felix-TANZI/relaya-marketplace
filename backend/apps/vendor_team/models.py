@@ -195,64 +195,6 @@ class VendorEmployeeActionLog(models.Model):
         )
 
 
-class VendorOwnerSecurityCode(models.Model):
-    """
-    Code à 6 chiffres envoyé au téléphone PERSONNEL du propriétaire avant un geste sensible (ajouter,
-    changer les droits, réactiver ou retirer un membre ; changer le lieu principal ; déposer une demande
-    de modification). Même principe de sécurité que accounts.RelayAccessPin / apps.otp.CodeOtp
-    (empreinte hachée, essais comptés) mais auto-contenu : le catalogue d'« objet » de apps.otp est pensé
-    pour l'espace client (CL-*) et ne porte pas ces motifs vendeur — ne pas le détourner avec une valeur
-    hors de son enum.
-    """
-
-    LONGUEUR = 6
-    VALIDE_MINUTES = 10
-    ESSAIS_MAX = 5
-
-    class Motif(models.TextChoices):
-        RETRAIT = "retrait", "Retrait d'un membre"
-        DROITS = "droits", "Changement de droits"
-        REACTIVATION = "reactivation", "Réactivation"
-        INVITATION = "invitation", "Invitation d'un membre"
-        LIEU_PRINCIPAL = "lieu_principal", "Changer le lieu principal"
-        CHANGE_REQUEST = "change_request", "Demande de modification"
-
-    vendor = models.ForeignKey(VendorProfile, on_delete=models.CASCADE, related_name="owner_security_codes")
-    motif = models.CharField(max_length=20, choices=Motif.choices)
-    target_employee = models.ForeignKey(
-        VendorEmployee, on_delete=models.CASCADE, null=True, blank=True, related_name="security_codes",
-    )
-    code_hash = models.CharField(max_length=160)
-    essais = models.PositiveSmallIntegerField(default=0)
-    expires_at = models.DateTimeField()
-    used_at = models.DateTimeField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ["-created_at"]
-        verbose_name = "Code de sécurité propriétaire"
-        verbose_name_plural = "Codes de sécurité propriétaire"
-
-    def set_code(self, code: str) -> None:
-        self.code_hash = make_password(code)
-
-    @property
-    def est_valide(self) -> bool:
-        return not self.used_at and self.expires_at > timezone.now() and self.essais < self.ESSAIS_MAX
-
-    def check_code(self, code: str) -> bool:
-        if not self.est_valide:
-            return False
-        ok = check_password(code, self.code_hash)
-        if ok:
-            self.used_at = timezone.now()
-            self.save(update_fields=["used_at"])
-        else:
-            self.essais += 1
-            self.save(update_fields=["essais"])
-        return ok
-
-
 class VendorLocationMeta(models.Model):
     """Champs du nouveau contrat (type de lieu, horaires propres) que vendors.VendorLocation ne porte pas :
     même raison que VendorShopMeta — pas de colonne ajoutée à une app partagée en parallèle."""
@@ -421,37 +363,6 @@ class VendorShopMeta(models.Model):
         verbose_name_plural = "Métadonnées d'ouverture de boutique"
 
 
-class VendorKycPiece(models.Model):
-    """Pièce KYC (recto, verso, selfie) envoyée par un vendeur déjà authentifié (POST /shops/{id}/kyc).
-    Fichiers privés (MEDIA, pas de stockage public) : voir vendors/views.py pour le patron d'upload déjà
-    en place (ShopModificationDocument)."""
-
-    class Piece(models.TextChoices):
-        RECTO = "recto", "Recto"
-        VERSO = "verso", "Verso"
-        SELFIE = "selfie", "Selfie"
-
-    class Etat(models.TextChoices):
-        A_FAIRE = "a_faire", "À faire"
-        RECU = "recu", "Reçu"
-        VERIFIE = "verifie", "Vérifié"
-        REFUSE = "refuse", "Refusé"
-
-    vendor = models.ForeignKey(VendorProfile, on_delete=models.CASCADE, related_name="kyc_pieces")
-    piece = models.CharField(max_length=10, choices=Piece.choices)
-    image = models.ImageField(upload_to="vendors/kyc/%Y/%m/")
-    etat = models.CharField(max_length=10, choices=Etat.choices, default=Etat.RECU)
-    motif_refus = models.CharField(max_length=255, blank=True, default="")
-    decided_at = models.DateTimeField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = [("vendor", "piece")]
-        ordering = ["piece"]
-        verbose_name = "Pièce KYC vendeur"
-        verbose_name_plural = "Pièces KYC vendeur"
-
-
 class VendorContractSignature(models.Model):
     """Signature du contrat vendeur (POST /contract/sign) : version, horodatage, IP, appareil."""
 
@@ -474,56 +385,3 @@ class VendorContractSignature(models.Model):
         return f"Contrat {self.vendor.business_name} — {self.version}"
 
 
-class VendorVerificationCode(models.Model):
-    """
-    Code à 6 chiffres générique, par numéro de téléphone (pas forcément un compte existant) : sert à la
-    connexion par numéro + code avant authentification (session.demanderCodeNumero / validerCodeNumero) et
-    à la vérification du téléphone à l'ouverture d'une boutique (POST /shops). Auto-contenu, même raison
-    que VendorOwnerSecurityCode : apps.otp.CodeOtp est pensé pour l'espace client et exige un objet de son
-    enum ; aucun des siens ne convient à une connexion SANS compte connu.
-    """
-
-    LONGUEUR = 6
-    VALIDE_MINUTES = 10
-    ESSAIS_MAX = 5
-    RENVOI_SECONDES = 60
-    RENVOIS_PAR_HEURE = 3
-
-    class Purpose(models.TextChoices):
-        LOGIN = "login", "Connexion par numéro"
-        SHOP_PHONE = "shop_phone", "Vérification du numéro à l'ouverture"
-
-    phone = models.CharField(max_length=20, db_index=True)
-    purpose = models.CharField(max_length=12, choices=Purpose.choices)
-    device = models.CharField(max_length=120, blank=True, default="")
-    canal = models.CharField(max_length=10, default="sms")
-    code_hash = models.CharField(max_length=160)
-    essais = models.PositiveSmallIntegerField(default=0)
-    expires_at = models.DateTimeField()
-    used_at = models.DateTimeField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ["-created_at"]
-        indexes = [models.Index(fields=["phone", "purpose", "created_at"])]
-        verbose_name = "Code de vérification (connexion / ouverture)"
-        verbose_name_plural = "Codes de vérification (connexion / ouverture)"
-
-    def set_code(self, code: str) -> None:
-        self.code_hash = make_password(code)
-
-    @property
-    def est_valide(self) -> bool:
-        return not self.used_at and self.expires_at > timezone.now() and self.essais < self.ESSAIS_MAX
-
-    def check_code(self, code: str) -> bool:
-        if not self.est_valide:
-            return False
-        ok = check_password(code, self.code_hash)
-        if ok:
-            self.used_at = timezone.now()
-            self.save(update_fields=["used_at"])
-        else:
-            self.essais += 1
-            self.save(update_fields=["essais"])
-        return ok

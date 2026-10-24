@@ -21,7 +21,6 @@ import {
   Sparkles,
   Star,
   Ticket,
-  Truck,
   XCircle,
   Zap,
 } from "lucide-react";
@@ -34,11 +33,10 @@ import { PfShellStyles } from "@/styles/pfShell";
 const PRICE_MONTHLY = 2500;
 const PRICE_YEARLY = 25000;
 
-/** Les 10 avantages listés dans la carte du plan, en deux colonnes. */
+/** Les avantages listés dans la carte du plan, en deux colonnes. */
 const PLAN_FEATURES: { icon: LucideIcon; labelKey: string; tone: string }[] = [
   { icon: Palette, labelKey: "cl5_premium.feature_theme", tone: "text-violet-300" },
   { icon: Map, labelKey: "cl5_premium.feature_map", tone: "text-sky-300" },
-  { icon: Truck, labelKey: "cl5_premium.feature_delivery", tone: "text-orange-300" },
   { icon: Zap, labelKey: "cl5_premium.feature_flash", tone: "text-amber-300" },
   { icon: CreditCard, labelKey: "cl5_premium.feature_points", tone: "text-emerald-300" },
   { icon: Ticket, labelKey: "cl5_premium.feature_coupons", tone: "text-pink-300" },
@@ -50,12 +48,6 @@ const PLAN_FEATURES: { icon: LucideIcon; labelKey: string; tone: string }[] = [
 
 /** Le détail long, sous la calculatrice. */
 const ADVANTAGES: { icon: LucideIcon; tone: string; titleKey: string; textKey: string }[] = [
-  {
-    icon: Truck,
-    tone: "text-orange-500",
-    titleKey: "cl5_premium.advantage_delivery_title",
-    textKey: "cl5_premium.advantage_delivery_text",
-  },
   {
     icon: Zap,
     tone: "text-amber-500",
@@ -115,7 +107,6 @@ const ADVANTAGES: { icon: LucideIcon; tone: string; titleKey: string; textKey: s
 /** Tableau comparatif Gratuit / BelivaY+. */
 const COMPARISON: { labelKey: string; freeKey: string; plusKey: string; icon?: string }[] = [
   { labelKey: "cl5_premium.cmp_tracking_label", freeKey: "cl5_premium.cmp_tracking_free", plusKey: "cl5_premium.cmp_tracking_plus", icon: "map" },
-  { labelKey: "cl5_premium.cmp_delivery_label", freeKey: "cl5_premium.cmp_delivery_free", plusKey: "cl5_premium.cmp_delivery_plus" },
   { labelKey: "cl5_premium.cmp_flash_label", freeKey: "cl5_premium.cmp_flash_free", plusKey: "cl5_premium.cmp_flash_plus", icon: "zap" },
   { labelKey: "cl5_premium.cmp_points_label", freeKey: "cl5_premium.cmp_points_free", plusKey: "cl5_premium.cmp_points_plus" },
   { labelKey: "cl5_premium.cmp_coupons_label", freeKey: "cl5_premium.cmp_coupons_free", plusKey: "cl5_premium.cmp_coupons_plus" },
@@ -238,10 +229,10 @@ export default function PremiumPage() {
   }, [codeCopied]);
 
   const savings = useMemo(() => {
-    const delivery = orders * 2500;
+    // La livraison n'entre pas dans le calcul : BelivaY+ ne l'offre pas, seules les règles R07 s'appliquent.
     const deals = orders * cart * 0.05;
     const points = orders * cart * 0.03;
-    const perMonth = delivery + deals + points;
+    const perMonth = deals + points;
     return {
       perMonth,
       perYear: perMonth * 12,
@@ -411,7 +402,6 @@ export default function PremiumPage() {
 
             <div className="pf-card pf-anim" style={{ display: "flex", flexDirection: "column", gap: 11 }}>
               {[
-                { icon: Truck, grad: "linear-gradient(135deg,#ffa04d,#f4610f)", labelKey: "cl5_premium.gain_delivery" },
                 { icon: CreditCard, grad: "linear-gradient(135deg,#34d399,#059669)", labelKey: "cl5_premium.gain_points" },
                 { icon: Phone, grad: "linear-gradient(135deg,#5bb8ff,#2563eb)", labelKey: "cl5_premium.gain_support" },
               ].map((g) => {

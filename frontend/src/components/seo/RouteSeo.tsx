@@ -49,9 +49,9 @@ const PAGES: Record<string, Meta> = {
       "Offres a duree limitee sur BelivaY : les meilleures reductions du moment, renouvelees chaque jour.",
   },
   "/premium": {
-    title: "BelivaY+ : livraison gratuite et avantages membres",
+    title: "BelivaY+ : avantages membres",
     description:
-      "Livraison gratuite illimitee, points fidelite triples, ventes flash en avant-premiere et support prioritaire avec l'abonnement BelivaY+.",
+      "Points fidelite triples, ventes flash en avant-premiere et support prioritaire avec l'abonnement BelivaY+.",
   },
   "/selection-premium": {
     title: "Selection premium",

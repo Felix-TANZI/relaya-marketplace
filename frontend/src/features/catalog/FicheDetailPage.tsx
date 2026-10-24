@@ -391,10 +391,13 @@ export default function FicheDetailPage() {
     ? master.offers.filter((o) => o.variant === selectedVariantId)
     : master.offers;
 
-  // Buy Box = offre la moins chère du variant (ou master.buy_box en fallback)
+  // Spec v2.1, R93.1 : l'offre mise en avant est celle que retient la meilleure offre (A6) ; pour une variante
+  // choisie, l'offre la moins chère de cette variante (la sélection est refaite au panier, R93.2).
+  const retenue = master.meilleure_offre?.offre ? master.offers.find((o) => o.id === master.meilleure_offre?.offre) : undefined;
   const buyBox = hasVariantAxes && selectedVariantId
     ? (filteredMasterOffers.sort((a, b) => a.price_xaf - b.price_xaf)[0] ?? null)
-    : master.buy_box;
+    : (retenue ?? master.buy_box);
+  const indisponible = master.meilleure_offre?.disponible === false;
 
   const otherOffers = filteredMasterOffers.filter((o) => !buyBox || o.id !== buyBox.id);
   const conditions = Array.from(new Set(otherOffers.map(o => o.condition).filter((c): c is string => !!c)));
@@ -413,7 +416,7 @@ export default function FicheDetailPage() {
 
   const onPromo = Boolean(buyBox?.is_on_promotion && buyBox.discount_percent > 0);
   const saved = buyBox?.compare_at_price ? Math.max(0, buyBox.compare_at_price - buyBox.price_final) : 0;
-  const inStock = Boolean(buyBox && buyBox.stock_quantity > 0);
+  const inStock = Boolean(buyBox && buyBox.stock_quantity > 0) && !indisponible;  // R32.4
   /* Jauge de stock : pleine à partir de 25 unités, comme les fiches de l'accueil. */
   const stockRatio = Math.min(100, Math.round(((buyBox?.stock_quantity ?? 0) / 25) * 100));
 
@@ -726,6 +729,15 @@ export default function FicheDetailPage() {
                     );
                   })}
                 </div>
+
+                {/* Spec v2.1 : R32.4 « Indisponible pour le moment » ; R12.2 « Livraison dès … F » */}
+                {indisponible ? (
+                  <p className="text-[13px] font-black text-red-600">{master.meilleure_offre?.message}</p>
+                ) : master.meilleure_offre?.livraison_des !== undefined ? (
+                  <p className="text-[12.5px] font-bold text-gray-600 dark:text-gray-300">
+                    Livraison dès {master.meilleure_offre.livraison_des.toLocaleString('fr-FR').replace(/[  ]/g, ' ')} F
+                  </p>
+                ) : null}
 
                 {/* Boutons */}
                 <button onClick={() => addOffer(buyBox, qty)} disabled={!inStock}

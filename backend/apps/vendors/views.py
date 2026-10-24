@@ -782,9 +782,11 @@ def vendor_order_note(request, order_id):
         )
 
 
-def lignes_totaux_recu(*, paye_par_client, taux_commission, commission, net):
+def lignes_totaux_recu(*, paye_par_client, net):
     """
-    Les trois lignes du pied du recu vendeur — tache D20.
+    Les lignes du pied du recu vendeur — tache D20, revue par la spec v2.1 (R26.1) : l'espace vendeur montre net_b
+    et NE DOIT JAMAIS montrer ce qui est retenu ; la ligne de commission est donc retiree (RCU-01 : « aucune ligne
+    de commission »).
 
     « Afficher la ligne "Paye par le client" sur le recu. » Le recu montrait
     « Prix de vente » puis « Vous gardez », sans dire d'ou venait l'ecart : la
@@ -802,8 +804,7 @@ def lignes_totaux_recu(*, paye_par_client, taux_commission, commission, net):
     """
     return [
         ("Paye par le client", paye_par_client, False),
-        (f"Commission BelivaY ({taux_commission} %)", commission, True),
-        ("Vous gardez", net, False),
+        ("Vous recevez", net, False),
     ]
 
 
@@ -854,8 +855,8 @@ def vendor_order_receipt_pdf(request, order_id):
 
     items = list(order.items.filter(product__vendor=request.user))
     vendor_subtotal = sum(item.line_total_xaf for item in items)
-    commission_amount = round(vendor_subtotal * float(order.commission_rate_snapshot) / 100)
-    vendor_net_amount = vendor_subtotal - commission_amount
+    from apps.orders.commission import net_vendeur
+    vendor_net_amount = net_vendeur(order, request.user, vendor_subtotal)  # R22.1, R26.1
     order_ref = f"BLV-{order.id:05d}"
 
     def fmt_xaf(amount):
@@ -932,8 +933,6 @@ def vendor_order_receipt_pdf(request, order_id):
             [libelle, (f'- {fmt_xaf(montant)}' if negatif else fmt_xaf(montant))]
             for libelle, montant, negatif in lignes_totaux_recu(
                 paye_par_client=vendor_subtotal,
-                taux_commission=order.commission_rate_snapshot,
-                commission=commission_amount,
                 net=vendor_net_amount,
             )
         ],
@@ -1000,30 +999,16 @@ def vendor_payment_summary(request):
         # ── Commandes du vendeur (contient au moins un de ses articles) ─────
         qs = Order.objects.filter(items__product__vendor=vendor).distinct()
  
+        from apps.orders.commission import net_vendeur
+
         def vendor_net(order_qs):
-            """Somme des vendor_net_amount pour les commandes du queryset."""
-            total = 0
-            for o in order_qs.prefetch_related('items__product'):
-                items = o.items.filter(product__vendor=vendor)
-                subtotal = sum(i.line_total_xaf for i in items)
-                rate     = float(o.commission_rate_snapshot)
-                comm     = round(subtotal * rate / 100)
-                total   += subtotal - comm
-            return total
+            """Somme des net_b du vendeur (R22.1) pour les commandes du queryset."""
+            return sum(net_vendeur(o, vendor) for o in order_qs.prefetch_related('items__product', 'commissions'))
  
         def vendor_gross(order_qs):
             total = 0
             for o in order_qs.prefetch_related('items__product'):
                 total += sum(i.line_total_xaf for i in o.items.filter(product__vendor=vendor))
-            return total
- 
-        def vendor_commission(order_qs):
-            total = 0
-            for o in order_qs.prefetch_related('items__product'):
-                items    = o.items.filter(product__vendor=vendor)
-                subtotal = sum(i.line_total_xaf for i in items)
-                rate     = float(o.commission_rate_snapshot)
-                total   += round(subtotal * rate / 100)
             return total
  
         # ── KPIs principaux ────────────────────────────────────────────────
@@ -1036,7 +1021,6 @@ def vendor_payment_summary(request):
         total_release_pending  = vendor_net(pending_qs)
  
         total_gross      = vendor_gross(released_qs)
-        total_commission = vendor_commission(released_qs)
  
         # ── Projection mensuelle (moyenne des 3 derniers mois) ─────────────
         three_months_ago  = now - timedelta(days=90)
@@ -1091,10 +1075,8 @@ def vendor_payment_summary(request):
             'total_blocked_xaf':         total_blocked,
             'total_release_pending_xaf': total_release_pending,
             'total_gross_xaf':           total_gross,
-            'total_commission_xaf':      total_commission,
             'released_orders_count':     released_qs.count(),
             'blocked_orders_count':      blocked_qs.count(),
-            'commission_rate':           settings.platform_commission_percent,
             'withdrawal_fee_percent':    settings.withdrawal_fee_percent,
             'minimum_withdrawal_xaf':    settings.minimum_withdrawal_amount_xaf,
             'projection_monthly_xaf':    projection_monthly,
@@ -1149,122 +1131,31 @@ def vendor_withdrawal_list(request):
  
 @extend_schema(
     tags=["Vendors"],
-    summary="Create withdrawal request",
+    summary="Retrait à la demande (fermé) : versement automatique chaque vendredi",
     description=(
-        "Crée une demande de retrait Mobile Money. "
-        "Les frais sont calculés depuis PlatformSettings (withdrawal_fee_percent). "
-        "Un seul retrait PENDING autorisé à la fois par vendeur."
+        "Feuille de route D20 et spec v2.1, R22.2 : chaque vendredi avant r_versement_heure, le vendeur reçoit ses "
+        "net_b libérés, sans demande et sans minimum ; frais de versement r_versement à sa charge (R22.3)."
     ),
-    request=WithdrawalRequestCreateSerializer,
-    responses={201: WithdrawalRequestSerializer},
 )
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def vendor_withdrawal_create(request):
     """
-    Crée une demande de retrait.
- 
-    Règle : un seul retrait PENDING à la fois.
-    Raison : gestion admin manuelle dans cette version (sans API MoMo automatique).
-    Simplifie le traitement et évite les doublons / dépassements de solde.
+    Le retrait à la demande (décision du 12 octobre) est remplacé par le
+    versement du vendredi, comme le demande la feuille de route (D20, R22.2) :
+    apps.payments.bridge.vendredi. Le vendeur n'a plus rien à demander.
     """
-    # ─────────────────────────────────────────────────────────────────────
-    # LE RETRAIT PASSE PAR LE MODULE FINANCIER
-    #
-    # Decision produit confirmee : le vendeur retire quand il veut (PULL),
-    # pas de versement automatique par cycle.
-    #
-    # A NOTER, pour qui relirait le cahier des charges : la feuille de route
-    # « Reste a faire de l'equipe tech & produit » (V2 Elite, 16 octobre,
-    # tache D20) demande encore « Verser chaque vendredi ». C'etait la regle
-    # INITIALE ; elle a ete abandonnee au profit du retrait a la demande,
-    # confirme le 12 octobre, et le document n'a pas suivi sur ce point.
-    # Ne pas rouvrir ce chantier en le lisant : l'ecart est signale, il
-    # attend une confirmation.
-    #
-    # Les versements du vendredi, eux, restent bien en vigueur pour les points
-    # relais (D13) et les entreprises de livraison (D11) : ce sont des cycles
-    # differents, que cette decision ne touche pas.
-    #
-    # Cette vue emprunte le meme
-    # circuit comptable qu'un reglement par cycle (lot, confirmation,
-    # approbation par un tiers, execution) mais le DECLENCHEUR reste le
-    # vendeur, pas un calendrier — request_withdrawal() ne verse jamais
-    # plus que le montant deja libere (`amount_due`), donc aucun risque de
-    # payer ce qui n'est pas du.
-    # ─────────────────────────────────────────────────────────────────────
-    from apps.payments.bridge.actors import payee_for_vendor
-    from apps.payments.settlements.services import (
-        SettlementError, request_withdrawal,
-    )
-
-    try:
-        profil = VendorProfile.objects.get(user=request.user)
-    except VendorProfile.DoesNotExist:
-        return Response({'detail': 'Profil vendeur introuvable.'},
-                        status=status.HTTP_404_NOT_FOUND)
-
-    if not profil.is_active_vendor:
-        return Response(
-            {'detail': "Votre compte vendeur n'est pas encore approuve."},
-            status=status.HTTP_403_FORBIDDEN,
-        )
-
-    # ── Tache D19 ────────────────────────────────────────────────────────
-    # « Exiger les documents complets avant le premier versement. »
-    #
-    # Le controle porte sur CHAQUE demande, pas seulement la premiere : si
-    # une piece est rejetee ou expire apres un premier versement, verser a
-    # nouveau reviendrait a payer un compte dont l'identite n'est plus
-    # etablie. Un vendeur en regle ne voit jamais ce message.
-    from apps.vendors.kyc import etat_verification, identite_verifiee
-    if not identite_verifiee(request.user):
-        return Response(
-            {
-                'detail': "Vos pieces d'identite doivent etre validees avant "
-                          "tout versement.",
-                'piece_identite': etat_verification(request.user),
-            },
-            status=status.HTTP_403_FORBIDDEN,
-        )
-
-    compte = payee_for_vendor(profil, create=True)
-    if compte is None:
-        return Response(
-            {'detail': "Aucun compte financier n'est rattache a votre "
-                       "boutique. Contactez le support."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    montant = request.data.get('amount_xaf') or 0
-    try:
-        montant = int(montant)
-    except (TypeError, ValueError):
-        montant = 0
-
-    try:
-        demande = request_withdrawal(
-            compte, requested_by=request.user, amount_xaf=montant,
-            justification='Retrait demande depuis l\'espace vendeur',
-        )
-    except SettlementError as exc:
-        # Le message du service, TEL QUEL : il explique ce qui manque et
-        # comment y remedier.
-        return Response({'detail': str(exc)},
-                        status=status.HTTP_400_BAD_REQUEST)
+    from apps.regles import services as regles
 
     return Response(
         {
-            'reference': demande.reference,
-            'amount_xaf': demande.amount_xaf,
-            'status': demande.status,
-            'status_display': demande.get_status_display(),
             'detail': (
-                "Demande enregistree. Elle sera validee par BelivaY puis "
-                "versee sur votre numero Mobile Money."
+                "Plus besoin de demander : vos ventes libérées vous sont versées automatiquement chaque vendredi "
+                f"avant {regles.reglage('r_versement_heure')} h, sur votre numéro vérifié."
             ),
+            'code': 'versement_du_vendredi',
         },
-        status=status.HTTP_201_CREATED,
+        status=status.HTTP_409_CONFLICT,
     )
 
 
@@ -1405,6 +1296,15 @@ def update_fulfillment_status(request, order_id):
                 status=status.HTTP_404_NOT_FOUND,
             )
  
+        # Feuille de route D8 ; spec v2.1, R35.1 : un vendeur qui annule une commande payée la REFUSE ; elle bascule
+        # vers une autre offre ou le client est remboursé (R35.4), jamais une annulation sèche de toute la commande.
+        if request.data.get('fulfillment_status') == Order.FulfillmentStatus.CANCELLED and order.is_paid:
+            from apps.orders.bascule import REFUS, declencher
+
+            declencher(order, request.user, REFUS)
+            order.refresh_from_db()
+            return Response(VendorOrderSerializer(order, context={'request': request, 'vendor': request.user}).data)
+
         serializer = UpdateFulfillmentStatusSerializer(
             order,
             data=request.data,
@@ -3684,8 +3584,9 @@ def admin_finances_stats(request):
     # Commission totale = SUM(subtotal_xaf * commission_rate_snapshot / 100)
     def commission_sum(qs):
         total = 0
-        for o in qs.only('subtotal_xaf', 'commission_rate_snapshot'):
-            total += round(o.subtotal_xaf * float(o.commission_rate_snapshot) / 100)
+        from apps.vendors.serializers import commission_console
+        for o in qs.only('subtotal_xaf', 'commission_rate_snapshot').prefetch_related('commissions'):
+            total += commission_console(o)  # commissions figées (spec v2.1, R14.1)
         return total
  
     total_commission  = commission_sum(paid_orders)
@@ -3739,7 +3640,11 @@ def admin_finances_stats(request):
         # sans vendeur n'a de toute facon aucune commission a attribuer.
         if vendor is None:
             continue
-        commission = round(item.line_total_xaf * float(item.order.commission_rate_snapshot) / 100)
+        figee = next((c for c in item.order.commissions.all() if c.vendor_id == vendor.id), None)
+        if figee is not None and figee.st_b:  # part de l'article dans la commission figée (spec v2.1, R14.1)
+            commission = round(figee.commission_b * item.line_total_xaf / figee.st_b)
+        else:
+            commission = round(item.line_total_xaf * float(item.order.commission_rate_snapshot) / 100)
         key = vendor.id
         if key not in vendor_commissions:
             profile = getattr(vendor, 'vendor_profile', None)
@@ -4649,8 +4554,9 @@ def admin_account_stats(request):
  
     # Commissions = SUM(subtotal_xaf * commission_rate_snapshot / 100)
     total_commissions = 0
-    for o in paid_orders.only('subtotal_xaf', 'commission_rate_snapshot'):
-        total_commissions += round(o.subtotal_xaf * float(o.commission_rate_snapshot) / 100)
+    from apps.vendors.serializers import commission_console
+    for o in paid_orders.only('subtotal_xaf', 'commission_rate_snapshot').prefetch_related('commissions'):
+        total_commissions += commission_console(o)  # commissions figées (spec v2.1, R14.1)
  
     # Escrow
     escrow_blocked = Order.objects.filter(
@@ -6572,10 +6478,11 @@ def vendor_certifications(request):
         TIER_LABELS   = {'BRONZE': 'Bronze', 'SILVER': 'Argent', 'GOLD': 'Or', 'DIAMOND': 'Diamant'}
         TIER_NEXT     = {'BRONZE': 'SILVER', 'SILVER': 'GOLD', 'GOLD': 'DIAMOND', 'DIAMOND': None}
         TIER_BENEFITS = {
-            'BRONZE':  ['Vente sur BelivaY', 'QR Code boutique', 'Support standard', 'Commission standard'],
-            'SILVER':  ['Badge Argent visible', 'Commission -1%', 'Support prioritaire', '2 boosts/mois offerts'],
-            'GOLD':    ['Badge Or visible', 'Commission -2%', 'Support dedie', '5 boosts/mois offerts', 'Mise en avant catalogue'],
-            'DIAMOND': ['Badge Diamant exclusif', 'Commission -3%', 'Support VIP 24/7', 'Boosts illimites', 'Page boutique Premium'],
+            # Spec v2.1, R18.2 : aucun taux particulier NE DOIT être promis à un vendeur.
+            'BRONZE':  ['Vente sur BelivaY', 'QR Code boutique', 'Support standard'],
+            'SILVER':  ['Badge Argent visible', 'Support prioritaire', '2 boosts/mois offerts'],
+            'GOLD':    ['Badge Or visible', 'Support dedie', '5 boosts/mois offerts', 'Mise en avant catalogue'],
+            'DIAMOND': ['Badge Diamant exclusif', 'Support VIP 24/7', 'Boosts illimites', 'Page boutique Premium'],
         }
  
         tiers_info = []
@@ -6669,7 +6576,7 @@ def vendor_list_plans(request):
             'description':      p.description,
             'price_monthly_xaf': p.price_monthly_xaf,
             'price_annual_xaf': p.price_annual_xaf,
-            'commission_rate':  float(p.commission_rate),
+            # Pas de commission_rate : aucun taux n'est promis au vendeur (R18.2), il ne voit que net_b (R26.1).
             'max_products':     p.max_products,
             'max_boosts_month': p.max_boosts_month,
             'features':         p.features,
@@ -7151,6 +7058,17 @@ def admin_approve_product(request, product_id):
             status=status.HTTP_409_CONFLICT,
         )
 
+    # Une offre est publiée avec sa fiche maître : univers, poids et dimensions (R16.1, R63.1),
+    # et jamais sous le prix minimum publiable (R19.1).
+    from apps.catalog.regles_catalogue import manques_fiche, prix_minimum
+    manques = manques_fiche(product.master) if product.master else ['fiche maître (R16.1, R63.1)']
+    if manques:
+        return Response({'detail': 'Fiche incomplète, publication impossible : ' + ' ; '.join(manques) + '.',
+                         'manques': manques}, status=status.HTTP_409_CONFLICT)
+    if product.price_xaf < prix_minimum():
+        return Response({'detail': f'Prix inférieur au prix minimum publiable ({prix_minimum()} F).',
+                         'raison': 'prix_minimum'}, status=status.HTTP_409_CONFLICT)
+
     product.moderation_status = ModerationStatus.APPROVED
     product.moderation_reason = ''            # efface un éventuel motif de rejet précédent
     product.moderated_at = timezone.now()
@@ -7409,7 +7327,28 @@ def admin_update_master(request, master_id):
                 )
  
         master.variant_axes = new_axes
- 
+
+    # ── Spécification v2.1 : univers, poids, dimensions, carton, Made in Cameroon (R16.1, R63.1, R87.1, R17.1)
+    champs_v21 = ["univers", "poids_kg", "dim_l1_cm", "dim_l2_cm", "dim_l3_cm", "carton", "made_in_cameroon"]
+    for f in champs_v21:
+        if f in request.data:
+            val = request.data[f]
+            if f in ("carton", "made_in_cameroon"):
+                val = val in (True, "true", "1", 1)
+            elif f == "univers":
+                val = (val or "").strip().upper()
+            elif val in ("", None):
+                val = None
+            setattr(master, f, val)
+    if any(f in request.data for f in champs_v21):
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        try:
+            master.clean_fields(exclude=[f.name for f in master._meta.fields if f.name not in champs_v21])
+            master.clean()
+        except DjangoValidationError as exc:
+            return Response({"detail": " ".join(exc.messages), "erreurs": exc.message_dict if hasattr(exc, "error_dict") else exc.messages},
+                            status=status.HTTP_400_BAD_REQUEST)
+
     master.save()
  
     return Response(
@@ -7423,10 +7362,16 @@ def admin_update_master(request, master_id):
 def admin_approve_master(request, master_id):
     from apps.catalog.models import MasterProduct, ModerationStatus
     from django.utils import timezone
+    from apps.catalog.regles_catalogue import manques_fiche
     try:
         master = MasterProduct.objects.get(id=master_id)
     except MasterProduct.DoesNotExist:
         return Response({'detail': 'Fiche introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+    # R16.1, R63.1 : une fiche sans univers, poids ou dimensions ne peut pas être publiée.
+    manques = manques_fiche(master)
+    if manques:
+        return Response({'detail': 'Fiche incomplète, publication impossible : ' + ' ; '.join(manques) + '.',
+                         'manques': manques}, status=status.HTTP_409_CONFLICT)
     master.moderation_status = ModerationStatus.APPROVED
     master.moderated_at = timezone.now()
     master.moderated_by = request.user
@@ -8323,7 +8268,8 @@ def ev_order_ready(request, order_id):
         # confirmation attendue côté vendeur sur ce frontend (PRE-01).
         from .business_hours import add_business_hours
         order.vendor_acknowledged_at = now
-        order.prep_deadline = add_business_hours(now, 4, profile.closed_days)
+        if order.prep_deadline is None:  # spec v2.1 : déjà posé au paiement (R44.1, R44.3)
+            order.prep_deadline = add_business_hours(now, 4, profile.closed_days)
     order.fulfillment_status = FS.READY_FOR_PICKUP
     order.save()
 
@@ -8351,20 +8297,36 @@ def ev_order_stockout(request, order_id):
         return Response({'ok': False, 'raison': 'introuvable'})
     if order.fulfillment_status == Order.FulfillmentStatus.READY_FOR_PICKUP:
         return Response({'ok': False, 'raison': 'deja_prete'})
+    return _ev_bascule(request, order, 'rupture', 'Rupture de stock signalée (espace vendeur)')
 
-    order.fulfillment_status = Order.FulfillmentStatus.CANCELLED
-    order.cancellation_reason = Order.CancellationReason.STOCKOUT
-    order.cancelled_at = timezone.now()
-    if order.is_paid:
-        order.escrow_status = Order.EscrowStatus.REFUNDED
-    order.save()
 
+def _ev_bascule(request, order, motif, libelle):
+    """Feuille de route D8 ; spec v2.1, R35.1 : rupture ou refus du vendeur. La commande n'est plus annulée d'office :
+    chaque article bascule vers une autre offre (R35.2, R35.3) ou le client est remboursé le jour même (R35.4)."""
+    from apps.orders.bascule import declencher
     from apps.orders.models import OrderHistory
+
+    resultat = declencher(order, request.user, motif)
     OrderHistory.objects.create(
-        order=order, user=request.user, action='Rupture de stock signalée (espace vendeur)',
-        field_name='fulfillment_status', old_value='', new_value='CANCELLED',
+        order=order, user=request.user, action=libelle,
+        field_name='fulfillment_status', old_value='', new_value=order.fulfillment_status,
     )
-    return Response({'ok': True})
+    return Response({'ok': True, **resultat})
+
+
+@extend_schema(tags=["Vendors"], summary="(Espace vendeur) Refuser la commande — bascule vers un autre vendeur (R35.1)")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def ev_order_refuse(request, order_id):
+    profile, err = _ev_active_vendor(request)
+    if err:
+        return err
+    order = _ev_vendor_order(order_id, request.user)
+    if not order:
+        return Response({'ok': False, 'raison': 'introuvable'})
+    if order.fulfillment_status == Order.FulfillmentStatus.READY_FOR_PICKUP:
+        return Response({'ok': False, 'raison': 'deja_prete'})
+    return _ev_bascule(request, order, 'refus', 'Commande refusée par le vendeur (espace vendeur)')
 
 
 @extend_schema(
@@ -8799,13 +8761,23 @@ def _vd_category_names(category):
     return categorie, rayon
 
 
-def _vd_commission_kept(vendor, price_xaf):
-    """Montant gardé par le vendeur à price_xaf : réutilise LE calcul réellement appliqué aux
-    commandes (apps.orders.serializers._commission_rate_for_product), jamais un barème recalculé
-    séparément — cohérence garantie avec ce que le checkout facture vraiment."""
+def _vd_commission_kept(vendor, price_xaf, master=None):
+    """(gardé, retenu, taux) pour une vente d'un article à price_xaf : le service de commission de la spec v2.1
+    (moteur BV-DEV-09, A7), avec l'univers de la fiche, le palier et l'offre de découverte du vendeur, sans
+    livraison offerte. Seul « gardé » (net_b) peut être montré au vendeur (R26.1). Sans univers sur la fiche,
+    l'ancien taux de la commande s'applique."""
     from decimal import Decimal
     if not price_xaf:
         return 0, 0, 0.0
+    if master is not None and getattr(master, 'univers', ''):
+        from apps.orders.commission import decouverte, palier_vendeur
+        from apps.regles import services as regles
+        r = regles.moteur().commission(
+            [dict(prix_i=price_xaf, q_i=1, univers_i=master.univers, mic_i=master.made_in_cameroon)],
+            palier_vendeur(vendor), decouverte(vendor), 0,
+        )
+        retenu = r['commission_b'] + r['tva_b']
+        return r['net_b'], retenu, round(retenu / price_xaf * 100, 2)
     try:
         from apps.orders.models import PlatformSettings
         from apps.orders.serializers import _commission_rate_for_product
@@ -8838,8 +8810,8 @@ def _vd_offer_etat(product):
 
 
 def _vd_offer_month_stats(product):
-    """Ventes, gardé et litiges réels du mois en cours (OrderItem, Dispute) — gardeCeMois utilise
-    order.commission_rate_snapshot, le taux réellement appliqué à chaque commande."""
+    """Ventes, gardé et litiges réels du mois en cours (OrderItem, Dispute) — gardeCeMois est la part de l'article
+    dans le net_b figé de sa sous-commande (spec v2.1, R22.1) ; une commande antérieure garde son taux."""
     from django.utils import timezone
     now = timezone.now()
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -8850,10 +8822,15 @@ def _vd_offer_month_stats(product):
             product=product, order__created_at__gte=month_start,
         ).select_related('order')
         ventes = items.count()
+        from apps.orders.models import CommissionSousCommande
         garde = 0
         for item in items:
-            rate = float(item.order.commission_rate_snapshot or 0)
-            garde += int(round(float(item.line_total_xaf) * (1 - rate / 100)))
+            figee = CommissionSousCommande.objects.filter(order=item.order, vendor=product.vendor).first()
+            if figee is not None and figee.st_b:
+                garde += int(round(figee.net_b * item.line_total_xaf / figee.st_b))
+            else:
+                rate = float(item.order.commission_rate_snapshot or 0)
+                garde += int(round(float(item.line_total_xaf) * (1 - rate / 100)))
     except Exception:
         ventes, garde = 0, None
     try:
@@ -8889,7 +8866,7 @@ def _vd_offer_dict(product, request):
     except Exception:
         stock = 0
     seuil = product.get_effective_stock_threshold()
-    kept, _commission, _rate = _vd_commission_kept(product.vendor, product.price_xaf)
+    kept, _commission, _rate = _vd_commission_kept(product.vendor, product.price_xaf, product.master)
     categorie, rayon = _vd_category_names(product.category)
     images = list(product.images.all())
     primary = next((i for i in images if i.is_primary), images[0] if images else None)
@@ -8999,7 +8976,7 @@ def _vd_fiche_dict(master, request):
     part = None
     if prices:
         prix_ref = min(prices)
-        kept, _c, _r = _vd_commission_kept(request.user, prix_ref)
+        kept, _c, _r = _vd_commission_kept(request.user, prix_ref, master)
         part = {'pourCent': round(kept / prix_ref * 100, 1) if prix_ref else 0, 'prixRef': prix_ref}
     try:
         img = master.images.filter(is_primary=True).first() or master.images.first()
@@ -9358,9 +9335,15 @@ def vd_offers_import(request):
             prix = row.get('prix')
             if prix:
                 try:
-                    product.price_xaf = int(prix)
+                    prix = int(prix)
                 except ValueError:
-                    pass
+                    prix = None
+                if prix is not None:
+                    from apps.catalog.regles_catalogue import prix_minimum
+                    if prix < prix_minimum():  # R19.1 : la ligne n'est pas appliquée
+                        ignorees += 1
+                        continue
+                    product.price_xaf = prix
             product.save()
             stock = row.get('stock')
             if stock is not None and str(stock) != '':
@@ -9432,6 +9415,9 @@ def vd_offer_detail(request, offer_id):
                 raise ValueError
         except (TypeError, ValueError):
             return Response({'ok': False, 'raison': 'prix'}, status=200)
+        from apps.catalog.regles_catalogue import prix_minimum
+        if prix < prix_minimum():  # R19.1
+            return Response({'ok': False, 'raison': 'prix_minimum'}, status=200)
         product.price_xaf = prix
     if 'prixBarre' in data:
         pb = data['prixBarre']
@@ -9643,26 +9629,26 @@ def vd_offers_quote(request):
         return Response({'detail': 'Paramètre "prix" requis (entier).'}, status=400)
     offre_id = request.query_params.get('offre')
     product = Product.objects.filter(pk=offre_id, vendor=request.user).first() if offre_id else None
-    # Constantes documentées dans src/donnees/domaines/offres.ts (commentaires du contrat produit),
-    # pas inventées ici : 500 F minimum publiable, 700 F commission minimale (VD-COM-MIN), 5 000 F
-    # seuil petit prix (VD-COM-POINTS).
-    MINIMUM = 500
-    COMMISSION_MIN = 700
-    SEUIL_PETIT_PRIX = 5000
+    # Réglages de l'admin (spécification v2.1) : prix minimum publiable (R19.1), seuil et points « petit prix »
+    # (R17.1). La commission minimale n'est plus renvoyée : le vendeur ne voit jamais ce qui est retenu (R26.1).
+    from apps.regles import services as regles
+    MINIMUM = regles.reglage('r_prix_min_publiable')
+    SEUIL_PETIT_PRIX = regles.reglage('r_petit_prix')
+    POINTS_PETIT_PRIX = regles.reglage('r_pts_petit_prix')
     if prix < MINIMUM:
         return Response({
             'prix': prix, 'garde': None, 'partPourCent': None,
             'petitPrix': prix < SEUIL_PETIT_PRIX, 'points': 0,
-            'minimum': MINIMUM, 'plagesMinimale': [], 'commissionMinimale': COMMISSION_MIN,
+            'minimum': MINIMUM, 'plagesMinimale': [], 'commissionMinimale': None,  # R26.1
             'seuilPetitPrix': SEUIL_PETIT_PRIX, 'plafond': None, 'refus': 'minimum',
         })
     vendor = product.vendor if product else request.user
-    garde, _commission, _rate = _vd_commission_kept(vendor, prix)
+    garde, _commission, _rate = _vd_commission_kept(vendor, prix, product.master if product else None)
     part = round(garde / prix * 100, 1) if prix else None
     return Response({
         'prix': prix, 'garde': garde, 'partPourCent': part,
-        'petitPrix': prix < SEUIL_PETIT_PRIX, 'points': 3 if prix < SEUIL_PETIT_PRIX else 0,
-        'minimum': MINIMUM, 'plagesMinimale': [], 'commissionMinimale': COMMISSION_MIN,
+        'petitPrix': prix < SEUIL_PETIT_PRIX, 'points': POINTS_PETIT_PRIX if prix < SEUIL_PETIT_PRIX else 0,
+        'minimum': MINIMUM, 'plagesMinimale': [], 'commissionMinimale': None,  # R26.1
         'seuilPetitPrix': SEUIL_PETIT_PRIX, 'plafond': None, 'refus': None,
     })
 
@@ -9730,7 +9716,7 @@ def vd_offer_price_advice(request, offer_id):
     conseille = min(conseille, prix_saisi)
     conseille = max(conseille, 0)
 
-    garde_conseille, _commission, _rate = _vd_commission_kept(product.vendor, conseille)
+    garde_conseille, _commission, _rate = _vd_commission_kept(product.vendor, conseille, product.master)
     part_conseille = round(garde_conseille / conseille * 100, 1) if conseille else 0.0
     moins_cher = min(autres_prix_tries)
     economie_client = max(0, moins_cher - conseille)
@@ -9868,7 +9854,8 @@ def vd_offer_price(request, offer_id):
             raise ValueError
     except (TypeError, ValueError):
         return Response({'ok': False, 'raison': 'prix'}, status=200)
-    if prix < 500:
+    from apps.catalog.regles_catalogue import prix_minimum
+    if prix < prix_minimum():  # R19.1
         return Response({'ok': False, 'raison': 'prix_minimum'}, status=200)
 
     confirme = bool(request.data.get('confirmer'))
@@ -10130,10 +10117,10 @@ def vd_promotions_quote(request):
     if reference <= promo_price:
         return Response({'ok': False, 'raison': 'prix'}, status=200)
     remise_pct = round((1 - promo_price / reference) * 100, 1)
-    garde, commission, _rate = _vd_commission_kept(product.vendor, promo_price)
+    garde, _commission, _rate = _vd_commission_kept(product.vendor, promo_price, product.master)
     return Response({
         'ok': True, 'prixReference': reference, 'prixPromo': promo_price,
-        'remisePourCent': remise_pct, 'garde': garde, 'commission': commission,
+        'remisePourCent': remise_pct, 'garde': garde,  # R26.1 : jamais ce qui est retenu
         'remiseValide': 15 <= remise_pct <= 70,
     })
 
@@ -10797,21 +10784,31 @@ def _document_content(profile, doc_type, period):
                 Order.FulfillmentStatus.RELEASED_TO_VENDOR,
             ],
         )
+        from apps.orders.commission import net_vendeur
         lignes = []
         total_vente = total_commission = total_garde = 0
         for order in qs.order_by('updated_at'):
             items = order.items.filter(product__vendor=vendor)
             subtotal = sum(i.line_total_xaf for i in items)
-            rate = float(order.commission_rate_snapshot)
-            commission = round(subtotal * rate / 100)
-            garde = subtotal - commission
+            garde = net_vendeur(order, vendor, subtotal)  # net_b (R22.1)
+            commission = subtotal - garde
             total_vente += subtotal
             total_commission += commission
             total_garde += garde
-            lignes.append([_vendor_ref(order.id), order.updated_at.strftime('%d/%m/%Y'), subtotal, commission, garde])
-        titre = "Relevé de commission" if doc_type == 'facture' else "Relevé de ventes"
-        colonnes = ['Commande', 'Date', 'Prix de vente (FCFA)', 'Commission (FCFA)', 'Vous gardez (FCFA)']
-        totaux = ['Total', '', total_vente, total_commission, total_garde]
+            if doc_type == 'facture':
+                lignes.append([_vendor_ref(order.id), order.updated_at.strftime('%d/%m/%Y'), subtotal, commission, garde])
+            else:
+                lignes.append([_vendor_ref(order.id), order.updated_at.strftime('%d/%m/%Y'), subtotal, garde])
+        if doc_type == 'facture':
+            # Facture mensuelle de commission (R13.5) : document comptable, distinct de l'espace vendeur (R26.1).
+            titre = "Relevé de commission"
+            colonnes = ['Commande', 'Date', 'Prix de vente (FCFA)', 'Commission (FCFA)', 'Vous gardez (FCFA)']
+            totaux = ['Total', '', total_vente, total_commission, total_garde]
+        else:
+            # R26.1 : le relevé de ventes montre net_b, jamais ce qui est retenu.
+            titre = "Relevé de ventes"
+            colonnes = ['Commande', 'Date', 'Prix de vente (FCFA)', 'Vous recevez (FCFA)']
+            totaux = ['Total', '', total_vente, total_garde]
         mentions = ["Ceci n'est pas une facture fiscale." if not lignes else "Montants en francs CFA (XAF)."]
         return (f"{titre} · {period}", profile.business_name, colonnes, lignes, totaux, mentions)
 
@@ -11654,6 +11651,9 @@ def vendor_flash_sales_create(request):
     produit = reward.product
     prix_ref = produit.price_xaf
     prix_promo = max(1, round(prix_ref * (1 - remise / 100)))
+    from apps.catalog.regles_catalogue import prix_minimum
+    if prix_promo < prix_minimum():  # R19.1 : le prix flash est le prix payé (prix_i)
+        return Response({'ok': False, 'raison': 'prix_minimum'})
     maintenant = timezone.now()
     duree_h = min(48, max(2, reward.days * 24 if reward.days else 24))
     statut = PromotionCampaign.Status.APPROVED if remise <= 50 else PromotionCampaign.Status.PENDING

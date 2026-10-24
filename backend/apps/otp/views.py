@@ -45,6 +45,7 @@ ALIAS = {
     "email_sms": Objet.EMAIL_SMS,
     "email_adresse": Objet.EMAIL_ADRESSE,
     "change_old": Objet.NUMERO_ANCIEN,
+    "change_lost": Objet.NUMERO_PERDU,
     "change_new": Objet.NUMERO_NOUVEAU,
     # Premier numéro : le site envoie « numero-nouveau » (CL-03, Numero.tsx) ; « verify » en est un synonyme.
     "verify": Objet.NUMERO_NOUVEAU,
@@ -52,6 +53,15 @@ ALIAS = {
 # Objets envoyés par d'autres routes (cadeau : /wishlists/{code}/gifts/otp).
 AILLEURS = {Objet.CADEAU}
 VERS_LE_NUMERO_DU_COMPTE = {Objet.PROFIL, Objet.EMAIL_SMS, Objet.NUMERO_ANCIEN, Objet.SUPPRESSION}
+
+
+def ancien_numero_prouve(user, fenetres: int = 1) -> bool:
+    """Changement de numéro : l'ancien numéro a reçu son code, ou il est perdu et l'e-mail du compte a reçu le sien
+    (D7, « Ce n'est plus mon numéro »)."""
+    dernier = _comptes().dernier_changement(user)
+    apres = dernier.le if dernier else None
+    return any(services.etape_validee(objet=o, utilisateur=user, apres=apres, fenetres=fenetres)
+               for o in (Objet.NUMERO_ANCIEN, Objet.NUMERO_PERDU))
 
 
 def objet_de(purpose: str | None) -> str | None:
@@ -124,6 +134,11 @@ class EnvoyerCode(VuePublique):
     def _destination(self, user, objet: str, destination: str) -> str:
         comptes = _comptes()
         numero = comptes.numero_verifie(user)
+        if objet == Objet.NUMERO_PERDU:
+            # D7 : « Ce n'est plus mon numéro ». L'ancien numéro ne reçoit plus rien : le code part à l'e-mail du compte.
+            if not user.email:
+                raise refus("email_absent", "Ajoute d'abord une adresse e-mail à ton compte, ou contacte le support.")
+            return user.email
         if objet in VERS_LE_NUMERO_DU_COMPTE:
             if numero:
                 return numero
@@ -148,10 +163,8 @@ class EnvoyerCode(VuePublique):
                 raise refus("meme", "C'est déjà le numéro de ton compte.")
             if comptes.numero_pris(destination, sauf=user):
                 raise conflit("utilise", "Ce numéro est déjà vérifié sur un autre compte.")
-            if numero:
-                dernier = comptes.dernier_changement(user)
-                if not services.etape_validee(objet=Objet.NUMERO_ANCIEN, utilisateur=user, apres=dernier.le if dernier else None):
-                    raise conflit("state_changed", "Entre d'abord le code reçu sur ton numéro actuel.")
+            if numero and not ancien_numero_prouve(user):
+                raise conflit("state_changed", "Entre d'abord le code reçu sur ton numéro actuel.")
         return destination
 
 
@@ -191,6 +204,10 @@ class VerifierCode(VuePublique):
             r = services.verifier(objet=objet, code=d["code"], destination=numero, utilisateur=user)
             if r.get("ok"):
                 comptes.enregistrer_numero(user, numero)
+            return Response(resultat(r, comptes.client(user, request) if r.get("ok") else None))
+
+        if objet == Objet.NUMERO_PERDU:  # D7 : « Ce n'est plus mon numéro », code reçu à l'e-mail du compte
+            r = services.verifier(objet=objet, code=d["code"], destination=user.email or "", utilisateur=user)
             return Response(resultat(r, comptes.client(user, request) if r.get("ok") else None))
 
         if objet in (Objet.EMAIL_SMS, Objet.NUMERO_ANCIEN):  # verifierCodeEmail, verifierCodeNumeroAncien

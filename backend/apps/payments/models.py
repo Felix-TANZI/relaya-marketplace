@@ -33,6 +33,9 @@ from apps.payments.reconciliation import models as _rec_models  # noqa: F401,E40
 # ── Lot 11 : risque et Trust Score ───────────────────────────────────────────
 from apps.payments.risk import models as _risk_models  # noqa: F401,E402
 
+# ── Feuille de route D16 : le Wallet du client (spec v2.1, R03) ─────────────
+from apps.payments.wallet import models as _wallet_models  # noqa: F401,E402
+
 
 class TimeStampedModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)

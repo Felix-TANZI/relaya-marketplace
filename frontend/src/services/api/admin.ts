@@ -792,6 +792,27 @@ export interface AdminMaster {
  
   created_at: string;
   updated_at: string;
+
+  // Spécification v2.1 : remplis par l'équipe catalogue (R16.1, R63.1, R87.1, R17.1)
+  univers: string;
+  poids_kg: string | null;
+  dim_l1_cm: string | null;
+  dim_l2_cm: string | null;
+  dim_l3_cm: string | null;
+  carton: boolean;
+  made_in_cameroon: boolean;
+  /** Ce qui empêche la validation ; vide : fiche publiable. */
+  manques_publication: string[];
+  /** Format de colis calculé (R62) ; null tant que poids ou dimensions manquent. */
+  colis: { pf_kg: number; volume_l: number; format: string } | null;
+}
+
+/** Ligne de t_univers (spécification v2.1). */
+export interface Univers {
+  code: string;
+  nom: string;
+  nom_en: string;
+  famille: string;
 }
 
 export interface AdminMasterOffer {
@@ -824,6 +845,13 @@ export interface MasterUpdatePayload {
   category?: number;
   brand_fk?: number | null;
   variant_axes?: string[];
+  univers?: string;
+  poids_kg?: string | null;
+  dim_l1_cm?: string | null;
+  dim_l2_cm?: string | null;
+  dim_l3_cm?: string | null;
+  carton?: boolean;
+  made_in_cameroon?: boolean;
 }
 
 export interface AdminVariantResolvedAxis {
@@ -2015,6 +2043,9 @@ export const adminApi = {
       },
     );
   },
+
+  listUnivers: async (): Promise<Univers[]> =>
+    (await http<{ lignes: Univers[] }>(`/api/regles/tables/t_univers/`, { headers: authHeader() })).lignes,
 
   approveMaster: async (id: number) =>
     http(`/api/vendors/admin/masters/${id}/approve/`, { method: 'POST', headers: authHeader() }),

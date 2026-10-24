@@ -9,7 +9,7 @@ condition avec les moteurs (comptoir, litiges, garde…) ; les machines ne vont 
 
 Écarts voulus avec CL-02 : l'état « sans retour » du retour n'existe plus (DP-10 : toujours un dépôt au relais) ;
 une rupture de stock essaie au plus deux vendeurs suivants avant d'annuler (DP-01) ; « Tout est en ordre » ne
-vient que du client (DP-28).
+vient que du client (DP-28). Côté vendeur : la machine du versement (VER-02, VER-04 ; Q-13, Q-19).
 """
 
 from __future__ import annotations
@@ -365,7 +365,12 @@ ESCROW = Machine(
             effets=("libération, C10 et garde suspendus",),
             libelle_client="Rien n'est versé au vendeur",
         ),
-        T("suspendu", "dispute.rejected", "escrow_liberable", effets=("libération recalculée",)),
+        T(
+            "suspendu",
+            "dispute.rejected",
+            "escrow_liberable",
+            effets=("libération recalculée à la fin du gel : délai de recours écoulé ou réponse (Q-26)",),
+        ),
         T("suspendu", "refund.decided", "rembourse", effets=("vers le moyen d'origine",)),
         T(
             "escrow_bloque",
@@ -373,6 +378,13 @@ ESCROW = Machine(
             "escrow_liberable",
             effets=("date de libération = fermeture + 3 j (Or, Platine 1 j ; carte 14 j)",),
             libelle_client="Le vendeur n'est pas encore payé",
+        ),
+        T(
+            "escrow_liberable",
+            "dispute.opened",
+            "suspendu",
+            effets=("gel immédiat, même pendant le compte à rebours de libération (LIB-02)",),
+            libelle_client="Rien n'est versé au vendeur",
         ),
         T("escrow_liberable", "payout.friday", "verse", effets=("vendeur payé le vendredi",)),
         T(
@@ -588,4 +600,60 @@ REMPLACEMENT = Machine(
     frozenset({"remis", "rembourse"}),
 )
 
-MACHINES = (COMMANDE, SOUS_COMMANDE, TENTATIVE_PAIEMENT, ESCROW, LITIGE, RETOUR, REMPLACEMENT)
+# ── Le versement du vendeur (VER-02, VER-04 ; DP-55 : Q-13, Q-19) ──────────────────────────────────────
+
+VERSEMENT = Machine(
+    "versement",
+    (
+        T(
+            "—",
+            "payout.closing",
+            "prevu",
+            effets=(
+                "arrêté du jeudi 23 h 59, heure de Yaoundé : montant dû figé, sans minimum",
+                "référence BLV-VS-nnnn attribuée et annoncée (VER-02)",
+            ),
+        ),
+        T(
+            "prevu",
+            "payout.friday",
+            "envoye",
+            (),
+            ("revue_du_numero",),
+            "jamais pendant la revue de 7 jours d'un nouveau numéro",
+            effets=("envoyé le vendredi avant 12 h, sans frais",),
+        ),
+        T(
+            "prevu",
+            "payout.friday",
+            "reporte",
+            ("revue_du_numero",),
+            effets=("reporté au vendredi qui suit la revue ; jamais envoyé à l'ancien numéro (Q-19)",),
+        ),
+        T("reporte", "number.review_ended", "prevu", effets=("tout le montant dû part le vendredi suivant",)),
+        T("envoye", "operator.credited", "credite", effets=("référence gardée dans Versements",)),
+        T(
+            "envoye",
+            "operator.refused",
+            "refuse",
+            effets=("motif affiché tel quel avec « À faire »", "essais à + 24 h, + 48 h, + 72 h (F7)"),
+        ),
+        T("refuse", "payout.retry", "envoye", (), ("essais_epuises",), "trois essais au plus"),
+        T(
+            "refuse",
+            "payout.retry",
+            "suspendu",
+            ("essais_epuises",),
+            effets=("versements suspendus, le support prend la main ; l'argent reste au vendeur",),
+        ),
+        T(
+            "suspendu",
+            "number.corrected",
+            "prevu",
+            effets=("reprise automatique (après la revue de 7 jours si le numéro change), sans frais (Q-13)",),
+        ),
+    ),
+    frozenset({"credite"}),
+)
+
+MACHINES = (COMMANDE, SOUS_COMMANDE, TENTATIVE_PAIEMENT, ESCROW, LITIGE, RETOUR, REMPLACEMENT, VERSEMENT)

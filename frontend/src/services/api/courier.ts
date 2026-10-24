@@ -42,6 +42,10 @@ export type CourierShipment = {
   delivery_longitude?: number | null;
   delivery_location_precision?: Partial<LocationPrecisionResult>;
   receipt_confirmation_code?: string | null;
+  /** R66.1, R66.2 : code de depot a montrer au relais (dans le QR du colis). */
+  depot_code?: string | null;
+  /** R52.1 : paquet vers un relais, ou course a domicile. */
+  delivery_mode?: "relais" | "domicile";
   authorized_pickup_name?: string;
   authorized_pickup_phone?: string;
   city: string;
@@ -307,7 +311,7 @@ export const courierApi = {
 
   actOnShipment: async (
     id: number,
-    payload: { action: CourierShipmentAction; message?: string; location?: string; pickup_code?: string },
+    payload: { action: CourierShipmentAction; message?: string; location?: string; pickup_code?: string; delivery_code?: string },
   ): Promise<CourierShipment> => {
     return http<CourierShipment>(`/api/shipping/my-shipments/${id}/action/`, {
       method: "POST",

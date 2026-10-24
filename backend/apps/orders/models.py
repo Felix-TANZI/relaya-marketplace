@@ -60,6 +60,8 @@ class Order(TimeStampedModel):
     class PaymentStatus(models.TextChoices):
         PENDING  = "PENDING",  "En attente de paiement"
         PAID     = "PAID",     "Payé"
+        # Spec v2.1, R42.4 (feuille de route D14) : avance payée, reste à payer au comptoir du relais
+        VALIDATED = "VALIDATED", "Validée — reste à payer au comptoir"
         FAILED   = "FAILED",   "Échec du paiement"
         REFUNDED = "REFUNDED", "Remboursé"
 
@@ -188,9 +190,24 @@ class Order(TimeStampedModel):
     )
 
     # Montants
+    # Spécification v2.1 (A1, A2) : subtotal_xaf = st ; delivery_fee_xaf = frais_client ; total_xaf = base_paiement.
     subtotal_xaf     = models.PositiveIntegerField(default=0)
     delivery_fee_xaf = models.PositiveIntegerField(default=0)
     total_xaf        = models.PositiveIntegerField(default=0)
+    couverture_xaf   = models.PositiveIntegerField(default=0, help_text="Livraison offerte prise par BelivaY (R07.3)")
+    frais_momo_xaf   = models.PositiveIntegerField(default=0, help_text="Frais Mobile Money payés par le client (R02.3)")
+    total_a_payer_xaf = models.PositiveIntegerField(default=0, help_text="total_momo (R02.2), ou base_paiement par le Wallet (R02.5)")
+    # Spec v2.1, R42 (feuille de route D14) : paiement au comptoir du relais, en deux fois par Mobile Money.
+    paiement_comptoir = models.BooleanField(default=False, help_text="avance à la commande, reste au comptoir (R42)")
+    avance_xaf = models.PositiveIntegerField(default=0, help_text="avance (R42.3), hors frais Mobile Money")
+    reste_comptoir_xaf = models.PositiveIntegerField(default=0, help_text="au_comptoir (R42.4), hors frais Mobile Money")
+    frais_momo_comptoir_xaf = models.PositiveIntegerField(default=0, help_text="frais Mobile Money du reste (R02.6)")
+    comptoir_paye_le = models.DateTimeField(null=True, blank=True)
+    comptoir_refuse_le = models.DateTimeField(null=True, blank=True, help_text="refus au comptoir (R42.5, R39.3)")
+    frais_detail     = models.JSONField(
+        default=dict, blank=True,
+        help_text="Calcul des frais figé au paiement (R12.3, R83.3) : boutiques, colis, distances, empreinte des réglages.",
+    )
 
     # Snapshot du taux de commission au moment de la commande.
     # Garantit qu'une modification de PlatformSettings n'affecte pas le passé.
@@ -213,6 +230,9 @@ class Order(TimeStampedModel):
     # dans les PDF de référence) : rappel à 4h, alerte admin à 6h,
     # réattribution signalée après 2 créneaux supplémentaires.
     prep_deadline = models.DateTimeField(null=True, blank=True, verbose_name="Délai de préparation (bon de préparation)")
+    # Spec v2.1 (A3) : heure promise au client, figée au paiement et qui fait foi pour lui (R45.7).
+    promesse_at = models.DateTimeField(null=True, blank=True, help_text="promesse (R45.3, R45.4)")
+    promesse_texte = models.CharField(max_length=80, blank=True, default="", help_text="Texte de R45.6")
     prep_reminder_sent_at = models.DateTimeField(null=True, blank=True)
     prep_admin_alert_sent_at = models.DateTimeField(null=True, blank=True)
     prep_reassignment_flagged_at = models.DateTimeField(null=True, blank=True)
@@ -284,7 +304,9 @@ class Order(TimeStampedModel):
 
     @property
     def is_paid(self) -> bool:
-        return self.payment_status == self.PaymentStatus.PAID
+        # Spec v2.1, R42.4 : une commande « Validée » (avance payée) se prépare et se livre comme une commande payée ;
+        # seul son code de retrait attend le paiement au comptoir.
+        return self.payment_status in (self.PaymentStatus.PAID, self.PaymentStatus.VALIDATED)
 
     @property
     def can_be_fulfilled(self) -> bool:
@@ -312,6 +334,10 @@ class Order(TimeStampedModel):
         hours = getattr(settings, "vendor_reply_h", 72)
         self.vendor_reply_deadline = timezone.now() + timedelta(hours=hours)
         self.save()
+        from apps.orders.delais import figer_au_paiement
+        figer_au_paiement(self, timezone.now())
+        from apps.orders import sms
+        sms.paiement_protege(self)  # D7, R78.1
 
     def vendor_acknowledge(self) -> None:
         self.fulfillment_status = self.FulfillmentStatus.VENDOR_ACKNOWLEDGED
@@ -520,8 +546,8 @@ class Dispute(models.Model):
     )
     vendor_replied_at      = models.DateTimeField(null=True, blank=True, verbose_name="Date réponse vendeur")
     vendor_reply_deadline  = models.DateTimeField(
-        null=True, blank=True, verbose_name="Délai de réponse vendeur (48h)",
-        help_text="Démarre au contact vendeur (vendor_contacted=True), pas à l'ouverture du litige.",
+        null=True, blank=True, verbose_name="Délai de réponse vendeur (r_litige_reponse_h)",
+        help_text="Spec v2.1, R70.1 : r_litige_reponse_h après l'ouverture du litige.",
     )
     silence_flagged_at     = models.DateTimeField(
         null=True, blank=True, verbose_name="Signalé pour arbitrage sur silence",
@@ -801,6 +827,12 @@ class Return(models.Model):
         User, on_delete=models.SET_NULL, null=True, blank=True, related_name="inspected_returns",
     )
     refund_amount_xaf = models.IntegerField(null=True, blank=True)
+    # Spec v2.1, R69.1 : course de retour (r_retour) attribuée après l'arbitrage à la partie en tort.
+    frais_retour_xaf = models.PositiveIntegerField(null=True, blank=True, verbose_name="Course de retour (F)")
+    frais_retour_partie = models.CharField(
+        max_length=20, blank=True, default="", verbose_name="Course de retour payée par",
+        help_text="vendeur, transporteur, relais ou client (R69.1) ; gratuite pour le client si le problème est validé.",
+    )
 
     # ── Brouillon d'inspection (gardé sur l'appareil, sync best-effort) ─────
     draft_inspection = models.JSONField(
@@ -1064,3 +1096,63 @@ class PlatformSettings(models.Model):
         """Récupère ou crée l'unique instance de configuration."""
         instance, _ = cls.objects.get_or_create(id=1)
         return instance
+
+
+class CommissionSousCommande(TimeStampedModel):
+    """Commission d'une sous-commande (une boutique) figée au paiement (BV-DEV-03, A7 et A8).
+
+    R13.2 : palier, univers, taux et offre de découverte sont figés ; R13.5 : la base, le taux et la décomposition sont
+    gardés pour le contrat, la facture mensuelle et le support. Le vendeur ne voit que net_b (R26.1) ; la console voit
+    commission_b, tva_b et net_b (R26.2)."""
+
+    class Plancher(models.TextChoices):  # R14.4
+        BAREME = "bareme_b", "Barème"
+        TAUX_MIN = "taux_min", "Taux minimal"
+        COM_MIN = "com_min", "Commission minimale"
+        PLANCHER_OFFERT = "plancher_offert_b", "Plancher de la livraison offerte"
+
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="commissions")
+    vendor = models.ForeignKey(User, on_delete=models.PROTECT, related_name="commissions_sous_commandes")
+    st_b = models.PositiveIntegerField(help_text="Sous-total de la boutique, prix payés (R13.1)")
+    commission_b = models.PositiveIntegerField(help_text="R14.1, arrondie (R20.1)")
+    tva_b = models.PositiveIntegerField(default=0, help_text="R21.2")
+    net_b = models.IntegerField(help_text="st_b − commission_b − tva_b (R22.1)")
+    bareme_b = models.CharField(max_length=60, help_text="Valeur exacte (fraction), non arrondie (R20.1)")
+    plancher_retenu = models.CharField(max_length=20, choices=Plancher.choices)
+    couv_b = models.CharField(max_length=60, default="0", help_text="Part de la couverture, valeur exacte (R14.3)")
+    palier = models.CharField(max_length=10, help_text="Palier du vendeur au paiement (R13.2, t_multiplicateurs)")
+    decouverte = models.BooleanField(default=False, help_text="Offre de découverte au paiement (R17.3)")
+    articles = models.JSONField(default=list, help_text="prix_i, q_i, univers_i, mic_i de chaque ligne (R13.5)")
+    # Contrôle de rentabilité (A8, R92) : exact, non arrondi.
+    liv_b = models.CharField(max_length=60, blank=True, default="")
+    couts_b = models.CharField(max_length=60, blank=True, default="")
+    reste_b = models.CharField(max_length=60, blank=True, default="")
+    exigence = models.BooleanField(null=True, help_text="reste_b ≥ 0 (R92.4)")
+    objectif = models.BooleanField(null=True, help_text="reste_b ≥ r_objectif_reste × couts_b (R92.4)")
+    reglages = models.CharField(max_length=20, blank=True, default="", help_text="Empreinte des réglages appliqués")
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["order", "vendor"], name="orders_commission_une_par_boutique")]
+        verbose_name = "Commission d'une sous-commande"
+        verbose_name_plural = "Commissions des sous-commandes"
+
+    def __str__(self):
+        return f"Commande #{self.order_id} · {self.vendor} · {self.commission_b} F"
+
+
+class SmsCommande(models.Model):
+    """Un SMS parti pour une commande (feuille de route D7 ; R78.1 : r_sms_max au plus, jamais de promotion)."""
+
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="sms")
+    sorte = models.CharField(max_length=20)
+    ok = models.BooleanField(default=False)
+    reference = models.CharField(max_length=120, blank=True, default="")
+    le = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["le"]
+        verbose_name = "SMS de commande"
+        verbose_name_plural = "SMS de commande"
+
+    def __str__(self):
+        return f"Commande #{self.order_id} · {self.sorte}"

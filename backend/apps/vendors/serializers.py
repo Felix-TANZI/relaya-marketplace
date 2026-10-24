@@ -11,10 +11,11 @@
 # leur identité.
 #
 # Commission :
-#   Calculée depuis Order.commission_rate_snapshot (jamais codée en dur).
+#   Calculée par apps.orders.commission.net_vendeur : net_b figé à la commande (spec v2.1, R22.1, R26.1).
 #   Tout vient de PlatformSettings, modifiable par l'admin.
 
 import hashlib
+from apps.orders.commission import net_vendeur
 from rest_framework import serializers
 from apps.orders.models import Order, OrderItem
 from apps.orders.serializers import DisputeEvidenceRequestSerializer
@@ -133,22 +134,19 @@ class VendorApplicationSerializer(serializers.ModelSerializer):
         model = VendorProfile
         fields = ['business_name', 'business_description', 'phone', 'address', 'city', 'id_document']
 
-    def validate(self, data):
-        if VendorProfile.objects.filter(user=self.context['request'].user).exists():
-            raise serializers.ValidationError("Vous avez déjà une demande vendeur.")
-
-        # Bannissement niveau 4 (V5.5 §8) : une CNI ou un numéro Mobile Money
-        # bloqué ne doit pas pouvoir revenir sous un nouveau compte.
-        from apps.accounts.models import PartnerBlacklist
-
-        if PartnerBlacklist.is_blacklisted(PartnerBlacklist.IdentifierType.CNI, data.get('id_document', '')):
-            raise serializers.ValidationError("Cette pièce d'identité ne peut pas être utilisée pour créer un compte partenaire.")
-        if PartnerBlacklist.is_blacklisted(PartnerBlacklist.IdentifierType.MOMO, data.get('phone', '')):
-            raise serializers.ValidationError("Ce numéro Mobile Money ne peut pas être utilisé pour créer un compte partenaire.")
-        return data
-
     def create(self, validated_data):
-        return VendorProfile.objects.create(user=self.context['request'].user, **validated_data)
+        # Feuille de route D19 : une seule règle d'ouverture pour tous les écrans (apps.vendors.ouverture).
+        from apps.vendors.ouverture import Refus, ouvrir_boutique
+
+        try:
+            return ouvrir_boutique(
+                self.context['request'].user, nom=validated_data.get('business_name', ''),
+                telephone=validated_data.get('phone', ''), description=validated_data.get('business_description', ''),
+                adresse=validated_data.get('address', ''), ville=validated_data.get('city', ''),
+                id_document=validated_data.get('id_document', ''),
+            )
+        except Refus as refus:
+            raise serializers.ValidationError(refus.message)
 
 
 class VendorStatsSerializer(serializers.Serializer):
@@ -238,19 +236,15 @@ class VendorOrderSerializer(serializers.ModelSerializer):
       - customer_phone → "Confidentiel"
       - customer_email → non exposé
 
-    Finances vendeur :
-      - vendor_subtotal   : total des articles du vendeur avant commission
-      - commission_rate   : taux snapshot de la commande (ex : 12.0)
-      - commission_amount : BelivaY prélève ce montant
-      - vendor_net_amount : ce que le vendeur recevra = vendor_subtotal - commission_amount
+    Finances vendeur (spec v2.1, R26.1 : le vendeur voit net_b, jamais ce qui est retenu) :
+      - vendor_subtotal   : total des articles du vendeur, prix payés
+      - vendor_net_amount : ce que le vendeur recevra (net_b figé à la commande, R22.1)
     """
 
     items                    = serializers.SerializerMethodField()
     customer_name            = serializers.SerializerMethodField()
     customer_phone           = serializers.SerializerMethodField()
     vendor_subtotal          = serializers.SerializerMethodField()
-    commission_rate          = serializers.SerializerMethodField()
-    commission_amount        = serializers.SerializerMethodField()
     vendor_net_amount        = serializers.SerializerMethodField()
     shipment                 = serializers.SerializerMethodField()
 
@@ -276,9 +270,8 @@ class VendorOrderSerializer(serializers.ModelSerializer):
             'fulfillment_status', 'fulfillment_status_display',
             'escrow_status',      'escrow_status_display',
             'vendor_reply_deadline',
-            'commission_rate_snapshot',
             'subtotal_xaf', 'delivery_fee_xaf', 'total_xaf',
-            'vendor_subtotal', 'commission_rate', 'commission_amount', 'vendor_net_amount',
+            'vendor_subtotal', 'vendor_net_amount',
             'items', 'shipment',
             'is_paid', 'can_be_fulfilled',
             'created_at', 'updated_at',
@@ -312,14 +305,9 @@ class VendorOrderSerializer(serializers.ModelSerializer):
     def get_vendor_subtotal(self, obj) -> int:
         return sum(item.line_total_xaf for item in self._vendor_items(obj))
 
-    def get_commission_rate(self, obj) -> float:
-        return float(obj.commission_rate_snapshot)
-
-    def get_commission_amount(self, obj) -> int:
-        return round(self.get_vendor_subtotal(obj) * float(obj.commission_rate_snapshot) / 100)
-
     def get_vendor_net_amount(self, obj) -> int:
-        return self.get_vendor_subtotal(obj) - self.get_commission_amount(obj)
+        from apps.orders.commission import net_vendeur
+        return net_vendeur(obj, self.context.get('vendor'), self.get_vendor_subtotal(obj))
 
     # ── Articles ─────────────────────────────────────────────────────────────
 
@@ -468,10 +456,10 @@ class UpdateFulfillmentStatusSerializer(serializers.Serializer):
 
         instance.fulfillment_status = new_status
 
-        # Bon de préparation (proposition validée) : 4h ouvrées entre l'accusé
-        # de réception vendeur et "prêt pour enlèvement". Le compteur démarre
-        # ici, jamais à la création de la commande.
-        if new_status == Order.FulfillmentStatus.VENDOR_ACKNOWLEDGED:
+        # Spec v2.1 : le délai de préparation part du paiement (R45.1, R44.1), figé par apps.orders.delais ; il
+        # n'y a pas d'étape d'acceptation (R44.3). L'accusé de réception ne le pose que pour une commande
+        # antérieure, qui n'en a pas.
+        if new_status == Order.FulfillmentStatus.VENDOR_ACKNOWLEDGED and instance.prep_deadline is None:
             from django.utils import timezone as _tz
 
             from apps.vendors.business_hours import add_business_hours
@@ -851,7 +839,27 @@ def _resolve_variant_axes(variant_axes_slugs):
     return resolved
 
 
-class AdminMasterListSerializer(serializers.ModelSerializer):
+class _FicheSpecV21Mixin(serializers.Serializer):
+    """Champs de la spécification v2.1 remplis par l'équipe catalogue (apps/catalog/regles_catalogue.py)."""
+
+    manques_publication = serializers.SerializerMethodField()
+    colis = serializers.SerializerMethodField()
+
+    CHAMPS_V21 = [
+        "univers", "poids_kg", "dim_l1_cm", "dim_l2_cm", "dim_l3_cm", "carton", "made_in_cameroon",
+        "manques_publication", "colis",
+    ]
+
+    def get_manques_publication(self, obj):
+        from apps.catalog.regles_catalogue import manques_fiche
+        return manques_fiche(obj)
+
+    def get_colis(self, obj):
+        from apps.catalog.regles_catalogue import colis_fiche
+        return colis_fiche(obj)
+
+
+class AdminMasterListSerializer(_FicheSpecV21Mixin, serializers.ModelSerializer):
     """Vue tableau — infos essentielles + variant_axes + brand_fk."""
  
     primary_image = serializers.SerializerMethodField()
@@ -895,7 +903,7 @@ class AdminMasterListSerializer(serializers.ModelSerializer):
             "offers_count", "active_offers_count",
             "moderation_status", "moderated_at",
             "created_at", "updated_at",
-        ]
+        ] + _FicheSpecV21Mixin.CHAMPS_V21
  
     def get_primary_image(self, obj):
         request = self.context.get("request")
@@ -956,7 +964,7 @@ class AdminMasterVariantBriefSerializer(serializers.ModelSerializer):
         return obj.offers.filter(is_active=True).count()    
 
 
-class AdminMasterDetailSerializer(serializers.ModelSerializer):
+class AdminMasterDetailSerializer(_FicheSpecV21Mixin, serializers.ModelSerializer):
     """
     Vue modale — master complet avec variants attachés, brand_fk complet,
     axes résolus. Note : les 'offers' et 'images' restent gérés comme
@@ -1010,7 +1018,7 @@ class AdminMasterDetailSerializer(serializers.ModelSerializer):
             "moderation_status", "moderated_at",
             "moderated_by_username",
             "created_at", "updated_at",
-        ]
+        ] + _FicheSpecV21Mixin.CHAMPS_V21
  
     def get_primary_image(self, obj):
         request = self.context.get("request")
@@ -1116,6 +1124,8 @@ class AdminDisputeDetailSerializer(serializers.ModelSerializer):
     messages         = DisputeMessageSerializer(many=True, read_only=True)
     evidences        = DisputeEvidenceSerializer(many=True, read_only=True)
     evidence_requests = DisputeEvidenceRequestSerializer(many=True, read_only=True)
+    # D15 : chaîne de garde de chaque colis et responsable quand une preuve manque (R60, R66.3)
+    chaine_de_garde  = serializers.SerializerMethodField()
 
     class Meta:
         from apps.orders.models import Dispute
@@ -1126,9 +1136,14 @@ class AdminDisputeDetailSerializer(serializers.ModelSerializer):
             'resolution', 'resolution_note', 'resolved_by', 'resolved_by_name', 'resolved_at',
             'refund_amount_xaf',
             'vendor_can_reply', 'courier_can_reply',
-            'messages', 'evidences', 'evidence_requests',
+            'messages', 'evidences', 'evidence_requests', 'chaine_de_garde',
             'created_at', 'updated_at',
         ]
+
+    def get_chaine_de_garde(self, obj):
+        from apps.shipping.preuves import chaine_de_garde
+
+        return [chaine_de_garde(s) for s in obj.order.shipments.select_related("order")]
 
     def get_order_detail(self, obj):
         return {
@@ -1219,7 +1234,7 @@ class AdminOrderListSerializer(serializers.ModelSerializer):
         return list(obj.items.values_list('product__vendor__username', flat=True).distinct())
 
     def get_commission_amount(self, obj):
-        return round(obj.subtotal_xaf * float(obj.commission_rate_snapshot) / 100)
+        return commission_console(obj)
 
     def get_courier_info(self, obj):
         shipment = getattr(obj, 'shipment', None)
@@ -1230,6 +1245,15 @@ class AdminOrderListSerializer(serializers.ModelSerializer):
             'courier_phone': shipment.courier_phone or None,
             'status':        shipment.status,
         }
+
+
+def commission_console(order) -> int:
+    """Console (R26.2) : somme des commissions figées des sous-commandes (spec v2.1, R14.1) ; une commande antérieure
+    garde le calcul par son taux."""
+    figees = [c.commission_b for c in order.commissions.all()]
+    if figees:
+        return sum(figees)
+    return round(order.subtotal_xaf * float(order.commission_rate_snapshot) / 100)
 
 
 class AdminOrderDetailSerializer(serializers.ModelSerializer):
@@ -1248,7 +1272,8 @@ class AdminOrderDetailSerializer(serializers.ModelSerializer):
             'city', 'address', 'note',
             'payment_status', 'fulfillment_status', 'escrow_status',
             'subtotal_xaf', 'delivery_fee_xaf', 'total_xaf',
-            'commission_rate_snapshot', 'commission_amount',
+            'commission_rate_snapshot', 'commission_amount', 'commissions',
+            'couverture_xaf', 'frais_momo_xaf', 'total_a_payer_xaf',
             'vendor_reply_deadline',
             'items', 'history', 'payment_transactions',
             'courier_info',
@@ -1260,8 +1285,19 @@ class AdminOrderDetailSerializer(serializers.ModelSerializer):
             return f"{obj.user.first_name} {obj.user.last_name}".strip() or obj.user.username
         return "Invité"
 
+    commissions = serializers.SerializerMethodField()
+
+    def get_commissions(self, obj):
+        """Console (R26.2) : commission_b, tva_b et net_b de chaque sous-commande, avec ce qui les a fixés."""
+        return [
+            {"vendeur": c.vendor_id, "vendeur_nom": c.vendor.username, "st_b": c.st_b, "commission_b": c.commission_b,
+             "tva_b": c.tva_b, "net_b": c.net_b, "plancher_retenu": c.plancher_retenu, "palier": c.palier,
+             "decouverte": c.decouverte, "reste_b": c.reste_b, "exigence": c.exigence, "objectif": c.objectif}
+            for c in obj.commissions.select_related("vendor")
+        ]
+
     def get_commission_amount(self, obj):
-        return round(obj.subtotal_xaf * float(obj.commission_rate_snapshot) / 100)
+        return commission_console(obj)
 
     def get_items(self, obj):
         items_data = []
@@ -1360,6 +1396,14 @@ class AdminProductUpdateSerializer(serializers.ModelSerializer):
         from apps.catalog.models import Product
         model  = Product
         fields = ['title', 'description', 'price_xaf', 'is_active', 'category']
+
+    def validate_price_xaf(self, value):
+        from apps.catalog.regles_catalogue import PrixNonPubliable, verifier_prix_publiable
+        try:
+            verifier_prix_publiable(value)  # R19.1
+        except PrixNonPubliable as exc:
+            raise serializers.ValidationError(exc.messages[0], code=exc.code_refus)
+        return value
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1465,17 +1509,11 @@ class VendorPaymentSummarySerializer(serializers.Serializer):
     # Revenus bruts totaux (tous statuts, hors annulés/remboursés)
     total_gross_xaf            = serializers.IntegerField()
 
-    # Commission totale prélevée (toutes commandes libérées)
-    total_commission_xaf       = serializers.IntegerField()
-
     # Nombre de commandes libérées
     released_orders_count      = serializers.IntegerField()
 
     # Nombre de commandes en escrow
     blocked_orders_count       = serializers.IntegerField()
-
-    # Taux de commission actuel (depuis PlatformSettings)
-    commission_rate            = serializers.DecimalField(max_digits=5, decimal_places=2)
 
     # Frais de retrait MoMo actuels (depuis PlatformSettings)
     withdrawal_fee_percent     = serializers.DecimalField(max_digits=4, decimal_places=2)
@@ -1674,10 +1712,8 @@ class VendorDisputeListSerializer(serializers.ModelSerializer):
         vendor = self.context.get('vendor')
         if not vendor:
             return 0
-        items    = obj.order.items.filter(product__vendor=vendor)
-        subtotal = sum(i.line_total_xaf for i in items)
-        rate     = float(obj.order.commission_rate_snapshot)
-        return round(subtotal * (1 - rate / 100))
+        from apps.orders.commission import net_vendeur
+        return net_vendeur(obj.order, vendor)  # net_b (R22.1, R26.1)
 
     def get_vendor_reply_display(self, obj):
         if not obj.vendor_reply_type:
@@ -1802,9 +1838,23 @@ class VendorLocationSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'address', 'description', 'phone', 'email',
             'representative_name', 'representative_phone',
-            'latitude', 'longitude', 'is_active', 'is_main', 'created_at',
+            'latitude', 'longitude', 'quartier', 'is_active', 'is_main', 'created_at',
         ]
         read_only_fields = ['id', 'created_at']
+
+    def validate_quartier(self, value):
+        """Un quartier de t_quartiers (recherche R76.2), rendu sous son nom officiel."""
+        value = (value or '').strip()
+        if not value:
+            return ''
+        from apps.shipping.zones import chercher_quartiers
+        trouves = chercher_quartiers(value)
+        if len(trouves) == 1:
+            return trouves[0]['quartier']
+        if trouves:
+            raise serializers.ValidationError(
+                "Plusieurs quartiers portent ce nom : " + ", ".join(q['quartier'] for q in trouves) + ".")
+        raise serializers.ValidationError("Quartier inconnu de la liste de Yaoundé.")
 
     def validate(self, attrs):
         data = {}
@@ -2115,7 +2165,7 @@ def build_commande(order, vendor_profile) -> dict:
     ramassage = _ramassage_for_shipment(shipment) if shipment else None
     livreur = _livreur_for_shipment(shipment) if shipment else None
 
-    garde = None if probleme else (vendor_subtotal - round(vendor_subtotal * float(order.commission_rate_snapshot) / 100))
+    garde = None if probleme else (net_vendeur(order, vendor_profile.user, vendor_subtotal))
     gele = order.frozen_amount_xaf
 
     from apps.orders.models import PlatformSettings
@@ -2318,7 +2368,7 @@ def build_bon_preparation(order, vendor_profile) -> dict:
         }
 
     vendor_subtotal = sum(i.line_total_xaf for i in items)
-    garde = vendor_subtotal - round(vendor_subtotal * float(order.commission_rate_snapshot) / 100)
+    garde = net_vendeur(order, vendor_profile.user, vendor_subtotal)
     from apps.orders.models import PlatformSettings
     liberation_jours = round((getattr(PlatformSettings.get_settings(), 'escrow_release_h', 72) or 72) / 24) or 1
 
@@ -2382,7 +2432,7 @@ def build_remise(order, vendor_profile) -> dict:
         livreur = {**livreur_base, 'debut': ramassage['debut'], 'fin': ramassage['fin'], 'niveau': niveau}
 
     vendor_subtotal = sum(i.line_total_xaf for i in items)
-    garde = vendor_subtotal - round(vendor_subtotal * float(order.commission_rate_snapshot) / 100)
+    garde = net_vendeur(order, vendor_profile.user, vendor_subtotal)
     from apps.orders.models import PlatformSettings
     liberation_jours = round((getattr(PlatformSettings.get_settings(), 'escrow_release_h', 72) or 72) / 24) or 1
 
@@ -2436,7 +2486,7 @@ def build_recu(order, vendor_profile) -> dict:
     vendor_user = vendor_profile.user
     items = list(order.items.filter(product__vendor=vendor_user))
     vendor_subtotal = sum(i.line_total_xaf for i in items)
-    garde = vendor_subtotal - round(vendor_subtotal * float(order.commission_rate_snapshot) / 100)
+    garde = net_vendeur(order, vendor_profile.user, vendor_subtotal)
     moyen = _moyen_paiement_for_order(order)
     encaisse_a = None
     if order.payment_status == Order.PaymentStatus.PAID:
@@ -2463,7 +2513,7 @@ def build_recu_resume(order, vendor_profile) -> dict:
     vendor_user = vendor_profile.user
     items = list(order.items.filter(product__vendor=vendor_user))
     vendor_subtotal = sum(i.line_total_xaf for i in items)
-    garde = vendor_subtotal - round(vendor_subtotal * float(order.commission_rate_snapshot) / 100)
+    garde = net_vendeur(order, vendor_profile.user, vendor_subtotal)
     encaisse_a = _oh.dt_to_ms(order.created_at) if order.payment_status == Order.PaymentStatus.PAID else None
     article = _article_vendu(items[0]) if items else {'titre': '', 'dessin': ''}
     return {

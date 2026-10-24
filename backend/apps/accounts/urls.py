@@ -3,6 +3,7 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 
+from . import admin_minimum
 from .views import (
     AvatarUploadView,
     ComplianceDocumentFileView,
@@ -87,6 +88,13 @@ urlpatterns = [
     path("admin/couriers/<int:pk>/update/", admin_update_courier, name="auth-admin-update-courier"),
     path("admin/couriers/<int:pk>/", admin_delete_courier, name="auth-admin-delete-courier"),
     path("admin/couriers/sos/",             admin_sos_alerts,   name="auth-admin-sos-alerts"),
+    # Feuille de route D24 : administration minimum (support, fraude, livreurs, file des pièces vendeur).
+    path("admin/support/",                  admin_minimum.support_liste, name="auth-admin-support"),
+    path("admin/support/<int:pk>/",         admin_minimum.support_fil,   name="auth-admin-support-fil"),
+    path("admin/fraud/",                    admin_minimum.fraude,        name="auth-admin-fraud"),
+    path("admin/couriers/overview/",        admin_minimum.livreurs_vue,  name="auth-admin-couriers-overview"),
+    path("admin/kyc/pieces/",               admin_minimum.kyc_file,      name="auth-admin-kyc-pieces"),
+    path("admin/kyc/pieces/<int:pk>/",      admin_minimum.kyc_decision,  name="auth-admin-kyc-decision"),
     path("admin/couriers/sos/<int:pk>/",    admin_resolve_sos,  name="auth-admin-resolve-sos"),
 
     # ── Authentification ──────────────────────────────────────────────────────

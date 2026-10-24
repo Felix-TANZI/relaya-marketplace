@@ -31,7 +31,42 @@ export interface OrderCreateData {
   authorized_pickup_name?: string;
   authorized_pickup_phone?: string;
   cart_items: OrderItem[];
+  /** Total affiché au client ; s'il a changé au paiement, refus « Un prix a changé » (R93.6). */
+  total_attendu?: number | null;
+  /** R01.1 ; « comptoir » : avance maintenant, reste par Mobile Money au relais (R42, feuille de route D14). */
+  moyen?: 'momo' | 'comptoir';
 }
+
+/** Frais et total d'un panier avant le paiement (POST /orders/frais/, spec v2.1 A1 et A2). */
+export interface DevisPanier {
+  ok: boolean;
+  /** Code de refus (R91.3 : panier_min, boutique_min, relais_interdit, devis_hg ; ou donnée manquante). */
+  refus: { refus: string; b?: number; manque?: number } | null;
+  /** Messages à afficher tels quels (R84.2, R10.2…) ; « Payer » reste bloqué tant qu'il y en a. */
+  messages: string[];
+  frais: {
+    st: number;
+    frais_bruts: number;
+    couverture: number;
+    frais_client: number;
+    base_paiement: number;
+    frais_momo: number;
+    total_a_payer: number;
+    /** R07.5 : « Livraison offerte » ou « Livraison offerte jusqu'à … F » ; vide sans couverture. */
+    libelle_livraison: string;
+    /** R07.6 : ce qui manque au panier pour obtenir la livraison offerte. */
+    manque_livraison_offerte?: number;
+    /** R42.3, R42.4 : avance payée maintenant et reste payé au comptoir du relais, avec leurs frais Mobile Money. */
+    comptoir?: { avance: number; frais_momo_avance: number; au_comptoir: number; frais_momo_comptoir: number };
+  } | null;
+  /** Heure promise (R45.6), à montrer avant le paiement (R12.1) : « Livré demain avant 13 h ». */
+  promesse?: { texte: string; a: string } | null;
+  /** Sélection du panier (R93.2) : {offre mise au panier: offre retenue}. */
+  offres_retenues?: Record<string, number>;
+}
+
+export type DevisPanierData = Pick<OrderCreateData,
+  'delivery_mode' | 'district' | 'delivery_latitude' | 'delivery_longitude' | 'relay_point_id' | 'cart_items' | 'moyen'>;
 
 // Ré-exporter le type Order depuis types/order.ts
 export type { Order };
@@ -48,6 +83,13 @@ export const ordersApi = {
     delete payload.delivery_method;
 
     return api.post<Order>('/orders/', payload);
+  },
+
+  /**
+   * Frais et total du panier avant le paiement (recalculés à chaque changement, R84.3)
+   */
+  devis: async (data: DevisPanierData): Promise<DevisPanier> => {
+    return api.post<DevisPanier>('/orders/frais/', data);
   },
 
   /**

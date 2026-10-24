@@ -30,8 +30,9 @@ function exportCSV(orders: VendorOrder[], shopName: string, header: string) {
   const rows = [
     header,
     ...orders.map(o => [
+      // R26.1 : le vendeur ne voit que le net
       orderRef(o.id), fmtDate(o.created_at), o.vendor_subtotal,
-      o.commission_amount, o.vendor_net_amount, o.escrow_status_display,
+      o.vendor_net_amount, o.escrow_status_display,
     ].join(',')),
   ];
   const blob = new Blob(['﻿' + rows.join('\n')], { type: 'text/csv;charset=utf-8' });
@@ -129,16 +130,12 @@ export default function SellerPaymentsPage() {
   }
   if (!summary) return null;
 
-  const commRate = parseFloat(String(summary.commission_rate));
   const released = summary.total_released_xaf;
   const blocked = summary.total_blocked_xaf;
   const relPending = summary.total_release_pending_xaf;
   const circulating = released + blocked + relPending + frozen;
   const pct = (n: number) => (circulating > 0 ? (n / circulating) * 100 : 0);
   const lastSettled = withdrawals.find(w => w.status === 'APPROVED');
-  const grossProjection = commRate > 0
-    ? Math.round(summary.projection_monthly_xaf / (1 - commRate / 100))
-    : summary.projection_monthly_xaf;
 
   const legs: Leg[] = [
     { label: t('sl4_payments.leg_blocked_label'),        amount: blocked,    meta: t(summary.blocked_orders_count > 1 ? 'sl4_payments.leg_blocked_meta_plural' : 'sl4_payments.leg_blocked_meta', { count: summary.blocked_orders_count }), color: T.amber, pct: pct(blocked) },
@@ -230,9 +227,6 @@ export default function SellerPaymentsPage() {
         <StatCard icon={<Lock size={17} />} value={`${nf(blocked)}`}
           label={t('sl4_payments.kpi_escrow_label')} sub={t('sl4_payments.kpi_escrow_sub')}
           color={T.amber} bg={T.amberL} trend={String(summary.blocked_orders_count)} />
-        <StatCard icon={<Scale size={17} />} value={fmtRate(summary.commission_rate)}
-          label={t('sl4_payments.kpi_commission_label')} sub={t('sl4_payments.kpi_commission_sub')}
-          color={T.violet} bg={T.violetL} trend={t('sl4_payments.kpi_commission_trend')} />
         <StatCard icon={<Download size={17} />} value={fmtRate(summary.withdrawal_fee_percent)}
           label={t('sl4_payments.kpi_fee_label')} sub={t('sl4_payments.kpi_fee_sub', { amount: nf(summary.minimum_withdrawal_xaf) })}
           color={T.blue} bg={T.blueL} trend={t('sl4_payments.kpi_fee_trend')} />
@@ -261,18 +255,7 @@ export default function SellerPaymentsPage() {
             right={<TrendingUp size={15} style={{ color: T.violet }} />}
           >
             <div className="flex flex-col gap-2.5">
-              <div className="flex items-center justify-between rounded-2xl"
-                style={{ padding: '13px 15px', background: T.cream, border: `1px solid ${T.border}` }}>
-                <span className="font-semibold" style={{ fontSize: 11.5, color: T.muted }}>{t('sl4_payments.projection_gross_label')}</span>
-                <span className="font-black" style={{ fontSize: 15, color: T.text }}>{nf(grossProjection)}</span>
-              </div>
-              <div className="flex items-center justify-between rounded-2xl"
-                style={{ padding: '13px 15px', background: T.redL, border: `1px solid ${T.redB}` }}>
-                <span className="font-semibold" style={{ fontSize: 11.5, color: T.red }}>{t('sl4_payments.projection_commission_label', { rate: fmtRate(summary.commission_rate) })}</span>
-                <span className="font-black" style={{ fontSize: 15, color: T.red }}>
-                  − {nf(grossProjection - summary.projection_monthly_xaf)}
-                </span>
-              </div>
+              {/* R26.1 : le vendeur ne voit que le net — ni brut projeté, ni commission. */}
               <div className="flex items-center justify-between rounded-2xl"
                 style={{ padding: 15, background: T.greenL, border: `1px solid ${T.greenB}` }}>
                 <span className="font-bold" style={{ fontSize: 11.5, color: T.green }}>{t('sl4_payments.projection_receive_label')}</span>
@@ -345,12 +328,7 @@ export default function SellerPaymentsPage() {
                 <p className="font-bold uppercase" style={{ fontSize: 9.5, letterSpacing: '.1em', color: T.mutedL }}>{t('sl4_payments.column_gross')}</p>
                 <p className="font-semibold" style={{ fontSize: 12.5, color: T.muted, marginTop: 2 }}>{nf(o.vendor_subtotal)}</p>
               </div>
-              <div className="text-right flex-shrink-0" style={{ minWidth: 108 }}>
-                <p className="font-bold uppercase" style={{ fontSize: 9.5, letterSpacing: '.1em', color: 'rgba(220,38,38,.7)' }}>
-                  {t('sl4_payments.column_commission', { rate: o.commission_rate.toFixed(1) })}
-                </p>
-                <p className="font-semibold" style={{ fontSize: 12.5, color: T.red, marginTop: 2 }}>− {nf(o.commission_amount)}</p>
-              </div>
+              {/* R26.1 : pas de colonne commission */}
               <div className="text-right flex-shrink-0" style={{ minWidth: 112 }}>
                 <p className="font-bold uppercase" style={{ fontSize: 9.5, letterSpacing: '.1em', color: T.mutedL }}>{t('sl4_payments.column_net')}</p>
                 <p className="font-black" style={{ fontSize: 14.5, color: T.text, marginTop: 2 }}>{nf(o.vendor_net_amount)}</p>

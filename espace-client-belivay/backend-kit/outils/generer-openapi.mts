@@ -1,8 +1,11 @@
 // Génère le contrat OpenAPI 3.1 du back-end BelivaY (backend-kit/openapi.yaml) et la table des routes
-// (backend-kit/outils/routes.json), à partir du site, lu sans le modifier :
+// (backend-kit/outils/routes.json), à partir des deux sites, lus sans les modifier :
 //   - site/src/api/routes.ts      : les 211 méthodes de la source, leur route (existante ou à créer), leur état ;
 //   - site/src/donnees/source.ts  : les types de réponse (ce que l'écran lit) et les paramètres de chaque méthode ;
-//   - site/src/api/adaptateurs.ts : les formats de relaya-marketplace pour les routes existantes.
+//   - site/src/api/adaptateurs.ts : les formats de relaya-marketplace pour les routes existantes ;
+//   - espace-vendeur/src/api/routes.ts et espace-vendeur/src/donnees/domaines/*.ts : l'espace vendeur (routes
+//     /api/vendors/…, une méthode « domaine.methode » par connecteur, types de réponse du domaine).
+// Un seul contrat, deux étiquettes de premier niveau (x-tagGroups) : « Espace client » et « Espace vendeur ».
 //
 // Lancer (depuis backend-kit/outils, Node 20+ ; sans Node installé : uvx --from nodejs-wheel …) :
 //   npm install && node node_modules/.bin/tsx generer-openapi.mts
@@ -19,6 +22,7 @@ import ts from 'typescript'
 import { createGenerator } from 'ts-json-schema-generator'
 import YAML from 'yaml'
 import { CONNECTEURS } from '../../site/src/api/routes.ts'
+import { CONNECTEURS_PAGES, CONNECTEURS_VENDEUR, TYPES_PAGES } from '../../espace-vendeur/src/api/routes.ts'
 
 const ICI = dirname(fileURLToPath(import.meta.url))
 const SITE = resolve(ICI, '../../site')
@@ -363,6 +367,7 @@ const PUBLIQUES = [
   /^\/api\/flash-deals$/,
   /^\/api\/school-lists$/,
   /^\/api\/content\//,
+  /^\/api\/vendors\/auth\/(login|2fa|otp|verify|password)/,
 ]
 // Listes paginées par curseur (CAP-05) : taille d'une page.
 const PAGINEES: Record<string, number> = {
@@ -483,6 +488,8 @@ function construire() {
     ],
   ]
   for (const [k, o] of socle) if (!ops.has(k)) ops.set(k, o)
+  const tagsClient = new Set([...ops.values()].flatMap((o) => [...o.domaines]))
+  const tagsVendeur = ajouterVendeur(ops, composants)
 
   const paths: Schema = {}
   const triees = [...ops.values()].sort((a, b) => a.chemin.localeCompare(b.chemin) || a.methode.localeCompare(b.methode))
@@ -564,12 +571,16 @@ function construire() {
   const doc = {
     openapi: '3.1.0',
     info: {
-      title: 'BelivaY — API de l’espace client',
+      title: 'BelivaY — API de l’espace client et de l’espace vendeur',
       version: '0.1.0',
       description: [
-        'Contrat des routes que le site client (site/, VITE_SOURCE=api) appelle : les routes existantes de relaya-marketplace',
-        '(commit 9546ffe) et toutes les routes à créer. Généré par backend-kit/outils/generer-openapi.mts depuis',
-        'site/src/api/routes.ts et site/src/donnees/source.ts ; ne pas modifier à la main.',
+        'Contrat des routes que le site client (site/, VITE_SOURCE=api) et l’espace vendeur (espace-vendeur/, sous /vendeur/)',
+        'appellent : les routes existantes de relaya-marketplace (commit 9546ffe) et toutes les routes à créer. Généré par',
+        'backend-kit/outils/generer-openapi.mts depuis site/src/api/routes.ts, site/src/donnees/source.ts,',
+        'espace-vendeur/src/api/routes.ts et espace-vendeur/src/donnees/domaines/*.ts ; ne pas modifier à la main.',
+        '',
+        '- Espace vendeur : routes /api/vendors/… (préfixe de relaya, Q-51), schémas Vendeur_<domaine>_<Type> ; 403 owner_only',
+        '  pour l’accès Préparation sur l’argent, les prix, la publication, les plans, le numéro de versement et l’équipe.',
         '',
         '- Réponses des routes à créer : les types de source.ts tels quels (champs camelCase, dates en ms).',
         '- Montants : francs CFA entiers (CAP-06). Erreurs : `{ "error": { "code", "message", "data" } }` (CAP-04).',
@@ -581,6 +592,10 @@ function construire() {
     servers: [{ url: 'https://belivay.com', description: 'Production (nginx route /api/ vers Django)' }, { url: 'http://localhost:8000', description: 'Développement' }],
     security: [{ jwt: [] }],
     tags: [...new Set(table.flatMap((t) => t.domaines))].map((n) => ({ name: n })),
+    'x-tagGroups': [
+      { name: 'Espace client', tags: [...tagsClient].filter((t) => !tagsVendeur.has(t)) },
+      { name: 'Espace vendeur', tags: [...tagsVendeur] },
+    ],
     paths,
     components: {
       securitySchemes: { jwt: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT', description: 'simplejwt (POST /api/auth/login/, /api/auth/refresh/)' } },
@@ -617,6 +632,169 @@ function construire() {
     },
   }
   return { doc, table }
+}
+
+// ——— 7. Espace vendeur : domaines de la SourceVendeur, une méthode « domaine.methode » par connecteur ———
+
+const VENDEUR = resolve(ICI, '../../espace-vendeur')
+const DOMAINES_V = join(VENDEUR, 'src/donnees/domaines')
+
+interface MethodeV {
+  nom: string
+  params: (Param & { type: string })[]
+  retour: string
+  vide: boolean
+}
+
+/** Méthodes de l'interface Domaine<Nom> d'un fichier de domaine vendeur. */
+function lireDomaineVendeur(fichier: string, seule?: string): Map<string, MethodeV> {
+  const prog = ts.createProgram([fichier], { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext, skipLibCheck: true, noEmit: true })
+  const sf = prog.getSourceFile(fichier)!
+  const res = new Map<string, MethodeV>()
+  ts.forEachChild(sf, (n) => {
+    if (ts.isInterfaceDeclaration(n) && (seule ? n.name.text === seule : /^Domaine[A-Z]/.test(n.name.text))) {
+      for (const m of n.members) {
+        if (!ts.isMethodSignature(m) || !m.name || !ts.isIdentifier(m.name)) continue
+        const params = m.parameters.map((p) => ({ nom: p.name.getText(sf), optionnel: !!p.questionToken || !!p.initializer, type: p.type?.getText(sf) ?? 'unknown' }))
+        const ret = m.type?.getText(sf) ?? ''
+        res.set(m.name.text, { nom: m.name.text, params, retour: ret.replace(/^Promise<([\s\S]*)>$/, '$1'), vide: /^Promise<void>$/.test(ret.replace(/\s/g, '')) })
+      }
+    }
+  })
+  return res
+}
+
+/** Schémas d'un domaine vendeur, préfixés « Vendeur_<domaine>_ » (des types de même nom existent dans deux domaines). */
+function schemasDomaineVendeur(domaine: string, methodes: Map<string, MethodeV>, source = join(DOMAINES_V, `${domaine}.ts`)): Schema {
+  const copie = join(ICI, `.vendeur-${domaine}.ts`)
+  let t = readFileSync(source, 'utf8')
+  // Imports relatifs du fichier copié : rendus absolus (la copie vit dans backend-kit/outils).
+  t = t.replace(/from '(\.{1,2}\/[^']+)'/g, (_, rel: string) => `from '${resolve(dirname(source), rel)}'`)
+  const lignes = [t, '// ——— ajouté par generer-openapi.mts ———']
+  for (const m of methodes.values()) {
+    if (!m.vide) lignes.push(`export type Reponse_${m.nom} = ${m.retour}`)
+    m.params.forEach((p, i) => lignes.push(`export type Param_${m.nom}_${i} = ${p.type}`))
+  }
+  writeFileSync(copie, lignes.join('\n') + '\n')
+  const g = createGenerator({ path: copie, tsconfig: join(VENDEUR, 'tsconfig.app.json'), type: '*', expose: 'export', topRef: true, jsDoc: 'extended', skipTypeCheck: true, additionalProperties: true, sortProps: false })
+  const defs = g.createSchema('*').definitions ?? {}
+  const prefixe = `Vendeur_${domaine}_`
+  const renommer = (n: string) => prefixe + nomPropre(n)
+  const fixer = (x: any): any => {
+    if (Array.isArray(x)) return x.map(fixer)
+    if (x && typeof x === 'object') {
+      const o: any = {}
+      for (const [k, v] of Object.entries(x)) {
+        if (k === '$ref' && typeof v === 'string' && v.startsWith('#/definitions/')) o.$ref = `#/components/schemas/${renommer(decodeURIComponent(v.slice('#/definitions/'.length)))}`
+        else if (k !== '$schema' && k !== 'definitions') o[k] = fixer(v)
+      }
+      return o
+    }
+    return x
+  }
+  const out: Schema = {}
+  for (const [k, v] of Object.entries(defs)) out[renommer(k)] = fixer(v)
+  return out
+}
+
+const TITRES_VENDEUR: Record<string, string> = {
+  session: 'Session, connexion et ouverture', accueil: 'Accueil', commandes: 'Commandes', preparation: 'Préparation',
+  remise: 'Remise au livreur', litiges: 'Litiges', retours: 'Retours', produits: 'Produits', offres: 'Nouvelle offre',
+  argent: 'Argent', versements: 'Versements', trust: 'Trust Score et sanctions', paliers: 'Paliers', plans: 'Plans et visibilité',
+  boutique: 'Boutique', compte: 'Compte et sécurité', equipe: 'Équipe', messages: 'Messages', notifications: 'Notifications', aide: 'Aide',
+}
+
+function ajouterVendeur(ops: Map<string, Operation>, composants: Schema): Set<string> {
+  const tags = new Set<string>()
+  const parDomaine = new Map<string, Map<string, MethodeV>>()
+  // Pages ajoutées et domaines hors SourceVendeur (src/api/routes/pages.ts) : types lus dans le fichier indiqué.
+  const fichierDe = (domaine: string) => (TYPES_PAGES[domaine] ? join(VENDEUR, TYPES_PAGES[domaine].fichier) : join(DOMAINES_V, `${domaine}.ts`))
+  const tous = { ...CONNECTEURS_VENDEUR, ...CONNECTEURS_PAGES } as Record<string, any>
+  for (const cle of Object.keys(tous)) {
+    const domaine = cle.split('.')[0]
+    if (!parDomaine.has(domaine)) parDomaine.set(domaine, lireDomaineVendeur(fichierDe(domaine), TYPES_PAGES[domaine]?.interface))
+  }
+  for (const [domaine, methodes] of parDomaine) Object.assign(composants, schemasDomaineVendeur(domaine, methodes, fichierDe(domaine)))
+  for (const [cle, c] of Object.entries(tous)) {
+    const [domaine, nom] = cle.split('.')
+    const m = parDomaine.get(domaine)?.get(nom)
+    const tag = `Vendeur · ${TITRES_VENDEUR[domaine] ?? TYPES_PAGES[domaine]?.titre ?? domaine}`
+    const ref_ = (n: string) => ({ $ref: `#/components/schemas/Vendeur_${domaine}_${n}` })
+    const codes = lireCodes(`${c.route} ${c.echange ?? ''}`)
+    for (const r of lireRoute(c.route)) {
+      for (const methode of r.methodes) {
+        const k = `${methode} ${r.chemin}`
+        let op = ops.get(k)
+        if (!op) {
+          op = { methode, chemin: r.chemin, sources: [], domaines: new Set(), etats: new Set(), idempotent: false, corps: [], corpsSource: [], reponses: [], vide: true, codes: {}, query: new Map(), notes: [] }
+          ops.set(k, op)
+        }
+        tags.add(tag)
+        op.sources.push(cle)
+        op.domaines.add(tag)
+        op.etats.add(c.etat)
+        op.idempotent ||= r.idempotent
+        for (const q of r.query) op.query.set(q.nom, q.valeur)
+        for (const [s2, l] of Object.entries(codes)) op.codes[s2] = [...new Set([...(op.codes[s2] ?? []), ...l])]
+        if (c.note) op.notes.push(`${cle} : ${c.note}`)
+        if (r.corps) op.corps.push(r.corps)
+        else if (m && methode !== 'get' && methode !== 'delete') {
+          const dansChemin = (p: string) => r.chemin.includes(`{${p}}`) || (['id', 'ref', 'reference'].includes(p) && r.chemin.includes('{'))
+          const restants = m.params.map((p, i) => ({ ...p, i })).filter((p) => !dansChemin(p.nom))
+          if (restants.length)
+            op.corpsSource.push({ type: 'object', properties: Object.fromEntries(restants.map((p) => [p.nom, ref_(`Param_${nom}_${p.i}`)])), required: restants.filter((p) => !p.optionnel).map((p) => p.nom) })
+        }
+        if (m && !m.vide) {
+          op.reponses.push(ref_(`Reponse_${nom}`))
+          op.vide = false
+        }
+      }
+    }
+  }
+  // Publicité du vendeur (DP-59, apps/publicite) : routes du kit seulement, l'écran vendeur viendra ensuite.
+  const tagPub = 'Vendeur · Publicité (DP-59)'
+  const ent = { type: 'integer' }
+  const txt = { type: 'string' }
+  const nul = (s: Schema) => ({ oneOf: [s, { type: 'null' }] })
+  const obj = (props: Record<string, Schema>, req = Object.keys(props)): Schema => ({ type: 'object', required: req, properties: props })
+  const stats = obj({ impressions: ent, clics: ent, clicsFactures: ent, ventes: ent, depense: ent, tauxClicPourCent: { type: 'number' } })
+  const camp = obj({
+    id: txt, type: { type: 'string', enum: ['clic', 'a_la_une', 'carrousel', 'flash', 'boost'] }, statut: { type: 'string', enum: ['en_attente', 'active', 'pause', 'terminee', 'refusee'] },
+    offre: txt, titre: txt, enchere: nul(ent), budgetQuotidien: nul(ent), mode: nul(txt), debut: nul(ent), fin: nul(ent), prix: ent, rembourse: ent,
+    duree: nul(txt), prixFlash: nul(ent), titreDiapo: nul(txt), motif: nul(txt), stats,
+  })
+  const mvt = obj({ id: txt, type: txt, statut: { type: 'string', enum: ['en_attente', 'confirme', 'refuse'] }, montant: ent, libelle: txt, a: ent })
+  const place = obj({ places: ent, tarifSemaine: ent, enchereMin: ent })
+  const apercu = obj({
+    solde: ent, rechargesEnAttente: { type: 'array', items: mvt }, campagnes: { type: 'array', items: camp },
+    offres: { type: 'array', items: obj({ id: txt, titre: txt, prix: ent, stock: ent, motifs: { type: 'array', items: txt } }) },
+    tarifs: obj({ clicPlancher: ent, budgetMin: ent, rechargeMin: ent, aLaUne: place, carrousel: place, boost24h: ent, boost7j: ent, flashMajorationPoints: { type: 'number' }, flashRemiseMinPourCent: { type: 'number' }, flashDureeMaxH: ent }),
+  })
+  const emplacements = obj({ emplacement: txt, semaine: { type: 'string', format: 'date' }, places: ent, restantes: ent, tarifSemaine: ent, enchereMin: ent, encheres: ent })
+  const facture = obj({ reference: txt, mois: txt, lignes: { type: 'array', items: obj({ libelle: txt, montant: ent }) }, horsTaxe: ent, tva: ent, total: ent })
+  const empl = { type: 'string', enum: ['a_la_une', 'carrousel'] }
+  const pub: [Methode, string, string, Schema | null, Schema, boolean, Record<string, string[]>, string[], string][] = [
+    ['get', '/api/vendors/ads', 'aperçu', null, apercu, false, {}, [], 'Solde, recharges en attente, campagnes et statistiques, offres annonçables (motifs du seuil de qualité), tarifs du registre.'],
+    ['post', '/api/vendors/ads/top-up', 'recharger', obj({ montant: ent }), mvt, true, { '422': ['annonce_refusee'] }, [], 'Demande Mobile Money ; solde crédité à la confirmation (webhook). Jamais retenu sur les versements.'],
+    ['post', '/api/vendors/ads/campaigns', 'creerCampagneClic', obj({ offre: txt, enchere: ent, budgetQuotidien: ent }), camp, true, { '422': ['annonce_refusee'] }, [], 'Produit sponsorisé : enchère au clic ≥ plancher, coût = second prix + 1 F ; budget quotidien.'],
+    ['get', '/api/vendors/ads/campaigns/{id}', 'campagne', null, camp, false, {}, [], 'Une campagne et ses statistiques.'],
+    ['post', '/api/vendors/ads/campaigns/{id}/pause', 'pauseCampagne', obj({ pause: { type: 'boolean' } }), camp, false, { '422': ['state_changed'] }, [], 'Campagne au clic seulement.'],
+    ['post', '/api/vendors/ads/campaigns/{id}/stop', 'arreterCampagne', null, camp, true, { '422': ['state_changed'] }, [], 'Heures non diffusées d’un Boost ou d’un emplacement rendues au solde.'],
+    ['get', '/api/vendors/ads/slots', 'emplacements', null, emplacements, false, {}, ['emplacement', 'semaine'], 'Places de la semaine (?emplacement=a_la_une|carrousel&semaine=AAAA-MM-JJ).'],
+    ['post', '/api/vendors/ads/slots/book', 'reserverEmplacement', obj({ emplacement: empl, offre: txt, mode: { type: 'string', enum: ['fixe', 'enchere'] }, semaine: { type: 'string', format: 'date' }, enchere: nul(ent), titre: txt, sousTitre: txt }, ['emplacement', 'offre', 'mode', 'semaine']), camp, true, { '422': ['annonce_refusee', 'solde_insuffisant', 'complet', 'semaine_passee', 'semaine_commencee'] }, [], 'Tarif fixe débité au prorata des heures qui restent ; enchère attribuée avant la semaine au second prix + 1 F.'],
+    ['post', '/api/vendors/ads/boost', 'booster', obj({ offre: txt, duree: { type: 'string', enum: ['24h', '7j'] } }), camp, true, { '422': ['annonce_refusee', 'solde_insuffisant', 'deja'] }, [], 'Forfait débité ; classement × multiplicateur plafonné.'],
+    ['post', '/api/vendors/ads/flash', 'proposerFlash', obj({ offre: txt, prixFlash: ent, debut: ent, fin: ent, stock: ent }), { allOf: [camp, obj({ remisePourCent: ent })] }, true, { '422': ['annonce_refusee'] }, [], 'Proposition à la sélection flash (remise ≥ FLASH-REMISE-MIN, durée ≤ FLASH-DUREE-MAX) ; commission majorée de VD-PUB-FLASH-MAJORATION points pendant la vente.'],
+    ['get', '/api/vendors/ads/invoices/{mois}', 'facturePublicitaire', null, facture, false, { '422': ['invalid'] }, [], 'Facture du mois AAAA-MM.'],
+  ]
+  for (const [methode, chemin, source, corps, rep, idem, codes, query, note] of pub) {
+    tags.add(tagPub)
+    ops.set(`${methode} ${chemin}`, {
+      methode, chemin, sources: [`publicite.${source}`], domaines: new Set([tagPub]), etats: new Set(['serveur']), idempotent: idem, corps: [],
+      corpsSource: corps ? [corps] : [], reponses: [rep], vide: false, codes, query: new Map(query.map((q) => [q, undefined])),
+      notes: [`${note} Propriétaire seulement (403 owner_only).`],
+    })
+  }
+  return tags
 }
 
 function fusionner(a: Schema, b: Schema): Schema {

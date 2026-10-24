@@ -258,8 +258,24 @@ class PartnerDueSerializer(serializers.Serializer):
     blockers = serializers.ListField(child=serializers.CharField())
 
 
+# Spec v2.1, R26.1 : l'espace vendeur montre net_b et NE DOIT JAMAIS montrer ce qui est retenu. Pour un vendeur,
+# le brut et la commission d'un sequestre sont donc retires ; les autres partenaires les gardent.
+MONTANTS_CACHES_AU_VENDEUR = ("gross_amount_xaf", "commission_xaf")
+
+
+def _est_vendeur(hold) -> bool:
+    return getattr(getattr(hold, "payee", None), "payee_type", "") == "VENDOR"
+
+
 class PartnerEscrowSerializer(serializers.ModelSerializer):
-    """Sequestre, vue partenaire. Il voit SA commission — c'est la sienne."""
+    """Sequestre, vue partenaire. Il voit SA commission — sauf un vendeur (R26.1)."""
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if _est_vendeur(instance):
+            for champ in MONTANTS_CACHES_AU_VENDEUR:
+                data.pop(champ, None)
+        return data
 
     status_label = serializers.CharField(source="get_status_display", read_only=True)
     component_label = serializers.CharField(source="get_component_display", read_only=True)
@@ -330,8 +346,9 @@ class PartnerSettlementSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
     def get_lines(self, obj) -> list:
-        return [
-            {
+        lignes = []
+        for hold in obj.covered_holds.select_related("payee").all()[:200]:
+            ligne = {
                 "reference": hold.reference,
                 "component": hold.component,
                 "order_id": hold.order_id,
@@ -340,8 +357,10 @@ class PartnerSettlementSerializer(serializers.ModelSerializer):
                 "net_xaf": hold.payable_amount_xaf,
                 "released_at": hold.released_at,
             }
-            for hold in obj.covered_holds.all()[:200]
-        ]
+            if _est_vendeur(hold):  # R26.1
+                del ligne["gross_xaf"], ligne["commission_xaf"]
+            lignes.append(ligne)
+        return lignes
 
     def get_adjustments(self, obj) -> list:
         return PartnerAdjustmentSerializer(

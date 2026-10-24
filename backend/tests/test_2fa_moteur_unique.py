@@ -20,7 +20,6 @@ import re
 import pytest
 from django.core import mail
 
-from apps.accounts.models import OTPCode
 from apps.otp.models import CodeOtp
 
 pytestmark = pytest.mark.django_db
@@ -53,8 +52,6 @@ def test_le_code_n_est_plus_stocke_en_clair(api_client, compte):
     reponse = api_client.post(ENVOI, {"purpose": "2FA_ENABLE"}, format="json")
 
     assert reponse.status_code == 200
-    # Plus aucune ligne dans l'ancien modele, qui gardait le code en clair.
-    assert OTPCode.objects.count() == 0
 
     enregistre = CodeOtp.objects.get()
     code = _code_recu()

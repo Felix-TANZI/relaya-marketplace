@@ -10,6 +10,8 @@
 
 from django.urls import path
 
+from apps.payments.wallet import views as wv
+
 from . import config_views as cv
 from . import views as v
 
@@ -123,4 +125,9 @@ urlpatterns = [
     path("tasks/runs/", v.AdminTaskRunListView.as_view(), name="task-runs"),
     path("tasks/<str:name>/run/", v.AdminRunTaskView.as_view(),
          name="task-run"),
+
+    # ── Wallet des clients (feuille de route D16, R03) ──────────────────────
+    path("wallet/", wv.SuiviWalletView.as_view(), name="wallet-suivi"),
+    path("wallet/gestes/", wv.GesteView.as_view(), name="wallet-geste"),
+    path("wallet/gestes/<int:pk>/decision/", wv.GesteDecisionView.as_view(), name="wallet-geste-decision"),
 ]

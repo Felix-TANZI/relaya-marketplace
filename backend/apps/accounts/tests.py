@@ -1292,12 +1292,13 @@ class RelayAccessPinTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertFalse(self.RelayAccessPin.objects.filter(user=self.user).exists())
 
+    def _demander_code(self):
+        """D6 : le code part au numero du relais par le moteur unique ; on fixe le tirage pour le connaitre."""
+        with patch("apps.otp.services.secrets.randbelow", return_value=123456):
+            self.client.post(self.url_code, {"phone": self.phone}, format="json")
+
     def test_pin_pose_avec_un_code_valide(self):
-        from .models import OTPCode
-        OTPCode.objects.create(
-            user=self.user, code="123456", purpose="2FA_LOGIN",
-            expires_at=timezone.now() + timezone.timedelta(minutes=10),
-        )
+        self._demander_code()
 
         response = self.client.post(
             self.url_set, {"phone": self.phone, "code": "123456", "pin": "1974"}, format="json",
@@ -1308,11 +1309,7 @@ class RelayAccessPinTests(APITestCase):
 
     def test_code_a_usage_unique(self):
         """Un code qui resservirait laisserait reposer le PIN a volonte."""
-        from .models import OTPCode
-        OTPCode.objects.create(
-            user=self.user, code="123456", purpose="2FA_LOGIN",
-            expires_at=timezone.now() + timezone.timedelta(minutes=10),
-        )
+        self._demander_code()
         self.client.post(
             self.url_set, {"phone": self.phone, "code": "123456", "pin": "1974"}, format="json",
         )
@@ -1325,11 +1322,10 @@ class RelayAccessPinTests(APITestCase):
         self.assertTrue(self.RelayAccessPin.objects.get(user=self.user).check_pin("1974"))
 
     def test_code_expire_refuse(self):
-        from .models import OTPCode
-        OTPCode.objects.create(
-            user=self.user, code="123456", purpose="2FA_LOGIN",
-            expires_at=timezone.now() - timezone.timedelta(minutes=1),
-        )
+        from apps.otp.models import CodeOtp
+
+        self._demander_code()
+        CodeOtp.objects.update(expire_le=timezone.now() - timezone.timedelta(minutes=1))
 
         response = self.client.post(
             self.url_set, {"phone": self.phone, "code": "123456", "pin": "1974"}, format="json",
@@ -1435,15 +1431,16 @@ class RelayAccessPinTests(APITestCase):
         self.assertEqual(inconnu.status_code, status.HTTP_200_OK)
         self.assertEqual(connu.data["detail"], inconnu.data["detail"])
 
-    def test_canal_annonce_est_l_email(self):
+    def test_le_code_part_au_numero_du_relais(self):
         """
-        La maquette annonce un SMS. Aucun envoi SMS n'existe.
+        D6 : moteur de codes unique. Le code part par SMS au numero du relais,
+        comme l'annonce la maquette (prestataire SMS du moteur, D7).
+        """
+        from apps.otp.models import CodeOtp
 
-        Ce test tombera le jour ou un fournisseur sera branche — et c'est
-        le signal attendu pour changer le texte des ecrans.
-        """
         response = self.client.post(self.url_code, {"phone": self.phone}, format="json")
-        self.assertEqual(response.data["channel"], "email")
+        self.assertEqual(response.data["channel"], "sms")
+        self.assertEqual(CodeOtp.objects.get().canal, "sms")
 
     def test_statut_oriente_l_ecran(self):
         sans = self.client.get(self.url_status, {"phone": self.phone})

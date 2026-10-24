@@ -76,7 +76,7 @@ export default {
     subtitle: "Where every franc you earned currently stands",
     export_csv_button: "CSV statement",
     refresh: "Refresh",
-    csv_header: "Reference,Date,Gross Revenue (FCFA),Commission (FCFA),Net to Seller (FCFA),Escrow Status",
+    csv_header: "Reference,Date,Sale price (FCFA),You receive (FCFA),Escrow Status",
     toast_load_error: "Loading error",
     chart_bar_tooltip: "{{date}} · released {{released}} · escrow {{blocked}}",
     chart_today: "Today",

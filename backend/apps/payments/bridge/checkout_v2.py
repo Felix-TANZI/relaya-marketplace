@@ -64,17 +64,47 @@ def _lignes_par_vendeur(order) -> dict:
     return dict(groupes)
 
 
+AVANCE, COMPTOIR = "avance", "comptoir"
+
+
+def acompte_par_vendeur(order, groupes: dict) -> dict:
+    """
+    Spec v2.1, R42.3 (feuille de route D14) : la part des articles comprise dans l'avance d'une commande payee au
+    comptoir (avance - frais_client, soit r_relais quand la livraison est offerte). Elle est prise sur les vendeurs
+    dans l'ordre du panier, sans depasser la part de chacun ; le reste des articles se paie au comptoir.
+    """
+    reste = max(0, int(order.avance_xaf or 0) - int(order.delivery_fee_xaf or 0))
+    parts = {}
+    for vendeur_user, montant in groupes.items():
+        parts[vendeur_user] = min(reste, max(0, montant))
+        reste -= parts[vendeur_user]
+    return parts
+
+
+def _part(phase: str, montant: int, acompte: int) -> int:
+    if phase == AVANCE:
+        return acompte
+    if phase == COMPTOIR:
+        return montant - acompte
+    return montant
+
+
 @db_transaction.atomic
 def prepare_payment(order, *, payer_msisdn: str, payer_operator: str,
-                    idempotency_key: str = ""):
+                    idempotency_key: str = "", phase: str = ""):
     """
     Cree l'intention de paiement d'une commande, telle qu'elle est.
 
     Ne decoupe rien, ne deplace aucun article. Retourne l'intention creee.
 
+    Une commande payee au comptoir du relais (spec v2.1, R42) a deux intentions : l'avance a la commande (phase
+    AVANCE, choisie d'office), puis le reste au comptoir (phase COMPTOIR, `prepare_payment_comptoir`).
+
     Leve `CheckoutError` si le paiement ne peut pas etre prepare — l'appelant
     decide alors s'il annule la commande ou la laisse impayee.
     """
+    if not phase and getattr(order, "paiement_comptoir", False):
+        phase = AVANCE
     from apps.payments.application.collect import create_payment_intent
     from apps.payments.domain.distribution import ComponentInput
     from apps.payments.domain.enums import EconomicComponent
@@ -112,7 +142,9 @@ def prepare_payment(order, *, payer_msisdn: str, payer_operator: str,
 
     from apps.vendors.models import VendorProfile
 
-    for vendeur_user, montant in groupes.items():
+    acomptes = acompte_par_vendeur(order, groupes) if phase else {}
+    for vendeur_user, total_vendeur in groupes.items():
+        montant = _part(phase, total_vendeur, acomptes.get(vendeur_user, 0))
         if montant <= 0:
             continue
         profil = VendorProfile.objects.filter(user=vendeur_user).first()
@@ -127,6 +159,17 @@ def prepare_payment(order, *, payer_msisdn: str, payer_operator: str,
                 f"Aucun compte financier pour le vendeur {vendeur_user}."
             )
 
+        # Spec v2.1 : la commission de la sous-commande est celle que le service de commission a figee a la
+        # commande (A7, R13.2) ; avec la TVA, c'est ce que le vendeur ne recoit pas (net_b, R22.1). Une commande
+        # anterieure, sans commission figee, garde son taux d'origine.
+        from apps.orders.models import CommissionSousCommande
+        figee = CommissionSousCommande.objects.filter(order=order, vendor=vendeur_user).first()
+        retenue = Money(figee.commission_b + figee.tva_b) if figee is not None else None
+        if retenue is not None and phase:
+            # R42 : la retenue est prise d'abord sur la part payee au comptoir, le reste sur l'acompte.
+            sur_comptoir = min(retenue.amount, total_vendeur - acomptes.get(vendeur_user, 0))
+            retenue = Money(sur_comptoir if phase == COMPTOIR else retenue.amount - sur_comptoir)
+
         # Chaque composant porte SON beneficiaire : sans cela, la
         # repartition attribuerait tout au dernier vendeur rencontre.
         composants.append(ComponentInput(
@@ -135,12 +178,13 @@ def prepare_payment(order, *, payer_msisdn: str, payer_operator: str,
             order_id=order.pk,
             payee_code=compte.payee_code,
             commission_rate=commission,
+            commission_amount=retenue,
         ))
         types[compte.payee_code] = DomainPayeeType.VENDOR
         codes.setdefault(DomainPayeeType.VENDOR, compte.payee_code)
 
     # ── Le transport, de niveau paiement ─────────────────────────────────
-    frais = int(order.delivery_fee_xaf or 0)
+    frais = int(order.delivery_fee_xaf or 0) if phase != COMPTOIR else 0
     if frais > 0:
         composants.append(ComponentInput(
             EconomicComponent.TRANSPORT, Money(frais),
@@ -150,6 +194,15 @@ def prepare_payment(order, *, payer_msisdn: str, payer_operator: str,
         # comportement nominal, pas une anomalie.
         _resoudre_transporteur(order, codes, types)
 
+    # ── Les frais Mobile Money payes par le client (spec v2.1, R02.2, R02.3) ──
+    # L'intention vaut alors total_a_payer = base_paiement + frais_momo : BelivaY recoit au moins base_paiement
+    # apres les frais du prestataire. Toute la part va a la plateforme, sans sequestre.
+    frais_momo = int(getattr(order, "frais_momo_xaf", 0) or 0)
+    if phase == COMPTOIR:  # R42.4, R02.6 : les frais Mobile Money du reste paye au comptoir
+        frais_momo = int(order.frais_momo_comptoir_xaf or 0)
+    if frais_momo > 0:
+        composants.append(ComponentInput(EconomicComponent.PAYMENT_FEE, Money(frais_momo)))
+
     if not composants:
         raise CheckoutError(
             f"La commande #{order.pk} ne contient aucun montant a repartir."
@@ -158,7 +211,7 @@ def prepare_payment(order, *, payer_msisdn: str, payer_operator: str,
     # ── L'intention ──────────────────────────────────────────────────────
     # La cle d'idempotence porte l'identifiant de commande : un acheteur qui
     # valide deux fois ne cree qu'UNE intention.
-    cle = idempotency_key or f"order-{order.pk}"
+    cle = idempotency_key or (f"order-{order.pk}-comptoir" if phase == COMPTOIR else f"order-{order.pk}")
 
     intent = create_payment_intent(
         buyer=order.user,
@@ -179,6 +232,15 @@ def prepare_payment(order, *, payer_msisdn: str, payer_operator: str,
         len(groupes),
     )
     return intent
+
+
+def prepare_payment_comptoir(order, *, payer_msisdn: str, payer_operator: str):
+    """Spec v2.1, R42.4 : l'intention du reste a payer au comptoir, une fois l'avance encaissee."""
+    from apps.orders.models import Order
+
+    if not order.paiement_comptoir or order.payment_status != Order.PaymentStatus.VALIDATED:
+        raise CheckoutError(f"La commande #{order.pk} n'a pas de reste a payer au comptoir.")
+    return prepare_payment(order, payer_msisdn=payer_msisdn, payer_operator=payer_operator, phase=COMPTOIR)
 
 
 def _resoudre_transporteur(order, codes: dict, types: dict) -> None:

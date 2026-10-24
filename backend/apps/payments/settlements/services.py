@@ -958,6 +958,16 @@ def execute_refund(refund):
         )
 
     intent = refund.intent
+    from apps.payments.wallet import services as wallet
+
+    if intent.provider_code == wallet.PRESTATAIRE:
+        # Spec v2.1, R03.6 (feuille de route D16) : paye par le Wallet, rembourse sur le Wallet.
+        wallet.rembourser(refund)
+        refund.status = Refund.Status.PAID
+        refund.save(update_fields=["status"])
+        _solder_sequestres(refund)
+        return refund
+
     numero = intent.payer_msisdn
     if not numero:
         raise SettlementError(

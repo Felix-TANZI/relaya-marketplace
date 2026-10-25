@@ -3,6 +3,7 @@
 
 from rest_framework import serializers
 import os
+from django.db import transaction
 from django.db.models import Count, Q
 from django.utils.text import slugify
 from django.utils import timezone
@@ -293,8 +294,9 @@ class OrderCreateSerializer(serializers.Serializer):
 
         return product
 
+    @transaction.atomic
     def create(self, validated_data):
-        """Créer une nouvelle commande"""
+        """Créer une nouvelle commande (atomique : une réservation flash refusée n'en laisse rien, D9)"""
         from .models import PlatformSettings
         from apps.shipping.models import Shipment, ShipmentEvent, infer_actor_role
         from apps.orders.models import OrderHistory
@@ -448,6 +450,13 @@ class OrderCreateSerializer(serializers.Serializer):
         # Créer les articles de la commande
         for item_data in order_items_data:
             OrderItem.objects.create(order=order, **item_data)
+
+        # Feuille de route D9 : le stock flash baisse à la commande, le même pour tous.
+        from . import flash
+        try:
+            flash.reserver(order)
+        except flash.FlashEpuise as exc:
+            raise serializers.ValidationError({'prix_change': "Un prix a changé", 'flash': str(exc)})
 
         # Commission de chaque sous-commande, figée maintenant (A7, A8 ; R13.2, R13.5). Le taux de la commande en
         # garde l'équivalent, pour les écrans qui le lisent encore.

@@ -47,6 +47,8 @@ export interface Product {
     promo_price_xaf: number;
     discount_percent: number;
     remaining_stock: number;
+    /** D9 : heure du serveur au moment de la réponse, pour un compte à rebours juste. */
+    server_now?: string;
   } | null;
   price_final: number;
   stock_quantity: number;

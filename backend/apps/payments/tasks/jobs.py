@@ -53,7 +53,10 @@ def poll_pending_payments(limit: int = 100) -> dict:
 )
 def expire_stale_intents() -> dict:
     from apps.payments.application.collect import expire_stale_intents as expirer
-    return {"expired": expirer()}
+    from apps.payments.bridge.flash import rendre_les_impayees
+
+    # Feuille de route D9 : le stock flash des commandes restees impayees revient a la vente.
+    return {"expired": expirer(), "flash_rendus": rendre_les_impayees()}
 
 
 # ─────────────────────────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Baby,
@@ -18,7 +18,8 @@ import {
   Tag,
 } from "lucide-react";
 import { productsApi, type Category, type Product } from "@/services/api/products";
-import { getPromoProducts } from "@/data/v29Products";
+// Feuille de route D9 : plus de jeu de démonstration ; compte à rebours à l'heure du serveur.
+import { caleSurServeur, maintenantServeur } from "@/data/flashDeals";
 import CatalogProductCard from "@/components/product/CatalogProductCard";
 
 type PromoProduct = Product & {
@@ -52,7 +53,7 @@ function useCountdown(endTime: number) {
   const [remaining, setRemaining] = useState(0);
 
   useEffect(() => {
-    const tick = () => setRemaining(Math.max(0, endTime - Date.now()));
+    const tick = () => setRemaining(endTime ? Math.max(0, endTime - maintenantServeur()) : 0);
     // First tick on the next frame (not synchronously in the effect body).
     const raf = requestAnimationFrame(tick);
     const id = window.setInterval(tick, 1000);
@@ -98,9 +99,17 @@ export default function PromotionsPage() {
   const [activeCat, setActiveCat] = useState("all");
   const [loading, setLoading] = useState(true);
   const [codeCopied, setCodeCopied] = useState(false);
-  const [usingFallbackPromos, setUsingFallbackPromos] = useState(false);
-  const endTimeRef = useRef(Date.now() + 8 * 3600 * 1000);
-  const countdown = useCountdown(endTimeRef.current);
+  const usingFallbackPromos = false;
+  // La première fin de campagne encore à venir, à l'heure du serveur ; 0 = aucune.
+  const endTime = useMemo(() => {
+    const now = maintenantServeur();
+    const fins = allPromo
+      .map((product) => (product.active_campaign?.ends_at ? new Date(product.active_campaign.ends_at).getTime() : 0))
+      .filter((fin) => fin > now)
+      .sort((a, b) => a - b);
+    return fins[0] ?? 0;
+  }, [allPromo]);
+  const countdown = useCountdown(endTime);
 
   useEffect(() => {
     let mounted = true;
@@ -119,42 +128,12 @@ export default function PromotionsPage() {
           || product.is_on_promotion
           || (product.discount_percent ?? product.discount ?? 0) > 0
         );
-        const fallbackPromos = getPromoProducts(t);
-
-        if (promos.length) {
-          setAllPromo(promos);
-          setCategories(catRes.results);
-          setUsingFallbackPromos(false);
-        } else {
-          const fallbackCategories = Array.from(
-            new Map(
-              fallbackPromos.map((product) => [
-                product.category?.slug ?? String(product.id),
-                product.category,
-              ]),
-            ).values(),
-          ).filter(Boolean) as Category[];
-
-          setAllPromo(fallbackPromos);
-          setCategories(fallbackCategories);
-          setUsingFallbackPromos(true);
-        }
+        caleSurServeur(promos.find((product) => product.active_campaign?.server_now)?.active_campaign?.server_now);
+        setAllPromo(promos);
+        setCategories(catRes.results);
       } catch {
         if (!mounted) return;
-
-        const fallbackPromos = getPromoProducts(t);
-        const fallbackCategories = Array.from(
-          new Map(
-            fallbackPromos.map((product) => [
-              product.category?.slug ?? String(product.id),
-              product.category,
-            ]),
-          ).values(),
-        ).filter(Boolean) as Category[];
-
-        setAllPromo(fallbackPromos);
-        setCategories(fallbackCategories);
-        setUsingFallbackPromos(true);
+        setAllPromo([]);
       } finally {
         if (mounted) setLoading(false);
       }

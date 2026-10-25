@@ -3,6 +3,7 @@
 
 from rest_framework import serializers
 from django.db.models import Avg
+from django.utils import timezone
 import re
 from .models import Product, Category, ProductMedia, ProductImage, ProductReview, MasterProduct, ProductCondition, PromotionCampaign, Brand, ColorDictionary, ProductAttribute, MasterProduct, AttributeRole, ProductVariant, ColorFamily, ProductQuestion
 from apps.common.translation import translate_fields, request_language
@@ -515,25 +516,16 @@ class ProductSerializer(serializers.ModelSerializer):
         return ProductReview.objects.filter(product=obj, is_approved=True).count()
     
     def get_price_final(self, obj):
-        """Calculer le prix après réduction"""
-        campaign = self._get_active_campaign(obj)
-        if campaign:
-            return campaign.promo_price_xaf
-        if obj.compare_at_price and obj.compare_at_price > obj.price_xaf:
-            return obj.price_xaf
-        if obj.discount > 0:
-            return obj.price_xaf - (obj.price_xaf * obj.discount // 100)
-        return obj.price_xaf
+        """R27.2 : flash, sinon promotion, sinon prix normal — le même calcul partout (catalog/flash.py, D9)."""
+        from .flash import prix_final
+
+        return prix_final(obj, self._get_active_campaign(obj))
 
     def _get_active_campaign(self, obj):
+        from .flash import choisir
+
         campaigns = getattr(obj, "promotion_campaigns", None)
-        if not campaigns:
-            return None
-        active = [campaign for campaign in campaigns.all() if campaign.is_active_now]
-        if not active:
-            return None
-        active.sort(key=lambda campaign: campaign.campaign_type == PromotionCampaign.CampaignType.FLASH, reverse=True)
-        return active[0]
+        return choisir(campaigns.all()) if campaigns is not None else None
 
     def get_active_campaign(self, obj):
         campaign = self._get_active_campaign(obj)
@@ -544,6 +536,8 @@ class ProductSerializer(serializers.ModelSerializer):
             "campaign_type": campaign.campaign_type,
             "title": campaign.title,
             "ends_at": campaign.ends_at,
+            # D9 : le compte à rebours part de l'heure du serveur, jamais de celle du téléphone.
+            "server_now": timezone.now(),
             "promo_price_xaf": campaign.promo_price_xaf,
             "discount_percent": campaign.discount_percent,
             "remaining_stock": campaign.remaining_stock,
@@ -761,11 +755,10 @@ class OfferSerializer(serializers.ModelSerializer):
             return 0
 
     def get_price_final(self, obj):
-        if obj.compare_at_price and obj.compare_at_price > obj.price_xaf:
-            return obj.price_xaf
-        if obj.discount > 0:
-            return obj.price_xaf - (obj.price_xaf * obj.discount // 100)
-        return obj.price_xaf
+        # D9 : l'offre suit la même règle que la liste, la fiche et la commande (campagne comprise).
+        from .flash import campagne_active, prix_final
+
+        return prix_final(obj, campagne_active(obj))
     
     def get_real_image(self, obj):
         img = obj.images.filter(is_primary=True).first() or obj.images.first()

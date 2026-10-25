@@ -100,6 +100,9 @@ def refuser(order, colis, motif: str, actor=None) -> None:
                              location=parcel.relay_point.name, actor=actor,
                              actor_role="RELAY_POINT" if actor else ShipmentEvent.ACTOR_ROLE_SYSTEM)
     Order.objects.filter(pk=order.pk).update(fulfillment_status=Order.FulfillmentStatus.CANCELLED)
+    from . import flash
+
+    flash.rendre(order)  # D9 : l'article repart au vendeur, son stock flash revient à la vente
     try:
         for hold in EscrowHold.objects.filter(order_id=order.pk, component=EscrowHold.Component.GOODS,
                                               status__in=[EscrowHold.Status.PENDING, EscrowHold.Status.HELD]):

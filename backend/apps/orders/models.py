@@ -1213,3 +1213,21 @@ class RetraitDroitRemboursementAuto(models.Model):
         verbose_name = "Retrait du remboursement automatique"
         verbose_name_plural = "Retraits du remboursement automatique"
 
+
+class ReservationFlash(models.Model):
+    """
+    Feuille de route D9 : le stock flash baisse à la commande (PromotionCampaign.stock_claimed), le même pour tous ;
+    il est rendu si la commande est annulée ou reste impayée après le délai de paiement.
+    """
+
+    campaign = models.ForeignKey("catalog.PromotionCampaign", on_delete=models.PROTECT, related_name="reservations")
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="reservations_flash")
+    order_item = models.OneToOneField(OrderItem, on_delete=models.CASCADE, related_name="reservation_flash")
+    qty = models.PositiveIntegerField()
+    rendue_le = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Réservation de stock flash"
+        verbose_name_plural = "Réservations de stock flash"
+

@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Clock, Flame } from "lucide-react";
 import SectionBanner from "./SectionBanner";
+// Feuille de route D9 : le compte à rebours suit l'heure du serveur, jamais celle du téléphone.
+import { maintenantServeur } from "@/data/flashDeals";
 
 interface FlashPromoBannerProps {
   /** Nombre d'articles actuellement en promotion. */
@@ -14,14 +16,8 @@ interface FlashPromoBannerProps {
 
 const PLACEHOLDER = "--:--:--";
 
-function endOfToday() {
-  const end = new Date();
-  end.setHours(23, 59, 59, 999);
-  return end.getTime();
-}
-
 function formatRemaining(targetTime: number) {
-  const totalSeconds = Math.max(0, Math.floor((targetTime - Date.now()) / 1000));
+  const totalSeconds = Math.max(0, Math.floor((targetTime - maintenantServeur()) / 1000));
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
@@ -35,12 +31,16 @@ export default function FlashPromoBanner({ count, maxDiscount, endDates }: Flash
   /*
    * L'horloge n'est lue que dans l'effet : la calculer pendant le rendu rendrait le
    * composant impur, avec un résultat qui change à chaque re-rendu fortuit. C'est
-   * aussi ici qu'on choisit l'échéance — la première fin de promo encore à venir,
-   * ou la fin de journée si aucune date n'est renseignée.
+   * aussi ici qu'on choisit l'échéance — la première fin de promo encore à venir ;
+   * sans date connue, pas de compte à rebours inventé (D9).
    */
   useEffect(() => {
-    const now = Date.now();
-    const target = endDates.find((date) => date > now) ?? endOfToday();
+    const now = maintenantServeur();
+    const target = endDates.find((date) => date > now);
+    if (!target) {
+      setRemaining(PLACEHOLDER);
+      return undefined;
+    }
 
     const tick = () => setRemaining(formatRemaining(target));
     const firstTick = window.setTimeout(tick, 0);

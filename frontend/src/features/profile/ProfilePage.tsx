@@ -948,6 +948,11 @@ export default function ProfilePage() {
               <span className="pf-quick-ic b"><Bell size={18} /></span>
               {t("cl3_profile_dashboard.notifications")}
             </button>
+            {/* Feuille de route D9 : le client modifie ses univers choisis à la première ouverture. */}
+            <button type="button" className="pf-quick-tile" onClick={() => navigate("/interets")}>
+              <span className="pf-quick-ic p"><Sparkles size={18} /></span>
+              Mes centres d'intérêt
+            </button>
             <button type="button" className="pf-quick-tile" onClick={() => openPanel("parrain")}>
               <span className="pf-quick-ic p"><Gift size={18} /></span>
               {t("cl3_profile_dashboard.shortcut_referral")}

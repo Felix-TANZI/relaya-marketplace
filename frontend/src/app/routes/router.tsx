@@ -50,6 +50,7 @@ const BecomeSellerPage = lazy(() => import('@/features/vendors/BecomeSellerPage'
 const NotFoundPage = lazy(() => import('@/features/system/NotFoundPage'));
 const PromotionsPage = lazy(() => import('@/features/promotions/PromotionsPage'));
 const FlashDealsPage = lazy(() => import('@/features/flash/FlashDealsPage'));
+const InteretsPage = lazy(() => import('@/features/interets/InteretsPage'));
 const DriverApp = lazy(() => import('@/features/driver/DriverApp'));
 const FicheDetailPage = lazy(() => import('@/features/catalog/FicheDetailPage'));
 const RelayPointPage = lazy(() => import('@/features/relay/RelayPointPage'));
@@ -178,6 +179,7 @@ const KYCPage = lazy(() => import('@/features/admin/d24/KycPiecesPage'));
 const SupportPage = lazy(() => import('@/features/admin/system/SupportPage'));
 const FraudPage = lazy(() => import('@/features/admin/d24/FraudPage'));
 const RemboursementsAutoPage = lazy(() => import('@/features/admin/d24/RemboursementsAutoPage'));
+const CampagnesPage = lazy(() => import('@/features/admin/d24/CampagnesPage'));
 const CouriersOverviewPage = lazy(() => import('@/features/admin/d24/CouriersOverviewPage'));
 const WithdrawalsPage = lazy(() => import('@/features/admin/vendors/WithdrawalsPage'));
 const ModificationsPage = lazy(() => import('@/features/admin/vendors/ModificationsPage'));
@@ -266,6 +268,8 @@ export const router = createBrowserRouter([
       { path: 'search',          element: <SearchPage /> },
       { path: 'promotions',      element: <PromotionsPage /> },
       { path: 'flash-deals',     element: <FlashDealsPage /> },
+      // Feuille de route D9 : univers choisis à la première ouverture, modifiables depuis le profil.
+      { path: 'interets',        element: <InteretsPage /> },
       { path: 'premium',         element: <PremiumPage /> },
       { path: 'selection-premium', element: <SelectionPremiumPage /> },
       { path: 'contact',         element: <ContactPage /> },
@@ -509,7 +513,8 @@ export const router = createBrowserRouter([
 
       // ── GROWTH (SOON) ───────────────────────────────────────────────────
       { path: 'analytics', element: <AdminStub title="Analytics & Tendances"    description="Bientôt disponible." icon={TrendingUp} /> },
-      { path: 'boost',     element: <AdminStub title="Boost & Campagnes"        description="Bientôt disponible." icon={Zap}        /> },
+      // Feuille de route D9 : partie campagnes de « Boost & Campagnes » (le boost reste en priorité 5).
+      { path: 'boost',     element: <CampagnesPage /> },
       { path: 'marketing', element: <AdminStub title="Marketing & Communication" description="Bientôt disponible." icon={Megaphone}  /> },
       { path: 'ia',        element: <AdminStub title="IA Conseiller"            description="Bientôt disponible." icon={Bot}        /> },
 

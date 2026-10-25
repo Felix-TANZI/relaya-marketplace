@@ -156,6 +156,20 @@ class ProductViewSet(viewsets.ModelViewSet):
         )
         return annotate_trust_score(base)
 
+    def retrieve(self, request, *args, **kwargs):
+        # Feuille de route D9 : « ce que le client regarde » nourrit son accueil, s'il a laissé la personnalisation.
+        reponse = super().retrieve(request, *args, **kwargs)
+        from .preferences import personnalisation_permise
+
+        if personnalisation_permise(request.user):
+            try:
+                from apps.client_accounts.services import noter_vu
+
+                noter_vu(request.user, kwargs.get("pk"))
+            except Exception:  # l'historique ne bloque jamais la fiche
+                pass
+        return reponse
+
     def filter_queryset(self, queryset):
         """
         Recherche tolérante : on court-circuite le SearchFilter de DRF, qui ne fait
@@ -551,6 +565,16 @@ class AdminPromotionCampaignDecisionView(APIView):
             campaign.rejection_reason = request.data.get("rejection_reason", campaign.rejection_reason)
         campaign.full_clean()
         campaign.save(update_fields=["status", "approved_by", "rejection_reason", "admin_note", "updated_at"])
+        # Feuille de route D9 : l'alerte flash part à l'approbation, selon les préférences des clients.
+        if (decision == PromotionCampaign.Status.APPROVED
+                and campaign.campaign_type == PromotionCampaign.CampaignType.FLASH and _flash_ouvert()):
+            try:
+                from .preferences import notifier_flash
+
+                notifier_flash(campaign)
+            except Exception:
+                import logging
+                logging.getLogger("apps.catalog").exception("Alerte flash non envoyée (campagne #%s).", campaign.pk)
         return Response(PromotionCampaignSerializer(campaign, context={"request": request}).data)
 
 
@@ -2644,3 +2668,67 @@ def admin_categories_bulk_set_flag(request):
         **{flag: value},
     )
     return Response({"updated_count": n})    
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FEUILLE DE ROUTE D9 : FLASH DEALS ET ACCUEIL PERSONNALISÉ
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _flash_ouvert() -> bool:
+    from apps.client_core import interrupteurs
+
+    return interrupteurs.ouvert("FF-FLASH")
+
+
+@extend_schema(tags=["Promotions"], summary="Flash Deals en cours, dans l'ordre des préférences du client (D9)")
+class FlashDealsView(APIView):
+    """Prix, stock et compte à rebours sont les mêmes pour tous : seul l'ordre suit les préférences. Le compte à
+    rebours part de `server_now` (l'heure du serveur), jamais de l'horloge du téléphone."""
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        from .flash import flash_actives
+        from .preferences import ordonner_campagnes
+
+        maintenant = timezone.now()
+        if not _flash_ouvert():
+            return Response({"ouvert": False, "server_now": maintenant, "deals": []})
+        campagnes = ordonner_campagnes(request.user, list(flash_actives(maintenant)))
+        produits = {p.pk: p for p in ProductViewSet().get_queryset().filter(
+            pk__in=[c.product_id for c in campagnes])}
+        deals = []
+        for c in campagnes:
+            if c.product_id not in produits:
+                continue  # produit retiré de la vitrine
+            deals.append({
+                **PromotionCampaignSerializer(c, context={"request": request}).data,
+                "product": ProductSerializer(produits[c.product_id], context={"request": request}).data,
+            })
+        return Response({"ouvert": True, "server_now": maintenant, "deals": deals})
+
+
+@extend_schema(
+    tags=["Recommendations"],
+    summary="Accueil : une rangée par univers, dans l'ordre des choix puis des habitudes du client (D9)",
+    parameters=[OpenApiParameter(name="par_rangee", type=int, default=10)],
+)
+class AccueilView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        from .preferences import scores
+
+        par_rangee = max(1, min(int(request.query_params.get("par_rangee") or 10), 30))
+        s = scores(request.user)
+        univers = list(Category.objects.filter(parent__isnull=True, is_active=True))
+        # Sans choix ni habitude : l'accueil général, dans l'ordre du catalogue.
+        univers.sort(key=lambda c: (-s.get(c.pk, 0), c.display_order, c.name))
+        vitrine = ProductViewSet().get_queryset()
+        rangees = []
+        for u in univers:
+            produits = list(vitrine.filter(category_id__in=u.get_subtree_ids()).order_by(
+                *ProductViewSet.ordering)[:par_rangee])
+            if produits:
+                rangees.append({"univers": {"id": u.pk, "slug": u.slug, "name": u.name},
+                                "produits": ProductSerializer(produits, many=True, context={"request": request}).data})
+        return Response({"personnalise": bool(s), "server_now": timezone.now(), "rangees": rangees})

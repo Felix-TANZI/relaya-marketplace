@@ -26,6 +26,7 @@ from .views import (
     RelayPointNearbyView,
     VerifierAdresseView,
     RelayPointComptoirCollectView,
+    ShipmentMaskedCallView,
     RelayPointComptoirRefusalView,
     RelayPointParcelEvidenceUploadView,
     RelayPointParcelListView,
@@ -47,6 +48,8 @@ urlpatterns = [
     path("orders/<int:order_id>/messages/", ClientOrderMessagesView.as_view(), name="shipping-client-messages"),
     path("admin/supervision/", AdminSupervisionDashboardView.as_view(), name="shipping-admin-supervision"),
     path("create/", ShipmentCreateView.as_view(), name="shipping-create"),
+    # Feuille de route D33 : appel client-livreur avec numéro masqué
+    path("shipments/<int:pk>/appel/", ShipmentMaskedCallView.as_view(), name="shipping-masked-call"),
     path("events/", ShipmentEventCreateView.as_view(), name="shipping-events"),
     path("relay-points/nearby/", RelayPointNearbyView.as_view(), name="shipping-relay-points-nearby"),
     path("quartiers/", QuartiersView.as_view(), name="shipping-quartiers"),

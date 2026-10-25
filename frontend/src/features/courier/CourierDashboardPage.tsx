@@ -65,6 +65,7 @@ import {
   type CourierTab,
 } from './courierNav';
 import CourierSidebar from './CourierSidebar';
+import AppelMasqueButton from '@/components/AppelMasqueButton';
 import CourierDrawer from './CourierDrawer';
 import CourierMobileNav, { COURIER_TABBAR_IDS } from './CourierMobileNav';
 import CourierProfileSheet from './CourierProfileSheet';
@@ -1640,6 +1641,10 @@ export default function CourierDashboardPage() {
                 {contactLoading ? <LoaderCircle size={14} className="animate-spin" /> : <Phone size={14} />}
                 {contactLoading ? t("cr1_dashboard.courses.sending") : t("cr1_dashboard.courses.notify_client")}
               </button>
+              {/* Feuille de route D33 : appel au client sans voir son numéro ; chaque appel est la preuve de R51.1. */}
+              {selectedShipment ? (
+                <AppelMasqueButton shipmentId={selectedShipment.id} libelle="Appeler le client" className="border-white/20 text-white" />
+              ) : null}
             </div>
             {actionFeedback ? (
               <div className="mt-4 rounded-[16px] border border-emerald-500/15 bg-emerald-500/5 px-4 py-3 text-[13px] font-semibold text-emerald-300 animate-pulse">

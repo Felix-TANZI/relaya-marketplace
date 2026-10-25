@@ -11,6 +11,9 @@ export interface AppleCredential {
   familyName: string | null;
 }
 
+/** D33 : « state » du retour web d'Apple (Android), comparé au retour pour écarter une réponse forgée. */
+export const APPLE_STATE_KEY = 'belivay_apple_state';
+
 interface AppleAuthButtonProps {
   onCredential: (credential: AppleCredential) => Promise<void>;
   disabled?: boolean;
@@ -39,7 +42,11 @@ function AppleGlyph() {
  *    Apple Developer avec son URL de redirection, puis a fournir au build via
  *    VITE_APPLE_SERVICES_ID et a ajouter a APPLE_CLIENT_IDS cote backend (sans
  *    quoi le backend rejette le jeton, son audience ne correspondant pas).
- *  - Android : le plugin n'implemente pas cette plateforme.
+ *  - Android : le plugin n'implemente pas cette plateforme. Feuille de route D33 :
+ *    la vue web ouvre la page d'Apple (response_mode=form_post) ; Apple renvoie au
+ *    serveur (VITE_APPLE_REDIRECT_URI = /api/auth/apple/callback/), qui renvoie
+ *    l'application sur /auth/apple/retour avec un ticket a usage unique
+ *    (voir AppleRetourPage). Il faut le Services ID et cette adresse de retour.
  *
  * Hors cas fonctionnel, le clic n'echoue pas en silence : l'erreur est remontee
  * a `onError` et affichee en toast (voir handleClick).
@@ -56,6 +63,21 @@ export default function AppleAuthButton({ onCredential, disabled = false, onErro
 
   const handleClick = async () => {
     if (disabled || pending) return;
+    if (Capacitor.getPlatform() === 'android') {
+      const redirectUri = import.meta.env.VITE_APPLE_REDIRECT_URI?.trim();
+      if (!servicesId || !redirectUri) {
+        onError?.(t('cl6_social_auth.apple_login_failed'));
+        return;
+      }
+      const state = crypto.randomUUID();
+      sessionStorage.setItem(APPLE_STATE_KEY, state);
+      const params = new URLSearchParams({
+        client_id: servicesId, redirect_uri: redirectUri, response_type: 'code id_token',
+        scope: 'name email', response_mode: 'form_post', state,
+      });
+      window.location.href = `https://appleid.apple.com/auth/authorize?${params.toString()}`;
+      return;
+    }
     setPending(true);
     try {
       const { response } = await SignInWithApple.authorize({

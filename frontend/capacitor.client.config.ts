@@ -5,6 +5,9 @@ const config: CapacitorConfig = {
   appName: 'BelivaY',
   webDir: 'dist-client',
   android: { path: 'android-client' },
+  // Feuille de route D33 : « Se connecter avec Apple » sur Android passe par la page d'Apple dans la vue web, qui
+  // renvoie au serveur BelivaY ; ces deux domaines restent dans l'application au lieu d'ouvrir le navigateur.
+  server: { allowNavigation: ['appleid.apple.com', 'belivay.com', '*.belivay.com'] },
   plugins: {
     GoogleAuth: {
       scopes: ['profile', 'email'],

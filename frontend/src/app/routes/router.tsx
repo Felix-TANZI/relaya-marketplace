@@ -51,6 +51,7 @@ const NotFoundPage = lazy(() => import('@/features/system/NotFoundPage'));
 const PromotionsPage = lazy(() => import('@/features/promotions/PromotionsPage'));
 const FlashDealsPage = lazy(() => import('@/features/flash/FlashDealsPage'));
 const InteretsPage = lazy(() => import('@/features/interets/InteretsPage'));
+const AppleRetourPage = lazy(() => import('@/features/auth/AppleRetourPage'));
 const DriverApp = lazy(() => import('@/features/driver/DriverApp'));
 const FicheDetailPage = lazy(() => import('@/features/catalog/FicheDetailPage'));
 const RelayPointPage = lazy(() => import('@/features/relay/RelayPointPage'));
@@ -283,6 +284,8 @@ export const router = createBrowserRouter([
 
       // Auth
       { path: 'login',    element: <PublicRoute><LoginRoute /></PublicRoute> },
+      // Feuille de route D33 : retour de la connexion Apple sur Android (ticket à usage unique).
+      { path: 'auth/apple/retour', element: <AppleRetourPage /> },
       { path: 'register', element: <PublicRoute><RegisterPage /></PublicRoute> },
 
       // Protected (client)

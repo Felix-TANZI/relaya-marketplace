@@ -159,6 +159,10 @@ export const authApi = {
     });
   },
 
+  /** Feuille de route D33 : Apple sur Android — le ticket à usage unique laissé par le retour de la page Apple. */
+  appleTicket: async (ticket: string): Promise<LoginResult> =>
+    http<LoginResult>('/api/auth/apple/ticket/', { method: 'POST', body: JSON.stringify({ ticket }) }),
+
   appleLogin: async (payload: {
     identityToken: string;
     authorizationCode?: string | null;

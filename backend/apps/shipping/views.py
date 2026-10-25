@@ -2167,3 +2167,28 @@ class VerifierAdresseView(APIView):
             "niveau": r.niveau,
             "zoneExploitee": r.exploitee,
         })
+
+
+@extend_schema(
+    tags=["Shipping"],
+    summary="Appeler le livreur ou le client sans voir son numéro (feuille de route D33)",
+    description="BelivaY appelle la personne qui demande, puis la relie à l'autre : aucun numéro n'est montré. "
+                "Chaque appel est journalisé (preuve du livreur, R51.1).",
+)
+class ShipmentMaskedCallView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        from . import appels
+
+        shipment = get_object_or_404(Shipment.objects.select_related("order", "courier"), pk=pk)
+        try:
+            journal = appels.appeler(shipment, request.user)
+        except PermissionError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_409_CONFLICT)
+        return Response({"ok": journal.ok, "message": journal.message or "BelivaY vous appelle : décrochez pour être "
+                                                                         "mis en relation.",
+                         "appels_au_client": appels.appels_au_client(shipment)},
+                        status=status.HTTP_200_OK if journal.ok else status.HTTP_502_BAD_GATEWAY)

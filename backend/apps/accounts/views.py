@@ -11,7 +11,8 @@ from django.contrib.auth.models import User, update_last_login
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics, status
-from rest_framework.decorators import api_view, permission_classes
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
@@ -283,7 +284,13 @@ def apple_login(request):
     deja cree et retrouve par email. Le client transmet aussi
     `authorization_code` : echange contre un refresh_token Apple, conserve
     pour revoquer l'autorisation a la suppression du compte."""
-    identity_token = str(request.data.get("identity_token", "")).strip()
+    return _connexion_apple(request, request.data)
+
+
+def _connexion_apple(request, data):
+    """Le coeur de la connexion Apple, partage par le bouton (jeton du plugin) et le retour web d'Android
+    (feuille de route D33) : `data` porte identity_token, authorization_code, email, given_name, family_name."""
+    identity_token = str(data.get("identity_token", "")).strip()
     if not django_settings.APPLE_CLIENT_IDS:
         return Response(
             {"detail": "La connexion Apple n'est pas configuree sur le serveur."},
@@ -313,7 +320,7 @@ def apple_login(request):
     # L'email n'est present dans le jeton que si Apple le fournit (relay
     # prive inclus) ; a defaut, on retombe sur celui transmis par le client
     # lors de la toute premiere autorisation.
-    email = str(claims.get("email") or request.data.get("email") or "").strip().lower()
+    email = str(claims.get("email") or data.get("email") or "").strip().lower()
     email_verified = claims.get("email_verified") in (True, "true")
 
     matches = User.objects.filter(email__iexact=email) if email else User.objects.none()
@@ -335,8 +342,8 @@ def apple_login(request):
             user = User(
                 username=_available_apple_username(email, subject),
                 email=email,
-                first_name=str(request.data.get("given_name", ""))[:150],
-                last_name=str(request.data.get("family_name", ""))[:150],
+                first_name=str(data.get("given_name", ""))[:150],
+                last_name=str(data.get("family_name", ""))[:150],
             )
             user.set_unusable_password()
             user.save()
@@ -344,7 +351,7 @@ def apple_login(request):
     if not user.is_active:
         return Response({"detail": "Ce compte BelivaY est desactive."}, status=status.HTTP_403_FORBIDDEN)
 
-    _link_apple_identity(user, claims, str(request.data.get("authorization_code", "")).strip())
+    _link_apple_identity(user, claims, str(data.get("authorization_code", "")).strip())
 
     profile = get_or_create_profile(user)
     if profile.two_factor_enabled:
@@ -374,6 +381,61 @@ def apple_login(request):
     _register_session_from_response(response, user, request)
     _marquer_derniere_connexion(user)
     return response
+
+
+# ── Feuille de route D33 : « Se connecter avec Apple » sur Android ──────────────────────────────────────
+#
+# Le plugin natif ne couvre pas Android. L'application ouvre donc la page d'Apple dans sa vue web ; Apple renvoie
+# le résultat ici (response_mode=form_post). Le serveur garde les jetons sous un ticket à usage unique, valable
+# APPLE_TICKET_SECONDES, et renvoie l'application sur APPLE_RETOUR_URL avec ce ticket : aucun jeton ne passe dans
+# une adresse. L'application échange ensuite le ticket (apple_ticket) et la connexion suit le chemin habituel.
+
+APPLE_TICKET_SECONDES = 120
+
+
+@csrf_exempt
+@extend_schema(tags=["Auth"], summary="Retour de la page Apple (Android) : garde les jetons sous un ticket")
+@api_view(["POST"])
+@permission_classes([AllowAny])
+@authentication_classes([])
+def apple_callback(request):
+    import json
+    import secrets
+    from urllib.parse import urlencode
+
+    from django.core.cache import cache
+    from django.http import HttpResponseRedirect
+
+    retour = django_settings.APPLE_RETOUR_URL
+    etat = str(request.data.get("state", ""))[:128]
+    if request.data.get("error") or not request.data.get("id_token"):
+        return HttpResponseRedirect(f"{retour}?{urlencode({'erreur': request.data.get('error') or 'apple', 'state': etat})}")
+    try:  # Apple n'envoie le nom et l'e-mail (champ « user ») qu'à la toute première autorisation
+        utilisateur = json.loads(request.data.get("user") or "{}")
+    except ValueError:
+        utilisateur = {}
+    nom = utilisateur.get("name") or {}
+    ticket = secrets.token_urlsafe(32)
+    cache.set(f"apple-ticket:{ticket}", {
+        "identity_token": request.data.get("id_token"), "authorization_code": request.data.get("code") or "",
+        "email": utilisateur.get("email") or "", "given_name": nom.get("firstName") or "",
+        "family_name": nom.get("lastName") or "",
+    }, timeout=APPLE_TICKET_SECONDES)
+    return HttpResponseRedirect(f"{retour}?{urlencode({'ticket': ticket, 'state': etat})}")
+
+
+@extend_schema(tags=["Auth"], summary="Échanger le ticket Apple (Android) contre une session BelivaY")
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def apple_ticket(request):
+    from django.core.cache import cache
+
+    cle = f"apple-ticket:{str(request.data.get('ticket', ''))[:64]}"
+    data = cache.get(cle)
+    cache.delete(cle)  # usage unique
+    if not data:
+        return Response({"detail": "Connexion Apple expirée. Recommencez."}, status=status.HTTP_400_BAD_REQUEST)
+    return _connexion_apple(request, data)
 
 
 @extend_schema(tags=["Auth"], summary="Register new user", request=RegisterSerializer, responses={201: UserSerializer})

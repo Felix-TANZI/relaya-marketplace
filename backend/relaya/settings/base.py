@@ -54,6 +54,9 @@ APPLE_TEAM_ID = os.getenv("APPLE_TEAM_ID", "").strip()
 APPLE_KEY_ID = os.getenv("APPLE_KEY_ID", "").strip()
 APPLE_PRIVATE_KEY = os.getenv("APPLE_PRIVATE_KEY", "")
 APPLE_PRIVATE_KEY_PATH = os.getenv("APPLE_PRIVATE_KEY_PATH", "").strip()
+# Feuille de route D33 : sur Android, la page d'Apple renvoie au serveur (apple/callback/), qui renvoie l'application
+# ici avec un ticket. Par défaut, l'adresse servie par Capacitor dans l'application elle-même.
+APPLE_RETOUR_URL = os.getenv("APPLE_RETOUR_URL", "https://localhost/auth/apple/retour").strip()
 
 INSTALLED_APPS = [
     # Django
@@ -360,6 +363,9 @@ BELIVAY_SMS_FOURNISSEUR = os.getenv("BELIVAY_SMS_FOURNISSEUR", "apps.otp.prestat
 # compte de service, et BELIVAY_PUSH=apps.notifications_client.prestataires.FCMPush
 # dans l'environnement — aucun changement de code necessaire.
 BELIVAY_PUSH = os.getenv("BELIVAY_PUSH", "apps.notifications_client.prestataires.PushConsole")
+# Feuille de route D33 : opérateur d'appel masqué client-livreur, à brancher à la signature du contrat (chemin d'une
+# classe apps.shipping.appels.PrestataireAppel). Tant que c'est la console, les numéros restent visibles.
+BELIVAY_APPELS = os.getenv("BELIVAY_APPELS", "apps.shipping.appels.AppelConsole")
 FCM_CREDENTIALS_PATH = os.getenv("FCM_CREDENTIALS_PATH", "")
 
 from datetime import timedelta

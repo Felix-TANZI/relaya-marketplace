@@ -31,6 +31,7 @@ import { ordersApi } from "@/services/api/orders";
 import { productsApi } from "@/services/api/products";
 import { customerApi, type Dispute, type Shipment, type OrderChatMessage, type OrderReturn } from "@/services/api/customer";
 import TrackingMap from "@/components/TrackingMap";
+import AppelMasqueButton from "@/components/AppelMasqueButton";
 import { OrderPaymentPanel } from "@/features/payments/OrderPaymentPanel";
 import { PfShellStyles } from "@/styles/pfShell";
 import QrScanner from "@/components/QrScanner";
@@ -1740,6 +1741,10 @@ export default function OrderDetailPage() {
                       {tracking?.courier_name || t('order.detail.shipping_courier_pending')}
                       {tracking?.courier_phone ? ` · ${tracking.courier_phone}` : ""}
                     </p>
+                    {/* Feuille de route D33 : appel au livreur sans voir son numéro (ni lui le vôtre). */}
+                    {tracking?.courier && ["ASSIGNED", "PICKED_UP", "IN_TRANSIT", "OUT_FOR_DELIVERY", "INCIDENT"].includes(tracking.status) && (
+                      <AppelMasqueButton shipmentId={tracking.id} libelle="Appeler le livreur" className="mt-2" />
+                    )}
                   </div>
                 </div>
               </div>

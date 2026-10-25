@@ -928,3 +928,30 @@ class LigneGrille(models.Model):
 
         self.controle, self.plafond_achat, self.controle_note = controler(self, self.grille.signee_le)
         super().save(*args, **kwargs)
+
+
+class AppelMasque(models.Model):
+    """
+    Feuille de route D33 : appel client-livreur avec numéro masqué. BelivaY appelle les deux personnes et les met en
+    relation : aucun des deux ne voit le numéro de l'autre. Le journal sert aussi de preuve au livreur (R51.1 :
+    r_client_appels appels avant de constater une absence).
+    """
+
+    class Sens(models.TextChoices):
+        CLIENT_VERS_LIVREUR = "CLIENT_LIVREUR", "Le client appelle le livreur"
+        LIVREUR_VERS_CLIENT = "LIVREUR_CLIENT", "Le livreur appelle le client"
+
+    shipment = models.ForeignKey(Shipment, on_delete=models.CASCADE, related_name="appels_masques")
+    sens = models.CharField(max_length=16, choices=Sens.choices)
+    demande_par = models.ForeignKey(User, on_delete=models.PROTECT, related_name="appels_masques")
+    prestataire = models.CharField(max_length=60)
+    ok = models.BooleanField(default=False)
+    reference = models.CharField(max_length=120, blank=True, default="")
+    message = models.CharField(max_length=255, blank=True, default="")
+    le = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-le"]
+        verbose_name = "Appel masqué"
+        verbose_name_plural = "Appels masqués"
+

@@ -155,6 +155,24 @@ class ShipmentSerializer(serializers.ModelSerializer):
     def get_estimated_availability_at(self, obj):
         return obj.estimated_availability_at()
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # Feuille de route D33 : dès qu'un opérateur d'appel masqué est branché, le client et le livreur ne voient
+        # plus le numéro de l'autre ; ils s'appellent par POST shipments/<id>/appel/. L'équipe BelivaY les voit.
+        from . import appels
+
+        request = self.context.get("request")
+        if appels.masque_actif() and not (request and request.user.is_staff):
+            from apps.client_core.masquage import masquer_numero
+
+            for champ in ("courier_phone", "customer_phone", "authorized_pickup_phone"):
+                if data.get(champ):
+                    data[champ] = masquer_numero(data[champ])
+            if isinstance(data.get("courier"), dict) and data["courier"].get("phone"):
+                data["courier"]["phone"] = masquer_numero(data["courier"]["phone"])
+        data["appel_masque"] = True
+        return data
+
     def get_delivery_evidences(self, obj):
         # Cote acheteur, seules les preuves de REMISE (a domicile ou au
         # guichet relais) sont pertinentes — les etapes d'enlevement vendeur

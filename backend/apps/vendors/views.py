@@ -10279,15 +10279,23 @@ def vd_questions_template_delete(request, template_id):
 #     ROLE_TIER_RULES, SanctionRecord) — voir rapport de mission sur V5.4/V5.5.
 #   - OTP deux codes  : apps.otp.services (envoyer/verifier) — pas réinventé.
 #
-# ⚠️ CONFLIT CONNU (signalé, pas résolu ici) : apps.payments.settlements est
-# bâti sur le principe explicite « ni solde, ni bouton de retrait » (cycle de
-# règlement automatique) — voir apps/payments/settlements/models.py, en-tête.
-# Cela contredit la règle produit mémorisée « le vendeur décide quand il
-# retire » (PULL). vendor_withdrawal_create() plus haut a déjà basculé vers ce
-# nouveau chemin et laisse l'ancien chemin (retrait à la demande) commenté
-# comme désactivé. Les vues ci-dessous EXPOSENT la réalité actuelle du moteur
-# financier (lecture seule) sans trancher ce conflit — voir le rapport de
-# mission pour la décision à prendre côté produit.
+# CONFLIT TRANCHÉ — ne plus le rouvrir.
+#
+# Ce bloc a longtemps signalé une contradiction : apps.payments.settlements est
+# bâti sur « ni solde, ni bouton de retrait » (règlement automatique), là où
+# une règle produit du 12 octobre disait « le vendeur décide quand il retire »
+# (PULL).
+#
+# C'est le règlement automatique qui l'emporte. La spec v2.1 le dit sans
+# ambiguïté : R22.2 verse chaque vendredi, R43.1 précise « sans demande et
+# sans minimum ». Confirmé par le porteur le 25 octobre 2026.
+#
+# En pratique : apps/payments/bridge/vendredi.py verse, et
+# vendor_withdrawal_create() plus haut ne crée plus rien — il répond
+# « versement_du_vendredi » pour ne pas casser le front. Il n'existe donc PAS
+# deux chemins qui paient le même vendeur.
+#
+# Les vues ci-dessous exposent l'état du moteur financier, en lecture seule.
 # ══════════════════════════════════════════════════════════════════════════════
 
 from rest_framework.decorators import renderer_classes as renderer_classes

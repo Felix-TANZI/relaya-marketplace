@@ -1,0 +1,17 @@
+/* Préparation en trois gestes (chantier F, point 2) : dans la carte de nuit de la commande. */
+.vd5-limite{display:flex;align-items:center;gap:8px;margin-top:12px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);color:#fff;font-size:14px;line-height:1.35}
+.vd5-limite-d{display:block;font-size:13px;color:var(--gold-l);margin-top:2px}
+.vd5-gestes{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.vd5-geste{display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 6px 6px 10px;border-radius:14px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);color:#fff}
+.vd5-geste.fait{background:rgba(34,160,90,.18);border-color:rgba(120,220,160,.35)}
+.vd5-geste-n{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:800;font-size:14px;background:rgba(255,255,255,.14)}
+.vd5-geste.fait .vd5-geste-n{background:var(--green);color:#fff}
+.vd5-geste-t{font-weight:700;font-size:15px;min-width:0}
+.vd5-geste-b{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;min-width:44px;padding:0 14px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:transparent;color:#fff;font:inherit;font-weight:700;font-size:14px;cursor:pointer;flex-shrink:0}
+.vd5-geste-b:focus-within,.vd5-geste-b:focus-visible{outline:2px solid var(--gold-l);outline-offset:2px}
+.vd5-geste-b input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.vd5-geste-3{padding:0;background:none;border:0;display:block}
+.vd5-geste-3 .btn{width:100%}
+.vd5-verifs>summary{display:flex;align-items:center;gap:10px;min-height:44px;cursor:pointer;list-style:none}
+.vd5-verifs>summary::-webkit-details-marker{display:none}
+.vd5-verifs[open]>summary>svg:last-child{transform:rotate(180deg)}

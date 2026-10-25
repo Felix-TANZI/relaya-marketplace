@@ -1,0 +1,75 @@
+/* PR-04 Guichet 1 (Aujourd'hui, Réception, Appareil photo) : ajouts aux classes transcrites du prototype. Couleurs en
+   jetons seulement (styles/jetons.css) ; tailles en rem ; cibles de 44 px au moins, 56 px pour l'action principale. */
+.r4-cache{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.r4-cible{min-width:44px;min-height:44px}
+.r4-cible-56{min-height:56px}
+.r4-chargement{padding:24px 16px;text-align:center;color:var(--ink-3);font-size:.875rem}
+.r4-message{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:12px;border:1px solid;font-size:.875rem;line-height:1.45;font-weight:600}
+.r4-message svg{flex-shrink:0;margin-top:1px}
+.r4-note{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--amber-soft);color:var(--amber);border:1px solid var(--amber-line);font-size:.8125rem;line-height:1.45}
+.r4-note svg{flex-shrink:0}
+.r4-panneau{display:flex;flex-direction:column;gap:12px}
+.r4-panneau h2{font-size:1.0625rem;font-weight:800}
+.r4-titre-alerte{display:flex;align-items:center;gap:10px;color:var(--or-txt)}
+.r4-panneau-inline{display:flex;flex-direction:column;gap:12px;padding:4px 0 8px 52px}
+.r4-bouton-ligne{width:100%;border:0;background:transparent;padding:0;text-align:left;font-family:inherit;cursor:pointer}
+.r4-chevron{transition:transform var(--blv-court,.13s) ease}
+.r4-chevron.on{transform:rotate(90deg)}
+.r4-choix{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.r4-choix legend{font-size:.8125rem;font-weight:800;color:var(--ink-2);margin-bottom:4px;padding:0}
+.r4-option{display:flex;align-items:center;gap:10px;min-height:48px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:var(--card-2);font-size:.875rem;cursor:pointer;color:var(--ink)}
+.r4-option input{width:22px;height:22px;accent-color:var(--acc);flex-shrink:0;margin:0}
+.r4-option:has(input:checked){border-color:var(--acc-line);background:var(--acc-soft)}
+.r4-deux{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.r4-ligne{display:flex;gap:8px;align-items:stretch}
+.r4-court{width:auto;flex-shrink:0;padding:0 16px}
+.r4-champ,.r4-code-champ{flex:1;min-width:0;min-height:56px;padding:0 14px;border-radius:12px;border:1.5px solid var(--line-2);background:var(--card);color:var(--ink);font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:max(1.125rem,16px);letter-spacing:.06em}
+.r4-code-champ{width:100%;text-align:center;font-size:1.75rem;letter-spacing:.4em;font-weight:800}
+.r4-pin{letter-spacing:.5em}
+.r4-champ:focus-visible,.r4-code-champ:focus-visible{outline:3px solid var(--acc);outline-offset:1px}
+.r4-code{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.r4-code .r4-code-champ{background:var(--blanc-08);color:var(--nuit-ink);border-color:var(--blanc-25)}
+.r4-lien-nuit{display:inline-flex;align-items:center;gap:8px;min-height:48px;margin-top:6px;color:var(--nuit-ink);font-weight:800;font-size:.875rem;text-decoration:none}
+.r4-lien-bouton{border:0;background:transparent;padding:0;min-height:44px;font-family:inherit;cursor:pointer;text-align:left;text-decoration:underline}
+.r4-lien{color:var(--acc-txt);font-weight:800;font-size:.875rem;display:inline-flex;align-items:center;min-height:44px}
+.r4-bloque{margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--or-soft);color:var(--or-txt);border:1px solid var(--or-line);font-size:.8125rem;font-weight:700;line-height:1.45}
+.r4-manque{margin-top:4px;font-size:.75rem;font-weight:800;color:var(--amber)}
+.r4-manque-nuit{padding:10px 12px;border-radius:10px;background:var(--amber-soft);color:var(--amber);border:1px solid var(--amber-line);font-size:.8125rem;font-weight:700}
+.r4-scan{display:flex;flex-direction:column;gap:4px}
+.r4-detail{display:flex;flex-direction:column;gap:10px;padding:4px 0 10px 52px}
+.r4-surligne{outline:3px solid var(--acc);outline-offset:4px;border-radius:12px}
+.r4-scanne{border-color:var(--acc)!important;border-style:solid!important;background:var(--acc-soft)}
+.r4-ligne-fixe{cursor:default}
+.r4-raison{text-align:center;margin-top:-4px}
+.r4-photo-lot{display:flex;align-items:center;gap:12px}
+.r4-photo-lot img{width:72px;height:72px;border-radius:12px;object-fit:cover;flex-shrink:0}
+.r4-attente{background:var(--acc-soft)}
+.r4-heros-manque .p-anbp2l{font-weight:800}
+.r4-caisse{margin-top:4px;padding-top:8px;border-top:1px solid var(--blanc-12)}
+.r4-carte-lien{text-decoration:none;color:var(--ink)}
+.r4-pied{min-height:44px;text-decoration:none}
+.r4-connecte{background:var(--green-soft);color:var(--green);border-color:var(--green-line)}
+.r4-annonce-claire{font-size:.8125rem;color:var(--ink-2);text-align:center;min-height:1em}
+.r4-etape{flex:1 1 0;min-width:0;display:flex}
+.p-pkdjgs h1.p-bbwgsw{margin:0}
+.p-c1r1yj h1.p-fdt7cn{margin:0}
+
+/* ── Appareil photo ── */
+.r4-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0}
+.r4-video.on{opacity:1}
+.r4-cam-centre{position:absolute;top:130px;bottom:150px;left:20px;right:20px;display:flex;align-items:center;justify-content:center;overflow-y:auto}
+.r4-cam-carte{width:100%;max-width:420px;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center;padding:20px;border-radius:18px;background:var(--blanc-08);border:1px solid var(--blanc-20);color:var(--camera-ink)}
+.r4-cam-carte h1{font-size:1.125rem;font-weight:800}
+.r4-cam-carte p,.r4-cam-carte ol{font-size:.875rem;line-height:1.5;color:var(--camera-ink-2);margin:0}
+.r4-cam-carte ol{text-align:left;padding-left:20px}
+.r4-cam-note{display:block;margin-top:8px;font-size:.75rem;color:var(--camera-ink-2)}
+.r4-cam-choix{display:flex;flex-direction:column;gap:8px;color:var(--camera-ink);text-align:center;font-size:.875rem;font-weight:700}
+.r4-cam-saisie{display:flex;flex-direction:column;gap:8px;color:var(--camera-ink);font-size:.8125rem;font-weight:700}
+.r4-cam-saisie .r4-champ{background:var(--blanc-12);color:var(--camera-ink);border-color:var(--blanc-25)}
+.r4-vignette{object-fit:cover}
+.r4-annonce{position:absolute;left:24px;right:24px;bottom:16px;text-align:center;font-size:.8125rem;font-weight:700;color:var(--camera-ink)}
+@media (max-height:700px){.r4-cam-centre{top:110px;bottom:130px}}
+.p-ncx7qc[aria-disabled=true]{opacity:.55;box-shadow:none}
+/* Caisse du jour : tuile pleine largeur sous les quatre tuiles (gérant seul). */
+.r4-caisse-tuile{display:block;width:100%}
+.r4-unite{font-size:.5em;font-weight:800}

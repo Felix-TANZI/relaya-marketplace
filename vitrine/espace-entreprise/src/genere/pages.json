@@ -1,0 +1,490 @@
+[
+ {
+  "route": "recherche",
+  "ecran": "AJ-E",
+  "titre": "Rechercher partout",
+  "groupe": "AJ-E",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": "menu",
+  "roles": null,
+  "sansSession": false
+ },
+ {
+  "route": "securite",
+  "ecran": "AJ-E",
+  "titre": "Sécurité du compte",
+  "groupe": "AJ-E",
+  "statut": "repris",
+  "parent": "profil",
+  "onglet": "menu",
+  "roles": null,
+  "sansSession": false
+ },
+ {
+  "route": "roles",
+  "ecran": "AJ-E",
+  "titre": "Rôles et accès",
+  "groupe": "AJ-E",
+  "statut": "repris",
+  "parent": "profil",
+  "onglet": "menu",
+  "roles": null,
+  "sansSession": false
+ },
+ {
+  "route": "planning",
+  "ecran": "AJ-E",
+  "titre": "Planning des livreurs",
+  "groupe": "AJ-E",
+  "statut": "repris",
+  "parent": "flotte",
+  "onglet": null,
+  "roles": null,
+  "sansSession": false
+ },
+ {
+  "route": "apprendre",
+  "ecran": "AJ-E",
+  "titre": "Apprendre",
+  "groupe": "AJ-E",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": "menu",
+  "roles": null,
+  "sansSession": false
+ },
+ {
+  "route": "activite",
+  "ecran": "AJ-E",
+  "titre": "Activité de l’équipe",
+  "groupe": "AJ-E",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": "menu",
+  "roles": null,
+  "sansSession": false
+ },
+ {
+  "route": "menu",
+  "ecran": "socle",
+  "titre": "Menu",
+  "groupe": "ENT-00",
+  "statut": "repris",
+  "parent": null,
+  "onglet": "menu",
+  "roles": null,
+  "sansSession": false
+ },
+ {
+  "route": "profil",
+  "ecran": "socle",
+  "titre": "Mon entreprise",
+  "groupe": "ENT-00",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": "menu",
+  "roles": null,
+  "sansSession": false
+ },
+ {
+  "route": "connexion",
+  "ecran": "ENT-P01",
+  "titre": "Connexion",
+  "groupe": "ENT-03",
+  "statut": "repris",
+  "parent": null,
+  "onglet": null,
+  "roles": null,
+  "sansSession": true
+ },
+ {
+  "route": "candidature",
+  "ecran": "ENT-P01",
+  "titre": "Candidature de votre entreprise",
+  "groupe": "ENT-03",
+  "statut": "repris",
+  "parent": null,
+  "onglet": null,
+  "roles": null,
+  "sansSession": true
+ },
+ {
+  "route": "tableau",
+  "ecran": "ENT-P02",
+  "titre": "Tableau de bord",
+  "groupe": "ENT-03",
+  "statut": "repris",
+  "parent": null,
+  "onglet": "tableau",
+  "roles": null,
+  "sansSession": false
+ },
+ {
+  "route": "contrat",
+  "ecran": "ENT-P03",
+  "titre": "Contrat et documents",
+  "groupe": "ENT-03",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "roles": null,
+  "sansSession": false
+ },
+ {
+  "route": "etat",
+  "ecran": "ENT-P27",
+  "titre": "État du compte",
+  "groupe": "ENT-03",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "roles": null,
+  "sansSession": false
+ },
+ {
+  "route": "zones",
+  "ecran": "ENT-P04",
+  "titre": "Zones et capacité",
+  "groupe": "ENT-04",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "roles": null,
+  "sansSession": false
+ },
+ {
+  "route": "flotte",
+  "ecran": "ENT-P05",
+  "titre": "Livreurs",
+  "groupe": "ENT-04",
+  "statut": "repris",
+  "parent": null,
+  "onglet": "flotte",
+  "roles": null,
+  "sansSession": false
+ },
+ {
+  "route": "livreur",
+  "ecran": "ENT-P06",
+  "titre": "Fiche du livreur",
+  "groupe": "ENT-04",
+  "statut": "repris",
+  "parent": "flotte",
+  "onglet": null,
+  "roles": null,
+  "sansSession": false
+ },
+ {
+  "route": "ajout",
+  "ecran": "ENT-P07",
+  "titre": "Ajouter un livreur",
+  "groupe": "ENT-04",
+  "statut": "repris",
+  "parent": "flotte",
+  "onglet": null,
+  "roles": [
+   "proprietaire",
+   "repartiteur"
+  ],
+  "sansSession": false
+ },
+ {
+  "route": "pieces",
+  "ecran": "ENT-P06",
+  "titre": "Contrôle des pièces",
+  "groupe": "ENT-04",
+  "statut": "repris",
+  "parent": "flotte",
+  "onglet": null,
+  "roles": [
+   "proprietaire",
+   "repartiteur"
+  ],
+  "sansSession": false
+ },
+ {
+  "route": "vehicules",
+  "ecran": "ENT-P08",
+  "titre": "Véhicules",
+  "groupe": "ENT-04",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "roles": null,
+  "sansSession": false
+ },
+ {
+  "route": "sla",
+  "ecran": "ENT-P09",
+  "titre": "Prix et délais",
+  "groupe": "ENT-05",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "roles": null,
+  "sansSession": false
+ },
+ {
+  "route": "paquets",
+  "ecran": "ENT-P10",
+  "titre": "Paquets disponibles",
+  "groupe": "ENT-05",
+  "statut": "repris",
+  "parent": null,
+  "onglet": "paquets",
+  "roles": [
+   "proprietaire",
+   "repartiteur"
+  ],
+  "sansSession": false
+ },
+ {
+  "route": "paquet",
+  "ecran": "ENT-P11",
+  "titre": "Détail du paquet",
+  "groupe": "ENT-05",
+  "statut": "repris",
+  "parent": "paquets",
+  "onglet": null,
+  "roles": [
+   "proprietaire",
+   "repartiteur"
+  ],
+  "sansSession": false
+ },
+ {
+  "route": "affectation",
+  "ecran": "ENT-P12",
+  "titre": "Affecter un livreur",
+  "groupe": "ENT-05",
+  "statut": "repris",
+  "parent": "paquets",
+  "onglet": null,
+  "roles": [
+   "proprietaire",
+   "repartiteur"
+  ],
+  "sansSession": false
+ },
+ {
+  "route": "missions",
+  "ecran": "ENT-P13",
+  "titre": "Missions et carte",
+  "groupe": "ENT-06",
+  "statut": "repris",
+  "parent": null,
+  "onglet": "missions",
+  "roles": [
+   "proprietaire",
+   "repartiteur"
+  ],
+  "sansSession": false
+ },
+ {
+  "route": "incidents",
+  "ecran": "ENT-P14",
+  "titre": "Incidents à valider",
+  "groupe": "ENT-06",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "roles": [
+   "proprietaire",
+   "repartiteur"
+  ],
+  "sansSession": false
+ },
+ {
+  "route": "colis",
+  "ecran": "ENT-P15",
+  "titre": "Colis",
+  "groupe": "ENT-06",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "roles": [
+   "proprietaire",
+   "repartiteur"
+  ],
+  "sansSession": false
+ },
+ {
+  "route": "preuves",
+  "ecran": "ENT-P16",
+  "titre": "Preuves",
+  "groupe": "ENT-06",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "roles": [
+   "proprietaire",
+   "repartiteur"
+  ],
+  "sansSession": false
+ },
+ {
+  "route": "litiges",
+  "ecran": "ENT-P17",
+  "titre": "Litiges",
+  "groupe": "ENT-07",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "roles": null,
+  "sansSession": false
+ },
+ {
+  "route": "reglements",
+  "ecran": "ENT-P18",
+  "titre": "Règlements",
+  "groupe": "ENT-07",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "roles": [
+   "proprietaire",
+   "comptable"
+  ],
+  "sansSession": false
+ },
+ {
+  "route": "releves",
+  "ecran": "ENT-P19",
+  "titre": "Relevés et factures",
+  "groupe": "ENT-07",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "roles": [
+   "proprietaire",
+   "comptable"
+  ],
+  "sansSession": false
+ },
+ {
+  "route": "score",
+  "ecran": "ENT-P20",
+  "titre": "Score qualité",
+  "groupe": "ENT-07",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "roles": null,
+  "sansSession": false
+ },
+ {
+  "route": "emballages",
+  "ecran": "ENT-P21",
+  "titre": "Emballages",
+  "groupe": "ENT-08",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "roles": null,
+  "sansSession": false
+ },
+ {
+  "route": "messages",
+  "ecran": "ENT-P22",
+  "titre": "Messages",
+  "groupe": "ENT-08",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "roles": null,
+  "sansSession": false
+ },
+ {
+  "route": "notifications",
+  "ecran": "ENT-P23",
+  "titre": "Notifications",
+  "groupe": "ENT-08",
+  "statut": "repris",
+  "parent": "tableau",
+  "onglet": null,
+  "roles": null,
+  "sansSession": false
+ },
+ {
+  "route": "parametres",
+  "ecran": "ENT-P24",
+  "titre": "Paramètres",
+  "groupe": "ENT-08",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "roles": null,
+  "sansSession": false
+ },
+ {
+  "route": "parametres-journal",
+  "ecran": "ENT-P24",
+  "titre": "Journal des modifications",
+  "groupe": "ENT-08",
+  "statut": "repris",
+  "parent": "parametres",
+  "onglet": null,
+  "roles": null,
+  "sansSession": false
+ },
+ {
+  "route": "mes-donnees",
+  "ecran": "ENT-P24",
+  "titre": "Mes données",
+  "groupe": "ENT-08",
+  "statut": "repris",
+  "parent": "parametres",
+  "onglet": null,
+  "roles": null,
+  "sansSession": false
+ },
+ {
+  "route": "rapports",
+  "ecran": "ENT-P25",
+  "titre": "Rapports",
+  "groupe": "ENT-08",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "roles": null,
+  "sansSession": false
+ },
+ {
+  "route": "integrations",
+  "ecran": "ENT-P26",
+  "titre": "Intégrations",
+  "groupe": "ENT-08",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "roles": [
+   "proprietaire"
+  ],
+  "sansSession": false
+ },
+ {
+  "route": "integrations-cles",
+  "ecran": "ENT-P26",
+  "titre": "Clés, rappels et journal",
+  "groupe": "ENT-08",
+  "statut": "repris",
+  "parent": "integrations",
+  "onglet": null,
+  "roles": [
+   "proprietaire"
+  ],
+  "sansSession": false
+ },
+ {
+  "route": "equipe",
+  "ecran": "AJ-E",
+  "titre": "Registre du personnel",
+  "groupe": "EQUIPE",
+  "statut": "repris",
+  "parent": "flotte",
+  "onglet": null,
+  "roles": null,
+  "sansSession": false
+ }
+]

@@ -1,0 +1,29 @@
+/* Équipe (l'entreprise employeur) : sections repliables de l'onglet « Emploi » et registre du personnel. Jetons de
+   src/styles/jetons.css seulement, sobres : aucune lueur, aucun dégradé. */
+.px .eq-onglet{display:flex;flex-direction:column;gap:10px}
+.px .eq-sec>summary{min-height:56px}
+.px .eq-ic{display:inline-grid;place-items:center;width:34px;height:34px;flex-shrink:0;border-radius:10px;background:var(--card);box-shadow:inset 0 0 0 1px var(--line);color:var(--ink-2)}
+.px .eq-ic.alerte{color:var(--amber);background:var(--amber-soft);box-shadow:inset 0 0 0 1px var(--amber-line)}
+.px .eq-tt{display:flex;flex-direction:column;gap:1px;flex:1;min-width:0}
+.px .eq-tt b{font-size:.9375rem;color:var(--ink)}
+.px .eq-tt .t13{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.px .eq-etat{display:flex;flex-direction:column;gap:3px;padding:10px 12px;border-radius:10px;font-size:.875rem;line-height:1.45;color:var(--ink)}
+.px .eq-etat.amber{background:var(--amber-soft);box-shadow:inset 3px 0 0 var(--amber)}
+.px .eq-etat.red{background:var(--red-soft);box-shadow:inset 3px 0 0 var(--red)}
+.px .eq-avert{margin:6px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+.px .eq-avert li{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:10px;background:var(--card);box-shadow:inset 0 0 0 1px var(--line);font-size:.875rem;line-height:1.45}
+.px .eq-grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px;margin:4px 0 10px}
+.px .eq-case{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:10px;background:var(--card);box-shadow:inset 0 0 0 1px var(--line)}
+.px .eq-case.repos{color:var(--ink-3);background:var(--card-2)}
+.px .eq-fixe{display:flex;gap:8px;align-items:flex-start;margin:4px 0 0;font-size:.8125rem;line-height:1.45;color:var(--ink-3)}
+.px .eq-fixe svg{flex-shrink:0;margin-top:2px}
+.px .eq-recap{display:flex;flex-direction:column;gap:2px;padding:12px;border-radius:12px;background:var(--card-2);box-shadow:inset 0 0 0 1px var(--line)}
+.px .eq-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.px .eq-semaine{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.px .eq-jour{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;flex-wrap:wrap}
+.px .eq-j{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:.875rem;min-width:120px}
+.px .eq-j input{width:20px;height:20px}
+.px .eq-h{display:inline-flex;align-items:center;gap:6px}
+.px .eq-h input{min-height:40px;padding:4px 8px;border-radius:10px;border:1px solid var(--line-2);background:var(--card);color:var(--ink);font:inherit}
+.px .eq-res{display:flex;flex-wrap:wrap;gap:4px 14px;margin:0 0 10px;font-size:.875rem;color:var(--ink-2)}
+.px .eq-res b{color:var(--ink)}

@@ -1,0 +1,6 @@
+/* Tailwind (TAILWIND.md), importé avant nos feuilles de style (main.tsx) : à spécificité égale, nos règles gardent
+   le dernier mot. « base » ne contient que les variables --tw-* des utilitaires (preflight est coupé dans
+   tailwind.config.js) : aucun style du site n'est remis à zéro. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

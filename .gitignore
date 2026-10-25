@@ -93,6 +93,9 @@ assets/
 # c'est pour ça que ces fichiers n'ont jamais atteint le dépôt.
 !espace-client-belivay/site/src/assets/
 !espace-client-belivay/site/src/assets/**
+# Même exception pour la vitrine (vitrine/) : logos, polices et images des six espaces.
+!vitrine/site/src/assets/
+!vitrine/espace-*/src/assets/
 
 
 #  Sauvegardes base de données

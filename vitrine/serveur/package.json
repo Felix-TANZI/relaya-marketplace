@@ -1,0 +1,14 @@
+{
+  "name": "vitrine-serveur",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Serveur de la vitrine BelivaY (fichiers des six espaces, comptes réels) : dépendances de production seulement.",
+  "type": "module",
+  "engines": {
+    "node": ">=20.19"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "1.2.0",
+    "qrcode": "1.5.4"
+  }
+}

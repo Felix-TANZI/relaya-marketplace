@@ -1,0 +1,50 @@
+/* Écrans LIV-09 (historique, activité, Trust Score), repris sur le prototype : ajustements propres, préfixe l9-.
+   Tout le reste vient des classes du prototype (src/styles/prototype.css, ecarts-prototype.css). */
+
+/* Identifiants de paquet : jamais coupés au milieu */
+.l9-id{overflow-wrap:anywhere}
+
+/* Historique : champ de recherche (lien sur la liste, vrai champ sur ?s=recherche) */
+.l9-champ{display:block;color:inherit;text-decoration:none;border-radius:12px}
+.l9-champ .fld,form.fld{margin-top:0}
+.l9-inp{padding-right:4px}
+.l9-inp input{flex:1;min-width:0;min-height:44px;border:0;background:transparent;color:var(--ink);font:inherit;font-size:1rem}
+.l9-inp input:focus{outline:none}
+.l9-inp input::placeholder{color:var(--ink-4)}
+.l9-chercher{min-height:44px;padding:0 14px;border:0;border-radius:10px;background:var(--acc-soft);color:var(--acc-txt);font:inherit;font-weight:800;cursor:pointer;flex-shrink:0}
+.l9-plage{display:flex;gap:10px;margin-top:10px}
+.l9-plage label{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;font-size:.8125rem;font-weight:700;color:var(--ink-2)}
+.l9-plage .inp{width:100%;font:inherit;min-height:48px}
+
+/* Photos de preuve (aperçu, jamais téléchargeable) */
+.l9-photo{display:flex;align-items:center;justify-content:center;color:var(--ink-3);user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.l9-photo>svg{margin-bottom:28px}
+
+/* Graphiques (CH du prototype) */
+.l9-chart{display:block;width:100%;height:auto;margin-top:4px}
+.l9-chart text{font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:12px;fill:var(--ink-3);font-weight:700}
+.l9-hbar{gap:10px;padding:7px 0}
+.l9-hbar>span:first-child{width:96px;flex-shrink:0}
+.l9-hbar>span:last-child{width:48px;text-align:right}
+
+/* Activité */
+.l9-hero-l{color:rgba(255,255,255,.85);margin-top:10px}
+.l9-donut{flex-wrap:wrap;align-items:center}
+.l9-donut .grow{min-width:160px}
+.l9-puce{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
+
+/* Trust Score */
+.l9-paliers-l{justify-content:space-between;flex-wrap:wrap;gap:4px 10px;margin-top:2px;font-size:.75rem;font-weight:800;color:rgba(255,255,255,.8)}
+.l9-mission{color:var(--acc-txt);font-weight:800;text-decoration:underline;display:inline-flex;align-items:center;min-height:44px}
+.l9-contester{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-top:4px;padding:0;border:0;background:none;font:inherit;font-size:.8125rem;font-weight:800;color:var(--or-txt);cursor:pointer;text-align:left}
+.l9-radio{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.l9-note-c{flex:1;width:100%;min-height:96px;border:0;background:transparent;color:var(--ink);font:inherit;resize:vertical}
+.l9-note-c:focus{outline:none}
+.l9-erreur{margin-top:10px;font-size:.875rem;font-weight:800;color:var(--red)}
+.l9-crit{display:block;margin-top:2px;font-size:.75rem;font-weight:700;color:var(--ink-3)}
+.livc-crit.low .bar i{background:linear-gradient(90deg,var(--gold),var(--or))}
+.l9-hm span{color:rgba(255,255,255,.93)}
+.l9-monter{display:inline-flex;align-items:center;min-height:44px;font-weight:800;color:inherit;text-decoration:underline}
+/* Courbe d'évolution qui se dessine à l'ouverture (mouvement libre seulement). */
+html[data-mouv] .l9-trace{stroke-dasharray:1;stroke-dashoffset:1;animation:l9-trace .9s ease-out .1s forwards}
+@keyframes l9-trace{to{stroke-dashoffset:0}}

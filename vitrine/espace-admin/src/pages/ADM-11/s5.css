@@ -1,0 +1,31 @@
+/* Écrans du groupe S5 : compléments au kit du prototype (contenu.css). Couleurs : jetons seulement. */
+.px ol.stepper{list-style:none;padding:0;margin-left:0;margin-right:0}
+.s5-charge{display:grid;gap:12px;margin-top:16px}
+.s5-sq{height:88px;border-radius:var(--r-l);background:linear-gradient(90deg,var(--sand-3),var(--card),var(--sand-3));background-size:200% 100%}
+html[data-mouv] .s5-sq{animation:e-reflet 1.4s linear infinite}
+.s5-num{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.s5-num input,.s5-sel select,.s5-champ input,.s5-champ textarea{font:inherit;color:var(--ink);background:var(--input-bg);border:1.5px solid var(--input-line);border-radius:12px;padding:10px 12px;min-height:44px;max-width:100%}
+.s5-num input{width:9em}
+.s5-champ{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.s5-champ>span:first-child{font-size:0.8125rem;font-weight:800;color:var(--ink-2)}
+.s5-champ textarea{width:100%;resize:vertical}
+.s5-sel select{width:100%}
+.s5-ligne{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.s5-mx{width:100%;border-collapse:collapse;font-size:0.8125rem}
+.s5-mx th,.s5-mx td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:center}
+.s5-mx th:first-child,.s5-mx td:first-child{text-align:left}
+.s5-mx .neg{color:var(--red);font-weight:800}
+.s5-mx .pos{color:var(--green);font-weight:800}
+.s5-wrap{overflow-x:auto;max-width:100%}
+.s5-texte{white-space:pre-wrap;line-height:1.5}
+.s5-mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:0.8125rem}
+.s5-grille{display:grid;gap:16px;margin-top:16px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:1024px){.s5-grille.g21x{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}.s5-grille.g2x{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.s5-plus{display:flex;justify-content:center;margin-top:12px}
+.s5-alerte{border-left:4px solid var(--or);padding-left:10px}
+.s5-lien{background:none;border:0;padding:0;margin:0;text-align:left;font:inherit;color:inherit;cursor:pointer;display:block;min-height:44px}
+.s5-lien>span{display:block}
+.s5-lien:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:6px}
+.px button.admm-req{text-align:left;width:100%;font:inherit;color:inherit;display:block}
+.px .admp-pl b{overflow-wrap:anywhere;min-width:0;white-space:normal}
+.px .admp-mod{min-width:0}

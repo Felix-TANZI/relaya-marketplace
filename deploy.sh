@@ -13,7 +13,9 @@ COMPOSE="docker compose -f docker-compose.prod.yml --env-file .env.prod"
 
 # Images construites par ce dépôt. Les autres services (postgres, redis,
 # nginx, certbot, pgbouncer) sont des images officielles, jamais reconstruites.
-SERVICES_BUILD="backend celery-worker frontend-client frontend-seller frontend-courier frontend-admin frontend-relay-point frontend-delivery-org"
+# frontend-client (ancien site de belivay.com) n'est plus construit : la vitrine
+# le remplace (vitrine, vitrine-comptes ; PR-VITRINE.md).
+SERVICES_BUILD="backend celery-worker vitrine vitrine-comptes frontend-seller frontend-courier frontend-admin frontend-relay-point frontend-delivery-org"
 
 # Docker Compose nomme les images <nom-du-dossier>-<service> (ex. belivay-backend).
 IMG_PREFIX="$(basename "$PWD" | tr '[:upper:]' '[:lower:]')"
@@ -24,11 +26,21 @@ IMG_PREFIX="$(basename "$PWD" | tr '[:upper:]' '[:lower:]')"
 # test local.
 HEALTH_URL="https://belivay.com/api/auth/health/"
 
+# Vitrine : la page d'un espace (ses fichiers sous /vendeur/assets/) et le
+# service des comptes réels (réponse JSON, base branchée ou non).
+VITRINE_URL="https://belivay.com/vendeur/"
+COMPTES_URL="https://belivay.com/api/auth/etat?espace=client"
+
+vitrine_ok() {
+  curl -fsSk --max-time 10 --resolve belivay.com:443:127.0.0.1 "$VITRINE_URL" 2>/dev/null | grep -q 'src="/vendeur/assets/' &&
+    curl -fsSk --max-time 10 --resolve belivay.com:443:127.0.0.1 "$COMPTES_URL" 2>/dev/null | grep -q '"base":'
+}
+
 check_health() {
   local i
   for i in $(seq 1 12); do
-    if curl -fsSk --max-time 10 --resolve belivay.com:443:127.0.0.1 "$HEALTH_URL" 2>/dev/null | grep -q '"status": *"ok"'; then
-      echo "  ✓ Application en bonne santé"
+    if curl -fsSk --max-time 10 --resolve belivay.com:443:127.0.0.1 "$HEALTH_URL" 2>/dev/null | grep -q '"status": *"ok"' && vitrine_ok; then
+      echo "  ✓ Application en bonne santé (back-end et vitrine)"
       return 0
     fi
     echo "  … en attente de l'application ($i/12)"
@@ -59,12 +71,20 @@ fi
 # Une étiquette empêche `docker system prune` de les supprimer.
 # ─────────────────────────────────────────────────────────────────────────
 echo "📌 Conservation de la version actuelle (retour arrière possible)..."
+# Un service qui n'a encore jamais tourné (vitrine, vitrine-comptes au premier
+# déploiement) n'a pas de version précédente : il est laissé de côté ici et
+# au retour arrière, sans priver les autres services du leur.
 HAVE_PREVIOUS=1
+PREVIOUS_SERVICES=""
 for svc in $SERVICES_BUILD; do
   if docker image inspect "${IMG_PREFIX}-${svc}:latest" >/dev/null 2>&1; then
     docker tag "${IMG_PREFIX}-${svc}:latest" "${IMG_PREFIX}-${svc}:previous"
+    PREVIOUS_SERVICES="$PREVIOUS_SERVICES $svc"
   else
-    HAVE_PREVIOUS=0
+    case "$svc" in
+      vitrine|vitrine-comptes) echo "  (première version de $svc : pas de version précédente)" ;;
+      *) HAVE_PREVIOUS=0 ;;
+    esac
   fi
 done
 
@@ -117,11 +137,11 @@ revenir_en_arriere() {
     return 1
   fi
   echo "↩️  Retour à la version précédente..."
-  for svc in $SERVICES_BUILD; do
+  for svc in $PREVIOUS_SERVICES; do
     docker tag "${IMG_PREFIX}-${svc}:previous" "${IMG_PREFIX}-${svc}:latest" || return 1
   done
   # --no-deps : postgres et redis ne sont pas touchés.
-  $COMPOSE up -d --no-build --no-deps --force-recreate $SERVICES_BUILD || return 1
+  $COMPOSE up -d --no-build --no-deps --force-recreate $PREVIOUS_SERVICES || return 1
   sleep 10
   $COMPOSE restart nginx || return 1
   check_health
@@ -129,6 +149,9 @@ revenir_en_arriere() {
 
 if basculer; then
   echo "✅ Déploiement terminé !"
+  # L'ancien site client (profil « ancien-front ») ne reçoit plus de trafic :
+  # arrêté s'il tourne encore depuis le déploiement précédent.
+  $COMPOSE --profile ancien-front stop frontend-client >/dev/null 2>&1 || true
   # Supprime les images orphelines (celles de deux versions en arrière) et
   # le cache de build. Les images « previous » sont conservées.
   docker system prune -f

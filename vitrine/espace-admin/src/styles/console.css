@@ -1,0 +1,50 @@
+/* Composants communs de la console (src/composants : DecisionMotivee, CarteQuatreYeux, Masque, PieceIdentite,
+   Perimetre, LigneJournal, ExportSigne) et pastille rôle · périmètre de l'en-tête. Couleurs : jetons seulement. */
+
+/* Pastille rôle · périmètre (ADM-ROL-01) : toujours visible ; au téléphone, rappelée sous l'en-tête secondaire. */
+.e-role{white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.tb-pills .e-role{max-width:340px}
+.hd-label.e-role-l{margin-top:2px;padding-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Champs des feuilles de décision. */
+.e-decision textarea,.e-qy textarea,.e-masque input,.e-piece input{width:100%;min-height:44px;border:0;background:transparent;font:inherit;color:var(--ink);outline:none;resize:vertical}
+.e-case{display:flex;align-items:center;gap:10px;min-height:44px;cursor:pointer}
+.e-case input{width:20px;height:20px;accent-color:var(--e)}
+.e-erreur{display:flex;align-items:center;gap:8px;color:var(--red);font-weight:700;font-size:.875rem}
+
+/* Carte quatre yeux. */
+.e-qy-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.e-qy-m{font-weight:800;color:var(--ink)}
+.e-preuves{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.e-preuves li{display:flex;align-items:center;gap:8px;min-height:32px;color:var(--ink-2)}
+.e-preuves a{color:var(--e-txt);font-weight:700;display:inline-flex;align-items:center;min-height:44px}
+
+/* Ligne du journal. */
+.e-lj-l{list-style:none;margin:0;padding:0}
+.e-lj{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)}
+.e-lj:first-child{border-top:0}
+.e-lj-n{min-width:36px;font-weight:800;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.e-lj-s{display:block;font-size:.8125rem;color:var(--ink-3)}
+.e-lj-m{display:block;font-size:.8125rem;color:var(--ink-2);margin-top:2px}
+.e-lj-e{display:inline-flex;align-items:center;gap:4px;font-size:.75rem;color:var(--ink-3);background:var(--sand-2);border-radius:6px;padding:2px 6px;white-space:nowrap}
+
+/* Donnée masquée. */
+.e-masque{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}
+.e-masque-v{font-variant-numeric:tabular-nums;font-weight:700}
+.e-masque-f{display:grid;gap:8px;width:100%;margin-top:6px}
+
+/* Pièce d'identité sous filigrane. */
+.e-piece-h{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.e-piece-v{position:relative;overflow:hidden;min-height:180px;border-radius:12px;background:var(--sand-3);display:flex;align-items:center;justify-content:center}
+.e-piece-ph{color:var(--ink-3);font-weight:700}
+.e-filigrane{position:absolute;inset:-20%;display:flex;flex-direction:column;justify-content:space-around;transform:rotate(-18deg);pointer-events:none;user-select:none}
+.e-filigrane span{white-space:nowrap;font-size:.75rem;font-weight:800;color:var(--ink-3);opacity:.45}
+
+/* Périmètre et connexion de démonstration. */
+.e-perimetre{margin-bottom:14px}
+.e-roles{flex-wrap:wrap}
+.e-roles .btn{flex:1 1 220px}
+
+/* Bandeau de panne : lien « Voir la panne », cible de 44 px sans grandir le bandeau. */
+.bandeau .bd-lien{display:inline-flex;align-items:center;min-height:44px;margin:-12px 0;white-space:nowrap}
+.bandeau .grow{min-width:0;overflow-wrap:anywhere}

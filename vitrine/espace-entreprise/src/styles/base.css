@@ -1,0 +1,161 @@
+/* Base de l'espace entreprise (chargée AVANT la feuille du prototype, qui l'emporte sur les classes communes) : remise à zéro, typographie, composants de contenu (boutons, cartes, pastilles,
+   bandeaux, listes, champs, sélecteurs, feuilles). Tout en rem : la taille du texte (préférences, --zoom posé sur
+   <html>) agrandit tout d'un bloc, sans zoom CSS. Couleurs : jetons seulement (jetons.css). */
+*,*::before,*::after{box-sizing:border-box}
+html{font-size:calc(100% * var(--zoom,1));-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;background:var(--sand);color:var(--ink);font-family:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:.9375rem;line-height:1.5;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+img,svg{display:block;max-width:100%}
+svg{flex-shrink:0}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--e-txt);text-decoration:none}
+h1,h2,h3,h4,p{margin:0}
+:focus-visible{outline:2px solid var(--e-txt);outline-offset:2px}
+.vh{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.nw{white-space:nowrap}
+.grow{flex:1;min-width:0}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---------- Titres de page et de section ---------- */
+.pg-t{font-size:1.5rem;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+.pg-s{margin-top:4px;color:var(--ink-3);font-size:.9375rem}
+
+/* ---------- Boutons ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border:0;border-radius:var(--r-m);font-size:.9375rem;font-weight:700;line-height:1.2;text-align:center;white-space:nowrap;text-decoration:none}
+.btn.primary{background:var(--e);color:var(--sur-e);box-shadow:var(--ombre-btn)}
+.btn.alerte{background:var(--or);color:var(--sur-alerte)}
+.btn.secondary{background:var(--e-soft);color:var(--e-txt);box-shadow:inset 0 0 0 1px var(--e-line)}
+.btn.ghost{background:transparent;color:var(--ink-2);box-shadow:inset 0 0 0 1px var(--line-2)}
+.btn.danger{background:var(--red-soft);color:var(--red);box-shadow:inset 0 0 0 1px var(--red-line)}
+.btn.sm{min-height:44px;padding:0 12px;font-size:.8125rem;border-radius:var(--r-s)}
+.btn.bloc{display:flex;width:100%}
+/* Texte très agrandi : un bouton passe à la ligne plutôt que de sortir de l'écran. */
+.btn{max-width:100%}
+html[data-echelle="130"] .btn,html[data-echelle="140"] .btn,html[data-text="tres"]:not([data-echelle]) .btn{white-space:normal;padding-block:8px}
+.btn:disabled,.btn[aria-disabled=true]{opacity:.5;cursor:not-allowed;box-shadow:none}
+.btns{display:flex;flex-wrap:wrap;gap:10px}
+@media (hover:hover) and (pointer:fine){
+  .btn.primary:not(:disabled):hover{background:var(--e-fort)}
+  .btn.secondary:not(:disabled):hover{background:var(--e-soft-2)}
+  .btn.ghost:not(:disabled):hover{background:var(--sand-2)}
+}
+.ibtn{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border:0;border-radius:12px;background:transparent;color:var(--ink-2);position:relative;flex-shrink:0}
+@media (hover:hover) and (pointer:fine){.ibtn:hover{background:var(--sand-2)}}
+
+/* ---------- Cartes ---------- */
+.card{background:var(--card);border-radius:var(--r-l);box-shadow:var(--ombre-carte);padding:16px}
+.card+.card{margin-top:12px}
+.card-t{font-size:1rem;font-weight:800;letter-spacing:-.01em}
+.card-s{margin-top:2px;font-size:.8125rem;color:var(--ink-3)}
+
+/* ---------- Pastilles ---------- */
+.pill{display:inline-flex;align-items:center;gap:6px;min-height:26px;padding:0 10px;border-radius:999px;font-size:.75rem;font-weight:700;white-space:nowrap;background:var(--sand-2);color:var(--ink-2)}
+.pill .d{width:7px;height:7px;border-radius:50%;background:currentColor}
+.pill.e{background:var(--e-soft);color:var(--e-txt);box-shadow:inset 0 0 0 1px var(--e-line)}
+.pill.ok{background:var(--green-soft);color:var(--green);box-shadow:inset 0 0 0 1px var(--green-line)}
+.pill.ambre{background:var(--amber-soft);color:var(--amber);box-shadow:inset 0 0 0 1px var(--amber-line)}
+.pill.rouge{background:var(--red-soft);color:var(--red);box-shadow:inset 0 0 0 1px var(--red-line)}
+.pill.alerte{background:var(--or-soft);color:var(--or-txt);box-shadow:inset 0 0 0 1px var(--or-line)}
+a.pill{text-decoration:none}
+.compteur{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:10px;font-size:.6875rem;font-weight:800;line-height:1;background:var(--e);color:var(--sur-e);font-variant-numeric:tabular-nums}
+.compteur.alerte{background:var(--or);color:var(--sur-alerte)}
+
+/* ---------- Bandeaux (un seul, le plus grave : ENT-P02 ; erreur de chargement : ENT-01-R17) ---------- */
+.bandeau{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:var(--r-m);font-size:.875rem;line-height:1.45;background:var(--e-soft);color:var(--ink);box-shadow:inset 0 0 0 1px var(--e-line);margin-bottom:12px}
+.bandeau svg{margin-top:1px;color:var(--e-txt)}
+.bandeau.ambre{background:var(--amber-soft);box-shadow:inset 0 0 0 1px var(--amber-line)}
+.bandeau.ambre svg{color:var(--amber)}
+.bandeau.rouge{background:var(--red-soft);box-shadow:inset 0 0 0 1px var(--red-line)}
+.bandeau.rouge svg{color:var(--red)}
+.bandeau a{font-weight:800}
+
+/* ---------- Listes de lignes ---------- */
+.lignes{list-style:none;margin:0;padding:0}
+.ligne{display:flex;flex-wrap:wrap;align-items:center;gap:12px;min-height:52px;padding:10px 4px;border-top:1px solid var(--line);color:var(--ink);text-decoration:none}
+.lignes>li:first-child>.ligne,.lignes>.ligne:first-child{border-top:0}
+.ligne .ic{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--e-soft);color:var(--e-txt);flex-shrink:0}
+.ligne .lt{font-weight:700;font-size:.9375rem;line-height:1.3}
+.ligne .ls{font-size:.8125rem;color:var(--ink-3);margin-top:2px}
+a.ligne .chev{color:var(--ink-4)}
+/* Texte agrandi : le texte garde au moins 12 em, l'action passe dessous plutôt que de déborder. */
+.ligne>.grow{flex:1 1 12em}
+@media (hover:hover) and (pointer:fine){a.ligne:hover .lt{color:var(--e-txt)}}
+
+/* ---------- Clé · valeur ---------- */
+.kv{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;padding:8px 0;border-top:1px solid var(--line);font-size:.875rem}
+.kv:first-child{border-top:0}
+.kv .k{color:var(--ink-3);flex:1 1 7em}
+.kv .v{min-width:0;max-width:100%;margin-left:auto;font-weight:700;text-align:right;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.kv .v>a{display:inline-flex;align-items:center;min-height:44px;margin:-12px 0}
+
+/* ---------- État vide, chargement ---------- */
+.vide{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:40px 16px}
+.vide .ei{width:56px;height:56px;border-radius:18px;display:flex;align-items:center;justify-content:center;background:var(--e-soft);color:var(--e-txt);margin-bottom:6px}
+.vide h2,.vide h3{font-size:1.125rem;font-weight:800}
+.vide p{max-width:46ch;color:var(--ink-3)}
+.chargement{height:120px;border-radius:var(--r-l);background:linear-gradient(90deg,var(--card) 0%,var(--card-2) 50%,var(--card) 100%);background-size:200% 100%;box-shadow:var(--ombre-carte)}
+html[data-mouv] .chargement{animation:e-reflet 1.4s linear infinite}
+@keyframes e-reflet{to{background-position:-200% 0}}
+
+/* ---------- Champs et sélecteurs ---------- */
+.champ{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.champ>span{font-size:.8125rem;font-weight:700;color:var(--ink-2)}
+.champ input,.champ select,.champ textarea{min-height:46px;padding:10px 14px;border:1px solid var(--line-2);border-radius:var(--r-m);background:var(--card);color:var(--ink);font-size:1rem}
+.champ input:focus,.champ select:focus,.champ textarea:focus{outline:none;border-color:var(--e);box-shadow:var(--focus)}
+.seg{display:flex;gap:4px;padding:4px;border-radius:var(--r-m);background:var(--sand-2);box-shadow:inset 0 0 0 1px var(--line)}
+.seg>*{flex:1;display:flex;align-items:center;justify-content:center;min-height:44px;padding:0 10px;border:0;border-radius:10px;background:transparent;color:var(--ink-2);font-size:.875rem;font-weight:700;cursor:pointer;text-align:center}
+.seg>.on,.seg>[aria-checked=true]{background:var(--card);color:var(--e-txt);box-shadow:var(--ombre-seg)}
+
+/* ---------- Feuilles (Feuille du client : voile, feuille, poignée ; modales dès 768 px) ---------- */
+.veil{position:fixed;inset:0;z-index:70;background:var(--voile)}
+.sheet{position:fixed;z-index:71;left:0;right:0;bottom:0;max-height:88dvh;overflow:auto;overscroll-behavior:contain;background:var(--card);color:var(--ink);border-radius:24px 24px 0 0;padding:10px 18px calc(20px + env(safe-area-inset-bottom));box-shadow:var(--ombre-pop)}
+.sheet>.grab{width:40px;height:5px;border-radius:3px;background:var(--line-2);margin:0 auto 12px}
+.sheet .sheet-x{position:sticky;top:-8px;z-index:3;display:flex;align-items:center;justify-content:center;width:44px;height:44px;margin:-8px -12px -36px auto;border:0;border-radius:50%;background:var(--sand-2);color:var(--ink-2)}
+@media (min-width:768px){
+  .sheet{top:0;bottom:0;margin:auto;width:min(560px,calc(100% - 48px));height:fit-content;max-height:86vh;border-radius:24px;padding:20px 24px 24px}
+  .sheet>.grab{display:none}
+  .sheet[data-forme=large]{width:min(760px,calc(100% - 48px))}
+  .sheet[data-forme=tiroir]{left:auto;top:0;bottom:0;margin:0;height:auto;max-height:none;width:min(440px,100%);border-radius:24px 0 0 24px}
+}
+html[data-mouv] .sheet{animation:e-monte var(--blv-long) var(--blv-doux) both}
+@keyframes e-monte{from{transform:translate3d(0,24px,0);opacity:.4}}
+
+/* ---------- Recadrage d'une photo (Rognage, comme le client) ---------- */
+.pf-rog{position:relative;width:100%;max-width:300px;aspect-ratio:1;margin:14px auto 0;overflow:hidden;border-radius:16px;background:var(--rog-fond);touch-action:none;user-select:none;outline:none}
+.pf-rog:focus-visible{box-shadow:0 0 0 3px var(--e-ciel)}
+.pf-rog img{position:absolute;left:50%;top:50%;max-width:none;transform-origin:center;pointer-events:none}
+.pf-rog-masque{position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 999px var(--rog-voile);border:2px solid var(--rog-bord);pointer-events:none}
+.pf-rog.vd-rog-couv{max-width:560px;aspect-ratio:3}
+.pf-rog.vd-rog-couv .pf-rog-masque{border-radius:12px}
+.pf-rog-zoom{display:flex;align-items:center;gap:6px;max-width:300px;margin:8px auto 0}
+.pf-rog-zoom.vd-rog-couv-z{max-width:560px}
+.pf-rog-zoom input{flex:1;accent-color:var(--e)}
+.pf-rog-act{display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap}
+.pf-rog-act .btn{width:auto;flex:1 1 0;min-width:130px}
+.note{padding:10px 12px;border-radius:var(--r-s);font-size:.8125rem}
+.note.red{background:var(--red-soft);color:var(--red)}
+.mt10{margin-top:10px}.mt14{margin-top:14px}.mt16{margin-top:16px}
+
+/* ---------- Animations de la famille (animations.css du client, sous html[data-mouv]) ---------- */
+html:not([data-mouv]) *{scroll-behavior:auto}
+
+/* ---------- Préférences du Menu ---------- */
+.prefs .row-t{display:flex;align-items:center;gap:10px;margin:16px 0 10px;font-size:.9375rem;font-weight:700}
+.prefs .row-t:first-child{margin-top:0}
+.prefs .row-t svg{color:var(--e-txt)}
+
+/* ---------- Page provisoire du socle ---------- */
+.prov{overflow-wrap:anywhere}
+.prov-g>div{min-width:0}
+.prov-l{overflow-wrap:anywhere;margin:0;padding:0 0 0 18px;display:grid;gap:6px;font-size:.875rem;color:var(--ink-2)}
+.prov-l a{font-weight:800;text-decoration:underline;text-underline-offset:2px}
+@media (min-width:1024px){
+  .prov-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 24px;align-items:start}
+}
+
+
+/* ---------- Bascules des préférences (Profil) ---------- */
+.prefs .e-bascule{gap:12px;margin-top:14px;align-items:center}
+.prefs .e-bascule>svg{color:var(--e-txt)}
+.prefs .e-bascule b{display:block;font-size:.9375rem}
+.prefs .e-bascule .grow>span{display:block;font-size:.8125rem;color:var(--ink-3)}

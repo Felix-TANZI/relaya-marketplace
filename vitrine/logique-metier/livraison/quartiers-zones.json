@@ -1,0 +1,1056 @@
+{
+ "description": "Table quartier → zone de Yaoundé (carte des zones adoptée le 23 oct. 2026 : découpage v2 dans l'emprise urbaine réelle, codes Z1–Z12 gardés ; ZONES.md). 12 zones BelivaY, les 117 quartiers de BV-DEV-07 ; « domicile » : livraison à domicile ouverte (éléments dev v1.4 ; « a_verifier » : à confirmer sur le terrain, la vente reste possible au relais). Lue par les moteurs (belivay_moteurs.zones_quartiers) et le kit. Générée par outils/adopter_v2.py ; ne pas modifier à la main.",
+ "source": "logique-metier/livraison/zones-yaounde.geo.json + BV-DEV-07_Donnees.json (quartiers) + éléments dev v1.4 (domicile, actif)",
+ "zones": [
+  {
+   "code": "Z1",
+   "nom": "Centre-ville / Mballa",
+   "vague": 1,
+   "grandCentre": "GC-A (nord)",
+   "quartiers": 16
+  },
+  {
+   "code": "Z2",
+   "nom": "Nsam / Obili",
+   "vague": 1,
+   "grandCentre": "GC-B (ouest)",
+   "quartiers": 10
+  },
+  {
+   "code": "Z3",
+   "nom": "Mokolo / Mbankolo",
+   "vague": 1,
+   "grandCentre": "GC-C (centre-sud)",
+   "quartiers": 13
+  },
+  {
+   "code": "Z4",
+   "nom": "Ngousso / Mvog-Ebanda",
+   "vague": 2,
+   "grandCentre": "GC-D (sud-est)",
+   "quartiers": 6
+  },
+  {
+   "code": "Z5",
+   "nom": "Nsimeyong / Ahala",
+   "vague": 2,
+   "grandCentre": "GC-C (centre-sud)",
+   "quartiers": 17
+  },
+  {
+   "code": "Z6",
+   "nom": "Biyem-Assi / Etoug-Ebe",
+   "vague": 1,
+   "grandCentre": "GC-B (ouest)",
+   "quartiers": 7
+  },
+  {
+   "code": "Z7",
+   "nom": "Simbock / Mendong",
+   "vague": 3,
+   "grandCentre": "GC-B (ouest)",
+   "quartiers": 4
+  },
+  {
+   "code": "Z8",
+   "nom": "Nkolbisson / Oyom-Abang",
+   "vague": 3,
+   "grandCentre": "GC-B (ouest)",
+   "quartiers": 5
+  },
+  {
+   "code": "Z9",
+   "nom": "Essos / Nkolmesseng",
+   "vague": 2,
+   "grandCentre": "GC-D (sud-est)",
+   "quartiers": 8
+  },
+  {
+   "code": "Z10",
+   "nom": "Mimboman / Kondengui",
+   "vague": 3,
+   "grandCentre": "GC-D (sud-est)",
+   "quartiers": 14
+  },
+  {
+   "code": "Z11",
+   "nom": "Odza / Ekoumdoum",
+   "vague": 3,
+   "grandCentre": "GC-D (sud-est)",
+   "quartiers": 11
+  },
+  {
+   "code": "Z12",
+   "nom": "Emana / Nkolondom",
+   "vague": 3,
+   "grandCentre": "GC-A (nord)",
+   "quartiers": 6
+  }
+ ],
+ "quartiers": [
+  {
+   "quartier": "Centre commercial",
+   "alias": [
+    "Centre-ville"
+   ],
+   "commune": "Yaoundé I",
+   "zone": "Z1",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Elig-Essono",
+   "alias": [],
+   "commune": "Yaoundé I",
+   "zone": "Z1",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Etoa-Meki 1",
+   "alias": [],
+   "commune": "Yaoundé I",
+   "zone": "Z1",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Etoa-Meki 2",
+   "alias": [],
+   "commune": "Yaoundé I",
+   "zone": "Z1",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Nlongkak",
+   "alias": [],
+   "commune": "Yaoundé I",
+   "zone": "Z1",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Elig-Edzoa",
+   "alias": [],
+   "commune": "Yaoundé I",
+   "zone": "Z1",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Bastos",
+   "alias": [],
+   "commune": "Yaoundé I",
+   "zone": "Z1",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Manguier",
+   "alias": [],
+   "commune": "Yaoundé I",
+   "zone": "Z1",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Tongolo",
+   "alias": [],
+   "commune": "Yaoundé I",
+   "zone": "Z1",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Mballa 1",
+   "alias": [],
+   "commune": "Yaoundé I",
+   "zone": "Z1",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Mballa 2",
+   "alias": [],
+   "commune": "Yaoundé I",
+   "zone": "Z1",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Mballa 3",
+   "alias": [],
+   "commune": "Yaoundé I",
+   "zone": "Z1",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Nkolondom",
+   "alias": [],
+   "commune": "Yaoundé I",
+   "zone": "Z12",
+   "domicile": "a_verifier",
+   "actif": true
+  },
+  {
+   "quartier": "Etoudi",
+   "alias": [],
+   "commune": "Yaoundé I",
+   "zone": "Z1",
+   "domicile": "a_verifier",
+   "actif": true
+  },
+  {
+   "quartier": "Messassi",
+   "alias": [],
+   "commune": "Yaoundé I",
+   "zone": "Z12",
+   "domicile": "a_verifier",
+   "actif": true
+  },
+  {
+   "quartier": "Okolo",
+   "alias": [],
+   "commune": "Yaoundé I",
+   "zone": "Z12",
+   "domicile": "a_verifier",
+   "actif": true
+  },
+  {
+   "quartier": "Olembe",
+   "alias": [],
+   "commune": "Yaoundé I",
+   "zone": "Z12",
+   "domicile": "a_verifier",
+   "actif": true
+  },
+  {
+   "quartier": "Nyom",
+   "alias": [],
+   "commune": "Yaoundé I",
+   "zone": "Z12",
+   "domicile": "a_verifier",
+   "actif": true
+  },
+  {
+   "quartier": "Emana",
+   "alias": [],
+   "commune": "Yaoundé I",
+   "zone": "Z12",
+   "domicile": "a_verifier",
+   "actif": true
+  },
+  {
+   "quartier": "Nkoleton",
+   "alias": [],
+   "commune": "Yaoundé I",
+   "zone": "Z1",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Cité Verte",
+   "alias": [],
+   "commune": "Yaoundé II",
+   "zone": "Z3",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Madagascar",
+   "alias": [],
+   "commune": "Yaoundé II",
+   "zone": "Z3",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Mokolo",
+   "alias": [],
+   "commune": "Yaoundé II",
+   "zone": "Z3",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Grand Messa",
+   "alias": [],
+   "commune": "Yaoundé II",
+   "zone": "Z3",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Ekoudou",
+   "alias": [],
+   "commune": "Yaoundé II",
+   "zone": "Z3",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Tsinga",
+   "alias": [],
+   "commune": "Yaoundé II",
+   "zone": "Z3",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Nkom-Kana",
+   "alias": [],
+   "commune": "Yaoundé II",
+   "zone": "Z3",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Oliga",
+   "alias": [],
+   "commune": "Yaoundé II",
+   "zone": "Z3",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Messa Carrière",
+   "alias": [],
+   "commune": "Yaoundé II",
+   "zone": "Z3",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "École de Police",
+   "alias": [],
+   "commune": "Yaoundé II",
+   "zone": "Z3",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Febe",
+   "alias": [],
+   "commune": "Yaoundé II",
+   "zone": "Z3",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Ntoungou",
+   "alias": [],
+   "commune": "Yaoundé II",
+   "zone": "Z3",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Obili",
+   "alias": [],
+   "commune": "Yaoundé III",
+   "zone": "Z2",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Ngoa-Ekelé 1",
+   "alias": [
+    "Ngoa Ekellé",
+    "Ngoa-Ekellé"
+   ],
+   "commune": "Yaoundé III",
+   "zone": "Z2",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Ngoa-Ekelé 2",
+   "alias": [
+    "Ngoa Ekellé",
+    "Ngoa-Ekellé"
+   ],
+   "commune": "Yaoundé III",
+   "zone": "Z2",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Nlong Mvolyé",
+   "alias": [],
+   "commune": "Yaoundé III",
+   "zone": "Z2",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Ahala 1",
+   "alias": [],
+   "commune": "Yaoundé III",
+   "zone": "Z5",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Ahala 2",
+   "alias": [],
+   "commune": "Yaoundé III",
+   "zone": "Z5",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Efoulan",
+   "alias": [],
+   "commune": "Yaoundé III",
+   "zone": "Z2",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Obobogo",
+   "alias": [],
+   "commune": "Yaoundé III",
+   "zone": "Z5",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Nsam",
+   "alias": [],
+   "commune": "Yaoundé III",
+   "zone": "Z2",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Melen 2 – Centre administratif",
+   "alias": [
+    "Centre administratif",
+    "Quartier administratif"
+   ],
+   "commune": "Yaoundé III",
+   "zone": "Z2",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Etoa",
+   "alias": [],
+   "commune": "Yaoundé III",
+   "zone": "Z5",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Nkolmesseng 1",
+   "alias": [
+    "Nkolmesseng"
+   ],
+   "commune": "Yaoundé III",
+   "zone": "Z5",
+   "domicile": "a_verifier",
+   "actif": true
+  },
+  {
+   "quartier": "Afanoya 1",
+   "alias": [],
+   "commune": "Yaoundé III",
+   "zone": "Z5",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Afanoya 2",
+   "alias": [],
+   "commune": "Yaoundé III",
+   "zone": "Z5",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Afanoya 3",
+   "alias": [],
+   "commune": "Yaoundé III",
+   "zone": "Z5",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Afanoya 4",
+   "alias": [],
+   "commune": "Yaoundé III",
+   "zone": "Z5",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Nkolfon",
+   "alias": [],
+   "commune": "Yaoundé III",
+   "zone": "Z5",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Mekoumbou 1",
+   "alias": [],
+   "commune": "Yaoundé III",
+   "zone": "Z5",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Mekoumbou 2",
+   "alias": [],
+   "commune": "Yaoundé III",
+   "zone": "Z5",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Ntouessong",
+   "alias": [],
+   "commune": "Yaoundé III",
+   "zone": "Z5",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Nsimeyong 1",
+   "alias": [],
+   "commune": "Yaoundé III",
+   "zone": "Z5",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Nsimeyong 2",
+   "alias": [],
+   "commune": "Yaoundé III",
+   "zone": "Z5",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Nsimeyong 3",
+   "alias": [],
+   "commune": "Yaoundé III",
+   "zone": "Z5",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Olezoa",
+   "alias": [],
+   "commune": "Yaoundé III",
+   "zone": "Z5",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Dakar",
+   "alias": [],
+   "commune": "Yaoundé III",
+   "zone": "Z2",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Mvan-Nord",
+   "alias": [
+    "Mvan"
+   ],
+   "commune": "Yaoundé IV",
+   "zone": "Z11",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Mvan-Sud",
+   "alias": [
+    "Mvan"
+   ],
+   "commune": "Yaoundé IV",
+   "zone": "Z11",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Ndamvout",
+   "alias": [],
+   "commune": "Yaoundé IV",
+   "zone": "Z11",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Messame-Ndongo",
+   "alias": [],
+   "commune": "Yaoundé IV",
+   "zone": "Z11",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Odza",
+   "alias": [],
+   "commune": "Yaoundé IV",
+   "zone": "Z11",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Ekoumdoum",
+   "alias": [],
+   "commune": "Yaoundé IV",
+   "zone": "Z11",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Awae",
+   "alias": [],
+   "commune": "Yaoundé IV",
+   "zone": "Z11",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Nkomo",
+   "alias": [],
+   "commune": "Yaoundé IV",
+   "zone": "Z10",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Ekounou",
+   "alias": [],
+   "commune": "Yaoundé IV",
+   "zone": "Z11",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Biteng",
+   "alias": [],
+   "commune": "Yaoundé IV",
+   "zone": "Z10",
+   "domicile": "a_verifier",
+   "actif": true
+  },
+  {
+   "quartier": "Kondengui 1",
+   "alias": [],
+   "commune": "Yaoundé IV",
+   "zone": "Z10",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Kondengui 2",
+   "alias": [],
+   "commune": "Yaoundé IV",
+   "zone": "Z10",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Kondengui 3",
+   "alias": [],
+   "commune": "Yaoundé IV",
+   "zone": "Z10",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Mimboman 1",
+   "alias": [],
+   "commune": "Yaoundé IV",
+   "zone": "Z10",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Mimboman 3",
+   "alias": [],
+   "commune": "Yaoundé IV",
+   "zone": "Z10",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Etam-Bafia",
+   "alias": [],
+   "commune": "Yaoundé IV",
+   "zone": "Z10",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Mvog-Mbi",
+   "alias": [],
+   "commune": "Yaoundé IV",
+   "zone": "Z10",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Nkol-Ndongo 1",
+   "alias": [
+    "Nkoldongo"
+   ],
+   "commune": "Yaoundé IV",
+   "zone": "Z10",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Nkol-Ndongo 2",
+   "alias": [
+    "Nkoldongo"
+   ],
+   "commune": "Yaoundé IV",
+   "zone": "Z10",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Mebandan",
+   "alias": [],
+   "commune": "Yaoundé IV",
+   "zone": "Z11",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Ekie",
+   "alias": [],
+   "commune": "Yaoundé IV",
+   "zone": "Z11",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Emombo",
+   "alias": [],
+   "commune": "Yaoundé IV",
+   "zone": "Z10",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Ntui-Essong",
+   "alias": [],
+   "commune": "Yaoundé IV",
+   "zone": "Z10",
+   "domicile": "a_verifier",
+   "actif": true
+  },
+  {
+   "quartier": "Nkolo",
+   "alias": [],
+   "commune": "Yaoundé IV",
+   "zone": "Z10",
+   "domicile": "a_verifier",
+   "actif": true
+  },
+  {
+   "quartier": "Abom",
+   "alias": [],
+   "commune": "Yaoundé IV",
+   "zone": "Z9",
+   "domicile": "a_verifier",
+   "actif": true
+  },
+  {
+   "quartier": "Mvog-Ada",
+   "alias": [],
+   "commune": "Yaoundé V",
+   "zone": "Z9",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Essos",
+   "alias": [],
+   "commune": "Yaoundé V",
+   "zone": "Z9",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Nkol-Messeng",
+   "alias": [
+    "Nkolmesseng",
+    "Nkol Messing"
+   ],
+   "commune": "Yaoundé V",
+   "zone": "Z9",
+   "domicile": "a_verifier",
+   "actif": true
+  },
+  {
+   "quartier": "Nkol-Ebogo",
+   "alias": [],
+   "commune": "Yaoundé V",
+   "zone": "Z4",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Quartier Fouda",
+   "alias": [],
+   "commune": "Yaoundé V",
+   "zone": "Z9",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Ngousso 1",
+   "alias": [],
+   "commune": "Yaoundé V",
+   "zone": "Z4",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Ngousso 2",
+   "alias": [],
+   "commune": "Yaoundé V",
+   "zone": "Z4",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Ngousso-Ntem",
+   "alias": [],
+   "commune": "Yaoundé V",
+   "zone": "Z4",
+   "domicile": "a_verifier",
+   "actif": true
+  },
+  {
+   "quartier": "Éleveur",
+   "alias": [],
+   "commune": "Yaoundé V",
+   "zone": "Z4",
+   "domicile": "a_verifier",
+   "actif": true
+  },
+  {
+   "quartier": "Mfandena 1",
+   "alias": [],
+   "commune": "Yaoundé V",
+   "zone": "Z9",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Mfandena 2",
+   "alias": [],
+   "commune": "Yaoundé V",
+   "zone": "Z9",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Ngoulmekong",
+   "alias": [],
+   "commune": "Yaoundé V",
+   "zone": "Z4",
+   "domicile": "a_verifier",
+   "actif": true
+  },
+  {
+   "quartier": "Biyem-Assi",
+   "alias": [],
+   "commune": "Yaoundé VI",
+   "zone": "Z6",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Melen",
+   "alias": [],
+   "commune": "Yaoundé VI",
+   "zone": "Z6",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Melen 8",
+   "alias": [],
+   "commune": "Yaoundé VI",
+   "zone": "Z2",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Melen 8B et 8C",
+   "alias": [],
+   "commune": "Yaoundé VI",
+   "zone": "Z2",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Etoug-Ebe 1",
+   "alias": [],
+   "commune": "Yaoundé VI",
+   "zone": "Z6",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Etoug-Ebe 2",
+   "alias": [],
+   "commune": "Yaoundé VI",
+   "zone": "Z6",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Mvog-Betsi",
+   "alias": [],
+   "commune": "Yaoundé VI",
+   "zone": "Z6",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Mendong 2",
+   "alias": [],
+   "commune": "Yaoundé VI",
+   "zone": "Z7",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Simbock",
+   "alias": [],
+   "commune": "Yaoundé VI",
+   "zone": "Z7",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Simbock École de guerre",
+   "alias": [],
+   "commune": "Yaoundé VI",
+   "zone": "Z7",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Elig-Effa",
+   "alias": [],
+   "commune": "Yaoundé VI",
+   "zone": "Z6",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Nkolbikok",
+   "alias": [],
+   "commune": "Yaoundé VI",
+   "zone": "Z6",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Nkolbisson",
+   "alias": [],
+   "commune": "Yaoundé VII",
+   "zone": "Z8",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Etetak",
+   "alias": [],
+   "commune": "Yaoundé VII",
+   "zone": "Z8",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Oyom-Abang",
+   "alias": [],
+   "commune": "Yaoundé VII",
+   "zone": "Z8",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Minkoameyos",
+   "alias": [],
+   "commune": "Yaoundé VII",
+   "zone": "Z8",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Nkolso",
+   "alias": [],
+   "commune": "Yaoundé VII",
+   "zone": "Z8",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Omnisport",
+   "alias": [],
+   "commune": "Yaoundé V",
+   "zone": "Z9",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Mendong (Mendong Camp SIC)",
+   "alias": [
+    "Mendong",
+    "Mendong Camp SIC",
+    "Camp SIC Mendong"
+   ],
+   "commune": "Yaoundé VI",
+   "zone": "Z7",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Briqueterie",
+   "alias": [],
+   "commune": "Yaoundé II",
+   "zone": "Z3",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Golf",
+   "alias": [],
+   "commune": "Yaoundé I",
+   "zone": "Z1",
+   "domicile": "oui",
+   "actif": true
+  },
+  {
+   "quartier": "Hippodrome",
+   "alias": [],
+   "commune": "Yaoundé II",
+   "zone": "Z1",
+   "domicile": "a_verifier",
+   "actif": true
+  },
+  {
+   "quartier": "Nsimalen",
+   "alias": [],
+   "commune": "Mefou-et-Afamba (aéroport)",
+   "zone": "Z11",
+   "domicile": "a_verifier",
+   "actif": true
+  }
+ ]
+}

@@ -1,0 +1,47 @@
+/* Logistique (S4) : compléments des classes du prototype (admlg-*), jetons seulement. */
+.px .s4-charge{display:flex;align-items:center;gap:10px;color:var(--ink-3);font-weight:700}
+.px .s4-sous{margin-top:4px}
+.px .s4-issue{margin:0 0 14px}
+.px .s4-issue .lnk,.px .lnk{border:0;background:none;padding:0;font:inherit;font-weight:800;color:var(--e-txt);text-decoration:underline;cursor:pointer;min-height:24px}
+.px .s4-chain{list-style:none;padding:0}
+.px .s4-chain .t{font-weight:800;font-size:.8125rem;margin-top:6px}
+.px .s4-chain .d{font-size:.75rem;color:var(--ink-3);margin-top:2px}
+.px .s4-actes{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.px .s4-pile{display:flex;flex-direction:column;gap:16px;min-width:0}
+.px .s4-ligne{display:flex;align-items:center;gap:10px;min-width:0}
+.px .s4-ligne .grow{min-width:0}
+.px .s4-lien{border:0;background:none;padding:0;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.px .s4-lien b{color:var(--ink)}
+.px .s4-lien:hover b,.px .s4-lien:focus-visible b{color:var(--e-txt);text-decoration:underline}
+.px .s4-mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.8125rem}
+.px .s4-cr{color:var(--red)}
+.px .s4-cg{color:var(--green)}
+.px .s4-filtres{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.px .s4-filtres select{min-height:44px;border-radius:10px;border:1px solid var(--input-line);background:var(--input-bg);color:var(--ink);font:inherit;font-size:.8125rem;padding:0 10px}
+.px .s4-ok{color:var(--green);font-weight:800}
+@media (max-width:767px){
+  .px .money4.admlg-m4x4{grid-template-columns:1fr 1fr}
+  .px .s4-chain{flex-wrap:wrap;row-gap:14px}
+  .px .s4-chain .s{flex:0 0 33%}
+}
+/* Carte du réseau (OpenStreetMap ou plan) */
+.px .s4-carte{position:relative;margin:0;border-radius:14px;overflow:hidden;background:var(--map-bg);box-shadow:0 0 0 1px var(--line)}
+.px .s4-carte svg{display:block;width:100%;height:auto}
+.px .s4-carte .fond-plan{fill:var(--map-bg)}
+.px .s4-carte .zone{fill:var(--e-soft-2);stroke:var(--e);stroke-width:2;fill-opacity:.85}
+.px .s4-carte .zone.vente{fill:var(--sand-3);stroke:var(--ink-4);stroke-dasharray:5 4;fill-opacity:.45}
+.px .s4-carte .zone.alerte{fill:var(--red-soft);stroke:var(--red)}
+.px .s4-carte .zone.surveiller{fill:var(--amber-soft);stroke:var(--amber)}
+.px .s4-carte .zone.choisie{stroke-width:3.4}
+.px .s4-carte .etiq{font:800 13px 'Plus Jakarta Sans',sans-serif;fill:var(--map-txt);paint-order:stroke;stroke:var(--card);stroke-width:3px}
+.px .s4-carte g[role=button]{cursor:pointer;outline:none}
+.px .s4-carte g[role=button]:not(.mq):focus-visible path{stroke:var(--focus);stroke-width:4}
+.px .mq-l.s4-z{width:14px;height:12px;margin:0 6px 0 4px;border:0;border-radius:3px;background:var(--e-soft-2);box-shadow:inset 0 0 0 1.5px var(--e)}
+.px .mq-l.s4-z.red{background:var(--red-soft);box-shadow:inset 0 0 0 1.5px var(--red)}
+.px .mq-l.s4-z.vente{background:var(--sand-3);box-shadow:inset 0 0 0 1.5px var(--ink-4)}
+.px .s4-carte .trajet{fill:none;stroke:var(--or);stroke-width:3.4;stroke-dasharray:9 7;stroke-linecap:round}
+.px .s4-photos{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.px .s4-photos li{display:flex;flex-direction:column;gap:4px;padding:12px;color:var(--ink-2)}
+.px .hero.night.s4-rouge{background:linear-gradient(135deg,var(--red-soft) 0%,var(--card) 72%);box-shadow:inset 0 0 0 1.5px var(--red-line)}
+.px .hero.night.s4-rouge .hk{color:var(--red)}
+.r-livreurs .tabs,.r-entreprises .tabs,.r-candidatures .tabs,.r-emballages .tabs{max-width:100%;overflow-x:auto;scrollbar-width:thin}

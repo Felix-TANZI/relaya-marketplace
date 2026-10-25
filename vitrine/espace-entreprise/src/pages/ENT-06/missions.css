@@ -1,0 +1,141 @@
+/* ENT-06 : carte de la flotte, missions, incidents, colis, preuves. Jetons seulement. */
+.px .lv-carte{background:var(--card-2)}
+.px .lv-carte svg.map-svg{display:block;width:100%;height:auto;touch-action:manipulation}
+.px .panel .lv-carte{box-shadow:none}
+.px .entb-mapb .map-leg{background:var(--card);box-shadow:var(--shadow-card);color:var(--ink-2)}
+.px .entb-mapb .map-leg span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.px .entb-mapb .entb-mapover .empty{padding:18px}
+.lv-c-fond{fill:var(--sand)}
+.lv-c-grille{fill:none;stroke:var(--line);stroke-width:.6}
+.lv-c-zone{fill:var(--e-soft);stroke:var(--e-line);stroke-width:1.5;opacity:.85}
+.lv-c-zt{fill:var(--e-txt);font-size:11px;font-weight:800;font-family:inherit}
+.lv-c-trace polyline{fill:none;stroke:var(--e);stroke-width:3;stroke-dasharray:6 5;stroke-linecap:round;stroke-linejoin:round;opacity:.75}
+.lv-c-trace.rouge polyline{stroke:var(--red)}
+.lv-c-trace.ambre polyline{stroke:var(--amber)}
+.lv-c-trace.sel polyline{stroke-width:5;opacity:1}
+.lv-c-client{fill:none;stroke:var(--ink-4);stroke-width:1.5;stroke-dasharray:3 3}
+/* Marqueurs et légende : module commun (@client/composants/carte). Zone d'une course à domicile dans la légende : */
+.mq-l.lv-c-l.client{width:14px;height:14px;margin:0 5px;border:1.5px dashed var(--ink-4);border-radius:50%}
+
+/* Outils des tableaux du prototype : recherche (srch) et filtres (flt) réels */
+.px .srch{height:38px;min-width:240px;border-radius:11px;border:1px solid var(--line-2);background:var(--card);display:flex;align-items:center;gap:8px;padding:0 12px;font-size:.8125rem;color:var(--ink-3)}
+.px .srch input{flex:1;min-width:0;border:0;background:none;font:inherit;color:var(--ink);outline:none;height:100%}
+.px .srch:focus-within{border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-soft)}
+.px label.flt{position:relative;cursor:pointer}
+.px label.flt select{appearance:none;-webkit-appearance:none;border:0;background:none;font:inherit;color:inherit;padding:0 4px 0 0;min-height:42px;cursor:pointer;max-width:200px}
+.px label.flt:focus-within{box-shadow:0 0 0 3px var(--acc-soft)}
+@media (max-width:767.98px){.px .srch{min-width:0;flex:1 1 100%}}
+.px .lien-pq{padding:0;border:0;background:none;cursor:pointer;text-align:left;min-height:32px}
+.px .lien-pq:hover{text-decoration:underline;text-underline-offset:2px}
+.px button.entb-open{background:var(--card);cursor:pointer;min-width:44px}
+.px .entb-mis{width:100%;border:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.px .entb-mis.on{background:var(--acc-soft);box-shadow:inset 0 0 0 1px var(--acc-line)}
+.px button.entb-inc{width:100%;font:inherit;color:inherit;text-align:left;cursor:pointer}
+
+/* Avancement d'une mission */
+.lv-av-barre{display:flex;gap:3px;margin-top:4px}
+.lv-av-barre i{flex:1;height:5px;border-radius:3px;background:var(--sand-3)}
+.lv-av-barre i.f{background:var(--e)}
+.lv-mission-sel{box-shadow:inset 0 0 0 2px var(--e),var(--ombre-carte)}
+
+
+
+/* Appel masqué */
+.lv-appel{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:16px 0}
+.lv-appel .rond{width:84px;height:84px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--e-grad);color:var(--sur-e)}
+html[data-mouv] .lv-appel .rond.sonne{animation:lv-sonne 1.4s ease-in-out infinite}
+@keyframes lv-sonne{0%,100%{box-shadow:0 0 0 0 var(--halo)}50%{box-shadow:0 0 0 18px var(--halo-0)}}
+.lv-appel .num{font-size:1.75rem;font-weight:800;letter-spacing:-.02em}
+.lv-sos{background:var(--red);color:var(--sur-e)}
+.lien-btn{display:inline;padding:0;border:0;background:none;color:var(--e-txt);font:inherit;font-weight:800;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+/* Seul dans sa cellule ou sa ligne (pas dans une phrase) : une cible de 44 px. */
+td>.lien-btn,.lv-mini .lien-btn{display:inline-flex;align-items:center;min-height:44px;margin:-10px 0}
+.lien-ligne{width:100%;background:none;border:0;font:inherit;text-align:left;cursor:pointer}
+button.lv-livreur{color:inherit;font:inherit}
+.lv-livreur.lien-ligne+.lv-livreur{margin-top:8px}
+.lien-ligne .lt,.lien-ligne .ls{display:block}
+.ph-ciel{fill:var(--sand-2)}
+.ph-sol{fill:var(--sand-3)}
+.ph-bat{fill:var(--card);stroke:var(--ink-4);stroke-width:1.5}
+.ph-colis{fill:var(--or-soft);stroke:var(--or-txt);stroke-width:1.5}
+.ph-etq{fill:var(--card);stroke:var(--ink-3);stroke-width:1}
+/* Horodatage incrusté lisible sur la photo claire (le voile sombre du kit masque le texte foncé) */
+.px .photo .ts{background:var(--card);color:var(--ink);opacity:.94}
+.px .entb-inc .row{flex-wrap:wrap;row-gap:4px}
+.px .entb-inc .pill{max-width:100%;white-space:normal;line-height:1.25}
+
+/* Panneaux étroits (colonne droite des grilles g21 / g12) : titre et lien sur une ligne, lignes sans chevron */
+.px .lv-etroit>.ph>h2{min-width:0}
+.px .lv-etroit .li>.grow{flex:1 1 0}
+.px .lv-livs .li .chev{display:none}
+.px .lv-livs .li .ls{overflow-wrap:anywhere}
+.lv-case{display:flex;gap:10px;align-items:flex-start;min-height:44px;font-size:.875rem;line-height:1.4;cursor:pointer}
+.lv-case input{width:22px;height:22px;flex-shrink:0;margin:0;accent-color:var(--e)}
+.px .dk-banner+.dk-head{margin-top:16px}
+.px .lv-actions{display:flex;gap:2px 8px;flex-wrap:wrap;margin:2px 0 -10px}
+.px .lv-act{display:inline-flex;align-items:center;gap:4px;min-height:44px;padding:0 2px;border:0;background:none;font:inherit;font-size:.75rem;font-weight:800;color:var(--e-txt);cursor:pointer;white-space:nowrap}
+.px .lv-act:hover{text-decoration:underline;text-underline-offset:2px}
+.px .lv-etqs{display:flex;flex-wrap:wrap;gap:4px}
+@media (max-width:767.98px){.px .lv-actions{justify-content:flex-end}.px .lv-etqs{justify-content:flex-end}}
+.px .entb-chain:has(+ .hint-l)::before{display:none}
+.px .lv-checks .check:first-child{border-top:0}
+.px .entb-pend.avenir{border-color:var(--line-2);background:var(--sand-2);color:var(--ink-3)}
+.px .entb-mis .lv-av{flex-shrink:0}
+.px .entb-mis .grow{min-width:0}
+.px .entb-mis b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.px .entb-mis .pill{flex-shrink:0}
+@media (min-width:768px){.px .entb-t .dt-wrap{overflow-x:auto}}
+.px .entb-t td .who b{white-space:nowrap}
+
+/* Enrichissements P13 : plein écran de la carte (ordinateur), heure de la donnée des positions */
+.px .lv-carte-d{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.px .lv-carte-d .btn.sm{width:auto}
+.lv-carte-cadre{background:var(--card)}
+.lv-carte-cadre:fullscreen,.lv-carte-cadre.lv-plein{display:flex;flex-direction:column;gap:10px;padding:16px;background:var(--card);overflow:auto}
+.lv-carte-cadre.lv-plein{position:fixed;inset:0;z-index:80}
+.lv-carte-cadre:fullscreen svg.map-svg,.lv-carte-cadre.lv-plein svg.map-svg{max-height:calc(100vh - 150px)!important}
+.lv-plein-t{display:flex;align-items:center;gap:10px;color:var(--ink)}
+.lv-plein-t .btn.sm{width:auto}
+.lv-maj{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:.8125rem;color:var(--ink-2)}
+.lv-maj .btn.sm{width:auto;flex:none;min-height:44px}
+.lv-maj.ancienne{color:var(--or-txt)}
+.lv-maj.ancienne b{color:var(--or-txt)}
+/* Outils de liste dans un panneau (incidents, missions du jour) */
+.px .lv-outils{display:grid;gap:8px;margin:0 0 12px}
+.px .lv-outils .e-puces{margin:0;flex-wrap:wrap}
+.px .lv-outils .srch{min-width:0}
+.px .lv-outils .e-tri{justify-self:start}
+/* P15 : QR masqué jusqu'au toucher, scan d'étiquette */
+.lv-qr-masque{width:200px;height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:14px;border-radius:var(--r-l);border:1.5px dashed var(--line-2);background:var(--card-2);color:var(--ink);font:inherit;text-align:center;cursor:pointer}
+.lv-qr-masque span{font-size:.75rem;color:var(--ink-3);line-height:1.35}
+.lv-qr-masque:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.px .lv-scan-b{width:auto;flex:none;min-height:44px}
+.lv-scan{position:relative;display:grid;gap:8px;margin:10px 0}
+.lv-scan video{width:100%;max-height:300px;object-fit:cover;border-radius:var(--r-l);background:var(--sand-3)}
+.lv-scan-cadre{position:absolute;left:50%;top:150px;width:180px;height:180px;margin:-90px 0 0 -90px;border:3px solid var(--e);border-radius:16px;pointer-events:none}
+/* P16 : visionneuse des preuves (zoom, pincer, heure et lieu incrustés) */
+.px .photo.lv-ouvrable{cursor:zoom-in}
+.px .photo.lv-ouvrable:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.lv-vis{position:fixed;inset:0;z-index:90;display:flex;flex-direction:column;background:var(--sand);color:var(--ink)}
+.lv-vis-t{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--card)}
+.lv-vis-t .grow{min-width:0;display:grid}
+.lv-vis-t .grow b{overflow-wrap:anywhere}
+.lv-vis-t .grow span{font-size:.75rem;color:var(--ink-3)}
+.lv-vis .btn.sm{width:auto;flex:none;min-height:44px;min-width:44px}
+.lv-vis-z{display:inline-flex;gap:2px}
+.lv-vis-pct{font-variant-numeric:tabular-nums}
+.lv-vis-scene{position:relative;flex:1;overflow:hidden;display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none}
+.lv-vis-photo{width:min(78vh,92vw);max-width:100%}
+.lv-vis-photo>div{transform-origin:center;transition:transform .08s linear}
+.lv-vis-photo .photo{border-radius:12px}
+.lv-vis-inc{position:absolute;left:12px;right:12px;bottom:12px;display:grid;gap:2px;padding:8px 10px;border-radius:10px;background:var(--card);color:var(--ink);box-shadow:var(--shadow-card);font-size:.8125rem;font-weight:700;pointer-events:none}
+.lv-vis-b{display:flex;align-items:center;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--card)}
+.lv-vis-b .btn{width:auto;flex:none;min-height:44px}
+.lv-vis-aide{flex:1;min-width:0;text-align:center;font-size:.75rem;color:var(--ink-3)}
+@media (max-width:520px){.lv-vis-aide{display:none}.lv-vis-b{justify-content:space-between}}
+.px .lv-outils .srch{height:44px}
+.px .lv-outils label.flt.e-tri{min-height:44px}
+/* Fond OpenStreetMap (composants/CarteOsm) : zones plus transparentes pour laisser lire les rues, mention en haut à droite
+   (la légende occupe le bas). */
+.px .lv-carte[data-fond=osm] .lv-c-zone{fill-opacity:.38;stroke:var(--e);stroke-opacity:.55}
+.px .lv-carte .lv-osm{top:6px;bottom:auto}

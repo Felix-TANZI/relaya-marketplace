@@ -1,0 +1,31 @@
+{
+ "icones": {
+  "menu": "r-menu",
+  "themeSombre": "r-lune",
+  "cloche": "r-cloche",
+  "retour": "r-chevron-gauche",
+  "themeClair": "r-soleil"
+ },
+ "onglets": [
+  {
+   "route": "accueil",
+   "titre": "Aujourd’hui",
+   "icone": "r-grille"
+  },
+  {
+   "route": "reception",
+   "titre": "Réception",
+   "icone": "r-colis"
+  },
+  {
+   "route": "retrait",
+   "titre": "Retrait",
+   "icone": "r-cle"
+  },
+  {
+   "route": "stock",
+   "titre": "Stock",
+   "icone": "r-pile"
+  }
+ ]
+}

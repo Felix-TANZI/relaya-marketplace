@@ -440,6 +440,9 @@ class AutomaticReassignmentCas62Tests(TestCase):
         from unittest import mock
         admin = User.objects.create_user("cas62_admin", password="pass", is_staff=True)
         replacement = self._make_replacement_offer(price_xaf=8000)
+        # Une différence ne se rembourse que sur une commande payée (ici sans séquestre : réglée à la main).
+        Order.objects.filter(pk=self.order.pk).update(payment_status=Order.PaymentStatus.PAID)
+        self.item.order.refresh_from_db()
 
         # R35.3 : prix plus bas, la différence revient au client (validation humaine, module financier).
         with mock.patch("apps.orders.reassignment.find_reassignment_candidate", return_value=replacement):

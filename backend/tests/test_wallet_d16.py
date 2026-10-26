@@ -25,9 +25,14 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def ouvert(monkeypatch):
-    """R03.1 : on simule l'ouverture du Wallet (r_wallet_ouvert = 1), les autres réglages restent ceux de la spec."""
+    """R03.1 : on simule l'ouverture du Wallet (r_wallet_ouvert = 1), les autres réglages restent ceux de la spec.
+    R25.1 : chaque geste de ces tests porte sur une commande dont la commission (simulée) le couvre."""
+    from apps.payments.bridge import gestes
+
     vrai = regles.reglage
     monkeypatch.setattr(regles, "reglage", lambda nom: 1 if nom == "r_wallet_ouvert" else vrai(nom))
+    monkeypatch.setattr(gestes, "commission_de_la_commande", lambda order_id: 100000)
+    monkeypatch.setattr(gestes, "commande_du_client", lambda order_id, user: True)
 
 
 def _client(user):
@@ -73,7 +78,7 @@ def test_le_solde_ne_depasse_jamais_le_plafond(acheteur, ouvert):
 def test_payer_une_commande_sans_frais_les_gestes_d_abord(acheteur, ouvert):
     _recharger(acheteur, 30000)
     chef, adjoint = (User.objects.create_user(n, password="p") for n in ("fin1", "fin2"))
-    geste = wallet.demander_geste(acheteur, montant=2000, motif="Retard", demande_par=chef)
+    geste = wallet.demander_geste(acheteur, montant=2000, motif="Retard", demande_par=chef, order_id=1)
     with pytest.raises(wallet.WalletError):
         wallet.decider_geste(geste, par=chef, accepte=True)                                # séparation des rôles
     wallet.decider_geste(geste, par=adjoint, accepte=True)
@@ -114,7 +119,7 @@ def test_code_a_4_chiffres_au_dela_du_seuil(acheteur, ouvert):
 def test_retrait_frais_minimum_numero_et_gestes(acheteur, ouvert):
     _recharger(acheteur, 10000)
     chef, adjoint = (User.objects.create_user(n, password="p") for n in ("f1", "f2"))
-    wallet.decider_geste(wallet.demander_geste(acheteur, montant=3000, motif="x", demande_par=chef),
+    wallet.decider_geste(wallet.demander_geste(acheteur, montant=3000, motif="x", demande_par=chef, order_id=1),
                          par=adjoint, accepte=True)
     c = _client(acheteur)
     devis = c.get("/api/payments/v2/me/wallet/withdrawal-quote/", {"montant_xaf": 10000}).json()
@@ -135,7 +140,7 @@ def test_retrait_frais_minimum_numero_et_gestes(acheteur, ouvert):
 def test_retrait_seulement_vers_un_numero_qui_a_recharge(ouvert):
     sans = User.objects.create_user("sans_recharge", password="p")
     wallet.decider_geste(wallet.demander_geste(sans, montant=5000, motif="x",
-                                               demande_par=User.objects.create_user("g1", password="p")),
+                                               demande_par=User.objects.create_user("g1", password="p"), order_id=1),
                          par=User.objects.create_user("g2", password="p"), accepte=True)
     with pytest.raises(wallet.WalletError) as e:
         wallet.retirer(sans, montant=2000)

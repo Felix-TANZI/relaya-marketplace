@@ -83,6 +83,8 @@ class GestePortefeuille(models.Model):
         REFUSE = "REFUSE", "Refuse"
 
     client = models.ForeignKey(User, on_delete=models.PROTECT, related_name="gestes_wallet")
+    # Spec v2.1, R25.1 : un geste se rattache a une commande et ne depasse jamais sa commission_b.
+    order_id = models.PositiveBigIntegerField(null=True, blank=True)
     montant_xaf = models.PositiveIntegerField()
     motif = models.CharField(max_length=200)
     statut = models.CharField(max_length=12, choices=Statut.choices, default=Statut.EN_ATTENTE)

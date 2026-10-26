@@ -46,3 +46,44 @@ def flash_actives(maintenant=None):
             .filter(campaign_type=PromotionCampaign.CampaignType.FLASH, status=PromotionCampaign.Status.APPROVED,
                     starts_at__lte=maintenant, ends_at__gte=maintenant, stock_reserved__gt=F("stock_claimed"))
             .select_related("product", "product__category"))
+
+
+# ── R34.5 : une hausse de plus de r_hausse_badge en r_hausse_badge_j retire l'accès aux ventes flash ────────────────
+
+def hausse_recente(produit, maintenant=None) -> bool:
+    """Vrai si le prix actuel dépasse de plus de r_hausse_badge le plus bas prix des r_hausse_badge_j derniers jours."""
+    from datetime import timedelta
+    from fractions import Fraction
+
+    from apps.regles import services as regles
+
+    from .models import PrixHistorique
+
+    maintenant = maintenant or timezone.now()
+    depuis = maintenant - timedelta(days=regles.reglage("r_hausse_badge_j"))
+    prix = list(PrixHistorique.objects.filter(product=produit, le__gte=depuis).values_list("price_xaf", flat=True))
+    # Le prix en vigueur au début de la période compte aussi : c'est le dernier relevé d'avant.
+    avant = (PrixHistorique.objects.filter(product=produit, le__lt=depuis).values_list("price_xaf", flat=True)
+             .first())
+    if avant is not None:
+        prix.append(avant)
+    if not prix:
+        return False
+    plus_bas = min(prix)
+    return Fraction(produit.price_xaf) > Fraction(plus_bas) * (1 + Fraction(str(regles.reglage("r_hausse_badge"))))
+
+
+def noter_prix(produit) -> None:
+    """Relève le prix d'une offre ; une hausse R34.5 suspend ses Flash Deals en cours ou en attente."""
+    from .models import PrixHistorique
+
+    dernier = PrixHistorique.objects.filter(product=produit).values_list("price_xaf", flat=True).first()
+    if dernier == produit.price_xaf:
+        return
+    PrixHistorique.objects.create(product=produit, price_xaf=produit.price_xaf)
+    if dernier is not None and hausse_recente(produit):
+        PromotionCampaign.objects.filter(
+            product=produit, campaign_type=PromotionCampaign.CampaignType.FLASH,
+            status__in=[PromotionCampaign.Status.APPROVED, PromotionCampaign.Status.PENDING],
+        ).update(status=PromotionCampaign.Status.SUSPENDED,
+                 admin_note="R34.5 : hausse de prix de plus de r_hausse_badge en r_hausse_badge_j.")

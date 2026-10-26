@@ -126,7 +126,8 @@ class RetraitView(APIView):
 # ── Administration (feuille de route D16 : suivi du Wallet) ─────────────────────────────────────────────
 
 def _geste(g: GestePortefeuille) -> dict:
-    return {"id": g.pk, "client": g.client.username, "montant_xaf": g.montant_xaf, "motif": g.motif,
+    return {"id": g.pk, "client": g.client.username, "commande": g.order_id, "montant_xaf": g.montant_xaf,
+            "motif": g.motif,
             "statut": g.statut, "demande_par": g.demande_par.username,
             "decide_par": g.decide_par.username if g.decide_par else None, "le": g.created_at}
 
@@ -152,7 +153,8 @@ class GesteView(APIView):
         client = get_object_or_404(User, pk=request.data.get("client_id"))
         try:
             g = services.demander_geste(client, montant=request.data.get("montant_xaf") or 0,
-                                        motif=request.data.get("motif") or "", demande_par=request.user)
+                                        motif=request.data.get("motif") or "", demande_par=request.user,
+                                        order_id=request.data.get("order_id"))
         except services.WalletError as exc:
             return _refus(exc)
         return Response(_geste(g), status=status.HTTP_201_CREATED)

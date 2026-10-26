@@ -88,10 +88,10 @@ def _deja(user, empreinte, telephone, depuis) -> int:
 
 def montants(order, item) -> tuple[int, int]:
     """R71.1 : l'article, livraison exclue ; R72.1 : sa part des frais Mobile Money payés."""
+    from .frais import part_frais_momo
+
     article = int(item.line_total_xaf or 0)
-    frais = int(order.frais_momo_xaf or 0) + int(order.frais_momo_comptoir_xaf or 0)
-    base = int(order.total_xaf or 0)
-    return article, (frais * article // base) if base else 0
+    return article, part_frais_momo(order, article)
 
 
 def _alerter_plafond(debut_mois) -> None:

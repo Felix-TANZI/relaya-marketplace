@@ -352,6 +352,15 @@ class PromotionCampaignSerializer(serializers.ModelSerializer):
             except PrixNonPubliable as exc:
                 raise serializers.ValidationError({"promo_price_xaf": exc.messages[0]})
         if campaign_type == PromotionCampaign.CampaignType.FLASH:
+            from .flash import hausse_recente
+
+            if product and hausse_recente(product):  # R34.5
+                from apps.regles import services as regles
+
+                raise serializers.ValidationError({"campaign_type": (
+                    f"Le prix de cette offre a augmenté de plus de {round(regles.reglage('r_hausse_badge') * 100)} % "
+                    f"ces {regles.reglage('r_hausse_badge_j')} derniers jours : pas de vente flash pour l'instant "
+                    "(R34.5).")})
             stock_reserved = data.get("stock_reserved") or getattr(self.instance, "stock_reserved", 0)
             if stock_reserved < 5:
                 raise serializers.ValidationError({"stock_reserved": "Un Flash Deal demande au moins 5 unités réservées."})

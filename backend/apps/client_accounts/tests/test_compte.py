@@ -54,9 +54,11 @@ def test_compte_d_un_nouveau_client():
     assert r.status_code == 200
     d = r.json()
     assert d["numeroVerifie"] is False
-    # Nouveau compte (CCO-04) : 15 000 F jusqu'au premier retrait, puis 50 000 F, 100 000 F après 5 commandes.
+    # Nouveau compte (CCO-04, R42.2) : 15 000 F jusqu'au premier retrait, puis 50 000 F, 100 000 F après 5 commandes.
+    # Remboursement immédiat (R71.1) : 0 tant que le remboursement automatique est fermé (r_auto_rmb_plafond_mois = 0),
+    # pour ne jamais promettre au client un avantage qui n'existe pas encore.
     assert d["palier"] == {
-        "remboursementImmediat": 3000,
+        "remboursementImmediat": 0,
         "comptoir": 15000,
         "suivant": {"comptoir": 100000, "commandes": 5},
         "prochain": 50000,

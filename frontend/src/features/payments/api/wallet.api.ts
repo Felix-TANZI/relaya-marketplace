@@ -47,6 +47,8 @@ export interface DevisRetrait {
 export interface WalletGeste {
   id: number;
   client: string;
+  /** R25.1 : commande du geste, dont il ne dépasse jamais la commission. */
+  commande: number | null;
   montant_xaf: number;
   motif: string;
   statut: 'EN_ATTENTE' | 'CREDITE' | 'REFUSE';
@@ -84,8 +86,8 @@ export const walletApi = {
 
   // ── Administration (habilitation finance) ──────────────────────────────
   suivi: () => api.get<SuiviWallet>(`${BASE}/admin/wallet/`),
-  demanderGeste: (client_id: number, montant_xaf: number, motif: string) =>
-    api.post<WalletGeste>(`${BASE}/admin/wallet/gestes/`, { client_id, montant_xaf, motif }),
+  demanderGeste: (client_id: number, order_id: number, montant_xaf: number, motif: string) =>
+    api.post<WalletGeste>(`${BASE}/admin/wallet/gestes/`, { client_id, order_id, montant_xaf, motif }),
   deciderGeste: (id: number, accepte: boolean) =>
     api.post<WalletGeste>(`${BASE}/admin/wallet/gestes/${id}/decision/`, { accepte }),
 };

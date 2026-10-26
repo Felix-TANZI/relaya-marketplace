@@ -502,8 +502,10 @@ def return_replacement(request, ref):
         ret.save(update_fields=['replacement_choice', 'status', 'refund_amount_xaf', 'updated_at'])
         try:
             from apps.payments.bridge import events_in
+            from apps.orders.frais import part_frais_momo
             events_in.return_completed(
                 order_id=ret.order_id, outcome='REFUND', refund_amount_xaf=montant,
+                frais_momo_xaf=part_frais_momo(ret.order, montant),  # R72.1 : retour validé
                 event_id=f"return-{ret.id}-vendor-refund",
                 emitter="apps.vendors.vd07_retours.return_replacement",
             )

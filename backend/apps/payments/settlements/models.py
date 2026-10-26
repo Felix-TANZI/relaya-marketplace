@@ -487,6 +487,9 @@ class Refund(models.Model):
     source_holds = models.ManyToManyField(
         EscrowHold, related_name="refunds", blank=True,
     )
+    # Spec v2.1, R72.1 : part des frais Mobile Money rendue au client qui n'est pas en faute. Comprise dans
+    # amount_xaf ; elle ne sort pas du sequestre (ces frais sont un produit de la plateforme) mais du produit.
+    frais_momo_xaf = models.PositiveIntegerField(default=0)
     payout = models.OneToOneField(
         PayoutRequest, on_delete=models.PROTECT, null=True, blank=True,
         related_name="refund",

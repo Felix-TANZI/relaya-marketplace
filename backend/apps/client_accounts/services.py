@@ -418,7 +418,11 @@ def compte_comptoir(user):
 
     sc = _sous_commandes(user)
     if sc is None:
-        return CompteClient(0, 0, 0, ifa_negatif(user))
+        # Module pickup du kit non installé : les compteurs réels sont ceux des commandes (R42.2, R42.5).
+        from apps.orders import comptoir
+
+        c = comptoir.compte(user)
+        return CompteClient(c["nb_livrees"], c["nb_sans_incident"], c["nb_refus"], ifa_negatif(user))
     from apps.pickup.models import CompteComptoir
 
     retirees = set(sc.filter(remise_le__isnull=False).values_list("order_id", flat=True))
@@ -428,19 +432,22 @@ def compte_comptoir(user):
 
 
 def palier(user) -> dict:
-    """Avantages actifs (CCO-04, CAL-13) : remboursement immédiat (LIT-AUTO-STD), plafond du comptoir et suivant."""
-    from belivay_moteurs.comptoir import PalierComptoir, palier_comptoir, plafond
+    """Avantages actifs (CCO-04, CAL-13), lus dans les réglages de la spec v2.1 et les vrais compteurs du client
+    (apps.orders.comptoir) : plafond du comptoir (R42.2), palier suivant, remboursement immédiat (R71.1, 0 tant que le
+    remboursement automatique est fermé)."""
+    from apps.orders import comptoir, remboursement_auto
+    from apps.regles import services as regles
 
-    p = parametres.paiement()
-    compte = compte_comptoir(user)
-    niveau = palier_comptoir(compte, p)
+    compte = comptoir.compte(user)
+    confirme = compte["nb_sans_incident"] >= regles.reglage("r_cpt_confirme_cmd")
     d = {
-        "remboursementImmediat": parametres.litiges().auto_standard,
-        "comptoir": plafond(compte, p),
-        "suivant": None if niveau == PalierComptoir.FIDELE else {"comptoir": p.comptoir_fidele, "commandes": p.commandes_fidele},
+        "remboursementImmediat": remboursement_auto.seuil(user) if remboursement_auto.plafond_mensuel() > 0 else 0,
+        "comptoir": regles.moteur().plafond_comptoir(compte),
+        "suivant": None if confirme else {"comptoir": regles.reglage("r_cpt_confirme"),
+                                          "commandes": regles.reglage("r_cpt_confirme_cmd")},
     }
-    if niveau == PalierComptoir.NOUVEAU:
-        d["prochain"] = p.comptoir_standard
+    if compte["nb_livrees"] == 0:
+        d["prochain"] = regles.reglage("r_cpt_panier")
     return d
 
 

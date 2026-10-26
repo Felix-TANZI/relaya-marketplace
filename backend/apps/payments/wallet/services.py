@@ -183,8 +183,10 @@ def rembourser(refund) -> None:
     _mouvement(p, MouvementPortefeuille.Sorte.REMBOURSEMENT, f"remboursement-{refund.reference}",
                retirable=refund.amount_xaf - part_geste, geste=part_geste, intent_reference=intent.reference,
                libelle="Remboursement sur le Wallet")
+    from apps.payments.settlements.services import lignes_de_remboursement
+
     post(kind=LedgerTransaction.Kind.REFUND,
-         lines=[debit(coa.ESCROW_LIABILITY, refund.amount_xaf, label=f"Remboursement {refund.reference}"),
+         lines=[*lignes_de_remboursement(refund),
                 credit(coa.WALLET_LIABILITY, refund.amount_xaf, label="Credit du Wallet")],
          description=f"Remboursement {refund.reference} sur le Wallet ({intent.reference}) — R03.6",
          source_type="Refund", source_ref=refund.reference, correlation_id=intent.correlation_id,
@@ -193,12 +195,31 @@ def rembourser(refund) -> None:
 
 # ── Geste commercial (R03.6) : demande, puis approbation par un autre membre de l'equipe ─────────────────
 
-def demander_geste(user, *, montant: int, motif: str, demande_par) -> GestePortefeuille:
+def _plafond_geste(order_id, montant: int, sauf=None) -> None:
+    """R25.1 : les gestes d'une commande (en attente ou credites) ne depassent jamais sa commission_b."""
+    from django.db.models import Sum
+
+    from apps.payments.bridge.gestes import commission_de_la_commande
+
+    deja = (GestePortefeuille.objects.filter(order_id=order_id).exclude(statut=GestePortefeuille.Statut.REFUSE)
+            .exclude(pk=getattr(sauf, "pk", None)).aggregate(t=Sum("montant_xaf"))["t"] or 0)
+    plafond = commission_de_la_commande(order_id)
+    if deja + int(montant) > plafond:
+        raise WalletError("geste_plafond", f"Un geste ne peut pas dépasser la commission de la commande "
+                                           f"({plafond} F, dont {deja} F déjà accordés) — R25.1.")
+
+
+def demander_geste(user, *, montant: int, motif: str, demande_par, order_id=None) -> GestePortefeuille:
+    from apps.payments.bridge.gestes import commande_du_client
+
     _exiger_ouvert()
     if int(montant) <= 0 or not (motif or "").strip():
         raise WalletError("geste", "Montant et motif obligatoires.")
-    return GestePortefeuille.objects.create(client=user, montant_xaf=int(montant), motif=motif.strip()[:200],
-                                            demande_par=demande_par)
+    if not order_id or not commande_du_client(order_id, user):
+        raise WalletError("geste_commande", "Un geste se rattache à une commande de ce client (R25.1).")
+    _plafond_geste(order_id, montant)
+    return GestePortefeuille.objects.create(client=user, order_id=order_id, montant_xaf=int(montant),
+                                            motif=motif.strip()[:200], demande_par=demande_par)
 
 
 @db_transaction.atomic
@@ -214,6 +235,8 @@ def decider_geste(geste: GestePortefeuille, *, par, accepte: bool) -> GestePorte
         geste.save(update_fields=["statut", "decide_par", "decide_le"])
         return geste
     _exiger_ouvert()
+    if geste.order_id:
+        _plafond_geste(geste.order_id, geste.montant_xaf, sauf=geste)  # R25.1, revu au moment de crediter
     p = portefeuille_de(geste.client, verrou=True)
     _plafond(p, geste.montant_xaf)
     _mouvement(p, MouvementPortefeuille.Sorte.GESTE, f"geste-{geste.pk}", geste=geste.montant_xaf,

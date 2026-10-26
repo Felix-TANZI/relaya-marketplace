@@ -18,7 +18,10 @@ logger = logging.getLogger("apps.orders")
 
 
 def rembourser(ret, motif: str) -> None:
+    from apps.orders.frais import part_frais_momo
+
     montant = int(ret.order_item.line_total_xaf or 0)
+    frais = part_frais_momo(ret.order, montant)  # R72.1 : retour validé, le client n'est pas en faute
     ret.status = Return.Status.REFUNDED
     ret.refund_amount_xaf = montant
     ret.save(update_fields=["status", "refund_amount_xaf", "updated_at"])
@@ -26,6 +29,7 @@ def rembourser(ret, motif: str) -> None:
         from apps.payments.bridge import events_in
 
         events_in.return_completed(order_id=ret.order_id, outcome="REFUND", refund_amount_xaf=montant,
+                                   frais_momo_xaf=frais,
                                    event_id=f"return-{ret.id}-office", emitter=f"traiter_retours ({motif})")
     except Exception:
         logger.exception("Remboursement d'office non transmis — retour #%s.", ret.id)
@@ -33,7 +37,7 @@ def rembourser(ret, motif: str) -> None:
 
     UserNotification.objects.create(
         user=ret.requested_by, title=f"Remboursement en cours · commande #{ret.order_id}",
-        message=f"{montant} F te reviennent sur ton moyen de paiement d'origine ({motif}).",
+        message=f"{montant + frais} F te reviennent sur ton moyen de paiement d'origine ({motif}).",
         notification_type=UserNotification.NotificationType.ORDER, action_url=f"/orders/{ret.order_id}",
     )
 

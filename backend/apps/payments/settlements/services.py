@@ -841,7 +841,7 @@ def request_withdrawal(payee: PayeeAccount, *, requested_by,
 
 @db_transaction.atomic
 def create_refund(intent, *, amount_xaf: int, reason: str, requested_by,
-                  detail: str = "", holds=None):
+                  detail: str = "", holds=None, frais_momo_xaf: int = 0):
     """
     Cree une demande de remboursement.
 
@@ -887,6 +887,7 @@ def create_refund(intent, *, amount_xaf: int, reason: str, requested_by,
 
     remboursement = Refund(
         intent=intent, amount_xaf=amount_xaf, reason=reason,
+        frais_momo_xaf=max(0, min(int(frais_momo_xaf or 0), amount_xaf)),
         detail=detail.strip(), requested_by=requested_by,
         status=Refund.Status.PENDING_APPROVAL,
     )
@@ -1040,12 +1041,12 @@ def execute_refund(refund):
 
     versement.save()
 
-    # L'argent quitte le sequestre pour retourner a l'acheteur.
+    # L'argent quitte le sequestre pour retourner a l'acheteur ; la part des frais Mobile Money (R72.1) sort du
+    # produit, ou elle avait ete reconnue a l'encaissement.
     post(
         kind=LedgerTransaction.Kind.REFUND,
         lines=[
-            debit(coa.ESCROW_LIABILITY, refund.amount_xaf,
-                  label=f"Remboursement {refund.reference}"),
+            *lignes_de_remboursement(refund),
             credit(coa.psp_account_for(intent.payer_operator, degraded=True),
                    refund.amount_xaf, label="Sortie de tresorerie"),
         ],
@@ -1140,6 +1141,19 @@ def verser_a_un_client(*, user, msisdn: str, operator: str, masque: str, montant
     return versement, PayoutRequest.Status.PAID
 
 
+def lignes_de_remboursement(refund) -> list:
+    """DEBIT du sequestre pour les articles et la livraison, DEBIT du produit pour les frais Mobile Money (R72.1)."""
+    frais = int(refund.frais_momo_xaf or 0)
+    lignes = []
+    if refund.amount_xaf - frais > 0:
+        lignes.append(debit(coa.ESCROW_LIABILITY, refund.amount_xaf - frais,
+                            label=f"Remboursement {refund.reference}"))
+    if frais > 0:
+        lignes.append(debit(coa.REVENUE_COMMISSION, frais,
+                            label=f"Frais Mobile Money rendus (R72.1) {refund.reference}"))
+    return lignes
+
+
 def _solder_sequestres(refund) -> None:
     """
     Marque les sequestres rembourses : cet argent n'ira jamais au partenaire.
@@ -1149,7 +1163,7 @@ def _solder_sequestres(refund) -> None:
     """
     from apps.payments.escrow.models import EscrowHold
 
-    restant = refund.amount_xaf
+    restant = refund.amount_xaf - int(refund.frais_momo_xaf or 0)
     for hold in refund.source_holds.select_for_update().all():
         if restant <= 0:
             break

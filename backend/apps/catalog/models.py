@@ -1818,3 +1818,18 @@ class SelectionOffre(models.Model):
 
     def __str__(self):
         return f"{self.get_raison_display()} · {self.master} → {self.retenue_id}"
+
+
+class PrixHistorique(models.Model):
+    """Spec v2.1, R34.5 : chaque changement de prix d'une offre, pour reconnaître une hausse de plus de r_hausse_badge
+    en r_hausse_badge_j, qui retire l'accès aux ventes flash."""
+
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="historique_prix")
+    price_xaf = models.PositiveIntegerField()
+    le = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-le"]
+        verbose_name = "Prix précédent d'une offre"
+        verbose_name_plural = "Historique des prix"
+

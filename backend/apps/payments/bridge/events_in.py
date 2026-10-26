@@ -573,7 +573,7 @@ def return_initiated(*, order_id: int, reason: str, component: str = "",
 @db_transaction.atomic
 def return_completed(*, order_id: int, outcome: str, component: str = "",
                      refund_amount_xaf: int = 0, event_id: str = "",
-                     emitter: str = "", occurred_at=None) -> EscrowEvent:
+                     emitter: str = "", occurred_at=None, frais_momo_xaf: int = 0) -> EscrowEvent:
     """
     Un retour est finalise APRES reception physique et inspection du colis
     retourne — jamais a la simple demande (regle produit verrouillee).
@@ -619,7 +619,7 @@ def return_completed(*, order_id: int, outcome: str, component: str = "",
         )
 
     if decision in ("REFUND", "PARTIAL", "PARTIAL_REFUND"):
-        return _rembourser(evenement, geles, decision, refund_amount_xaf)
+        return _rembourser(evenement, geles, decision, refund_amount_xaf, frais_momo_xaf)
 
     return _cloture(
         evenement, EscrowEvent.Outcome.IGNORED,
@@ -627,7 +627,7 @@ def return_completed(*, order_id: int, outcome: str, component: str = "",
     )
 
 
-def _rembourser(evenement, geles, decision: str, montant: int):
+def _rembourser(evenement, geles, decision: str, montant: int, frais_momo_xaf: int = 0):
     """
     Cree la demande de remboursement d'un litige tranche en faveur de
     l'acheteur.
@@ -668,9 +668,10 @@ def _rembourser(evenement, geles, decision: str, montant: int):
             )
 
     demandeur = _demandeur_systeme()
+    frais = max(0, int(frais_momo_xaf or 0))  # R72.1 : en plus des articles, hors sequestre
     try:
         remboursement = create_refund(
-            intent, amount_xaf=a_rembourser,
+            intent, amount_xaf=a_rembourser + frais, frais_momo_xaf=frais,
             reason=Refund.Reason.DISPUTE,
             requested_by=demandeur,
             detail=(

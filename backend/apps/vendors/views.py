@@ -5805,6 +5805,14 @@ def admin_return_mark_received(request, return_id):
     return Response(ReturnSerializer(return_obj, context={'request': request}).data)
 
 
+def _part_frais_retour(return_obj) -> int:
+    """Spec v2.1, R72.1 : part des frais Mobile Money de l'article d'un retour validé."""
+    from apps.orders.frais import part_frais_momo
+
+    montant = return_obj.refund_amount_xaf or int(return_obj.order_item.line_total_xaf or 0)
+    return part_frais_momo(return_obj.order, montant)
+
+
 @extend_schema(
     tags=["Admin"],
     summary="Finaliser un retour apres inspection (admin) — declenche le remboursement",
@@ -5856,6 +5864,8 @@ def admin_finalize_return(request, return_id):
                 order_id=return_obj.order_id,
                 outcome='PARTIAL' if (inspection_passed and refund_amount) else ('REFUND' if inspection_passed else 'REJECTED'),
                 refund_amount_xaf=refund_amount or 0,
+                # Spec v2.1, R72.1 : retour validé, la part des frais Mobile Money de l'article revient aussi.
+                frais_momo_xaf=_part_frais_retour(return_obj) if inspection_passed else 0,
                 event_id=f"return-{return_obj.id}-completed",
                 emitter="apps.vendors.admin_finalize_return",
             )

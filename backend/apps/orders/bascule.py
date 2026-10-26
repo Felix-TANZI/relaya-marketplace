@@ -97,7 +97,11 @@ def basculer(order_item, remplacante, motif: str) -> None:
 def sans_remplacante(order, vendeur_user, items, motif: str) -> None:
     """R35.4 : pas de remplaçante ; le colis du vendeur est annulé et le client remboursé le jour même (demande de
     remboursement créée tout de suite, approuvée par un tiers avant que l'argent ne sorte)."""
+    from .frais import part_frais_momo
+
     montant = sum(i.line_total_xaf for i in items)
+    frais = part_frais_momo(order, montant)  # R72.1 : rupture, le client n'est pas en faute
+    montant += frais
     with transaction.atomic():
         for colis in Shipment.objects.filter(order=order, vendor=vendeur_user).exclude(status=Shipment.Status.CANCELLED):
             colis.status = Shipment.Status.CANCELLED
@@ -112,7 +116,8 @@ def sans_remplacante(order, vendeur_user, items, motif: str) -> None:
             order.cancelled_at = timezone.now()
             order.save(update_fields=["fulfillment_status", "cancellation_reason", "cancelled_at"])
             montant = order.total_a_payer_xaf or order.total_xaf  # R35.4 : remboursement intégral
-    demande = _demander_le_remboursement(order, vendeur_user, montant, motif) if order.is_paid else None
+            frais = int(order.frais_momo_xaf or 0)  # compris dans total_a_payer (R72.1)
+    demande = _demander_le_remboursement(order, vendeur_user, montant, motif, frais) if order.is_paid else None
 
     from .models import OrderHistory
 
@@ -186,7 +191,7 @@ def _geler_le_sequestre(order, vendeur_user, motif: str) -> None:
         logger.exception("Séquestre non gelé pour la commande #%s.", order.pk)
 
 
-def _demander_le_remboursement(order, vendeur_user, montant: int, motif: str) -> str | None:
+def _demander_le_remboursement(order, vendeur_user, montant: int, motif: str, frais: int = 0) -> str | None:
     try:
         from apps.payments.bridge.actors import payee_for_vendor
         from apps.payments.bridge.events_in import _demandeur_systeme
@@ -204,7 +209,7 @@ def _demander_le_remboursement(order, vendeur_user, montant: int, motif: str) ->
         holds = []
         for hold in EscrowHold.objects.filter(order_id=order.pk, payee=payee, component=EscrowHold.Component.GOODS):
             holds.append(cancel_hold(hold, reason=f"Sans remplaçant (R35.4). {motif}"))
-        demande = create_refund(intent, amount_xaf=montant, reason=Refund.Reason.CANCELLATION,
+        demande = create_refund(intent, amount_xaf=montant, reason=Refund.Reason.CANCELLATION, frais_momo_xaf=frais,
                                 requested_by=_demandeur_systeme(), holds=holds or None,
                                 detail=f"R35.4 : aucun remplaçant sur la commande #{order.pk}. {motif}")
         return demande.reference

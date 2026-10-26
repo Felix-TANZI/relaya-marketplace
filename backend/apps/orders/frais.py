@@ -139,6 +139,14 @@ class Devis:
         return self.detail.get("frais_client", 0)
 
 
+def part_frais_momo(order, montant_articles: int) -> int:
+    """Spec v2.1, R72.1 : la part des frais Mobile Money payés (avance et comptoir compris) qui revient avec
+    `montant_articles` quand le client n'est pas en faute ; au prorata du total payé, arrondie au franc inférieur."""
+    frais = int(order.frais_momo_xaf or 0) + int(getattr(order, "frais_momo_comptoir_xaf", 0) or 0)
+    base = int(order.total_xaf or 0)
+    return min(frais, frais * int(montant_articles or 0) // base) if base else 0
+
+
 def calculer(lignes: list[tuple], destination: Destination, moyen: str = "momo", user=None) -> Devis:
     """Frais et total d'un panier ; `lignes` : [(Product, quantité)] dans l'ordre du panier."""
     m = regles.moteur()

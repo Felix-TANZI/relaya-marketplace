@@ -66,6 +66,7 @@ import {
 } from './courierNav';
 import CourierSidebar from './CourierSidebar';
 import AppelMasqueButton from '@/components/AppelMasqueButton';
+import CourierExceptionsPanel from './CourierExceptionsPanel';
 import CourierDrawer from './CourierDrawer';
 import CourierMobileNav, { COURIER_TABBAR_IDS } from './CourierMobileNav';
 import CourierProfileSheet from './CourierProfileSheet';
@@ -1646,6 +1647,15 @@ export default function CourierDashboardPage() {
                 <AppelMasqueButton shipmentId={selectedShipment.id} libelle="Appeler le client" className="border-white/20 text-white" />
               ) : null}
             </div>
+            {/* Spec v2.1 : client absent (R51), refus à la porte (R85.2), déplacement inutile (R85.3). */}
+            {selectedShipment ? (
+              <CourierExceptionsPanel
+                shipmentId={selectedShipment.id}
+                status={selectedShipment.status}
+                aDomicile={selectedShipment.delivery_mode !== "relais"}
+                onDone={(message) => { setActionFeedback(message); refreshCourierWork(); }}
+              />
+            ) : null}
             {actionFeedback ? (
               <div className="mt-4 rounded-[16px] border border-emerald-500/15 bg-emerald-500/5 px-4 py-3 text-[13px] font-semibold text-emerald-300 animate-pulse">
                 {actionFeedback}

@@ -135,6 +135,8 @@ def mirror_payment_confirmed(intent) -> int:
         # son code de retrait ; l'avance seule la laisse « Validée », mais le vendeur prepare deja.
         if intent.idempotency_key.endswith("-comptoir"):
             return _comptoir_paye(intent, [c.pk for c in commandes])
+        if intent.idempotency_key.endswith("-absence"):
+            return _absence_payee(intent, [c.pk for c in commandes])
 
         a_payer = Order.objects.filter(
             pk__in=[c.pk for c in commandes],
@@ -184,12 +186,33 @@ def _comptoir_paye(intent, pks) -> int:
     modifiees = a_payer.update(payment_status=Order.PaymentStatus.PAID,
                                comptoir_paye_le=intent.confirmed_at or timezone.now())
     for commande in Order.objects.filter(pk__in=payees):
-        colis = (RelayParcel.objects.filter(shipment__order=commande, status__in=[RelayParcel.Status.RECEIVED,
-                                                                                 RelayParcel.Status.STORED])
-                 .exclude(pickup_code="").select_related("relay_point").first())
-        if colis is not None:
-            comptoir.annoncer_retrait(commande, colis.pickup_code, colis.relay_point.name)
+        _reveler_code(commande)
     return modifiees
+
+
+def _absence_payee(intent, pks) -> int:
+    """R51.5 : frais d'absence encaissés ; le code de retrait se débloque s'il ne reste rien à payer."""
+    from django.utils import timezone
+
+    from apps.orders.models import Order
+
+    a_payer = Order.objects.filter(pk__in=pks, frais_absence_xaf__gt=0, frais_absence_paye_le__isnull=True)
+    payees = list(a_payer.values_list("pk", flat=True))
+    modifiees = a_payer.update(frais_absence_paye_le=intent.confirmed_at or timezone.now())
+    for commande in Order.objects.filter(pk__in=payees):
+        _reveler_code(commande)
+    return modifiees
+
+
+def _reveler_code(commande) -> None:
+    from apps.orders import comptoir
+    from apps.shipping.models import RelayParcel
+
+    colis = (RelayParcel.objects.filter(shipment__order=commande, status__in=[RelayParcel.Status.RECEIVED,
+                                                                             RelayParcel.Status.STORED])
+             .exclude(pickup_code="").select_related("relay_point").first())
+    if colis is not None:
+        comptoir.annoncer_retrait(commande, colis.pickup_code, colis.relay_point.name)
 
 
 def compare_states(order_id: int) -> dict:

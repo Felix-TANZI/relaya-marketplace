@@ -32,6 +32,7 @@ import { productsApi } from "@/services/api/products";
 import { customerApi, type Dispute, type Shipment, type OrderChatMessage, type OrderReturn } from "@/services/api/customer";
 import TrackingMap from "@/components/TrackingMap";
 import AppelMasqueButton from "@/components/AppelMasqueButton";
+import FraisAbsenceBlock from "./FraisAbsenceBlock";
 import { OrderPaymentPanel } from "@/features/payments/OrderPaymentPanel";
 import { PfShellStyles } from "@/styles/pfShell";
 import QrScanner from "@/components/QrScanner";
@@ -1705,6 +1706,9 @@ export default function OrderDetailPage() {
                 ) : null}
               </div>
             </section>
+
+            {/* Spec v2.1, R51.5 : frais d'absence à payer avant le retrait. */}
+            <FraisAbsenceBlock order={order} />
 
             <section className="pf-card pf-anim">
               <h2 className="mb-4 text-lg font-bold text-gray-900 dark:text-white">

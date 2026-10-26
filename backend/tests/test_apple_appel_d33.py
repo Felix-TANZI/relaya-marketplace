@@ -59,7 +59,7 @@ def test_le_client_et_le_livreur_s_appellent_par_le_serveur():
     livreur = APIClient()
     livreur.force_authenticate(colis.courier.user)
     r = livreur.post(f"/api/shipping/shipments/{colis.pk}/appel/")
-    assert r.json()["appels_au_client"] == 1                                              # preuve R51.1
+    assert r.json()["appels_au_client"] == 0                                              # console : pas une preuve (DP-61)
     assert list(AppelMasque.objects.values_list("sens", flat=True)) == ["LIVREUR_CLIENT", "CLIENT_LIVREUR"]
 
     inconnu = APIClient()

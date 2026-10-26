@@ -204,6 +204,11 @@ class Order(TimeStampedModel):
     frais_momo_comptoir_xaf = models.PositiveIntegerField(default=0, help_text="frais Mobile Money du reste (R02.6)")
     comptoir_paye_le = models.DateTimeField(null=True, blank=True)
     comptoir_refuse_le = models.DateTimeField(null=True, blank=True, help_text="refus au comptoir (R42.5, R39.3)")
+    # Spec v2.1, R51 : client absent à domicile, colis transféré au relais de sa zone ; frais d'absence à payer avant
+    # le retrait (R51.4, R51.5), par Mobile Money avec ses frais (R02.6), dans l'application ou au relais.
+    frais_absence_xaf = models.PositiveIntegerField(default=0, help_text="frais_absence (R51.4)")
+    frais_momo_absence_xaf = models.PositiveIntegerField(default=0, help_text="frais Mobile Money des frais d'absence")
+    frais_absence_paye_le = models.DateTimeField(null=True, blank=True)
     frais_detail     = models.JSONField(
         default=dict, blank=True,
         help_text="Calcul des frais figé au paiement (R12.3, R83.3) : boutiques, colis, distances, empreinte des réglages.",

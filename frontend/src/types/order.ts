@@ -52,6 +52,12 @@ export interface Order {
   /** Spec v2.1 : frais Mobile Money (R02.3) et total réellement payé (R02.2). */
   frais_momo_xaf?: number;
   total_a_payer_xaf?: number;
+  /** R51.4, R51.5 : frais d'absence à payer avant le retrait (avec leurs frais Mobile Money). */
+  frais_absence_xaf?: number;
+  frais_momo_absence_xaf?: number;
+  frais_absence_paye_le?: string | null;
+  /** Nom du relais de retrait (servi par OrderDetailSerializer). */
+  relay_point_name?: string | null;
   /** Heure promise, figée au paiement, qui fait foi pour le client (R45.6, R45.7). */
   promesse_at?: string | null;
   promesse_texte?: string;

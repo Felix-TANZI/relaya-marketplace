@@ -121,6 +121,13 @@ class OrderDetailSerializer(serializers.ModelSerializer):
             'couverture_xaf',
             'frais_momo_xaf',
             'total_a_payer_xaf',
+            # R42 (comptoir) et R51.5 (frais d'absence) : ce qui reste à payer avant le retrait
+            'paiement_comptoir',
+            'reste_comptoir_xaf',
+            'frais_momo_comptoir_xaf',
+            'frais_absence_xaf',
+            'frais_momo_absence_xaf',
+            'frais_absence_paye_le',
             'promesse_at',
             'promesse_texte',
             'items',

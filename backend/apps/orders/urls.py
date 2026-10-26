@@ -17,6 +17,7 @@ from .views import (
     MyPendingEvidenceRequestsView,
     OrderReturnListCreateView,
     DevisPanierView,
+    PayerFraisAbsenceView,
 )
 from .remboursement_auto_admin import ProposerRetraitView, SuiviRemboursementAutoView, ValiderRetraitView
 
@@ -32,6 +33,7 @@ urlpatterns = [
     path("<int:id>/", OrderDetailView.as_view(), name="order-detail"), # Retrieve order details by ID
     path("<int:id>/tracking/", OrderTrackingView.as_view(), name="order-tracking"),
     path("<int:id>/cancel/", CancelOrderView.as_view(), name="order-cancel"),
+    path("<int:id>/frais-absence/payer/", PayerFraisAbsenceView.as_view(), name="order-frais-absence"),  # R51.5
     path("<int:id>/confirm-receipt/", ConfirmReceiptView.as_view(), name="order-confirm-receipt"),
     path("<int:id>/extend-relay-garde/", ExtendRelayGardeView.as_view(), name="order-extend-relay-garde"),
     path("<int:id>/disputes/", OrderDisputeListCreateView.as_view(), name="order-disputes"),

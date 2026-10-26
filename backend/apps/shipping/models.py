@@ -527,6 +527,8 @@ class ShipmentEvidence(models.Model):
         # D15 : contestation au retrait, le gérant photographie le déballage devant le client
         RELAY_UNPACKING = "RELAY_UNPACKING", "Déballage contesté au comptoir"
         CUSTOMER_DELIVERY = "CUSTOMER_DELIVERY", "Remise client"
+        # Spec v2.1, R51.1 : preuve de l'absence du client (photo devant l'adresse)
+        CUSTOMER_ABSENT = "CUSTOMER_ABSENT", "Client absent"
         RETURN_DEPOSIT = "RETURN_DEPOSIT", "Dépôt retour"
 
     shipment = models.ForeignKey(Shipment, on_delete=models.CASCADE, related_name="evidences")

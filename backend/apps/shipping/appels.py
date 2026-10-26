@@ -85,5 +85,6 @@ def appeler(shipment, user):
 
 
 def appels_au_client(shipment) -> int:
-    """R51.1 : nombre d'appels du livreur au client pour ce colis (preuve avant de constater une absence)."""
-    return shipment.appels_masques.filter(sens="LIVREUR_CLIENT", ok=True).count()
+    """R51.1 : nombre d'appels du livreur au client pour ce colis (preuve avant de constater une absence). Un appel
+    du mode console n'a pas été composé : il ne prouve rien (DP-61)."""
+    return shipment.appels_masques.filter(sens="LIVREUR_CLIENT", ok=True).exclude(prestataire=AppelConsole.nom).count()

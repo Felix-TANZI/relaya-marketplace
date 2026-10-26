@@ -551,8 +551,9 @@ def _colis_a_payer(request):
         id=request.data.get("parcel_id"), relay_point=relay_point,
         status__in=[RelayParcel.Status.RECEIVED, RelayParcel.Status.STORED],
     )
-    order = parcel.shipment.order
-    if order.payment_status != order.PaymentStatus.VALIDATED:
+    from apps.orders.absence import dus_au_relais
+
+    if not dus_au_relais(parcel.shipment.order)["total"]:
         return parcel, Response({"code": "rien_a_payer", "detail": "Cette commande n'a rien à payer au comptoir."},
                                 status=status.HTTP_409_CONFLICT)
     return parcel, None
@@ -569,16 +570,20 @@ class RelayPointComptoirCollectView(APIView):
 
     def post(self, request):
         from apps.payments.application.collect import CollectError, initiate_collect
-        from apps.payments.bridge.checkout_v2 import CheckoutError, prepare_payment_comptoir
+        from apps.payments.bridge.checkout_v2 import CheckoutError, prepare_payment_absence, prepare_payment_comptoir
 
         parcel, refus = _colis_a_payer(request)
         if refus:
             return refus
         order = parcel.shipment.order
         telephone = (request.data.get("payer_msisdn") or order.customer_phone or "").replace(" ", "")
+        operateur = request.data.get("payer_operator") or ""
         try:
-            intent = prepare_payment_comptoir(order, payer_msisdn=telephone,
-                                              payer_operator=request.data.get("payer_operator") or "")
+            # D'abord le reste du comptoir (R42.4), puis les frais d'absence (R51.5) : un paiement à la fois.
+            if order.payment_status == order.PaymentStatus.VALIDATED:
+                intent = prepare_payment_comptoir(order, payer_msisdn=telephone, payer_operator=operateur)
+            else:
+                intent = prepare_payment_absence(order, payer_msisdn=telephone, payer_operator=operateur)
             issue = initiate_collect(intent)
         except (CheckoutError, CollectError) as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
@@ -600,6 +605,10 @@ class RelayPointComptoirRefusalView(APIView):
         parcel, refus = _colis_a_payer(request)
         if refus:
             return refus
+        if parcel.shipment.order.payment_status != parcel.shipment.order.PaymentStatus.VALIDATED:
+            return Response({"code": "pas_de_comptoir",
+                             "detail": "Le refus au comptoir ne vaut que pour le reste d'une commande payée au comptoir "
+                                       "(R42.5)."}, status=status.HTTP_409_CONFLICT)
         colis = list(RelayParcel.objects.select_related("shipment", "relay_point").filter(
             shipment__order=parcel.shipment.order, relay_point=parcel.relay_point,
             status__in=[RelayParcel.Status.RECEIVED, RelayParcel.Status.STORED]))
@@ -955,6 +964,7 @@ class CourierShipmentEvidenceUploadView(APIView):
     ALLOWED_STAGES = {
         ShipmentEvidence.Stage.COURIER_PICKUP_VENDOR,
         ShipmentEvidence.Stage.CUSTOMER_DELIVERY,
+        ShipmentEvidence.Stage.CUSTOMER_ABSENT,  # R51.1
     }
 
     def post(self, request, id):

@@ -124,6 +124,13 @@ class ShipmentLocationCreateSerializer(serializers.ModelSerializer):
         return value
 
 
+def _dus(order) -> int:
+    """Ce qui reste à payer au relais avant la remise : reste du comptoir (R42.4) et frais d'absence (R51.5)."""
+    from apps.orders.absence import dus_au_relais
+
+    return dus_au_relais(order)["total"]
+
+
 class ShipmentSerializer(serializers.ModelSerializer):
     events = ShipmentEventSerializer(many=True, read_only=True)
     courier = serializers.SerializerMethodField()
@@ -317,7 +324,7 @@ class ShipmentSerializer(serializers.ModelSerializer):
         # D14, R42.4 : invisible aussi tant que le reste n'est pas payé au comptoir.
         request = self.context.get("request")
         if (request and request.user.is_authenticated and request.user.id == obj.order.user_id
-                and obj.order.payment_status != obj.order.PaymentStatus.VALIDATED):
+                and not _dus(obj.order)):
             data["pickup_code"] = parcel.pickup_code
         return data
 
@@ -501,10 +508,8 @@ class RelayParcelSerializer(serializers.ModelSerializer):
         return bool(obj.pickup_code) and not self.get_a_payer_comptoir_xaf(obj)
 
     def get_a_payer_comptoir_xaf(self, obj):
-        order = obj.shipment.order
-        if order.payment_status != order.PaymentStatus.VALIDATED:
-            return 0
-        return int(order.reste_comptoir_xaf or 0) + int(order.frais_momo_comptoir_xaf or 0)
+        # D14 et R51.5 : reste du comptoir et frais d'absence, frais Mobile Money compris.
+        return _dus(obj.shipment.order)
 
     def get_garde_fee_due_xaf(self, obj):
         return obj.garde_fee_due()
@@ -778,10 +783,10 @@ class RelayParcelPickupSerializer(serializers.Serializer):
             raise serializers.ValidationError({"pickup_code": "Code de retrait incorrect ou colis deja retire."})
         RelayPickupAttempt.register(relay_point, code, success=True)
 
-        # D14, R42.4 : jamais de remise avant le paiement du reste au comptoir, par Mobile Money.
-        if any(p.shipment.order.payment_status == Order.PaymentStatus.VALIDATED for p in parcels):
+        # D14, R42.4 et R51.5 : jamais de remise avant le paiement de ce qui reste dû au relais, par Mobile Money.
+        if any(_dus(p.shipment.order) for p in parcels):
             raise serializers.ValidationError({
-                "comptoir": "Le reste de cette commande n'est pas payé : encaissez-le par Mobile Money avant la remise.",
+                "comptoir": "Un montant reste à payer pour cette commande : encaissez-le par Mobile Money avant la remise.",
             })
 
         # Retrait par un tiers : si l'acheteur a designe une personne
@@ -995,6 +1000,10 @@ class CourierShipmentActionSerializer(serializers.Serializer):
             "INCIDENT",
             "FAILED",
             "NOTE",
+            # Spec v2.1 : client absent (R51), refus d'un colis conforme à la porte (R85.2), déplacement inutile (R85.3)
+            "ABSENT",
+            "REFUS_PORTE",
+            "DEPLACEMENT_INUTILE",
         ]
     )
     message = serializers.CharField(required=False, allow_blank=True, default="")
@@ -1002,6 +1011,9 @@ class CourierShipmentActionSerializer(serializers.Serializer):
     pickup_code = serializers.CharField(required=False, allow_blank=True, default="")
     # D11 : à domicile, code que le client lit dans son suivi et donne au livreur à la porte
     delivery_code = serializers.CharField(required=False, allow_blank=True, default="")
+    # R51.1 : position du livreur devant l'adresse du client absent
+    latitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=False, allow_null=True, default=None)
+    longitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=False, allow_null=True, default=None)
 
     def validate(self, attrs):
         if attrs.get("action") == "INCIDENT" and not attrs.get("message", "").strip():
@@ -1023,6 +1035,30 @@ class CourierShipmentActionSerializer(serializers.Serializer):
         message = self.validated_data.get("message", "")
         location = self.validated_data.get("location", "")
         order = shipment.order
+
+        if action in ("ABSENT", "REFUS_PORTE", "DEPLACEMENT_INUTILE"):
+            from apps.orders import absence
+
+            try:
+                if action == "ABSENT":
+                    if shipment.status not in (Shipment.Status.OUT_FOR_DELIVERY, Shipment.Status.IN_TRANSIT):
+                        raise absence.AbsenceRefusee("action", "« Client absent » se déclare devant l'adresse, en cours "
+                                                               "de livraison.")
+                    absence.declarer_absence(shipment, request.user, self.validated_data.get("latitude"),
+                                             self.validated_data.get("longitude"))
+                elif action == "REFUS_PORTE":
+                    if shipment.status != Shipment.Status.OUT_FOR_DELIVERY:
+                        raise absence.AbsenceRefusee("action", "Le refus se constate à la porte, en cours de livraison.")
+                    absence.refus_a_la_porte(shipment, request.user, message)
+                else:
+                    if shipment.status != Shipment.Status.ASSIGNED:
+                        raise absence.AbsenceRefusee("action", "Le déplacement inutile se déclare au ramassage, chez "
+                                                               "le vendeur.")
+                    absence.deplacement_inutile(shipment, request.user, message)
+            except absence.AbsenceRefusee as exc:
+                raise serializers.ValidationError({exc.champ: exc.message})
+            shipment.refresh_from_db()
+            return shipment
 
         if action == "ACCEPT":
             shipment.status = Shipment.Status.ASSIGNED

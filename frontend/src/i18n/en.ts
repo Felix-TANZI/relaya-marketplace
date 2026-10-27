@@ -1419,6 +1419,7 @@
     fin_payees: 'Payees',
     fin_scheduler: 'Scheduler',
     fin_delivery_services: 'Delivery company services',
+    fin_friday: 'Friday payout list (DP-42)',
     fin_configuration:    'Configuration',
     finances:             'Finances & Commissions',
     account:              'BelivaY Account',

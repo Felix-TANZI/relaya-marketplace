@@ -283,6 +283,9 @@ class TestSeparationDesRoles:
     def test_un_tiers_habilite_peut_approuver(
         self, acheteur, vendeur, finance, finance2,
     ):
+        from apps.payments.tests.dp42_aide import avec_role
+
+        avec_role(finance2.membre, "finance-comptable")  # DP-42 : la 1re validation revient au comptable
         demande = self._demande(acheteur, vendeur, finance)
         reponse = finance2.post(
             f"{BASE}/payouts/{demande.reference}/approve/",

@@ -14,6 +14,7 @@ from apps.payments.wallet import views as wv
 
 from . import config_views as cv
 from . import views as v
+from . import views_dp42 as dp42v
 
 app_name = "payments_admin"
 
@@ -71,6 +72,11 @@ urlpatterns = [
 
     # ── Versements ──────────────────────────────────────────────────────────
     path("payouts/", v.AdminPayoutListView.as_view(), name="payouts"),
+    # DP-42 : liste du vendredi validée en bloc (comptable puis porteur), valideurs de secours
+    path("payouts/vendredi/", dp42v.ListeDuVendrediView.as_view(), name="payouts-friday"),
+    path("payouts/vendredi/<str:liste>/valider/", dp42v.ValiderListeView.as_view(), name="payouts-friday-approve"),
+    path("payouts/secours/", dp42v.SecoursView.as_view(), name="payouts-backup"),
+    path("payouts/secours/<int:pk>/revoquer/", dp42v.RevoquerSecoursView.as_view(), name="payouts-backup-revoke"),
     path("payouts/<str:reference>/", v.AdminPayoutDetailView.as_view(),
          name="payout-detail"),
     path("payouts/<str:reference>/approve/",

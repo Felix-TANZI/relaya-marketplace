@@ -22,6 +22,9 @@ REGLAGES_FEUILLE_DE_ROUTE = {
     "r_wallet_code_blocage_h",  # sécurité main 2 : durée du blocage du code Wallet, en heures
     "r_code_relais_echecs",     # sécurité main 2 : codes de retrait faux qui bloquent un relais (R66.1)
     "r_code_relais_fenetre_h",  # sécurité main 2 : période de ce comptage, en heures
+    "r_secours_jours_max",      # DP-42 : durée maximale d'un accès de valideur de secours
+    "r_rappel_valideurs_h1",    # DP-42 : premier rappel du vendredi aux valideurs
+    "r_rappel_valideurs_h2",    # DP-42 : second rappel du vendredi aux valideurs
 }
 
 

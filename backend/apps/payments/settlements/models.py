@@ -360,6 +360,9 @@ class PayoutRequest(models.Model):
     executed_at = models.DateTimeField(null=True, blank=True)
     settled_at = models.DateTimeField(null=True, blank=True)
     justification = models.TextField(blank=True, default="")
+    # DP-42 : les demandes du versement du vendredi forment une liste, validée en bloc (total et détail).
+    liste = models.CharField(max_length=40, blank=True, default="", db_index=True,
+                             help_text="DP-42 : liste du vendredi (vendredi-AAAA-MM-JJ), vide hors liste")
 
     class Meta:
         app_label = "payments"
@@ -421,6 +424,11 @@ class PayoutApproval(models.Model):
     )
     comment = models.TextField(blank=True, default="")
     approved_at = models.DateTimeField(auto_now_add=True)
+    # DP-42 : à quel titre cette personne a validé (comptable en premier, porteur en second), et par délégation de
+    # secours le cas échéant — tracé pour toujours, l'approbation ne se supprime pas.
+    role = models.CharField(max_length=12, blank=True, default="")
+    secours = models.ForeignKey("payments.ValideurSecours", on_delete=models.PROTECT, null=True, blank=True,
+                                related_name="approbations")
 
     class Meta:
         app_label = "payments"
@@ -535,3 +543,63 @@ class Refund(models.Model):
 
     def delete(self, *args, **kwargs):
         raise ValidationError("Un remboursement ne se supprime pas.")
+
+
+class ValideurSecours(models.Model):
+    """
+    DP-42 : un valideur de secours, quand le comptable ou le porteur est absent.
+
+    L'accès est limité dans le temps (fin, au plus r_secours_jours_max jours) et tracé : qui l'a accordé, à qui, pour
+    quel rôle, pourquoi, et qui l'a retiré. Il ne se supprime jamais ; il se révoque.
+    """
+
+    class Role(models.TextChoices):
+        COMPTABLE = "comptable", "Finance (comptable) : 1re validation"
+        DIRECTION = "direction", "Direction (porteur) : 2e validation"
+
+    user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="secours_dp42")
+    role = models.CharField(max_length=12, choices=Role.choices)
+    debut = models.DateTimeField(default=timezone.now)
+    fin = models.DateTimeField()
+    motif = models.TextField()
+    accorde_par = models.ForeignKey(User, on_delete=models.PROTECT, related_name="+")
+    accorde_le = models.DateTimeField(auto_now_add=True)
+    revoque_le = models.DateTimeField(null=True, blank=True)
+    revoque_par = models.ForeignKey(User, on_delete=models.PROTECT, null=True, blank=True, related_name="+")
+
+    class Meta:
+        app_label = "payments"
+        ordering = ["-accorde_le"]
+        verbose_name = "Valideur de secours (DP-42)"
+        verbose_name_plural = "Valideurs de secours (DP-42)"
+        constraints = [
+            models.CheckConstraint(condition=~models.Q(accorde_par=models.F("user")),
+                                   name="secours_pas_accorde_a_soi_meme"),
+            models.CheckConstraint(condition=models.Q(fin__gt=models.F("debut")), name="secours_fin_apres_debut"),
+        ]
+
+    def __str__(self):
+        return f"Secours {self.get_role_display()} : {self.user} jusqu'au {self.fin:%d/%m/%Y %H:%M}"
+
+    def actif(self, quand=None) -> bool:
+        quand = quand or timezone.now()
+        return self.revoque_le is None and self.debut <= quand < self.fin
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Un valideur de secours ne se supprime pas : il se révoque (DP-42, traçabilité).")
+
+
+class RappelValidation(models.Model):
+    """DP-42, R22.2 : les rappels envoyés aux valideurs d'une liste du vendredi (un seul envoi par rappel)."""
+
+    liste = models.CharField(max_length=40)
+    numero = models.PositiveSmallIntegerField()
+    etape = models.CharField(max_length=12)
+    destinataires = models.PositiveIntegerField(default=0)
+    envoye_le = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        app_label = "payments"
+        verbose_name = "Rappel aux valideurs (DP-42)"
+        verbose_name_plural = "Rappels aux valideurs (DP-42)"
+        constraints = [models.UniqueConstraint(fields=["liste", "numero"], name="un_rappel_par_numero")]

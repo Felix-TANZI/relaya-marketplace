@@ -223,9 +223,11 @@ PAYOUT_POLICIES = [
     {
         "config_key": "payout-default",
         "name": "Politique de versement par defaut",
-        "min_payout_xaf": 1000,
+        # R22.2, R43.1 : le vendredi « sans minimum » ; ce minimum ne vaut que pour un versement exceptionnel.
+        "min_payout_xaf": 0,
         "max_payout_xaf": 5_000_000,
-        "required_approvals": 1,
+        # DP-42 : deux validations pour tous les versements (le comptable puis le porteur).
+        "required_approvals": 2,
         "dual_approval_threshold_xaf": 100_000,
         "momo_change_cooling_hours": 72,
         "auto_execute_on_approval": False,

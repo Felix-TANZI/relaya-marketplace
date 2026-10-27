@@ -139,6 +139,7 @@ const SECTIONS: NavSection[] = [
       { key: 'fin_center',         path: '/admin/finance',                icon: Landmark, end: true },
       { key: 'fin_analytics',      path: '/admin/finance/analytics',      icon: TrendingUp },
       { key: 'fin_payouts',        path: '/admin/finance/payouts',        icon: Send },
+      { key: 'fin_friday',         path: '/admin/finance/vendredi',       icon: Send },
       { key: 'fin_refunds',        path: '/admin/finance/refunds',        icon: Undo2 },
       { key: 'fin_escrow',         path: '/admin/finance/escrow',         icon: Lock },
       { key: 'fin_settlements',    path: '/admin/finance/settlements',    icon: Receipt },

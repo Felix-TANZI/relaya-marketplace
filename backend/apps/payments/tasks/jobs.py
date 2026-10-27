@@ -93,6 +93,16 @@ def escrow_release(limit: int = 200) -> dict:
 # ─────────────────────────────────────────────────────────────────────────────
 
 @payments_task(
+    "rappels_valideurs", lock_timeout=300,
+    description="DP-42 : rappelle au comptable puis au porteur de valider la liste du vendredi avant midi.",
+)
+def rappels_valideurs() -> dict:
+    from apps.payments.settlements.dp42 import rappels_du_vendredi
+
+    return rappels_du_vendredi()
+
+
+@payments_task(
     "build_settlements", lock_timeout=900, critical=True,
     description=(
         "Construit les lots de reglement du cycle : agrege les sequestres "
@@ -409,6 +419,8 @@ SCHEDULE = [
     # Reglements : spec v2.1, R22.2 et R43.1 — la tache tourne chaque jour et ne
     # verse que le vendredi avant r_versement_heure (bridge.vendredi).
     {"task": "build_settlements", "every_minutes": 1440, "group": "settlement"},
+    # DP-42, R22.2 : rappels aux valideurs de la liste du vendredi (ne fait rien hors du vendredi matin).
+    {"task": "rappels_valideurs", "every_minutes": 30, "group": "settlement"},
     {"task": "execute_payouts", "every_minutes": 10, "group": "payout"},
     {"task": "execute_refunds", "every_minutes": 10, "group": "payout"},
 ]

@@ -37,6 +37,7 @@ from apps.payments.ledger.invariants import run_all
 from apps.payments.ledger.models import LedgerAccount
 from apps.payments.payees.models import MomoOperator, PayeeType
 from apps.payments.payees.services import create_payee, hold_payouts
+from apps.payments.tests.dp42_aide import avec_role, valider_dp42
 from apps.payments.settlements.models import (
     Adjustment, PayoutApproval, PayoutRequest, SettlementBatch,
 )
@@ -117,7 +118,10 @@ def operateur():
 
 @pytest.fixture
 def approbateur():
-    return User.objects.create_user("approbateur", "ap@belivay.cm", "x")
+    # DP-42 : l'approbateur de ces tests tient le rôle du comptable (1re validation).
+    from apps.payments.tests.dp42_aide import avec_role
+
+    return avec_role(User.objects.create_user("approbateur", "ap@belivay.cm", "x"), "finance-comptable")
 
 
 @pytest.fixture
@@ -365,7 +369,7 @@ class TestApprobation:
     ):
         lot = self._lot_confirme(acheteur, vendeur)
         demande = request_payout(lot, requested_by=operateur)
-        demande = approve_payout(demande, approved_by=approbateur)
+        demande = valider_dp42(demande, approbateur)  # DP-42 : comptable puis porteur
         assert demande.status == PayoutRequest.Status.APPROVED
 
     def test_double_approbation_au_dela_du_seuil(
@@ -379,7 +383,7 @@ class TestApprobation:
         demande = approve_payout(demande, approved_by=approbateur)
         assert demande.status == PayoutRequest.Status.PENDING_APPROVAL
 
-        second = User.objects.create_user("approbateur2", "ap2@b.cm", "x")
+        second = avec_role(User.objects.create_user("approbateur2", "ap2@b.cm", "x"), "direction")
         demande = approve_payout(demande, approved_by=second)
         assert demande.status == PayoutRequest.Status.APPROVED
 
@@ -431,7 +435,7 @@ class TestExecution:
         liberer(acheteur, vendeur, **kw)
         lot = confirm_batch(build_batch(vendeur))
         demande = request_payout(lot, requested_by=operateur)
-        return approve_payout(demande, approved_by=approbateur)
+        return valider_dp42(demande, approbateur)
 
     def test_versement_execute(
         self, acheteur, vendeur, operateur, approbateur,
@@ -728,7 +732,7 @@ class TestScenarioComplet:
         assert lot.net_amount_xaf == 46000
 
         demande = request_payout(lot, requested_by=operateur)
-        demande = approve_payout(demande, approved_by=approbateur)
+        demande = valider_dp42(demande, approbateur)  # DP-42
         demande = execute_payout(demande)
 
         assert demande.status == PayoutRequest.Status.PAID

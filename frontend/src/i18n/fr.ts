@@ -1384,6 +1384,7 @@
     fin_payees:           'Bénéficiaires',
     fin_scheduler:        'Ordonnanceur',
     fin_delivery_services: 'Prestations des entreprises',
+    fin_friday: 'Liste du vendredi (DP-42)',
     fin_configuration:    'Configuration',
 
     finances:             'Finances & Commissions',

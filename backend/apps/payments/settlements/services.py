@@ -266,7 +266,7 @@ def build_batches_for_cycle(cycle_key: str = "", *, now=None,
 
 @db_transaction.atomic
 def request_payout(batch: SettlementBatch, *, requested_by,
-                   justification: str = "") -> PayoutRequest:
+                   justification: str = "", liste: str = "") -> PayoutRequest:
     """
     Cree une demande de versement pour un lot confirme.
 
@@ -300,7 +300,9 @@ def request_payout(batch: SettlementBatch, *, requested_by,
     if montant <= 0:
         raise SettlementError(f"Lot {batch.reference} : rien à verser après les frais de versement.")
 
-    minimum = int(_politique_valeur(politique, "min_payout_xaf", 0))
+    # Spec v2.1, R22.2 et R43.1 : le versement du vendredi part « sans minimum ». Le minimum de la politique ne
+    # vaut plus que pour un versement exceptionnel, hors cycle.
+    minimum = int(_politique_valeur(politique, "min_payout_xaf", 0)) if batch.is_exceptional else 0
     maximum = int(_politique_valeur(politique, "max_payout_xaf", 0))
     if minimum and montant < minimum:
         raise SettlementError(
@@ -319,6 +321,7 @@ def request_payout(batch: SettlementBatch, *, requested_by,
         seuil = int(_politique_valeur(politique, "dual_approval_threshold_xaf", 0))
         if seuil and montant >= seuil:
             requises = max(requises, 2)
+    requises = max(requises, 2)  # DP-42 : deux validations pour TOUS les versements (comptable puis porteur)
 
     demande = PayoutRequest(
         batch=batch, payee=batch.payee, amount_xaf=montant, psp_fee_xaf=frais_versement,
@@ -328,6 +331,7 @@ def request_payout(batch: SettlementBatch, *, requested_by,
         requested_by=requested_by,
         justification=justification.strip(),
         status=PayoutRequest.Status.DRAFT,
+        liste=liste,
     )
     demande.save()
     demande.transition_to(PayoutRequest.Status.PENDING_APPROVAL)
@@ -429,7 +433,12 @@ def approve_payout(payout: PayoutRequest, *, approved_by,
 
     Controle double : ici pour un message clair, et en base par une
     contrainte — un contournement par requete directe echoue aussi.
+
+    DP-42 : deux validations par deux personnes differentes, le comptable
+    (Finance) en premier, le porteur (Direction) en second (settlements.dp42).
     """
+    from . import dp42
+
     payout = PayoutRequest.objects.select_for_update().get(pk=payout.pk)
 
     if payout.status != PayoutRequest.Status.PENDING_APPROVAL:
@@ -447,9 +456,16 @@ def approve_payout(payout: PayoutRequest, *, approved_by,
             f"{approved_by} a deja approuve ce versement. "
             "Une seule approbation par personne."
         )
+    try:
+        titre = dp42.controler(payout, approved_by)
+    except dp42.Dp42Error as exc:
+        raise SettlementError(str(exc)) from exc
+    if payout.required_approvals < 2:  # demande creee avant DP-42
+        PayoutRequest.objects.filter(pk=payout.pk).update(required_approvals=2)
 
     PayoutApproval.objects.create(
         payout=payout, approved_by=approved_by, comment=comment,
+        role=titre["role"], secours=titre["secours"],
     )
     payout.refresh_from_db()
 
@@ -1654,11 +1670,14 @@ def versements_du_vendredi(now=None, refus=None) -> dict:
     versement ; l'équipe finance les approuve (maker-checker), puis l'exécution part toute seule."""
     from apps.regles import services as regles
 
+    from . import dp42
+
     local = timezone.localtime(now or timezone.now())
     if local.weekday() != VENDREDI or local.hour >= regles.reglage("r_versement_heure"):
         return {"skipped": True}
     fin = local.replace(hour=0, minute=0, second=0, microsecond=0)  # jeudi à minuit
     systeme = _systeme()
+    liste = dp42.cle_du_vendredi(local)  # DP-42 : une liste, validée en bloc par le comptable puis le porteur
     lots, demandes, erreurs = 0, 0, []
     for payee in PayeeAccount.objects.filter(is_active=True).exclude(payee_type__in=["PLATFORM", "BUYER"]):
         motif = refus(payee) if refus else None  # règle métier lue par le pont (ex. D19 : pièces du vendeur)
@@ -1671,11 +1690,12 @@ def versements_du_vendredi(now=None, refus=None) -> dict:
                 continue
             lots += 1
             confirm_batch(lot)
-            request_payout(lot, requested_by=systeme, justification="Versement du vendredi (R22.2, R43.1).")
+            request_payout(lot, requested_by=systeme, justification="Versement du vendredi (R22.2, R43.1).",
+                           liste=liste)
             demandes += 1
         except Exception as exc:  # un bénéficiaire bloqué (KYC, numéro) n'arrête pas les autres
             erreurs.append(f"{payee.payee_code} : {exc}")
-    return {"skipped": False, "batches": lots, "payout_requests": demandes, "errors": erreurs[:20]}
+    return {"skipped": False, "batches": lots, "payout_requests": demandes, "errors": erreurs[:20], "liste": liste}
 
 
 def _prochaine_date(payee: PayeeAccount):

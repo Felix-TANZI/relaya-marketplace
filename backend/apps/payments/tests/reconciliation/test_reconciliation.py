@@ -10,6 +10,8 @@ from datetime import timedelta
 from decimal import Decimal
 
 import pytest
+
+from apps.payments.tests.dp42_aide import valider_dp42
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils import timezone
@@ -42,7 +44,7 @@ from apps.payments.reconciliation.services import (
 )
 from apps.payments.settlements.models import PayoutRequest
 from apps.payments.settlements.services import (
-    approve_payout, build_batch, confirm_batch, execute_payout, request_payout,
+    build_batch, confirm_batch, execute_payout, request_payout,
 )
 
 pytestmark = pytest.mark.django_db
@@ -333,7 +335,7 @@ class TestVersementsInconnus:
                      reason="Test")
         lot = confirm_batch(build_batch(vendeur))
         demande = request_payout(lot, requested_by=operateur)
-        demande = approve_payout(demande, approved_by=approbateur)
+        demande = valider_dp42(demande, approbateur)  # DP-42 : comptable puis porteur
 
         vendeur.set_momo_number(NUMERO_TIMEOUT, MomoOperator.MTN)
         vendeur.momo_changed_at = timezone.now() - timedelta(days=30)

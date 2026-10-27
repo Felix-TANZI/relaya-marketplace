@@ -6,6 +6,7 @@
 // « Poser une question au vendeur », onglets Description / Caractéristiques / Avis, barre du bas (favori,
 // Ajouter, Acheter). Tout vient du catalogue (?p=…).
 // Écran repris à la main : outils/ecran.mjs ne le réécrit plus.
+import { noterVue } from '../../donnees/pourVous'
 import { useEffect, useState, type MouseEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Ecran } from '../../composants/coque'
@@ -62,6 +63,8 @@ export function Fiche() {
     setMessage(null)
     source.produit(cle).then((x) => {
       setPr(x)
+      // Flux « Pour vous » de l'accueil : catégorie et produit vus (donnees/pourVous.ts).
+      if (x) noterVue(x)
       if (x) setChoix(Object.fromEntries(x.options.map((o) => [o.nom, o.choisi])))
     })
     source.favoris().then((f) => setFavori(f.favoris.some((x) => x.p === cle)))
@@ -140,7 +143,7 @@ export function Fiche() {
   )
 
   // Grand écran, souris : loupe au survol de l'image principale (le clic ouvre toujours la galerie).
-  const loupe = (e: MouseEvent<HTMLAnchorElement>) => {
+  const loupe = (e: MouseEvent<HTMLDivElement>) => {
     const r = e.currentTarget.getBoundingClientRect()
     e.currentTarget.style.setProperty('--zx', ((e.clientX - r.left) / r.width) * 100 + '%')
     e.currentTarget.style.setProperty('--zy', ((e.clientY - r.top) / r.height) * 100 + '%')
@@ -155,16 +158,13 @@ export function Fiche() {
             </button>
           ))}
         </div>
-        <Link to={chemin('galerie', { p: pr.p, i: String(image) })} className="fp-main" aria-label={t('Agrandir la photo')} onMouseMove={tabL ? loupe : undefined}>
+        <div className="fp-main" onMouseMove={tabL ? loupe : undefined}>
           {(dessins[image] || pr.images?.[image]) && <Dessin id={dessins[image] ?? ''} image={pr.images?.[image]} alt={pr.titre} tailles="(min-width: 1200px) 50vw, 100vw" />}
           <span className="pill green sm fp-cert">
             <Icone nom="check" taille={13} />
             {t('Certifié')}
           </span>
-          <span className="fp-zoom">
-            <Icone nom="zoom-in" taille={18} />
-          </span>
-        </Link>
+        </div>
       </div>
     </>
   )

@@ -5,7 +5,7 @@
 import type { ClientApi } from '@client/api/client'
 import type { ContenuDocument, Documents, DomaineArgent, Gains, Gele, ResumeArgent, SeLibere } from '../../donnees/domaines/argent'
 import type { SourceVendeur } from '../../donnees/source'
-import { appels } from '../outils'
+import { appels, seg } from '../outils'
 
 export function domaineArgent(api: ClientApi): SourceVendeur['argent'] {
   const a = appels(api, 'argent')
@@ -15,7 +15,9 @@ export function domaineArgent(api: ClientApi): SourceVendeur['argent'] {
     gele: () => a.get<Gele>('/money/frozen'),
     gains: (mois) => a.get<Gains>('/money/earnings', { query: { month: mois } }),
     documents: () => a.get<Documents>('/documents'),
-    document: (doc) => a.get<ContenuDocument>('/documents/content', { query: { type: doc.type, periode: 'periode' in doc ? doc.periode : undefined } }),
+    // GET /documents/{type}/{period} (chemin, pas requête) : le serveur attend un segment de
+    // période même pour 'contrat' (sans période propre) — 'actuel' par convention.
+    document: (doc) => a.get<ContenuDocument>(`/documents/${seg(doc.type)}/${seg('periode' in doc ? doc.periode : 'actuel')}`),
   }
   return d
 }

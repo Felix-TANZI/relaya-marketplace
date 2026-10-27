@@ -27,26 +27,27 @@ export const finRecours = (l: Litige) => (l.decision ? l.decision.le + RECOURS_H
 // Une décision contre le client se conteste une fois, sous 48 h.
 export const contestable = (l: Litige, maintenant: number) => l.etat === 'refuse' && !!l.decision && !l.decision.conteste && maintenant < finRecours(l)
 
-// Où va l'argent d'un remboursement (REMB-DESTINATION, DP-06, DP-17, DP-50) : payé par carte, sur la même carte ;
-// sinon sur le Portefeuille BelivaY quand il est ouvert (FF-WALLET), crédité dès la décision et retirable vers
-// Mobile Money sans frais ; portefeuille fermé : sur le moyen d'origine, sous 1 h (REMB-MOMO-H).
+// Où va l'argent d'un remboursement (REMB-DESTINATION ; v6 D16, remplace DP-50) : toujours sur le moyen de paiement
+// d'origine — la même carte, le numéro Mobile Money qui a payé (sous 1 h), ou le Wallet s'il a payé (dès la décision).
 export const parCarte = (payePar: string | null) => !!payePar && /^carte|visa|mastercard/i.test(payePar)
+// v6 (D16) : toujours sur le moyen de paiement d'origine ; le Wallet seulement s'il a payé la commande.
+export const parWallet = (payePar: string | null) => !!payePar && /^portefeuille|wallet/i.test(payePar)
 export function useRemboursement(payePar: string | null) {
   const { t, tf } = usePreferences()
   const { interrupteurs } = useSession()
   const carte = parCarte(payePar)
-  const portefeuille = !carte && interrupteurs['FF-WALLET']
+  const portefeuille = !carte && parWallet(payePar) && interrupteurs['FF-WALLET']
   const ou = carte
     ? payePar
       ? tf('sur la carte qui a payé ({p})', { p: payePar })
       : t('sur la carte qui a payé')
     : portefeuille
-      ? t('sur ton Portefeuille BelivaY')
+      ? t('sur ton Wallet BelivaY, le moyen de paiement d’origine')
       : payePar
-        ? tf('sur ton {moyen}', { moyen: payePar })
-        : t('sur le moyen qui a payé la commande')
+        ? tf('sur le moyen de paiement d’origine ({moyen})', { moyen: payePar })
+        : t('sur le moyen de paiement d’origine')
   const quand = carte ? t('le délai d’affichage dépend de ta banque') : portefeuille ? t('dès la décision') : t('sous 1 h')
-  const ensuite = carte ? null : portefeuille ? t('Tu paies une commande avec, ou tu le retires vers ton Mobile Money : sans frais pour un remboursement.') : null
+  const ensuite = carte ? null : null
   return { ou, quand, ensuite, carte, portefeuille }
 }
 

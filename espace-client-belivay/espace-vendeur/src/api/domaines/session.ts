@@ -110,8 +110,11 @@ export function domaineSession(api: ClientApi): SourceVendeur['session'] {
       return session()
     },
     changerMembre: () => Promise.reject(new NonDisponible('session.changerMembre', 'démonstration seulement')),
+    // DELETE /devices/current (et non POST /auth/devices/forget, qui n'existe pas côté serveur) : réutilise
+    // le système de sessions générique de relaya (apps.accounts.UserSession, branché le 11→12 oct.) plutôt
+    // qu'un deuxième mécanisme d'« appareil » (INTEGRATION-API.md §1, domaine session).
     oublierAppareil: async () => {
-      await a.post('/auth/devices/forget', { appareil: appareil() })
+      await a.supprimer('/devices/current')
     },
 
     // ── Ouverture ──

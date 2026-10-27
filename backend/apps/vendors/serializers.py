@@ -187,6 +187,48 @@ class VendorOrderItemSerializer(serializers.ModelSerializer):
         return None
 
 
+SHIPMENT_STATUS_LABELS = {
+    Shipment.Status.CREATED: 'Livraison créée',
+    Shipment.Status.ASSIGNED: 'Livreur assigné',
+    Shipment.Status.PICKED_UP: 'Colis pris en main',
+    Shipment.Status.IN_TRANSIT: 'Colis en transit',
+    Shipment.Status.OUT_FOR_DELIVERY: 'En cours de livraison',
+    Shipment.Status.DELIVERED: 'Colis livré',
+    Shipment.Status.FAILED: 'Livraison échouée',
+    Shipment.Status.CANCELLED: 'Livraison annulée',
+}
+
+
+def _shipment_event_actor_label(event):
+    """
+    Signature de chaque entrée du journal (audit vendeur) : jamais le nom réel
+    d'un acheteur (même convention que customer_name → "Acheteur #XXXX"),
+    une identification utile pour les autres rôles, et "Système BelivaY" pour
+    les transitions automatiques (dispatch, libération de mission...).
+    """
+    role = event.actor_role
+    if role == 'COURIER':
+        name = event.actor.get_full_name().strip() if event.actor else ''
+        return f"Livreur {name}".strip() if name else 'Livreur'
+    if role == 'RELAY_POINT':
+        name = event.location or (event.actor.get_full_name().strip() if event.actor else '')
+        return f"Point relais {name}".strip() if name else 'Point relais'
+    if role == 'VENDOR':
+        return 'Vous'
+    if role == 'DISPATCHER':
+        name = event.actor.get_full_name().strip() if event.actor else ''
+        return f"Organisation de livraison ({name})" if name else 'Organisation de livraison'
+    if role == 'SUPPORT':
+        name = event.actor.get_full_name().strip() if event.actor else ''
+        return f"Support BelivaY ({name})" if name else 'Support BelivaY'
+    if role == 'CLIENT':
+        if event.actor_id:
+            code = hashlib.sha256(str(event.actor_id).encode()).hexdigest()[:4].upper()
+            return f"Acheteur #{code}"
+        return 'Acheteur'
+    return 'Système BelivaY'
+
+
 class VendorOrderSerializer(serializers.ModelSerializer):
     """
     Commande vue vendeur.
@@ -292,13 +334,16 @@ class VendorOrderSerializer(serializers.ModelSerializer):
         if not shipment:
             return None
 
+        order_created_label = 'Achat client initié'
         order_events = [
             {
                 'id': f"order-{obj.id}-created",
                 'status': 'ORDER_CREATED',
-                'label': 'Achat client initié',
+                'label': order_created_label,
+                'previous_label': '',
                 'message': f"Le client a initié la commande à {obj.city}.",
                 'location': obj.city,
+                'actor_label': self.get_customer_name(obj),
                 'created_at': obj.created_at,
             }
         ]
@@ -319,8 +364,10 @@ class VendorOrderSerializer(serializers.ModelSerializer):
                 'id': f"order-{obj.id}-vendor",
                 'status': 'VENDOR_PROCESSING',
                 'label': 'Préparation vendeur',
+                'previous_label': order_created_label,
                 'message': 'La commande est suivie dans l’espace vendeur.',
                 'location': obj.city,
+                'actor_label': 'Vous',
                 'created_at': obj.updated_at,
             })
 
@@ -328,21 +375,17 @@ class VendorOrderSerializer(serializers.ModelSerializer):
             {
                 'id': event.id,
                 'status': event.status,
-                'label': {
-                    Shipment.Status.CREATED: 'Livraison créée',
-                    Shipment.Status.ASSIGNED: 'Livreur assigné',
-                    Shipment.Status.PICKED_UP: 'Colis pris en main',
-                    Shipment.Status.IN_TRANSIT: 'Colis en transit',
-                    Shipment.Status.OUT_FOR_DELIVERY: 'En cours de livraison',
-                    Shipment.Status.DELIVERED: 'Colis livré',
-                    Shipment.Status.FAILED: 'Livraison échouée',
-                    Shipment.Status.CANCELLED: 'Livraison annulée',
-                }.get(event.status, event.status),
+                'label': SHIPMENT_STATUS_LABELS.get(event.status, event.status),
+                'previous_label': (
+                    SHIPMENT_STATUS_LABELS.get(event.previous_status, event.previous_status)
+                    if event.previous_status else ''
+                ),
                 'message': event.message,
                 'location': event.location,
+                'actor_label': _shipment_event_actor_label(event),
                 'created_at': event.created_at,
             }
-            for event in shipment.events.all().order_by('created_at')
+            for event in shipment.events.all().select_related('actor').order_by('created_at')
         ]
 
         timeline = sorted(
@@ -1840,4 +1883,594 @@ class SubscriptionPlanSerializer(serializers.ModelSerializer):
             'commission_rate', 'max_products', 'max_boosts_month',
             'features', 'trial_days', 'plan_duration_days',
             'display_order',
-        ]    
+        ]
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# ESPACE VENDEUR (nouveau frontend, espace-client-belivay/espace-vendeur) —
+# domaines commandes / préparation / remise / journal.
+#
+# Construit les types français de src/donnees/domaines/{commandes,preparation,
+# remise}.ts à partir des modèles Django existants (Order, Shipment,
+# ShipmentEvent, Dispute, Return) — aucun nouveau modèle de "commande vue
+# vendeur" : ce sont des fonctions de présentation, pas un ORM parallèle.
+#
+# RÔLE : pas de modèle "employé / accès Préparation" côté serveur aujourd'hui
+# (domaine "équipe" non câblé) — tout utilisateur vendeur authentifié est
+# `role: 'proprietaire'`, jamais de montant masqué ici (simplification à
+# resserrer quand ce domaine existera).
+# ═════════════════════════════════════════════════════════════════════════════
+
+from . import opening_hours as _oh
+
+PARCEL_SIZE_TO_CLASSE = {
+    'SMALL': 'S', 'STANDARD': 'M', 'LARGE': 'L', 'BULKY': 'XL',
+}
+
+
+def _ref_commande(order) -> str:
+    """Référence opaque pour le nouveau frontend — simplification signalée :
+    pas le format cosmétique « BLV-00008 » du TS d'origine (routage Django
+    plus simple avec l'id numérique brut ; le frontend traite `ref` comme une
+    chaîne opaque, seul l'affichage perd le préfixe)."""
+    return str(order.id)
+
+
+def _hhmm(ms: int) -> str:
+    dt = _oh.ms_to_dt(ms + _oh.DECALAGE)
+    return dt.strftime('%H:%M')
+
+
+def _jour(ms: int) -> str:
+    return _oh._jour_de(ms)  # noqa: SLF001 — module interne, même paquet logique
+
+
+def _article_vendu(order_item) -> dict:
+    product = order_item.product
+    image = ''
+    variante = ''
+    etat = 'Neuf'
+    categorie = ''
+    if product:
+        try:
+            img = product.images.filter(is_primary=True).first() or product.images.first()
+            if img and img.image:
+                image = img.image.url
+        except Exception:
+            pass
+        if product.variant_id and product.variant.axis_values:
+            variante = ' / '.join(str(v) for v in product.variant.axis_values.values())
+        if product.condition_id:
+            etat = product.condition.name
+        if product.category_id:
+            categorie = product.category.name
+    return {
+        'offreId': str(product.id) if product else str(order_item.id),
+        'titre': order_item.title_snapshot,
+        'variante': variante,
+        'etat': etat,
+        'dessin': image,
+        'categorie': categorie,
+    }
+
+
+def _ligne_commande(order_item, montants: bool) -> dict:
+    product = order_item.product
+    return {
+        'article': _article_vendu(order_item),
+        'quantite': order_item.qty,
+        'prixUnitaire': order_item.price_xaf_snapshot if montants else None,
+        'reference': (product.sku if product and product.sku else f"BLV-{order_item.id:05d}"),
+        'aMettreDeCote': [],  # non modélisé côté catalogue (accessoires livrés) — toujours vide pour l'instant
+    }
+
+
+def _calendrier_boutique(vendor_profile) -> dict:
+    return _oh.calendar_for_vendor(vendor_profile)
+
+
+CANCELLATION_REASON_TO_MOTIF = {
+    Order.CancellationReason.CLIENT_BEFORE_PICKUP: 'client_avant_ramassage',
+    Order.CancellationReason.STOCKOUT: 'rupture',
+    Order.CancellationReason.DISPUTE_LOST: 'litige_perdu',
+    Order.CancellationReason.BELIVAY: 'belivay',
+}
+
+
+def _cancellation_for_order(order):
+    if order.fulfillment_status not in (Order.FulfillmentStatus.CANCELLED, Order.FulfillmentStatus.REFUNDED):
+        return None
+    motif = CANCELLATION_REASON_TO_MOTIF.get(order.cancellation_reason, 'belivay')
+    at = order.cancelled_at or order.updated_at
+    return {'motif': motif, 'a': _oh.dt_to_ms(at)}
+
+
+def _probleme_for_order(order, vendor_user):
+    """
+    `probleme` (Commande.probleme) : litige ou retour ouvert sur CETTE
+    sous-commande vendeur. SIMPLIFICATION signalée (partagée avec le domaine
+    litiges/retours, qui possède la construction fine) : `inspectionHeures`
+    n'a pas de constante business écrite (RET-INSPECT-H non défini dans les
+    décisions verrouillées) — posé à 0 plutôt qu'une valeur inventée ; à
+    corriger par l'agent litiges/retours quand la règle existera.
+    """
+    from apps.orders.models import Dispute, Return
+
+    dispute = (
+        Dispute.objects.filter(order=order, vendor=vendor_user, status__in=['OPEN', 'IN_PROGRESS'])
+        .order_by('-created_at').first()
+    )
+    if dispute:
+        return {
+            'type': 'litige',
+            'echeance': _oh.dt_to_ms(dispute.vendor_reply_deadline) if dispute.vendor_reply_deadline else _oh.now_ms(),
+            'motif': dispute.get_reason_display(),
+            'repondu': dispute.vendor_replied,
+        }
+
+    retour = (
+        Return.objects.filter(
+            order=order, vendor=vendor_user,
+        ).exclude(status__in=[Return.Status.REFUNDED, Return.Status.CLOSED_NO_REFUND, Return.Status.REJECTED])
+        .order_by('-created_at').first()
+    )
+    if retour:
+        arrivee_ms = _oh.dt_to_ms(retour.received_at) if retour.received_at else _oh.passage_suivant(_oh.now_ms(), {'horaires': [], 'passages': []})[0]
+        return {
+            'type': 'retour',
+            'motif': retour.get_reason_display(),
+            'arrivee': {'jour': _jour(arrivee_ms), 'creneau': [_hhmm(arrivee_ms), _hhmm(arrivee_ms)]},
+            'inspectionHeures': 0,
+        }
+    return None
+
+
+def _moyen_paiement_for_order(order) -> str:
+    if order.delivery_method == Order.DeliveryMethod.PICKUP and order.payment_status == Order.PaymentStatus.PENDING:
+        return 'comptoir'
+    try:
+        from apps.payments.models import PaymentTransaction
+        tx = PaymentTransaction.objects.filter(order=order).order_by('-created_at').first()
+        if tx and tx.provider in (PaymentTransaction.Provider.MTN_MOMO, PaymentTransaction.Provider.ORANGE_MONEY):
+            return 'momo'
+    except Exception:
+        pass
+    return 'momo'
+
+
+def _statut_commande(order, probleme) -> str:
+    if probleme and probleme['type'] == 'litige':
+        return 'litige_gele'
+    if probleme and probleme['type'] == 'retour':
+        return 'retour_gele'
+    FS = Order.FulfillmentStatus
+    if order.fulfillment_status in (FS.CANCELLED, FS.REFUNDED):
+        return 'annulee'
+    if order.fulfillment_status in (FS.DELIVERED, FS.BUYER_CONFIRMED, FS.AUTO_CONFIRMED, FS.RELEASED_TO_VENDOR):
+        return 'livree'
+    if order.fulfillment_status in (FS.DRIVER_ASSIGNED, FS.PICKED_UP, FS.OUT_FOR_DELIVERY):
+        return 'chez_le_livreur'
+    if order.fulfillment_status == FS.READY_FOR_PICKUP:
+        return 'prete'
+    if order.fulfillment_status in (FS.PAID_IN_ESCROW, FS.VENDOR_ACKNOWLEDGED, FS.PREPARING):
+        return 'a_preparer'
+    if order.delivery_method == Order.DeliveryMethod.PICKUP and order.payment_status == Order.PaymentStatus.PENDING:
+        return 'payable_au_retrait'
+    return 'payee'
+
+
+def _livreur_for_shipment(shipment):
+    if not shipment or not shipment.courier_name:
+        return None
+    societe = ''
+    try:
+        if shipment.courier and shipment.courier.delivery_organization:
+            societe = shipment.courier.delivery_organization.name
+    except Exception:
+        pass
+    ramassage = _ramassage_for_shipment(shipment)
+    return {
+        'nom': shipment.courier_name,
+        'societe': societe,
+        'creneau': [_hhmm(ramassage['debut']), _hhmm(ramassage['fin'])],
+        'photo': '',
+    }
+
+
+def _ramassage_for_shipment(shipment) -> dict:
+    """Créneau de passage du livreur — tournée réelle si assignée, sinon la
+    disponibilité estimée du colis (Shipment.estimated_availability_at)."""
+    if shipment and shipment.tournee_id:
+        t = shipment.tournee
+        from .opening_hours import _a_heure
+        jour = t.slot_date.isoformat()
+        if t.period == t.Period.MORNING:
+            return {'debut': _a_heure(jour, '08:00'), 'fin': _a_heure(jour, '12:00')}
+        return {'debut': _a_heure(jour, '12:00'), 'fin': _a_heure(jour, '18:00')}
+    eta = shipment.estimated_availability_at() if shipment else None
+    if eta:
+        ms = _oh.dt_to_ms(eta)
+        return {'debut': ms, 'fin': ms + _oh.H}
+    now = _oh.now_ms()
+    return {'debut': now, 'fin': now + _oh.H}
+
+
+def build_commande(order, vendor_profile) -> dict:
+    vendor_user = vendor_profile.user
+    montants = True  # pas d'accès Préparation câblé aujourd'hui (voir en-tête)
+
+    items = list(order.items.filter(product__vendor=vendor_user))
+    vendor_subtotal = sum(i.line_total_xaf for i in items)
+    shipment = order.shipments.filter(vendor=vendor_user).first()
+    probleme = _probleme_for_order(order, vendor_user)
+    statut = _statut_commande(order, probleme)
+    calendrier = _calendrier_boutique(vendor_profile)
+
+    paid_at = order.created_at
+    payee_a = _oh.dt_to_ms(paid_at)
+    debut = _oh.dt_to_ms(order.vendor_acknowledged_at) if order.vendor_acknowledged_at else payee_a
+    echeance = _oh.dt_to_ms(order.prep_deadline) if order.prep_deadline else None
+    echeance_absolue = _oh.ajouter_ouvertes(debut, 24 * _oh.H, calendrier) if order.vendor_acknowledged_at else None
+
+    ramassage = _ramassage_for_shipment(shipment) if shipment else None
+    livreur = _livreur_for_shipment(shipment) if shipment else None
+
+    garde = None if probleme else (vendor_subtotal - round(vendor_subtotal * float(order.commission_rate_snapshot) / 100))
+    gele = order.frozen_amount_xaf
+
+    from apps.orders.models import PlatformSettings
+    liberation_jours = round((getattr(PlatformSettings.get_settings(), 'escrow_release_h', 72) or 72) / 24) or 1
+
+    return {
+        'ref': _ref_commande(order),
+        'statut': statut,
+        'payableAuRetrait': order.delivery_method == Order.DeliveryMethod.PICKUP,
+        'payeeA': payee_a,
+        'debut': debut,
+        'echeance': echeance,
+        'echeanceAbsolue': echeance_absolue,
+        'prolongee': order.prep_extended,
+        'calendrier': calendrier,
+        'lignes': [_ligne_commande(i, montants) for i in items],
+        'colis': PARCEL_SIZE_TO_CLASSE.get(shipment.parcel_size if shipment else '', 'M'),
+        'garde': garde,
+        'commissionMinimale': None,
+        'remplacementDe': _ref_commande(order.replacement_of) if order.replacement_of_id else None,
+        'liberationJours': liberation_jours,
+        'argent': None if not montants else {
+            'etat': _etat_argent_for_order(order),
+            'liberation': _oh.dt_to_ms(order.updated_at) if order.escrow_status == Order.EscrowStatus.RELEASE_PENDING else None,
+            'vendredi': None,
+            'versement': None,
+        },
+        'livreur': livreur,
+        'ramassage': ramassage,
+        'preteA': _oh.dt_to_ms(order.updated_at) if order.fulfillment_status == Order.FulfillmentStatus.READY_FOR_PICKUP else None,
+        'remiseA': _oh.dt_to_ms(shipment.buyer_confirmed_at) if shipment and shipment.buyer_confirmed_at else None,
+        'retireeA': _oh.dt_to_ms(order.updated_at) if order.fulfillment_status in (
+            Order.FulfillmentStatus.DELIVERED, Order.FulfillmentStatus.BUYER_CONFIRMED,
+            Order.FulfillmentStatus.AUTO_CONFIRMED, Order.FulfillmentStatus.RELEASED_TO_VENDOR,
+        ) else None,
+        'confirmeeParLeClient': order.fulfillment_status in (
+            Order.FulfillmentStatus.BUYER_CONFIRMED, Order.FulfillmentStatus.AUTO_CONFIRMED,
+            Order.FulfillmentStatus.RELEASED_TO_VENDOR,
+        ),
+        'annulation': _cancellation_for_order(order),
+        'probleme': probleme,
+        'gele': gele,
+        'moyenPaiement': _moyen_paiement_for_order(order),
+    }
+
+
+def _etat_argent_for_order(order) -> str:
+    ES = Order.EscrowStatus
+    if order.escrow_status == ES.BLOCKED:
+        return 'en_cours'
+    if order.escrow_status == ES.RELEASE_PENDING:
+        return 'se_libere'
+    if order.escrow_status in (ES.REFUNDED, ES.PARTIAL_REFUNDED):
+        return 'repris'
+    if order.escrow_status == ES.RELEASED:
+        return 'verse'
+    return 'a_verser'
+
+
+FILTRE_VERS_STATUTS = {
+    'prep': {'a_preparer', 'payable_au_retrait'},
+    'cours': {'prete', 'chez_le_livreur'},
+    'fin': {'livree', 'annulee', 'payee'},
+    'pb': {'litige_gele', 'retour_gele'},
+}
+
+
+def build_vue_commandes(orders_qs, vendor_profile, filtre: str) -> dict:
+    vendor_user = vendor_profile.user
+    all_commandes = [build_commande(o, vendor_profile) for o in orders_qs]
+
+    detail = {
+        'prep': sum(1 for c in all_commandes if c['statut'] in ('a_preparer', 'payable_au_retrait')),
+        'cours': sum(1 for c in all_commandes if c['statut'] in ('prete', 'chez_le_livreur')),
+        'litiges': sum(1 for c in all_commandes if c['statut'] == 'litige_gele'),
+        'retours': sum(1 for c in all_commandes if c['statut'] == 'retour_gele'),
+        'terminees': sum(1 for c in all_commandes if c['statut'] == 'livree'),
+        'annulees': sum(1 for c in all_commandes if c['statut'] == 'annulee'),
+    }
+    compteurs = {
+        'prep': detail['prep'],
+        'cours': detail['cours'],
+        'fin': detail['terminees'] + detail['annulees'],
+        'pb': detail['litiges'] + detail['retours'],
+    }
+    wanted = FILTRE_VERS_STATUTS.get(filtre, set())
+    items = [c for c in all_commandes if c['statut'] in wanted]
+    return {
+        'compteurs': compteurs,
+        'detail': detail,
+        'total': len(all_commandes),
+        'items': items,
+        'maintenant': _oh.now_ms(),
+    }
+
+
+def build_entree_journal(order, vendor_profile) -> list:
+    """
+    EntreeJournal[] (JRN-02, du plus récent au plus ancien) — réutilise le
+    même matériau que VendorOrderSerializer.get_shipment() (OrderHistory +
+    ShipmentEvent), présenté dans le format attendu par le nouveau frontend
+    (a, auteur, role, action, avant/après).
+    """
+    vendor_user = vendor_profile.user
+    entries = []
+
+    entries.append({
+        'a': _oh.dt_to_ms(order.created_at),
+        'auteur': 'Système BelivaY',
+        'role': 'systeme',
+        'action': 'Achat client initié',
+    })
+
+    if order.vendor_acknowledged_at:
+        entries.append({
+            'a': _oh.dt_to_ms(order.vendor_acknowledged_at),
+            'auteur': 'Vous',
+            'role': 'proprietaire',
+            'action': 'Commande confirmée',
+            'detail': 'prête avant',
+            'detailA': _oh.dt_to_ms(order.prep_deadline) if order.prep_deadline else None,
+        })
+
+    if order.prep_extended:
+        entries.append({
+            'a': _oh.dt_to_ms(order.updated_at),
+            'auteur': 'Vous',
+            'role': 'proprietaire',
+            'action': 'Plus de temps demandé',
+        })
+
+    if order.not_ready_at:
+        entries.append({
+            'a': _oh.dt_to_ms(order.not_ready_at),
+            'auteur': 'Livreur',
+            'role': 'systeme',
+            'action': 'Colis signalé pas prêt',
+            'detail': order.not_ready_reason or '',
+        })
+
+    shipment = order.shipments.filter(vendor=vendor_user).first()
+    if shipment:
+        for event in shipment.events.all().select_related('actor').order_by('created_at'):
+            entries.append({
+                'a': _oh.dt_to_ms(event.created_at),
+                'auteur': _shipment_event_actor_label(event),
+                'role': 'proprietaire' if event.actor_role == 'VENDOR' else 'systeme',
+                'action': SHIPMENT_STATUS_LABELS.get(event.status, event.status),
+                'detail': event.message or None,
+                'avant': SHIPMENT_STATUS_LABELS.get(event.previous_status, event.previous_status) if event.previous_status else None,
+                'apres': SHIPMENT_STATUS_LABELS.get(event.status, event.status),
+            })
+
+    cancellation = _cancellation_for_order(order)
+    if cancellation:
+        entries.append({
+            'a': cancellation['a'],
+            'auteur': 'Système BelivaY',
+            'role': 'systeme',
+            'action': 'Commande annulée',
+            'detail': cancellation['motif'],
+        })
+
+    entries.sort(key=lambda e: e['a'], reverse=True)
+    return entries
+
+
+# ── Préparation (bon de préparation, extend-options, ready, stockout) ───────
+
+VERIFICATIONS = ['modele', 'etat', 'accessoires', 'boite']
+
+
+def build_bon_preparation(order, vendor_profile) -> dict:
+    vendor_user = vendor_profile.user
+    items = list(order.items.filter(product__vendor=vendor_user))
+    shipment = order.shipments.filter(vendor=vendor_user).first()
+    slip_state = order.prep_slip_state or {}
+    checks_state = slip_state.get('checks', {})
+
+    lignes = []
+    for i in items:
+        product = i.product
+        lignes.append({
+            'titre': i.title_snapshot,
+            'variante': _article_vendu(i)['variante'],
+            'etat': _article_vendu(i)['etat'],
+            'dessin': _article_vendu(i)['dessin'],
+            'reference': (product.sku if product and product.sku else f"BLV-{i.id:05d}"),
+            'quantite': i.qty,
+            'aMettreDeCote': [],
+        })
+
+    ramassage = None
+    if shipment:
+        r = _ramassage_for_shipment(shipment)
+        ramassage = {
+            'debut': r['debut'], 'fin': r['fin'],
+            'livreur': shipment.courier_name or '',
+            'photo': '',
+        }
+
+    vendor_subtotal = sum(i.line_total_xaf for i in items)
+    garde = vendor_subtotal - round(vendor_subtotal * float(order.commission_rate_snapshot) / 100)
+    from apps.orders.models import PlatformSettings
+    liberation_jours = round((getattr(PlatformSettings.get_settings(), 'escrow_release_h', 72) or 72) / 24) or 1
+
+    return {
+        'ref': _ref_commande(order),
+        'colis': PARCEL_SIZE_TO_CLASSE.get(shipment.parcel_size if shipment else '', 'M'),
+        'payeeA': _oh.dt_to_ms(order.created_at),
+        'payableAuRetrait': order.delivery_method == Order.DeliveryMethod.PICKUP,
+        'echeance': _oh.dt_to_ms(order.prep_deadline) if order.prep_deadline else None,
+        'lignes': lignes,
+        'aVerifier': [
+            {
+                'cle': cle,
+                'fait': bool(checks_state.get(cle, {}).get('fait')),
+                'par': checks_state.get(cle, {}).get('par'),
+            }
+            for cle in VERIFICATIONS
+        ],
+        'ramassage': ramassage,
+        'garde': garde,
+        'liberationJours': liberation_jours,
+        'aPreparer': order.fulfillment_status in (
+            Order.FulfillmentStatus.PAID_IN_ESCROW, Order.FulfillmentStatus.VENDOR_ACKNOWLEDGED,
+            Order.FulfillmentStatus.PREPARING,
+        ),
+    }
+
+
+# ── Remise (handover) ────────────────────────────────────────────────────────
+
+def build_remise(order, vendor_profile) -> dict:
+    vendor_user = vendor_profile.user
+    items = list(order.items.filter(product__vendor=vendor_user))
+    shipment = order.shipments.filter(vendor=vendor_user).first()
+    probleme = _probleme_for_order(order, vendor_user)
+
+    FS = Order.FulfillmentStatus
+    if order.fulfillment_status in (FS.CANCELLED, FS.REFUNDED):
+        etape = 'annulee'
+    elif shipment and shipment.buyer_confirmed_at:
+        etape = 'remise'
+    elif order.fulfillment_status == FS.READY_FOR_PICKUP:
+        etape = 'prete'
+    else:
+        etape = 'a_preparer'
+
+    livreur = None
+    niveau_requis = 'Nouveau'
+    plafonds = {'nouveau': 75000, 'confirme': 250000}
+    if shipment and shipment.courier_id:
+        livreur_base = _livreur_for_shipment(shipment) or {}
+        niveau = 'Confirme'
+        try:
+            from apps.accounts.models import TrustScoreProfile
+            tsp = TrustScoreProfile.objects.filter(user=shipment.courier.user, role='COURIER').first()
+            if tsp:
+                niveau = {'NEW': 'Nouveau', 'CONFIRMED': 'Confirme', 'GOLD': 'Or', 'PLATINUM': 'Or'}.get(tsp.tier, 'Confirme')
+        except Exception:
+            pass
+        ramassage = _ramassage_for_shipment(shipment)
+        livreur = {**livreur_base, 'debut': ramassage['debut'], 'fin': ramassage['fin'], 'niveau': niveau}
+
+    vendor_subtotal = sum(i.line_total_xaf for i in items)
+    garde = vendor_subtotal - round(vendor_subtotal * float(order.commission_rate_snapshot) / 100)
+    from apps.orders.models import PlatformSettings
+    liberation_jours = round((getattr(PlatformSettings.get_settings(), 'escrow_release_h', 72) or 72) / 24) or 1
+
+    autres = list(
+        Order.objects.filter(
+            items__product__vendor=vendor_user,
+            fulfillment_status=FS.READY_FOR_PICKUP,
+        ).exclude(id=order.id).distinct().values_list('id', flat=True)[:10]
+    )
+
+    return {
+        'ref': _ref_commande(order),
+        'article': _article_vendu(items[0]) if items else None,
+        'quantite': sum(i.qty for i in items),
+        'colis': PARCEL_SIZE_TO_CLASSE.get(shipment.parcel_size if shipment else '', 'M'),
+        'payableAuRetrait': order.delivery_method == Order.DeliveryMethod.PICKUP,
+        'etape': etape,
+        'echeance': _oh.dt_to_ms(order.prep_deadline) if order.prep_deadline else None,
+        'preteA': _oh.dt_to_ms(order.updated_at) if order.fulfillment_status == FS.READY_FOR_PICKUP else None,
+        'livreur': livreur,
+        # Essais/blocage non câblés : la vérification du code se fait côté livreur,
+        # pas encore construite dans ce backend (voir rapport).
+        'essaisFaux': 0,
+        'essaisMax': 3,
+        'blocageHeures': 24,
+        'bloqueJusqua': None,
+        'nouveauCodeDemande': False,
+        'remiseA': _oh.dt_to_ms(shipment.buyer_confirmed_at) if shipment and shipment.buyer_confirmed_at else None,
+        'photos': [],
+        'erreur': None,
+        'creneauManque': (
+            {'debut': _oh.dt_to_ms(order.not_ready_at), 'fin': _oh.dt_to_ms(order.not_ready_at) + _oh.H}
+            if order.not_ready_at and etape != 'remise' else None
+        ),
+        'valeurColis': vendor_subtotal,
+        'niveauRequis': niveau_requis,
+        'plafonds': plafonds,
+        'fileHeures': 72,
+        'garde': garde,
+        'suite': {
+            'palier': vendor_profile.get_certification_tier_display(),
+            'liberationJours': liberation_jours,
+            'confirmationJours': 4,
+            'numero': f"BLV-VS-{order.id:05d}",
+        } if etape == 'remise' else None,
+        'autresPourCeLivreur': [str(i) for i in autres],
+    }
+
+
+def build_recu(order, vendor_profile) -> dict:
+    vendor_user = vendor_profile.user
+    items = list(order.items.filter(product__vendor=vendor_user))
+    vendor_subtotal = sum(i.line_total_xaf for i in items)
+    garde = vendor_subtotal - round(vendor_subtotal * float(order.commission_rate_snapshot) / 100)
+    moyen = _moyen_paiement_for_order(order)
+    encaisse_a = None
+    if order.payment_status == Order.PaymentStatus.PAID:
+        encaisse_a = _oh.dt_to_ms(order.created_at)
+    return {
+        'ref': _ref_commande(order),
+        'encaisseA': encaisse_a,
+        'article': _article_vendu(items[0]) if items else None,
+        'quantite': sum(i.qty for i in items),
+        'colis': PARCEL_SIZE_TO_CLASSE.get(order.shipments.filter(vendor=vendor_user).values_list('parcel_size', flat=True).first() or '', 'M'),
+        'prix': vendor_subtotal,
+        'garde': garde,
+        'moyen': moyen,
+        'fraisPayesParLeClient': moyen == 'carte',
+        'argent': {
+            'etat': _etat_argent_for_order(order),
+            'liberation': _oh.dt_to_ms(order.updated_at) if order.escrow_status == Order.EscrowStatus.RELEASE_PENDING else None,
+            'vendredi': None,
+        },
+    }
+
+
+def build_recu_resume(order, vendor_profile) -> dict:
+    vendor_user = vendor_profile.user
+    items = list(order.items.filter(product__vendor=vendor_user))
+    vendor_subtotal = sum(i.line_total_xaf for i in items)
+    garde = vendor_subtotal - round(vendor_subtotal * float(order.commission_rate_snapshot) / 100)
+    encaisse_a = _oh.dt_to_ms(order.created_at) if order.payment_status == Order.PaymentStatus.PAID else None
+    article = _article_vendu(items[0]) if items else {'titre': '', 'dessin': ''}
+    return {
+        'ref': _ref_commande(order),
+        'encaisseA': encaisse_a,
+        'titre': article.get('titre', ''),
+        'dessin': article.get('dessin', ''),
+        'prix': vendor_subtotal,
+        'garde': garde,
+    }    

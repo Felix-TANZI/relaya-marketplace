@@ -86,7 +86,7 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <section className="rounded-[14px] border border-slate-200 bg-white p-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
       <h3 className="mb-3 flex items-center gap-2 text-[15px] font-black text-slate-950 dark:text-white">
         <Icon size={17} strokeWidth={2.4} className="flex-shrink-0 text-blue-700 dark:text-blue-300" />
         {title}
@@ -446,7 +446,7 @@ export function RelaySettingsContent({
 
       {/* Certificat : le gerant l'affiche en boutique, l'acheteur le scanne pour
           verifier qu'il depose bien dans un relais du reseau. */}
-      <section className="rounded-2xl border border-blue-100 bg-blue-50/60 p-5 text-center dark:border-blue-900 dark:bg-blue-950/30">
+      <section className="rounded-[14px] border border-blue-100 bg-blue-50/60 p-5 text-center dark:border-blue-900 dark:bg-blue-950/30">
         <div className="mx-auto flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-blue-500 to-blue-700 ring-4 ring-white dark:ring-slate-900">
           {avatarUrl ? (
             <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
@@ -588,7 +588,7 @@ export default function RelayProfileSheet({
         /* Fermee, la feuille reste montee pour s'animer ; `inert` la sort de
            l'ordre de tabulation le temps qu'elle est hors de l'ecran. */
         inert={!open}
-        className={`absolute inset-y-0 right-0 flex w-full max-w-[440px] flex-col bg-[#f6f7fb] shadow-[-8px_0_40px_rgba(2,6,23,.45)] transition-transform duration-300 ease-out dark:bg-slate-950 ${
+        className={`absolute inset-y-0 right-0 flex w-full max-w-[440px] flex-col bg-[#FBF8F4] shadow-[-8px_0_40px_rgba(14,27,56,.45)] transition-transform duration-300 ease-out dark:bg-slate-950 ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >

@@ -88,6 +88,12 @@ class OrderCreateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]  # Exiger authentification
 
     def create(self, request, *args, **kwargs):
+        # Tache D2 — phase vitrine : aucune commande ne doit naitre tant que
+        # les achats ne sont pas ouverts. Controle AVANT toute validation,
+        # pour ne rien ecrire ni reserver de stock au passage.
+        from apps.common.purchases import assert_purchases_open
+        assert_purchases_open(request.user)
+
         serializer = self.get_serializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
 
@@ -280,11 +286,13 @@ class CancelOrderView(APIView):
                 indemnified_couriers.append(shipment.courier_id)
             shipment.status = Shipment.Status.CANCELLED
             shipment.save(update_fields=["status", "updated_at"])
-            ShipmentEvent.objects.create(
+            ShipmentEvent.record(
                 shipment=shipment,
                 status=Shipment.Status.CANCELLED,
                 message=f"Commande annulée par le client ({reason_label})",
                 location=order.city,
+                actor=request.user,
+                actor_role="CLIENT",
             )
 
         OrderHistory.objects.create(
@@ -422,11 +430,13 @@ class ConfirmReceiptView(APIView):
             shipment.status = Shipment.Status.DELIVERED
             shipment.buyer_confirmed_at = timezone.now()
             shipment.save(update_fields=['status', 'buyer_confirmed_at', 'updated_at'])
-            ShipmentEvent.objects.create(
+            ShipmentEvent.record(
                 shipment=shipment,
                 status=Shipment.Status.DELIVERED,
                 message="Reception confirmee par le client",
                 location=order.city,
+                actor=request.user,
+                actor_role="CLIENT",
             )
             # La liberation de l'escrow (evenement plus bas) reste au niveau
             # commande — elle n'intervient qu'une fois TOUS les colis
@@ -441,11 +451,13 @@ class ConfirmReceiptView(APIView):
             for shipment in shipments:
                 shipment.status = Shipment.Status.DELIVERED
                 shipment.save(update_fields=['status', 'updated_at'])
-                ShipmentEvent.objects.create(
+                ShipmentEvent.record(
                     shipment=shipment,
                     status=Shipment.Status.DELIVERED,
                     message="Reception confirmee par le client",
                     location=order.city,
+                    actor=request.user,
+                    actor_role="CLIENT",
                 )
 
         OrderHistory.objects.create(

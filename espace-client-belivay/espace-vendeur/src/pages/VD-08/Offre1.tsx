@@ -619,9 +619,14 @@ function Brouillon({ b, r, variantes }: { b: Produit; r: Reglages; variantes: Va
   const [envoi, setEnvoi] = useState(false)
   const [refus, setRefus] = useState<string | null>(null)
   const [stockDe, setStockDe] = useState<Produit | null>(null)
+  // VD-PRIX-ANORMAL : un prix hors norme (vs médiane des autres offres) demande
+  // une confirmation explicite avant publication — posé après le premier refus,
+  // un second appui sur « Publier » renvoie confirmer: true.
+  const [prixAConfirmer, setPrixAConfirmer] = useState(false)
   const maj = (c: Partial<Formulaire>) => {
     setF((x) => ({ ...x, ...c }))
     setRefus(null)
+    setPrixAConfirmer(false)
   }
   const nouveau = !b.ficheId
 
@@ -721,13 +726,23 @@ function Brouillon({ b, r, variantes }: { b: Produit; r: Reglages; variantes: Va
       return setRefus(t(m.raison === 'variante' ? 'Cette variante est déjà dans vos produits : choisissez-en une autre.' : 'Vérifiez les champs en rouge.'))
     }
     const rester = !!c && !c.dejaLeMoinsCher && prix !== null && prix > c.conseille
-    const res = await source.offres.publier(b.id, { rester, horsLigne: !enLigne })
+    const res = await source.offres.publier(b.id, { rester, horsLigne: !enLigne, confirmer: prixAConfirmer })
     setEnvoi(false)
     if (res.ok) {
       jouer('fin')
+      setPrixAConfirmer(false)
       return naviguer(chemin('offre_publiee', { o: b.id }), { replace: true })
     }
     jouer('erreur')
+    if (res.raison === 'prix_anormal') {
+      setPrixAConfirmer(true)
+      const det = res.detail as { motif?: string; mediane?: number; ancienPrix?: number; variationPct?: number; niveau?: string } | undefined
+      const msg =
+        det?.motif === 'variation_brutale'
+          ? tf('Vous passez de {a} à {b}, c’est bien ça ? Appuyez à nouveau sur Publier pour confirmer.', { a: montant(det.ancienPrix ?? 0), b: montant(prix ?? 0) })
+          : tf('Ce prix est très éloigné de celui des autres offres ({m} en moyenne). Appuyez à nouveau sur Publier pour confirmer.', { m: montant(det?.mediane ?? 0) })
+      return setRefus(msg)
+    }
     const textes: Record<string, [string, string]> = {
       photos: [tf(Number(res.detail) > 1 ? 'Encore {n} photos réelles avant de publier.' : 'Encore {n} photo réelle avant de publier.', { n: res.detail ?? '1' }), 'np-photos'],
       stock: [t('Indiquez votre stock avant de publier.'), 'np-stock'],
@@ -735,6 +750,7 @@ function Brouillon({ b, r, variantes }: { b: Produit; r: Reglages; variantes: Va
       prix_minimum: [tf('Prix refusé : publiable dès {m}, sinon vous ne gardez rien.', { m: montant(Number(res.detail ?? r.prixMin)) }), 'np-prix'],
       plafond: [tf('Au-dessus de {m} par commande, la publication attend vos {n} premières commandes livrées sans incident. Le brouillon est gardé.', { m: montant(Number(res.detail ?? 0)), n: r.plafond?.requises ?? 10 }), 'np-prix'],
       promo: [tf('Promotion refusée : {p} % de remise au moins sous le prix barré, et une fin dans les {j} jours.', { p: r.promoRemiseMin, j: r.promoJoursMax }), 'np-promo'],
+      doublon_vendeur: [t('Vous vendez déjà ce produit : modifiez le stock ou ajoutez une variante plutôt que de publier une nouvelle fiche.'), 'np-produit'],
       etat: [t('Choisissez l’état du produit.'), 'np-etat'],
       nom: [t('Écrivez le nom du produit.'), 'np-produit'],
       categorie: [t('Choisissez la catégorie.'), 'np-produit'],

@@ -11,7 +11,10 @@ export function domaineLitiges(api: ClientApi): SourceVendeur['litiges'] {
   const a = appels(api, 'litiges')
   const d: DomaineLitiges = {
     regles: () => a.get<ReglesLitiges>('/disputes/rules'),
-    liste: (etat) => a.get<Litige[]>('/disputes', { query: { state: etat } }),
+    // /disputes/v2 (et non /disputes) : évite la collision avec l'ancienne liste du premier
+    // frontend vendeur (frontend/src/services/api/vendors.ts), qui sert encore /vendors/disputes
+    // avec une forme de réponse différente — voir backend/apps/vendors/urls.py.
+    liste: (etat) => a.get<Litige[]>('/disputes/v2', { query: { state: etat } }),
     compteurs: () => a.get<CompteursLitiges>('/disputes/counts'),
     detail: (ref) => ouNull(a.get<Litige>(`/disputes/${seg(ref)}`)),
     ajouterPreuve: (ref, photo) => a.post(`/disputes/${seg(ref)}/evidence`, { photo }, { idempotence: true }),

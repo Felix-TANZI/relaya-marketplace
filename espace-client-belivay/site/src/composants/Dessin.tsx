@@ -7,6 +7,7 @@ import { createElement, useEffect, useMemo, useState, type CSSProperties } from 
 import { CHARGEURS } from 'virtual:dessins'
 import type { PhotoServeur } from '../donnees/source'
 import { usePreferences } from '../preferences'
+import { PHOTO_DU_DESSIN } from '../demo/catalogue'
 
 interface D {
   attrs: Record<string, string>
@@ -98,7 +99,8 @@ const STYLE_PHOTO: CSSProperties = { display: 'block', width: '100%', height: '1
 
 export function Dessin({ id, image, alt, tailles }: { id: string; image?: PhotoServeur | null; alt?: string; tailles?: string }) {
   const [, setEchec] = useState(0)
-  const photo = image?.url && !echouees.has(image.url) ? image : null
+  const choisie = image?.url ? image : PHOTO_DU_DESSIN[id] // un dessin du catalogue a sa vraie photo
+  const photo = choisie?.url && !echouees.has(choisie.url) ? choisie : null
   if (photo) return <PhotoServie photo={photo} alt={alt} tailles={tailles} onEchec={() => (echouees.add(photo.url), setEchec((n) => n + 1))} />
   return id ? <DessinDemo id={id} /> : null // ni photo ni dessin (donnée du serveur sans image)
 }

@@ -135,7 +135,7 @@ export type ChampsBrouillon = Partial<Pick<Produit, 'variante' | 'etatArticle' |
   prioritaire?: boolean
 }
 export type RefusModification = 'stock' | 'prix' | 'seuil' | 'variante' | 'colis' | 'plancher' | 'nom' | 'categorie' | 'description' | 'promo' | 'note'
-export type RefusPublication = 'photos' | 'prix_minimum' | 'stock' | 'plafond' | 'prix' | 'fiche' | 'etat' | 'nom' | 'categorie' | 'description' | 'promo' | 'note'
+export type RefusPublication = 'photos' | 'prix_minimum' | 'stock' | 'plafond' | 'prix' | 'fiche' | 'etat' | 'nom' | 'categorie' | 'description' | 'promo' | 'note' | 'doublon_vendeur' | 'prix_anormal'
 
 export interface DomaineOffres {
   reglages(): Promise<Reglages>
@@ -166,10 +166,12 @@ export interface DomaineOffres {
   ordonnerPhotos(cible: string, ids: string[]): Promise<void>
   apercu(offreId: string | null, prix: number, madeInCameroon?: boolean): Promise<Apercu>
   conseil(offreId: string, prix: number): Promise<Conseil | null>
-  /** « Rester à X F » : aucun rappel avant 7 jours (VD08-R20). */
-  publier(id: string, choix: { rester: boolean; horsLigne: boolean }): Promise<Resultat<Publication, RefusPublication>>
-  /** « Ajuster » / « Rester » sur une offre déjà en vente : le prix change, l'offre reste en vente. */
-  changerPrix(id: string, prix: number, rester: boolean): Promise<Resultat<{ produit: Produit }, 'prix_minimum' | 'plafond' | 'prix'>>
+  /** « Rester à X F » : aucun rappel avant 7 jours (VD08-R20). `confirmer` : renvoyé à true après que le
+   *  vendeur a confirmé un prix anormal signalé par `raison: 'prix_anormal'` (VD-PRIX-ANORMAL). */
+  publier(id: string, choix: { rester: boolean; horsLigne: boolean; confirmer?: boolean }): Promise<Resultat<Publication, RefusPublication>>
+  /** « Ajuster » / « Rester » sur une offre déjà en vente : le prix change, l'offre reste en vente.
+   *  `confirmer` : renvoyé à true après confirmation d'un prix anormal (VD-PRIX-ANORMAL). */
+  changerPrix(id: string, prix: number, rester: boolean, confirmer?: boolean): Promise<Resultat<{ produit: Produit }, 'prix_minimum' | 'plafond' | 'prix' | 'prix_anormal'>>
   publication(id?: string | null): Promise<Publication | null>
   /** Correction de la fiche proposée par le vendeur, relue par BelivaY (Q-34). */
   proposerDescription(offreId: string, texte: string): Promise<Resultat<{ reponseAvant: Instant }, 'court' | 'coordonnees' | 'long'>>

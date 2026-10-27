@@ -36,6 +36,7 @@ urlpatterns = [
     path("api/payments/", include("apps.payments.urls")),
     path("api/shipping/", include("apps.shipping.urls")),
     path('api/vendors/', include('apps.vendors.urls')),
+    path('api/vendors/', include('apps.vendor_team.urls')),
     path('api/contact/', include('apps.contact.urls')),
     path("api/whatsapp/", include("apps.whatsapp_assistant.urls")),  # module détachable
 

@@ -68,10 +68,10 @@ export interface OutboundParcel {
 }
 
 const REASON_STYLE: Record<OutboundReason, string> = {
-  renvoi: "border-[#F2B8B8] bg-[#FDECEC] text-[#D84B4B]",
-  retour: "border-[#B7E0C4] bg-[#F1FAF3] text-[#2E7D4F]",
-  refus: "border-[#F2D79B] bg-[#FDF6E3] text-[#B4791A]",
-  transfert: "border-[#C3CCF5] bg-[#EEF1FD] text-[#5B6BD6]",
+  renvoi: "border-[#F4C3BE] bg-[#FDECEA] text-[#B42318]",
+  retour: "border-[#BFE3CF] bg-[#E6F4EC] text-[#1F7A4D]",
+  refus: "border-[#F0DA9C] bg-[#FFF4D6] text-[#8A5A00]",
+  transfert: "border-[#C9D7FB] bg-[#EAF0FF] text-[#2456D6]",
 };
 
 const REASON_LABEL: Record<OutboundReason, string> = {
@@ -241,15 +241,15 @@ export default function RelayOutbound({
 
       {/* ── Prochaine collecte ───────────────────────────────────────────── */}
       <section
-        className="overflow-hidden rounded-[18px] px-[18px] py-[18px] text-white shadow-[0_6px_18px_rgba(8,14,31,.28)]"
+        className="overflow-hidden rounded-[18px] px-[18px] py-[18px] text-white shadow-[0_6px_18px_rgba(14,27,56,.28)]"
         style={{
           backgroundImage:
-            "radial-gradient(80% 120% at 96% -4%, rgba(214,116,62,.30) 0%, rgba(214,116,62,0) 62%),"
+            "radial-gradient(80% 120% at 96% -4%, rgba(239,106,0,.30) 0%, rgba(239,106,0,0) 62%),"
             + " linear-gradient(140deg, #0A1230 0%, #101E48 48%, #17296B 100%)",
         }}
       >
-        <Truck size={26} strokeWidth={2.2} className="text-[#E9A93A]" />
-        <p className="mt-3.5 text-[12.5px] font-black uppercase leading-none tracking-[0.09em] text-[#7B9BE8]">
+        <Truck size={26} strokeWidth={2.2} className="text-[#E8A10E]" />
+        <p className="mt-3.5 text-[12.5px] font-black uppercase leading-none tracking-[0.09em] text-[#8FB0FF]">
           Prochaine collecte
         </p>
         <div className="mt-2 text-[22px] font-black leading-tight">{collecte.titre}</div>
@@ -264,7 +264,7 @@ export default function RelayOutbound({
       <div
         role="tablist"
         aria-label="Sorties"
-        className="grid grid-cols-3 gap-1 rounded-[14px] bg-[#E9EBF2] p-1 dark:bg-slate-800/70"
+        className="grid grid-cols-3 gap-1 rounded-[14px] bg-[#E8EDF8] p-1 dark:bg-slate-800/70"
       >
         {TABS.map((tab) => {
           const on = tab.key === active;
@@ -277,7 +277,7 @@ export default function RelayOutbound({
               onClick={() => setActive(tab.key)}
               className={`rounded-[11px] px-2 py-2.5 text-[13.5px] font-bold leading-tight transition active:scale-[.96] ${
                 on
-                  ? "bg-white text-slate-900 shadow-[0_1px_3px_rgba(15,23,42,.14)] dark:bg-slate-900 dark:text-white"
+                  ? "bg-white text-slate-900 shadow-[0_1px_3px_rgba(60,35,15,.14)] dark:bg-slate-900 dark:text-white"
                   : "text-slate-500 dark:text-slate-400"
               }`}
             >
@@ -290,12 +290,12 @@ export default function RelayOutbound({
 
       {/* ── À remettre ───────────────────────────────────────────────────── */}
       {active === "todo" ? (
-        <section className="rounded-[18px] border border-slate-200/70 bg-white px-4 pb-4 pt-4 shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
+        <section className="rounded-[14px] border border-slate-200 bg-white px-4 pb-4 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-baseline justify-between gap-3">
-            <h3 className="text-[19px] font-black tracking-[-0.015em] text-slate-900 dark:text-white">
+            <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
               Scannez en sortie
             </h3>
-            <span className="text-[15px] font-black text-[#1D4ED8] dark:text-blue-400">
+            <span className="text-[15px] font-black text-[#2456D6] dark:text-blue-400">
               {checked.length} / {pending.length}
             </span>
           </div>
@@ -322,14 +322,14 @@ export default function RelayOutbound({
                         <span
                           className={`flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-[10px] border-2 transition ${
                             on
-                              ? "border-[#B7E0C4] bg-[#E8F6EC] text-[#2E7D4F]"
+                              ? "border-[#BFE3CF] bg-[#E6F4EC] text-[#1F7A4D]"
                               : "border-dashed border-slate-300 dark:border-slate-600"
                           }`}
                         >
                           {on ? <Check size={17} strokeWidth={3} /> : null}
                         </span>
 
-                        <span className="flex h-[34px] w-[46px] flex-shrink-0 items-center justify-center rounded-[10px] bg-[#0F1C3F] text-[12px] font-black tabular-nums text-[#E9A93A]">
+                        <span className="flex h-[34px] w-[46px] flex-shrink-0 items-center justify-center rounded-[10px] bg-[#0E1B38] text-[12px] font-black tabular-nums text-[#E8A10E]">
                           {parcel.slot || "—"}
                         </span>
 
@@ -365,7 +365,7 @@ export default function RelayOutbound({
                 type="button"
                 disabled={checked.length === 0 || busy}
                 onClick={() => void validate()}
-                className="mt-3 flex w-full items-center justify-center gap-2.5 rounded-[12px] bg-gradient-to-r from-[#F58A1F] to-[#E8590C] px-4 py-4 text-[17px] font-black text-white shadow-[0_4px_14px_rgba(232,89,12,.38)] transition active:scale-[.97] disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none dark:disabled:from-slate-700 dark:disabled:to-slate-700"
+                className="pr-btn mt-3 flex w-full items-center justify-center gap-2.5 rounded-[12px] px-4 py-4 text-[17px] font-black text-white transition active:scale-[.97] disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none dark:disabled:from-slate-700 dark:disabled:to-slate-700"
               >
                 <Check size={19} strokeWidth={3} /> {busy ? "Validation..." : "Valider la sortie"}
               </button>
@@ -376,8 +376,8 @@ export default function RelayOutbound({
 
       {/* ── Collectes et livraisons prévues ──────────────────────────────── */}
       {active === "batches" ? (
-        <section className="rounded-[18px] border border-slate-200/70 bg-white px-4 pb-4 pt-4 shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
-          <h3 className="text-[19px] font-black tracking-[-0.015em] text-slate-900 dark:text-white">
+        <section className="rounded-[14px] border border-slate-200 bg-white px-4 pb-4 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
+          <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
             Collectes et livraisons prévues
           </h3>
 
@@ -402,7 +402,7 @@ export default function RelayOutbound({
 
                 return (
                   <li key={passage.tournee_id} className="flex items-start gap-3 py-3.5">
-                    <span className="flex h-[38px] w-[38px] flex-shrink-0 items-center justify-center rounded-[11px] bg-[#E8EFFC] text-[#2F6BD8] dark:bg-blue-950/60 dark:text-blue-300">
+                    <span className="flex h-[38px] w-[38px] flex-shrink-0 items-center justify-center rounded-[11px] bg-[#EAF0FF] text-[#2456D6] dark:bg-blue-950/60 dark:text-blue-300">
                       <Truck size={19} strokeWidth={2.2} />
                     </span>
                     <span className="min-w-0 flex-1">
@@ -426,9 +426,9 @@ export default function RelayOutbound({
               Sans cette phrase, un passage qui ne vide pas tout passe pour une
               panne. C'est le fonctionnement normal : BelivaY greffe les sorties
               sur des tournees que les entreprises ont choisies. */}
-          <div className="mt-3 flex items-start gap-2.5 rounded-[12px] bg-[#E8EEFC] px-3.5 py-3 dark:bg-blue-950/40">
-            <Layers size={18} strokeWidth={2.2} className="mt-[1px] flex-shrink-0 text-[#2F6BD8] dark:text-blue-300" />
-            <p className="text-[13px] font-medium leading-[1.5] text-[#3558B8] dark:text-blue-200">
+          <div className="mt-3 flex items-start gap-2.5 rounded-[12px] bg-[#EAF0FF] px-3.5 py-3 dark:bg-blue-950/40">
+            <Layers size={18} strokeWidth={2.2} className="mt-[1px] flex-shrink-0 text-[#2456D6] dark:text-blue-300" />
+            <p className="text-[13px] font-medium leading-[1.5] text-[#1E4BC4] dark:text-blue-200">
               Les entreprises de livraison choisissent leurs tournées ; BelivaY groupe les colis pour
               qu'un passage serve à la fois à déposer et à reprendre.
             </p>
@@ -438,8 +438,8 @@ export default function RelayOutbound({
 
       {/* ── Partis cette semaine ─────────────────────────────────────────── */}
       {active === "gone" ? (
-        <section className="rounded-[18px] border border-slate-200/70 bg-white px-4 pb-2 pt-4 shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
-          <h3 className="text-[19px] font-black tracking-[-0.015em] text-slate-900 dark:text-white">
+        <section className="rounded-[14px] border border-slate-200 bg-white px-4 pb-2 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
+          <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
             Partis cette semaine
           </h3>
           {partis.length === 0 ? (
@@ -450,7 +450,7 @@ export default function RelayOutbound({
             <ul className="mt-2 divide-y divide-slate-100 dark:divide-slate-800">
               {partis.map((groupe) => (
                 <li key={groupe.at.toISOString()} className="flex items-start gap-3 py-3.5">
-                  <span className="flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-[10px] border-2 border-[#B7E0C4] bg-[#E8F6EC] text-[#2E7D4F] dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
+                  <span className="flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-[10px] border-2 border-[#BFE3CF] bg-[#E6F4EC] text-[#1F7A4D] dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
                     <Check size={17} strokeWidth={3} />
                   </span>
 
@@ -479,7 +479,7 @@ export default function RelayOutbound({
                     croire au gerant qu'il detient une preuve opposable du
                     transfert de responsabilite — exactement ce qu'il n'a pas.
                   */}
-                  <span className="flex-shrink-0 rounded-full border border-[#B7E0C4] bg-[#F1FAF3] px-3 py-[5px] text-[12.5px] font-semibold text-[#2E7D4F] dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+                  <span className="flex-shrink-0 rounded-full border border-[#BFE3CF] bg-[#E6F4EC] px-3 py-[5px] text-[12.5px] font-semibold text-[#1F7A4D] dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
                     Enregistré
                   </span>
                 </li>
@@ -490,8 +490,8 @@ export default function RelayOutbound({
       ) : null}
 
       {/* ── Pourquoi un colis part ───────────────────────────────────────── */}
-      <section className="rounded-[18px] border border-slate-200/70 bg-white px-5 pb-4 pt-4 shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
-        <h3 className="text-[19px] font-black tracking-[-0.015em] text-slate-900 dark:text-white">
+      <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-4 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
+        <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
           Pourquoi un colis part
         </h3>
         <dl className="mt-3 divide-y divide-slate-100 dark:divide-slate-800">

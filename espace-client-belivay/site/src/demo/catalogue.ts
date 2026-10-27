@@ -2,8 +2,9 @@
 // prix barré, note et avis, ventes, stock, catégorie, paramètres (couleur, capacité, taille, pointure ;
 // indisponibles), marque (null : sans marque), vendeur certifié, autres vendeurs, description et caractéristiques. L'API servira le vrai catalogue.
 import type { Produit } from '../donnees/source'
+import { etendre } from './catalogue-etendu'
 
-export const CATALOGUE: Record<string, Produit> = {
+const CATALOGUE_BASE: Record<string, Produit> = {
  camon30: {
   p: "camon30",
   marque: "Tecno",
@@ -302,7 +303,7 @@ export const CATALOGUE: Record<string, Produit> = {
  tablette8: {
   p: "tablette8",
   marque: "Lenovo",
-  titre: "Tablette 8″ · 64 Go",
+  titre: "Samsung Galaxy Tab A9 8,7″ · 64 Go",
   variante: "Gris",
   prix: 64000,
   prixBarre: null,
@@ -482,7 +483,7 @@ export const CATALOGUE: Record<string, Produit> = {
  chargeur33: {
   p: "chargeur33",
   marque: "Oraimo",
-  titre: "Chargeur rapide 33 W USB-C",
+  titre: "Chargeur rapide Samsung 33 W USB-C",
   variante: null,
   prix: 6500,
   prixBarre: null,
@@ -561,7 +562,7 @@ export const CATALOGUE: Record<string, Produit> = {
  batterie: {
   p: "batterie",
   marque: "Oraimo",
-  titre: "Batterie externe 20 000 mAh",
+  titre: "Batterie externe Anker 20 000 mAh",
   variante: null,
   prix: 14900,
   prixBarre: null,
@@ -637,7 +638,7 @@ export const CATALOGUE: Record<string, Produit> = {
  tv43: {
   p: "tv43",
   marque: "Hisense",
-  titre: "Téléviseur LED 43″",
+  titre: "Téléviseur Samsung LED 43″",
   variante: null,
   prix: 189000,
   prixBarre: null,
@@ -713,7 +714,7 @@ export const CATALOGUE: Record<string, Produit> = {
  ventilo: {
   p: "ventilo",
   marque: "Binatone",
-  titre: "Ventilateur sur pied 16″",
+  titre: "Ventilateur sur pied Midea 16″",
   variante: null,
   prix: 24500,
   prixBarre: null,
@@ -790,7 +791,7 @@ export const CATALOGUE: Record<string, Produit> = {
  mixeur: {
   p: "mixeur",
   marque: "Binatone",
-  titre: "Mixeur-blender 2 L · 600 W",
+  titre: "Mixeur-blender Philips 2 L · 600 W",
   variante: null,
   prix: 37000,
   prixBarre: null,
@@ -866,7 +867,7 @@ export const CATALOGUE: Record<string, Produit> = {
  fer: {
   p: "fer",
   marque: "Philips",
-  titre: "Fer à repasser vapeur 2 200 W",
+  titre: "Fer à repasser vapeur Tefal 2 200 W",
   variante: null,
   prix: 15800,
   prixBarre: null,
@@ -942,7 +943,7 @@ export const CATALOGUE: Record<string, Produit> = {
  marmite: {
   p: "marmite",
   marque: null,
-  titre: "Marmite en fonte 8 L",
+  titre: "Marmite en fonte Tefal 8 L",
   variante: null,
   prix: 22000,
   prixBarre: null,
@@ -1470,7 +1471,7 @@ export const CATALOGUE: Record<string, Produit> = {
  montre: {
   p: "montre",
   marque: "Casio",
-  titre: "Montre acier bracelet cuir",
+  titre: "Montre Casio chronographe acier, bracelet cuir",
   variante: null,
   prix: 27500,
   prixBarre: 29900,
@@ -1640,7 +1641,7 @@ export const CATALOGUE: Record<string, Produit> = {
  baskets: {
   p: "baskets",
   marque: "Adidas",
-  titre: "Baskets running",
+  titre: "Baskets running ASICS",
   variante: "Pointure 42",
   prix: 29900,
   prixBarre: 34900,
@@ -1732,7 +1733,7 @@ export const CATALOGUE: Record<string, Produit> = {
  karite: {
   p: "karite",
   marque: null,
-  titre: "Beurre de karité pur 500 g",
+  titre: "Beurre de karité pur Africa’s Best 500 g",
   variante: null,
   prix: 3500,
   prixBarre: null,
@@ -1808,7 +1809,7 @@ export const CATALOGUE: Record<string, Produit> = {
  coco: {
   p: "coco",
   marque: null,
-  titre: "Huile de coco vierge 500 ml",
+  titre: "Huile de coco vierge Vita d’Or 500 ml",
   variante: null,
   prix: 4800,
   prixBarre: null,
@@ -1884,7 +1885,7 @@ export const CATALOGUE: Record<string, Produit> = {
  cremevisage: {
   p: "cremevisage",
   marque: "Nivea",
-  titre: "Crème visage karité & aloe 100 ml",
+  titre: "Crème visage karité & aloe Evoluderm 100 ml",
   variante: null,
   prix: 6900,
   prixBarre: null,
@@ -1960,7 +1961,7 @@ export const CATALOGUE: Record<string, Produit> = {
  riz: {
   p: "riz",
   marque: "Tilda",
-  titre: "Riz parfumé 25 kg",
+  titre: "Riz parfumé Royal Umbrella 25 kg",
   variante: null,
   prix: 18500,
   prixBarre: null,
@@ -2036,7 +2037,7 @@ export const CATALOGUE: Record<string, Produit> = {
  huile5l: {
   p: "huile5l",
   marque: "Mayor",
-  titre: "Huile d’arachide 5 L",
+  titre: "Huile d’arachide Lesieur 5 L",
   variante: null,
   prix: 9800,
   prixBarre: null,
@@ -2112,7 +2113,7 @@ export const CATALOGUE: Record<string, Produit> = {
  cafe: {
   p: "cafe",
   marque: "UCCAO",
-  titre: "Café arabica de l’Ouest 500 g",
+  titre: "Café Nescafé Arabica de l’Ouest 500 g",
   variante: null,
   prix: 5500,
   prixBarre: null,
@@ -2188,7 +2189,7 @@ export const CATALOGUE: Record<string, Produit> = {
  portebebe: {
   p: "portebebe",
   marque: "Chicco",
-  titre: "Porte-bébé ergonomique",
+  titre: "Porte-bébé ergonomique Ergobaby",
   variante: null,
   prix: 19900,
   prixBarre: null,
@@ -2264,7 +2265,7 @@ export const CATALOGUE: Record<string, Produit> = {
  cartable: {
   p: "cartable",
   marque: null,
-  titre: "Cartable scolaire 16″",
+  titre: "Cartable scolaire Champion 16″",
   variante: "Rouge",
   prix: 12500,
   prixBarre: null,
@@ -2341,7 +2342,7 @@ export const CATALOGUE: Record<string, Produit> = {
  ballon: {
   p: "ballon",
   marque: "Puma",
-  titre: "Ballon de football taille 5",
+  titre: "Ballon de football adidas Tiro Club taille 5",
   variante: null,
   prix: 8500,
   prixBarre: null,
@@ -2417,7 +2418,7 @@ export const CATALOGUE: Record<string, Produit> = {
  tapisyoga: {
   p: "tapisyoga",
   marque: "Domyos",
-  titre: "Tapis de yoga 6 mm",
+  titre: "Tapis de yoga Reebok 6 mm",
   variante: "Vert",
   prix: 9900,
   prixBarre: null,
@@ -2491,3 +2492,27 @@ export const CATALOGUE: Record<string, Produit> = {
   ]
  }
 }
+
+// Les 30 produits du prototype, puis la suite du jeu d'essai (catalogue-etendu.ts) : même ordre, rien de déplacé.
+// Vraies photos des produits (src/assets/produits/<id>-<n>.webp|jpg, n = 1, 2, 3… dans l'ordre de la galerie) :
+// une photo déposée remplace le dessin correspondant ; sans photo, le dessin reste (PROMPTS.md du même dossier).
+const PHOTOS = import.meta.glob<string>('../assets/produits/*.{webp,jpg,jpeg,png}', { eager: true, query: '?url', import: 'default' })
+const photosDe = (id: string) =>
+  Object.entries(PHOTOS)
+    .map(([f, url]) => ({ m: new RegExp(`/${id}-(\\d+)\\.\\w+$`).exec(f), url }))
+    .filter((x) => x.m)
+    .sort((a, b) => Number(a.m![1]) - Number(b.m![1]))
+    .map((x) => ({ url: x.url }))
+const MARQUES: Record<string, string> = {'tablette8': 'Samsung', 'chargeur33': 'Samsung', 'batterie': 'Anker', 'tv43': 'Samsung', 'ventilo': 'Midea', 'mixeur': 'Philips', 'fer': 'Tefal', 'marmite': 'Tefal', 'montre': 'Casio', 'baskets': 'ASICS', 'karite': 'Africa’s Best', 'coco': 'Vita d’Or', 'cremevisage': 'Evoluderm', 'riz': 'Royal Umbrella', 'huile5l': 'Lesieur', 'cafe': 'Nescafé', 'portebebe': 'Ergobaby', 'cartable': 'Champion', 'ballon': 'adidas', 'tapisyoga': 'Reebok', 'tel-a05': 'Samsung', 'tel-a06': 'Samsung', 'tel-pop': 'Infinix', 'elec-bt': 'Apple', 'elec-casque': 'Sony', 'elec-enceinte': 'JBL', 'mai-blender': 'Philips', 'mai-bouilloire': 'Tefal', 'mai-cuiseur': 'Moulinex', 'fem-wax-4': 'Vlisco', 'fem-wax-f': 'Vlisco', 'pagne': 'Vlisco', 'hom-polo': 'Lacoste', 'cha-sandale-p': 'Minelli', 'cha-sandale-c': 'Aldo', 'cha-claquette': 'Nike', 'sandales': 'Minelli', 'bea-karite-p': 'Palmer’s', 'bea-aloe': 'Disaar', 'bea-savon': 'Dudu-Osun', 'mar-riz-10': 'Bonnet Rouge', 'mar-riz-5': 'Asiko', 'mar-huile-2': 'Dinor', 'beb-couches': 'Pampers', 'beb-lingettes': 'Huggies', 'beb-biberon': 'Philips Avent', 'spo-ballon-b': 'Spalding', 'spo-ballon-h': 'Molten', 'spo-maillot': 'adidas'}
+const avecPhotos = (c: Record<string, Produit>) =>
+  Object.fromEntries(Object.entries(c).map(([id, p]) => { const images = photosDe(id); const marque = p.marque ?? MARQUES[id] ?? null; return [id, { ...p, marque, ...(images.length ? { images } : {}) }] }))
+export const CATALOGUE: Record<string, Produit> = avecPhotos({ ...CATALOGUE_BASE, ...etendre(CATALOGUE_BASE) })
+
+/** Photo réelle d'un dessin du catalogue (le premier produit qui le porte), pour les écrans qui posent un dessin seul. */
+export const PHOTO_DU_DESSIN: Record<string, { url: string }> = {}
+for (const p of Object.values(CATALOGUE)) p.dessins.forEach((d, i) => { if (d && p.images?.[i] && !PHOTO_DU_DESSIN[d]) PHOTO_DU_DESSIN[d] = p.images[i] })
+// Photos réelles des autres dessins (portraits, relais, articles hors catalogue) : src/assets/produits/d-<dessin>.webp ;
+// tuiles d'univers : photos du carrousel du porteur.
+for (const [f, url] of Object.entries(PHOTOS)) { const m = /\/d-([0-9a-f]{12})\.\w+$/.exec(f); if (m) PHOTO_DU_DESSIN[m[1]] = { url } }
+const UNIVERS_PHOTO: Record<string, string> = { aae8368e5385: 'beaute', a00d64f30e5f: 'maison', '30a65dd8f0c3': 'femme', '6051650401c1': 'marche', '6cb441816096': 'tel', dba0f8ad24f9: 'elec' }
+for (const [d, nom] of Object.entries(UNIVERS_PHOTO)) PHOTO_DU_DESSIN[d] ??= { url: `/images/carrousel/${nom}.webp` }

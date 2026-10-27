@@ -9,25 +9,44 @@ import { ErreurValidation, NonDisponible } from '../erreurs'
 import { ecrireRetenu } from './session'
 import { ou, seg } from './refus'
 
+// GET /api/me/security → {alerteConnexion, numeroVerifieLe} (en plus de PATCH, qui ne fait que régler alerteConnexion).
+interface RSecurite {
+  alerteConnexion: boolean
+  numeroVerifieLe: number | null
+}
+// GET /api/me/identities → adresse masquée du compte Google/Apple lié, ou null (CIN-46).
+interface RIdentites {
+  google: string | null
+  apple: string | null
+}
+
 export function domaineSecurite(api: ClientApi) {
   return {
     securite: async () => {
-      const [moi, sessions, compte] = await Promise.all([
+      const [moi, sessions, compte, securite, identites] = await Promise.all([
         api.get<RUtilisateur>('/auth/me/'),
         api.get<RSessionAppareil[]>('/auth/sessions/'),
         api.get<DonneesCompte>('/me').catch(() => null),
+        api.get<RSecurite>('/me/security').catch(() => null),
+        api.get<RIdentites>('/me/identities').catch(() => null),
       ])
       const client = versClient(moi)
       return {
-        numero: { masque: client.numeroMasque, operateur: client.operateur, verifie: compte?.numeroVerifie ?? false, verifieLe: null },
+        numero: {
+          masque: client.numeroMasque,
+          operateur: client.operateur,
+          verifie: compte?.numeroVerifie ?? false,
+          verifieLe: securite?.numeroVerifieLe ?? null,
+        },
         email: client.emailMasque,
-        methodes: { google: null, apple: null, motDePasse: moi.has_usable_password !== false },
+        methodes: { google: identites?.google ?? null, apple: identites?.apple ?? null, motDePasse: moi.has_usable_password !== false },
         methodeActuelle: client.connexion,
         appareils: sessions.map(versAppareil),
+        // Historique des connexions (méthode, lieu) : pas encore suivi par session côté serveur.
         historique: [],
         biometrie: false,
         seuilBiometrie: 0,
-        alerteConnexion: false,
+        alerteConnexion: securite?.alerteConnexion ?? true,
       }
     },
     // POST /api/auth/change-password/ (relaya) ; premier mot de passe d'un compte Google ou Apple : route à créer.

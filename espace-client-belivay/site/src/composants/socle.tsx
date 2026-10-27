@@ -190,7 +190,7 @@ export function Illustration({ image, classe, style }: { image: ImageDonnee; cla
   if ('url' in image)
     return (
       <span className={classe} style={style}>
-        <img src={image.url} srcSet={image.srcset || undefined} alt={image.alt ?? ''} loading="lazy" decoding="async" />
+        <img src={image.url} srcSet={image.srcset || undefined} alt={image.alt ?? ''} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }} />
       </span>
     )
   const svg = theme === 'dark' && image.svgSombre ? image.svgSombre : image.svg

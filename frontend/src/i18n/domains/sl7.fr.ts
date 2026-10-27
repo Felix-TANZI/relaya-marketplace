@@ -129,6 +129,7 @@ export default {
     // Journal de la commande (VD-05 §JRN-01/02)
     journal_title: 'Journal de la commande',
     journal_subtitle: 'Chaque action est signée',
+    journal_signed_by: 'Signé par {{actor}}',
     journal_immutable: 'Personne ne peut modifier ni effacer ce journal.',
 
     // Remise au livreur (VD-06 §REM-01 à REM-09)

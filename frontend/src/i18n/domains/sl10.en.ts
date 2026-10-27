@@ -100,6 +100,15 @@ export default {
     step1_no_results: 'No results for this search.',
     step1_request_sheet: 'None of these · Request a sheet',
 
+    // Barcode scanner
+    scan_title: 'Scan a code',
+    scan_hint: 'Aim at the product barcode or QR code.',
+    scan_checking: 'Checking code…',
+    scan_opening: 'Opening camera…',
+    scan_manual: 'Type the name instead',
+    scan_close: 'Close',
+    scan_not_found: 'Code not recognized. Search for the product by name.',
+
     // Request a sheet
     sheet_request_title: 'Request a sheet',
     sheet_field_name: 'Product name',

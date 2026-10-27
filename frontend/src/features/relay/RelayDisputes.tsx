@@ -119,8 +119,8 @@ const ETAPES = ["Constat", "Vendeur 48 h", "Médiation", "Décision", "Recours"]
 type EtapeTon = "done" | "current" | "todo";
 
 const ETAPE_STYLE: Record<EtapeTon, string> = {
-  done: "bg-[#2E7D4F]",
-  current: "bg-[#E8A020]",
+  done: "bg-[#1F7A4D]",
+  current: "bg-[#E8A10E]",
   todo: "bg-slate-200 dark:bg-slate-700",
 };
 
@@ -235,7 +235,7 @@ function ScanSheet({ onCancel, onDecoded }: { onCancel: () => void; onDecoded: (
       <button
         type="button"
         onClick={onCancel}
-        className="mt-5 w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+        className="mt-5 w-full rounded-[14px] border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
       >
         Saisir la référence à la main
       </button>
@@ -421,7 +421,7 @@ export default function RelayDisputes({
       <div
         role="tablist"
         aria-label="Constats et retours"
-        className="grid grid-cols-3 gap-1 rounded-[14px] bg-[#E9EBF2] p-1 dark:bg-slate-800/70"
+        className="grid grid-cols-3 gap-1 rounded-[14px] bg-[#E8EDF8] p-1 dark:bg-slate-800/70"
       >
         {TABS.map((tab) => {
           const on = tab.key === active;
@@ -434,7 +434,7 @@ export default function RelayDisputes({
               onClick={() => setActive(tab.key)}
               className={`rounded-[11px] px-2 py-2.5 text-[13.5px] font-bold leading-tight transition active:scale-[.96] ${
                 on
-                  ? "bg-white text-slate-900 shadow-[0_1px_3px_rgba(15,23,42,.14)] dark:bg-slate-900 dark:text-white"
+                  ? "bg-white text-slate-900 shadow-[0_1px_3px_rgba(60,35,15,.14)] dark:bg-slate-900 dark:text-white"
                   : "text-slate-500 dark:text-slate-400"
               }`}
             >
@@ -448,7 +448,7 @@ export default function RelayDisputes({
       {/* ── Constat ──────────────────────────────────────────────────────── */}
       {active === "constat" ? (
         <>
-          <section className="rounded-[18px] border border-slate-200/70 bg-white px-5 pb-5 pt-4 shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
+          <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-5 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
             <h3 className="text-[12px] font-black uppercase leading-none tracking-[0.1em] text-slate-500 dark:text-slate-400">
               1 · Scannez le colis
             </h3>
@@ -458,13 +458,13 @@ export default function RelayDisputes({
                 onChange={(event) => setQuery(event.target.value.toUpperCase())}
                 placeholder="BV-40077"
                 autoComplete="off"
-                className="min-w-0 flex-1 rounded-[12px] border border-slate-200 bg-white px-4 py-3 text-[16px] font-black tracking-wide text-slate-900 outline-none transition focus:border-[#1D4ED8] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                className="min-w-0 flex-1 rounded-[12px] border border-slate-200 bg-white px-4 py-3 text-[16px] font-black tracking-wide text-slate-900 outline-none transition focus:border-[#2456D6] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
               />
               <button
                 type="button"
                 onClick={() => setScanOpen(true)}
                 aria-label="Scanner le QR du client"
-                className="flex w-[52px] flex-shrink-0 items-center justify-center rounded-[12px] bg-[#1D4ED8] text-white transition active:scale-95"
+                className="flex w-[52px] flex-shrink-0 items-center justify-center rounded-[12px] bg-[#2456D6] text-white transition active:scale-95"
               >
                 <QrCode size={22} strokeWidth={2.2} />
               </button>
@@ -475,7 +475,7 @@ export default function RelayDisputes({
                 className={`mt-3 text-[13px] font-semibold ${
                   delai?.ouverte === false
                     ? "text-orange-600 dark:text-orange-400"
-                    : "text-[#2E7D4F] dark:text-emerald-400"
+                    : "text-[#1F7A4D] dark:text-emerald-400"
                 }`}
               >
                 {delai
@@ -495,7 +495,7 @@ export default function RelayDisputes({
             )}
           </section>
 
-          <section className="rounded-[18px] border border-slate-200/70 bg-white px-5 pb-5 pt-4 shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
+          <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-5 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
             <h3 className="text-[12px] font-black uppercase leading-none tracking-[0.1em] text-slate-500 dark:text-slate-400">
               2 · Que se passe-t-il ?
             </h3>
@@ -510,11 +510,11 @@ export default function RelayDisputes({
                     aria-pressed={on}
                     className={`flex flex-col items-start rounded-[12px] border-2 px-4 py-3.5 text-left transition active:scale-[.97] ${
                       on
-                        ? "border-[#E8590C] bg-[#FDEEE0] dark:border-orange-500 dark:bg-orange-950/50"
+                        ? "border-[#EF6A00] bg-[#FFF1E2] dark:border-orange-500 dark:bg-orange-950/50"
                         : "border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900"
                     }`}
                   >
-                    <Icon size={20} strokeWidth={2.2} className="text-[#E8590C] dark:text-orange-400" />
+                    <Icon size={20} strokeWidth={2.2} className="text-[#EF6A00] dark:text-orange-400" />
                     <span className="mt-3 text-[15px] font-black leading-tight text-slate-900 dark:text-white">
                       {label}
                     </span>
@@ -524,7 +524,7 @@ export default function RelayDisputes({
             </div>
           </section>
 
-          <section className="rounded-[18px] border border-slate-200/70 bg-white px-5 pb-5 pt-4 shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
+          <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-5 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
             <h3 className="text-[12px] font-black uppercase leading-none tracking-[0.1em] text-slate-500 dark:text-slate-400">
               3 · Deux photos
             </h3>
@@ -544,21 +544,21 @@ export default function RelayDisputes({
                     key={key}
                     className={`flex cursor-pointer flex-col items-center justify-center rounded-[14px] px-3 py-7 text-center transition active:scale-[.97] ${
                       pris
-                        ? "bg-[#0F1C3F]"
-                        : "border-2 border-dashed border-[#E8590C] bg-[#FDEEE0] dark:bg-orange-950/40"
+                        ? "bg-[#0E1B38]"
+                        : "border-2 border-dashed border-[#EF6A00] bg-[#FFF1E2] dark:bg-orange-950/40"
                     }`}
                   >
                     {pris ? (
                       <>
-                        <Check size={26} strokeWidth={3} className="text-[#4ADE80]" />
-                        <span className="mt-2.5 text-[13.5px] font-black text-[#4ADE80]">
+                        <Check size={26} strokeWidth={3} className="text-[#5EF2B5]" />
+                        <span className="mt-2.5 text-[13.5px] font-black text-[#5EF2B5]">
                           {label} · prise
                         </span>
                       </>
                     ) : (
                       <>
-                        <Camera size={24} strokeWidth={2.2} className="text-[#E8590C]" />
-                        <span className="mt-2.5 text-[13.5px] font-black text-[#E8590C]">{label}</span>
+                        <Camera size={24} strokeWidth={2.2} className="text-[#EF6A00]" />
+                        <span className="mt-2.5 text-[13.5px] font-black text-[#EF6A00]">{label}</span>
                       </>
                     )}
                     <input
@@ -574,9 +574,9 @@ export default function RelayDisputes({
             </div>
           </section>
 
-          <div className="flex items-start gap-3 rounded-[14px] bg-[#EEF3FE] px-4 py-3.5 dark:bg-blue-950/40">
-            <ShieldCheck size={19} strokeWidth={2.2} className="mt-0.5 flex-shrink-0 text-[#5B7FC7] dark:text-blue-300" />
-            <p className="text-[13.5px] font-medium leading-[1.55] text-[#4A5E8A] dark:text-blue-100/80">
+          <div className="flex items-start gap-3 rounded-[14px] bg-[#EAF0FF] px-4 py-3.5 dark:bg-blue-950/40">
+            <ShieldCheck size={19} strokeWidth={2.2} className="mt-0.5 flex-shrink-0 text-[#8FB0FF] dark:text-blue-300" />
+            <p className="text-[13.5px] font-medium leading-[1.55] text-[#9FAACB] dark:text-blue-100/80">
               Le colis reste chez vous <strong className="font-black">sans frais de garde</strong> jusqu'à la
               décision. Vous constatez ; le vendeur répond sous 48 h, puis la médiation BelivaY tranche
               sur les photos.
@@ -587,7 +587,7 @@ export default function RelayDisputes({
             type="button"
             disabled={!ready || busy}
             onClick={() => void submit()}
-            className="flex w-full items-center justify-center gap-2.5 rounded-[12px] bg-gradient-to-r from-[#F58A1F] to-[#E8590C] px-4 py-4 text-[17px] font-black text-white shadow-[0_4px_14px_rgba(232,89,12,.38)] transition active:scale-[.97] disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none dark:disabled:from-slate-700 dark:disabled:to-slate-700"
+            className="pr-btn flex w-full items-center justify-center gap-2.5 rounded-[12px] px-4 py-4 text-[17px] font-black text-white transition active:scale-[.97] disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none dark:disabled:from-slate-700 dark:disabled:to-slate-700"
           >
             <Send size={19} strokeWidth={2.6} /> {busy ? "Envoi..." : "Envoyer le constat"}
           </button>
@@ -602,14 +602,14 @@ export default function RelayDisputes({
               portail réserve à ce qui engage le relais. Ici le gérant prend
               la garde d'un colis qui n'est pas le sien. */}
           <section
-            className="overflow-hidden rounded-[18px] px-[18px] py-[18px] text-white shadow-[0_6px_18px_rgba(8,14,31,.28)]"
+            className="overflow-hidden rounded-[18px] px-[18px] py-[18px] text-white shadow-[0_6px_18px_rgba(14,27,56,.28)]"
             style={{
               backgroundImage:
-                "radial-gradient(80% 120% at 96% -4%, rgba(214,116,62,.30) 0%, rgba(214,116,62,0) 62%),"
+                "radial-gradient(80% 120% at 96% -4%, rgba(239,106,0,.30) 0%, rgba(239,106,0,0) 62%),"
                 + " linear-gradient(140deg, #0A1230 0%, #101E48 48%, #17296B 100%)",
             }}
           >
-            <p className="text-[12.5px] font-black uppercase leading-none tracking-[0.09em] text-[#E9A93A]">
+            <p className="text-[12.5px] font-black uppercase leading-none tracking-[0.09em] text-[#E8A10E]">
               Dépôt d'un retour validé
             </p>
             <p className="mt-2 text-[14px] font-medium leading-[1.5] text-white/85">
@@ -633,7 +633,7 @@ export default function RelayDisputes({
                 type="button"
                 onClick={() => setReturnScanOpen(true)}
                 aria-label="Scanner l'étiquette du retour"
-                className="flex w-[58px] flex-shrink-0 items-center justify-center rounded-[12px] bg-gradient-to-b from-[#F58A1F] to-[#E8590C] text-white shadow-[0_4px_12px_rgba(232,89,12,.4)] transition active:scale-[.95]"
+                className="pr-btn flex w-[58px] flex-shrink-0 items-center justify-center rounded-[12px] transition active:scale-[.95]"
               >
                 <QrCode size={23} strokeWidth={2.2} />
               </button>
@@ -643,15 +643,15 @@ export default function RelayDisputes({
               <p className="mt-2.5 text-[13px] font-semibold text-white/60">Lecture…</p>
             ) : null}
             {lookupError ? (
-              <p className="mt-2.5 text-[13px] font-semibold leading-snug text-[#FFB4A8]">{lookupError}</p>
+              <p className="mt-2.5 text-[13px] font-semibold leading-snug text-[#FF8A80]">{lookupError}</p>
             ) : null}
           </section>
 
           {/* ── Le retour lu ───────────────────────────────────────────────── */}
           {lookup ? (
-            <section className="rounded-[18px] border border-slate-200/70 bg-white px-5 pb-5 pt-4 shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
+            <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-5 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
               <div className="flex items-center justify-between gap-3">
-                <h3 className="text-[21px] font-black tracking-[-0.015em] tabular-nums text-slate-900 dark:text-white">
+                <h3 className="text-[17px] font-black tracking-[-0.02em] tabular-nums text-slate-900 dark:text-white">
                   {lookup.reference}
                 </h3>
                 {/* La pastille dit si le colis s'accepte, pas si le dossier est
@@ -659,8 +659,8 @@ export default function RelayDisputes({
                 <span
                   className={`flex-shrink-0 rounded-full border px-3 py-[5px] text-[12.5px] font-semibold ${
                     lookup.depositable
-                      ? "border-[#B7E0C4] bg-[#F1FAF3] text-[#2E7D4F]"
-                      : "border-[#F2B8B8] bg-[#FDECEC] text-[#D84B4B]"
+                      ? "border-[#BFE3CF] bg-[#E6F4EC] text-[#1F7A4D]"
+                      : "border-[#F4C3BE] bg-[#FDECEA] text-[#B42318]"
                   }`}
                 >
                   {lookup.depositable ? "Motif validé" : "Non déposable"}
@@ -692,7 +692,7 @@ export default function RelayDisputes({
                     gerant ranger le colis a une place que personne ne pourra
                     retrouver — pire qu'une absence de consigne.
                   */}
-                  <dd className="text-right text-[14px] font-black text-[#1D4ED8] dark:text-blue-400">
+                  <dd className="text-right text-[14px] font-black text-[#2456D6] dark:text-blue-400">
                     À part des colis clients
                   </dd>
                 </div>
@@ -709,7 +709,7 @@ export default function RelayDisputes({
               {/* Le retour attendu ailleurs : le gerant renvoie le client au bon
                   comptoir au lieu d'encaisser un colis qu'on n'attend pas ici. */}
               {lookup.assigned_elsewhere ? (
-                <p className="mt-3 rounded-[12px] border border-[#F2D79B] bg-[#FDF6E3] px-3.5 py-3 text-[13px] font-semibold leading-snug text-[#B4791A]">
+                <p className="mt-3 rounded-[12px] border border-[#F0DA9C] bg-[#FFF4D6] px-3.5 py-3 text-[13px] font-semibold leading-snug text-[#8A5A00]">
                   Ce retour est attendu au {lookup.assigned_elsewhere}. Vous pouvez le prendre, mais
                   prévenez le client du changement.
                 </p>
@@ -721,13 +721,13 @@ export default function RelayDisputes({
                   <div
                     className={`mt-3.5 rounded-[12px] border-2 border-dashed px-3.5 py-3 transition ${
                       sealReady
-                        ? "border-[#B7E0C4] bg-[#F1FAF3] dark:border-emerald-800 dark:bg-emerald-950/30"
-                        : "border-[#F0B96A] bg-[#FFF8ED] dark:border-orange-800 dark:bg-orange-950/20"
+                        ? "border-[#BFE3CF] bg-[#E6F4EC] dark:border-emerald-800 dark:bg-emerald-950/30"
+                        : "border-[#F6CFA8] bg-[#FFF1E2] dark:border-orange-800 dark:bg-orange-950/20"
                     }`}
                   >
                     <p
                       className={`flex items-center gap-2 text-[13.5px] font-black leading-snug ${
-                        sealReady ? "text-[#2E7D4F] dark:text-emerald-300" : "text-[#C77C1C] dark:text-orange-300"
+                        sealReady ? "text-[#1F7A4D] dark:text-emerald-300" : "text-[#8A5A00] dark:text-orange-300"
                       }`}
                     >
                       {sealReady ? <Check size={17} strokeWidth={3} /> : <Camera size={17} strokeWidth={2.4} />}
@@ -769,14 +769,14 @@ export default function RelayDisputes({
                     type="button"
                     onClick={() => void submitReturn()}
                     disabled={busy || !sealReady}
-                    className="mt-3.5 flex w-full items-center justify-center gap-2.5 rounded-[12px] bg-gradient-to-r from-[#F58A1F] to-[#E8590C] px-4 py-4 text-[17px] font-black text-white shadow-[0_4px_14px_rgba(232,89,12,.38)] transition active:scale-[.97] disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none dark:disabled:from-slate-700 dark:disabled:to-slate-700"
+                    className="pr-btn mt-3.5 flex w-full items-center justify-center gap-2.5 rounded-[12px] px-4 py-4 text-[17px] font-black text-white transition active:scale-[.97] disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none dark:disabled:from-slate-700 dark:disabled:to-slate-700"
                   >
                     <Check size={19} strokeWidth={3} />
                     {busy ? "Enregistrement…" : "Enregistrer le dépôt"}
                   </button>
                 </>
               ) : (
-                <p className="mt-3.5 rounded-[12px] border border-[#F2B8B8] bg-[#FDECEC] px-3.5 py-3 text-[13px] font-semibold leading-snug text-[#D84B4B]">
+                <p className="mt-3.5 rounded-[12px] border border-[#F4C3BE] bg-[#FDECEA] px-3.5 py-3 text-[13px] font-semibold leading-snug text-[#B42318]">
                   {lookup.status_label} — ce retour ne se dépose pas. Le client garde son colis et
                   contacte BelivaY depuis sa commande.
                 </p>
@@ -805,7 +805,7 @@ export default function RelayDisputes({
         <>
           {/* ── En cours ─────────────────────────────────────────────────── */}
           {dossiersOuverts.length === 0 ? (
-            <section className="rounded-[18px] border border-slate-200/70 bg-white px-4 py-6 text-center shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
+            <section className="rounded-[14px] border border-slate-200 bg-white px-4 py-6 text-center shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
               <p className="text-[13.5px] font-medium text-slate-400 dark:text-slate-500">
                 Aucun dossier en cours sur vos colis.
               </p>
@@ -817,10 +817,10 @@ export default function RelayDisputes({
               return (
                 <section
                   key={file.ref}
-                  className="rounded-[18px] border border-slate-200/70 bg-white px-4 pb-4 pt-4 shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900"
+                  className="rounded-[14px] border border-slate-200 bg-white px-4 pb-4 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900"
                 >
                   <div className="flex items-start gap-3">
-                    <span className="flex h-[38px] w-[38px] flex-shrink-0 items-center justify-center rounded-[11px] bg-[#FDF3DC] text-[#B4791A] dark:bg-amber-950/50 dark:text-amber-300">
+                    <span className="flex h-[38px] w-[38px] flex-shrink-0 items-center justify-center rounded-[11px] bg-[#FFF4D6] text-[#8A5A00] dark:bg-amber-950/50 dark:text-amber-300">
                       <Scale size={19} strokeWidth={2.2} />
                     </span>
                     <span className="min-w-0 flex-1">
@@ -837,8 +837,8 @@ export default function RelayDisputes({
                     <span
                       className={`flex-shrink-0 rounded-full border px-3 py-[5px] text-[12.5px] font-semibold ${
                         aCompleter
-                          ? "border-[#F2D79B] bg-[#FDF6E3] text-[#B4791A]"
-                          : "border-[#C3CCF5] bg-[#EEF1FD] text-[#5B6BD6]"
+                          ? "border-[#F0DA9C] bg-[#FFF4D6] text-[#8A5A00]"
+                          : "border-[#C9D7FB] bg-[#EAF0FF] text-[#2456D6]"
                       }`}
                     >
                       {aCompleter ? "À compléter" : file.status}
@@ -870,7 +870,7 @@ export default function RelayDisputes({
                   {file.requests.map((demande) => (
                     <p
                       key={demande.instructions}
-                      className="mt-3.5 flex items-start gap-2.5 rounded-[12px] bg-[#FDF6E3] px-3.5 py-3 text-[13px] font-semibold leading-[1.5] text-[#B4791A] dark:bg-amber-950/30 dark:text-amber-200"
+                      className="mt-3.5 flex items-start gap-2.5 rounded-[12px] bg-[#FFF4D6] px-3.5 py-3 text-[13px] font-semibold leading-[1.5] text-[#8A5A00] dark:bg-amber-950/30 dark:text-amber-200"
                     >
                       <Camera size={17} strokeWidth={2.4} className="mt-[2px] flex-shrink-0" />
                       <span>
@@ -888,14 +888,14 @@ export default function RelayDisputes({
 
           {/* ── Clos ce mois ─────────────────────────────────────────────── */}
           {dossiersClos.length > 0 ? (
-            <section className="rounded-[18px] border border-slate-200/70 bg-white px-4 pb-2 pt-4 shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
-              <h3 className="text-[19px] font-black tracking-[-0.015em] text-slate-900 dark:text-white">
+            <section className="rounded-[14px] border border-slate-200 bg-white px-4 pb-2 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
+              <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
                 Clos ce mois
               </h3>
               <ul className="mt-2 divide-y divide-slate-100 dark:divide-slate-800">
                 {dossiersClos.map((file) => (
                   <li key={file.ref} className="flex items-start gap-3 py-3.5">
-                    <span className="flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-[10px] border-2 border-[#B7E0C4] bg-[#E8F6EC] text-[#2E7D4F] dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
+                    <span className="flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-[10px] border-2 border-[#BFE3CF] bg-[#E6F4EC] text-[#1F7A4D] dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
                       <Check size={17} strokeWidth={3} />
                     </span>
                     <span className="min-w-0 flex-1">
@@ -908,7 +908,7 @@ export default function RelayDisputes({
                         pas mis en cause
                       </span>
                     </span>
-                    <span className="flex-shrink-0 rounded-full border border-[#B7E0C4] bg-[#F1FAF3] px-3 py-[5px] text-[12.5px] font-semibold text-[#2E7D4F] dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+                    <span className="flex-shrink-0 rounded-full border border-[#BFE3CF] bg-[#E6F4EC] px-3 py-[5px] text-[12.5px] font-semibold text-[#1F7A4D] dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
                       Clos
                     </span>
                   </li>
@@ -918,8 +918,8 @@ export default function RelayDisputes({
           ) : null}
 
           {/* ── Les règles ───────────────────────────────────────────────── */}
-          <section className="rounded-[18px] border border-slate-200/70 bg-white px-5 pb-4 pt-4 shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
-            <h3 className="text-[19px] font-black tracking-[-0.015em] text-slate-900 dark:text-white">
+          <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-4 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
+            <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
               Les règles
             </h3>
             <dl className="mt-3 divide-y divide-slate-100 dark:divide-slate-800">

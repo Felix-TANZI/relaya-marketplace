@@ -63,8 +63,8 @@ export const minutesAPied = (km: number) => Math.max(1, Math.round(km * 17))
 // dans les 7 jours mais n'est jamais facturé ; la garde ne dépasse jamais la valeur des colis ; le 8e jour (premier
 // jour ouvert), renvoi au vendeur (+ 500 F, GARDE-RENVOI), retenue jamais plus que ce qui a été payé (DP-24).
 export const GRILLE_GARDE = [0, 100, 100, 100, 200, 500, 1000]
-export const GARDE_GROS_AJOUT = 300
-export const RENVOI_GARDE = 500
+export const GARDE_GROS_AJOUT = 0 // v6 : pas de supplément gros colis
+export const RENVOI_GARDE = 0 // v6 : au renvoi, seuls les 2 000 F de garde sont déduits, sans autre frais
 const JOURS_FR = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
 const jourSemaine = (ms: number) => new Date(ms + 3600e3).getUTCDay()
 export interface JourGarde {

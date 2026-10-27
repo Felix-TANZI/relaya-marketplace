@@ -10,7 +10,9 @@ import { appels, ouNull, seg } from '../outils'
 export function domaineRetours(api: ClientApi): SourceVendeur['retours'] {
   const a = appels(api, 'retours')
   const d: DomaineRetours = {
-    liste: (etat) => a.get<Retour[]>('/returns', { query: { state: etat } }),
+    // /returns/v2 (et non /returns) : évite la collision avec l'ancienne liste du premier
+    // frontend vendeur (frontend/src/services/api/vendors.ts) — voir backend/apps/vendors/urls.py.
+    liste: (etat) => a.get<Retour[]>('/returns/v2', { query: { state: etat } }),
     compteurs: () => a.get<CompteursRetours>('/returns/counts'),
     detail: (ref) => ouNull(a.get<Retour>(`/returns/${seg(ref)}`)),
     recevoir: (ref) => a.post(`/returns/${seg(ref)}/receive`, {}, { idempotence: true }),

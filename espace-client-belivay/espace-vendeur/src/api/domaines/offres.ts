@@ -38,7 +38,8 @@ export function domaineOffres(api: ClientApi): SourceVendeur['offres'] {
     conseil: (offreId, prix) => ouNull(a.get<Conseil>(`/offers/${seg(offreId)}/price-advice`, { query: { prix } })),
     publier: (id, choix) =>
       a.post<Resultat<Publication, RefusPublication>>(`/offers/${seg(id)}/publish`, choix, { idempotence: true }),
-    changerPrix: (id, prix, rester) => a.put<Resultat<{ produit: Produit }, 'prix_minimum' | 'plafond' | 'prix'>>(`/offers/${seg(id)}/price`, { prix, rester }),
+    changerPrix: (id, prix, rester, confirmer) =>
+      a.put<Resultat<{ produit: Produit }, 'prix_minimum' | 'plafond' | 'prix' | 'prix_anormal'>>(`/offers/${seg(id)}/price`, { prix, rester, confirmer }),
     publication: (id) => ouNull(a.get<Publication>(id ? `/offers/${seg(id)}/publication` : '/offers/publication')),
     proposerDescription: (offreId, texte) => a.post<Resultat<{ reponseAvant: Instant }, 'court' | 'coordonnees' | 'long'>>(`/offers/${seg(offreId)}/description-proposal`, { texte }),
   }

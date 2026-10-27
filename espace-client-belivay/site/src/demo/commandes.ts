@@ -18,8 +18,8 @@ export const COMMANDES: CommandeClient[] = [
     ref: 'BLV-52107', etat: 'preparation', payeeLe: U(24, 9, 2), mode: 'relais', lieu: 'Relais Mvog-Ada', total: 180280, livraison: 1880,
     colis: [
       { n: 1, p: 'galaxya15', produit: 'Samsung Galaxy A15 · 128 Go', dessin: '96013188e842', prix: 89900, qte: 1, boutique: 'Boutique A', etagere: null, arrive: false, statut: 'pret' },
-      { n: 2, p: 'tablette8', produit: 'Tablette 8″ · 64 Go', dessin: '6d95c1664bef', prix: 64000, qte: 1, boutique: 'Boutique B', etagere: null, arrive: false, statut: 'preparation' },
-      { n: 3, p: 'ventilo', produit: 'Ventilateur sur pied 16″', dessin: '02cc832346b3', prix: 24500, qte: 1, boutique: 'Boutique C', etagere: null, arrive: false, statut: 'attente', gros: true },
+      { n: 2, p: 'tablette8', produit: 'Samsung Galaxy Tab A9 8,7″ · 64 Go', dessin: '6d95c1664bef', prix: 64000, qte: 1, boutique: 'Boutique B', etagere: null, arrive: false, statut: 'preparation' },
+      { n: 3, p: 'ventilo', produit: 'Ventilateur sur pied Midea 16″', dessin: '02cc832346b3', prix: 24500, qte: 1, boutique: 'Boutique C', etagere: null, arrive: false, statut: 'attente', gros: true },
     ],
     code: '281907', codeBio: true, arriveeLe: null, pretLe: U(24, 15), garde: null, comptoir: null, litige: null,
     retireeLe: null, retourJusqua: null, annulee: null, delegue: null,
@@ -44,14 +44,14 @@ export const COMMANDES: CommandeClient[] = [
   },
   {
     ref: 'BLV-51877', etat: 'litige', payeeLe: U(20, 11, 0), mode: 'relais', lieu: 'Relais Mvog-Ada', total: 16700, livraison: 900,
-    colis: [{ n: 1, p: 'fer', produit: 'Fer à repasser vapeur 2 200 W', dessin: '3626f48d73f7', prix: 15800, qte: 1, boutique: 'Boutique C', etagere: 'C-02', arrive: true }],
+    colis: [{ n: 1, p: 'fer', produit: 'Fer à repasser vapeur Tefal 2 200 W', dessin: '3626f48d73f7', prix: 15800, qte: 1, boutique: 'Boutique C', etagere: 'C-02', arrive: true }],
     code: null, codeBio: false, arriveeLe: U(23, 16, 0), pretLe: U(23, 16, 0), garde: null, comptoir: null, litige: 'LIT-3042',
     retireeLe: null, retourJusqua: null, annulee: null, delegue: null,
     etapes: [{ titre: 'Payée', le: U(20, 11, 0) }, { titre: 'Arrivée au relais', le: U(23, 16, 0) }, { titre: 'Constat au comptoir : litige ouvert', le: U(23, 17, 15) }, { titre: 'Décision', le: null }],
   },
   {
     ref: 'BLV-51655', etat: 'litige', payeeLe: U(18, 12, 0), mode: 'relais', lieu: 'Relais Mvog-Ada', total: 37000, livraison: 0,
-    colis: [{ n: 1, p: 'mixeur', produit: 'Mixeur-blender 2 L · 600 W', dessin: '1bf387ebd71e', prix: 37000, qte: 1, boutique: 'Boutique C', etagere: null, arrive: true }],
+    colis: [{ n: 1, p: 'mixeur', produit: 'Mixeur-blender Philips 2 L · 600 W', dessin: '1bf387ebd71e', prix: 37000, qte: 1, boutique: 'Boutique C', etagere: null, arrive: true }],
     code: null, codeBio: false, arriveeLe: U(20, 15, 0), pretLe: U(20, 15, 0), garde: null, comptoir: null, litige: 'LIT-3041',
     retireeLe: U(21, 10, 5), retourJusqua: U(28, 23, 59), annulee: null, delegue: null,
     etapes: [{ titre: 'Payée', le: U(18, 12, 0) }, { titre: 'Arrivée au relais', le: U(20, 15, 0) }, { titre: 'Retirée', le: U(21, 10, 5) }, { titre: 'Remplacement en cours', le: U(23, 11, 0) }],
@@ -65,7 +65,7 @@ export const COMMANDES: CommandeClient[] = [
   },
   {
     ref: 'BLV-51533', etat: 'annulee', payeeLe: U(11, 20, 0), mode: 'relais', lieu: 'Relais Mvog-Ada', total: 22900, livraison: 900,
-    colis: [{ n: 1, p: 'montre', produit: 'Montre acier bracelet cuir', dessin: '4241cc89c7cc', prix: 22000, qte: 1, boutique: 'Boutique D', etagere: null, arrive: false }],
+    colis: [{ n: 1, p: 'montre', produit: 'Montre Casio chronographe acier, bracelet cuir', dessin: '4241cc89c7cc', prix: 22000, qte: 1, boutique: 'Boutique D', etagere: null, arrive: false }],
     code: null, codeBio: false, arriveeLe: null, pretLe: null, garde: null, comptoir: null, litige: null,
     retireeLe: null, retourJusqua: null, annulee: { le: U(12, 9, 0), rembourse: 22900 }, delegue: null,
     etapes: [{ titre: 'Payée', le: U(11, 20, 0) }, { titre: 'Annulée par toi, remboursée', le: U(12, 9, 0) }],

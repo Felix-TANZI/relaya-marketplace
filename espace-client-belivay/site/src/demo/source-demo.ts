@@ -18,6 +18,10 @@ import { estimer, MODELES_REPRISE } from '../donnees/troc'
 import { FAQ } from './faq'
 import { LEGAL } from './legal'
 import { CATALOGUE } from './catalogue'
+// Vignette de chaque univers (menu, catégories) : la photo sur fond clair d'un produit représentatif.
+const VIGNETTE_UNIVERS: Record<string, string> = { tel: 'galaxya15', elec: 'tv43', femme: 'robewax', homme: 'chemise', chauss: 'baskets', beaute: 'karite', maison: 'mixeur', marche: 'riz', bebe: 'beb-couches', sport: 'ballon' }
+import { ENCART_DEFAUT } from '../donnees/parametresPub'
+import { annoncesDemo, cliquerDemo, emplacementsDemo, SELECTION_FLASH, selectionFlashVendeur, signalerDemo, venteDemo, voirDemo } from './annonces'
 import { CONTENU_ACCUEIL } from '../donnees/contenus'
 import { centre, kmEntre, texteKm, type Point } from '../donnees/geo'
 import { COMMANDES } from './commandes'
@@ -25,7 +29,7 @@ import { ECOLES, LISTES_RENTREE } from './rentree'
 import { ETAT_NOUVEAU, ecrireEtat, lireEtat, modifier, solde, type EtatDemo } from './magasin'
 import { cleCompte, compteDe, compteGarde, garderCompte, inscrireNumero, methodesRecus, notificationsRecus, recusATraiter, rouvrirCompte } from './reseau'
 import navigation from '../genere/navigation.json'
-import illustrations from './illustrations.json'
+import PHOTO_CARINE from '../assets/produits/d-ebb567019115.webp'
 
 // Mode « prototype » de la démonstration : tous les modules ouverts et les repères de revue visibles,
 // pour comparer le site au prototype au pixel près. Réglé sur l'appareil (blv_demo_prototype = 1).
@@ -61,7 +65,7 @@ function client(): Client {
     email: p.email,
     emailMasque: masquerEmail(p.email),
     connexion: p.connexion,
-    portrait: { 36: { svg: illustrations.portraits['carine-36'] }, 48: { svg: illustrations.portraits['carine-48'] } },
+    portrait: { 36: { url: PHOTO_CARINE, alt: '' }, 48: { url: PHOTO_CARINE, alt: '' } }, // vraie photo de la cliente de démonstration
     photo: p.photo,
   }
 }
@@ -110,7 +114,7 @@ function session(): Session {
     relais: e.relais ? { nom: e.relais.nom, gerant: e.relais.gerant, horaireDuJour: 'Ouvert jusqu’à 19 h' } : null,
     badges: (() => {
       const m = compteursMenu(e)
-      return { panier: e.panier.lignes.reduce((n, l) => n + l.qte, 0), nonLus: m.notificationsNouvelles, compte: m.commandes.aRetirer }
+      return { panier: e.panier.lignes.reduce((n, l) => n + l.qte, 0), nonLus: m.notificationsNouvelles, compte: m.commandes.aRetirer, favoris: e.favoris.length }
     })(),
     interrupteurs: proto ? tousOuverts() : INTERRUPTEURS_DU_LANCEMENT,
     reperesPrototype: proto,
@@ -154,10 +158,7 @@ const MENU: Omit<DonneesMenu, 'portefeuille' | 'commandes' | 'sauvegardesSuivis'
     id,
     nom,
     produits,
-    vignette: {
-      svg: (illustrations.univers as Record<string, string>)[id],
-      svgSombre: (illustrations.universSombre as Record<string, string>)[id],
-    },
+    vignette: { url: CATALOGUE[VIGNETTE_UNIVERS[id]]?.images?.[0]?.url ?? `/images/carrousel/${id}.webp`, alt: '' }, // photo produit sur fond clair
   })),
   support: { ouverture: 7, fermeture: 21 },
 }
@@ -290,6 +291,9 @@ function majListe(id: string, f: (l: ListeEnvies) => ListeEnvies) {
   modifier((e) => (id === 'favoris' ? e : { ...e, listes: (e.listes ?? []).map((l) => (l.id === id ? f(l) : l)) }))
 }
 
+// Produits de chaque commande passée pendant la visite (vente attribuée à une annonce au paiement).
+const produitsCommandes = new Map<string, string[]>()
+
 // Ventes flash du jeu d'essai (heures de Yaoundé, jeudi 24 sept.) : stock propre à l'offre.
 const FLASH: { p: string; prix: number; debut: number; fin: number; stock: number }[] = [
   { p: 'cartable', prix: 10900, debut: Date.UTC(2026, 8, 23, 19), fin: Date.UTC(2026, 8, 24, 19), stock: 7 },
@@ -297,12 +301,26 @@ const FLASH: { p: string; prix: number; debut: number; fin: number; stock: numbe
   { p: 'chargeur33', prix: 5500, debut: Date.UTC(2026, 8, 24, 9), fin: Date.UTC(2026, 8, 25, 11), stock: 18 },
   { p: 'ballon', prix: 7200, debut: Date.UTC(2026, 8, 22, 9), fin: Date.UTC(2026, 8, 24, 9), stock: 0 },
   { p: 'riz', prix: 15900, debut: Date.UTC(2026, 8, 25, 7), fin: Date.UTC(2026, 8, 26, 19), stock: 25 },
+  // Suite du jeu d'essai (catalogue-etendu.ts) : d'autres offres en cours, pour une colonne de Ventes flash bien fournie.
+  { p: 'tel-a05', prix: 58000, debut: Date.UTC(2026, 8, 24, 8), fin: Date.UTC(2026, 8, 25, 11), stock: 9 },
+  { p: 'elec-bt', prix: 14900, debut: Date.UTC(2026, 8, 24, 8), fin: Date.UTC(2026, 8, 25, 8), stock: 14 },
+  { p: 'mai-blender', prix: 22900, debut: Date.UTC(2026, 8, 24, 9), fin: Date.UTC(2026, 8, 25, 11), stock: 6 },
+  { p: 'fem-wax-4', prix: 14500, debut: Date.UTC(2026, 8, 24, 7), fin: Date.UTC(2026, 8, 25, 9), stock: 11 },
+  { p: 'cha-claquette', prix: 3500, debut: Date.UTC(2026, 8, 24, 8), fin: Date.UTC(2026, 8, 25, 10), stock: 30 },
+  { p: 'bea-karite-p', prix: 1800, debut: Date.UTC(2026, 8, 24, 9), fin: Date.UTC(2026, 8, 25, 11), stock: 20 },
+  { p: 'mar-huile-2', prix: 3200, debut: Date.UTC(2026, 8, 24, 8), fin: Date.UTC(2026, 8, 25, 8), stock: 16 },
 ]
 function offresFlash(e: EtatDemo): OffreFlash[] {
-  return FLASH.filter((f) => CATALOGUE[f.p]).map((f) => {
+  // Ventes flash de la sélection acceptées pour la boutique de l'espace vendeur (Publicité, demo/annonces.ts) : prix
+  // remisé de sa vente flash de Promotions, stock de la sélection (5 au plus, VD-PUB-FLASH).
+  const vendeur = selectionFlashVendeur()
+    .filter((v) => CATALOGUE[v.p] && !FLASH.some((f) => f.p === v.p))
+    .map((v) => ({ p: v.p, prix: Math.round((CATALOGUE[v.p].prix * (100 - v.remisePourCent)) / 10000) * 100, debut: v.debut, fin: v.fin, stock: 5, annonce: v.annonce }))
+  const toutes: { p: string; prix: number; debut: number; fin: number; stock: number; annonce?: string }[] = [...FLASH, ...vendeur]
+  return toutes.filter((f) => CATALOGUE[f.p]).map((f) => {
     const pr = CATALOGUE[f.p]
     const fr = calculer('relais', [{ boutique: pr.vendeur.boutique, zone: pr.vendeur.zone, articles: [{ prix: f.prix, quantite: 1, classe: pr.classe as Classe }] }])
-    return { p: f.p, titre: pr.titre, dessin: pr.dessins[0] ?? '', univers: pr.univers, prix: f.prix, avant: pr.prix, debut: f.debut, fin: f.fin, stock: Math.max(0, f.stock - (e.flashVendus?.[f.p] ?? 0)), livraison: fr.total - fr.sousTotal }
+    return { p: f.p, titre: pr.titre, dessin: pr.dessins[0] ?? '', univers: pr.univers, prix: f.prix, avant: pr.prix, debut: f.debut, fin: f.fin, stock: Math.max(0, f.stock - (e.flashVendus?.[f.p] ?? 0)), livraison: fr.total - fr.sousTotal, ...(f.annonce ? { selection: true, annonce: f.annonce } : f.p in SELECTION_FLASH ? { selection: true, annonce: SELECTION_FLASH[f.p] } : {}) }
   })
 }
 
@@ -341,15 +359,15 @@ function majCotisation(c: Cotisation) {
 // Panier famille : les essentiels (5 kg au plus chacun) et les paniers prêts.
 const ARTICLES_FAMILLE: ArticleFamille[] = [
   { id: 'riz5', titre: 'Riz parfumé 5 kg', prix: 4200, poids: 5, dessin: 'ead843e64b50' },
-  { id: 'riz25', titre: 'Riz parfumé 25 kg', prix: 18500, poids: 25, dessin: '' },
-  { id: 'huile5', titre: 'Huile d’arachide 5 L', prix: 9800, poids: 4.6, dessin: '56af8b436322' },
+  { id: 'riz25', titre: 'Riz parfumé Royal Umbrella 25 kg', prix: 18500, poids: 25, dessin: '' },
+  { id: 'huile5', titre: 'Huile d’arachide Lesieur 5 L', prix: 9800, poids: 4.6, dessin: '56af8b436322' },
   { id: 'sucre', titre: 'Sucre en poudre 1 kg', prix: 1000, poids: 1, dessin: '8df366466f2c' },
   { id: 'lait', titre: 'Lait en poudre 400 g', prix: 4600, poids: 0.45, dessin: '97c870f40819' },
   { id: 'spaghetti', titre: 'Spaghetti 500 g', prix: 400, poids: 0.5, dessin: 'abaa0336cc7c' },
   { id: 'savon', titre: 'Savon de ménage 400 g', prix: 350, poids: 0.4, dessin: '2182cef3b810' },
   { id: 'tomate', titre: 'Tomate concentrée 400 g', prix: 500, poids: 0.42, dessin: 'fc235ec495c7' },
   { id: 'sardines', titre: 'Sardines à l’huile 125 g', prix: 600, poids: 0.13, dessin: 'd1bed55bf0fa' },
-  { id: 'cafe', titre: 'Café arabica de l’Ouest 500 g', prix: 6500, poids: 0.5, dessin: '' },
+  { id: 'cafe', titre: 'Café Nescafé Arabica de l’Ouest 500 g', prix: 6500, poids: 0.5, dessin: '' },
   { id: 'cahiers', titre: 'Cahiers 100 pages × 10', prix: 3000, poids: 2, dessin: '' },
   { id: 'stylos', titre: 'Stylos bille × 10', prix: 1000, poids: 0.15, dessin: '' },
 ]
@@ -392,7 +410,7 @@ function changementsPanier(e: EtatDemo): ChangementPanier[] {
 // ville) et, pour Odile, le panier qu'elle envoie à payer dès que le lien existe.
 type LigneDemande = { titre: string; dessin: string; qte: number; prix: number; boutique: string; classe: Classe }
 const CODES_FAMILLE: Record<string, { prenom: string; relais: string; numero: string; domicile: boolean; ville: string; panier?: LigneDemande[]; mot?: string }> = {
-  'FAM-4821': { prenom: 'Odile', relais: 'Relais Mvog-Ada', numero: '699000012', domicile: true, ville: 'Yaoundé', mot: 'Merci mon fils, c’est pour la rentrée des petits.', panier: [{ titre: 'Cartable scolaire 16″', dessin: 'bfb8686109b5', qte: 2, prix: 12500, boutique: 'Boutique C', classe: 'S' }, { titre: 'Riz parfumé 25 kg', dessin: '3499c5c0a9f4', qte: 1, prix: 18500, boutique: 'Boutique B', classe: 'L' }] },
+  'FAM-4821': { prenom: 'Odile', relais: 'Relais Mvog-Ada', numero: '699000012', domicile: true, ville: 'Yaoundé', mot: 'Merci mon fils, c’est pour la rentrée des petits.', panier: [{ titre: 'Cartable scolaire Champion 16″', dessin: 'bfb8686109b5', qte: 2, prix: 12500, boutique: 'Boutique C', classe: 'S' }, { titre: 'Riz parfumé Royal Umbrella 25 kg', dessin: '3499c5c0a9f4', qte: 1, prix: 18500, boutique: 'Boutique B', classe: 'L' }] },
   'FAM-7350': { prenom: 'Junior', relais: 'Relais Essos', numero: '677550033', domicile: false, ville: 'Yaoundé' },
 }
 // Invitations envoyées par un proche à l'étranger (vu du Cameroun) : le code de son lien d'invitation.
@@ -430,7 +448,7 @@ function payePar(ref: string): string {
 // Remboursement d'un litige ou d'une annulation (REMB-DESTINATION, DP-17, DP-50) : payé par carte, sur la même
 // carte (rien au portefeuille) ; sinon crédité au Portefeuille BelivaY dès la décision quand FF-WALLET est ouvert.
 function crediterRemboursement(montant: number, libelle: string, moyen: string) {
-  if (montant <= 0 || /^carte|visa|mastercard/i.test(moyen) || !session().interrupteurs['FF-WALLET']) return
+  if (montant <= 0 || !/^portefeuille|wallet/i.test(moyen) || !session().interrupteurs['FF-WALLET']) return // v6 : moyen d'origine ; Wallet seulement s'il a payé
   const le = maintenant()
   modifier((e) => ({
     ...e,
@@ -508,7 +526,7 @@ function avecDistance(pr: Produit, e: EtatDemo = lireEtat()): Produit {
 // Boutiques du jeu d'essai (une boutique = un colis) : zone de ramassage, délai, palier, articles à ajouter.
 const BOUTIQUES: DonneesPanier['boutiques'] = {
   'Boutique A': { zone: 'Mvog-Ada', delai: '4\u00A0h', palier: 'Vendeur certifié Or · Trust Score 91', suggestions: [
-    { p: 'tablette8', titre: 'Tablette 8″ · 64 Go', dessin: '6d95c1664bef', prix: 64000 },
+    { p: 'tablette8', titre: 'Samsung Galaxy Tab A9 8,7″ · 64 Go', dessin: '6d95c1664bef', prix: 64000 },
     { p: 'galaxya15', titre: 'Samsung Galaxy A15 · 128 Go', dessin: '20344e766a88', prix: 89900 },
   ] },
   'Boutique B': { zone: 'Mvog-Ada', delai: '4\u00A0h', palier: 'Vendeur certifié Argent · Trust Score 78', suggestions: [] },
@@ -1595,6 +1613,15 @@ export const sourceDemo: Source = {
   alerteFlash: async (actif) => {
     modifier((e) => ({ ...e, alerteFlash: actif }))
   },
+  // ——— Annonces sponsorisées (DP-59 ; demo/annonces.ts) ———
+  annoncesListe: async (ou, q, cat) => annoncesDemo(ou, q, cat),
+  emplacementsAccueil: async () => {
+    const t = maintenant()
+    return { ...emplacementsDemo(), encart: ENCART_DEFAUT, flash: offresFlash(lireEtat()).filter((o) => o.selection && o.debut <= t && t < o.fin && o.stock > 0) }
+  },
+  cliquerAnnonce: async (id) => cliquerDemo(id),
+  voirAnnonce: async (id, emplacement) => voirDemo(id, emplacement),
+  signalerAnnonce: async (id, motif) => signalerDemo(id, motif),
   // ——— Échanges entre clients (DP-54 ; donnees/echanges.ts) ———
   echanges: async () => {
     const e = lireEtat()
@@ -2305,6 +2332,7 @@ export const sourceDemo: Source = {
       lignes: lignes.map((l) => ({ titre: l.titre, dessin: l.dessin, qte: l.qte, prix: l.prix, boutique: l.boutique })),
     }
     modifier((x) => ({ ...x, passees: [commande, ...x.passees] }))
+    produitsCommandes.set(ref, lignes.map((l) => l.p))
     return directe ? sourceDemo.confirmerPaiement(ref) : commande
   },
   paiementsEnAttente: async () => lireEtat().passees.filter((c) => c.etat === 'attente' && c.expire > maintenant()),
@@ -2332,6 +2360,8 @@ export const sourceDemo: Source = {
       }
       return { ...e, passees: e.passees.map((x) => (x.ref === ref ? fin! : x)), panier: c.canal === 'whatsapp' ? e.panier : { ...e.panier, lignes: [] }, portefeuille: pf, compteurs: { ...e.compteurs, commandes: e.compteurs.commandes + 1 } }
     })
+    // Publicité : la vente est attribuée au dernier clic du client sur une annonce de ce produit (7 jours).
+    if (fin) venteDemo(produitsCommandes.get(ref) ?? [])
     return fin ?? lireEtat().passees.find((c) => c.ref === ref)!
   },
   echouerPaiement: async (ref, cause) => {

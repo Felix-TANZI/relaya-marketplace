@@ -79,7 +79,6 @@ export function CorpsAide({ d, tard }: { d: Aides; tard: boolean }) {
   const { aide } = d
   const faq = diaspora ? [...d.faq].sort((a, b) => (b.cle === 'diaspora' ? 1 : 0) - (a.cle === 'diaspora' ? 1 : 0)) : d.faq
   const conv = aide.conversations
-  const portefeuille = interrupteurs['FF-WALLET']
   const nombre = (th: ThemeFaq) => questionsVisibles(th, interrupteurs as Record<string, boolean>).length
   const large = useDes('tab-l')
   const coord = useCoordonnees()
@@ -141,7 +140,7 @@ export function CorpsAide({ d, tard }: { d: Aides; tard: boolean }) {
                 ['Réponse du vendeur à un litige', '48 h'],
                 ['Décision de BelivaY', '24 h au plus après'],
                 ['Recours contre une décision', 'une fois, sous 48 h'],
-                portefeuille ? ['Remboursement', 'au portefeuille, dès la décision'] : ['Remboursement Mobile Money', 'dans l’heure après la décision'],
+                ['Remboursement', 'sur le moyen de paiement d’origine, dans l’heure après la décision'],
                 ['Remboursement d’un paiement par carte', 'sur la même carte'],
               ] as [string, string][]
             ).map(([k, v]) => (

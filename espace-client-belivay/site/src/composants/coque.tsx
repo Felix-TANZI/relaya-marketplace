@@ -382,13 +382,14 @@ function Action({ a }: { a: ActionEntete }) {
 export function BarreDuBas({ actif, calme, etat }: { actif: string | null; calme?: boolean; etat?: { panier: string | null; compte: string | null } }) {
   const { t } = usePreferences()
   const { badges } = useSession()
-  const nombres: Record<string, number> = calme ? {} : { panier: badges.panier, compte: badges.compte }
+  const nombres: Record<string, number> = calme ? {} : { panier: badges.panier, compte: badges.compte, sauvegardes: badges.favoris ?? 0 }
   const bulle = useBulle(
     ONGLETS.map((o) => chemin(o.id)),
     ONGLETS.findIndex((o) => o.id === actif),
   )
   // Un écran construit suit les badges de son état (panier vide…) ; sinon, la session.
-  const badgeDe = (id: string) => (etat ? ((etat as Record<string, string | null>)[id] ?? null) : badge(nombres[id] ?? 0))
+  // Favoris : toujours le nombre réel de la session, mis à jour dès qu'un cœur est touché.
+  const badgeDe = (id: string) => (etat && id !== 'sauvegardes' ? ((etat as Record<string, string | null>)[id] ?? null) : badge(nombres[id] ?? 0))
   return (
     <nav className={'dock glass' + (bulle.bouge ? ' bouge' : '')} aria-label={t('Navigation principale')} {...bulle.props}>
       {ONGLETS.map((o) => {

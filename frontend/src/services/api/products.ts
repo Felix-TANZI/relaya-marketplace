@@ -103,6 +103,13 @@ export interface ProductListParams {
   in_stock?: boolean;
   is_active?: boolean;
   ordering?: string;
+  /**
+   * Tâche D5 — ne renvoyer qu'une offre par fiche produit. Plusieurs vendeurs
+   * peuvent vendre le même produit : le serveur retient alors celle au prix le
+   * plus bas, promotions comprises. Les écrans qui doivent voir chaque offre
+   * séparément n'envoient simplement pas ce paramètre.
+   */
+  group_by_master?: boolean;
 }
 
 export interface CategoryListParams {

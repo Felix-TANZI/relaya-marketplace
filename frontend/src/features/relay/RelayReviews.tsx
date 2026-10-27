@@ -57,9 +57,9 @@ const THEMES: Array<{ label: string; tone: "good" | "warn" | "bad"; mots: string
 ];
 
 const THEME_TONE: Record<"good" | "warn" | "bad", string> = {
-  good: "border-[#B7E0C4] bg-[#F1FAF3] text-[#2E7D4F]",
-  warn: "border-[#F2D79B] bg-[#FDF6E3] text-[#B4791A]",
-  bad: "border-[#F2B8B8] bg-[#FDECEC] text-[#D84B4B]",
+  good: "border-[#BFE3CF] bg-[#E6F4EC] text-[#1F7A4D]",
+  warn: "border-[#F0DA9C] bg-[#FFF4D6] text-[#8A5A00]",
+  bad: "border-[#F4C3BE] bg-[#FDECEA] text-[#B42318]",
 };
 
 const JOUR_SEMAINE = new Intl.DateTimeFormat("fr-FR", { weekday: "long" });
@@ -133,7 +133,7 @@ export default function RelayReviews({ onError }: { onError: (error: unknown) =>
   return (
     <div className="space-y-4">
       {/* ── La note ──────────────────────────────────────────────────────── */}
-      <section className="overflow-hidden rounded-[18px] bg-gradient-to-br from-[#F79020] via-[#F07E16] to-[#E85D04] px-5 pb-5 pt-5 text-white shadow-[0_8px_22px_rgba(232,93,4,.3)]">
+      <section className="pr-sunrise overflow-hidden rounded-[18px] px-5 pb-5 pt-5 text-white shadow-[0_8px_22px_rgba(217,80,0,.3)]">
         <div className="flex items-end gap-4">
           <span className="text-[52px] font-black leading-[0.85] tracking-[-0.03em]">
             {total > 0 ? summary.average.toFixed(1).replace(".", ",") : "—"}
@@ -197,7 +197,7 @@ export default function RelayReviews({ onError }: { onError: (error: unknown) =>
           {reviews.map((review, index) => (
             <li
               key={review.id}
-              className={`rounded-[14px] border border-slate-200/70 bg-white px-4 py-3.5 shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900 ${
+              className={`rounded-[14px] border border-slate-200 bg-white px-4 py-3.5 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900 ${
                 index % 2 === 0 ? "mr-5" : "ml-5"
               }`}
             >

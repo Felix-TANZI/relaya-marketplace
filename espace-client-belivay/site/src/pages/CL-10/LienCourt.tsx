@@ -15,7 +15,7 @@ import { source, type CommandeClient } from '../../donnees/source'
 import { F } from '../../i18n/format'
 import { dateA, jourSeul } from '../../i18n/dates'
 import { usePreferences } from '../../preferences'
-import { echeancier, Groupe, jeton, ouvertureDuJour, Qr, RENVOI_GARDE, useRelais } from '../CL-09/Commun'
+import { echeancier, Groupe, jeton, ouvertureDuJour, Qr, useRelais } from '../CL-09/Commun'
 import { lienItineraire } from '../../connecteurs/cartes'
 
 export function LienCourt() {
@@ -124,7 +124,7 @@ export function LienCourt() {
               <p>{t('À payer en Mobile Money au comptoir, sur ton téléphone.')}</p>
               {(() => {
                 const e = echeancier(k, maintenant, relais?.ferme ?? null)
-                return <p>{tf('Retire avant {d} au soir, sinon tes colis repartent chez le vendeur (+ {r} F de renvoi).', { d: jourSeul(e.dernier.le, langue), r: F(RENVOI_GARDE) })}</p>
+                return <p>{tf('Retire avant {d} au soir, sinon tes colis repartent chez le vendeur. Garde à payer en espèces au gérant.', { d: jourSeul(e.dernier.le, langue) })}</p>
               })()}
             </div>
           )}

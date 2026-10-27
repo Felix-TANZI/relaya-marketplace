@@ -79,6 +79,8 @@ function Formulaire3({ p, r, variantes }: { p: Produit; r: Reglages; variantes: 
   const [tente, setTente] = useState(false)
   const [envoi, setEnvoi] = useState(false)
   const [erreurServeur, setErreurServeur] = useState<string | null>(null)
+  // VD-PRIX-ANORMAL : second appui sur « Enregistrer » confirme un prix hors norme.
+  const [prixAConfirmer, setPrixAConfirmer] = useState(false)
   const stockRef = useRef<HTMLInputElement>(null)
   const prixRef = useRef<HTMLInputElement>(null)
   useEffect(() => {
@@ -157,19 +159,32 @@ function Formulaire3({ p, r, variantes }: { p: Produit; r: Reglages; variantes: 
       return setErreurServeur(t(m.raison === 'variante' ? 'Cette variante existe déjà dans vos produits : choisissez-en une autre.' : 'Vérifiez les champs en rouge.'))
     }
     if (edition) {
-      const r2 = await source.offres.changerPrix(p.id, prixChoisi, rester)
+      const r2 = await source.offres.changerPrix(p.id, prixChoisi, rester, prixAConfirmer)
       setEnvoi(false)
       if (!r2.ok) {
         jouer('erreur')
+        if (r2.raison === 'prix_anormal') {
+          setPrixAConfirmer(true)
+          const det = r2.detail as { motif?: string; mediane?: number; ancienPrix?: number } | undefined
+          return setErreurServeur(
+            det?.motif === 'variation_brutale'
+              ? tf('Vous passez de {a} à {b}, c’est bien ça ? Appuyez à nouveau sur Enregistrer pour confirmer.', { a: montant(det.ancienPrix ?? 0), b: montant(prixChoisi) })
+              : tf('Ce prix est très éloigné de celui des autres offres ({m} en moyenne). Appuyez à nouveau sur Enregistrer pour confirmer.', { m: montant(det?.mediane ?? 0) }),
+          )
+        }
         return setErreurServeur(r2.raison === 'plafond' ? t('Au-dessus du plafond de démarrage : prix refusé, rien n’a changé.') : tf('Prix refusé : publiable dès {m}.', { m: montant(Number(r2.detail ?? 500)) }))
       }
+      setPrixAConfirmer(false)
       jouer('interrupteur')
       return naviguer(chemin('offre_detail', { p: p.id }), { replace: true, state: { message: tf('Offre mise à jour : {m}', { m: montant(prixChoisi) }) } })
     }
     setEnvoi(false)
     naviguer(chemin('offre4', { b: p.id, keep: rester ? 1 : undefined }), { state: lieu.state })
   }
-  const maj = (c2: Partial<Formulaire>) => setF((x) => ({ ...x, ...c2 }))
+  const maj = (c2: Partial<Formulaire>) => {
+    setF((x) => ({ ...x, ...c2 }))
+    setPrixAConfirmer(false)
+  }
   const inp = (faute: boolean) => 'inp' + (tente && faute ? ' err' : '')
 
   return (

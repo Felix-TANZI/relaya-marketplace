@@ -126,12 +126,12 @@ export default function RelayShelfPlan({
   const pct = plan.total > 0 ? Math.round((plan.placesUsed / plan.total) * 100) : 0;
   // Au-dela de 90 %, BelivaY coupe l'envoi : le chiffre passe alors en orange
   // pour que le gerant le voie venir au lieu de le subir.
-  const pctTone = pct >= 90 ? "text-[#E8590C]" : "text-[#1D4ED8] dark:text-blue-400";
+  const pctTone = pct >= 90 ? "text-[#EF6A00]" : "text-[#2456D6] dark:text-blue-400";
 
   return (
-    <section className="rounded-[18px] border border-slate-200/70 bg-white p-5 shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
+    <section className="rounded-[14px] border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
       <div className="flex items-baseline justify-between gap-3">
-        <h3 className="text-[19px] font-black tracking-[-0.015em] text-slate-900 dark:text-white">
+        <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
           Plan des étagères
         </h3>
         <span className={`text-[22px] font-black leading-none ${pctTone}`}>{pct} %</span>
@@ -196,7 +196,7 @@ export default function RelayShelfPlan({
             if (event.target === event.currentTarget) setOpened(null);
           }}
         >
-          <div className="animate-sheet-up safe-pb w-full rounded-t-3xl border border-slate-200 bg-white p-5 shadow-[0_-8px_40px_rgba(2,6,23,.32)] dark:border-slate-800 dark:bg-slate-900 sm:animate-page-in sm:max-w-md sm:rounded-3xl">
+          <div className="animate-sheet-up safe-pb w-full rounded-t-[18px] border border-slate-200 bg-white p-5 shadow-[0_-8px_40px_rgba(14,27,56,.32)] dark:border-slate-800 dark:bg-slate-900 sm:animate-page-in sm:max-w-md sm:rounded-[14px]">
             <div className="mx-auto mb-3 h-1.5 w-11 rounded-full bg-slate-300 dark:bg-slate-700 sm:hidden" aria-hidden />
 
             <div className="flex items-start justify-between gap-3">
@@ -241,7 +241,7 @@ export default function RelayShelfPlan({
                   setOpened(null);
                   onOpenParcel(parcel);
                 }}
-                className="mt-5 w-full rounded-[12px] bg-gradient-to-r from-[#F58A1F] to-[#E8590C] px-4 py-3.5 text-[16px] font-black text-white transition active:scale-[.97]"
+                className="pr-btn mt-5 w-full rounded-[12px] px-4 py-3.5 text-[16px] font-black text-white transition active:scale-[.97]"
               >
                 Remettre ce colis
               </button>

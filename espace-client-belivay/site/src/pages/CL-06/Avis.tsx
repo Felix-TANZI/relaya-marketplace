@@ -1,8 +1,8 @@
 // Écran « Avis » d'un produit (CL-06), repris pour l'usage réel (DP-54) : note moyenne et répartition, acheteurs
 // vérifiés seulement ; filtres (tous, avec photo, par étoiles), tri (récents, plus utiles) ; « Utile » (une
-// voix, annulable), « Signaler » ; photos d'acheteurs vers la galerie ; réponse du vendeur ; donner son avis
+// voix, annulable), « Signaler » ; photos d'acheteurs ; réponse du vendeur ; donner son avis
 // quand on a acheté le produit (sinon, quand on pourra) ; nombre d'avis de chaque filtre, filtre vide qu'on
-// efface ; une photo d'acheteur ouvre la galerie sur elle ; poser une question au vendeur avant d'acheter.
+// efface ; poser une question au vendeur avant d'acheter.
 // Écran repris à la main : outils/ecran.mjs ne le réécrit plus.
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -72,9 +72,9 @@ export function Avis() {
       </div>
       <div className="cl06-phs">
         {photos.map((a) => (
-          <Link key={a.id} to={chemin('galerie', { p: pr.p, a: a.id })} aria-label={t('Photo d’acheteur')}>
+          <span key={a.id} role="img" aria-label={t('Photo d’acheteur')}>
             <Dessin id={a.photo!} />
-          </Link>
+          </span>
         ))}
       </div>
     </>
@@ -193,9 +193,9 @@ export function Avis() {
                 </div>
                 <p>{t(a.texte)}</p>
                 {a.photo && (
-                  <Link to={chemin('galerie', { p: pr.p, a: a.id })} className="cl06-rph" aria-label={t('Photo d’acheteur')}>
+                  <span className="cl06-rph" role="img" aria-label={t('Photo d’acheteur')}>
                     <Dessin id={a.photo} />
-                  </Link>
+                  </span>
                 )}
                 {a.reponse && (
                   <div className="note ink mt8">

@@ -178,6 +178,10 @@ export default function CatalogPage() {
         const params: Record<string, string | number | boolean> = {
           page: currentPage,
           page_size: pageSize,
+          // Tâche D5 — une seule carte par produit. Plusieurs vendeurs peuvent
+          // proposer la même fiche : le serveur ne renvoie alors que l'offre
+          // au prix le plus bas (promotions comprises).
+          group_by_master: true,
         };
 
         if (searchQuery) params.search = searchQuery;

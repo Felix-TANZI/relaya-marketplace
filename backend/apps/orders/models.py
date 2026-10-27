@@ -838,6 +838,10 @@ class Return(models.Model):
         max_length=20, blank=True, default="", verbose_name="Course de retour payée par",
         help_text="vendeur, transporteur, relais ou client (R69.1) ; gratuite pour le client si le problème est validé.",
     )
+    # R69.1 avec R02.6 : quand le client est en tort, il paie la course de retour dans l'application, frais Mobile
+    # Money compris (même chemin que les frais d'absence, R51.5).
+    frais_momo_retour_xaf = models.PositiveIntegerField(default=0, verbose_name="Frais Mobile Money de la course (F)")
+    frais_retour_paye_le = models.DateTimeField(null=True, blank=True, verbose_name="Course de retour payée le")
 
     # ── Brouillon d'inspection (gardé sur l'appareil, sync best-effort) ─────
     draft_inspection = models.JSONField(
@@ -1171,6 +1175,8 @@ class RemboursementAuto(models.Model):
 
     class Statut(models.TextChoices):
         REFUSE = "REFUSE", "Non éligible : traitement normal"
+        # Sécurité avant main 2 : accordé et enregistré avant l'envoi au prestataire (compté dans les plafonds).
+        EN_COURS = "EN_COURS", "Versement en cours"
         VERSE = "VERSE", "Remboursé"
         INCONNU = "INCONNU", "Versement à issue inconnue"
         ECHEC = "ECHEC", "Versement refusé : traitement normal"

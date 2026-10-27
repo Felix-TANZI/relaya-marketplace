@@ -705,6 +705,27 @@ class PayerFraisAbsenceView(APIView):
                          "montant_xaf": issue.intent.amount_xaf})
 
 
+class PayerCourseRetourView(APIView):
+    """Spec v2.1, R69.1 : le client en tort paie la course de retour dans l'application (Mobile Money, R02.6)."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id, return_id):
+        from apps.payments.application.collect import CollectError, initiate_collect
+        from apps.payments.bridge.checkout_v2 import CheckoutError, prepare_payment_course_retour
+
+        order = get_user_order_or_404(request, id)
+        ret = get_object_or_404(Return, pk=return_id, order=order)
+        try:
+            intent = prepare_payment_course_retour(
+                ret, payer_msisdn=(request.data.get("payer_msisdn") or order.customer_phone or "").replace(" ", ""),
+                payer_operator=request.data.get("payer_operator") or "")
+            issue = initiate_collect(intent)
+        except (CheckoutError, CollectError) as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"reference": issue.intent.reference, "status": issue.status, "message": issue.message,
+                         "montant_xaf": issue.intent.amount_xaf})
+
+
 @extend_schema(tags=["Orders"], summary="Lister/creer un retour pour une commande")
 class OrderReturnListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]

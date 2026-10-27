@@ -474,6 +474,9 @@ PAYMENTS_ENCRYPTION_KEY = os.getenv("PAYMENTS_ENCRYPTION_KEY", "")
 # Deuxieme cle acceptee en lecture pendant une rotation.
 PAYMENTS_ENCRYPTION_KEY_OLD = os.getenv("PAYMENTS_ENCRYPTION_KEY_OLD", "")
 PAYMENTS_FINGERPRINT_SALT = os.getenv("PAYMENTS_FINGERPRINT_SALT", "belivay-momo")
+# Securite avant main 2 : un envoi reste « en cours » si le processus tombe pendant l'appel au prestataire. Passe ce
+# delai, il devient une issue INCONNUE et part en reconciliation (jamais renvoye).
+PAYMENTS_ENVOI_INTERROMPU_MINUTES = int(os.getenv("PAYMENTS_ENVOI_INTERROMPU_MINUTES", "30"))
 
 # ── CAMPAY — secrets en environnement UNIQUEMENT ─────────────────────────────
 # Jamais en base, jamais lisibles depuis l'administration.

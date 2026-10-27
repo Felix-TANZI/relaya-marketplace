@@ -158,6 +158,9 @@ export interface OrderReturn {
   inspection_note: string;
   refund_amount_xaf: number | null;
   is_free_for_buyer: boolean;
+  /** R69.1 : course de retour encore due par le client en tort (0 sinon). */
+  course_retour_due_xaf?: number;
+  frais_retour_partie?: string;
   created_at: string;
   updated_at: string;
 }

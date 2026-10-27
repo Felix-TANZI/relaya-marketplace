@@ -44,15 +44,19 @@ def verser(order, *, montant: int, reference: str) -> tuple[str, str]:
         raise ValueError(f"Aucun paiement encaissé pour la commande #{order.pk}.")
     justification = f"Remboursement automatique {reference} (commande #{order.pk}) — R71"
     if intent.provider_code == wallet.PRESTATAIRE:
-        p = wallet.portefeuille_de(intent.buyer, verrou=True)
-        wallet._mouvement(p, MouvementPortefeuille.Sorte.REMBOURSEMENT, reference, retirable=montant,
-                          intent_reference=intent.reference, libelle="Remboursement automatique (R71)")
-        post(kind=LedgerTransaction.Kind.REFUND,
-             lines=[debit(coa.EXPENSE_AUTO_REFUND, montant, label=justification),
-                    credit(coa.WALLET_LIABILITY, montant, label="Credit du Wallet")],
-             description=justification, source_type="RemboursementAuto", source_ref=reference,
-             created_by_label="bridge.remboursement_auto.verser")
+        from django.db import transaction
+
+        with transaction.atomic():  # rien ne sort vers un prestataire : mouvement et écriture ensemble
+            p = wallet.portefeuille_de(intent.buyer, verrou=True)
+            wallet._mouvement(p, MouvementPortefeuille.Sorte.REMBOURSEMENT, reference, retirable=montant,
+                              intent_reference=intent.reference, libelle="Remboursement automatique (R71)")
+            post(kind=LedgerTransaction.Kind.REFUND,
+                 lines=[debit(coa.EXPENSE_AUTO_REFUND, montant, label=justification),
+                        credit(coa.WALLET_LIABILITY, montant, label="Credit du Wallet")],
+                 description=justification, source_type="RemboursementAuto", source_ref=reference,
+                 created_by_label="bridge.remboursement_auto.verser")
         return PayoutRequest.Status.PAID, ""
+    # Sécurité avant main 2 : verser_a_un_client enregistre « en cours », envoie hors transaction, puis conclut.
     versement, etat = verser_a_un_client(
         user=intent.buyer, msisdn=intent.payer_msisdn, operator=intent.payer_operator or "",
         masque=intent.payer_msisdn_masked, montant=montant, reference=reference, justification=justification,

@@ -291,7 +291,9 @@ def reconcile_transactions_task(days: int = 1) -> dict:
 )
 def resolve_unknown_payouts_task(days: int = 7) -> dict:
     from apps.payments.reconciliation.services import resolve_unknown_payouts
+    from apps.payments.settlements.services import requalifier_envois_interrompus
 
+    requalifier_envois_interrompus()  # sécurité main 2 : un envoi interrompu devient une issue inconnue
     run = resolve_unknown_payouts(days=days)
     resume = run.summary or {}
     if resume.get("candidates_needing_human"):

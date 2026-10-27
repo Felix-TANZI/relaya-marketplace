@@ -755,6 +755,8 @@ class ReturnSerializer(serializers.ModelSerializer):
     requested_by_name = serializers.SerializerMethodField()
     relay_point_name = serializers.CharField(source='dropoff_relay_point.name', read_only=True, default='')
     is_free_for_buyer = serializers.SerializerMethodField()
+    # R69.1 : ce que le client doit encore pour la course de retour quand il est en tort (0 sinon, ou une fois payé)
+    course_retour_due_xaf = serializers.SerializerMethodField()
 
     class Meta:
         model = Return
@@ -766,6 +768,7 @@ class ReturnSerializer(serializers.ModelSerializer):
             'reviewed_at', 'review_note',
             'received_at', 'inspection_passed', 'inspection_note',
             'refund_amount_xaf', 'is_free_for_buyer',
+            'frais_retour_xaf', 'frais_retour_partie', 'course_retour_due_xaf', 'frais_retour_paye_le',
             'created_at', 'updated_at',
         ]
         read_only_fields = [
@@ -779,10 +782,14 @@ class ReturnSerializer(serializers.ModelSerializer):
         return obj.requested_by.get_full_name() or obj.requested_by.username
 
     def get_is_free_for_buyer(self, obj):
-        # Regle verrouillee (lancement) : tout retour accepte est un retour
-        # pour faute produit — le renvoi n'est jamais facture a l'acheteur.
-        # Le "retour pour convenance" payant est une phase future, non construite.
-        return True
+        # Spec v2.1, R69.1 : la course de retour est gratuite pour le client si son probleme est valide ; elle est a
+        # sa charge s'il est en tort apres l'inspection.
+        return obj.frais_retour_partie != "client"
+
+    def get_course_retour_due_xaf(self, obj):
+        from .retours import course_de_retour_due
+
+        return course_de_retour_due(obj)
 
 
 class ReturnCreateSerializer(serializers.ModelSerializer):

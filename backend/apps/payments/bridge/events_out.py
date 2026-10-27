@@ -137,6 +137,8 @@ def mirror_payment_confirmed(intent) -> int:
             return _comptoir_paye(intent, [c.pk for c in commandes])
         if intent.idempotency_key.endswith("-absence"):
             return _absence_payee(intent, [c.pk for c in commandes])
+        if intent.idempotency_key.endswith("-course-retour"):
+            return _course_retour_payee(intent)
 
         a_payer = Order.objects.filter(
             pk__in=[c.pk for c in commandes],
@@ -202,6 +204,17 @@ def _absence_payee(intent, pks) -> int:
     for commande in Order.objects.filter(pk__in=payees):
         _reveler_code(commande)
     return modifiees
+
+
+def _course_retour_payee(intent) -> int:
+    """R69.1 : la course de retour du client en tort est payée."""
+    from django.utils import timezone
+
+    from apps.orders.models import Return
+
+    pk = int(intent.idempotency_key.split("-")[1])
+    return Return.objects.filter(pk=pk, frais_retour_partie="client", frais_retour_paye_le__isnull=True).update(
+        frais_retour_paye_le=intent.confirmed_at or timezone.now())
 
 
 def _reveler_code(commande) -> None:

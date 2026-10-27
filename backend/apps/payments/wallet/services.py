@@ -72,8 +72,21 @@ def _mouvement(p: Portefeuille, sorte, reference, retirable=0, geste=0, **extra)
                                                 part_retirable_xaf=retirable, part_geste_xaf=geste, **extra)
 
 
+def recharges_en_attente(user) -> int:
+    """Les recharges lancées mais pas encore confirmées : une fois payées, elles entreront dans le solde."""
+    from django.db.models import Q, Sum
+
+    from apps.payments.intents.models import PaymentIntent
+
+    S = PaymentIntent.Status
+    return int(PaymentIntent.objects.filter(buyer=user, idempotency_key__startswith=CLE_RECHARGE).filter(
+        Q(status=S.PROCESSING) | Q(status__in=[S.DRAFT, S.REQUIRES_ACTION], expires_at__gt=timezone.now()))
+        .aggregate(t=Sum("amount_xaf"))["t"] or 0)
+
+
 def _plafond(p: Portefeuille, montant: int) -> None:
-    if p.solde_xaf + montant > regles.reglage("r_wallet_plafond"):  # R03.5
+    # R03.5, sécurité avant main 2 : le solde, plus les recharges encore en attente, plus celle-ci.
+    if p.solde_xaf + recharges_en_attente(p.client) + montant > regles.reglage("r_wallet_plafond"):
         raise WalletError("wallet_plafond",
                           f"Le solde du Wallet ne peut pas dépasser {regles.reglage('r_wallet_plafond')} F.")
 
@@ -166,11 +179,11 @@ def preparer_recharge(user, *, montant: int, msisdn: str, operator: str, cle: st
     montant = int(montant)
     if montant <= 0:
         raise WalletError("montant", "Montant de recharge invalide.")
-    _plafond(portefeuille_de(user), montant)
     cle = f"{CLE_RECHARGE}{cle or uuid.uuid4()}"
     existante = PaymentIntent.objects.filter(idempotency_key=cle, buyer=user).first()
     if existante is not None:
         return existante
+    _plafond(portefeuille_de(user, verrou=True), montant)  # verrou : deux recharges simultanées attendent leur tour
     intent = PaymentIntent(
         idempotency_key=cle, buyer=user, amount_xaf=montant, currency="XAF",
         distribution_plan={"total_distributed": montant, "currency": "XAF", "platform_revenue": 0,
@@ -351,7 +364,6 @@ def devis_retrait(user, montant: int) -> dict:
             "numeros": [i.payer_msisdn_masked for i in numeros_de_recharge(user)]}
 
 
-@db_transaction.atomic
 def retirer(user, *, montant: int, numero_masque: str = "", cle: str = ""):
     """
     Le client retire `montant` de la part retirable ; il recoit montant - frais sur un numero qui a recharge.
@@ -373,11 +385,14 @@ def retirer(user, *, montant: int, numero_masque: str = "", cle: str = ""):
     if source is None:
         raise WalletError("numero", "Le retrait part seulement vers un numéro qui a rechargé ce Wallet.")
     frais = frais_retrait(montant)
-    p = portefeuille_de(user, verrou=True)
-    if p.solde_retirable_xaf < montant:  # R03.6 : jamais les gestes
-        raise WalletError("solde_insuffisant", "Montant supérieur à la part retirable du Wallet.")
-    mouvement = _mouvement(p, MouvementPortefeuille.Sorte.RETRAIT, reference, retirable=-montant, frais_xaf=frais,
-                           libelle="Retrait vers Mobile Money")
+    # Sécurité avant main 2 : le Wallet est débité et validé en base AVANT l'envoi ; l'envoi part hors transaction ;
+    # la conclusion (référence, ou part rendue si l'opérateur refuse) suit dans une nouvelle transaction.
+    with db_transaction.atomic():
+        p = portefeuille_de(user, verrou=True)
+        if p.solde_retirable_xaf < montant:  # R03.6 : jamais les gestes
+            raise WalletError("solde_insuffisant", "Montant supérieur à la part retirable du Wallet.")
+        mouvement = _mouvement(p, MouvementPortefeuille.Sorte.RETRAIT, reference, retirable=-montant,
+                               frais_xaf=frais, libelle="Retrait vers Mobile Money")
 
     versement, etat = verser_a_un_client(
         user=user, msisdn=source.payer_msisdn, operator=source.payer_operator or "",
@@ -386,13 +401,15 @@ def retirer(user, *, montant: int, numero_masque: str = "", cle: str = ""):
         debits=[debit(coa.WALLET_LIABILITY, montant, label=f"Retrait {reference}")],
         autres_credits=[credit(coa.REVENUE_WALLET_WITHDRAWAL_FEE, frais, label="Frais de retrait (R03.4)")]
         if frais else [])
-    mouvement.payout_reference = versement.reference
-    mouvement.save(update_fields=["payout_reference"])
-    if etat == PayoutRequest.Status.FAILED:
-        # Rien n'est parti : la part retirable est rendue, aucune ecriture au grand livre.
-        return _mouvement(p, MouvementPortefeuille.Sorte.RETRAIT_ANNULE, f"{reference}-annule", retirable=montant,
-                          payout_reference=versement.reference,
-                          libelle=(versement.error_message or "Retrait refusé par l'opérateur")[:200])
+    with db_transaction.atomic():
+        mouvement.payout_reference = versement.reference
+        mouvement.save(update_fields=["payout_reference"])
+        if etat == PayoutRequest.Status.FAILED:
+            # Rien n'est parti : la part retirable est rendue, aucune ecriture au grand livre.
+            p = portefeuille_de(user, verrou=True)
+            return _mouvement(p, MouvementPortefeuille.Sorte.RETRAIT_ANNULE, f"{reference}-annule",
+                              retirable=montant, payout_reference=versement.reference,
+                              libelle=(versement.error_message or "Retrait refusé par l'opérateur")[:200])
     # UNKNOWN : la part reste debitee du Wallet, le compte 2050 attend la reconciliation (voir suivi()).
     return mouvement
 

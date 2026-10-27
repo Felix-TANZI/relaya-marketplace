@@ -79,7 +79,34 @@ def attribuer_frais_de_retour(ret) -> None:
                 break
     ret.frais_retour_xaf = regles.reglage("r_retour")
     ret.frais_retour_partie = partie
-    ret.save(update_fields=["frais_retour_xaf", "frais_retour_partie", "updated_at"])
+    # Client en tort : il paie la course, plus les frais Mobile Money de ce paiement (R02.6), dans l'application.
+    ret.frais_momo_retour_xaf = int(regles.moteur().frais_momo(ret.frais_retour_xaf)) if partie == "client" else 0
+    ret.save(update_fields=["frais_retour_xaf", "frais_retour_partie", "frais_momo_retour_xaf", "updated_at"])
+    if partie == "client":
+        _demander_la_course_au_client(ret)
+        return
     from apps.payments.bridge.retours import facturer_course_de_retour
 
     facturer_course_de_retour(ret)  # créance sur la partie en tort, approuvée par un tiers
+
+
+def _demander_la_course_au_client(ret) -> None:
+    """R69.1 : le problème n'est pas validé ; le client est prévenu de la course de retour à payer."""
+    from apps.accounts.models import UserNotification
+
+    if ret.order.user_id is None or ret.frais_retour_paye_le:
+        return
+    total = (ret.frais_retour_xaf or 0) + (ret.frais_momo_retour_xaf or 0)
+    UserNotification.objects.get_or_create(
+        user_id=ret.order.user_id, title=f"Course de retour à payer · commande #{ret.order_id}",
+        defaults={"message": f"Le problème signalé n'a pas été validé à l'inspection : la course de retour, "
+                             f"{total} F frais Mobile Money compris, reste à votre charge (R69.1).",
+                  "notification_type": UserNotification.NotificationType.ORDER,
+                  "action_url": f"/orders/{ret.order_id}"})
+
+
+def course_de_retour_due(ret) -> int:
+    """Ce que le client doit encore pour la course de retour (0 s'il n'est pas en tort ou s'il a payé)."""
+    if ret.frais_retour_partie != "client" or ret.frais_retour_paye_le:
+        return 0
+    return int(ret.frais_retour_xaf or 0) + int(ret.frais_momo_retour_xaf or 0)

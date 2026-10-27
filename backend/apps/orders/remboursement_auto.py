@@ -32,7 +32,8 @@ from .retours import retire_le
 logger = logging.getLogger("apps.orders")
 
 PREUVES_DE_REMISE = ("RELAY_RELEASED", "CUSTOMER_DELIVERY")  # D15 : photo de la remise au client
-COMPTES = (RemboursementAuto.Statut.VERSE, RemboursementAuto.Statut.INCONNU)
+# Un remboursement « en cours » compte déjà : sinon deux demandes simultanées passeraient sous le même plafond.
+COMPTES = (RemboursementAuto.Statut.VERSE, RemboursementAuto.Statut.INCONNU, RemboursementAuto.Statut.EN_COURS)
 RAISONS = {
     "ferme": "Le remboursement automatique n'est pas ouvert.",
     "droit_retire": "Le remboursement automatique a été retiré à ce compte.",
@@ -153,6 +154,13 @@ def examiner(dispute, maintenant=None) -> str:
     return ""
 
 
+def _verrouiller_les_plafonds() -> None:
+    """Un seul examen à la fois : verrou sur la ligne du réglage du plafond mensuel (créée par migration)."""
+    from apps.regles.models import Reglage
+
+    list(Reglage.objects.select_for_update().filter(nom="r_auto_rmb_plafond_mois"))
+
+
 def tenter(dispute, statut_avant: str) -> RemboursementAuto:
     """Examine la demande ; accordée, BelivaY rembourse tout de suite et le litige se ferme ; sinon il suit son
     cours normal (retour du colis). Le cas est journalisé dans les deux cas."""
@@ -160,19 +168,30 @@ def tenter(dispute, statut_avant: str) -> RemboursementAuto:
     from apps.payments.bridge import remboursement_auto as pont
 
     order, item = dispute.order, dispute.order_item
-    raison = examiner(dispute)
-    article, frais = montants(order, item)
-    journal = RemboursementAuto(
-        dispute=dispute, order=order, order_item=item, client=dispute.opened_by, vendor=dispute.vendor,
-        article_xaf=article, frais_momo_xaf=frais, total_xaf=article + frais, raison=raison,
-        empreinte_numero=pont.empreinte_payeur(order), telephone=_telephone(order), relais=order.relay_point,
-        statut=RemboursementAuto.Statut.REFUSE)
-    if raison:
-        journal.save()
-        return journal
+    # Sécurité avant main 2 : le plafond mensuel (D32) et les limites par personne se vérifient sous un verrou, et la
+    # demande accordée est enregistrée « en cours » dans la même transaction : deux demandes simultanées ne passent
+    # jamais toutes les deux sous le même plafond. L'envoi au prestataire vient ensuite, hors transaction.
     with transaction.atomic():
+        _verrouiller_les_plafonds()
+        raison = examiner(dispute)
+        article, frais = montants(order, item)
+        journal = RemboursementAuto(
+            dispute=dispute, order=order, order_item=item, client=dispute.opened_by, vendor=dispute.vendor,
+            article_xaf=article, frais_momo_xaf=frais, total_xaf=article + frais, raison=raison,
+            empreinte_numero=pont.empreinte_payeur(order), telephone=_telephone(order), relais=order.relay_point,
+            statut=RemboursementAuto.Statut.REFUSE if raison else RemboursementAuto.Statut.EN_COURS)
         journal.save()
+    if raison:
+        return journal
+    try:
         etat, reference = pont.verser(order, montant=article + frais, reference=f"rembt-auto-{dispute.pk}")
+    except ValueError:  # aucun paiement à rembourser : rien n'est parti
+        RemboursementAuto.objects.filter(pk=journal.pk).update(statut=RemboursementAuto.Statut.ECHEC)
+        raise
+    except Exception:  # incident après l'enregistrement « en cours » : on ne sait pas, la réconciliation tranche
+        RemboursementAuto.objects.filter(pk=journal.pk).update(statut=RemboursementAuto.Statut.INCONNU)
+        raise
+    with transaction.atomic():
         journal.payout_reference = reference
         journal.statut = {"PAID": RemboursementAuto.Statut.VERSE, "UNKNOWN": RemboursementAuto.Statut.INCONNU}.get(
             etat, RemboursementAuto.Statut.ECHEC)

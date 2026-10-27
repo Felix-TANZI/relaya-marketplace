@@ -33,6 +33,7 @@ import { customerApi, type Dispute, type Shipment, type OrderChatMessage, type O
 import TrackingMap from "@/components/TrackingMap";
 import AppelMasqueButton from "@/components/AppelMasqueButton";
 import FraisAbsenceBlock from "./FraisAbsenceBlock";
+import CourseRetourBlock from "./CourseRetourBlock";
 import { OrderPaymentPanel } from "@/features/payments/OrderPaymentPanel";
 import { PfShellStyles } from "@/styles/pfShell";
 import QrScanner from "@/components/QrScanner";
@@ -1492,6 +1493,7 @@ export default function OrderDetailPage() {
                           {t("cl2_order_dispute.return_refund_progress", { amount: (ret.refund_amount_xaf ?? 0).toLocaleString("fr-FR") })}
                         </p>
                       )}
+                      <CourseRetourBlock ret={ret} orderId={order.id} phone={order.customer_phone} />
                     </div>
                   ))}
                 </div>

@@ -1,175 +1,32 @@
 // Domaine « Diaspora et proches » (DP-54) : inscription (deux codes), liens famille (code, invitation, réponse,
 // livraison du proche), commander pour un proche (carte, contrôle de cohérence), demandes de panier, proche actif
-// (« Pour qui ? »), devise d'affichage. Routes du kit : backend-kit/apps/diaspora, apps/otp (codes « diaspora »),
-// apps/client_accounts (préférences) ; réponses au format de src/donnees/source.ts (adaptateur identité).
+// (« Pour qui ? »), devise d'affichage.
 //
-// identiteFournisseur reste « front » : il faut le jeton Google Identity Services ou Sign in with Apple JS (comme
-// `connecter`), que le site n'a pas encore ; la route POST /api/auth/social/lookup est prête dans le kit.
-import type {
-  CarteJeton,
-  CompteDiaspora,
-  ControleDiaspora,
-  DemandeProche,
-  EnvoiCode,
-  InscriptionDiaspora,
-  LienFamille,
-  ResultatInscription,
-  Session,
-  Source,
-} from '../../donnees/source'
+// NON DISPONIBLE EN PRODUCTION — décision produit requise avant de construire quoi que ce soit ici. CONNECTEURS.md
+// (3 oct. 2026) annonçait « 19/20 branché », ce qui est trompeur : « branché » n'y signifie que « le site appelle une
+// route réelle », pas « la route existe côté relaya-marketplace ». Vérifié contre `backend/apps/` aujourd'hui :
+// - `backend-kit/apps/diaspora` (famille du kit qui porte TOUT ce domaine : inscription, family-links, proche actif,
+//   commander pour un proche) N'EST PAS dans `backend/apps/` ni dans `INSTALLED_APPS`. Il n'y a tout simplement pas
+//   de modèle de compte diaspora, de lien famille ou de commande pour un proche côté serveur.
+// - `apps/client_accounts/ProfilClient.type_compte` a bien un choix `DIASPORA`, mais rien dans le code aujourd'hui ne
+//   le met à cette valeur (seule `apps.diaspora.inscrireDiaspora`, absente, le ferait) : PATCH /api/me/preferences
+//   (reglerDevise) existe réellement (apps.client_accounts.Preferences, installée) mais répondra TOUJOURS
+//   403 « hors compte diaspora » tant qu'aucun compte diaspora ne peut naître.
+// - Les DEUX seules routes qui répondent vraiment aujourd'hui sont génériques et déjà utilisées ailleurs :
+//   POST /api/auth/otp/send {purpose: diaspora} et POST /api/auth/otp/verify {purpose: diaspora} (apps.otp, installée,
+//   ne dépend pas de apps.diaspora). Elles peuvent envoyer/vérifier un code, mais ne mènent nulle part : la route
+//   d'inscription qui les suit (POST /api/auth/diaspora/register) n'existe pas. Les garder « branchées » seules
+//   serait une fonctionnalité inutile (obtenir un code qu'on ne peut jamais utiliser) ; elles sont donc aussi
+//   retirées d'ici par cohérence produit.
+// - BUG LATENT REPÉRÉ (hors du périmètre de ce fichier, à signaler à l'équipe backend) : `apps/otp/views.py`,
+//   purpose=« diaspora-renforce », importe `from apps.diaspora.services import compte as compte_diaspora` ; comme
+//   `apps.diaspora` n'est pas installée, tout appel authentifié avec ce purpose lève une ImportError (500) au lieu
+//   d'un refus propre.
+// Toutes les méthodes sont donc volontairement absentes d'ici : `source-api.ts` les fait lever NonDisponible (voir
+// src/api/routes.ts, état « serveur »), l'écran le sait et dit quoi créer plutôt que d'appeler une route qui
+// n'existera jamais tant que la décision produit n'est pas prise.
 import type { ClientApi } from '../client'
-import { ErreurInterdit, ErreurIntrouvable } from '../erreurs'
-import { ou, refusAttendu, seg, suivreRedirection } from './refus'
 
-type ReponseInscription = ({ ok: true; session: Session; access: string; refresh: string }) | Exclude<ResultatInscription, { ok: true }>
-
-export function domaineDiaspora(api: ClientApi) {
-  return {
-    // Inscription : POST /api/auth/otp/send {purpose: diaspora, canal: sms|email, destination} (sans compte) → 202 EnvoiCode.
-    // Commande pour un proche, vérification renforcée (l'écran donne le numéro masqué du compte) :
-    // POST /api/auth/otp/send {purpose: diaspora-renforce} (compte connecté) → le code part au numéro étranger vérifié.
-    envoyerCodeDiaspora: async (canal: 'sms' | 'email', vers: string) =>
-      /[·•]/.test(vers) && api.jetons.lire()
-        ? api.post<EnvoiCode>('/auth/otp/send', { purpose: 'diaspora-renforce', canal: 'sms' })
-        : api.post<EnvoiCode>('/auth/otp/send', { purpose: 'diaspora', canal, destination: vers }, { anonyme: true }),
-
-    // POST /api/auth/otp/verify {purpose: diaspora, destination, code} (sans compte, sans consommer le code : le
-    // serveur le recontrôle à l'inscription) → { ok } ; 422 code → { ok: false }
-    verifierCodeDiaspora: async (vers: string, code: string) =>
-      ou(api.post<{ ok: boolean }>('/auth/otp/verify', { purpose: 'diaspora', destination: vers, code }, { anonyme: true }), ['code'] as const).then((r) => ({ ok: r.ok })),
-
-    // E-mail : POST /api/auth/diaspora/register ; Google, Apple, numéro : POST /api/auth/social/diaspora.
-    // → { ok, session, access, refresh } (la session s'ouvre sur l'appareil) ; refus existe, prenom, email, mdp (200) ;
-    // 422 code, codeEmail, age, pays, numero, jeton.
-    inscrireDiaspora: async (i: InscriptionDiaspora) => {
-      const communs = { prenom: i.prenom, nom: i.nom, email: i.email, naissance: i.naissance, pays: i.pays, ville: i.ville, indicatif: i.indicatif, numero: i.numero, code: i.code }
-      try {
-        const r =
-          i.fournisseur === 'email'
-            ? await api.post<ReponseInscription>('/auth/diaspora/register', { ...communs, motDePasse: i.motDePasse ?? '', codeEmail: i.codeEmail ?? '' }, { anonyme: true })
-            : await api.post<ReponseInscription>('/auth/social/diaspora', { ...communs, fournisseur: i.fournisseur, jeton: i.jeton ?? '', convertir: !!i.convertir }, { anonyme: true })
-        if (!r.ok) return r
-        api.jetons.ecrire({ acces: r.access, rafraichissement: r.refresh }, true)
-        return { ok: true as const, session: r.session }
-      } catch (e) {
-        const { ok, raison } = refusAttendu(e, ['code', 'codeEmail', 'age', 'pays', 'numero', 'jeton', 'existe', 'prenom', 'email', 'mdp'] as const)
-        return { ok, raison }
-      }
-    },
-
-    // GET /api/me/family-links → { compte, liens, code, depensesMois, maintenant }
-    liensFamille: async () =>
-      api.get<{ compte: CompteDiaspora | null; liens: LienFamille[]; code: { code: string; jusqua: number } | null; depensesMois: number; maintenant: number }>('/me/family-links'),
-
-    // POST /api/me/family-links/code → { code, jusqua } (côté Cameroun) ; 403 type
-    creerCodeFamille: async () => api.post<{ code: string; jusqua: number }>('/me/family-links/code'),
-
-    // POST /api/me/family-links {code} → { ok, lien } ; 404 code, 409 deja, 422 max
-    lierParCode: async (code: string) => ou(api.post<{ ok: true; lien: LienFamille }>('/me/family-links', { code }), ['code', 'max', 'deja'] as const),
-
-    // POST /api/me/family-links/invite {prenom, numero} → { ok, lien } | { ok: false, raison: numero | max | deja }
-    inviterProche: async (prenom: string, numero: string) =>
-      ou(api.post<{ ok: true; lien: LienFamille } | { ok: false; raison: 'numero' | 'max' | 'deja' }>('/me/family-links/invite', { prenom, numero }), ['numero', 'max', 'deja'] as const),
-
-    // POST /api/me/family-links/{id}/answer {accepte, relais?} → 204 (côté Cameroun)
-    repondreLien: async (id: string, accepte: boolean, relais?: string) => {
-      await api.post(`/me/family-links/${seg(id)}/answer`, { accepte, relais: relais ?? null })
-    },
-
-    // DELETE /api/me/family-links/{id} → 204
-    retirerLien: async (id: string) => {
-      await api.supprimer(`/me/family-links/${seg(id)}`)
-    },
-
-    // POST /api/family-links/{id}/orders (Idempotency-Key) {carte: jeton, bin, paysCarte, devise, mot, titulaire, codeSms,
-    // livraison, moyen, demande, supplementPar} → { ok, ref } | { ok: false, raison, controle? } ; 422 domicile, demande, garantie.
-    // Carte : le jeton du prestataire et le BIN (6 à 8 chiffres, permis par PCI DSS) seuls (CAP-24).
-    commanderPour: async (
-      id: string,
-      p: { carte: CarteJeton; devise: 'EUR' | 'USD'; mot: string; titulaire: string; paysCarte: string; codeSms?: string; livraison?: 'relais' | 'domicile'; moyen?: 'carte' | 'apple' | 'google'; demande?: string; supplementPar?: 'payeur' | 'destinataire' },
-    ) => {
-      type R = Awaited<ReturnType<Source['commanderPour']>>
-      try {
-        const r = await api.post<R>(
-          `/family-links/${seg(id)}/orders`,
-          {
-            carte: p.carte.jeton,
-            bin: p.carte.bin,
-            paysCarte: p.paysCarte,
-            devise: p.devise,
-            mot: p.mot,
-            titulaire: p.titulaire,
-            codeSms: p.codeSms ?? '',
-            livraison: p.livraison ?? 'relais',
-            moyen: p.moyen ?? 'carte',
-            demande: p.demande ?? null,
-            supplementPar: p.supplementPar ?? null,
-          },
-          { idempotence: true },
-        )
-        return suivreRedirection(r)
-      } catch (e) {
-        const x = refusAttendu(e, ['lien', 'plafond', 'vide', 'titulaire', 'verification', 'coherence', 'domicile', 'demande', 'garantie'] as const)
-        return x.data.controle ? { ok: false, raison: x.raison, controle: x.data.controle as ControleDiaspora } : { ok: false, raison: x.raison }
-      }
-    },
-
-    // PATCH /api/me/preferences {devise} → { ok } ; 403 hors compte diaspora → { ok: false }
-    reglerDevise: async (d: 'XAF' | 'EUR' | 'USD') => {
-      try {
-        return await api.patch<{ ok: boolean }>('/me/preferences', { devise: d })
-      } catch (e) {
-        if (e instanceof ErreurInterdit) return { ok: false }
-        throw e
-      }
-    },
-
-    // PUT /api/me/active-relative {lien} → { ok } ; 403 hors compte diaspora, 404 lien non actif → { ok: false }.
-    // La session porte ensuite `proche` (distances, délais du catalogue depuis le relais de ce proche).
-    choisirProche: async (id: string) => {
-      try {
-        return await api.put<{ ok: boolean }>('/me/active-relative', { lien: id })
-      } catch (e) {
-        if (e instanceof ErreurInterdit || e instanceof ErreurIntrouvable) return { ok: false }
-        throw e
-      }
-    },
-
-    // POST /api/me/family-links/invitation → { type, code, jusqua } (lien partageable, QR)
-    lienInvitation: async () => api.post<{ type: 'famille' | 'invitation'; code: string; jusqua: number }>('/me/family-links/invitation'),
-
-    // POST /api/me/family-links/invitation/{code}/accept {relais} → { ok, lien } ; 404 code, 409 deja, 422 max, 403 type
-    accepterInvitation: async (code: string, relais: string) =>
-      ou(api.post<{ ok: true; lien: LienFamille }>(`/me/family-links/invitation/${seg(code)}/accept`, { relais }), ['code', 'max', 'deja', 'type'] as const),
-
-    // PATCH /api/me/family-links/{id}/delivery {relais, domicile, prefere} → 204 (côté Cameroun) ; 422 relais
-    reglerLivraisonLien: async (id: string, p: { relais: string; domicile: boolean; prefere: 'relais' | 'domicile' }) => {
-      await api.patch(`/me/family-links/${seg(id)}/delivery`, p)
-    },
-
-    // GET /api/me/family-requests → { demandes, maintenant }
-    demandesProches: async () => api.get<{ demandes: DemandeProche[]; maintenant: number }>('/me/family-requests'),
-
-    // POST /api/me/family-links/{id}/requests {mot, livraison, lignes?} → { ok, demande } ; refus lien (200) ;
-    // 409 deja ; 422 vide, plafond, domicile
-    envoyerPanierAuProche: async (lien: string, p: { mot: string; livraison: 'relais' | 'domicile'; lignes?: string[] }) =>
-      ou(
-        api.post<{ ok: true; demande: DemandeProche } | { ok: false; raison: 'lien' | 'vide' | 'plafond' | 'deja' | 'domicile' }>(`/me/family-links/${seg(lien)}/requests`, {
-          mot: p.mot,
-          livraison: p.livraison,
-          lignes: p.lignes ?? null,
-        }),
-        ['lien', 'vide', 'plafond', 'deja', 'domicile'] as const,
-      ),
-
-    // POST /api/me/family-requests/{id}/decline {mot} → 204 (côté diaspora) ; 409 state_changed
-    refuserDemande: async (id: string, mot: string) => {
-      await api.post(`/me/family-requests/${seg(id)}/decline`, { mot })
-    },
-
-    // DELETE /api/me/family-requests/{id} → 204 (côté Cameroun) ; 409 state_changed
-    annulerDemande: async (id: string) => {
-      await api.supprimer(`/me/family-requests/${seg(id)}`)
-    },
-  } satisfies Partial<Source>
+export function domaineDiaspora(_api: ClientApi) {
+  return {}
 }

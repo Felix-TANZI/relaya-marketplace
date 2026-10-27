@@ -158,7 +158,9 @@ export function domaineSession(api: ClientApi, o: { interrupteurs: EtatInterrupt
     deconnecter: async () => {
       const j = api.jetons.lire()
       try {
-        // Au mieux : la session est fermée sur l'appareil quoi qu'il arrive (sans token_blacklist, relaya répond 500).
+        // Au mieux : la session est fermée sur l'appareil quoi qu'il arrive, même si l'appel serveur échoue
+        // (jeton déjà expiré, réseau coupé…). rest_framework_simplejwt.token_blacklist est bien installé côté
+        // serveur (INSTALLED_APPS) : /api/auth/logout/ met la session en liste noire sans 500.
         if (j) await api.post('/auth/logout/', { refresh: j.rafraichissement }).catch(() => undefined)
       } finally {
         api.jetons.ecrire(null)

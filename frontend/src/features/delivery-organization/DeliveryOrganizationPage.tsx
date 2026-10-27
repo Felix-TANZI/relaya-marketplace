@@ -865,6 +865,7 @@ export default function DeliveryOrganizationPage() {
               destinationPrecision={missions[0].address_precision}
               destinationLabel={`${missions[0].reference} · ${missions[0].delivery_address}`}
               originLabel={missions[0].courier?.full_name || t("do1_page.fleet.map_assigned_courier")}
+              vehicleType={missions[0].courier?.vehicle_type}
               currentLocation={missions[0].latest_location
                 ? [missions[0].latest_location.latitude, missions[0].latest_location.longitude]
                 : undefined}

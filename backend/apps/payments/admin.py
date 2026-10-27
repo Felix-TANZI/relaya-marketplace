@@ -2,6 +2,7 @@
 # Enregistrement des modèles payments dans Django Admin.
 # Remplace le fichier vide existant.
 
+from django.conf import settings
 from django.contrib import admin
 from django.utils.html import format_html
 from .models import PaymentTransaction
@@ -62,6 +63,21 @@ class PaymentTransactionAdmin(admin.ModelAdmin):
     status_badge.short_description = 'Statut'
 
     actions = ['simulate_success', 'mark_failed']
+
+    def get_actions(self, request):
+        """
+        Retire la simulation de paiement hors developpement (tache D2).
+
+        `simulate_success` fait passer une commande a PAYEE sans qu'un franc
+        ne bouge. C'est un outil de developpement : les routes HTTP qui
+        l'exposaient ont deja ete retirees (voir apps/payments/urls.py), mais
+        l'action restait offerte a tout membre du staff en production. On la
+        masque donc partout ou DEBUG est faux, ce qui couvre la production.
+        """
+        actions = super().get_actions(request)
+        if not settings.DEBUG:
+            actions.pop('simulate_success', None)
+        return actions
 
     def simulate_success(self, request, queryset):
         """Action DEV — simule un paiement réussi (comme le endpoint /simulate-success/)."""

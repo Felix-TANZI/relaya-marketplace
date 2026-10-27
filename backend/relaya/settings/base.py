@@ -77,6 +77,7 @@ INSTALLED_APPS = [
     "apps.payments",
     "apps.shipping",
     'apps.vendors',
+    'apps.vendor_team',
     "apps.contact",
     # Module détachable : voir apps/whatsapp_assistant/README.md (activation, retrait).
     "apps.whatsapp_assistant",
@@ -343,7 +344,13 @@ BELIVAY_PARAMETRES_JSON = BASE_DIR / "apps" / "client_core" / "donnees" / "param
 BELIVAY_INTERRUPTEURS_JSON = BASE_DIR / "apps" / "client_core" / "donnees" / "interrupteurs.json"
 BELIVAY_SITE_URL = os.getenv("BELIVAY_SITE_URL", "https://belivay.com")
 BELIVAY_SMS = "apps.otp.prestataires.SmsConsole"
-BELIVAY_PUSH = "apps.notifications_client.prestataires.PushConsole"
+# BELIVAY_PUSH et FCM_CREDENTIALS_PATH : console par defaut (journal seulement,
+# aucun compte Firebase requis). Pour activer un vrai envoi (D21) une fois le
+# projet Firebase cree : poser FCM_CREDENTIALS_PATH vers le fichier JSON du
+# compte de service, et BELIVAY_PUSH=apps.notifications_client.prestataires.FCMPush
+# dans l'environnement — aucun changement de code necessaire.
+BELIVAY_PUSH = os.getenv("BELIVAY_PUSH", "apps.notifications_client.prestataires.PushConsole")
+FCM_CREDENTIALS_PATH = os.getenv("FCM_CREDENTIALS_PATH", "")
 
 from datetime import timedelta
 
@@ -446,6 +453,25 @@ CAMPAY_TOKEN = os.getenv("CAMPAY_TOKEN", "")
 CAMPAY_TOKEN_SANDBOX = os.getenv("CAMPAY_TOKEN_SANDBOX", "")
 CAMPAY_TOKEN_LIVE = os.getenv("CAMPAY_TOKEN_LIVE", "")
 CAMPAY_WEBHOOK_KEY = os.getenv("CAMPAY_WEBHOOK_KEY", "")
+
+
+# ── VITRINE V2 : FERMETURE DES ACHATS (tache D2) ─────────────────────────────
+# La V2 part en ligne en mode decouverte : le catalogue se consulte, mais
+# aucune commande ne doit pouvoir naitre, ni aucun paiement etre emis.
+#
+# L'ouverture des achats n'est PAS reglee ici : elle depend de l'interrupteur
+# FF-ACHAT (administration > Interrupteurs de module), comme toutes les autres
+# fonctionnalites du socle client. Voir apps/common/purchases.py.
+#
+# Seule exception gardee en environnement : les comptes de test. La tache D23
+# impose de valider le parcours de bout en bout sur ce meme serveur, achats
+# fermes au public. Liste separee par des virgules, vide par defaut — donc
+# aucune exception tant qu'on n'en declare pas.
+PURCHASES_TEST_USERNAMES = [
+    u.strip()
+    for u in os.getenv("PURCHASES_TEST_USERNAMES", "").split(",")
+    if u.strip()
+]
 
 
 # ========================================

@@ -1,0 +1,20 @@
+# Configuration Ruff du backend.
+#
+# Ruff ne tourne pas dans l'integration continue (voir .github/workflows/ci.yml) :
+# ces reglages ne servent qu'a l'editeur. Le but est d'avoir un panneau de
+# problemes qu'on relit vraiment, au lieu de dizaines d'alertes a ignorer.
+
+[lint]
+ignore = [
+    # RUF012 — "valeur modifiable en attribut de classe".
+    #
+    # La regle vise le piege classique du `[]` partage entre instances. Mais
+    # dans une vue Django REST Framework, `permission_classes = [...]`,
+    # `filter_backends = [...]` et `ordering = [...]` sont l'ECRITURE OFFICIELLE
+    # du framework : ces listes sont lues, jamais modifiees. Les annoter en
+    # `ClassVar` partout rendrait le code moins lisible que la documentation
+    # de DRF, pour zero gain reel.
+    #
+    # Mesure sur apps/shipping/views.py : 40 alertes, toutes de cette forme.
+    "RUF012",
+]

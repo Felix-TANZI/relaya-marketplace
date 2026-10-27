@@ -25,16 +25,18 @@ from rest_framework.permissions import AllowAny
 from django.utils.text import slugify
 from django.utils import timezone
 
-from .models import Product, Category, ProductReview, MasterProduct, ModerationStatus, PromotionCampaign, Brand, ColorDictionary, ColorFamily, ProductAttribute, MasterProduct, AttributeRole, ProductVariant
+from .models import Product, Category, ProductReview, MasterProduct, ModerationStatus, PromotionCampaign, Brand, ColorDictionary, ColorFamily, ProductAttribute, MasterProduct, AttributeRole, ProductVariant, ProductQuestion
 from .search import smart_product_search
 from .serializers import (
-    ProductSerializer, 
+    ProductSerializer,
     CategorySerializer,
     ProductReviewSerializer,
     ProductReviewCreateSerializer,
     MasterProductListSerializer,
     MasterProductDetailSerializer,
     PromotionCampaignSerializer,
+    ProductQuestionSerializer,
+    ProductQuestionCreateSerializer,
     CategoryTreeSerializer, 
     CategoryFlatSerializer,
     BrandSerializer, 
@@ -133,6 +135,13 @@ class ProductViewSet(viewsets.ModelViewSet):
     ]
     ordering = ['-belivay_trust_score', '-belivay_rating_average', '-belivay_reviews_count', '-created_at']
 
+    #: Tâche D5 — demande une seule fiche par produit (voir catalog/offers.py).
+    #: Volontairement optionnel : la grille client et la recherche l'envoient,
+    #: les autres écrans (flash deals, promotions, favoris) gardent leur
+    #: comportement actuel tant qu'ils n'ont pas été migrés explicitement.
+    GROUP_BY_MASTER_PARAM = 'group_by_master'
+    _VRAI = {'1', 'true', 'yes', 'on'}
+
     def get_queryset(self):
         from .recommendation import annotate_trust_score
 
@@ -157,7 +166,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         query = self.request.query_params.get('search', '').strip()
 
         if not query:
-            return super().filter_queryset(queryset)
+            return self._une_fiche_par_produit(super().filter_queryset(queryset))
 
         # Les autres backends (filtres à facettes, tri) restent en place ; seul le
         # SearchFilter est retiré puisque smart_product_search le remplace.
@@ -168,7 +177,23 @@ class ProductViewSet(viewsets.ModelViewSet):
 
         results, meta = smart_product_search(queryset, query)
         self.search_meta = meta
-        return results
+        return self._une_fiche_par_produit(results)
+
+    def _une_fiche_par_produit(self, queryset):
+        """
+        Tâche D5 — ne garder qu'une offre par fiche, si le client le demande.
+
+        Le regroupement vient APRÈS les filtres et la recherche : l'offre
+        représentante doit être choisie parmi celles que le client voit
+        réellement, sinon filtrer par catégorie pourrait élire une offre
+        absente du résultat et faire disparaître la fiche entière.
+        """
+        demande = self.request.query_params.get(self.GROUP_BY_MASTER_PARAM, '')
+        if self.action != 'list' or demande.strip().lower() not in self._VRAI:
+            return queryset
+
+        from .offers import one_offer_per_master, regroupable
+        return one_offer_per_master(queryset) if regroupable(queryset) else queryset
 
     def list(self, request, *args, **kwargs):
         """Ajoute le contexte de recherche pour que le front puisse l'expliquer."""
@@ -213,6 +238,36 @@ class ProductViewSet(viewsets.ModelViewSet):
             ProductReviewSerializer(review).data,
             status=status.HTTP_201_CREATED
         )
+
+    @extend_schema(
+        tags=["Questions"],
+        summary="Questions clients sur cette fiche (publiques, avant achat)",
+        description="Liste les questions déjà répondues sur ce produit (connecteur `poserQuestion`, lecture).",
+    )
+    @action(detail=True, methods=['get'], permission_classes=[])
+    def questions(self, request, pk=None):
+        product = self.get_object()
+        qs = ProductQuestion.objects.filter(product=product, is_reported=False).order_by('-created_at')
+        return Response(ProductQuestionSerializer(qs, many=True).data)
+
+    @extend_schema(
+        tags=["Questions"],
+        summary="Poser une question sur cette fiche (avant achat)",
+        description="Question publique à laquelle le vendeur répond (espace vendeur, pas une messagerie privée). "
+                     "Coordonnées (numéro, e-mail, lien) retirées avant stockage.",
+        request=ProductQuestionCreateSerializer,
+        responses={201: ProductQuestionCreateSerializer},
+    )
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def ask_question(self, request, pk=None):
+        product = self.get_object()
+        serializer = ProductQuestionCreateSerializer(
+            data={**request.data, 'product': product.id},
+            context={'request': request},
+        )
+        serializer.is_valid(raise_exception=True)
+        question = serializer.save()
+        return Response(ProductQuestionCreateSerializer(question, context={'request': request}).data, status=status.HTTP_201_CREATED)
 
     @extend_schema(
         tags=["Promotions"],

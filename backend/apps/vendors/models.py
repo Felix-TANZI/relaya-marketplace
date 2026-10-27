@@ -1,7 +1,9 @@
 # backend/apps/vendors/models.py
 
 from django.db import models
+from django.db.models import Q
 from django.contrib.auth.models import User
+from django.utils import timezone
 from django.utils.text import slugify
 
 
@@ -97,6 +99,18 @@ class VendorProfile(models.Model):
         help_text="Jours de fermeture hebdomadaire du vendeur (0=lundi ... 6=dimanche). Dimanche est toujours ferme, pas besoin de l'ajouter.",
     )
 
+    # « Fermer aujourd'hui » (espace-vendeur §7, POST /shop/closed-today) —
+    # fermeture ponctuelle d'un jour précis, distincte de closed_days
+    # (fermeture hebdomadaire récurrente) et des fermetures programmées du
+    # domaine boutique (VD-11, pas encore câblées ici). Vide = pas de
+    # fermeture ponctuelle en cours ; vidé automatiquement le lendemain
+    # (comparé à la date du jour à la lecture, jamais nettoyé en tâche de fond).
+    closed_today_date = models.DateField(
+        null=True, blank=True,
+        verbose_name="Fermeture ponctuelle (date)",
+        help_text="Date (AAAA-MM-JJ) pour laquelle le vendeur a fermé la boutique aujourd'hui ; comparée à 'aujourd'hui' à chaque lecture.",
+    )
+
     # ── Boutique publique ────────────────────────────────────────────────────
     shop_slug         = models.SlugField(max_length=120, unique=True, blank=True)
     banner_image      = models.ImageField(upload_to='vendors/banners/%Y/%m/', null=True, blank=True)
@@ -113,6 +127,14 @@ class VendorProfile(models.Model):
         verbose_name="Numéro Mobile Money préférentiel",
     )        
     is_online         = models.BooleanField(default=True)
+
+    # ── Pause boutique (domaine "boutique", 30 jours au plus — Q-39) ───────────
+    # Distinct de `closed_days` (fermeture hebdomadaire recurrente) et des
+    # `ShopClosure` (fermetures programmees par plage de dates) : la pause est
+    # une suspension temporaire immediate de la boutique entiere, levee
+    # automatiquement a `paused_until` ou par un appel explicite de reprise.
+    paused_since = models.DateTimeField(null=True, blank=True, verbose_name="Mise en pause depuis")
+    paused_until = models.DateTimeField(null=True, blank=True, verbose_name="Pause jusqu'au")
 
     # ── Certification (cache recalculé dynamiquement) ────────────────────────
     total_points       = models.PositiveIntegerField(default=0)
@@ -142,6 +164,11 @@ class VendorProfile(models.Model):
     @property
     def is_active_vendor(self):
         return self.status == 'APPROVED'
+
+    @property
+    def is_paused(self):
+        from django.utils import timezone
+        return bool(self.paused_until) and self.paused_until > timezone.now()
 
     @property
     def required_location(self):
@@ -531,4 +558,316 @@ class SystemLog(models.Model):
         ]
  
     def __str__(self):
-        return f'[{self.level}] [{self.service}] {self.message[:80]}'            
+        return f'[{self.level}] [{self.service}] {self.message[:80]}'
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# BOUTIQUE — FERMETURES PROGRAMMÉES (domaine "boutique", vague d'intégration
+# espace-vendeur autonome, 12 oct.) : plages de dates annoncées à l'avance,
+# distinctes de `closed_days` (fermeture hebdomadaire) et de la pause globale
+# (`VendorProfile.paused_since/paused_until`). Écourtable et annulable (Q-39).
+# ══════════════════════════════════════════════════════════════════════════════
+
+class ShopClosure(models.Model):
+    vendor      = models.ForeignKey(VendorProfile, on_delete=models.CASCADE, related_name='closures')
+    start_date  = models.DateField(verbose_name="Du")
+    end_date    = models.DateField(verbose_name="Au")
+    reason      = models.CharField(max_length=255, blank=True, default="", verbose_name="Motif (interne)")
+    created_at  = models.DateTimeField(auto_now_add=True)
+    updated_at  = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-start_date']
+        verbose_name = "Fermeture programmée"
+        verbose_name_plural = "Fermetures programmées"
+
+    def __str__(self):
+        return f"{self.vendor.business_name} : {self.start_date} → {self.end_date}"
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# NOTIFICATIONS — RÉGLAGES PAR VENDEUR (domaine "notifications"). N'ajoute PAS
+# de modèle de notification : les notifications elles-mêmes restent dans
+# `apps.accounts.models.UserNotification` (générique à tous les rôles,
+# réutilisé via un alias de vues sous /api/vendors/notifications/). Ici,
+# seules les préférences propres au vendeur (muettes côté serveur tant que les
+# déclencheurs d'autres domaines — litiges, sécurité — ne sont pas câblés).
+# ══════════════════════════════════════════════════════════════════════════════
+
+class VendorNotificationSettings(models.Model):
+    vendor            = models.OneToOneField(VendorProfile, on_delete=models.CASCADE, related_name='notification_settings')
+    payouts_enabled   = models.BooleanField(default=True, verbose_name="Versements")
+    reviews_enabled   = models.BooleanField(default=True, verbose_name="Avis")
+    tips_enabled      = models.BooleanField(default=True, verbose_name="Conseils (1/semaine au plus)")
+    distinct_sound    = models.BooleanField(default=True, verbose_name="Son distinct aux heures d'ouverture")
+    silence_start     = models.CharField(max_length=5, default="21:00", verbose_name="Silence depuis")
+    silence_end       = models.CharField(max_length=5, default="07:00", verbose_name="Silence jusqu'à")
+    created_at        = models.DateTimeField(auto_now_add=True)
+    updated_at        = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Réglages notifications vendeur"
+        verbose_name_plural = "Réglages notifications vendeurs"
+
+    def __str__(self):
+        return f"Réglages notifications — {self.vendor.business_name}"
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MESSAGERIE VENDEUR ↔ CLIENT (domaine "messages", vague d'intégration espace-
+# vendeur autonome, 12 oct.) — CHANGEMENT DE RÈGLE PRODUIT : jusqu'ici,
+# `Product.faq` (apps.catalog.models) compensait explicitement l'ABSENCE de
+# messagerie directe acheteur-vendeur ("Addendum Décisions v1.0"), et les
+# litiges passent par un admin médiateur (DisputeMessage.SenderRole ne propose
+# aucun canal vendeur→client direct). Ce modèle introduit une conversation
+# directe, anonyme des deux côtés (le vendeur ne voit jamais le nom réel du
+# client — même convention que les commandes et les avis : "Client de
+# BLV-XXXXX"). À valider avec le porteur avant mise en production — voir
+# rapport de l'agent qui l'a construit.
+# ══════════════════════════════════════════════════════════════════════════════
+
+class MessageThread(models.Model):
+    class Kind(models.TextChoices):
+        ORDER   = 'ORDER',   'Commande'
+        SUPPORT = 'SUPPORT', 'Support BelivaY'
+
+    vendor      = models.ForeignKey(VendorProfile, on_delete=models.CASCADE, related_name='message_threads')
+    kind        = models.CharField(max_length=10, choices=Kind.choices, default=Kind.ORDER)
+    order       = models.ForeignKey(
+        'orders.Order', on_delete=models.SET_NULL, null=True, blank=True, related_name='vendor_message_threads',
+    )
+    # Fil ouvert depuis une réponse privée à un avis (POST /reviews/{id}/private-reply) :
+    # réutilise la conversation de la commande notée plutôt que d'ouvrir un troisième canal.
+    review      = models.ForeignKey(
+        'catalog.ProductReview', on_delete=models.SET_NULL, null=True, blank=True, related_name='vendor_reply_threads',
+    )
+    closed      = models.BooleanField(default=False, verbose_name="Fermé (fin du délai ou litige clos)")
+    vendor_last_read_at = models.DateTimeField(null=True, blank=True)
+    created_at  = models.DateTimeField(auto_now_add=True)
+    updated_at  = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-updated_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['vendor', 'order'],
+                condition=Q(kind='ORDER'),
+                name='unique_order_thread_per_vendor',
+            ),
+        ]
+        verbose_name = "Conversation vendeur"
+        verbose_name_plural = "Conversations vendeur"
+
+    def __str__(self):
+        return f"Fil #{self.pk} ({self.kind}) — {self.vendor.business_name}"
+
+
+class ThreadMessage(models.Model):
+    class Sender(models.TextChoices):
+        VENDOR  = 'VENDOR',  'Vendeur'
+        CLIENT  = 'CLIENT',  'Client'
+        SUPPORT = 'SUPPORT', 'Support BelivaY'
+
+    thread      = models.ForeignKey(MessageThread, on_delete=models.CASCADE, related_name='messages')
+    sender      = models.CharField(max_length=10, choices=Sender.choices)
+    # Membre de l'équipe vendeur qui a écrit (signature, EQU-03) — null pour client/support.
+    author      = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    text        = models.TextField()
+    was_filtered = models.BooleanField(default=False, verbose_name="Coordonnées retirées avant envoi")
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+        verbose_name = "Message"
+        verbose_name_plural = "Messages"
+
+    def __str__(self):
+        return f"[{self.sender}] {self.text[:40]}"
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ÉVÉNEMENTS TEMPS RÉEL (§8 INTEGRATION-API.md) — flux entre interfaces
+# (console admin, espace vendeur…). Implémentation volontairement minimale :
+# une table d'événements et un polling court côté SSE, PAS de vraie infra
+# pub/sub (Redis, Channels…) tant que rien de tel n'existe déjà dans le projet.
+# ══════════════════════════════════════════════════════════════════════════════
+
+class VendorEvent(models.Model):
+    vendor      = models.ForeignKey(VendorProfile, on_delete=models.CASCADE, related_name='events')
+    event_type  = models.CharField(max_length=40, db_index=True)
+    payload     = models.JSONField(default=dict, blank=True)
+    created_at  = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['created_at']
+        verbose_name = "Événement vendeur"
+        verbose_name_plural = "Événements vendeur"
+
+    def __str__(self):
+        return f"{self.event_type} — {self.vendor.business_name} ({self.created_at:%Y-%m-%d %H:%M})"
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# NUMÉRO DE VERSEMENT — CHANGEMENT EN DEUX CODES + 7 JOURS DE REVUE
+# (domaines "versements"/"trust", vague d'intégration espace-vendeur autonome,
+# 12 oct. — INTEGRATION-API.md §8 : « Le numéro de versement garde son
+# parcours (/payout-number/codes, deux codes, 7 jours, Q-19) »).
+#
+# Les DEUX codes sont envoyés : un au NOUVEAU numéro Mobile Money (preuve que
+# le vendeur le contrôle), un au téléphone PERSONNEL déjà enregistré sur le
+# compte (`VendorProfile.phone` — second facteur, NUM-07). Les codes eux-mêmes
+# sont émis et vérifiés par `apps.otp.services` (réutilisé, pas réinventé) ;
+# cette table ne garde que la progression de la demande et le délai de 7
+# jours avant activation (anti-fraude : un fraudeur qui détourne un compte ne
+# peut pas détourner aussi l'argent le jour même).
+#
+# NOTE (canal réel du code SMS) : le canal effectif dépend du prestataire
+# configuré dans `apps.otp.prestataires.sms()`. Si aucun prestataire SMS
+# réel n'est branché en environnement de développement, ce prestataire est
+# responsable du repli (ex. log ou e-mail) — ce module n'invente aucun canal
+# lui-même, il délègue entièrement à `apps.otp.services.envoyer/verifier`.
+# ══════════════════════════════════════════════════════════════════════════════
+
+PAYOUT_NUMBER_REVIEW_DAYS = 7  # Q-19 : délai connu et confirmé, pas une invention.
+
+
+class PayoutNumberChangeRequest(models.Model):
+    class Status(models.TextChoices):
+        PENDING_CODES = 'PENDING_CODES', 'Codes en attente'
+        IN_REVIEW     = 'IN_REVIEW',     'En revue (7 jours)'
+        ACTIVE        = 'ACTIVE',        'Appliqué'
+        CANCELLED     = 'CANCELLED',     'Annulé'
+        REJECTED      = 'REJECTED',      'Rejeté'
+
+    vendor               = models.ForeignKey(VendorProfile, on_delete=models.CASCADE, related_name='payout_number_changes')
+    operator             = models.CharField(max_length=15, choices=WithdrawalRequest.Operator.choices)
+    new_phone_number     = models.CharField(max_length=20, verbose_name="Nouveau numéro")
+    status               = models.CharField(max_length=15, choices=Status.choices, default=Status.PENDING_CODES)
+    new_number_verified_at = models.DateTimeField(null=True, blank=True)
+    personal_verified_at   = models.DateTimeField(null=True, blank=True)
+    review_until         = models.DateTimeField(null=True, blank=True, verbose_name="En revue jusqu'au")
+    applied_at           = models.DateTimeField(null=True, blank=True)
+    cancelled_at         = models.DateTimeField(null=True, blank=True)
+    # Numéro remplacé, gardé pour l'historique/affichage ("ancien" dans NumeroVersement.enRevue).
+    previous_operator     = models.CharField(max_length=15, blank=True, default='')
+    previous_phone_number = models.CharField(max_length=20, blank=True, default='')
+    created_at           = models.DateTimeField(auto_now_add=True)
+    updated_at           = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Changement de numéro de versement"
+        verbose_name_plural = "Changements de numéro de versement"
+
+    def __str__(self):
+        return f"{self.vendor.business_name} → {self.new_phone_number} ({self.status})"
+
+    @property
+    def both_codes_verified(self) -> bool:
+        return self.new_number_verified_at is not None and self.personal_verified_at is not None
+
+    def start_review(self):
+        self.status = self.Status.IN_REVIEW
+        self.review_until = timezone.now() + timezone.timedelta(days=PAYOUT_NUMBER_REVIEW_DAYS)
+        self.save(update_fields=['status', 'review_until', 'updated_at'])
+
+    def apply_if_due(self) -> bool:
+        """Applique le changement sur VendorProfile si la revue de 7 jours est passée.
+        Appelé paresseusement à la lecture (pas de tâche planifiée dédiée — voir rapport
+        de mission) : un simple GET suffit à faire avancer l'état, sans "versement
+        automatique" au sens interdit (ceci ne déplace aucun argent, seulement la
+        destination future)."""
+        if self.status != self.Status.IN_REVIEW or not self.review_until:
+            return False
+        if timezone.now() < self.review_until:
+            return False
+        self.vendor.default_withdrawal_operator = self.operator
+        self.vendor.default_withdrawal_phone = self.new_phone_number
+        self.vendor.save(update_fields=['default_withdrawal_operator', 'default_withdrawal_phone', 'updated_at'])
+        self.status = self.Status.ACTIVE
+        self.applied_at = timezone.now()
+        self.save(update_fields=['status', 'applied_at', 'updated_at'])
+        return True
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TRUST SCORE — CONTESTATION D'UNE DÉCISION (domaine "trust", POST /score/appeal)
+#
+# `apps.accounts.trust_score` (SanctionRecord) porte déjà l'échelle de
+# sanctions 1→4 ; il ne porte PAS la contestation humaine (une fois par
+# décision, réponse sous 72 h ouvrées — CON-01, DP-15, Q-53, donné par le
+# contrat frontend, pas inventé ici). Ce modèle vit côté vendeur plutôt que
+# dans apps.accounts pour ne pas toucher un module partagé activement modifié
+# par d'autres agents cette nuit (trust_score.py) ; il référence SanctionRecord
+# par clé étrangère normale, en lecture.
+# ══════════════════════════════════════════════════════════════════════════════
+
+class TrustScoreAppeal(models.Model):
+    class Outcome(models.TextChoices):
+        MAINTAINED = 'MAINTAINED', 'Maintenue'
+        CANCELLED  = 'CANCELLED',  'Annulée'
+
+    vendor          = models.ForeignKey(VendorProfile, on_delete=models.CASCADE, related_name='trust_score_appeals')
+    sanction        = models.ForeignKey('accounts.SanctionRecord', on_delete=models.CASCADE, related_name='vendor_appeals')
+    text            = models.TextField()
+    evidence_urls   = models.JSONField(default=list, blank=True)
+    created_at      = models.DateTimeField(auto_now_add=True)
+    response_due_at = models.DateTimeField()
+    responded_at    = models.DateTimeField(null=True, blank=True)
+    outcome         = models.CharField(max_length=10, choices=Outcome.choices, blank=True, default='')
+    response_reason = models.TextField(blank=True, default='')
+    responded_by    = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+
+    class Meta:
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(fields=['sanction'], name='one_appeal_per_sanction'),
+        ]
+        verbose_name = "Contestation Trust Score"
+        verbose_name_plural = "Contestations Trust Score"
+
+    def __str__(self):
+        return f"Contestation {self.vendor.business_name} — sanction #{self.sanction_id}"
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# RÉCOMPENSES AU MÉRITE (domaine "plans", DP-14/Q-32 : JAMAIS de visibilité
+# payante — seulement méritée). Cette table ne fait QUE porter la structure
+# (ce qu'une récompense EST, et son usage) : l'OCTROI (quand un vendeur
+# "gagne" une récompense — seuil de mérite, fréquence, jours de suite...)
+# n'est délibérément PAS automatisé ici, faute de règle précisée dans
+# INTEGRATION-API.md (voir rapport de mission). Un admin peut en accorder une
+# manuellement (admin Django) en attendant la règle produit.
+# ══════════════════════════════════════════════════════════════════════════════
+
+class VendorReward(models.Model):
+    class Type(models.TextChoices):
+        VITRINE = 'VITRINE', 'Vitrine de quartier'
+        FLASH   = 'FLASH',   'Vente flash offerte'
+
+    vendor         = models.ForeignKey(VendorProfile, on_delete=models.CASCADE, related_name='rewards')
+    reward_type    = models.CharField(max_length=10, choices=Type.choices)
+    product        = models.ForeignKey('catalog.Product', on_delete=models.CASCADE, related_name='vendor_rewards')
+    title          = models.CharField(max_length=160)
+    days           = models.PositiveIntegerField(null=True, blank=True, help_text="Durée (vitrine) ; vide pour une vente flash.")
+    granted_at     = models.DateTimeField(auto_now_add=True)
+    available_until = models.DateTimeField(null=True, blank=True, help_text="Perdue si non utilisée avant cette date.")
+    used_at        = models.DateTimeField(null=True, blank=True)
+    active_until   = models.DateTimeField(null=True, blank=True, help_text="Vitrine : fin de la mise en avant en cours.")
+    flash_campaign = models.ForeignKey('catalog.PromotionCampaign', on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+
+    class Meta:
+        ordering = ['-granted_at']
+        verbose_name = "Récompense vendeur"
+        verbose_name_plural = "Récompenses vendeur"
+
+    def __str__(self):
+        return f"{self.vendor.business_name} · {self.reward_type} · {self.title}"
+
+    @property
+    def disponible(self) -> bool:
+        if self.used_at is not None:
+            return False
+        if self.available_until and timezone.now() > self.available_until:
+            return False
+        return True

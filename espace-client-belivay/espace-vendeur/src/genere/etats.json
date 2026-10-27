@@ -1,0 +1,5153 @@
+{
+ "accueil": {
+  "route": "accueil",
+  "adresse": "#accueil",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "green",
+     "point": true,
+     "icone": null,
+     "texte": "Ouverte · 18 h"
+    },
+    {
+     "ton": "bronze",
+     "point": false,
+     "icone": "award",
+     "texte": "Bronze · 63"
+    },
+    {
+     "ton": "or",
+     "point": false,
+     "icone": null,
+     "texte": "Free · découverte"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "FP",
+   "cloche": "4"
+  },
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "accueil?alerte=1": {
+  "route": "accueil",
+  "adresse": "#accueil?alerte=1",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "green",
+     "point": true,
+     "icone": null,
+     "texte": "Ouverte · 18 h"
+    },
+    {
+     "ton": "bronze",
+     "point": false,
+     "icone": "award",
+     "texte": "Bronze · 63"
+    },
+    {
+     "ton": "or",
+     "point": false,
+     "icone": null,
+     "texte": "Free · découverte"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "FP",
+   "cloche": "4"
+  },
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "accueil?alerte=1&pop=profil": {
+  "route": "accueil",
+  "adresse": "#accueil?alerte=1&pop=profil",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "green",
+     "point": true,
+     "icone": null,
+     "texte": "Ouverte · 18 h"
+    },
+    {
+     "ton": "bronze",
+     "point": false,
+     "icone": "award",
+     "texte": "Bronze · 63"
+    },
+    {
+     "ton": "or",
+     "point": false,
+     "icone": null,
+     "texte": "Free · découverte"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "FP",
+   "cloche": "4"
+  },
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": [],
+  "profil": true
+ },
+ "accueil?closed=1": {
+  "route": "accueil",
+  "adresse": "#accueil?closed=1",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "red",
+     "point": true,
+     "icone": null,
+     "texte": "Fermée aujourd’hui"
+    },
+    {
+     "ton": "bronze",
+     "point": false,
+     "icone": "award",
+     "texte": "Bronze · 63"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "FP",
+   "cloche": "4"
+  },
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "accueil?closed=1&pop=profil": {
+  "route": "accueil",
+  "adresse": "#accueil?closed=1&pop=profil",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "red",
+     "point": true,
+     "icone": null,
+     "texte": "Fermée aujourd’hui"
+    },
+    {
+     "ton": "bronze",
+     "point": false,
+     "icone": "award",
+     "texte": "Bronze · 63"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "FP",
+   "cloche": "4"
+  },
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": [],
+  "profil": true
+ },
+ "accueil?closed=1&role=prep": {
+  "route": "accueil",
+  "adresse": "#accueil?closed=1&role=prep",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "red",
+     "point": true,
+     "icone": null,
+     "texte": "Fermée aujourd’hui"
+    },
+    {
+     "ton": "ink",
+     "point": false,
+     "icone": "user-round",
+     "texte": "Aïcha N. · accès Préparation"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "AN",
+   "cloche": "4"
+  },
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": false
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "accueil?pop=profil": {
+  "route": "accueil",
+  "adresse": "#accueil?pop=profil",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "green",
+     "point": true,
+     "icone": null,
+     "texte": "Ouverte · 18 h"
+    },
+    {
+     "ton": "bronze",
+     "point": false,
+     "icone": "award",
+     "texte": "Bronze · 63"
+    },
+    {
+     "ton": "or",
+     "point": false,
+     "icone": null,
+     "texte": "Free · découverte"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "FP",
+   "cloche": "4"
+  },
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": [],
+  "profil": true
+ },
+ "accueil?pop=profil&role=prep": {
+  "route": "accueil",
+  "adresse": "#accueil?role=prep&pop=profil",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "green",
+     "point": true,
+     "icone": null,
+     "texte": "Ouverte · 18 h"
+    },
+    {
+     "ton": "ink",
+     "point": false,
+     "icone": "user-round",
+     "texte": "Aïcha N. · accès Préparation"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "AN",
+   "cloche": "4"
+  },
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": false
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": [],
+  "profil": true
+ },
+ "accueil?role=prep": {
+  "route": "accueil",
+  "adresse": "#accueil?role=prep",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "green",
+     "point": true,
+     "icone": null,
+     "texte": "Ouverte · 18 h"
+    },
+    {
+     "ton": "ink",
+     "point": false,
+     "icone": "user-round",
+     "texte": "Aïcha N. · accès Préparation"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "AN",
+   "cloche": "4"
+  },
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": false
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "accueil_calme": {
+  "route": "accueil_calme",
+  "adresse": "#accueil_calme",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "green",
+     "point": true,
+     "icone": null,
+     "texte": "Ouverte · 18 h"
+    },
+    {
+     "ton": "bronze",
+     "point": false,
+     "icone": "award",
+     "texte": "Bronze · 63"
+    },
+    {
+     "ton": "or",
+     "point": false,
+     "icone": null,
+     "texte": "Free · découverte"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "FP",
+   "cloche": null
+  },
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": null,
+    "produits": null,
+    "argent": null
+   },
+   "point": false
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "accueil_calme?pop=profil": {
+  "route": "accueil_calme",
+  "adresse": "#accueil_calme?pop=profil",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "green",
+     "point": true,
+     "icone": null,
+     "texte": "Ouverte · 18 h"
+    },
+    {
+     "ton": "bronze",
+     "point": false,
+     "icone": "award",
+     "texte": "Bronze · 63"
+    },
+    {
+     "ton": "or",
+     "point": false,
+     "icone": null,
+     "texte": "Free · découverte"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "FP",
+   "cloche": null
+  },
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": null,
+    "produits": null,
+    "argent": null
+   },
+   "point": false
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": [],
+  "profil": true
+ },
+ "activite": {
+  "route": "activite",
+  "adresse": "#activite",
+  "entete": "enfant",
+  "titre": "Activité de la boutique",
+  "retour": "#menu",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": null,
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "aide": {
+  "route": "aide",
+  "adresse": "#aide",
+  "entete": "enfant",
+  "titre": "Aide",
+  "retour": "#menu",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": null,
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "ajustements": {
+  "route": "ajustements",
+  "adresse": "#ajustements",
+  "entete": "enfant",
+  "titre": "Mes ajustements",
+  "retour": "#argent",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": null,
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "android": {
+  "route": "android",
+  "adresse": "#android",
+  "entete": "aucun",
+  "titre": null,
+  "retour": null,
+  "barre": null,
+  "margeHaute": null,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "apprendre": {
+  "route": "apprendre",
+  "adresse": "#apprendre",
+  "entete": "enfant",
+  "titre": "Apprendre",
+  "retour": "#menu",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": null,
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "argent": {
+  "route": "argent",
+  "adresse": "#argent",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "green",
+     "point": true,
+     "icone": null,
+     "texte": "Ouverte · 18 h"
+    },
+    {
+     "ton": "bronze",
+     "point": false,
+     "icone": "award",
+     "texte": "Bronze · 63"
+    },
+    {
+     "ton": "or",
+     "point": false,
+     "icone": null,
+     "texte": "Free · découverte"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "FP",
+   "cloche": "4"
+  },
+  "barre": {
+   "onglet": "argent",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "argent?pop=profil": {
+  "route": "argent",
+  "adresse": "#argent?pop=profil",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "green",
+     "point": true,
+     "icone": null,
+     "texte": "Ouverte · 18 h"
+    },
+    {
+     "ton": "bronze",
+     "point": false,
+     "icone": "award",
+     "texte": "Bronze · 63"
+    },
+    {
+     "ton": "or",
+     "point": false,
+     "icone": null,
+     "texte": "Free · découverte"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "FP",
+   "cloche": "4"
+  },
+  "barre": {
+   "onglet": "argent",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": [],
+  "profil": true
+ },
+ "argent?pop=profil&role=prep": {
+  "route": "argent",
+  "adresse": "#argent?role=prep&pop=profil",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "green",
+     "point": true,
+     "icone": null,
+     "texte": "Ouverte · 18 h"
+    },
+    {
+     "ton": "ink",
+     "point": false,
+     "icone": "user-round",
+     "texte": "Aïcha N. · accès Préparation"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "AN",
+   "cloche": "4"
+  },
+  "barre": {
+   "onglet": "argent",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": false
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": [],
+  "profil": true
+ },
+ "argent?role=prep": {
+  "route": "argent",
+  "adresse": "#argent?role=prep",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "green",
+     "point": true,
+     "icone": null,
+     "texte": "Ouverte · 18 h"
+    },
+    {
+     "ton": "ink",
+     "point": false,
+     "icone": "user-round",
+     "texte": "Aïcha N. · accès Préparation"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "AN",
+   "cloche": "4"
+  },
+  "barre": {
+   "onglet": "argent",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": false
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "avis": {
+  "route": "avis",
+  "adresse": "#avis",
+  "entete": "enfant",
+  "titre": "Avis",
+  "retour": "#boutique",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": null,
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "bienvenue_client": {
+  "route": "bienvenue_client",
+  "adresse": "#bienvenue_client",
+  "entete": "enfant",
+  "titre": "Devenir vendeur",
+  "retour": "#connexion",
+  "styleEntete": "padding-bottom:8px",
+  "barre": null,
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "bon": {
+  "route": "bon",
+  "adresse": "#bon",
+  "entete": "enfant",
+  "titre": "Bon · BLV-00008",
+  "retour": "#commande?ref=BLV-00008",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "bon?ref=BLV-00008": {
+  "route": "bon",
+  "adresse": "#bon?ref=BLV-00008",
+  "entete": "enfant",
+  "titre": "Bon · BLV-00008",
+  "retour": "#commande?ref=BLV-00008",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "bon?ref=BLV-00009": {
+  "route": "bon",
+  "adresse": "#bon?ref=BLV-00009",
+  "entete": "enfant",
+  "titre": "Bon · BLV-00009",
+  "retour": "#commande?ref=BLV-00009",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "boutique": {
+  "route": "boutique",
+  "adresse": "#boutique",
+  "entete": "enfant",
+  "titre": "Ma boutique",
+  "retour": "#menu",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": null,
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "camera": {
+  "route": "camera",
+  "adresse": "#camera",
+  "entete": "aucun",
+  "titre": null,
+  "retour": null,
+  "barre": null,
+  "margeHaute": null,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "camera?mode=photo": {
+  "route": "camera",
+  "adresse": "#camera?mode=photo",
+  "entete": "aucun",
+  "titre": null,
+  "retour": null,
+  "barre": null,
+  "margeHaute": null,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "camera?mode=scan": {
+  "route": "camera",
+  "adresse": "#camera?mode=scan",
+  "entete": "aucun",
+  "titre": null,
+  "retour": null,
+  "barre": null,
+  "margeHaute": null,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "chiffres": {
+  "route": "chiffres",
+  "adresse": "#chiffres",
+  "entete": "enfant",
+  "titre": "Mes chiffres",
+  "retour": "#accueil",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "commande": {
+  "route": "commande",
+  "adresse": "#commande",
+  "entete": "enfant",
+  "titre": "Commande BLV-00008",
+  "retour": "#commandes",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "commande?ref=BLV-00008": {
+  "route": "commande",
+  "adresse": "#commande?ref=BLV-00008",
+  "entete": "enfant",
+  "titre": "Commande BLV-00008",
+  "retour": "#commandes",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "commande?ref=BLV-00008&role=prep": {
+  "route": "commande",
+  "adresse": "#commande?ref=BLV-00008&role=prep",
+  "entete": "enfant",
+  "titre": "Commande BLV-00008",
+  "retour": "#commandes",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": false
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "commande?ref=BLV-00009": {
+  "route": "commande",
+  "adresse": "#commande?ref=BLV-00009",
+  "entete": "enfant",
+  "titre": "Commande BLV-00009",
+  "retour": "#commandes",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "commande?ref=BLV-00009&role=prep": {
+  "route": "commande",
+  "adresse": "#commande?ref=BLV-00009&role=prep",
+  "entete": "enfant",
+  "titre": "Commande BLV-00009",
+  "retour": "#commandes",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": false
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "commande_prete": {
+  "route": "commande_prete",
+  "adresse": "#commande_prete",
+  "entete": "enfant",
+  "titre": "Remise · BLV-00008",
+  "retour": "#commande?ref=BLV-00008",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "commande_prete?code=1": {
+  "route": "commande_prete",
+  "adresse": "#commande_prete?code=1",
+  "entete": "enfant",
+  "titre": "Remise · BLV-00008",
+  "retour": "#commande?ref=BLV-00008",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "commande_prete?code=1&ref=BLV-00008": {
+  "route": "commande_prete",
+  "adresse": "#commande_prete?ref=BLV-00008&code=1",
+  "entete": "enfant",
+  "titre": "Remise · BLV-00008",
+  "retour": "#commande?ref=BLV-00008",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "commande_prete?ref=BLV-00008": {
+  "route": "commande_prete",
+  "adresse": "#commande_prete?ref=BLV-00008",
+  "entete": "enfant",
+  "titre": "Remise · BLV-00008",
+  "retour": "#commande?ref=BLV-00008",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "commande_prete?ref=BLV-00008&role=prep": {
+  "route": "commande_prete",
+  "adresse": "#commande_prete?ref=BLV-00008&role=prep",
+  "entete": "enfant",
+  "titre": "Remise · BLV-00008",
+  "retour": "#commande?ref=BLV-00008",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": false
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "commande_prete?ref=BLV-00009": {
+  "route": "commande_prete",
+  "adresse": "#commande_prete?ref=BLV-00009",
+  "entete": "enfant",
+  "titre": "Remise · BLV-00009",
+  "retour": "#commande?ref=BLV-00009",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "commande_prete?ref=BLV-00009&role=prep": {
+  "route": "commande_prete",
+  "adresse": "#commande_prete?ref=BLV-00009&role=prep",
+  "entete": "enfant",
+  "titre": "Remise · BLV-00009",
+  "retour": "#commande?ref=BLV-00009",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": false
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "commande_remise": {
+  "route": "commande_remise",
+  "adresse": "#commande_remise",
+  "entete": "enfant",
+  "titre": "Remis · BLV-00008",
+  "retour": "#commandes",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "commande_remise?ref=BLV-00008": {
+  "route": "commande_remise",
+  "adresse": "#commande_remise?ref=BLV-00008",
+  "entete": "enfant",
+  "titre": "Remis · BLV-00008",
+  "retour": "#commandes",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "commandes": {
+  "route": "commandes",
+  "adresse": "#commandes",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "green",
+     "point": true,
+     "icone": null,
+     "texte": "Ouverte · 18 h"
+    },
+    {
+     "ton": "bronze",
+     "point": false,
+     "icone": "award",
+     "texte": "Bronze · 63"
+    },
+    {
+     "ton": "or",
+     "point": false,
+     "icone": null,
+     "texte": "Free · découverte"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "FP",
+   "cloche": "4"
+  },
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "commandes?f=cours": {
+  "route": "commandes",
+  "adresse": "#commandes?f=cours",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "green",
+     "point": true,
+     "icone": null,
+     "texte": "Ouverte · 18 h"
+    },
+    {
+     "ton": "bronze",
+     "point": false,
+     "icone": "award",
+     "texte": "Bronze · 63"
+    },
+    {
+     "ton": "or",
+     "point": false,
+     "icone": null,
+     "texte": "Free · découverte"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "FP",
+   "cloche": "4"
+  },
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "commandes?f=cours&pop=profil": {
+  "route": "commandes",
+  "adresse": "#commandes?f=cours&pop=profil",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "green",
+     "point": true,
+     "icone": null,
+     "texte": "Ouverte · 18 h"
+    },
+    {
+     "ton": "bronze",
+     "point": false,
+     "icone": "award",
+     "texte": "Bronze · 63"
+    },
+    {
+     "ton": "or",
+     "point": false,
+     "icone": null,
+     "texte": "Free · découverte"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "FP",
+   "cloche": "4"
+  },
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": [],
+  "profil": true
+ },
+ "commandes?f=fin": {
+  "route": "commandes",
+  "adresse": "#commandes?f=fin",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "green",
+     "point": true,
+     "icone": null,
+     "texte": "Ouverte · 18 h"
+    },
+    {
+     "ton": "bronze",
+     "point": false,
+     "icone": "award",
+     "texte": "Bronze · 63"
+    },
+    {
+     "ton": "or",
+     "point": false,
+     "icone": null,
+     "texte": "Free · découverte"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "FP",
+   "cloche": "4"
+  },
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "commandes?f=fin&pop=profil": {
+  "route": "commandes",
+  "adresse": "#commandes?f=fin&pop=profil",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "green",
+     "point": true,
+     "icone": null,
+     "texte": "Ouverte · 18 h"
+    },
+    {
+     "ton": "bronze",
+     "point": false,
+     "icone": "award",
+     "texte": "Bronze · 63"
+    },
+    {
+     "ton": "or",
+     "point": false,
+     "icone": null,
+     "texte": "Free · découverte"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "FP",
+   "cloche": "4"
+  },
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": [],
+  "profil": true
+ },
+ "commandes?f=pb": {
+  "route": "commandes",
+  "adresse": "#commandes?f=pb",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "green",
+     "point": true,
+     "icone": null,
+     "texte": "Ouverte · 18 h"
+    },
+    {
+     "ton": "bronze",
+     "point": false,
+     "icone": "award",
+     "texte": "Bronze · 63"
+    },
+    {
+     "ton": "or",
+     "point": false,
+     "icone": null,
+     "texte": "Free · découverte"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "FP",
+   "cloche": "4"
+  },
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "commandes?f=pb&pop=profil": {
+  "route": "commandes",
+  "adresse": "#commandes?f=pb&pop=profil",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "green",
+     "point": true,
+     "icone": null,
+     "texte": "Ouverte · 18 h"
+    },
+    {
+     "ton": "bronze",
+     "point": false,
+     "icone": "award",
+     "texte": "Bronze · 63"
+    },
+    {
+     "ton": "or",
+     "point": false,
+     "icone": null,
+     "texte": "Free · découverte"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "FP",
+   "cloche": "4"
+  },
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": [],
+  "profil": true
+ },
+ "commandes?f=prep": {
+  "route": "commandes",
+  "adresse": "#commandes?f=prep",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "green",
+     "point": true,
+     "icone": null,
+     "texte": "Ouverte · 18 h"
+    },
+    {
+     "ton": "bronze",
+     "point": false,
+     "icone": "award",
+     "texte": "Bronze · 63"
+    },
+    {
+     "ton": "or",
+     "point": false,
+     "icone": null,
+     "texte": "Free · découverte"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "FP",
+   "cloche": "4"
+  },
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "commandes?pop=profil": {
+  "route": "commandes",
+  "adresse": "#commandes?pop=profil",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "green",
+     "point": true,
+     "icone": null,
+     "texte": "Ouverte · 18 h"
+    },
+    {
+     "ton": "bronze",
+     "point": false,
+     "icone": "award",
+     "texte": "Bronze · 63"
+    },
+    {
+     "ton": "or",
+     "point": false,
+     "icone": null,
+     "texte": "Free · découverte"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "FP",
+   "cloche": "4"
+  },
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": [],
+  "profil": true
+ },
+ "commandes?role=prep": {
+  "route": "commandes",
+  "adresse": "#commandes?role=prep",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "green",
+     "point": true,
+     "icone": null,
+     "texte": "Ouverte · 18 h"
+    },
+    {
+     "ton": "ink",
+     "point": false,
+     "icone": "user-round",
+     "texte": "Aïcha N. · accès Préparation"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "AN",
+   "cloche": "4"
+  },
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": false
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "connexion": {
+  "route": "connexion",
+  "adresse": "#connexion",
+  "entete": "aucun",
+  "titre": null,
+  "retour": null,
+  "barre": null,
+  "margeHaute": 10,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "connexion?canal=sms&s=code": {
+  "route": "connexion",
+  "adresse": "#connexion?s=code&canal=sms",
+  "entete": "aucun",
+  "titre": null,
+  "retour": null,
+  "barre": null,
+  "margeHaute": 10,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "connexion?canal=sms&s=numero": {
+  "route": "connexion",
+  "adresse": "#connexion?s=numero&canal=sms",
+  "entete": "aucun",
+  "titre": null,
+  "retour": null,
+  "barre": null,
+  "margeHaute": 10,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "connexion?s=2fa": {
+  "route": "connexion",
+  "adresse": "#connexion?s=2fa",
+  "entete": "aucun",
+  "titre": null,
+  "retour": null,
+  "barre": null,
+  "margeHaute": 10,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "connexion?s=code": {
+  "route": "connexion",
+  "adresse": "#connexion?s=code",
+  "entete": "aucun",
+  "titre": null,
+  "retour": null,
+  "barre": null,
+  "margeHaute": 10,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "connexion?s=email": {
+  "route": "connexion",
+  "adresse": "#connexion?s=email",
+  "entete": "aucun",
+  "titre": null,
+  "retour": null,
+  "barre": null,
+  "margeHaute": 10,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "connexion?s=numero": {
+  "route": "connexion",
+  "adresse": "#connexion?s=numero",
+  "entete": "aucun",
+  "titre": null,
+  "retour": null,
+  "barre": null,
+  "margeHaute": 10,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "connexion?s=oubli": {
+  "route": "connexion",
+  "adresse": "#connexion?s=oubli",
+  "entete": "aucun",
+  "titre": null,
+  "retour": null,
+  "barre": null,
+  "margeHaute": 10,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "connexion?s=plusnum": {
+  "route": "connexion",
+  "adresse": "#connexion?s=plusnum",
+  "entete": "aucun",
+  "titre": null,
+  "retour": null,
+  "barre": null,
+  "margeHaute": 10,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "contester": {
+  "route": "contester",
+  "adresse": "#contester",
+  "entete": "enfant",
+  "titre": "Contester",
+  "retour": "#suspendu",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "delai": {
+  "route": "delai",
+  "adresse": "#delai",
+  "entete": "enfant",
+  "titre": "Plus de temps · BLV-00008",
+  "retour": "#commande?ref=BLV-00008",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "delai?c=1&ref=BLV-00008": {
+  "route": "delai",
+  "adresse": "#delai?ref=BLV-00008&c=1",
+  "entete": "enfant",
+  "titre": "Plus de temps · BLV-00008",
+  "retour": "#commande?ref=BLV-00008",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "delai?c=2&ref=BLV-00008": {
+  "route": "delai",
+  "adresse": "#delai?ref=BLV-00008&c=2",
+  "entete": "enfant",
+  "titre": "Plus de temps · BLV-00008",
+  "retour": "#commande?ref=BLV-00008",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "delai?c=d&ref=BLV-00008": {
+  "route": "delai",
+  "adresse": "#delai?ref=BLV-00008&c=d",
+  "entete": "enfant",
+  "titre": "Plus de temps · BLV-00008",
+  "retour": "#commande?ref=BLV-00008",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "delai?ref=BLV-00008": {
+  "route": "delai",
+  "adresse": "#delai?ref=BLV-00008",
+  "entete": "enfant",
+  "titre": "Plus de temps · BLV-00008",
+  "retour": "#commande?ref=BLV-00008",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "delai?ref=BLV-00008&role=prep": {
+  "route": "delai",
+  "adresse": "#delai?ref=BLV-00008&role=prep",
+  "entete": "enfant",
+  "titre": "Plus de temps · BLV-00008",
+  "retour": "#commande?ref=BLV-00008",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": false
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "delai?ref=BLV-00009": {
+  "route": "delai",
+  "adresse": "#delai?ref=BLV-00009",
+  "entete": "enfant",
+  "titre": "Plus de temps · BLV-00009",
+  "retour": "#commande?ref=BLV-00009",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "delai?ref=BLV-00009&role=prep": {
+  "route": "delai",
+  "adresse": "#delai?ref=BLV-00009&role=prep",
+  "entete": "enfant",
+  "titre": "Plus de temps · BLV-00009",
+  "retour": "#commande?ref=BLV-00009",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": false
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "demande": {
+  "route": "demande",
+  "adresse": "#demande",
+  "entete": "enfant",
+  "titre": "La demande",
+  "retour": "#chiffres",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "documents": {
+  "route": "documents",
+  "adresse": "#documents",
+  "entete": "enfant",
+  "titre": "Documents",
+  "retour": "#argent",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "argent",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "dupliquer": {
+  "route": "dupliquer",
+  "adresse": "#dupliquer",
+  "entete": "enfant",
+  "titre": "Dupliquer",
+  "retour": "#offre_detail",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "produits",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "emplacement": {
+  "route": "emplacement",
+  "adresse": "#emplacement",
+  "entete": "enfant",
+  "titre": "Emplacement",
+  "retour": "#boutique",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": null,
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "equipe": {
+  "route": "equipe",
+  "adresse": "#equipe",
+  "entete": "enfant",
+  "titre": "Mon équipe",
+  "retour": "#boutique",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": null,
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "equipe?add=1": {
+  "route": "equipe",
+  "adresse": "#equipe?add=1",
+  "entete": "enfant",
+  "titre": "Mon équipe",
+  "retour": "#boutique",
+  "styleEntete": "padding-bottom:8px",
+  "barre": null,
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [
+   "fixed"
+  ],
+  "styles": []
+ },
+ "erreurs": {
+  "route": "erreurs",
+  "adresse": "#erreurs",
+  "entete": "enfant",
+  "titre": "États d’erreur",
+  "retour": "#commandes",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "erreurs?e=absent": {
+  "route": "erreurs",
+  "adresse": "#erreurs?e=absent",
+  "entete": "enfant",
+  "titre": "États d’erreur",
+  "retour": "#commandes",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "erreurs?e=annulee": {
+  "route": "erreurs",
+  "adresse": "#erreurs?e=annulee",
+  "entete": "enfant",
+  "titre": "États d’erreur",
+  "retour": "#commandes",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "erreurs?e=bloque": {
+  "route": "erreurs",
+  "adresse": "#erreurs?e=bloque",
+  "entete": "enfant",
+  "titre": "États d’erreur",
+  "retour": "#commandes",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "erreurs?e=depasse": {
+  "route": "erreurs",
+  "adresse": "#erreurs?e=depasse",
+  "entete": "enfant",
+  "titre": "États d’erreur",
+  "retour": "#commandes",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "erreurs?e=plafond": {
+  "route": "erreurs",
+  "adresse": "#erreurs?e=plafond",
+  "entete": "enfant",
+  "titre": "États d’erreur",
+  "retour": "#commandes",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "erreurs?e=reseau": {
+  "route": "erreurs",
+  "adresse": "#erreurs?e=reseau",
+  "entete": "enfant",
+  "titre": "États d’erreur",
+  "retour": "#commandes",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "faceid": {
+  "route": "faceid",
+  "adresse": "#faceid",
+  "entete": "aucun",
+  "titre": null,
+  "retour": null,
+  "barre": null,
+  "margeHaute": 10,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "faceid?next=%23kyc&nouveau=1": {
+  "route": "faceid",
+  "adresse": "#faceid?nouveau=1&next=%23kyc",
+  "entete": "aucun",
+  "titre": null,
+  "retour": null,
+  "barre": null,
+  "margeHaute": 10,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "faceid?nouveau=1": {
+  "route": "faceid",
+  "adresse": "#faceid?nouveau=1",
+  "entete": "aucun",
+  "titre": null,
+  "retour": null,
+  "barre": null,
+  "margeHaute": 10,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "faceid?nouveau=1&os=android": {
+  "route": "faceid",
+  "adresse": "#faceid?nouveau=1&os=android",
+  "entete": "aucun",
+  "titre": null,
+  "retour": null,
+  "barre": null,
+  "margeHaute": 10,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "fiche": {
+  "route": "fiche",
+  "adresse": "#fiche",
+  "entete": "enfant",
+  "titre": "Demander une fiche",
+  "retour": "#offre1?q=chargeur itel",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "produits",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "gains": {
+  "route": "gains",
+  "adresse": "#gains",
+  "entete": "enfant",
+  "titre": "Mes gains",
+  "retour": "#argent",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "argent",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "gele": {
+  "route": "gele",
+  "adresse": "#gele",
+  "entete": "enfant",
+  "titre": "Gelé",
+  "retour": "#argent",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "argent",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "horaires": {
+  "route": "horaires",
+  "adresse": "#horaires",
+  "entete": "enfant",
+  "titre": "Horaires",
+  "retour": "#boutique",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": null,
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "horaires?prog=1": {
+  "route": "horaires",
+  "adresse": "#horaires?prog=1",
+  "entete": "enfant",
+  "titre": "Horaires",
+  "retour": "#boutique",
+  "styleEntete": "padding-bottom:8px",
+  "barre": null,
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [
+   "fixed"
+  ],
+  "styles": []
+ },
+ "horsligne": {
+  "route": "horsligne",
+  "adresse": "#horsligne",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "green",
+     "point": true,
+     "icone": null,
+     "texte": "Ouverte · 18 h"
+    },
+    {
+     "ton": "bronze",
+     "point": false,
+     "icone": "award",
+     "texte": "Bronze · 63"
+    },
+    {
+     "ton": "or",
+     "point": false,
+     "icone": null,
+     "texte": "Free · découverte"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "FP",
+   "cloche": "4"
+  },
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "horsligne?pop=profil": {
+  "route": "horsligne",
+  "adresse": "#horsligne?pop=profil",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "green",
+     "point": true,
+     "icone": null,
+     "texte": "Ouverte · 18 h"
+    },
+    {
+     "ton": "bronze",
+     "point": false,
+     "icone": "award",
+     "texte": "Bronze · 63"
+    },
+    {
+     "ton": "or",
+     "point": false,
+     "icone": null,
+     "texte": "Free · découverte"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "FP",
+   "cloche": "4"
+  },
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": [],
+  "profil": true
+ },
+ "inspection": {
+  "route": "inspection",
+  "adresse": "#inspection",
+  "entete": "enfant",
+  "titre": "Inspection",
+  "retour": "#retours",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "inspection?d=conforme": {
+  "route": "inspection",
+  "adresse": "#inspection?d=conforme",
+  "entete": "enfant",
+  "titre": "Inspection",
+  "retour": "#retours",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "inspection?d=non": {
+  "route": "inspection",
+  "adresse": "#inspection?d=non",
+  "entete": "enfant",
+  "titre": "Inspection",
+  "retour": "#retours",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "installer": {
+  "route": "installer",
+  "adresse": "#installer",
+  "entete": "enfant",
+  "titre": "Installer",
+  "retour": "#parametres",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": null,
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "installer?os=and": {
+  "route": "installer",
+  "adresse": "#installer?os=and",
+  "entete": "enfant",
+  "titre": "Installer",
+  "retour": "#parametres",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": null,
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "journal": {
+  "route": "journal",
+  "adresse": "#journal",
+  "entete": "enfant",
+  "titre": "Journal · BLV-00008",
+  "retour": "#commande?ref=BLV-00008",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "journal?ref=BLV-00008": {
+  "route": "journal",
+  "adresse": "#journal?ref=BLV-00008",
+  "entete": "enfant",
+  "titre": "Journal · BLV-00008",
+  "retour": "#commande?ref=BLV-00008",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "journal?ref=BLV-00009": {
+  "route": "journal",
+  "adresse": "#journal?ref=BLV-00009",
+  "entete": "enfant",
+  "titre": "Journal · BLV-00009",
+  "retour": "#commande?ref=BLV-00009",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "kyc": {
+  "route": "kyc",
+  "adresse": "#kyc",
+  "entete": "enfant",
+  "titre": "Devenir vendeur",
+  "retour": "#ouvrir",
+  "styleEntete": "padding-bottom:8px",
+  "barre": null,
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "kyc?s=attente": {
+  "route": "kyc",
+  "adresse": "#kyc?s=attente",
+  "entete": "enfant",
+  "titre": "Devenir vendeur",
+  "retour": "#kyc",
+  "styleEntete": "padding-bottom:8px",
+  "barre": null,
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "kyc?s=contrat": {
+  "route": "kyc",
+  "adresse": "#kyc?s=contrat",
+  "entete": "enfant",
+  "titre": "Devenir vendeur",
+  "retour": "#kyc?s=attente",
+  "styleEntete": "padding-bottom:8px",
+  "barre": null,
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "kyc?s=refusee": {
+  "route": "kyc",
+  "adresse": "#kyc?s=refusee",
+  "entete": "enfant",
+  "titre": "Devenir vendeur",
+  "retour": "#kyc",
+  "styleEntete": "padding-bottom:8px",
+  "barre": null,
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "lancement": {
+  "route": "lancement",
+  "adresse": "#lancement",
+  "entete": "aucun",
+  "titre": null,
+  "retour": null,
+  "barre": null,
+  "margeHaute": 8,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "litige": {
+  "route": "litige",
+  "adresse": "#litige",
+  "entete": "enfant",
+  "titre": "Litige · BLV-00005",
+  "retour": "#litiges",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "litige?pos=accepte": {
+  "route": "litige",
+  "adresse": "#litige?pos=accepte",
+  "entete": "enfant",
+  "titre": "Litige · BLV-00005",
+  "retour": "#litiges",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "litige?pos=accepte&ref=BLV-00005": {
+  "route": "litige",
+  "adresse": "#litige?ref=BLV-00005&pos=accepte",
+  "entete": "enfant",
+  "titre": "Litige · BLV-00005",
+  "retour": "#litiges",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "litige?pos=arrangement": {
+  "route": "litige",
+  "adresse": "#litige?pos=arrangement",
+  "entete": "enfant",
+  "titre": "Litige · BLV-00005",
+  "retour": "#litiges",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "litige?pos=arrangement&ref=BLV-00005": {
+  "route": "litige",
+  "adresse": "#litige?ref=BLV-00005&pos=arrangement",
+  "entete": "enfant",
+  "titre": "Litige · BLV-00005",
+  "retour": "#litiges",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "litige?pos=conteste&ref=BLV-00005": {
+  "route": "litige",
+  "adresse": "#litige?ref=BLV-00005&pos=conteste",
+  "entete": "enfant",
+  "titre": "Litige · BLV-00005",
+  "retour": "#litiges",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "litige?ref=BLV-00005": {
+  "route": "litige",
+  "adresse": "#litige?ref=BLV-00005",
+  "entete": "enfant",
+  "titre": "Litige · BLV-00005",
+  "retour": "#litiges",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "litige?ref=BLV-00005&role=prep": {
+  "route": "litige",
+  "adresse": "#litige?ref=BLV-00005&role=prep",
+  "entete": "enfant",
+  "titre": "Litige · BLV-00005",
+  "retour": "#litiges",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": false
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "litige?ref=BLV-00006": {
+  "route": "litige",
+  "adresse": "#litige?ref=BLV-00006",
+  "entete": "enfant",
+  "titre": "Litige · BLV-00006",
+  "retour": "#litiges",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "litige?ref=BLV-00006&role=prep": {
+  "route": "litige",
+  "adresse": "#litige?ref=BLV-00006&role=prep",
+  "entete": "enfant",
+  "titre": "Litige · BLV-00006",
+  "retour": "#litiges",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": false
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "litige_envoye": {
+  "route": "litige_envoye",
+  "adresse": "#litige_envoye",
+  "entete": "enfant",
+  "titre": "Décision · BLV-00005",
+  "retour": "#litiges",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "litige_envoye?issue=accepte&ref=BLV-00005": {
+  "route": "litige_envoye",
+  "adresse": "#litige_envoye?ref=BLV-00005&issue=accepte",
+  "entete": "enfant",
+  "titre": "Décision · BLV-00005",
+  "retour": "#litiges",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "litige_envoye?issue=gagne": {
+  "route": "litige_envoye",
+  "adresse": "#litige_envoye?issue=gagne",
+  "entete": "enfant",
+  "titre": "Décision · BLV-00005",
+  "retour": "#litiges",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "litige_envoye?issue=gagne&ref=BLV-00005": {
+  "route": "litige_envoye",
+  "adresse": "#litige_envoye?ref=BLV-00005&issue=gagne",
+  "entete": "enfant",
+  "titre": "Décision · BLV-00005",
+  "retour": "#litiges",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "litige_envoye?issue=perdu": {
+  "route": "litige_envoye",
+  "adresse": "#litige_envoye?issue=perdu",
+  "entete": "enfant",
+  "titre": "Décision · BLV-00005",
+  "retour": "#litiges",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "litige_envoye?issue=perdu&ref=BLV-00005": {
+  "route": "litige_envoye",
+  "adresse": "#litige_envoye?ref=BLV-00005&issue=perdu",
+  "entete": "enfant",
+  "titre": "Décision · BLV-00005",
+  "retour": "#litiges",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "litige_envoye?ref=BLV-00005": {
+  "route": "litige_envoye",
+  "adresse": "#litige_envoye?ref=BLV-00005",
+  "entete": "enfant",
+  "titre": "Décision · BLV-00005",
+  "retour": "#litiges",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "litiges": {
+  "route": "litiges",
+  "adresse": "#litiges",
+  "entete": "enfant",
+  "titre": "Litiges reçus",
+  "retour": "#accueil",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "livraison": {
+  "route": "livraison",
+  "adresse": "#livraison",
+  "entete": "enfant",
+  "titre": "Livraison et colis",
+  "retour": "#menu",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": null,
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "menu": {
+  "route": "menu",
+  "adresse": "#menu",
+  "entete": "enfant",
+  "titre": "Menu",
+  "retour": "#accueil",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": null,
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "messages": {
+  "route": "messages",
+  "adresse": "#messages",
+  "entete": "enfant",
+  "titre": "Messagerie",
+  "retour": "#accueil",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": null,
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "messages?fil=1": {
+  "route": "messages",
+  "adresse": "#messages?fil=1",
+  "entete": "enfant",
+  "titre": "Client de BLV-00008",
+  "retour": "#messages",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": null,
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "notifications": {
+  "route": "notifications",
+  "adresse": "#notifications",
+  "entete": "enfant",
+  "titre": "Notifications",
+  "retour": "#accueil",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": null,
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "notifications?f=argent": {
+  "route": "notifications",
+  "adresse": "#notifications?f=argent",
+  "entete": "enfant",
+  "titre": "Notifications",
+  "retour": "#accueil",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": null,
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "notifications?f=urgent": {
+  "route": "notifications",
+  "adresse": "#notifications?f=urgent",
+  "entete": "enfant",
+  "titre": "Notifications",
+  "retour": "#accueil",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": null,
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "numero_versement": {
+  "route": "numero_versement",
+  "adresse": "#numero_versement",
+  "entete": "enfant",
+  "titre": "Numéro de versement",
+  "retour": "#versements",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "argent",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "numero_versement?s=code": {
+  "route": "numero_versement",
+  "adresse": "#numero_versement?s=code",
+  "entete": "enfant",
+  "titre": "Numéro de versement",
+  "retour": "#versements",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "argent",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "numero_versement?s=ok": {
+  "route": "numero_versement",
+  "adresse": "#numero_versement?s=ok",
+  "entete": "enfant",
+  "titre": "Numéro de versement",
+  "retour": "#versements",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "argent",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "offre1": {
+  "route": "offre1",
+  "adresse": "#offre1",
+  "entete": "enfant",
+  "titre": "Nouvelle offre",
+  "retour": "#produits",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "produits",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "offre1?q=%C3%A9couteurs+sans+fil": {
+  "route": "offre1",
+  "adresse": "#offre1?q=%C3%A9couteurs%20sans%20fil",
+  "entete": "enfant",
+  "titre": "Nouvelle offre",
+  "retour": "#produits",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "produits",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "offre1?q=chargeur": {
+  "route": "offre1",
+  "adresse": "#offre1?q=chargeur",
+  "entete": "enfant",
+  "titre": "Nouvelle offre",
+  "retour": "#produits",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "produits",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "offre1?q=chargeur+itel": {
+  "route": "offre1",
+  "adresse": "#offre1?q=chargeur%20itel",
+  "entete": "enfant",
+  "titre": "Nouvelle offre",
+  "retour": "#produits",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "produits",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "offre1?q=coque+iphone+15": {
+  "route": "offre1",
+  "adresse": "#offre1?q=coque%20iphone%2015",
+  "entete": "enfant",
+  "titre": "Nouvelle offre",
+  "retour": "#produits",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "produits",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "offre2": {
+  "route": "offre2",
+  "adresse": "#offre2",
+  "entete": "enfant",
+  "titre": "Nouvelle offre",
+  "retour": "#offre1",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "produits",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "offre3": {
+  "route": "offre3",
+  "adresse": "#offre3",
+  "entete": "enfant",
+  "titre": "Nouvelle offre",
+  "retour": "#offre2",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "produits",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "offre4": {
+  "route": "offre4",
+  "adresse": "#offre4",
+  "entete": "enfant",
+  "titre": "Nouvelle offre",
+  "retour": "#offre3",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "produits",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "offre4?keep=1": {
+  "route": "offre4",
+  "adresse": "#offre4?keep=1",
+  "entete": "enfant",
+  "titre": "Nouvelle offre",
+  "retour": "#offre3",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "produits",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "offre_detail": {
+  "route": "offre_detail",
+  "adresse": "#offre_detail",
+  "entete": "enfant",
+  "titre": "Une offre",
+  "retour": "#produits",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "produits",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "offre_detail?p=iphone": {
+  "route": "offre_detail",
+  "adresse": "#offre_detail?p=iphone",
+  "entete": "enfant",
+  "titre": "Une offre",
+  "retour": "#produits",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "produits",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "offre_detail?role=prep": {
+  "route": "offre_detail",
+  "adresse": "#offre_detail?role=prep",
+  "entete": "enfant",
+  "titre": "Une offre",
+  "retour": "#produits",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "produits",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": false
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "offre_detail?v=verif": {
+  "route": "offre_detail",
+  "adresse": "#offre_detail?v=verif",
+  "entete": "enfant",
+  "titre": "Une offre",
+  "retour": "#produits",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "produits",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "offre_publiee": {
+  "route": "offre_publiee",
+  "adresse": "#offre_publiee",
+  "entete": "enfant",
+  "titre": "Offre envoyée",
+  "retour": "#produits",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "produits",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "otp": {
+  "route": "otp",
+  "adresse": "#otp",
+  "entete": "enfant",
+  "titre": "Devenir vendeur",
+  "retour": "#ouvrir",
+  "styleEntete": "padding-bottom:8px",
+  "barre": null,
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "ouvrir": {
+  "route": "ouvrir",
+  "adresse": "#ouvrir",
+  "entete": "enfant",
+  "titre": "Devenir vendeur",
+  "retour": "#connexion",
+  "styleEntete": "padding-bottom:8px",
+  "barre": null,
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "palier": {
+  "route": "palier",
+  "adresse": "#palier",
+  "entete": "enfant",
+  "titre": "Trust Score",
+  "retour": "#accueil",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "paliers": {
+  "route": "paliers",
+  "adresse": "#paliers",
+  "entete": "enfant",
+  "titre": "Trust Score",
+  "retour": "#accueil",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "parametres": {
+  "route": "parametres",
+  "adresse": "#parametres",
+  "entete": "enfant",
+  "titre": "Paramètres",
+  "retour": "#accueil",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": null,
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "plans": {
+  "route": "plans",
+  "adresse": "#plans",
+  "entete": "enfant",
+  "titre": "Plans & tarifs",
+  "retour": "#accueil",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "plans_liste": {
+  "route": "plans_liste",
+  "adresse": "#plans_liste",
+  "entete": "enfant",
+  "titre": "Plans & tarifs",
+  "retour": "#accueil",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "plans_liste?essai=boost": {
+  "route": "plans_liste",
+  "adresse": "#plans_liste?essai=boost",
+  "entete": "enfant",
+  "titre": "Plans & tarifs",
+  "retour": "#accueil",
+  "styleEntete": "padding-bottom:8px",
+  "barre": null,
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [
+   "fixed"
+  ],
+  "styles": []
+ },
+ "plans_liste?essai=pro": {
+  "route": "plans_liste",
+  "adresse": "#plans_liste?essai=pro",
+  "entete": "enfant",
+  "titre": "Plans & tarifs",
+  "retour": "#accueil",
+  "styleEntete": "padding-bottom:8px",
+  "barre": null,
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [
+   "fixed"
+  ],
+  "styles": []
+ },
+ "premier_jour": {
+  "route": "premier_jour",
+  "adresse": "#premier_jour",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "green",
+     "point": true,
+     "icone": null,
+     "texte": "Ouverte · 18 h"
+    },
+    {
+     "ton": "bronze",
+     "point": false,
+     "icone": "award",
+     "texte": "Bronze · lancement"
+    },
+    {
+     "ton": "or",
+     "point": false,
+     "icone": null,
+     "texte": "Free · découverte"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "FP",
+   "cloche": "1"
+  },
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": null,
+    "produits": null,
+    "argent": null
+   },
+   "point": false
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "premier_jour?pop=profil": {
+  "route": "premier_jour",
+  "adresse": "#premier_jour?pop=profil",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "green",
+     "point": true,
+     "icone": null,
+     "texte": "Ouverte · 18 h"
+    },
+    {
+     "ton": "bronze",
+     "point": false,
+     "icone": "award",
+     "texte": "Bronze · lancement"
+    },
+    {
+     "ton": "or",
+     "point": false,
+     "icone": null,
+     "texte": "Free · découverte"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "FP",
+   "cloche": "1"
+  },
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": null,
+    "produits": null,
+    "argent": null
+   },
+   "point": false
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": [],
+  "profil": true
+ },
+ "produits": {
+  "route": "produits",
+  "adresse": "#produits",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "green",
+     "point": true,
+     "icone": null,
+     "texte": "Ouverte · 18 h"
+    },
+    {
+     "ton": "bronze",
+     "point": false,
+     "icone": "award",
+     "texte": "Bronze · 63"
+    },
+    {
+     "ton": "or",
+     "point": false,
+     "icone": null,
+     "texte": "Free · découverte"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "FP",
+   "cloche": "4"
+  },
+  "barre": {
+   "onglet": "produits",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "produits?pop=profil": {
+  "route": "produits",
+  "adresse": "#produits?pop=profil",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "green",
+     "point": true,
+     "icone": null,
+     "texte": "Ouverte · 18 h"
+    },
+    {
+     "ton": "bronze",
+     "point": false,
+     "icone": "award",
+     "texte": "Bronze · 63"
+    },
+    {
+     "ton": "or",
+     "point": false,
+     "icone": null,
+     "texte": "Free · découverte"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "FP",
+   "cloche": "4"
+  },
+  "barre": {
+   "onglet": "produits",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": [],
+  "profil": true
+ },
+ "produits?role=prep": {
+  "route": "produits",
+  "adresse": "#produits?role=prep",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "green",
+     "point": true,
+     "icone": null,
+     "texte": "Ouverte · 18 h"
+    },
+    {
+     "ton": "ink",
+     "point": false,
+     "icone": "user-round",
+     "texte": "Aïcha N. · accès Préparation"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "AN",
+   "cloche": "4"
+  },
+  "barre": {
+   "onglet": "produits",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": false
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "profil": {
+  "route": "profil",
+  "adresse": "#profil",
+  "entete": "enfant",
+  "titre": "Mon profil",
+  "retour": "#menu",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": null,
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "promotions": {
+  "route": "promotions",
+  "adresse": "#promotions",
+  "entete": "enfant",
+  "titre": "Promotions",
+  "retour": "#menu",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "produits",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "publicite": {
+  "route": "publicite",
+  "adresse": "#publicite",
+  "entete": "enfant",
+  "titre": "Publicité",
+  "retour": "#menu",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "produits",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "publicite_nouvelle": {
+  "route": "publicite_nouvelle",
+  "adresse": "#publicite_nouvelle",
+  "entete": "enfant",
+  "titre": "Nouvelle campagne",
+  "retour": "#publicite",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "produits",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "publicite_solde": {
+  "route": "publicite_solde",
+  "adresse": "#publicite_solde",
+  "entete": "enfant",
+  "titre": "Solde publicitaire",
+  "retour": "#publicite",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "produits",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "questions": {
+  "route": "questions",
+  "adresse": "#questions",
+  "entete": "enfant",
+  "titre": "Questions des clients",
+  "retour": "#menu",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": null,
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "ramassages": {
+  "route": "ramassages",
+  "adresse": "#ramassages",
+  "entete": "enfant",
+  "titre": "Ramassages",
+  "retour": "#commandes",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": null,
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "recherche": {
+  "route": "recherche",
+  "adresse": "#recherche",
+  "entete": "enfant",
+  "titre": "Rechercher",
+  "retour": "#menu",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": null,
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "recu": {
+  "route": "recu",
+  "adresse": "#recu",
+  "entete": "enfant",
+  "titre": "Reçu · BLV-00008",
+  "retour": "#commandes?f=fin",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "recu?pay=apple": {
+  "route": "recu",
+  "adresse": "#recu?pay=apple",
+  "entete": "enfant",
+  "titre": "Reçu · BLV-00008",
+  "retour": "#commandes?f=fin",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "recu?pay=carte": {
+  "route": "recu",
+  "adresse": "#recu?pay=carte",
+  "entete": "enfant",
+  "titre": "Reçu · BLV-00008",
+  "retour": "#commandes?f=fin",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "recu?pay=eur": {
+  "route": "recu",
+  "adresse": "#recu?pay=eur",
+  "entete": "enfant",
+  "titre": "Reçu · BLV-00008",
+  "retour": "#commandes?f=fin",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "recu?pay=google": {
+  "route": "recu",
+  "adresse": "#recu?pay=google",
+  "entete": "enfant",
+  "titre": "Reçu · BLV-00008",
+  "retour": "#commandes?f=fin",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "recu?pay=usd": {
+  "route": "recu",
+  "adresse": "#recu?pay=usd",
+  "entete": "enfant",
+  "titre": "Reçu · BLV-00008",
+  "retour": "#commandes?f=fin",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "recu?pay=wallet": {
+  "route": "recu",
+  "adresse": "#recu?pay=wallet",
+  "entete": "enfant",
+  "titre": "Reçu · BLV-00008",
+  "retour": "#commandes?f=fin",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "recu?ref=BLV-00008": {
+  "route": "recu",
+  "adresse": "#recu?ref=BLV-00008",
+  "entete": "enfant",
+  "titre": "Reçu · BLV-00008",
+  "retour": "#commandes?f=fin",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "remplacement": {
+  "route": "remplacement",
+  "adresse": "#remplacement",
+  "entete": "enfant",
+  "titre": "Remplacement",
+  "retour": "#inspection",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "remplacement?c=rembourser": {
+  "route": "remplacement",
+  "adresse": "#remplacement?c=rembourser",
+  "entete": "enfant",
+  "titre": "Remplacement",
+  "retour": "#inspection",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "retours": {
+  "route": "retours",
+  "adresse": "#retours",
+  "entete": "enfant",
+  "titre": "Retours",
+  "retour": "#accueil",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "retours?role=prep": {
+  "route": "retours",
+  "adresse": "#retours?role=prep",
+  "entete": "enfant",
+  "titre": "Retours",
+  "retour": "#accueil",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": false
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "rupture": {
+  "route": "rupture",
+  "adresse": "#rupture",
+  "entete": "enfant",
+  "titre": "Rupture · BLV-00008",
+  "retour": "#commande?ref=BLV-00008",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "rupture?ref=BLV-00008": {
+  "route": "rupture",
+  "adresse": "#rupture?ref=BLV-00008",
+  "entete": "enfant",
+  "titre": "Rupture · BLV-00008",
+  "retour": "#commande?ref=BLV-00008",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "rupture?ref=BLV-00008&role=prep": {
+  "route": "rupture",
+  "adresse": "#rupture?ref=BLV-00008&role=prep",
+  "entete": "enfant",
+  "titre": "Rupture · BLV-00008",
+  "retour": "#commande?ref=BLV-00008",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": false
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "rupture?ref=BLV-00009": {
+  "route": "rupture",
+  "adresse": "#rupture?ref=BLV-00009",
+  "entete": "enfant",
+  "titre": "Rupture · BLV-00009",
+  "retour": "#commande?ref=BLV-00009",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "rupture?ref=BLV-00009&role=prep": {
+  "route": "rupture",
+  "adresse": "#rupture?ref=BLV-00009&role=prep",
+  "entete": "enfant",
+  "titre": "Rupture · BLV-00009",
+  "retour": "#commande?ref=BLV-00009",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "commandes",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": false
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "saisie_assistee": {
+  "route": "saisie_assistee",
+  "adresse": "#saisie_assistee",
+  "entete": "enfant",
+  "titre": "Saisie assistée",
+  "retour": "#produits",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "produits",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "sanctions": {
+  "route": "sanctions",
+  "adresse": "#sanctions",
+  "entete": "enfant",
+  "titre": "Sanctions et contrôle",
+  "retour": "#palier",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "score": {
+  "route": "score",
+  "adresse": "#score",
+  "entete": "enfant",
+  "titre": "Trust Score",
+  "retour": "#accueil",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "se_libere": {
+  "route": "se_libere",
+  "adresse": "#se_libere",
+  "entete": "enfant",
+  "titre": "Se libère",
+  "retour": "#argent",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "argent",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "securite": {
+  "route": "securite",
+  "adresse": "#securite",
+  "entete": "enfant",
+  "titre": "Sécurité",
+  "retour": "#parametres",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": null,
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "securite?cloture=1": {
+  "route": "securite",
+  "adresse": "#securite?cloture=1",
+  "entete": "enfant",
+  "titre": "Sécurité",
+  "retour": "#parametres",
+  "styleEntete": "padding-bottom:8px",
+  "barre": null,
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [
+   "fixed"
+  ],
+  "styles": []
+ },
+ "services": {
+  "route": "services",
+  "adresse": "#services",
+  "entete": "enfant",
+  "titre": "Services",
+  "retour": "#demande",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "services?demande=1": {
+  "route": "services",
+  "adresse": "#services?demande=1",
+  "entete": "enfant",
+  "titre": "Services",
+  "retour": "#demande",
+  "styleEntete": "padding-bottom:8px",
+  "barre": null,
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [
+   "fixed"
+  ],
+  "styles": []
+ },
+ "stock": {
+  "route": "stock",
+  "adresse": "#stock",
+  "entete": "enfant",
+  "titre": "Stock et inventaire",
+  "retour": "#menu",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "produits",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "suspendu": {
+  "route": "suspendu",
+  "adresse": "#suspendu",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "red",
+     "point": true,
+     "icone": null,
+     "texte": "Compte suspendu"
+    },
+    {
+     "ton": "ink",
+     "point": false,
+     "icone": "lock",
+     "texte": "Trust Score gelé"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "FP",
+   "cloche": "4"
+  },
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "suspendu?pop=profil": {
+  "route": "suspendu",
+  "adresse": "#suspendu?pop=profil",
+  "entete": "racine",
+  "titre": null,
+  "retour": null,
+  "racine": {
+   "pastilles": [
+    {
+     "ton": "red",
+     "point": true,
+     "icone": null,
+     "texte": "Compte suspendu"
+    },
+    {
+     "ton": "ink",
+     "point": false,
+     "icone": "lock",
+     "texte": "Trust Score gelé"
+    }
+   ],
+   "libelle": "Espace vendeur · Tonton PG",
+   "avatar": "FP",
+   "cloche": "4"
+  },
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 128,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": [],
+  "profil": true
+ },
+ "telephone": {
+  "route": "telephone",
+  "adresse": "#telephone",
+  "entete": "aucun",
+  "titre": null,
+  "retour": null,
+  "barre": null,
+  "margeHaute": null,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "telephone?from=%23ile": {
+  "route": "telephone",
+  "adresse": "#telephone?from=%23ile",
+  "entete": "aucun",
+  "titre": null,
+  "retour": null,
+  "barre": null,
+  "margeHaute": null,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "verrouille": {
+  "route": "verrouille",
+  "adresse": "#verrouille",
+  "entete": "aucun",
+  "titre": null,
+  "retour": null,
+  "barre": null,
+  "margeHaute": null,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "versements": {
+  "route": "versements",
+  "adresse": "#versements",
+  "entete": "enfant",
+  "titre": "Versements",
+  "retour": "#argent",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "argent",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "versements?periode=12": {
+  "route": "versements",
+  "adresse": "#versements?periode=12",
+  "entete": "enfant",
+  "titre": "Versements",
+  "retour": "#argent",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "argent",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "versements?periode=12&refus=1": {
+  "route": "versements",
+  "adresse": "#versements?refus=1&periode=12",
+  "entete": "enfant",
+  "titre": "Versements",
+  "retour": "#argent",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "argent",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "versements?periode=3": {
+  "route": "versements",
+  "adresse": "#versements?periode=3",
+  "entete": "enfant",
+  "titre": "Versements",
+  "retour": "#argent",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "argent",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "versements?periode=3&refus=1": {
+  "route": "versements",
+  "adresse": "#versements?refus=1&periode=3",
+  "entete": "enfant",
+  "titre": "Versements",
+  "retour": "#argent",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "argent",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "versements?periode=tout": {
+  "route": "versements",
+  "adresse": "#versements?periode=tout",
+  "entete": "enfant",
+  "titre": "Versements",
+  "retour": "#argent",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "argent",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "versements?periode=tout&refus=1": {
+  "route": "versements",
+  "adresse": "#versements?refus=1&periode=tout",
+  "entete": "enfant",
+  "titre": "Versements",
+  "retour": "#argent",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "argent",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "versements?refus=1": {
+  "route": "versements",
+  "adresse": "#versements?refus=1",
+  "entete": "enfant",
+  "titre": "Versements",
+  "retour": "#argent",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "argent",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "visibilite": {
+  "route": "visibilite",
+  "adresse": "#visibilite",
+  "entete": "enfant",
+  "titre": "Visibilité",
+  "retour": "#plans",
+  "styleEntete": "padding-bottom:8px",
+  "barre": {
+   "onglet": "accueil",
+   "badges": {
+    "accueil": null,
+    "commandes": "2",
+    "produits": null,
+    "argent": null
+   },
+   "point": true
+  },
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [],
+  "styles": []
+ },
+ "visibilite?achat=1": {
+  "route": "visibilite",
+  "adresse": "#visibilite?achat=1",
+  "entete": "enfant",
+  "titre": "Visibilité",
+  "retour": "#plans",
+  "styleEntete": "padding-bottom:8px",
+  "barre": null,
+  "margeHaute": 64,
+  "styleMain": "",
+  "classesApp": [
+   "fixed"
+  ],
+  "styles": []
+ }
+}

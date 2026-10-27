@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { SignInWithApple } from '@capacitor-community/apple-sign-in';
 import { useTranslation } from 'react-i18next';
+import { authApi } from '@/services/api/auth';
 
 export interface AppleCredential {
   identityToken: string;
   authorizationCode: string | null;
+  nonce: string | null;
   email: string | null;
   givenName: string | null;
   familyName: string | null;
@@ -69,25 +71,35 @@ export default function AppleAuthButton({ onCredential, disabled = false, onErro
         onError?.(t('cl6_social_auth.apple_login_failed'));
         return;
       }
+      let nonce: string;
+      try {
+        nonce = await authApi.appleNonce();
+      } catch {
+        onError?.(t('cl6_social_auth.apple_login_failed'));
+        return;
+      }
       const state = crypto.randomUUID();
       sessionStorage.setItem(APPLE_STATE_KEY, state);
       const params = new URLSearchParams({
         client_id: servicesId, redirect_uri: redirectUri, response_type: 'code id_token',
-        scope: 'name email', response_mode: 'form_post', state,
+        scope: 'name email', response_mode: 'form_post', state, nonce,
       });
       window.location.href = `https://appleid.apple.com/auth/authorize?${params.toString()}`;
       return;
     }
     setPending(true);
     try {
+      const nonce = await authApi.appleNonce();
       const { response } = await SignInWithApple.authorize({
         clientId,
         redirectURI: 'https://belivay.com/auth/apple/callback',
         scopes: 'email name',
+        nonce,
       });
       await onCredential({
         identityToken: response.identityToken,
         authorizationCode: response.authorizationCode,
+        nonce,
         email: response.email,
         givenName: response.givenName,
         familyName: response.familyName,

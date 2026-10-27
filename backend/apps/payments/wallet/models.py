@@ -21,6 +21,8 @@ class Portefeuille(models.Model):
     solde_retirable_xaf = models.PositiveIntegerField(default=0)
     solde_geste_xaf = models.PositiveIntegerField(default=0, help_text="gestes commerciaux, jamais retirables (R03.6)")
     code_hash = models.CharField(max_length=128, blank=True, default="", help_text="code a 4 chiffres (R03.5)")
+    code_echecs = models.PositiveSmallIntegerField(default=0, help_text="codes faux depuis le dernier bon code")
+    code_bloque_jusqua = models.DateTimeField(null=True, blank=True, help_text="r_wallet_code_essais atteint")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

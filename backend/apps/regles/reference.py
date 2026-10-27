@@ -18,6 +18,10 @@ EMPREINTE_MOTEUR = "21095446406de1570010586917913ce70c820ff50e851efc41ddcd0e7c63
 # migration, modifiables dans l'admin comme les autres. Toute autre différence avec la référence est une anomalie.
 REGLAGES_FEUILLE_DE_ROUTE = {
     "r_auto_rmb_plafond_mois",  # D32 : plafond mensuel global du remboursement automatique (0 = fermé)
+    "r_wallet_code_essais",     # sécurité main 2 : codes Wallet faux avant blocage (R03.5)
+    "r_wallet_code_blocage_h",  # sécurité main 2 : durée du blocage du code Wallet, en heures
+    "r_code_relais_echecs",     # sécurité main 2 : codes de retrait faux qui bloquent un relais (R66.1)
+    "r_code_relais_fenetre_h",  # sécurité main 2 : période de ce comptage, en heures
 }
 
 

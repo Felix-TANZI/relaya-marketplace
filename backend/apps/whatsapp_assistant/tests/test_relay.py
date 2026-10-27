@@ -312,11 +312,11 @@ def test_remise_avec_le_bon_code(relais, provider, django_capture_on_commit_call
     provider.sent.clear()
 
     contact = toucher(provider, "give")
-    assert "code de retrait" in provider.last["body"]
-    assert contact.state == "relay:code"                # l'assistant attend le code
+    assert "code de retrait" in provider.last["body"] and "référence du colis" in provider.last["body"]
+    assert contact.state == "relay:code"                # l'assistant attend la référence et le code
 
     provider.sent.clear()
-    ecrire(provider, code)
+    ecrire(provider, f"BVY-{colis['order'].id}-{colis['shipment'].id} {code}")   # R66.2 : le colis, puis le code
 
     colis["parcel"].refresh_from_db()
     colis["shipment"].refresh_from_db()
@@ -332,11 +332,11 @@ def test_un_mauvais_code_ne_remet_rien(relais, provider, django_capture_on_commi
     toucher(provider, "give")
     provider.sent.clear()
 
-    ecrire(provider, "ZZZ999")
+    ecrire(provider, f"BVY-{colis['order'].id}-{colis['shipment'].id} ZZZ999")
 
     colis["parcel"].refresh_from_db()
     assert colis["parcel"].status == "STORED"
-    assert "Aucun colis en attente avec ce code" in provider.sent[0]["body"]
+    assert "ne correspond pas à ce colis" in provider.sent[0]["body"]
 
 
 def test_le_gerant_peut_annuler_la_remise(relais, provider, django_capture_on_commit_callbacks):
@@ -362,7 +362,7 @@ def test_pendant_la_saisie_du_code_rien_d_autre_ne_s_interpose(relais, provider,
     ecrire(provider, "robe wax")
 
     assert "Résultats" not in tout_le_texte(provider)
-    assert "Aucun colis en attente avec ce code" in provider.sent[0]["body"]
+    assert "Référence du colis manquante" in provider.sent[0]["body"]
 
 
 def test_un_inconnu_ne_peut_rien_remettre(relais, provider, django_capture_on_commit_callbacks):

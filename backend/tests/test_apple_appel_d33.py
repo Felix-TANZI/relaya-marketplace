@@ -16,11 +16,14 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def jeton_apple(monkeypatch):
+    from django.core.cache import cache
+
     from apps.accounts import views
 
+    cache.set("apple-nonce:n-d33", True)  # sécurité main 2 : le nonce émis par le serveur, recopié par Apple
     monkeypatch.setattr(views, "_verify_apple_identity_token", lambda jeton: {
         "sub": "apple-sub-1", "email": "awa@privaterelay.appleid.com", "email_verified": "true",
-        "aud": "com.belivay.client.web"})
+        "aud": "com.belivay.client.web", "nonce": "n-d33"})
 
 
 def test_le_retour_apple_donne_un_ticket_puis_une_session(jeton_apple):

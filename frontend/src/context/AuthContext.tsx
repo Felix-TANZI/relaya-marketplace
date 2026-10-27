@@ -18,6 +18,7 @@ interface AuthContextType {
   appleLogin: (payload: {
     identityToken: string;
     authorizationCode?: string | null;
+    nonce?: string | null;
     email?: string | null;
     givenName?: string | null;
     familyName?: string | null;

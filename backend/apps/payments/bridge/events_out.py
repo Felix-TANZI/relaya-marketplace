@@ -210,7 +210,7 @@ def _reveler_code(commande) -> None:
 
     colis = (RelayParcel.objects.filter(shipment__order=commande, status__in=[RelayParcel.Status.RECEIVED,
                                                                              RelayParcel.Status.STORED])
-             .exclude(pickup_code="").select_related("relay_point").first())
+             .exclude(pickup_code_empreinte="").select_related("relay_point").first())
     if colis is not None:
         comptoir.annoncer_retrait(commande, colis.pickup_code, colis.relay_point.name)
 

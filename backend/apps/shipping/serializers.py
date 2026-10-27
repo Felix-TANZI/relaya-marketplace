@@ -12,7 +12,6 @@ from apps.common.translation import request_language, translate_text
 from .models import (
     CourierSOSAlert,
     RelayParcel,
-    RelayPickupAttempt,
     RelayPointReview,
     Shipment,
     ShipmentEvent,
@@ -505,7 +504,7 @@ class RelayParcelSerializer(serializers.ModelSerializer):
     a_payer_comptoir_xaf = serializers.SerializerMethodField()
 
     def get_pickup_ready(self, obj):
-        return bool(obj.pickup_code) and not self.get_a_payer_comptoir_xaf(obj)
+        return bool(obj.pickup_code_empreinte) and not self.get_a_payer_comptoir_xaf(obj)
 
     def get_a_payer_comptoir_xaf(self, obj):
         # D14 et R51.5 : reste du comptoir et frais d'absence, frais Mobile Money compris.
@@ -653,9 +652,11 @@ class RelayParcelReceiveSerializer(serializers.Serializer):
         siblings = list(RelayParcel.objects.filter(shipment__order=shipment.order))
         still_pending = [p for p in siblings if p.id != parcel.id and p.status == RelayParcel.Status.EXPECTED]
         if not still_pending:
-            code = next((p.pickup_code for p in siblings if p.pickup_code), "") or nouveau_code_de_retrait()
-            RelayParcel.objects.filter(id__in=[p.id for p in siblings]).exclude(pickup_code=code).update(pickup_code=code)
-            parcel.refresh_from_db(fields=["pickup_code"])
+            code = next((p.pickup_code for p in siblings if p.pickup_code_empreinte), "") or nouveau_code_de_retrait()
+            # DP-02 : chiffré et empreinte, jamais en clair
+            RelayParcel.objects.filter(id__in=[p.id for p in siblings]).exclude(
+                pickup_code_empreinte=RelayParcel.empreinte_code(code)).update(**RelayParcel.champs_du_code(code))
+            parcel.refresh_from_db(fields=["pickup_code_chiffre", "pickup_code_empreinte"])
             # Feuille de route D7, R78.1 : le code de retrait part aussi par SMS (commandes sans compte comprises) ;
             # D14, R42.4 : pas avant le paiement du reste au comptoir.
             from apps.orders import comptoir
@@ -678,50 +679,37 @@ class RelayParcelReceiveSerializer(serializers.Serializer):
         return parcel
 
 
+def _colis_scanne(relay_point, data):
+    """R66.2 : le colis dont le relais a scanné le QR (ou choisi par son identifiant), en stock chez lui."""
+    from apps.shipping import retrait
+
+    if not data.get("parcel_id") and not data.get("colis"):
+        raise serializers.ValidationError({"colis": "Scannez d'abord le QR du colis, puis saisissez le code du client."})
+    parcel = retrait.colis_en_stock(relay_point, parcel_id=data.get("parcel_id"), colis=data.get("colis"))
+    if parcel is None:
+        raise serializers.ValidationError({"colis": "Ce colis n'est pas en stock dans votre relais."})
+    return parcel
+
+
 class RelayPickupCodeCheckSerializer(serializers.Serializer):
     """
     Verification en direct d'un code de retrait avant la remise. Ne modifie
     aucun `RelayParcel` : seul `RelayParcelPickupSerializer` finalise la
-    remise. Alimente l'ecran comptoir en detectant en direct les deux
-    sous-etats jusque-la invisibles — code faux et colis bloque 24 h apres 3
-    echecs consecutifs (Regles Systeme DEV v2.0 §8.2).
+    remise. Securite avant main 2 : le code se verifie sur le colis scanne
+    (R66.2), essais comptes sur ce colis, plus une limite par relais
+    (apps.shipping.retrait).
     """
 
+    parcel_id = serializers.IntegerField(required=False)
+    colis = serializers.CharField(required=False, allow_blank=True, default="", help_text="QR ou référence du colis")
     pickup_code = serializers.CharField()
 
     def check(self):
+        from apps.shipping import retrait
+
         relay_point = self.context["relay_point"]
-        code = self.validated_data["pickup_code"]
-
-        locked_until = RelayPickupAttempt.locked_until(relay_point, code)
-        if locked_until:
-            return {"locked": True, "locked_until": locked_until, "attempts_left": 0, "parcels": []}
-
-        parcels = list(
-            RelayParcel.objects.select_related("shipment", "shipment__order", "relay_point")
-            .filter(
-                relay_point=relay_point,
-                pickup_code=code,
-                status__in=[RelayParcel.Status.RECEIVED, RelayParcel.Status.STORED],
-            )
-        )
-        if parcels:
-            RelayPickupAttempt.register(relay_point, code, success=True)
-            return {
-                "locked": False,
-                "locked_until": None,
-                "attempts_left": RelayPickupAttempt.max_essais(),
-                "parcels": parcels,
-            }
-
-        RelayPickupAttempt.register(relay_point, code, success=False)
-        locked_until = RelayPickupAttempt.locked_until(relay_point, code)
-        return {
-            "locked": bool(locked_until),
-            "locked_until": locked_until,
-            "attempts_left": RelayPickupAttempt.attempts_left(relay_point, code),
-            "parcels": [],
-        }
+        parcel = _colis_scanne(relay_point, self.validated_data)
+        return retrait.controler(relay_point, parcel, self.validated_data["pickup_code"])
 
 
 class RelayParcelPickupSerializer(serializers.Serializer):
@@ -732,6 +720,7 @@ class RelayParcelPickupSerializer(serializers.Serializer):
     """
 
     parcel_id = serializers.IntegerField(required=False)
+    colis = serializers.CharField(required=False, allow_blank=True, default="", help_text="QR ou référence du colis")
     pickup_code = serializers.CharField()
     proof_note = serializers.CharField(required=False, allow_blank=True, default="")
     picked_up_by_name = serializers.CharField(required=False, allow_blank=True, default="")
@@ -761,31 +750,17 @@ class RelayParcelPickupSerializer(serializers.Serializer):
     )
 
     def save(self, **kwargs):
+        from apps.shipping import retrait
+
         relay_point = self.context["relay_point"]
         code = self.validated_data["pickup_code"]
 
-        # 3 codes faux consecutifs bloquent ce code 24 h (Regles Systeme DEV
-        # v2.0 §8.2) : verifie ici en dernier recours, meme si l'ecran de
-        # retrait appelle deja RelayPickupCodeCheckSerializer avant d'arriver
-        # jusqu'ici.
-        locked_until = RelayPickupAttempt.locked_until(relay_point, code)
-        if locked_until:
-            raise serializers.ValidationError({
-                "pickup_code": f"Code bloque jusqu'au {locked_until:%d/%m %H:%M} apres 3 codes faux. Seul le support peut debloquer.",
-            })
-
-        parcels = list(
-            RelayParcel.objects.select_related("shipment", "shipment__order", "relay_point")
-            .filter(
-                relay_point=relay_point,
-                pickup_code=code,
-                status__in=[RelayParcel.Status.RECEIVED, RelayParcel.Status.STORED],
-            )
-        )
-        if not parcels:
-            RelayPickupAttempt.register(relay_point, code, success=False)
-            raise serializers.ValidationError({"pickup_code": "Code de retrait incorrect ou colis deja retire."})
-        RelayPickupAttempt.register(relay_point, code, success=True)
+        # Securite avant main 2 : le colis scanne d'abord (R66.2), puis le code verifie sur lui, essais comptes sur
+        # ce colis et par relais — meme si l'ecran de retrait a deja appele RelayPickupCodeCheckSerializer.
+        resultat = retrait.controler(relay_point, _colis_scanne(relay_point, self.validated_data), code)
+        if not resultat["ok"]:
+            raise serializers.ValidationError({"pickup_code": retrait.message_de_refus(resultat)})
+        parcels = resultat["parcels"]
 
         # D14, R42.4 et R51.5 : jamais de remise avant le paiement de ce qui reste dû au relais, par Mobile Money.
         if any(_dus(p.shipment.order) for p in parcels):

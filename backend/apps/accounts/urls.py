@@ -41,6 +41,7 @@ from .views import (
     app_release_latest,
     apple_callback,
     apple_login,
+    apple_nonce,
     apple_ticket,
     bootstrap_admin,
     bootstrap_demo_accounts,
@@ -104,6 +105,7 @@ urlpatterns = [
     path("login/",          TwoFactorTokenObtainPairView.as_view(), name="auth-login"),   # 2FA aware
     path("google/",         google_login,                           name="auth-google"),
     path("apple/",          apple_login,                            name="auth-apple"),
+    path("apple/nonce/",    apple_nonce,                            name="auth-apple-nonce"),
     # Feuille de route D33 : Apple sur Android (page web d'Apple, puis ticket à usage unique)
     path("apple/callback/", apple_callback,                         name="auth-apple-callback"),
     path("apple/ticket/",   apple_ticket,                           name="auth-apple-ticket"),

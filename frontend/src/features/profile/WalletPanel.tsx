@@ -34,6 +34,7 @@ export default function WalletPanel() {
   const [retrait, setRetrait] = useState({ montant: "", numero: "" });
   const [devis, setDevis] = useState<DevisRetrait | null>(null);
   const [code, setCode] = useState({ nouveau: "", ancien: "" });
+  const [oubli, setOubli] = useState<{ envoye: boolean; sms: string; nouveau: string }>({ envoye: false, sms: "", nouveau: "" });
   const [occupe, setOccupe] = useState(false);
 
   const charger = useCallback(() => {
@@ -133,6 +134,35 @@ export default function WalletPanel() {
             Enregistrer
           </button>
         </div>
+        {w.code_bloque_jusqua && (
+          <p className="pf-muted-sm">
+            Trop de codes faux : code bloqué jusqu'au {new Date(w.code_bloque_jusqua).toLocaleString("fr-FR")}.
+          </p>
+        )}
+        {w.code_defini && !oubli.envoye && (
+          <button type="button" className="pf-btn-ghost" disabled={occupe}
+            onClick={() => void agir(async () => {
+              await walletApi.codeOublie();
+              setOubli({ envoye: true, sms: "", nouveau: "" });
+            }, "Un code vous a été envoyé par SMS.")}>
+            Code oublié ou bloqué ?
+          </button>
+        )}
+        {oubli.envoye && (
+          <div className="flex flex-wrap gap-2">
+            <input className="pf-input" inputMode="numeric" placeholder="Code reçu par SMS" value={oubli.sms}
+              onChange={(e) => setOubli({ ...oubli, sms: e.target.value.replace(/\D/g, "") })} />
+            <input className="pf-input" inputMode="numeric" maxLength={4} placeholder="Nouveau code" value={oubli.nouveau}
+              onChange={(e) => setOubli({ ...oubli, nouveau: e.target.value.replace(/\D/g, "") })} />
+            <button type="button" className="pf-btn-ghost" disabled={occupe || !oubli.sms || oubli.nouveau.length !== 4}
+              onClick={() => void agir(async () => {
+                await walletApi.reinitialiserCode(oubli.sms, oubli.nouveau);
+                setOubli({ envoye: false, sms: "", nouveau: "" });
+              }, "Nouveau code enregistré.")}>
+              Valider
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="pf-card">

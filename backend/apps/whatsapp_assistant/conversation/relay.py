@@ -4,12 +4,13 @@
 #
 # Identifiants des boutons (ils reviennent dans reply_id) :
 #   rcv:<colis>     « Colis reçu » — réception au comptoir, avec le code de dépôt du livreur (R66.1)
-#   give            « Remettre » — demande le code de retrait au gérant
+#   give            « Remettre » — demande au gérant la référence du colis et le code de retrait
 #   pcl:<colis>     le détail d'un colis
 #   pcls            ce qu'il reste à traiter
 #
 # La remise se fait en deux temps : le gérant touche « Remettre », l'assistant
-# attend son prochain message, qui doit être le code annoncé par le client.
+# attend son prochain message : la référence du colis (comme le scan du QR au
+# guichet, R66.2) puis le code annoncé par le client.
 # La réception aussi : « Colis reçu », puis le code de dépôt que montre le
 # livreur (spec v2.1, R66.1). Cette attente est mémorisée dans contact.state.
 
@@ -222,6 +223,10 @@ def _submit_code(provider, contact, words: str, raw: str) -> None:
     elif result == relay_bridge.ActionResult.INACTIVE:
         send_text(provider, contact, t(language, "relay_inactive", phone=get_config().support_phone))
         return
+    elif result == relay_bridge.ActionResult.LOCKED:
+        send_text(provider, contact, t(language, "relay_code_locked", phone=get_config().support_phone))
+    elif result == relay_bridge.ActionResult.BAD_REF:
+        send_text(provider, contact, t(language, "relay_bad_ref"))
     else:
         send_text(provider, contact, t(language, "relay_bad_code"))
     _list(provider, contact, language, relay_id)

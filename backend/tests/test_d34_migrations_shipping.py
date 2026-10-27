@@ -86,6 +86,15 @@ def test_aucun_conflit_dans_le_graphe():
     assert not conflits, f"Conflits de migrations : {conflits}"
 
 
+# Migrations de donnees relues une a une, avec la raison et la preuve. Une nouvelle doit venir s'ajouter ici,
+# avec son test, et etre essayee sur une copie des donnees de production avant le deploiement.
+MIGRATIONS_DE_DONNEES_RELUES = {
+    # Securite avant main 2, DP-02 : chiffrer les codes de retrait existants AVANT de supprimer la colonne en clair
+    # (sinon ils seraient perdus). Preuve : test_dp02_la_migration_chiffre_les_codes_existants.
+    "0032_code_retrait_chiffre.py",
+}
+
+
 @migrations_desactivees
 def test_aucune_migration_de_donnees_dans_les_expeditions():
     """
@@ -103,8 +112,9 @@ def test_aucune_migration_de_donnees_dans_les_expeditions():
     fautives = [
         fichier.name
         for fichier in sorted(dossier.glob("0*.py"))
-        if "RunPython" in fichier.read_text(encoding="utf-8")
-        or "RunSQL" in fichier.read_text(encoding="utf-8")
+        if fichier.name not in MIGRATIONS_DE_DONNEES_RELUES
+        and ("RunPython" in fichier.read_text(encoding="utf-8")
+             or "RunSQL" in fichier.read_text(encoding="utf-8"))
     ]
 
     assert not fautives, (

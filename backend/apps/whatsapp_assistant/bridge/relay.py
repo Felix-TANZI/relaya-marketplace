@@ -163,7 +163,9 @@ class ActionResult:
     ALREADY = "already"             # deja receptionne, ou deja retire
     NOT_YOURS = "not_yours"         # ce colis n'est pas dans ce relais
     FULL = "full"                   # capacite de stockage atteinte
-    BAD_CODE = "bad_code"           # code de retrait inconnu ici
+    BAD_CODE = "bad_code"           # code de retrait faux pour ce colis
+    BAD_REF = "bad_ref"             # reference du colis absente ou inconnue ici
+    LOCKED = "locked"               # code du colis bloque (R66.1) ou trop de codes faux a ce relais
     NEEDS_APP = "needs_app"         # le coeur demande plus que ce que WhatsApp peut fournir
     INACTIVE = "inactive"           # relais suspendu ou non approuve
     REFUSED = "refused"
@@ -215,14 +217,20 @@ def receive_parcel(parcel_id: int, relay_id: int, depot_code: str = "") -> str:
     return ActionResult.DONE
 
 
-def hand_over(pickup_code: str, relay_id: int) -> tuple[str, list[str]]:
+def hand_over(message: str, relay_id: int) -> tuple[str, list[str]]:
     """
-    « Remettre au client » : le gerant saisit le code annonce par le client,
-    exactement comme au guichet. Renvoie (resultat, references des colis remis).
+    « Remettre au client » : le gerant envoie la reference du colis (BVY-…, sur
+    son etiquette) puis le code annonce par le client, exactement comme au
+    guichet ou il scanne le QR du colis avant le code (securite avant main 2,
+    R66.2). Les essais se comptent sur ce colis et par relais, avec les memes
+    regles (apps.shipping.retrait). Renvoie (resultat, references des colis remis).
     """
+    import re
+
     from rest_framework.exceptions import ValidationError
 
     from apps.accounts.models import RelayPointProfile
+    from apps.shipping import retrait
     from apps.shipping.models import RelayParcel
     from apps.shipping.serializers import RelayParcelPickupSerializer
 
@@ -230,20 +238,26 @@ def hand_over(pickup_code: str, relay_id: int) -> tuple[str, list[str]]:
     if profile is None or not (profile.is_active and profile.status == "APPROVED"):
         return ActionResult.INACTIVE, []
 
-    code = (pickup_code or "").strip().upper()
-    concerned = list(
-        RelayParcel.objects.select_related("shipment")
-        .filter(relay_point_id=relay_id, pickup_code=code, status__in=IN_STORE)
-    )
-    if not concerned:
-        deja = RelayParcel.objects.filter(
-            relay_point_id=relay_id, pickup_code=code, status="PICKED_UP",
-        ).exists()
-        return (ActionResult.ALREADY if deja else ActionResult.BAD_CODE), []
+    mots = re.split(r"[\s,;:]+", (message or "").strip().upper())
+    reference = next((m for m in mots if re.fullmatch(r"BVY?-\d+-\d+", m)), "")
+    code = next((m for m in mots if m and m != reference), "")
+    shipment_id = retrait.identifiant_du_colis(reference)
+    if not shipment_id or not code:
+        return ActionResult.BAD_REF, []
+    parcel = retrait.colis_en_stock(profile, colis=reference)
+    if parcel is None:
+        deja = RelayParcel.objects.filter(relay_point_id=relay_id, shipment_id=shipment_id,
+                                          status="PICKED_UP").exists()
+        return (ActionResult.ALREADY if deja else ActionResult.BAD_REF), []
 
+    controle = retrait.controler(profile, parcel, code)
+    if not controle["ok"]:
+        return (ActionResult.LOCKED if controle["locked"] else ActionResult.BAD_CODE), []
+
+    concerned = controle["parcels"]
     references = [f"BVY-{item.shipment.order_id}-{item.shipment_id}" for item in concerned]
     serializer = RelayParcelPickupSerializer(
-        data={"pickup_code": code, "proof_note": "Remise confirmée depuis WhatsApp"},
+        data={"parcel_id": parcel.id, "pickup_code": code, "proof_note": "Remise confirmée depuis WhatsApp"},
         context={"relay_point": profile},
     )
     try:

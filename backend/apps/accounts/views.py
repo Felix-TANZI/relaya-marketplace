@@ -272,6 +272,45 @@ def _link_apple_identity(user, claims, authorization_code):
         logger.warning("Apple authorization code exchange skipped for user %s: %s", user.pk, exc)
 
 
+# Sécurité avant main 2 : nonce de la connexion Apple. Le serveur l'émet, l'application le passe à Apple, Apple le
+# recopie dans le jeton signé ; à la connexion, le serveur le retire de sa liste. Un jeton volé ou rejoué n'ouvre donc
+# rien. Apple accepte le nonce tel quel ou son empreinte SHA-256 (cas d'iOS) : les deux sont reconnus.
+
+APPLE_NONCE_SECONDES = 600
+
+
+def _consommer_nonce_apple(nonce_du_jeton, nonce_brut=None):
+    import hashlib
+
+    from django.core.cache import cache
+
+    nonce_du_jeton = str(nonce_du_jeton or "")
+    if not nonce_du_jeton:
+        return False
+    candidats = [nonce_du_jeton]
+    nonce_brut = str(nonce_brut or "")
+    if nonce_brut and hashlib.sha256(nonce_brut.encode()).hexdigest() == nonce_du_jeton:
+        candidats.append(nonce_brut)
+    for nonce in candidats:
+        if cache.get(f"apple-nonce:{nonce[:128]}"):
+            cache.delete(f"apple-nonce:{nonce[:128]}")  # usage unique
+            return True
+    return False
+
+
+@extend_schema(tags=["Auth"], summary="Nonce à usage unique pour la connexion Apple")
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def apple_nonce(request):
+    import secrets
+
+    from django.core.cache import cache
+
+    nonce = secrets.token_urlsafe(32)
+    cache.set(f"apple-nonce:{nonce}", True, timeout=APPLE_NONCE_SECONDES)
+    return Response({"nonce": nonce, "expireDans": APPLE_NONCE_SECONDES})
+
+
 @extend_schema(tags=["Auth"], summary="Connexion ou inscription avec Apple")
 @api_view(["POST"])
 @permission_classes([AllowAny])
@@ -283,13 +322,15 @@ def apple_login(request):
     les connexions suivantes n'ont besoin que du jeton, l'utilisateur etant
     deja cree et retrouve par email. Le client transmet aussi
     `authorization_code` : echange contre un refresh_token Apple, conserve
-    pour revoquer l'autorisation a la suppression du compte."""
+    pour revoquer l'autorisation a la suppression du compte, et `nonce`
+    (obtenu par apple_nonce et passe a Apple). Le compte est retrouve par
+    l'identite Apple ; l'email transmis a cote n'est jamais utilise."""
     return _connexion_apple(request, request.data)
 
 
 def _connexion_apple(request, data):
     """Le coeur de la connexion Apple, partage par le bouton (jeton du plugin) et le retour web d'Android
-    (feuille de route D33) : `data` porte identity_token, authorization_code, email, given_name, family_name."""
+    (feuille de route D33) : `data` porte identity_token, authorization_code, nonce, given_name, family_name."""
     identity_token = str(data.get("identity_token", "")).strip()
     if not django_settings.APPLE_CLIENT_IDS:
         return Response(
@@ -317,36 +358,49 @@ def _connexion_apple(request, data):
     if not subject:
         return Response({"detail": "Jeton Apple invalide."}, status=status.HTTP_400_BAD_REQUEST)
 
-    # L'email n'est present dans le jeton que si Apple le fournit (relay
-    # prive inclus) ; a defaut, on retombe sur celui transmis par le client
-    # lors de la toute premiere autorisation.
-    email = str(claims.get("email") or data.get("email") or "").strip().lower()
+    # Sécurité avant main 2 : le jeton doit porter un nonce que ce serveur a émis (apple_nonce), une seule fois.
+    if not _consommer_nonce_apple(claims.get("nonce"), data.get("nonce")):
+        return Response({"detail": "Connexion Apple expirée ou rejouée. Recommencez."},
+                        status=status.HTTP_401_UNAUTHORIZED)
+
+    # Sécurité avant main 2 : on retrouve d'abord le compte par l'identité Apple (« sub »). L'e-mail ne sert qu'à
+    # rattacher ou créer un compte, et seulement s'il vient du jeton signé et qu'Apple l'a vérifié : jamais celui
+    # transmis à côté par l'application.
+    identite = AppleIdentity.objects.select_related("user").filter(subject=subject).first()
+    email = str(claims.get("email") or "").strip().lower()
     email_verified = claims.get("email_verified") in (True, "true")
-
-    matches = User.objects.filter(email__iexact=email) if email else User.objects.none()
-    if matches.count() > 1:
-        return Response(
-            {"detail": "Plusieurs comptes utilisent cet email. Contactez le support BelivaY."},
-            status=status.HTTP_409_CONFLICT,
-        )
-
-    user = matches.first()
-    created = user is None
-    if created:
+    created = False
+    if identite:
+        user = identite.user
+    else:
         if not email or not email_verified:
             return Response(
                 {"detail": "Apple n'a pas confirme d'adresse email pour ce compte. Reessayez la connexion."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        with transaction.atomic():
-            user = User(
-                username=_available_apple_username(email, subject),
-                email=email,
-                first_name=str(data.get("given_name", ""))[:150],
-                last_name=str(data.get("family_name", ""))[:150],
+        matches = User.objects.filter(email__iexact=email)
+        if matches.count() > 1:
+            return Response(
+                {"detail": "Plusieurs comptes utilisent cet email. Contactez le support BelivaY."},
+                status=status.HTTP_409_CONFLICT,
             )
-            user.set_unusable_password()
-            user.save()
+        user = matches.first()
+        if user is not None and AppleIdentity.objects.filter(user=user).exclude(subject=subject).exists():
+            return Response(
+                {"detail": "Ce compte BelivaY est deja lie a un autre identifiant Apple. Contactez le support BelivaY."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        created = user is None
+        if created:
+            with transaction.atomic():
+                user = User(
+                    username=_available_apple_username(email, subject),
+                    email=email,
+                    first_name=str(data.get("given_name", ""))[:150],
+                    last_name=str(data.get("family_name", ""))[:150],
+                )
+                user.set_unusable_password()
+                user.save()
 
     if not user.is_active:
         return Response({"detail": "Ce compte BelivaY est desactive."}, status=status.HTTP_403_FORBIDDEN)

@@ -973,6 +973,7 @@ export default function RelayPointPage() {
         method: "POST",
         body: JSON.stringify({
           parcel_id: input.parcelIds[0],
+          colis: input.colis,
           pickup_code: input.code,
           buyer_inspection: input.inspection,
           proof_note:
@@ -1503,7 +1504,7 @@ export default function RelayPointPage() {
    * compteur qu'une simple recharge de page remettrait a zero ne protegerait
    * personne.
    */
-  const checkPickupCode = async (code: string): Promise<PickupCodeCheck> => {
+  const checkPickupCode = async (colis: string, code: string): Promise<PickupCodeCheck> => {
     try {
       const data = await http<{
         locked: boolean;
@@ -1512,7 +1513,7 @@ export default function RelayPointPage() {
         parcels: RelayParcel[];
       }>("/api/shipping/relay-point/pickup/check/", {
         method: "POST",
-        body: JSON.stringify({ pickup_code: code }),
+        body: JSON.stringify({ colis, pickup_code: code }),
       });
       return {
         locked: data.locked,

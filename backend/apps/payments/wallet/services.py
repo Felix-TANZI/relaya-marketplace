@@ -7,6 +7,8 @@
 #   R03.4  retrait >= r_retrait_wallet_min ; frais = ceil(montant x r_retrait_wallet), payes par le client ;
 #          seulement vers le numero Mobile Money qui a recharge
 #   R03.5  paiement de plus de r_wallet_code_des : code a 4 chiffres ; solde jamais au-dela de r_wallet_plafond
+#          (securite avant main 2 : r_wallet_code_essais codes faux bloquent r_wallet_code_blocage_h heures ;
+#          reinitialisation par un code envoye au numero verifie)
 #   R03.6  un geste commercial ne se retire jamais ; une commande payee par le Wallet est remboursee sur le Wallet
 #
 # Ecritures au grand livre (compte 2050, dette envers les clients) :
@@ -78,14 +80,77 @@ def _plafond(p: Portefeuille, montant: int) -> None:
 
 # ── Code a 4 chiffres (R03.5) ────────────────────────────────────────────────────────────────────────────
 
+def controler_code(user, code: str, *, motif: str = "") -> None:
+    """Verifie le code et compte les erreurs dans sa propre transaction : l'erreur levee ensuite ne l'annule pas.
+    Quatre chiffres se trouvent en quelques milliers d'essais ; seul le serveur peut compter."""
+    erreur = None
+    with db_transaction.atomic():
+        p = portefeuille_de(user, verrou=True)
+        maintenant = timezone.now()
+        if p.code_bloque_jusqua and p.code_bloque_jusqua > maintenant:
+            erreur = WalletError("code_bloque", "Trop de codes faux : le code du Wallet est bloqué jusqu'au "
+                                 f"{timezone.localtime(p.code_bloque_jusqua):%d/%m à %H:%M}. "
+                                 "Vous pouvez le réinitialiser par un code reçu par SMS.")
+        elif p.code_valide(code):
+            if p.code_echecs or p.code_bloque_jusqua:
+                p.code_echecs, p.code_bloque_jusqua = 0, None
+                p.save(update_fields=["code_echecs", "code_bloque_jusqua", "updated_at"])
+        elif not code:
+            erreur = WalletError("code_requis", motif or "Le code du Wallet est demandé.")
+        else:
+            p.code_echecs += 1
+            restants = regles.reglage("r_wallet_code_essais") - p.code_echecs
+            if restants <= 0:
+                p.code_echecs = 0
+                p.code_bloque_jusqua = maintenant + timedelta(hours=regles.reglage("r_wallet_code_blocage_h"))
+                erreur = WalletError("code_bloque", "Code faux. Le code du Wallet est bloqué "
+                                     f"{regles.reglage('r_wallet_code_blocage_h')} h ; "
+                                     "vous pouvez le réinitialiser par un code reçu par SMS.")
+            else:
+                erreur = WalletError("code_faux", f"Code faux. Encore {restants} essai(s).")
+            p.save(update_fields=["code_echecs", "code_bloque_jusqua", "updated_at"])
+    if erreur is not None:
+        raise erreur
+
+
 def definir_code(user, code: str, ancien: str = "") -> None:
     if not re.fullmatch(r"\d{4}", code or ""):
         raise WalletError("code_format", "Le code du Wallet compte 4 chiffres.")
+    if portefeuille_de(user).code_hash:
+        controler_code(user, ancien, motif="L'ancien code est demandé.")
     p = portefeuille_de(user, verrou=True)
-    if p.code_hash and not p.code_valide(ancien):
-        raise WalletError("code_faux", "L'ancien code est faux.")
     p.definir_code(code)
     p.save(update_fields=["code_hash", "updated_at"])
+
+
+def demander_reinitialisation(user) -> dict:
+    """Code oublie ou bloque : un code part au numero verifie du compte, jamais a un numero saisi."""
+    from apps.payments.bridge import codes
+
+    numero = codes.numero_verifie(user)
+    if not numero:
+        raise WalletError("numero_non_verifie", "Vérifiez d'abord votre numéro pour réinitialiser le code du Wallet.")
+    return codes.envoyer_code(user, numero)
+
+
+def reinitialiser_code(user, *, code_sms: str, nouveau: str) -> dict:
+    """Le code recu par SMS remplace l'ancien code du Wallet et leve le blocage."""
+    from apps.payments.bridge import codes
+
+    if not re.fullmatch(r"\d{4}", nouveau or ""):
+        raise WalletError("code_format", "Le code du Wallet compte 4 chiffres.")
+    numero = codes.numero_verifie(user)
+    if not numero:
+        raise WalletError("numero_non_verifie", "Vérifiez d'abord votre numéro pour réinitialiser le code du Wallet.")
+    resultat = codes.verifier_code(user, numero, str(code_sms or "").strip())
+    if not resultat.get("ok"):
+        return resultat
+    with db_transaction.atomic():
+        p = portefeuille_de(user, verrou=True)
+        p.definir_code(nouveau)
+        p.code_echecs, p.code_bloque_jusqua = 0, None
+        p.save(update_fields=["code_hash", "code_echecs", "code_bloque_jusqua", "updated_at"])
+    return resultat
 
 
 # ── Recharge (R03.3) ─────────────────────────────────────────────────────────────────────────────────────
@@ -135,9 +200,18 @@ def crediter_recharge(intent) -> MouvementPortefeuille:
 
 # ── Paiement d'une commande (R02.5, R03.3, R03.5) ────────────────────────────────────────────────────────
 
-@db_transaction.atomic
 def payer(intent, *, user, code: str = ""):
-    """Paie l'intention d'une commande avec le Wallet, sans frais ; les gestes servent en premier."""
+    """Paie l'intention d'une commande avec le Wallet, sans frais ; les gestes servent en premier.
+    Le code (R03.5) est controle avant la transaction du paiement, pour que ses erreurs restent comptees."""
+    _exiger_ouvert()
+    if intent.amount_xaf > regles.reglage("r_wallet_code_des"):  # R03.5
+        controler_code(user, code, motif=f"Au-delà de {regles.reglage('r_wallet_code_des')} F, "
+                                         "le code du Wallet est demandé.")
+    return _payer(intent, user=user)
+
+
+@db_transaction.atomic
+def _payer(intent, *, user):
     from apps.payments.application.collect import confirm_payment
     from apps.payments.intents.models import PaymentAttempt, PaymentIntent
 
@@ -151,9 +225,6 @@ def payer(intent, *, user, code: str = ""):
         raise WalletError("intention", "Ce paiement n'est plus ouvert.")
     p = portefeuille_de(user, verrou=True)
     montant = intent.amount_xaf
-    if montant > regles.reglage("r_wallet_code_des") and not p.code_valide(code):  # R03.5
-        raise WalletError("code_requis" if not code else "code_faux",
-                          f"Au-delà de {regles.reglage('r_wallet_code_des')} F, le code du Wallet est demandé.")
     if p.solde_xaf < montant:
         raise WalletError("solde_insuffisant", "Solde du Wallet insuffisant.")
     geste = min(p.solde_geste_xaf, montant)

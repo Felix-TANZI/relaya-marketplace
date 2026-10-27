@@ -145,9 +145,10 @@ class ShipmentMessageAdmin(admin.ModelAdmin):
 
 @admin.register(RelayParcel)
 class RelayParcelAdmin(admin.ModelAdmin):
-    list_display = ("id", "shipment", "relay_point", "status", "slot_code", "pickup_code", "updated_at")
+    # DP-02 : le code de retrait ne s'affiche ni ne se cherche ici (il est chiffré, vérifié par empreinte).
+    list_display = ("id", "shipment", "relay_point", "status", "slot_code", "updated_at")
     list_filter = ("status", "relay_point")
-    search_fields = ("shipment__order__id", "relay_point__name", "slot_code", "pickup_code")
+    search_fields = ("shipment__order__id", "relay_point__name", "slot_code")
     readonly_fields = ("created_at", "updated_at", "received_at", "picked_up_at", "returned_at")
     ordering = ("-updated_at",)
 

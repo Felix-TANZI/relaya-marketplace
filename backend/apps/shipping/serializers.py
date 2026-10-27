@@ -635,6 +635,10 @@ class RelayParcelReceiveSerializer(serializers.Serializer):
             shipment.save(update_fields=["parcel_size"])
 
         parcel = existing_parcel or RelayParcel(shipment=shipment, relay_point=relay_point)
+        if not shipment.order.frais_absence_xaf:
+            from apps.shipping import remuneration
+
+            remuneration.depot_au_relais(shipment, relay_point)  # R53 : prestation faite, due à l'entreprise
         parcel.relay_point = relay_point
         parcel.status = RelayParcel.Status.STORED
         parcel.slot_code = self.validated_data.get("slot_code") or parcel.slot_code or f"SL-{relay_point.id}-{shipment.id}"
@@ -1108,6 +1112,9 @@ class CourierShipmentActionSerializer(serializers.Serializer):
                            self.validated_data.get("delivery_code"), "delivery_code")  # D11
             shipment.status = Shipment.Status.DELIVERED
             order.mark_delivered()
+            from apps.shipping import remuneration
+
+            remuneration.course_a_domicile(shipment)  # R53 : prestation faite, due à l'entreprise
         elif action == "INCIDENT":
             shipment.status = Shipment.Status.INCIDENT
         elif action == "FAILED":

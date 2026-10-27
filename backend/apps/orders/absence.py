@@ -147,6 +147,10 @@ def declarer_absence(shipment, livreur_user, latitude, longitude) -> dict:
                              message=f"Client absent (R51.1) : colis transféré au relais {relais.name} (R51.2).")
     order.frais_absence_xaf = frais
     order.frais_momo_absence_xaf = int(m.frais_momo(frais))  # R51.5 avec R02.6
+    from apps.shipping import remuneration
+
+    remuneration.course_a_domicile(shipment)                # R53.3 : course due
+    remuneration.incident(shipment, "absence")              # + supplément « client absent »
     order.save(update_fields=["frais_absence_xaf", "frais_momo_absence_xaf"])
     if order.user_id and relais is not None:
         UserNotification.objects.create(
@@ -179,6 +183,10 @@ def refus_a_la_porte(shipment, livreur_user, message: str = "") -> dict:
     if order.relay_point_id:
         raise AbsenceRefusee("action", "Le refus à la porte ne vaut que pour une livraison à domicile.")
     rembourse = montant_refus_porte(shipment)
+    from apps.shipping import remuneration
+
+    remuneration.course_a_domicile(shipment)                # R53.3 : course due
+    remuneration.incident(shipment, "refus")                # + supplément « refus d'un produit conforme »
     shipment.status = Shipment.Status.FAILED
     shipment.save(update_fields=["status", "updated_at"])
     ShipmentEvent.record(shipment=shipment, status=shipment.status, actor=livreur_user, actor_role="COURIER",
@@ -220,6 +228,9 @@ def deplacement_inutile(shipment, livreur_user, motif: str) -> str | None:
                                         "conforme…).")
     ShipmentEvent.record(shipment=shipment, status=shipment.status, actor=livreur_user, actor_role="COURIER",
                          message=f"Déplacement inutile (R85.3) : {motif}")
+    from apps.shipping import remuneration
+
+    remuneration.incident(shipment, "deplacement")          # R85.3 : payé à l'entreprise
     profil = getattr(shipment.vendor, "vendor_profile", None)
     payee = payee_for_vendor(profil, create=True) if profil else None
     if payee is None:

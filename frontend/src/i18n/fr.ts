@@ -1383,6 +1383,7 @@
     fin_risk:             'Risque',
     fin_payees:           'Bénéficiaires',
     fin_scheduler:        'Ordonnanceur',
+    fin_delivery_services: 'Prestations des entreprises',
     fin_configuration:    'Configuration',
 
     finances:             'Finances & Commissions',

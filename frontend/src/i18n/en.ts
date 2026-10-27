@@ -1418,6 +1418,7 @@
     fin_risk: 'Risk',
     fin_payees: 'Payees',
     fin_scheduler: 'Scheduler',
+    fin_delivery_services: 'Delivery company services',
     fin_configuration:    'Configuration',
     finances:             'Finances & Commissions',
     account:              'BelivaY Account',

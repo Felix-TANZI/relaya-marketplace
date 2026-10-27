@@ -1622,13 +1622,15 @@ def _systeme():
     return auteur
 
 
-def remunerer_semaine(payee: PayeeAccount, *, montant: int, semaine: str, detail: str):
+def remunerer_semaine(payee: PayeeAccount, *, montant: int, semaine: str, detail: str, regle: str = "R40.4",
+                      libelle: str = "Versement du relais"):
     """Spec v2.1, R40.4 et R40.5 : le versement de la semaine d'un point relais, calculé par la formule de la spec
     (apps.regles), entre au lot comme un ajustement ; négatif, il devient une créance reportée au vendredi suivant.
+    Sert aussi aux prestations d'une entreprise de livraison (R53, regle="R53").
     Approuvé par la règle (comme compensate_relay_parcel), jamais par une personne ; idempotent par semaine."""
     if montant == 0:
         return None
-    evenement = f"R40.4:{semaine}"
+    evenement = f"{regle}:{semaine}"
     existant = Adjustment.objects.filter(payee=payee, source_event=evenement).first()
     if existant is not None:
         return existant
@@ -1637,8 +1639,8 @@ def remunerer_semaine(payee: PayeeAccount, *, montant: int, semaine: str, detail
         direction=Adjustment.Direction.DEBIT if montant > 0 else Adjustment.Direction.CREDIT,
         category=Adjustment.Category.REBILLING if montant > 0 else Adjustment.Category.CORRECTION,
         amount_xaf=abs(montant), remaining_xaf=abs(montant),
-        reason=f"Versement du relais, semaine {semaine} (R40.4). {detail}"[:500],
-        source_event=evenement, source_contract="spec-v2.1#R40.4",
+        reason=f"{libelle}, semaine {semaine} ({regle}). {detail}"[:500],
+        source_event=evenement, source_contract=f"spec-v2.1#{regle}",
         status=Adjustment.Status.APPROVED, approved_by=None, approved_at=timezone.now(), created_by=_systeme(),
     )
     ajustement.save()

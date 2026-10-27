@@ -147,6 +147,7 @@ const SECTIONS: NavSection[] = [
       { key: 'fin_reconciliation', path: '/admin/finance/reconciliation', icon: Scale },
       { key: 'fin_risk',           path: '/admin/finance/risk',           icon: ShieldAlert },
       { key: 'fin_payees',         path: '/admin/finance/payees',         icon: Users },
+      { key: 'fin_delivery_services', path: '/admin/delivery-services',  icon: Send },
       { key: 'fin_scheduler',      path: '/admin/finance/scheduler',      icon: Clock },
       { key: 'fin_configuration',  path: '/admin/finance/configuration',  icon: SlidersHorizontal },
 

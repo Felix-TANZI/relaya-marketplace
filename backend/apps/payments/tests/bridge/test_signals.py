@@ -173,14 +173,14 @@ def payer(acheteur, frais=5000):
 
 class TestAssignationTransporteur:
 
-    def test_l_assignation_reallouе_la_part_transport(
+    def test_l_assignation_ne_realloue_plus_le_transport(
         self, acheteur, livreur,
     ):
         """
-        LE test qui corrige le chiffre d'affaires.
-
-        Avant assignation, les 3 500 FCFA du transporteur sont comptabilises
-        en produit. Le signal les remet ou ils doivent etre.
+        Spec v2.1, R53 (decision du porteur du 27/10/2026) : l'entreprise est
+        payee selon sa grille, prestation par prestation (apps.shipping.
+        remuneration) ; les frais de livraison restent a BelivaY, qui achete
+        la prestation. L'assignation ne deplace donc plus rien.
         """
         commande, intent = payer(acheteur)
         produit_avant = revenue_summary()["revenue_total"]
@@ -188,8 +188,8 @@ class TestAssignationTransporteur:
         Shipment.objects.create(order=commande, courier=livreur,
                                 status=Shipment.Status.ASSIGNED)
 
-        assert revenue_summary()["revenue_total"] == produit_avant - 3500
-        assert EscrowHold.objects.filter(
+        assert revenue_summary()["revenue_total"] == produit_avant
+        assert not EscrowHold.objects.filter(
             intent=intent, component="TRANSPORT").exists()
 
     def test_un_livreur_independant_ne_declenche_rien(
@@ -235,7 +235,7 @@ class TestAssignationTransporteur:
             expedition.save()
 
         assert EscrowHold.objects.filter(
-            intent=intent, component="TRANSPORT").count() == 1
+            intent=intent, component="TRANSPORT").count() == 0  # R53 : jamais de part du transport
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -244,25 +244,21 @@ class TestAssignationTransporteur:
 
 class TestPreuveDeLivraison:
 
-    def test_la_livraison_libere_le_transport(self, acheteur, livreur):
+    def test_la_livraison_n_a_plus_de_transport_a_liberer(self, acheteur, livreur):
         """
-        LE test qui debloque le paiement du transporteur.
-
-        Sans cet evenement, le sequestre TRANSPORT ne se libere jamais : sa
-        politique fixe auto_confirm_hours a 0.
+        Spec v2.1, R53 : sans part du transport, la livraison ne libere aucun
+        sequestre TRANSPORT ; l'entreprise est payee le vendredi selon sa
+        grille (R43.1). La livraison reste un fait journalise (preuve).
         """
         commande, intent = payer(acheteur)
         expedition = Shipment.objects.create(
             order=commande, courier=livreur, status=Shipment.Status.ASSIGNED)
 
-        transport = EscrowHold.objects.get(intent=intent, component="TRANSPORT")
-        assert transport.status == EscrowHold.Status.HELD
-
         expedition.status = Shipment.Status.DELIVERED
         expedition.save()
 
-        transport.refresh_from_db()
-        assert transport.status == EscrowHold.Status.RELEASE_SCHEDULED
+        assert not EscrowHold.objects.filter(intent=intent, component="TRANSPORT").exists()
+        assert EscrowEvent.objects.filter(event_id=f"proof-{expedition.pk}").exists()
 
     def test_un_statut_intermediaire_ne_libere_rien(self, acheteur, livreur):
         commande, intent = payer(acheteur)
@@ -272,8 +268,8 @@ class TestPreuveDeLivraison:
         expedition.status = Shipment.Status.OUT_FOR_DELIVERY
         expedition.save()
 
-        transport = EscrowHold.objects.get(intent=intent, component="TRANSPORT")
-        assert transport.status == EscrowHold.Status.HELD
+        marchandise = EscrowHold.objects.get(intent=intent, component="GOODS")
+        assert marchandise.status == EscrowHold.Status.HELD
 
     def test_la_marchandise_n_est_pas_liberee_par_la_livraison(
         self, acheteur, livreur,
@@ -338,19 +334,21 @@ class TestRobustesse:
 
 class TestScenarioComplet:
 
-    def test_du_checkout_au_paiement_du_transporteur(self, acheteur, livreur):
+    def test_du_checkout_a_la_liberation_sans_part_du_transport(self, acheteur, livreur):
         """
-        Parcours reel, sans aucun appel manuel : tout passe par le signal.
+        Parcours reel, sans aucun appel manuel. Spec v2.1, R53 (decision du
+        27/10/2026) : les frais de livraison restent a BelivaY ; l'entreprise
+        n'a rien en sequestre, elle est payee selon sa grille le vendredi.
         """
         from apps.payments.bridge import events_in
         from apps.payments.escrow.services import release_hold
 
         commande, intent = payer(acheteur)
-        assert revenue_summary()["revenue_total"] == 11750     # surestime
+        assert revenue_summary()["revenue_total"] == 11750
 
         expedition = Shipment.objects.create(
             order=commande, courier=livreur, status=Shipment.Status.ASSIGNED)
-        assert revenue_summary()["revenue_total"] == 8250      # corrige
+        assert revenue_summary()["revenue_total"] == 11750     # rien n'est reattribue
 
         expedition.status = Shipment.Status.DELIVERED
         expedition.save()
@@ -366,8 +364,10 @@ class TestScenarioComplet:
         from apps.payments.bridge.actors import payee_for_delivery_company
         transporteur = payee_for_delivery_company(compte)
 
-        assert balance(coa.PAYABLE_DELIVERY_COMPANY,
-                       payee_code=transporteur.payee_code) == 3500
+        # R53 : rien n'est du a l'entreprise par le sequestre ; son compte financier ne nait qu'au premier
+        # versement du vendredi de ses prestations (apps.shipping.remuneration).
+        assert transporteur is None or balance(coa.PAYABLE_DELIVERY_COMPANY,
+                                               payee_code=transporteur.payee_code) == 0
         assert balance(coa.ESCROW_LIABILITY) == 0
         assert trial_balance_total() == 0
         assert run_all()["ok"]

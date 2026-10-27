@@ -121,16 +121,9 @@ DISTRIBUTION_RULES = [
         "priority": 10,
         "notes": "La commission est prelevee au niveau du sequestre, pas ici.",
     },
-    {
-        "config_key": "dist-transport-carrier",
-        "name": "Transport a l'entreprise de livraison",
-        "component": DistributionRule.Component.TRANSPORT,
-        "payee_type": DistributionRule.PayeeType.DELIVERY_COMPANY,
-        "basis": DistributionRule.Basis.PERCENT_OF_COMPONENT,
-        "value": Decimal("70.0000"),
-        "priority": 20,
-        "notes": "Part a arbitrer contractuellement.",
-    },
+    # Spec v2.1, R53 (decision du 27/10/2026) : plus de part du transport a l'entreprise de livraison ; elle est
+    # payee selon sa grille (apps.shipping.remuneration). L'ancienne regle « dist-transport-carrier » (70 %) n'est
+    # plus semee ; dans une base existante, la clore par la double validation de la configuration financiere.
     {
         "config_key": "dist-transport-platform",
         "name": "Part plateforme sur le transport",

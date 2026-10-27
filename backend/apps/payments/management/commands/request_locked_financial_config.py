@@ -57,24 +57,6 @@ DISTRIBUTION_RULES = [
         ),
     },
     {
-        "target_key": "dist-transport-carrier",
-        "payload": {
-            "name": "Transport à l'entreprise de livraison",
-            "component": "TRANSPORT",
-            "payee_type": "DELIVERY_COMPANY",
-            "basis": "PERCENT_OF_COMPONENT",
-            "value": "70.0000",
-            "priority": 20,
-        },
-        "justification": (
-            "Part a arbitrer contractuellement (valeur provisoire reprise du "
-            "chantier initial) — necessaire pour qu'un livreur/une entreprise de "
-            "livraison touche reellement une part des frais de transport. "
-            "Aujourd'hui, aucun mecanisme ne verse d'argent reel a un livreur : "
-            "0 ligne DistributionRule n'existait en base."
-        ),
-    },
-    {
         "target_key": "dist-transport-platform",
         "payload": {
             "name": "Part plateforme sur le transport",
@@ -84,7 +66,11 @@ DISTRIBUTION_RULES = [
             "value": "0",
             "priority": 10,
         },
-        "justification": "Solde du composant TRANSPORT apres la part transporteur (70%).",
+        "justification": (
+            "Spec v2.1, R53 (decision du porteur du 27/10/2026) : tout le composant TRANSPORT va a BelivaY, qui achete "
+            "la prestation a l'entreprise de livraison selon sa grille signee (apps.shipping.remuneration). Il n'y a "
+            "plus de part du transport a l'entreprise (ancienne regle dist-transport-carrier a 70 %)."
+        ),
     },
     {
         "target_key": "dist-relay-point",

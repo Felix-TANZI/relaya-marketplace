@@ -113,6 +113,11 @@ def executer(now=None) -> dict:
         return {"skipped": True}
     fin = local.replace(hour=0, minute=0, second=0, microsecond=0)
     relais = preparer_relais(fin - timedelta(days=7), fin)
+    # R53, R43.1 : les prestations des entreprises de livraison de la semaine, au tarif de leur grille.
+    from apps.shipping.remuneration import preparer_entreprises
+
+    entreprises = preparer_entreprises(fin - timedelta(days=7), fin)
     resultat = versements_du_vendredi(now, refus=refus_metier)
     resultat["relay_weeks"] = relais
+    resultat["delivery_company_weeks"] = entreprises
     return resultat

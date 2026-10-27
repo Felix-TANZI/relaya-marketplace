@@ -957,3 +957,30 @@ class AppelMasque(models.Model):
         verbose_name = "Appel masqué"
         verbose_name_plural = "Appels masqués"
 
+
+class PrestationEntreprise(models.Model):
+    """
+    Spec v2.1, R53 (feuille de route, décision du 27/10/2026 : la grille remplace la part du transport) : chaque
+    prestation faite par une entreprise de livraison, payée au tarif de sa ligne de grille ; versée le vendredi
+    suivant (R43.1). Une ligne par prestation, pour la traçabilité et le contrôle de l'équipe finance.
+    """
+
+    organisation = models.ForeignKey("accounts.DeliveryOrganizationProfile", on_delete=models.PROTECT,
+                                     related_name="prestations")
+    shipment = models.ForeignKey(Shipment, on_delete=models.PROTECT, null=True, blank=True, related_name="prestations")
+    nature = models.CharField(max_length=24, help_text="type de ligne de grille (LigneGrille.Type)")
+    param = models.CharField(max_length=20, blank=True, default="")
+    ligne = models.ForeignKey(LigneGrille, on_delete=models.SET_NULL, null=True, blank=True)
+    quantite = models.PositiveIntegerField(default=1)
+    tarif = models.PositiveIntegerField(default=0)
+    montant = models.PositiveIntegerField(default=0)
+    note = models.CharField(max_length=200, blank=True, default="")
+    faite_le = models.DateTimeField(default=timezone.now, db_index=True)
+    versee_semaine = models.CharField(max_length=10, blank=True, default="", help_text="vendredi du versement")
+
+    class Meta:
+        ordering = ["-faite_le"]
+        constraints = [models.UniqueConstraint(fields=["shipment", "nature", "param"], name="prestation_unique")]
+        verbose_name = "Prestation d'entreprise de livraison"
+        verbose_name_plural = "Prestations d'entreprises de livraison"
+

@@ -2202,3 +2202,26 @@ class ShipmentMaskedCallView(APIView):
                                                                          "mis en relation.",
                          "appels_au_client": appels.appels_au_client(shipment)},
                         status=status.HTTP_200_OK if journal.ok else status.HTTP_502_BAD_GATEWAY)
+
+
+@extend_schema(tags=["Shipping"], summary="Prestations des entreprises de livraison, au tarif de leur grille (R53)")
+class AdminPrestationsEntreprisesView(APIView):
+    """Feuille de route, partie 2 (R53, R43.1) : chaque prestation faite, son tarif de grille et la semaine de son
+    versement ; les lignes à 0 F (grille absente ou ligne bloquée R54.3) sont à régler par l'équipe."""
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        from django.db.models import Count, Sum
+
+        from .models import PrestationEntreprise
+
+        qs = PrestationEntreprise.objects.select_related("organisation", "shipment")
+        if request.query_params.get("a_verser"):
+            qs = qs.filter(versee_semaine="")
+        totaux = list(qs.order_by().values("organisation__company_name", "versee_semaine")
+                      .annotate(nombre=Count("id"), montant=Sum("montant")).order_by("-versee_semaine"))
+        lignes = [{"id": p.pk, "entreprise": p.organisation.company_name, "colis": p.shipment_id,
+                   "commande": p.shipment.order_id if p.shipment else None, "nature": p.nature, "param": p.param,
+                   "quantite": p.quantite, "tarif": p.tarif, "montant": p.montant, "note": p.note,
+                   "faite_le": p.faite_le, "versee_semaine": p.versee_semaine} for p in qs[:300]]
+        return Response({"totaux": totaux, "lignes": lignes})

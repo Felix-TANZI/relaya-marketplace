@@ -7,7 +7,6 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import ProductCard from "@/components/product/ProductCard";
-import { getV29Products } from "@/data/v29Products";
 import { productsApi, type Product } from "@/services/api/products";
 import { PfShellStyles } from "@/styles/pfShell";
 
@@ -93,7 +92,7 @@ function priceOf(product: Product): number {
 export default function SelectionPremiumPage() {
   const { t, i18n } = useTranslation();
   const [apiProducts, setApiProducts] = useState<Product[]>([]);
-  const [usingMockProducts, setUsingMockProducts] = useState(true);
+  const usingMockProducts = false;  // Main 2 : plus de jeu de démonstration
   const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState<SortKey>("rating");
   const [categorySlug, setCategorySlug] = useState<string>("all");
@@ -107,13 +106,11 @@ export default function SelectionPremiumPage() {
         const results = response.results ?? [];
         if (results.length > 0) {
           setApiProducts(results);
-          setUsingMockProducts(results.length < 20);
         }
       })
       .catch(() => {
         if (cancelled) return;
         setApiProducts([]);
-        setUsingMockProducts(true);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -121,7 +118,8 @@ export default function SelectionPremiumPage() {
     return () => { cancelled = true; };
   }, [i18n.language]);
 
-  const sourceProducts = usingMockProducts ? getV29Products(t) : apiProducts;
+  // Main 2 : plus de jeu de démonstration, seulement le vrai catalogue.
+  const sourceProducts = apiProducts;
 
   const pool = useMemo(
     () => sourceProducts.filter(

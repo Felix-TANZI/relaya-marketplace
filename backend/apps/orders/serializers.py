@@ -247,7 +247,10 @@ class OrderCreateSerializer(serializers.Serializer):
         return value
 
     def _get_or_create_demo_product(self, item):
-        if not item.get('is_demo'):
+        # Main 2 : un article « démo » ne devient plus un produit, sauf en démonstration autorisée (DONNEES_DEMO_AUTORISEES).
+        from apps.common.demonstration import demonstration_autorisee
+
+        if not item.get('is_demo') or not demonstration_autorisee():
             raise serializers.ValidationError(
                 f"Produit {item['product_id']} introuvable"
             )

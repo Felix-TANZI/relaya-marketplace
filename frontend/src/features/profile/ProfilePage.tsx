@@ -77,21 +77,8 @@ import {
   SUPPORT_UPDATED_EVENT,
   type SupportConversation as StoredSupportConversation,
 } from "@/lib/supportInbox";
-import {
-  ACCOUNT_UPDATED_EVENT,
-  BELIVAY_PLANS,
-  BELIVAY_RECEIVERS,
-  MIN_DEPOSIT_XAF,
-  PROVIDER_LABELS,
-  createBelivayDeposit,
-  formatXaf,
-  getBelivayAccount,
-  payBelivaySubscription,
-  refreshBelivayAccount,
-  type BelivayAccount,
-  type BelivayProvider,
-} from "@/lib/belivayAccount";
-import { detectOperator, formatNational, isValidNationalNumber, toNationalNumber } from "@/lib/phone";
+// Feuille de route D16 et DP-17 : le vrai Wallet (API), affiché seulement quand il est ouvert.
+import WalletPanel, { useWalletOuvert } from "./WalletPanel";
 
 type FontSize = "small" | "normal" | "large";
 type PanelId =
@@ -251,10 +238,7 @@ export default function ProfilePage() {
   const [supportConversations, setSupportConversations] = useState<Conversation[]>(() =>
     toConversations(getSupportConversations(t)),
   );
-  const [account, setAccount] = useState<BelivayAccount>(() => getBelivayAccount());
-  const [depositProvider, setDepositProvider] = useState<BelivayProvider>("ORANGE_MONEY");
-  const [depositPhone, setDepositPhone] = useState("");
-  const [depositAmount, setDepositAmount] = useState("");
+  const walletOuvert = useWalletOuvert();
   const [disputes, setDisputes] = useState<StoredOrderDispute[]>(() => getStoredOrderDisputes());
   const [vendorProfile, setVendorProfile] = useState<VendorProfile | null>(null);
   const [rewardAccounts, setRewardAccounts] = useState<RewardAccount[]>([]);
@@ -370,16 +354,6 @@ export default function ProfilePage() {
       window.removeEventListener("storage", syncSupport);
     };
   }, [t]);
-
-  useEffect(() => {
-    const syncAccount = () => setAccount(getBelivayAccount());
-    window.addEventListener(ACCOUNT_UPDATED_EVENT, syncAccount);
-    window.addEventListener("storage", syncAccount);
-    return () => {
-      window.removeEventListener(ACCOUNT_UPDATED_EVENT, syncAccount);
-      window.removeEventListener("storage", syncAccount);
-    };
-  }, []);
 
   /* Ouvrir un fil le marque comme lu — la pastille du header suit aussitôt. */
   useEffect(() => {
@@ -596,71 +570,6 @@ export default function ProfilePage() {
     }
 
     setChatDraft("");
-  };
-
-  const handleRefreshAccount = () => {
-    setAccount(refreshBelivayAccount());
-    showToast(t("cl3_profile_wallet.toast_account_refreshed"), "success");
-  };
-
-  const handleDeposit = () => {
-    const national = toNationalNumber(depositPhone);
-    if (!isValidNationalNumber(national)) {
-      showToast(t("cl3_profile_wallet.toast_invalid_momo_number"), "error");
-      return;
-    }
-
-    /* Le numéro doit appartenir à l'opérateur choisi, sinon le transfert
-       n'arrivera jamais sur le compte BelivaY sélectionné. */
-    const operator = detectOperator(national)?.name;
-    const expected = depositProvider === "ORANGE_MONEY" ? "Orange" : "MTN";
-    if (operator && operator !== expected) {
-      showToast(t("cl3_profile_wallet.toast_operator_mismatch", { operator, expected }), "error");
-      return;
-    }
-
-    const amount = Number(depositAmount.replace(/\s/g, ""));
-    if (!Number.isFinite(amount) || amount < MIN_DEPOSIT_XAF) {
-      showToast(t("cl3_profile_wallet.toast_min_deposit", { amount: formatXaf(MIN_DEPOSIT_XAF) }), "error");
-      return;
-    }
-
-    try {
-      const deposit = createBelivayDeposit({
-        provider: depositProvider,
-        senderPhone: national,
-        amountXaf: amount,
-      }, t);
-      setAccount(getBelivayAccount());
-      setDepositAmount("");
-      showToast(t("cl3_profile_wallet.toast_deposit_recorded", { reference: deposit.reference }), {
-        description: t("cl3_profile_wallet.toast_deposit_recorded_description"),
-        type: "success",
-      });
-    } catch (error) {
-      showToast(error instanceof Error ? error.message : t("cl3_profile_wallet.toast_deposit_failed"), "error");
-    }
-  };
-
-  const handleResetDeposit = () => {
-    setDepositPhone("");
-    setDepositAmount("");
-    setDepositProvider("ORANGE_MONEY");
-  };
-
-  const handlePayPlan = (planId: "ESSENTIEL" | "PREMIUM") => {
-    try {
-      const charge = payBelivaySubscription(planId, t);
-      setAccount(getBelivayAccount());
-      showToast(t("cl3_profile_wallet.toast_subscription_paid"), {
-        description: t("cl3_profile_wallet.toast_subscription_valid_until", {
-          date: new Date(charge.periodEnd).toLocaleDateString("fr-FR"),
-        }),
-        type: "success",
-      });
-    } catch (error) {
-      showToast(error instanceof Error ? error.message : t("cl3_profile_wallet.toast_payment_failed"), "error");
-    }
   };
 
   const handleSellerField = (
@@ -961,11 +870,12 @@ export default function ProfilePage() {
               <span className="pf-quick-ic a"><HelpCircle size={18} /></span>
               {t("cl3_profile_dashboard.shortcut_help_center")}
             </button>
-            <button type="button" className="pf-quick-tile" onClick={() => openPanel("compte-belivay")}>
-              <span className="pf-quick-ic o"><Wallet size={18} /></span>
-              {t("cl3_profile_dashboard.shortcut_belivay_account")}
-              <span className="pf-muted-sm">{formatXaf(account.availableXaf)}</span>
-            </button>
+            {walletOuvert && (
+              <button type="button" className="pf-quick-tile" onClick={() => openPanel("compte-belivay")}>
+                <span className="pf-quick-ic o"><Wallet size={18} /></span>
+                Mon Wallet
+              </button>
+            )}
             <button type="button" className="pf-quick-tile" onClick={() => openPanel("reglages")}>
               <span className="pf-quick-ic b"><Settings size={18} /></span>
               {t("cl3_profile_dashboard.shortcut_settings")}
@@ -1535,243 +1445,8 @@ export default function ProfilePage() {
     </section>
   );
 
-  const renderCompteBelivay = () => {
-    const parsedAmount = Number(depositAmount.replace(/\s/g, ""));
-    const validAmount = Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount : 0;
-    const currentPlan = BELIVAY_PLANS.find((plan) => plan.id === account.plan);
-    const nationalPhone = toNationalNumber(depositPhone);
-    const phoneOperator = detectOperator(nationalPhone)?.name;
-
-    return (
-      <div className="pf-stack">
-        <section className="pf-glass-panel pf-anim">
-          <div className="pf-panel-head" style={{ marginBottom: 14 }}>
-            <div>
-              <div className="pf-panel-title" style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                <Building2 size={19} style={{ color: "var(--pf-accent)" }} />
-                {t("cl3_profile_wallet.my_belivay_account")}
-              </div>
-              <div className="pf-panel-sub">{t("cl3_profile_wallet.balance_deposits_subscription")}</div>
-            </div>
-            <button type="button" className="pf-btn-ghost" onClick={handleRefreshAccount}>
-              <RefreshCw size={13} />{t("cl3_profile_wallet.refresh")}
-            </button>
-          </div>
-
-          <div className="pf-wal-grid">
-            <div className="pf-wal o">
-              <span className="pf-wal-ic"><Wallet size={17} /></span>
-              <div className="pf-wal-amt">{formatXaf(account.availableXaf)}</div>
-              <div className="pf-wal-l">{t("cl3_profile_wallet.available_balance")}</div>
-              <div className="pf-wal-s">{t("cl3_profile_wallet.available_balance_sub")}</div>
-            </div>
-            <div className="pf-wal g">
-              <span className="pf-wal-ic"><CreditCard size={17} /></span>
-              <div className="pf-wal-amt">{formatXaf(account.totalDepositedXaf)}</div>
-              <div className="pf-wal-l">{t("cl3_profile_wallet.total_deposited")}</div>
-              <div className="pf-wal-s">
-                {t(account.depositCount > 1 ? "cl3_profile_wallet.deposit_count_plural" : "cl3_profile_wallet.deposit_count", { count: account.depositCount })}
-              </div>
-            </div>
-            <div className="pf-wal y">
-              <span className="pf-wal-ic"><Clock size={17} /></span>
-              <div className="pf-wal-amt">{formatXaf(account.pendingXaf)}</div>
-              <div className="pf-wal-l">{t("cl3_profile_wallet.pending")}</div>
-              <div className="pf-wal-s">{t("cl3_profile_wallet.pending_sub")}</div>
-            </div>
-          </div>
-
-          <div className="pf-info-note">
-            <span className="pf-info-ic"><Sparkles size={16} /></span>
-            <div style={{ fontSize: 12.5, lineHeight: 1.7, color: "var(--pf-text2)" }}>
-              <strong style={{ color: "var(--pf-text)" }}>{t("cl3_profile_wallet.info_note_title")}</strong>{" "}
-              {t("cl3_profile_wallet.info_note_body_1")} <strong style={{ color: "var(--pf-text)" }}>{t("cl3_profile_wallet.info_note_body_strong")}</strong>{" "}
-              {t("cl3_profile_wallet.info_note_body_2")}
-            </div>
-          </div>
-        </section>
-
-        <section className="pf-glass-panel pf-anim">
-          <div className="pf-panel-head" style={{ marginBottom: 14 }}>
-            <div>
-              <div className="pf-panel-title">{t("cl3_profile_wallet.deposit_funds")}</div>
-              <div className="pf-panel-sub">{t("cl3_profile_wallet.min_deposit", { amount: formatXaf(MIN_DEPOSIT_XAF) })}</div>
-            </div>
-          </div>
-
-          <div className="pf-op-grid">
-            {(["ORANGE_MONEY", "MTN_MOMO"] as BelivayProvider[]).map((provider) => (
-              <button
-                key={provider}
-                type="button"
-                aria-pressed={depositProvider === provider}
-                className={`pf-op${depositProvider === provider ? " on" : ""}`}
-                onClick={() => setDepositProvider(provider)}
-              >
-                <span className={`pf-op-dot ${provider === "ORANGE_MONEY" ? "orange" : "mtn"}`} />
-                <span className="pf-op-n">{PROVIDER_LABELS[provider]}</span>
-                <span className="pf-op-s">{t("cl3_profile_wallet.send_to_belivay")}</span>
-              </button>
-            ))}
-          </div>
-
-          <div className="pf-field" style={{ marginTop: 16 }}>
-            <label className="pf-label" htmlFor="belivay-deposit-phone">
-              {t("cl3_profile_wallet.your_number_label", { provider: PROVIDER_LABELS[depositProvider] })}
-            </label>
-            <div className={`pf-phone${nationalPhone && !isValidNationalNumber(nationalPhone) ? " invalid" : ""}`}>
-              <span className="pf-phone-country">🇨🇲 +237</span>
-              <input
-                id="belivay-deposit-phone"
-                className="pf-phone-input"
-                inputMode="numeric"
-                autoComplete="tel-national"
-                placeholder="690 000 000"
-                value={formatNational(nationalPhone)}
-                onChange={(event) => setDepositPhone(toNationalNumber(event.target.value))}
-              />
-            </div>
-            <div className="pf-muted-sm" style={{ marginTop: 6 }}>
-              {phoneOperator
-                ? t("cl3_profile_wallet.operator_detected", { operator: phoneOperator })
-                : t("cl3_profile_wallet.phone_format_hint")}
-            </div>
-          </div>
-
-          <div className="pf-field" style={{ marginTop: 14 }}>
-            <span className="pf-label">{t("cl3_profile_wallet.recipient_number_label")}</span>
-            <div className="pf-recv">
-              <span className="pf-recv-n">
-                <span
-                  className={`pf-op-dot ${depositProvider === "ORANGE_MONEY" ? "orange" : "mtn"}`}
-                  style={{ width: 16, height: 16 }}
-                />
-                {BELIVAY_RECEIVERS[depositProvider]}
-              </span>
-              <span className="pf-muted-sm">{t("cl3_profile_wallet.official_account")}</span>
-            </div>
-          </div>
-
-          <div className="pf-form-grid" style={{ marginTop: 14 }}>
-            <div className="pf-field">
-              <label className="pf-label" htmlFor="belivay-deposit-amount">{t("cl3_profile_wallet.amount_label")}</label>
-              <input
-                id="belivay-deposit-amount"
-                className="pf-input"
-                inputMode="numeric"
-                placeholder={t("cl3_profile_wallet.amount_placeholder")}
-                value={depositAmount}
-                onChange={(event) => setDepositAmount(event.target.value.replace(/[^\d\s]/g, ""))}
-              />
-            </div>
-            <div className="pf-field">
-              <span className="pf-label">{t("cl3_profile_wallet.new_estimated_balance")}</span>
-              <div className="pf-estimate">
-                {validAmount ? formatXaf(account.availableXaf + validAmount) : t("cl3_profile_wallet.estimate_placeholder")}
-              </div>
-            </div>
-          </div>
-
-          <div className="pf-form-actions">
-            <button type="button" className="pf-btn-accent" onClick={handleDeposit}>
-              <ArrowDownToLine size={14} />{t("cl3_profile_wallet.confirm_deposit")}
-            </button>
-            <button type="button" className="pf-btn-ghost" onClick={handleResetDeposit}>
-              <RotateCcw size={13} />{t("cl3_profile_wallet.reset")}
-            </button>
-          </div>
-        </section>
-
-        {account.deposits.length > 0 ? (
-          <section className="pf-glass-panel pf-anim">
-            <div className="pf-card-title pf-mb">{t("cl3_profile_wallet.deposit_history")}</div>
-            {account.deposits.slice(0, 8).map((deposit) => (
-              <div key={deposit.id} className="pf-dep-line">
-                <span className="pf-order-ic">
-                  {deposit.status === "CREDITED" ? <Check size={16} /> : <Clock size={16} />}
-                </span>
-                <div className="pf-order-mid">
-                  <div className="pf-order-id">
-                    {PROVIDER_LABELS[deposit.provider]} · {deposit.reference}
-                  </div>
-                  <div className="pf-muted-sm">
-                    {new Date(deposit.createdAt).toLocaleDateString("fr-FR", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                    {" · "}
-                    {deposit.status === "CREDITED" ? t("cl3_profile_wallet.credited") : t("cl3_profile_wallet.pending_validation")}
-                  </div>
-                </div>
-                <div className="pf-order-total">{formatXaf(deposit.amountXaf)}</div>
-              </div>
-            ))}
-          </section>
-        ) : null}
-
-        <section className="pf-glass-panel pf-anim">
-          <div className="pf-panel-head" style={{ marginBottom: 14 }}>
-            <div className="pf-panel-title" style={{ display: "flex", alignItems: "center", gap: 9 }}>
-              <Gem size={18} style={{ color: "var(--pf-accent)" }} />
-              {t("cl3_profile_wallet.pay_premium_subscription")}
-            </div>
-          </div>
-
-          <div className="pf-plan-current">
-            <div className="pf-plan-k">{t("cl3_profile_wallet.current_plan")}</div>
-            <div className="pf-plan-name">{currentPlan ? currentPlan.name : t("cl3_profile_wallet.free_plan")}</div>
-            <div className="pf-plan-sub">
-              {currentPlan && account.planExpiresAt
-                ? t("cl3_profile_wallet.active_until", { date: new Date(account.planExpiresAt).toLocaleDateString("fr-FR") })
-                : t("cl3_profile_wallet.go_premium_hint")}
-            </div>
-          </div>
-
-          <div className="pf-plan-grid">
-            {BELIVAY_PLANS.map((plan) => {
-              const isCurrent = account.plan === plan.id;
-              const affordable = account.availableXaf >= plan.priceXaf;
-              return (
-                <div key={plan.id} className={`pf-plan${plan.id === "PREMIUM" ? " violet" : ""}`}>
-                  {plan.id === "PREMIUM" ? (
-                    <Gem size={20} style={{ color: "#7c3aed" }} />
-                  ) : (
-                    <Star size={20} style={{ color: "var(--pf-accent)" }} />
-                  )}
-                  <div className="pf-plan-t">{plan.name}</div>
-                  <div className="pf-plan-p">
-                    {plan.priceXaf.toLocaleString("fr-FR")} FCFA<span>{t("cl3_profile_wallet.per_month")}</span>
-                  </div>
-                  <ul className="pf-plan-perks">
-                    {plan.perks.map((perk) => (
-                      <li key={perk}>
-                        <Check size={13} style={{ flexShrink: 0, marginTop: 2, color: "var(--pf-accent)" }} />
-                        {perk}
-                      </li>
-                    ))}
-                  </ul>
-                  <button
-                    type="button"
-                    className="pf-plan-cta"
-                    disabled={!affordable}
-                    onClick={() => handlePayPlan(plan.id)}
-                    title={affordable ? undefined : t("cl3_profile_wallet.insufficient_balance")}
-                  >
-                    {isCurrent ? t("cl3_profile_wallet.renew_cta") : t("cl3_profile_wallet.pay_cta")}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="pf-muted-sm" style={{ marginTop: 12, textAlign: "center" }}>
-            {t("cl3_profile_wallet.funds_usage_note")}
-          </div>
-        </section>
-      </div>
-    );
-  };
+  // D16 : le vrai Wallet ; DP-17 : rien quand il est fermé (WalletPanel ne rend rien).
+  const renderCompteBelivay = () => <WalletPanel />;
 
   const renderReglages = () => (
     <div className="pf-stack">
@@ -1957,7 +1632,7 @@ export default function ProfilePage() {
       case "securite":
         return renderSecurite();
       case "compte-belivay":
-        return renderCompteBelivay();
+        return walletOuvert ? renderCompteBelivay() : renderDashboard();  // DP-17
       case "reglages":
         return renderReglages();
       default:
@@ -1991,7 +1666,7 @@ export default function ProfilePage() {
     { key: "historique-paiements", label: t("cl3_profile_nav.payment_history"), icon: Wallet, panel: "historique-paiements" },
     { key: "parrain", label: t("cl3_profile_nav.referral"), icon: Gift, panel: "parrain" },
     { key: "securite", label: t("cl3_profile_nav.security"), icon: Shield, panel: "securite" },
-    { key: "compte-belivay", label: t("cl3_profile_nav.belivay_account"), icon: Building2, panel: "compte-belivay" },
+    ...(walletOuvert ? [{ key: "compte-belivay", label: "Mon Wallet", icon: Wallet, panel: "compte-belivay" as PanelId }] : []),
     { key: "reglages", label: t("cl3_profile_nav.settings"), icon: Settings, panel: "reglages" },
   ];
 
@@ -2014,7 +1689,7 @@ export default function ProfilePage() {
     { key: "parrain", label: t("cl3_profile_nav.referral"), icon: Gift, panel: "parrain" },
     { key: "messages", label: t("cl3_profile_nav.messages"), icon: MessageSquare, panel: "messages", badge: unreadMessages || undefined },
     { key: "securite", label: t("cl3_profile_nav.security"), icon: Shield, panel: "securite" },
-    { key: "compte-belivay", label: t("cl3_profile_nav.belivay_account"), icon: Building2, panel: "compte-belivay" },
+    ...(walletOuvert ? [{ key: "compte-belivay", label: "Mon Wallet", icon: Wallet, panel: "compte-belivay" as PanelId }] : []),
     { key: "reglages", label: t("cl3_profile_nav.settings"), icon: Settings, panel: "reglages" },
   ];
 
@@ -2051,13 +1726,13 @@ export default function ProfilePage() {
       active: activePanel === "messages",
       onSelect: () => openPanel("messages"),
     },
-    {
+    ...(walletOuvert ? [{
       key: "wallet",
-      label: t("cl3_profile_nav.wallet"),
+      label: "Mon Wallet",
       icon: Wallet,
       active: activePanel === "compte-belivay",
       onSelect: () => openPanel("compte-belivay"),
-    },
+    }] : []),
   ];
 
   return (

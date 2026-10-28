@@ -8,7 +8,8 @@ from django.conf import settings
 from django.utils.dateparse import parse_datetime
 from rest_framework import generics
 from rest_framework import status
-from rest_framework.permissions import AllowAny, IsAdminUser
+from rest_framework.permissions import AllowAny
+from apps.common.droits import Partie  # sécurité main 2 : droits par partie
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from drf_spectacular.utils import extend_schema
@@ -731,7 +732,7 @@ class LocationAssistantView(APIView):
 
 @extend_schema(tags=["Admin"], summary="Services externes factures ou critiques")
 class AdminExternalServiceListView(generics.ListCreateAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [Partie("pilotage")]
     serializer_class = ExternalServiceSerializer
     queryset = ExternalService.objects.all()
 
@@ -741,7 +742,7 @@ class AdminExternalServiceListView(generics.ListCreateAPIView):
 
 @extend_schema(tags=["Admin"], summary="Detail et activation d'un service externe")
 class AdminExternalServiceDetailView(generics.RetrieveUpdateAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [Partie("pilotage")]
     serializer_class = ExternalServiceSerializer
     queryset = ExternalService.objects.all()
     lookup_field = "key"
@@ -752,7 +753,7 @@ class AdminExternalServiceDetailView(generics.RetrieveUpdateAPIView):
 
 @extend_schema(tags=["Admin"], summary="Journal de consommation API")
 class AdminApiUsageEventListView(generics.ListAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [Partie("pilotage")]
     serializer_class = ApiUsageEventSerializer
 
     def get_queryset(self):
@@ -765,7 +766,7 @@ class AdminApiUsageEventListView(generics.ListAPIView):
 
 @extend_schema(tags=["Admin"], summary="Resume budgetaire des API externes")
 class AdminApiUsageSummaryView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [Partie("pilotage")]
     serializer_class = ApiUsageSummarySerializer
 
     def get(self, request):

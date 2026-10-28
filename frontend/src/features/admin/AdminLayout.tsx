@@ -188,6 +188,35 @@ const SECTIONS: NavSection[] = [
   },
 ];
 
+/**
+ * Sécurité avant main 2 : chaque entrée appartient à une partie de gestion (apps.common.droits côté serveur).
+ * Le menu ne montre que les parties du compte ; une entrée absente de cette table reste visible et le serveur
+ * décide à l'appel. Ce n'est pas un contrôle d'accès, seulement un menu lisible.
+ */
+const PARTIE_DE: Record<string, string> = {
+  dashboard: 'pilotage', live_users: 'pilotage',
+  customers_overview: 'clients', customers_list: 'clients', customers_create: 'clients',
+  customers_loyalty: 'clients', customers_broadcast: 'clients',
+  vendors_overview: 'vendeurs', vendors_list: 'vendeurs', vendors_map: 'vendeurs', vendors_kyc: 'conformite',
+  vendors_withdrawals: 'finance', vendors_subscriptions: 'vendeurs', vendors_certifications: 'vendeurs',
+  vendors_modifications: 'vendeurs',
+  catalog_categories: 'catalogue', catalog_variants: 'catalogue', catalog_brands: 'catalogue',
+  catalog_attributes: 'catalogue', catalog_colors: 'catalogue',
+  deliveries_overview: 'logistique', deliveries_list: 'logistique', deliveries_organization: 'logistique',
+  deliveries_relay_point: 'logistique', deliveries_zones: 'logistique', deliveries_perf: 'logistique',
+  orders: 'commandes', orders_map: 'commandes', disputes: 'litiges', returns: 'litiges',
+  supervision: 'logistique', catalogue: 'catalogue', reviews: 'catalogue', masters: 'catalogue',
+  finances: 'finance', account: 'vendeurs', plans: 'vendeurs', commissions: 'finance',
+  security: 'fraude', auto_refunds: 'litiges',
+  notifications: 'clients', support: 'support', audit: 'pilotage', logs: 'pilotage', settings: 'pilotage',
+};
+
+function entreeVisible(key: string, parties: string[] | undefined, superuser: boolean): boolean {
+  if (superuser || parties === undefined) return true;
+  const partie = key.startsWith('fin_') ? 'finance' : PARTIE_DE[key];
+  return !partie || parties.includes(partie);
+}
+
 const DEFAULT_OPEN = new Set([
   'section_overview', 'section_clients', 'section_vendors', 'section_catalog',
   'section_operations', 'section_finances', 'section_system',
@@ -311,6 +340,13 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
   const { t }            = useTranslation();
   const { open, toggle } = useSectionState();
   const location         = useLocation();
+  const { user }         = useAuth();
+  const sections = SECTIONS
+    .map(section => ({
+      ...section,
+      items: section.items.filter(item => entreeVisible(item.key, user?.parties, Boolean(user?.is_superuser))),
+    }))
+    .filter(section => section.items.length > 0);
 
   // Auto-ouvre la section qui contient la route active
   useEffect(() => {
@@ -332,7 +368,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
         className="flex-1 overflow-y-auto py-3"
         style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.1) transparent' }}
       >
-        {SECTIONS.map(section => {
+        {sections.map(section => {
           const isOpen       = open.has(section.key);
           const sectionTitle = t(`admin.nav.${section.key}`);
 

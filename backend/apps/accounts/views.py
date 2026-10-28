@@ -15,7 +15,8 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import FormParser, MultiPartParser
-from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from apps.common.droits import Partie  # sécurité main 2 : droits par partie
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView as _BaseLoginView
@@ -810,7 +811,7 @@ def bootstrap_demo_accounts(request):
 
 @extend_schema(tags=["Admin"], summary="List couriers with full performance stats")
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("logistique")])
 def admin_list_couriers(request):
     """
     Liste tous les livreurs avec leurs statistiques de performance :
@@ -915,7 +916,7 @@ def admin_list_couriers(request):
  
 @extend_schema(tags=["Admin"], summary="List open SOS alerts")
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("logistique")])
 def admin_sos_alerts(request):
     """Retourne les alertes SOS avec filtre optionnel status=OPEN|ACKNOWLEDGED|RESOLVED."""
     from apps.shipping.models import CourierSOSAlert
@@ -947,7 +948,7 @@ def admin_sos_alerts(request):
  
 @extend_schema(tags=["Admin"], summary="Acknowledge or resolve a SOS alert")
 @api_view(["PATCH"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("logistique")])
 def admin_resolve_sos(request, pk):
     """Changer le statut d'une alerte SOS : ACKNOWLEDGED ou RESOLVED."""
     from apps.shipping.models import CourierSOSAlert
@@ -973,7 +974,7 @@ def admin_resolve_sos(request, pk):
 
 @extend_schema(tags=["Admin"], summary="Create courier account")
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("logistique")])
 def admin_create_courier(request):
     username = request.data.get("username", "").strip()
     email = request.data.get("email", "").strip()
@@ -1038,7 +1039,7 @@ def admin_create_courier(request):
 
 @extend_schema(tags=["Admin"], summary="Update courier account")
 @api_view(["PATCH"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("logistique")])
 def admin_update_courier(request, pk):
     courier = get_object_or_404(CourierProfile.objects.select_related("user"), pk=pk)
     user = courier.user
@@ -1073,7 +1074,7 @@ def admin_update_courier(request, pk):
 
 @extend_schema(tags=["Admin"], summary="Delete courier account")
 @api_view(["DELETE"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("logistique")])
 def admin_delete_courier(request, pk):
     profile = get_object_or_404(CourierProfile.objects.select_related("user"), pk=pk)
     user = profile.user
@@ -1087,7 +1088,7 @@ def admin_delete_courier(request, pk):
 
 @extend_schema(tags=["Admin"], summary="Create user by role")
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("pilotage")])
 def admin_create_user(request):
     from apps.vendors.models import VendorProfile
 
@@ -1296,7 +1297,7 @@ def admin_create_user(request):
 
 @extend_schema(tags=["Admin"], summary="List delivery organizations for courier assignment")
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("logistique")])
 def admin_list_delivery_organizations(request):
     organizations = DeliveryOrganizationProfile.objects.select_related("user").filter(
         is_active=True,
@@ -1320,7 +1321,7 @@ def admin_list_delivery_organizations(request):
 
 @extend_schema(tags=["Admin"], summary="List relay points for admin map")
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("logistique")])
 def admin_list_relay_points(request):
     from .models import RelayPointProfile
 

@@ -11,8 +11,9 @@ from rest_framework.decorators import action
 from django.db import models, transaction
 from rest_framework.response import Response
 from rest_framework.permissions import (
-    SAFE_METHODS, BasePermission, IsAuthenticated, IsAuthenticatedOrReadOnly, IsAdminUser,
+    SAFE_METHODS, BasePermission, IsAuthenticated, IsAuthenticatedOrReadOnly,
 )
+from apps.common.droits import Partie  # sécurité main 2 : droits par partie
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Avg, Count, ExpressionWrapper, FloatField, Q, Value, Case, When, IntegerField
@@ -517,7 +518,7 @@ class ActivePromotionCampaignListView(generics.ListAPIView):
 @extend_schema(tags=["Promotions"], summary="Liste admin des campagnes promotionnelles")
 class AdminPromotionCampaignListView(generics.ListAPIView):
     serializer_class = PromotionCampaignSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [Partie("catalogue")]
 
     def get_queryset(self):
         qs = (
@@ -540,7 +541,7 @@ class AdminPromotionCampaignListView(generics.ListAPIView):
 
 @extend_schema(tags=["Promotions"], summary="Décision admin sur une campagne")
 class AdminPromotionCampaignDecisionView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [Partie("catalogue")]
 
     def post(self, request, pk):
         campaign = generics.get_object_or_404(PromotionCampaign, pk=pk)
@@ -1335,7 +1336,7 @@ def vendor_master_variants(request, master_id):
     responses={200: AdminVariantListSerializer(many=True)},
 )
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_variants_list(request):
     """Liste admin des Variants avec filtres avancés."""
     qs = ProductVariant.objects.select_related(
@@ -1413,7 +1414,7 @@ def admin_variants_list(request):
     responses={200: AdminVariantDetailSerializer, 404: None},
 )
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_variant_detail(request, variant_id):
     """Détail complet d'un Variant avec offres et axes résolus."""
     try:
@@ -1455,7 +1456,7 @@ def _apply_moderation(variant, request, new_status):
     responses={200: AdminVariantDetailSerializer},
 )
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_variant_approve(request, variant_id):
     """Approuve un Variant."""
     try:
@@ -1475,7 +1476,7 @@ def admin_variant_approve(request, variant_id):
     responses={200: AdminVariantDetailSerializer},
 )
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_variant_reject(request, variant_id):
     """Rejette un Variant. Note : les offres rattachees ne sont PAS touchees automatiquement — l'admin les traite separement."""
     try:
@@ -1494,7 +1495,7 @@ def admin_variant_reject(request, variant_id):
     description="Body attendu : { \"variant_ids\": [1, 2, 3], \"moderation_reason\": \"optionnel\" }",
 )
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_variants_bulk_approve(request):
     """Approuve en masse une liste de Variants."""
     ids = request.data.get("variant_ids", [])
@@ -1519,7 +1520,7 @@ def admin_variants_bulk_approve(request):
     summary="Rejeter plusieurs Variants",
 )
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_variants_bulk_reject(request):
     """Rejette en masse une liste de Variants."""
     ids = request.data.get("variant_ids", [])
@@ -1553,7 +1554,7 @@ def admin_variants_bulk_reject(request):
     responses={200: AdminBrandListSerializer(many=True)},
 )
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_brands_list(request):
     """Liste admin des marques avec filtres et tris."""
     qs = Brand.objects.all().annotate(
@@ -1610,7 +1611,7 @@ def admin_brands_list(request):
     responses={201: AdminBrandDetailSerializer},
 )
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 @parser_classes([MultiPartParser, FormParser, JSONParser])
 def admin_brands_create(request):
     """Créer une marque. is_verified défaut True (créée par admin = officielle)."""
@@ -1639,7 +1640,7 @@ def admin_brands_create(request):
     responses={200: AdminBrandDetailSerializer, 404: None},
 )
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_brand_detail(request, brand_id):
     """Détail complet d'une marque avec fiches attachées et stats."""
     try:
@@ -1662,7 +1663,7 @@ def admin_brand_detail(request, brand_id):
     responses={200: AdminBrandDetailSerializer, 404: None},
 )
 @api_view(["PATCH"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 @parser_classes([MultiPartParser, FormParser, JSONParser])
 def admin_brand_update(request, brand_id):
     """Modifier une marque."""
@@ -1692,7 +1693,7 @@ def admin_brand_update(request, brand_id):
     description="Interdit si la marque est utilisée par au moins 1 fiche maître.",
 )
 @api_view(["DELETE"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_brand_delete(request, brand_id):
     """Supprime une marque si aucune fiche ne l'utilise (PROTECT sinon)."""
     try:
@@ -1733,7 +1734,7 @@ def _toggle_brand(brand_id, field, value):
  
 @extend_schema(tags=["Admin Catalog"], summary="Vérifier une marque")
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_brand_verify(request, brand_id):
     brand = _toggle_brand(brand_id, "is_verified", True)
     if not brand:
@@ -1743,7 +1744,7 @@ def admin_brand_verify(request, brand_id):
  
 @extend_schema(tags=["Admin Catalog"], summary="Retirer la vérification")
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_brand_unverify(request, brand_id):
     brand = _toggle_brand(brand_id, "is_verified", False)
     if not brand:
@@ -1753,7 +1754,7 @@ def admin_brand_unverify(request, brand_id):
  
 @extend_schema(tags=["Admin Catalog"], summary="Activer une marque")
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_brand_activate(request, brand_id):
     brand = _toggle_brand(brand_id, "is_active", True)
     if not brand:
@@ -1763,7 +1764,7 @@ def admin_brand_activate(request, brand_id):
  
 @extend_schema(tags=["Admin Catalog"], summary="Désactiver une marque")
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_brand_deactivate(request, brand_id):
     brand = _toggle_brand(brand_id, "is_active", False)
     if not brand:
@@ -1785,28 +1786,28 @@ def _bulk_update(request, field, value):
  
 @extend_schema(tags=["Admin Catalog"], summary="Vérifier plusieurs marques")
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_brands_bulk_verify(request):
     return _bulk_update(request, "is_verified", True)
  
  
 @extend_schema(tags=["Admin Catalog"], summary="Retirer la vérification de plusieurs marques")
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_brands_bulk_unverify(request):
     return _bulk_update(request, "is_verified", False)
  
  
 @extend_schema(tags=["Admin Catalog"], summary="Activer plusieurs marques")
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_brands_bulk_activate(request):
     return _bulk_update(request, "is_active", True)
  
  
 @extend_schema(tags=["Admin Catalog"], summary="Désactiver plusieurs marques")
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_brands_bulk_deactivate(request):
     return _bulk_update(request, "is_active", False)
  
@@ -1821,7 +1822,7 @@ def admin_brands_bulk_deactivate(request):
     request=AdminBrandMergeSerializer,
 )
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_brands_merge(request):
     """
     Fusion : rebascule toutes les fiches maîtres des sources vers la cible,
@@ -1857,7 +1858,7 @@ def admin_brands_merge(request):
     summary="Exporter les marques au format CSV",
 )
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_brands_export_csv(request):
     """Exporte la liste des marques au format CSV, avec les mêmes filtres que list."""
     qs = Brand.objects.all().annotate(
@@ -1908,7 +1909,7 @@ def admin_brands_export_csv(request):
     responses={200: AdminAttributeListSerializer(many=True)},
 )
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_attributes_list(request):
     """Liste admin des attributs avec filtres."""
     qs = ProductAttribute.objects.select_related("category")
@@ -1963,7 +1964,7 @@ def admin_attributes_list(request):
     responses={201: AdminAttributeDetailSerializer},
 )
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_attributes_create(request):
     serializer = AdminAttributeCreateUpdateSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
@@ -1983,7 +1984,7 @@ def admin_attributes_create(request):
     responses={200: AdminAttributeDetailSerializer, 404: None},
 )
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_attribute_detail(request, attr_id):
     try:
         attr = ProductAttribute.objects.select_related("category").get(pk=attr_id)
@@ -2004,7 +2005,7 @@ def admin_attribute_detail(request, attr_id):
     responses={200: AdminAttributeDetailSerializer, 404: None},
 )
 @api_view(["PATCH"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_attribute_update(request, attr_id):
     try:
         attr = ProductAttribute.objects.get(pk=attr_id)
@@ -2043,7 +2044,7 @@ def admin_attribute_update(request, attr_id):
     description="Interdit si utilisé par au moins 1 fiche maître comme axe de variante.",
 )
 @api_view(["DELETE"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_attribute_delete(request, attr_id):
     try:
         attr = ProductAttribute.objects.get(pk=attr_id)
@@ -2071,7 +2072,7 @@ def admin_attribute_delete(request, attr_id):
  
 @extend_schema(tags=["Admin Catalog"], summary="Changer le rôle d'un attribut")
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_attribute_set_role(request, attr_id):
     """Change le rôle (AXE / SPEC / OFFRE)."""
     role = request.data.get("role", "").strip().upper()
@@ -2097,7 +2098,7 @@ def admin_attribute_set_role(request, attr_id):
  
 @extend_schema(tags=["Admin Catalog"], summary="Changer le rôle en masse")
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_attributes_bulk_set_role(request):
     ids = request.data.get("attribute_ids", [])
     role = request.data.get("role", "").strip().upper()
@@ -2111,7 +2112,7 @@ def admin_attributes_bulk_set_role(request):
  
 @extend_schema(tags=["Admin Catalog"], summary="Basculer is_required en masse")
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_attributes_bulk_toggle_required(request):
     ids = request.data.get("attribute_ids", [])
     is_required = bool(request.data.get("is_required", False))
@@ -2135,7 +2136,7 @@ def admin_attributes_bulk_toggle_required(request):
     responses={200: AdminColorListSerializer(many=True)},
 )
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_colors_list(request):
     """Liste admin des couleurs avec filtres."""
     qs = ColorDictionary.objects.all()
@@ -2181,7 +2182,7 @@ def admin_colors_list(request):
     responses={201: AdminColorDetailSerializer},
 )
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_colors_create(request):
     serializer = AdminColorCreateUpdateSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
@@ -2199,7 +2200,7 @@ def admin_colors_create(request):
 @extend_schema(tags=["Admin Catalog"], summary="Détail d'une couleur",
                responses={200: AdminColorDetailSerializer, 404: None})
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_color_detail(request, color_id):
     try:
         color = ColorDictionary.objects.get(pk=color_id)
@@ -2220,7 +2221,7 @@ def admin_color_detail(request, color_id):
     responses={200: AdminColorDetailSerializer, 404: None},
 )
 @api_view(["PATCH"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_color_update(request, color_id):
     try:
         color = ColorDictionary.objects.get(pk=color_id)
@@ -2245,7 +2246,7 @@ def admin_color_update(request, color_id):
     description="Interdit si utilisée par au moins 1 variant.",
 )
 @api_view(["DELETE"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_color_delete(request, color_id):
     try:
         color = ColorDictionary.objects.get(pk=color_id)
@@ -2283,7 +2284,7 @@ def _toggle_color(color_id, field, value):
  
 @extend_schema(tags=["Admin Catalog"], summary="Activer une couleur")
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_color_activate(request, color_id):
     color = _toggle_color(color_id, "is_active", True)
     if not color:
@@ -2293,7 +2294,7 @@ def admin_color_activate(request, color_id):
  
 @extend_schema(tags=["Admin Catalog"], summary="Désactiver une couleur")
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_color_deactivate(request, color_id):
     color = _toggle_color(color_id, "is_active", False)
     if not color:
@@ -2315,14 +2316,14 @@ def _bulk_toggle_colors(request, value):
  
 @extend_schema(tags=["Admin Catalog"], summary="Activer plusieurs couleurs")
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_colors_bulk_activate(request):
     return _bulk_toggle_colors(request, True)
  
  
 @extend_schema(tags=["Admin Catalog"], summary="Désactiver plusieurs couleurs")
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_colors_bulk_deactivate(request):
     return _bulk_toggle_colors(request, False)    
 
@@ -2342,7 +2343,7 @@ def admin_colors_bulk_deactivate(request):
     responses={200: AdminCategoryListSerializer(many=True)},
 )
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_categories_list(request):
     """Liste plate — filtres pour vue tableau alternative."""
     qs = Category.objects.filter(deleted_at__isnull=True).select_related("parent")
@@ -2394,7 +2395,7 @@ def admin_categories_list(request):
     ),
 )
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_categories_tree(request):
     """Arbre complet — inclut deprecated + inactive pour vue admin."""
     all_cats = list(
@@ -2451,7 +2452,7 @@ def admin_categories_tree(request):
     responses={201: AdminCategoryDetailSerializer},
 )
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 @parser_classes([MultiPartParser, FormParser, JSONParser])
 def admin_categories_create(request):
     serializer = AdminCategoryCreateUpdateSerializer(data=request.data)
@@ -2472,7 +2473,7 @@ def admin_categories_create(request):
     responses={200: AdminCategoryDetailSerializer, 404: None},
 )
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_category_detail(request, cat_id):
     try:
         cat = Category.objects.select_related("parent").get(pk=cat_id)
@@ -2493,7 +2494,7 @@ def admin_category_detail(request, cat_id):
     responses={200: AdminCategoryDetailSerializer, 404: None},
 )
 @api_view(["PATCH"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 @parser_classes([MultiPartParser, FormParser, JSONParser])
 def admin_category_update(request, cat_id):
     try:
@@ -2519,7 +2520,7 @@ def admin_category_update(request, cat_id):
     description="Interdit si utilisée (fiches, attributs, enfants).",
 )
 @api_view(["DELETE"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_category_delete(request, cat_id):
     try:
         cat = Category.objects.get(pk=cat_id)
@@ -2577,7 +2578,7 @@ def _toggle_flag(cat_id, flag_name, request):
  
 @extend_schema(tags=["Admin Catalog"], summary="Toggle is_active")
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_category_toggle_active(request, cat_id):
     cat = _toggle_flag(cat_id, "is_active", request)
     if not cat:
@@ -2587,7 +2588,7 @@ def admin_category_toggle_active(request, cat_id):
  
 @extend_schema(tags=["Admin Catalog"], summary="Toggle is_deprecated")
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_category_toggle_deprecated(request, cat_id):
     cat = _toggle_flag(cat_id, "is_deprecated", request)
     if not cat:
@@ -2597,7 +2598,7 @@ def admin_category_toggle_deprecated(request, cat_id):
  
 @extend_schema(tags=["Admin Catalog"], summary="Toggle requires_admin_approval")
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_category_toggle_approval(request, cat_id):
     cat = _toggle_flag(cat_id, "requires_admin_approval", request)
     if not cat:
@@ -2614,7 +2615,7 @@ def admin_category_toggle_approval(request, cat_id):
     description="Body : { 'display_order': 5 }",
 )
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_category_move(request, cat_id):
     try:
         cat = Category.objects.get(pk=cat_id)
@@ -2647,7 +2648,7 @@ def admin_category_move(request, cat_id):
     description="Body : { 'category_ids': [...], 'flag': 'is_deprecated', 'value': true }",
 )
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_categories_bulk_set_flag(request):
     ids = request.data.get("category_ids", [])
     flag = request.data.get("flag")

@@ -28,6 +28,9 @@ def _media_root(settings, tmp_path):
 @pytest.fixture
 def admin_client(api_client):
     admin = User.objects.create_user(username="admin-cat", password="p", is_staff=True)
+    from django.contrib.auth.models import Group
+
+    admin.groups.add(Group.objects.get_or_create(name="gestion-catalogue")[0])  # sécurité main 2 : partie catalogue
     api_client.force_authenticate(user=admin)
     return api_client
 

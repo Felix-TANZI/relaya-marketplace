@@ -35,6 +35,8 @@ export interface User {
   loyalty_tier?:          string;
   // false pour les comptes créés via Google/Apple (sans mot de passe)
   has_usable_password?:   boolean;
+  /** Sécurité avant main 2 : parties de gestion ouvertes à ce compte (le serveur reste seul juge). */
+  parties?:               string[];
 }
 
 export interface CourierProfile {

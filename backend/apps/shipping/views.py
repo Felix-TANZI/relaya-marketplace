@@ -7,7 +7,8 @@ from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics, status
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from apps.common.droits import Partie  # sécurité main 2 : droits par partie
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -2073,7 +2074,7 @@ LATE_TRACKED_STATUSES = [
     summary="Console de supervision minimale : colis en retard, tournées non prises, subvention par zone",
 )
 class AdminSupervisionDashboardView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [Partie("logistique")]
 
     def get(self, request):
         now = timezone.now()
@@ -2216,7 +2217,7 @@ class ShipmentMaskedCallView(APIView):
 class AdminPrestationsEntreprisesView(APIView):
     """Feuille de route, partie 2 (R53, R43.1) : chaque prestation faite, son tarif de grille et la semaine de son
     versement ; les lignes à 0 F (grille absente ou ligne bloquée R54.3) sont à régler par l'équipe."""
-    permission_classes = [IsAdminUser]
+    permission_classes = [Partie("finance")]
 
     def get(self, request):
         from django.db.models import Count, Sum

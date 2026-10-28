@@ -92,7 +92,8 @@ export default function AppleAuthButton({ onCredential, disabled = false, onErro
       const nonce = await authApi.appleNonce();
       const { response } = await SignInWithApple.authorize({
         clientId,
-        redirectURI: 'https://belivay.com/auth/apple/callback',
+        // Décision du porteur : le domaine de main 2 (VITE_APPLE_REDIRECT_URI), pas belivay.com qui reste la vitrine.
+        redirectURI: import.meta.env.VITE_APPLE_REDIRECT_URI?.trim() || 'https://belivay.com/auth/apple/callback',
         scopes: 'email name',
         nonce,
       });

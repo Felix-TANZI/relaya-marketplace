@@ -5,6 +5,7 @@ from rest_framework import status, viewsets
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
+from apps.common.droits import Partie  # sécurité main 2 : droits par partie
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from django.db import models
@@ -13,7 +14,6 @@ from django.contrib.auth.models import User
 from .models import VendorProfile, VendorOrderNote, WithdrawalRequest, \
     SubscriptionPlan, VendorSubscription
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAdminUser
 from django.utils import timezone
 from datetime import timedelta, date, datetime
 from rest_framework.decorators import action
@@ -2298,7 +2298,7 @@ def vendor_dispute_upload_evidence(request, dispute_id):
     responses={200: VendorProfileSerializer(many=True)}
 )
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("vendeurs")])
 def admin_list_vendors(request):
     """Liste tous les vendeurs avec filtre optionnel par statut"""
     vendors = VendorProfile.objects.all().select_related('user').order_by('-created_at')
@@ -2318,7 +2318,7 @@ def admin_list_vendors(request):
     responses={200: VendorProfileSerializer}
 )
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("vendeurs")])
 def admin_approve_vendor(request, vendor_id):
     """Approuver une demande vendeur"""
     try:
@@ -2355,7 +2355,7 @@ def admin_approve_vendor(request, vendor_id):
     responses={200: VendorProfileSerializer}
 )
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("vendeurs")])
 def admin_reject_vendor(request, vendor_id):
     """Rejeter une demande vendeur"""
     try:
@@ -2378,7 +2378,7 @@ def admin_reject_vendor(request, vendor_id):
     responses={200: VendorProfileSerializer}
 )
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("vendeurs")])
 def admin_suspend_vendor(request, vendor_id):
     """Suspendre un vendeur"""
     try:
@@ -2401,7 +2401,7 @@ def admin_suspend_vendor(request, vendor_id):
     responses={200: VendorProfileSerializer}
 )
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("vendeurs")])
 def admin_vendor_detail(request, vendor_id):
     """Récupérer les détails d'un vendeur"""
     try:
@@ -2424,7 +2424,7 @@ def admin_vendor_detail(request, vendor_id):
     responses={200: 'AdminDashboardStatsSerializer'}
 )
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("pilotage")])
 def admin_dashboard_stats(request):
     """
     Dashboard admin : statistiques globales de la plateforme
@@ -2538,7 +2538,7 @@ def admin_dashboard_stats(request):
     responses={200: 'AdminAnalyticsSerializer'}
 )
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("pilotage")])
 def admin_analytics(request):
     """
     Analytics admin : données pour graphiques et tableaux
@@ -2716,7 +2716,7 @@ def admin_analytics(request):
     responses={200: 'object'},
 )
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("clients")])
 def admin_customers_stats(request):
     """
     Statistiques clients pour la page admin Customers List.
@@ -2803,7 +2803,7 @@ def admin_customers_stats(request):
 
 @extend_schema(tags=["Admin"], summary="Live connected users with GPS")
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("clients")])
 def admin_live_users(request):
     import json
     from django.core.cache import cache
@@ -2914,7 +2914,7 @@ def admin_live_users(request):
  
 @extend_schema(tags=["Admin"], summary="Vendors map — distribution by city")
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("vendeurs")])
 def admin_vendors_map(request):
     """
     Distribution géographique des vendeurs par ville + emplacements physiques.
@@ -3104,7 +3104,7 @@ def _get_target_customers(filters: dict):
  
 @extend_schema(tags=["Admin"], summary="Preview customer broadcast audience count")
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_customers_broadcast_preview(request):
     """
     Retourne le nombre d'utilisateurs qui recevront le broadcast
@@ -3130,7 +3130,7 @@ def admin_customers_broadcast_preview(request):
  
 @extend_schema(tags=["Admin"], summary="Broadcast notification to customers")
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("clients")])
 def admin_customers_broadcast(request):
     """
     Envoie une notification à l'audience cible.
@@ -3206,7 +3206,7 @@ def admin_customers_broadcast(request):
  
 @extend_schema(tags=["Admin"], summary="History of customer broadcasts")
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("clients")])
 def admin_customers_broadcast_history(request):
     """Retourne les 50 derniers broadcasts envoyés aux clients."""
     import json
@@ -3242,7 +3242,7 @@ def _client_tier_from_points(points: int) -> str:
  
 @extend_schema(tags=["Admin"], summary="Customer loyalty stats & top clients")
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("clients")])
 def admin_customers_loyalty(request):
     """
     Stats fidélité clients acheteurs :
@@ -3323,7 +3323,7 @@ def admin_customers_loyalty(request):
 
 @extend_schema(tags=["Admin"], summary="System logs with charts data")
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("pilotage")])
 def admin_system_logs(request):
     from apps.vendors.models import SystemLog
     from django.utils import timezone
@@ -3437,7 +3437,7 @@ def admin_system_logs(request):
  
 @extend_schema(tags=["Admin"], summary="Delete old system logs")
 @api_view(['DELETE'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("pilotage")])
 def admin_clear_logs(request):
     from apps.vendors.models import SystemLog
     from django.utils import timezone
@@ -3465,7 +3465,7 @@ def admin_clear_logs(request):
     responses={200: 'object'},
 )
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("vendeurs")])
 def admin_vendors_stats(request):
     from apps.catalog.models import Product
     from apps.orders.models import OrderItem
@@ -3557,7 +3557,7 @@ def admin_vendors_stats(request):
     responses={200: 'object'},
 )
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("finance")])
 def admin_finances_stats(request):
     """
     Statistiques financières globales pour l'admin BelivaY.
@@ -3701,7 +3701,7 @@ def admin_finances_stats(request):
 
 @extend_schema(tags=["Admin"], summary="List all withdrawal requests (admin)")
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("finance")])
 def admin_list_withdrawals(request):
     """Liste toutes les demandes de retrait avec filtre optionnel par statut."""
     from apps.vendors.models import WithdrawalRequest
@@ -3738,7 +3738,7 @@ def admin_list_withdrawals(request):
  
 @extend_schema(tags=["Admin"], summary="Approve a withdrawal request")
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("finance")])
 def admin_approve_withdrawal(request, wd_id):
     """Approuve un retrait (statut → APPROVED). Admin confirme le virement MoMo effectué."""
     # ── Bascule vers le module financier ─────────────────────────────────
@@ -3782,7 +3782,7 @@ def admin_approve_withdrawal(request, wd_id):
  
 @extend_schema(tags=["Admin"], summary="Reject a withdrawal request")
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("finance")])
 def admin_reject_withdrawal(request, wd_id):
     """Rejette un retrait (statut → REJECTED) avec motif obligatoire."""
     from apps.vendors.models import WithdrawalRequest
@@ -3809,7 +3809,7 @@ def admin_reject_withdrawal(request, wd_id):
  
 @extend_schema(tags=["Admin"], summary="KYC queue — pending vendors")
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("conformite")])
 def admin_kyc_queue(request):
     """
     File d'attente KYC : vendeurs en attente de validation.
@@ -3854,7 +3854,7 @@ def admin_kyc_queue(request):
 #  ADMINISTRATION - LISTE PLANS ABONNEMENT
 @extend_schema(tags=["Admin"], summary="List all subscription plans with subscriber counts")
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("vendeurs")])
 def admin_list_plans(request):
     from apps.vendors.models import SubscriptionPlan, VendorProfile
  
@@ -3885,7 +3885,7 @@ def admin_list_plans(request):
 #  ADMINISTRATION - MISE À JOUR PLAN ABONNEMENT 
 @extend_schema(tags=["Admin"], summary="Update a subscription plan")
 @api_view(['PATCH'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("vendeurs")])
 def admin_update_plan(request, plan_id):
     from apps.vendors.models import SubscriptionPlan
  
@@ -3911,7 +3911,7 @@ def admin_update_plan(request, plan_id):
 #  ADMINISTRATION - GESTION AVIS
 @extend_schema(tags=["Admin"], summary="List all product reviews")
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_list_reviews(request):
     from apps.catalog.models import ProductReview
  
@@ -3953,7 +3953,7 @@ def admin_list_reviews(request):
 #  ADMINISTRATION - STATISTIQUES AVIS 
 @extend_schema(tags=["Admin"], summary="Review statistics")
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_reviews_stats(request):
     from apps.catalog.models import ProductReview
     from django.db.models import Avg, Count
@@ -3979,7 +3979,7 @@ def admin_reviews_stats(request):
 #  ADMINISTRATION - GESTION AVIS 
 @extend_schema(tags=["Admin"], summary="Toggle review approval")
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_toggle_review(request, review_id):
     from apps.catalog.models import ProductReview
  
@@ -3995,7 +3995,7 @@ def admin_toggle_review(request, review_id):
  
 @extend_schema(tags=["Admin"], summary="Delete a review")
 @api_view(['DELETE'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_delete_review(request, review_id):
     from apps.catalog.models import ProductReview
  
@@ -4011,7 +4011,7 @@ def admin_delete_review(request, review_id):
 #  ADMINISTRATION - JOURNAL D'AUDIT
 @extend_schema(tags=["Admin"], summary="Unified admin audit log")
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("pilotage")])
 def admin_audit_log(request):
     """
     Journal d'audit unifié — agrège toutes les sources :
@@ -4240,7 +4240,7 @@ def admin_audit_log(request):
 
 @extend_schema(tags=["Admin"], summary="List all vendor subscriptions")
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("vendeurs")])
 def admin_list_subscriptions(request):
     from apps.vendors.models import VendorSubscription
  
@@ -4280,7 +4280,7 @@ def admin_list_subscriptions(request):
 #  ADMINISTRATION - APPROBATION ABONNEMENT VENDEUR 
 @extend_schema(tags=["Admin"], summary="Approve and activate a vendor subscription")
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("vendeurs")])
 def admin_approve_subscription(request, sub_id):
     from apps.vendors.models import VendorSubscription
  
@@ -4318,7 +4318,7 @@ def admin_approve_subscription(request, sub_id):
 #  ADMINISTRATION - REJET ABONNEMENT VENDEUR 
 @extend_schema(tags=["Admin"], summary="Reject a vendor subscription")
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("vendeurs")])
 def admin_reject_subscription(request, sub_id):
     from apps.vendors.models import VendorSubscription
  
@@ -4341,7 +4341,7 @@ def admin_reject_subscription(request, sub_id):
 #  ADMINISTRATION - ENVOI NOTIFICATIONS
 @extend_schema(tags=["Admin"], summary="Send broadcast notification to users")
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("clients")])
 def admin_broadcast_notification(request):
     """
     Envoie une notification à une audience.
@@ -4382,7 +4382,7 @@ def admin_broadcast_notification(request):
 
 @extend_schema(tags=["Admin"], summary="List all shop modification requests")
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("vendeurs")])
 def admin_list_modifications(request):
     """Liste toutes les demandes de modification de boutique."""
     from apps.vendors.models import ShopModificationRequest
@@ -4431,7 +4431,7 @@ def admin_list_modifications(request):
  
 @extend_schema(tags=["Admin"], summary="Approve a shop modification request")
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("vendeurs")])
 def admin_approve_modification(request, mod_id):
     """Approuve une demande — applique les changements sur VendorProfile."""
     from apps.vendors.models import ShopModificationRequest
@@ -4458,7 +4458,7 @@ def admin_approve_modification(request, mod_id):
  
 @extend_schema(tags=["Admin"], summary="Reject a shop modification request")
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("vendeurs")])
 def admin_reject_modification(request, mod_id):
     """Rejette une demande avec un motif obligatoire."""
     from apps.vendors.models import ShopModificationRequest
@@ -4485,7 +4485,7 @@ def admin_reject_modification(request, mod_id):
     
 @extend_schema(tags=["Admin"], summary="Certifications stats & vendor ranking")
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("vendeurs")])
 def admin_certifications_stats(request):
     """
     Retourne :
@@ -4532,7 +4532,7 @@ def admin_certifications_stats(request):
 
 @extend_schema(tags=["Admin"], summary="Platform account & system health stats")
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("vendeurs")])
 def admin_account_stats(request):
     """
     Statistiques globales du compte plateforme BelivaY :
@@ -4640,7 +4640,7 @@ def admin_account_stats(request):
     responses={200: 'AdminProductListSerializer(many=True)'}
 )
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_list_products(request):
     """
     Liste admin de tous les produits avec filtres
@@ -4689,7 +4689,7 @@ def admin_list_products(request):
     responses={200: ProductSerializer}
 )
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_product_detail(request, product_id):
     """Détail d'un produit pour admin"""
     try:
@@ -4711,7 +4711,7 @@ def admin_product_detail(request, product_id):
     responses={200: ProductSerializer}
 )
 @api_view(['PATCH'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_update_product(request, product_id):
     """Modifier un produit (admin force)"""
     try:
@@ -4740,7 +4740,7 @@ def admin_update_product(request, product_id):
     responses={204: None}
 )
 @api_view(['DELETE'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_delete_product(request, product_id):
     """Supprimer un produit"""
     try:
@@ -4761,7 +4761,7 @@ def admin_delete_product(request, product_id):
     responses={200: ProductSerializer}
 )
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_toggle_product_status(request, product_id):
     """Activer/désactiver un produit (bannir)"""
     try:
@@ -4797,7 +4797,7 @@ def admin_toggle_product_status(request, product_id):
     responses={200: 'AdminOrderListSerializer(many=True)'}
 )
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("commandes")])
 def admin_list_orders(request):
     """
     Liste admin de toutes les commandes avec filtres avancés
@@ -4874,7 +4874,7 @@ def admin_list_orders(request):
     responses={200: 'AdminOrderDetailSerializer'}
 )
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("commandes")])
 def admin_order_detail(request, order_id):
     """Détail complet d'une commande"""
     try:
@@ -4908,7 +4908,7 @@ def admin_order_detail(request, order_id):
     responses={200: 'AdminOrderDetailSerializer'}
 )
 @api_view(['PATCH'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("commandes")])
 def admin_update_order(request, order_id):
     """Modifier une commande (admin)"""
     try:
@@ -4954,7 +4954,7 @@ def admin_update_order(request, order_id):
     responses={200: 'AdminOrderDetailSerializer'}
 )
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("commandes")])
 def admin_cancel_order(request, order_id):
     """Annuler une commande"""
     try:
@@ -4993,7 +4993,7 @@ def admin_cancel_order(request, order_id):
     responses={200: 'CSV file'}
 )
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("commandes")])
 def admin_export_orders_csv(request):
     """Export CSV des commandes"""
     import csv
@@ -5064,7 +5064,7 @@ def admin_export_orders_csv(request):
     responses={200: 'AdminUserListSerializer(many=True)'}
 )
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("clients")])
 def admin_list_users(request):
     """Liste admin de tous les utilisateurs"""
     from apps.vendors.serializers import AdminUserListSerializer
@@ -5132,7 +5132,7 @@ def admin_list_users(request):
     responses={200: 'AdminUserDetailSerializer'}
 )
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("clients")])
 def admin_user_detail(request, user_id):
     """Détail complet d'un utilisateur"""
     try:
@@ -5161,7 +5161,7 @@ def admin_user_detail(request, user_id):
     responses={200: 'AdminUserDetailSerializer'}
 )
 @api_view(['PATCH'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("clients")])
 def admin_update_user(request, user_id):
     """Modifier un utilisateur"""
     try:
@@ -5205,7 +5205,7 @@ def admin_update_user(request, user_id):
     responses={200: 'AdminUserDetailSerializer'}
 )
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("clients")])
 def admin_ban_user(request, user_id):
     """Bannir un utilisateur"""
     try:
@@ -5253,7 +5253,7 @@ def admin_ban_user(request, user_id):
     responses={200: 'AdminUserDetailSerializer'}
 )
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("clients")])
 def admin_unban_user(request, user_id):
     """Débannir un utilisateur"""
     try:
@@ -5298,7 +5298,7 @@ def admin_unban_user(request, user_id):
     responses={204: None}
 )
 @api_view(['DELETE'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("clients")])
 def admin_delete_user(request, user_id):
     """Supprimer un utilisateur"""
     try:
@@ -5327,7 +5327,7 @@ def admin_delete_user(request, user_id):
     responses={200: 'CSV file'}
 )
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("clients")])
 def admin_export_users_csv(request):
     """Export CSV des utilisateurs"""
     import csv
@@ -5388,7 +5388,7 @@ def admin_export_users_csv(request):
     responses={200: 'AdminDisputeListSerializer(many=True)'}
 )
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("litiges")])
 def admin_list_disputes(request):
     """Liste admin de tous les litiges"""
     from apps.orders.models import Dispute
@@ -5437,7 +5437,7 @@ def admin_list_disputes(request):
     responses={200: 'AdminDisputeDetailSerializer'}
 )
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("litiges")])
 def admin_dispute_detail(request, dispute_id):
     """Détail complet d'un litige"""
     # Imports hors du `try` : la clause `except Dispute.DoesNotExist` ci-dessous
@@ -5473,7 +5473,7 @@ def admin_dispute_detail(request, dispute_id):
 
 @extend_schema(tags=["Admin"], summary="Demander une preuve à une partie du litige")
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("litiges")])
 def admin_request_dispute_evidence(request, dispute_id):
     from apps.orders.models import Dispute
     from apps.vendors.serializers import AdminDisputeDetailSerializer
@@ -5540,7 +5540,7 @@ def admin_request_dispute_evidence(request, dispute_id):
     responses={200: 'AdminDisputeDetailSerializer'}
 )
 @api_view(['PATCH'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("litiges")])
 def admin_update_dispute(request, dispute_id):
     """Modifier un litige"""
     # Imports hors du `try` : voir `admin_dispute_detail`.
@@ -5596,7 +5596,7 @@ def admin_update_dispute(request, dispute_id):
     responses={200: 'AdminDisputeDetailSerializer'}
 )
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("litiges")])
 def admin_add_dispute_message(request, dispute_id):
     """Ajouter un message au litige"""
     # Imports hors du `try` : voir `admin_dispute_detail`.
@@ -5633,7 +5633,7 @@ def admin_add_dispute_message(request, dispute_id):
     responses={200: 'AdminDisputeDetailSerializer'}
 )
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("litiges")])
 def admin_resolve_dispute(request, dispute_id):
     """Résoudre un litige"""
     # Imports hors du `try` : voir `admin_dispute_detail`.
@@ -5727,7 +5727,7 @@ def admin_resolve_dispute(request, dispute_id):
     responses={200: 'object'}
 )
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("litiges")])
 def admin_dispute_stats(request):
     """Statistiques des litiges"""
     from apps.orders.models import Dispute
@@ -5764,7 +5764,7 @@ def admin_dispute_stats(request):
 
 @extend_schema(tags=["Admin"], summary="Lister tous les retours (admin)")
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("litiges")])
 def admin_list_returns(request):
     returns = Return.objects.select_related(
         'order', 'order_item', 'vendor', 'requested_by', 'dropoff_relay_point',
@@ -5785,7 +5785,7 @@ def admin_list_returns(request):
     ),
 )
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("litiges")])
 def admin_return_mark_received(request, return_id):
     try:
         return_obj = Return.objects.get(id=return_id)
@@ -5825,7 +5825,7 @@ def _part_frais_retour(return_obj) -> int:
     ),
 )
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("litiges")])
 def admin_finalize_return(request, return_id):
     try:
         return_obj = Return.objects.get(id=return_id)
@@ -5899,7 +5899,7 @@ def admin_finalize_return(request, return_id):
     responses={200: PlatformSettingsSerializer}
 )
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("pilotage")])
 def admin_get_settings(request):
     """Récupérer les paramètres plateforme"""
     from apps.orders.models import PlatformSettings
@@ -5918,7 +5918,7 @@ def admin_get_settings(request):
     responses={200: PlatformSettingsSerializer}
 )
 @api_view(['PATCH'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("pilotage")])
 def admin_update_settings(request):
     """Modifier les paramètres plateforme"""
     from apps.orders.models import PlatformSettings
@@ -6880,7 +6880,7 @@ def vendor_update_settings(request):
 
 @extend_schema(tags=["Admin"], summary="Toggle reply permission for vendor/courier in dispute")
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("litiges")])
 def admin_toggle_dispute_reply(request, dispute_id):
     """
     Accorde ou révoque la permission de répondre à un vendeur ou livreur dans un litige.
@@ -6916,7 +6916,7 @@ def admin_toggle_dispute_reply(request, dispute_id):
 
 @extend_schema(tags=["Admin"], summary="List all couriers")
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("logistique")])
 def admin_list_couriers(request):
     """
     Retourne la liste des livreurs pour le ciblage de notifications.
@@ -6947,7 +6947,7 @@ def admin_list_couriers(request):
 
 @extend_schema(tags=["Admin"], summary="Extended broadcast notification to all actor types")
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("clients")])
 def admin_broadcast_extended(request):
     """
     Envoie une notification à une audience étendue.
@@ -7043,7 +7043,7 @@ def admin_broadcast_extended(request):
 
 @extend_schema(tags=["Admin"], summary="Approve product (moderation)")
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_approve_product(request, product_id):
     from apps.catalog.models import Product, ModerationStatus
     from apps.catalog.serializers import ProductSerializer
@@ -7097,7 +7097,7 @@ def admin_approve_product(request, product_id):
 
 @extend_schema(tags=["Admin"], summary="Reject product (moderation, optional reason)")
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_reject_product(request, product_id):
     from apps.catalog.models import Product, ModerationStatus
     from apps.catalog.serializers import ProductSerializer
@@ -7135,7 +7135,7 @@ def admin_reject_product(request, product_id):
 # CONDITIONS PRODUITS — CRUD ADMIN
 @extend_schema(tags=["Admin"], summary="List product conditions")
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_list_conditions(request):
     from apps.catalog.models import ProductCondition
     from apps.catalog.serializers import ProductConditionSerializer
@@ -7145,7 +7145,7 @@ def admin_list_conditions(request):
 
 @extend_schema(tags=["Admin"], summary="Create product condition")
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_create_condition(request):
     from apps.catalog.models import ProductCondition
     from apps.catalog.serializers import ProductConditionSerializer
@@ -7160,7 +7160,7 @@ def admin_create_condition(request):
 
 @extend_schema(tags=["Admin"], summary="Update product condition")
 @api_view(['PATCH'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_update_condition(request, cond_id):
     from apps.catalog.models import ProductCondition
     from apps.catalog.serializers import ProductConditionSerializer
@@ -7177,7 +7177,7 @@ def admin_update_condition(request, cond_id):
 
 @extend_schema(tags=["Admin"], summary="Delete product condition")
 @api_view(['DELETE'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_delete_condition(request, cond_id):
     from apps.catalog.models import ProductCondition
     try:
@@ -7191,7 +7191,7 @@ def admin_delete_condition(request, cond_id):
 
 @extend_schema(tags=["Admin"], summary="List master products")
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_list_masters(request):
     from apps.catalog.models import MasterProduct
     from apps.vendors.serializers import AdminMasterListSerializer
@@ -7209,7 +7209,7 @@ def admin_list_masters(request):
 
 @extend_schema(tags=["Admin"], summary="Master product detail")
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_master_detail(request, master_id):
     from apps.catalog.models import MasterProduct
     from apps.vendors.serializers import AdminMasterDetailSerializer
@@ -7224,7 +7224,7 @@ def admin_master_detail(request, master_id):
 
 @extend_schema(tags=["Admin"], summary="Update master product (enrichi)")
 @api_view(["PATCH"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_update_master(request, master_id):
     """
     Met à jour une fiche maître.
@@ -7368,7 +7368,7 @@ def admin_update_master(request, master_id):
 
 @extend_schema(tags=["Admin"], summary="Approve master product")
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_approve_master(request, master_id):
     from apps.catalog.models import MasterProduct, ModerationStatus
     from django.utils import timezone
@@ -7391,7 +7391,7 @@ def admin_approve_master(request, master_id):
 
 @extend_schema(tags=["Admin"], summary="Reject master product")
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_reject_master(request, master_id):
     from apps.catalog.models import MasterProduct, ModerationStatus
     from django.utils import timezone
@@ -7408,7 +7408,7 @@ def admin_reject_master(request, master_id):
 
 @extend_schema(tags=["Admin"], summary="Delete master product")
 @api_view(['DELETE'])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("catalogue")])
 def admin_delete_master(request, master_id):
     from apps.catalog.models import MasterProduct
     try:

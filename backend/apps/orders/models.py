@@ -1196,6 +1196,10 @@ class RemboursementAuto(models.Model):
     empreinte_numero = models.CharField(max_length=64, blank=True, default="")
     telephone = models.CharField(max_length=20, blank=True, default="")
     relais = models.ForeignKey("accounts.RelayPointProfile", on_delete=models.SET_NULL, null=True, blank=True)
+    # R71.2 : relais habituel et nom de retrait normalisé du client au moment de la demande (reconnaître la même
+    # personne derrière plusieurs comptes ; jamais le relais seul)
+    relais_habituel_id = models.PositiveBigIntegerField(null=True, blank=True)
+    nom_retrait = models.CharField(max_length=80, blank=True, default="")
     payout_reference = models.CharField(max_length=48, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
 

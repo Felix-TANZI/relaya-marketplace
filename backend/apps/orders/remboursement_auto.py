@@ -12,9 +12,14 @@
 # atteinte ou qu'un doute apparaît, traitement normal avec retour ; droit retiré au client pris en abus après
 # validation humaine ; plafond mensuel global r_auto_rmb_plafond_mois (0 = fermé) avec alerte ; chaque cas journalisé.
 #
-# Choix prudents (à revoir avec l'équipe) : le seuil R71.1 porte sur la ligne de l'article (prix x quantité) ;
-# palier_client n'est défini nulle part, tout client est donc Standard ; le « relais habituel » de R71.2 n'est
-# pas encore une clé de comptage (il ne désigne pas une personne à lui seul).
+# Le seuil R71.1 porte sur la ligne de l'article (prix x quantité), choix validé par le porteur.
+# Définitions proposées puis validées par le porteur (2026-10-28), réglages modifiables dans l'admin :
+#   palier « Élevé » (R71.1)  au moins r_palier_eleve_livrees commandes livrées sans litige perdu, aucun litige perdu
+#                             depuis r_palier_eleve_litige_mois mois, compte ouvert depuis r_palier_eleve_anciennete_mois
+#                             mois, numéro vérifié ; perdu dès un litige perdu ou un retrait du droit
+#   relais habituel (R71.2)   celui choisi dans le profil, à défaut le relais du plus grand nombre de retraits sur
+#                             r_relais_habituel_jours jours ; il ne désigne jamais une personne seul : avec le même nom
+#                             de retrait, il reconnaît la même personne derrière plusieurs comptes
 
 import logging
 from datetime import timedelta
@@ -57,9 +62,55 @@ def plafond_mensuel() -> int:
         return 0
 
 
-def palier_client(user) -> str:
-    """R71.1 : « Standard ou Élevé, défini par la spécification client ». Pas encore défini : Standard pour tous."""
-    return "Standard"
+def palier_client(user, maintenant=None) -> str:
+    """R71.1 : Standard ou Élevé (définition validée par le porteur, voir l'en-tête)."""
+    from apps.client_accounts.services import numero_verifie
+
+    from .models import Dispute
+
+    maintenant = maintenant or timezone.now()
+    mois = timedelta(days=30)
+    if user is None or not getattr(user, "pk", None):
+        return "Standard"
+    if RetraitDroitRemboursementAuto.objects.filter(client=user, valide_le__isnull=False).exists():
+        return "Standard"
+    if livrees_sans_litige_perdu(user) < regles.reglage("r_palier_eleve_livrees"):
+        return "Standard"
+    depuis = maintenant - mois * regles.reglage("r_palier_eleve_litige_mois")
+    if Dispute.objects.filter(order__user=user, resolution="REJECTED").filter(
+            Q(resolved_at__gte=depuis) | Q(resolved_at__isnull=True, created_at__gte=depuis)).exists():
+        return "Standard"
+    if user.date_joined > maintenant - mois * regles.reglage("r_palier_eleve_anciennete_mois"):
+        return "Standard"
+    if not numero_verifie(user):
+        return "Standard"
+    return "Élevé"
+
+
+def relais_habituel_id(user, maintenant=None):
+    """R71.2 : le relais choisi dans le profil, à défaut celui du plus grand nombre de retraits récents."""
+    from apps.client_accounts.models import ProfilClient
+    from apps.shipping.models import RelayParcel
+
+    p = ProfilClient.objects.filter(user=user).first()
+    if p is not None and p.relais_habituel_id:
+        return p.relais_habituel_id
+    depuis = (maintenant or timezone.now()) - timedelta(days=regles.reglage("r_relais_habituel_jours"))
+    ligne = (RelayParcel.objects.filter(shipment__order__user=user, picked_up_at__gte=depuis)
+             .values("relay_point_id").annotate(n=Count("id")).order_by("-n", "relay_point_id").first())
+    return ligne["relay_point_id"] if ligne else None
+
+
+def nom_de_retrait(user) -> str:
+    """Le nom donné au comptoir (profil), à défaut le nom du compte ; normalisé pour comparer."""
+    import unicodedata
+
+    from apps.client_accounts.models import ProfilClient
+
+    p = ProfilClient.objects.filter(user=user).first()
+    nom = (p.nom_retrait if p is not None and p.nom_retrait else "") or user.get_full_name()
+    nom = unicodedata.normalize("NFKD", nom).encode("ascii", "ignore").decode().lower()
+    return "".join(ch for ch in nom if ch.isalnum())
 
 
 def seuil(user) -> int:
@@ -84,6 +135,9 @@ def _deja(user, empreinte, telephone, depuis) -> int:
         personne |= Q(empreinte_numero=empreinte)
     if telephone:
         personne |= Q(telephone=telephone)
+    relais, nom = relais_habituel_id(user), nom_de_retrait(user)
+    if relais and nom:  # R71.2 : relais habituel ET même nom de retrait, jamais le relais seul
+        personne |= Q(relais_habituel_id=relais, nom_retrait=nom)
     return RemboursementAuto.objects.filter(personne, statut__in=COMPTES, created_at__gte=depuis).count()
 
 
@@ -179,6 +233,7 @@ def tenter(dispute, statut_avant: str) -> RemboursementAuto:
             dispute=dispute, order=order, order_item=item, client=dispute.opened_by, vendor=dispute.vendor,
             article_xaf=article, frais_momo_xaf=frais, total_xaf=article + frais, raison=raison,
             empreinte_numero=pont.empreinte_payeur(order), telephone=_telephone(order), relais=order.relay_point,
+            relais_habituel_id=relais_habituel_id(dispute.opened_by), nom_retrait=nom_de_retrait(dispute.opened_by),
             statut=RemboursementAuto.Statut.REFUSE if raison else RemboursementAuto.Statut.EN_COURS)
         journal.save()
     if raison:

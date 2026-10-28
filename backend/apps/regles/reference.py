@@ -25,6 +25,10 @@ REGLAGES_FEUILLE_DE_ROUTE = {
     "r_secours_jours_max",      # DP-42 : durée maximale d'un accès de valideur de secours
     "r_rappel_valideurs_h1",    # DP-42 : premier rappel du vendredi aux valideurs
     "r_rappel_valideurs_h2",    # DP-42 : second rappel du vendredi aux valideurs
+    "r_palier_eleve_livrees",   # R71.1 : palier Élevé, commandes livrées sans litige perdu
+    "r_palier_eleve_litige_mois",       # R71.1 : palier Élevé, aucun litige perdu depuis (mois)
+    "r_palier_eleve_anciennete_mois",   # R71.1 : palier Élevé, ancienneté du compte (mois)
+    "r_relais_habituel_jours",  # R71.2 : relais habituel par défaut, fenêtre des retraits
 }
 
 

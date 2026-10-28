@@ -1,0 +1,222 @@
+/* Écrans LIV-10 (messages, notifications, moi, aide et SOS, réglages) : préfixe l10-. */
+
+.l10-n{min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--alerte-btn);color:var(--alerte-btn-ink);font-size:.75rem;font-weight:800;display:inline-flex;align-items:center;justify-content:center}
+.l10-point{width:10px;height:10px;border-radius:50%;background:var(--or);flex-shrink:0}
+.l10-rouge{background:var(--red-soft)!important;color:var(--red)!important}
+
+/* Messages : liste */
+.l10-fil b em{font-style:normal;font-weight:700;color:var(--ink-3)}
+.l10-fil .l-grow>span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.l10-fil-f{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;font-size:.75rem;color:var(--ink-3)}
+.l10-fil.ferme .lc-ligne-i{background:var(--sand-2);color:var(--ink-4)}
+
+/* Messages : fil */
+.l10-fil-hd{display:flex;align-items:center;gap:10px;padding:6px 8px 6px 2px;border-radius:var(--r);background:var(--card);box-shadow:var(--ombre)}
+.l10-fil-hd b{display:block}
+.l10-fil-hd .l-grow>span{display:block;font-size:.8125rem;color:var(--ink-3)}
+.l10-appel{color:var(--acc-txt);background:var(--acc-soft)}
+.l10-appel.ko{color:var(--ink-4);background:var(--sand-2)}
+.l10-contexte{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border-radius:14px;background:var(--acc-soft);color:var(--acc-txt);font-size:.8125rem;line-height:1.45}
+.l10-contexte svg{flex-shrink:0;margin-top:1px}
+.l10-contexte.ferme{background:var(--sand-2);color:var(--ink-3)}
+.l10-bulles{display:flex;flex-direction:column;gap:8px}
+.l10-bulle{max-width:84%;padding:10px 12px 6px;border-radius:18px;background:var(--card);box-shadow:var(--ombre);align-self:flex-start}
+.l10-bulle.moi{align-self:flex-end;background:var(--acc-btn);color:var(--acc-btn-ink);border-bottom-right-radius:6px}
+.l10-bulle.eux{border-bottom-left-radius:6px}
+.l10-bulle p{font-size:.9375rem;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere}
+.l10-meta{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:2px;font-size:.75rem;opacity:.8}
+.l10-masque{display:inline-flex;align-items:center;gap:3px;font-weight:800}
+.l10-signaler{display:inline-flex;align-items:center;gap:4px;min-height:36px;margin-top:2px;padding:0 8px;border:0;border-radius:10px;background:transparent;color:var(--ink-3);font:inherit;font-size:.75rem;font-weight:700;cursor:pointer}
+.l10-signaler:disabled{color:var(--amber);cursor:default}
+.l10-sys{display:flex;gap:6px;align-items:flex-start;align-self:center;max-width:92%;padding:6px 10px;border-radius:12px;background:var(--sand-2);color:var(--ink-3);font-size:.75rem;line-height:1.4;text-align:left}
+.l10-sys svg{flex-shrink:0;margin-top:1px}
+.l10-lecture{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:14px;background:var(--sand-2);color:var(--ink-3);font-weight:800;font-size:.875rem}
+.l10-rapides{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.l10-rapides::-webkit-scrollbar{display:none}
+.l10-rapides .lc-puce{flex-shrink:0;white-space:nowrap}
+.l10-champ{display:flex;gap:8px}
+.l10-champ input{flex:1;min-width:0;min-height:48px;padding:0 14px;border:0;border-radius:14px;background:var(--card);color:var(--ink);font:inherit;font-size:1rem;box-shadow:inset 0 0 0 1.5px var(--line-2)}
+.l10-champ input:focus{outline:none;box-shadow:inset 0 0 0 2px var(--acc)}
+.l10-envoyer{width:52px;height:48px;border:0;border-radius:14px;background:var(--acc-btn);color:var(--acc-btn-ink);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.l10-envoyer:disabled{opacity:.45;cursor:default}
+
+/* Notifications */
+.l10-entete-n{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.l10-rang{width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:var(--sand-2);color:var(--ink-2);font-size:.75rem}
+.l10-notif.nonlue{background:var(--card-2)}
+.l10-notif.nonlue b{font-weight:800}
+.l10-pills{display:flex!important;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px!important}
+
+/* Moi */
+.l10-carte-id{display:flex;flex-direction:column;gap:12px;padding:18px;border-radius:var(--r-l);background:linear-gradient(150deg,var(--acc-soft) 0%,var(--card) 72%);color:var(--ink);box-shadow:inset 0 0 0 1px var(--acc-line),var(--ombre)}
+.l10-id-hd{display:flex;align-items:center;gap:14px}
+.l10-avatar{width:72px;height:72px;font-size:1.375rem;box-shadow:0 0 0 3px var(--card),0 0 0 5px var(--acc-2)}
+.l10-id-k{display:block;font-size:.75rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--acc-txt)}
+.l10-id-hd b{display:block;font-size:1.375rem;font-weight:800;letter-spacing:-.01em}
+.l10-id-hd .l-grow>span:last-child{display:block;font-size:.8125rem;color:var(--ink-3)}
+.l10-id-pills{display:flex;flex-wrap:wrap;gap:6px}
+.l10-id-pills .lc-etiquette{min-height:44px}
+.l10-id-note{font-size:.8125rem;line-height:1.45;color:var(--ink-3)}
+.l10-id-pied{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:.8125rem;color:var(--ink-3)}
+.l10-id-pied>span{display:inline-flex;align-items:center;gap:6px}
+
+.l10-dl{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;margin:12px 0 0;font-size:.875rem}
+.l10-dl dt{color:var(--ink-3);font-weight:700}
+.l10-dl dd{margin:0;font-weight:700}
+.l10-tuiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.l10-tuile{display:flex;flex-direction:column;gap:4px;min-height:96px;padding:12px;border-radius:16px;background:var(--card);box-shadow:var(--ombre);color:var(--ink)}
+.l10-tuile>svg{color:var(--acc-txt)}
+.l10-tuile b{font-size:.875rem}
+.l10-tuile span{font-size:.75rem;color:var(--ink-3);line-height:1.3}
+.l10-sos{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:var(--r);background:var(--card);box-shadow:inset 3px 0 0 var(--red),inset 0 0 0 1px var(--line)}
+.l10-sos p{font-size:.875rem;line-height:1.45}
+.l10-sos b{color:var(--red)}
+.l10-feuille{display:flex;flex-direction:column;gap:12px}
+
+/* Aide et SOS */
+.l10-urgence{display:flex;flex-direction:column;gap:10px;padding:16px;border-radius:var(--r);background:linear-gradient(135deg,var(--red-soft) 0%,var(--card) 80%);box-shadow:inset 0 0 0 1px var(--red-line),var(--ombre)}
+.l10-urgence h2{display:flex;align-items:center;gap:8px;font-size:1.25rem;font-weight:800;color:var(--red)}
+.l10-urgence p{font-size:.9375rem;line-height:1.45}
+.l10-numeros{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.l10-numero{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:72px;border-radius:16px;background:var(--card);color:var(--red);box-shadow:inset 0 0 0 1.5px var(--red-line)}
+.l10-numero b{font-size:1.5rem;font-weight:800}
+.l10-numero span{font-size:.75rem;font-weight:700;color:var(--ink-2)}
+.l10-carte-sos{display:flex;flex-direction:column;gap:10px;padding:16px;border-radius:var(--r-l);background:var(--card);box-shadow:inset 0 0 0 2px var(--red-line),var(--ombre)}
+.l10-carte-sos .l-kicker{color:var(--red)}
+.l10-carte-sos p{font-size:.875rem;line-height:1.45;color:var(--ink-2)}
+.l10-recherche{display:flex;align-items:center;gap:8px;padding:0 14px;border-radius:16px;background:var(--card);box-shadow:inset 0 0 0 1.5px var(--line-2)}
+.l10-recherche>svg{color:var(--ink-3);flex-shrink:0}
+.l10-recherche input{flex:1;min-width:0;min-height:52px;border:0;background:transparent;color:var(--ink);font:inherit;font-size:1rem}
+.l10-recherche input:focus{outline:none}
+.l10-recherche:focus-within{box-shadow:inset 0 0 0 2px var(--acc)}
+.l10-fiche{display:flex;align-items:center;background:var(--card)}
+.l10-fiche .lc-ligne{flex:1;min-width:0}
+.l10-ecouter{width:52px;height:52px;margin-right:6px;border:0;border-radius:14px;background:var(--acc-soft);color:var(--acc-txt);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.l10-ecouter[aria-pressed=true]{background:var(--acc-btn);color:var(--acc-btn-ink)}
+.l10-etapes{margin:10px 0 0;padding-left:22px;display:flex;flex-direction:column;gap:8px;font-size:.9375rem;line-height:1.5}
+.l10-sos-plein{position:fixed;inset:0;z-index:80;overflow-y:auto;background:linear-gradient(180deg,var(--red-soft) 0%,var(--sand) 46%);color:var(--ink);padding:calc(env(safe-area-inset-top,0px) + 20px) 16px calc(env(safe-area-inset-bottom,0px) + 24px)}
+.l10-sos-c{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.l10-sos-k{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;padding:6px 12px;border-radius:999px;background:var(--red);color:#fff;font-weight:800;font-size:.875rem}
+html[data-mouv] .l10-sos-k svg{animation:lc-pulse .6s ease-in-out infinite alternate}
+.l10-sos-c h2{font-size:1.5rem;font-weight:800;line-height:1.2;color:var(--red)}
+.l10-sos-appels{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.l10-sos-appels li{display:flex;align-items:center;gap:10px;min-height:52px;padding:0 14px;border-radius:14px;background:var(--card);box-shadow:inset 0 0 0 1px var(--line);font-size:.9375rem}
+.l10-sos-appels li.en_cours{box-shadow:inset 3px 0 0 var(--red),inset 0 0 0 1px var(--red-line)}
+.l10-sos-appels li.en_cours>svg,.l10-sos-appels li.en_cours b{color:var(--red)}
+.l10-sos-appels li.a_venir{color:var(--ink-3)}
+.l10-sos-minuteur{display:flex;flex-direction:column;align-items:center;gap:2px;padding:14px;border-radius:18px;background:var(--card);box-shadow:var(--ombre);text-align:center}
+.l10-sos-minuteur b{font-size:2.5rem;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.02em;color:var(--red)}
+.l10-sos-minuteur span{font-size:.8125rem;color:var(--ink-3)}
+.l10-sos-note{font-size:.8125rem;line-height:1.45;color:var(--ink-2);text-align:center}
+.l10-sos-secours{background:var(--red);color:#fff}
+.l10-sos-stop{background:var(--card);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line-2)}
+
+/* Réglages */
+.l10-jamais{padding:14px;border-radius:var(--r);border:2px dashed var(--acc-line);background:var(--card)}
+.l10-jamais b{display:flex;align-items:center;gap:8px;color:var(--acc-txt)}
+.l10-jamais p{margin-top:6px;font-size:.875rem;line-height:1.45;color:var(--ink-2)}
+.l10-controles{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.l10-controles li{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;font-size:.875rem;font-weight:700}
+.l10-controles li.ok{background:var(--green-soft);color:var(--green)}
+.l10-controles li.ko{background:var(--amber-soft);color:var(--amber)}
+.l10-coche{display:flex;align-items:flex-start;gap:10px;min-height:48px;font-size:.875rem;line-height:1.45;cursor:pointer}
+.l10-coche input{width:22px;height:22px;margin-top:2px;accent-color:var(--acc);flex-shrink:0}
+
+@media (min-width:768px){
+  .l10-tuiles{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .l10-numeros{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+html[data-theme=dark] .l10-sos-k,html[data-theme=dark] .l10-sos-secours{background:#D93A2B}
+.l10-nav{flex-wrap:wrap}
+.l10-nav button{flex:1 1 40%}
+
+/* Pièces (Moi) : nom et validité sur toute la largeur, état et « Mettre à jour » dessous. */
+.l10-piece{flex-wrap:wrap;row-gap:8px}
+.l10-piece>.l-grow{flex-basis:calc(100% - 52px)}
+.l10-piece-a{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding-left:52px}
+
+/* Menu (☰) : carte nuit du livreur qui ouvre le profil ; réglages rapides dans les lignes du prototype. */
+.lm-carte{display:block;color:#fff}
+.lm-carte>.row>svg{color:rgba(255,255,255,.8);flex-shrink:0}
+.lm-carte .l-avatar{box-shadow:0 0 0 2px rgba(255,255,255,.6)}
+.card .li .l-choix button{min-height:44px}
+.lm-sortie .ic{color:var(--or-txt)}
+
+/* Moi (profil) : photo du héros d'identité (livc-idc .ph) en initiales quand il n'y a pas encore de photo vérifiée. */
+.l10-ph img{width:100%;height:100%;object-fit:cover;display:block}
+.l10-ph .l10-init{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--avatar-bg);color:var(--avatar-ink);font-size:1.625rem;font-weight:800}
+
+/* ===== Reprise sur le prototype (LIV-P27, P28, P30, P31) : compléments du balisage livc- ===== */
+/* Zone d'écriture d'un fil (bottom-cta du prototype, sans barre d'onglets). */
+.bottom-cta.l10-cta{position:fixed;z-index:32;left:0;right:0;bottom:0;padding:10px 16px calc(env(safe-area-inset-bottom,0px) + 14px);border-radius:24px 24px 0 0}
+.l10-cta-place{height:150px}
+.livc-qr button{flex-shrink:0;min-height:44px;padding:0 13px;border-radius:999px;border:1px solid var(--acc-line);background:var(--acc-soft);color:var(--acc-txt);font:inherit;font-size:0.8125rem;font-weight:800;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}
+.livc-qr::-webkit-scrollbar{display:none}
+.livc-compose input.in{min-width:0;font:inherit;font-size:1rem;color:var(--ink)}
+.livc-compose input.in::placeholder{color:var(--ink-3)}
+.livc-compose input.in:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 4px rgba(var(--acc-rgb),.14)}
+.livc-compose button.send{border:0;cursor:pointer}
+.livc-compose button.send:disabled{opacity:.5;cursor:default}
+.l10-ro{display:flex;gap:10px;justify-content:center;align-items:center;color:var(--ink-3);font-size:0.8438rem;font-weight:700;padding:8px 0}
+.livc-x.l10-x,.livc-x.l10-appel{width:44px;height:44px;border:0;cursor:pointer}
+.livc-x.l10-appel{background:var(--acc-soft);color:var(--acc-txt)}
+.livc-x.l10-appel.ko{background:var(--sand-2);color:var(--ink-3)}
+.livc-b .l10-signaler{min-height:44px;margin:2px 0 -6px -8px}
+.livc-b.out .tm svg{flex-shrink:0}
+.livc-thr .tt b{overflow-wrap:anywhere}
+/* Réglages : segments et choix en boutons. */
+.livc-seg3 button{flex:1;min-width:0;min-height:44px;border:0;border-radius:10px;background:transparent;display:flex;align-items:center;justify-content:center;gap:6px;font:inherit;font-size:0.8438rem;font-weight:700;color:var(--ink-3);padding:0 4px;cursor:pointer;white-space:normal;text-align:center;line-height:1.15}
+.livc-seg3 button.on{background:var(--card);color:var(--ink);box-shadow:0 2px 6px -2px rgba(60,35,15,.3);font-weight:800}
+html[data-theme=dark] .livc-seg3 button.on{background:var(--sand-4);box-shadow:none}
+.l10-radio{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.tg{cursor:pointer}
+.tg.lock{cursor:default}
+@media (min-width:768px){
+  .bottom-cta.l10-cta{left:50%;right:auto;width:min(760px,100%);transform:translateX(-50%)}
+}
+/* Notifications : lignes en boutons, « Tout marquer comme lu », aperçu de l'écran verrouillé. */
+.livc-nt.l10-nt{width:100%;background:none;border:0;border-top:1px solid var(--line);text-align:left;font:inherit;color:inherit;cursor:pointer}
+.livc-nt.l10-nt:first-child{border-top:0}
+a.livc-nt,button.livc-nt{min-height:56px;color:var(--ink)}
+.l10-toutlu{min-height:44px;padding:0 4px;border:0;background:none;font-family:inherit;cursor:pointer}
+.l10-toutlu:disabled{color:var(--ink-3);cursor:default}
+.l10-lien{color:var(--acc-txt);font-weight:700;text-decoration:underline;display:inline-flex;align-items:center;min-height:44px}
+.livc-lock.l10-lock{position:fixed;inset:0;z-index:50;overflow-y:auto;padding:calc(env(safe-area-inset-top,0px) + 72px) 16px calc(env(safe-area-inset-bottom,0px) + 28px)}
+.l10-lock>*{max-width:520px;margin-left:auto;margin-right:auto}
+/* Aide et SOS : gros bouton SOS (appui long), fiches avec écoute, recherche, SOS en cours. */
+.livc-sos .b.l10-sosb{border:0;font:inherit;cursor:pointer;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.l10-rouge-t{color:var(--red)!important}
+.card.l10-danger{border:1.5px solid var(--red-line)}
+.l10-fli{display:flex;align-items:center;gap:8px;border-top:1px solid var(--line)}
+.l10-fli:first-child{border-top:0}
+.l10-fli>.li{flex:1;min-width:0;border-top:0}
+.l10-ecoute{width:44px;height:44px;border-radius:50%!important;border:0;cursor:pointer}
+.l10-ecoute[aria-pressed=true]{background:var(--acc-grad);color:#fff}
+.l10-lecteur{gap:12px;padding:10px 12px;border-radius:14px;background:var(--acc-soft)}
+.l10-play{width:44px;height:44px;border-radius:50%!important;border:0;cursor:pointer;background:var(--acc-grad)!important;color:#fff}
+.l10-inp{cursor:text}
+.l10-inp input{flex:1;min-width:0;min-height:44px;border:0;background:transparent;color:var(--ink);font:inherit;font-size:.9375rem}
+.l10-inp input:focus{outline:none}
+.l10-inp:focus-within{border-color:var(--acc);box-shadow:0 0 0 4px rgba(var(--acc-rgb),.14)}
+.livc-num a.l10-num{min-height:64px}
+.livc-num a.l10-num .grow{min-width:0}
+.l10-sos-appel{gap:12px;padding:12px;border-radius:16px;background:rgba(255,255,255,.1)}
+.l10-sos-av{width:44px;height:44px;border-radius:50%!important;background:rgba(255,255,255,.2);color:#fff}
+.l10-sos-tel{width:44px;height:44px;border-radius:50%!important;background:#fff;color:#B42318}
+button.l10-lien{background:none;border:0;padding:0;font:inherit;cursor:pointer}
+/* Réglages : carte « ce qu'aucun réglage ne coupe », case « J'ai compris », bouton de déconnexion. */
+.card.l10-jamais2{border:1.5px dashed var(--line-2);box-shadow:none;background:var(--card-2)}
+.check.l10-compris{cursor:pointer;min-height:44px;align-items:center}
+.check.l10-compris input{width:22px;height:22px;accent-color:var(--acc);flex-shrink:0;margin:0}
+.btn.l10-deco{background:var(--n2);color:#fff;border:0;height:52px}
+.btn.l10-deco:disabled{opacity:.5}
+/* Contraste AA : compteur de la puce choisie, cœur du gros bouton SOS (texte blanc ≥ 3 : 1). */
+.l10-chips .chip.on .n{opacity:1}
+.livc-sos .b.l10-sosb{background:radial-gradient(60% 60% at 35% 30%,#E0453A 0%,#C8281C 45%,#912018 100%)}
+
+/* Appel masqué du fil dans l’en-tête (subHeader du prototype) : bouton d’en-tête vert, sans fond. */
+.l-hd-sub .l10-appel{background:none;color:var(--acc-txt)}
+.l-hd-sub .l10-appel.ko{background:none;color:var(--ink-3)}
+.lm-rech{margin-top:14px;font-size:.9375rem;font-weight:600;color:var(--ink-3)}
+.lm-rech span{flex:1;min-width:0;padding:12px 0;line-height:1.3}
+.l10-msg-lu{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-top:4px;padding:0;border:0;background:none;font:inherit;font-size:.875rem;font-weight:800;color:var(--acc-txt);cursor:pointer}

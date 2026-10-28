@@ -15,12 +15,7 @@
 # basculer l'article quand les 4 conditions tiennent ; sinon elle retourne
 # None sans rien modifier, laissant la décision à un humain.
 
-from django.contrib.auth.models import User
-from django.db import transaction
-
-from apps.accounts.models import UserNotification
 from apps.catalog.models import Product
-from apps.shipping.models import Shipment, ShipmentEvent
 
 
 def _destination(order):
@@ -71,91 +66,16 @@ def find_reassignment_candidate(order_item):
     return Product.objects.get(pk=choix["remplacante"])
 
 
-@transaction.atomic
 def attempt_automatic_reassignment(order_item, *, reason: str = ""):
     """
-    Applique le remplacement si un candidat valide existe : bascule
-    l'article sur le nouveau vendeur, annule le colis de l'ancien, en crée
-    un nouveau (qui repart dans le circuit normal d'affectation/tournée).
-
-    Retourne le Product de remplacement si effectué, None sinon (rien n'est
-    modifié dans ce cas).
+    Bascule l'article sur la remplaçante si elle existe (apps.orders.bascule : nouveau colis, échéance et commission
+    propres, prix payé par le client inchangé, séquestre du vendeur défaillant gelé). Retourne la remplaçante, ou
+    None sans rien modifier.
     """
+    from .bascule import basculer
+
     replacement = find_reassignment_candidate(order_item)
     if replacement is None:
         return None
-
-    order = order_item.order
-    old_product = order_item.product
-    old_vendor = old_product.vendor
-    old_price = order_item.price_xaf_snapshot
-    price_diff = old_price - replacement.price_xaf
-
-    old_shipment = Shipment.objects.filter(order=order, vendor=old_vendor).first()
-
-    order_item.product = replacement
-    order_item.title_snapshot = replacement.title
-    order_item.price_xaf_snapshot = replacement.price_xaf
-    order_item.line_total_xaf = replacement.price_xaf * order_item.qty
-    order_item.save(update_fields=["product", "title_snapshot", "price_xaf_snapshot", "line_total_xaf"])
-
-    order.subtotal_xaf = sum(item.line_total_xaf for item in order.items.all())
-    order.total_xaf = order.subtotal_xaf + (order.delivery_fee_xaf or 0)
-    order.save(update_fields=["subtotal_xaf", "total_xaf"])
-
-    if old_shipment is not None:
-        old_shipment.status = Shipment.Status.CANCELLED
-        old_shipment.save(update_fields=["status", "updated_at"])
-        ShipmentEvent.record(
-            shipment=old_shipment,
-            status=Shipment.Status.CANCELLED,
-            message=f"Réattribution automatique (cas 6.2) — article transféré à un autre vendeur. {reason}".strip(),
-            location=order.city,
-            actor_role=ShipmentEvent.ACTOR_ROLE_SYSTEM,
-        )
-
-    new_shipment = Shipment.objects.create(order=order, vendor=replacement.vendor, status=Shipment.Status.CREATED)
-    ShipmentEvent.record(
-        shipment=new_shipment,
-        status=Shipment.Status.CREATED,
-        message="Colis créé par réattribution automatique (cas 6.2) — vendeur d'origine en retard.",
-        location=order.city,
-        actor_role=ShipmentEvent.ACTOR_ROLE_SYSTEM,
-    )
-
-    if order.user_id:
-        UserNotification.objects.create(
-            user=order.user,
-            title=f"Article remplacé · commande #{order.id}",
-            message=(
-                f"Le vendeur initial de « {old_product.title} » n'a pas préparé l'article à temps. "
-                "Il a été remplacé par un autre vendeur — même produit, même état, prix identique ou inférieur."
-            ),
-            notification_type=UserNotification.NotificationType.ORDER,
-            action_url=f"/orders/{order.id}",
-        )
-
-    if price_diff > 0:
-        from .models import OrderHistory
-
-        OrderHistory.objects.create(
-            order=order,
-            action="Réattribution cas 6.2 : écart de prix à rembourser (validation humaine requise)",
-            field_name="line_total_xaf",
-            old_value=str(old_price),
-            new_value=str(replacement.price_xaf),
-        )
-        for admin_user in User.objects.filter(is_staff=True):
-            UserNotification.objects.create(
-                user=admin_user,
-                title=f"Écart de prix à rembourser · commande #{order.id}",
-                message=(
-                    f"Réattribution automatique cas 6.2 sur la commande #{order.id} : "
-                    f"nouveau prix {replacement.price_xaf} F contre {old_price} F. "
-                    f"Différence de {price_diff} F à rembourser à l'acheteur (validation manuelle requise)."
-                ),
-                notification_type=UserNotification.NotificationType.SYSTEM,
-                action_url=f"/admin/operations/orders/{order.id}",
-            )
-
+    basculer(order_item, replacement, reason)
     return replacement

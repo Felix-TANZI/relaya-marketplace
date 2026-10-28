@@ -27,7 +27,6 @@ from .models import (
     VendorChangeRequest,
     VendorLocationMeta,
     VendorLocationVerification,
-    VendorOwnerSecurityCode,
 )
 
 TAG = ["Vendors"]
@@ -41,23 +40,16 @@ def _jour(dt):
     return dt.date().isoformat() if dt else None
 
 
+MOTIF_LIEU_PRINCIPAL = services.MOTIF_LIEU_PRINCIPAL
+MOTIF_CHANGE_REQUEST = services.MOTIF_CHANGE_REQUEST
+
+
 def _envoyer_code(vendor, motif):
-    code = services.generer_code(VendorOwnerSecurityCode.LONGUEUR)
-    enregistrement = VendorOwnerSecurityCode(
-        vendor=vendor, motif=motif, expires_at=timezone.now() + timedelta(minutes=VendorOwnerSecurityCode.VALIDE_MINUTES),
-    )
-    enregistrement.set_code(code)
-    enregistrement.save()
-    if vendor.phone:
-        services.envoyer_code_sms(vendor.phone, code, VendorOwnerSecurityCode.VALIDE_MINUTES)
-    return enregistrement
+    return services.envoyer_code_proprietaire(vendor, motif)  # D6 : moteur de codes unique
 
 
 def _code_valide(vendor, motif, code):
-    enregistrement = VendorOwnerSecurityCode.objects.filter(
-        vendor=vendor, motif=motif, target_employee__isnull=True, used_at__isnull=True,
-    ).order_by("-created_at").first()
-    return enregistrement is not None and enregistrement.check_code(code)
+    return services.code_proprietaire_valide(vendor, motif, None, code)
 
 
 # ── Lieux ────────────────────────────────────────────────────────────────────────────────────────────────
@@ -220,7 +212,7 @@ def shop_location_point(request, location_id):
 @permission_classes([IsAuthenticated])
 def shop_locations_principal_code(request):
     vendor = vendeur_actif(request)
-    _envoyer_code(vendor, VendorOwnerSecurityCode.Motif.LIEU_PRINCIPAL)
+    _envoyer_code(vendor, MOTIF_LIEU_PRINCIPAL)
     return Response({"masque": masquer_numero(vendor.phone)})
 
 
@@ -236,7 +228,7 @@ def shop_location_make_principal(request, location_id):
         return Response({"ok": False, "raison": "a_verifier"})
 
     code = str(request.data.get("code") or "").strip()
-    if not _code_valide(vendor, VendorOwnerSecurityCode.Motif.LIEU_PRINCIPAL, code):
+    if not _code_valide(vendor, MOTIF_LIEU_PRINCIPAL, code):
         return Response({"ok": False, "raison": "code"})
 
     location.is_main = True
@@ -305,7 +297,7 @@ def shop_change_requests(request):
 @permission_classes([IsAuthenticated])
 def shop_change_requests_code(request):
     vendor = vendeur_actif(request)
-    _envoyer_code(vendor, VendorOwnerSecurityCode.Motif.CHANGE_REQUEST)
+    _envoyer_code(vendor, MOTIF_CHANGE_REQUEST)
     return Response({"masque": masquer_numero(vendor.phone)})
 
 
@@ -334,7 +326,7 @@ def _shop_change_requests_create(request, vendor):
         vendor=vendor, champ=champ, status=VendorChangeRequest.Status.EN_ATTENTE,
     ).exists():
         return Response({"ok": False, "raison": "deja"})
-    if not _code_valide(vendor, VendorOwnerSecurityCode.Motif.CHANGE_REQUEST, code):
+    if not _code_valide(vendor, MOTIF_CHANGE_REQUEST, code):
         return Response({"ok": False, "raison": "code"})
 
     avant = ""

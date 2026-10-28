@@ -19,7 +19,6 @@ from django.utils import timezone
 
 from apps.accounts.models import UserNotification
 from apps.orders.models import Order
-from apps.orders.reassignment import attempt_automatic_reassignment
 from apps.shipping.tournees import _slot_boundaries
 
 ADMIN_ALERT_DELAY_HOURS = 2   # +2h après le rappel de 4h = 6h depuis l'accusé vendeur
@@ -87,31 +86,11 @@ class Command(BaseCommand):
                 reassignment_at = admin_alert_at + timezone.timedelta(hours=REASSIGNMENT_FALLBACK_HOURS)
 
             if reassignment_at and now >= reassignment_at and order.prep_reassignment_flagged_at is None:
-                late_vendor_ids = {u.id for u in vendor_users}
-                manual_items = []
-                for item in order.items.select_related("product"):
-                    if not item.product.vendor_id or item.product.vendor_id not in late_vendor_ids:
-                        continue
-                    replacement = attempt_automatic_reassignment(
-                        item, reason="Échéance du vendeur dépassée (R35.1, R44.2).",
-                    )
-                    if replacement is None:
-                        manual_items.append(item)
+                # Spec v2.1, R35.1 : échéance dépassée ; bascule (R35.2, R35.3) ou remboursement intégral (R35.4).
+                from apps.orders.bascule import ECHEANCE, declencher
 
-                if manual_items:
-                    labels = ", ".join(item.title_snapshot for item in manual_items)
-                    for admin_user in User.objects.filter(is_staff=True):
-                        UserNotification.objects.create(
-                            user=admin_user,
-                            title=f"Réattribution manuelle nécessaire — commande #{order.id}",
-                            message=(
-                                f"Le vendeur de la commande #{order.id} a dépassé son échéance sans préparer le colis, "
-                                f"et aucune offre en course ne peut le remplacer (R35.2 : trust ≥ 75, prix ≤ prix payé) "
-                                f"pour : {labels}. Sans remplaçant, R35.4 prévoit le remboursement intégral le jour même."
-                            ),
-                            notification_type=UserNotification.NotificationType.SYSTEM,
-                            action_url=f"/admin/operations/orders/{order.id}",
-                        )
+                for vendeur in vendor_users:
+                    declencher(order, vendeur, ECHEANCE)
                 order.prep_reassignment_flagged_at = now
                 order.save(update_fields=["prep_reassignment_flagged_at"])
                 reassignments += 1

@@ -163,8 +163,10 @@ ESCROW_POLICIES = [
     {
         "config_key": "escrow-default",
         "name": "Politique par defaut",
-        "auto_confirm_hours": 48,
-        "release_delay_hours": 24,
+        # Spec v2.1, R23 : auto-confirmation fixee au retrait (bridge.signals.ouvrir_le_droit_de_retour),
+        # liberation + r_lib_j_standard (3 j, 1 j pour Or et Platine), fenetre r_retour_j (7 j).
+        "auto_confirm_hours": 0,
+        "release_delay_hours": 72,
         "dispute_window_days": 7,
         "vendor_reply_hours": 72,
         "priority": 0,

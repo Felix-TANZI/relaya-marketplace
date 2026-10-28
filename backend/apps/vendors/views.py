@@ -1131,122 +1131,31 @@ def vendor_withdrawal_list(request):
  
 @extend_schema(
     tags=["Vendors"],
-    summary="Create withdrawal request",
+    summary="Retrait à la demande (fermé) : versement automatique chaque vendredi",
     description=(
-        "Crée une demande de retrait Mobile Money. "
-        "Les frais sont calculés depuis PlatformSettings (withdrawal_fee_percent). "
-        "Un seul retrait PENDING autorisé à la fois par vendeur."
+        "Feuille de route D20 et spec v2.1, R22.2 : chaque vendredi avant r_versement_heure, le vendeur reçoit ses "
+        "net_b libérés, sans demande et sans minimum ; frais de versement r_versement à sa charge (R22.3)."
     ),
-    request=WithdrawalRequestCreateSerializer,
-    responses={201: WithdrawalRequestSerializer},
 )
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def vendor_withdrawal_create(request):
     """
-    Crée une demande de retrait.
- 
-    Règle : un seul retrait PENDING à la fois.
-    Raison : gestion admin manuelle dans cette version (sans API MoMo automatique).
-    Simplifie le traitement et évite les doublons / dépassements de solde.
+    Le retrait à la demande (décision du 12 octobre) est remplacé par le
+    versement du vendredi, comme le demande la feuille de route (D20, R22.2) :
+    apps.payments.bridge.vendredi. Le vendeur n'a plus rien à demander.
     """
-    # ─────────────────────────────────────────────────────────────────────
-    # LE RETRAIT PASSE PAR LE MODULE FINANCIER
-    #
-    # Decision produit confirmee : le vendeur retire quand il veut (PULL),
-    # pas de versement automatique par cycle.
-    #
-    # A NOTER, pour qui relirait le cahier des charges : la feuille de route
-    # « Reste a faire de l'equipe tech & produit » (V2 Elite, 16 octobre,
-    # tache D20) demande encore « Verser chaque vendredi ». C'etait la regle
-    # INITIALE ; elle a ete abandonnee au profit du retrait a la demande,
-    # confirme le 12 octobre, et le document n'a pas suivi sur ce point.
-    # Ne pas rouvrir ce chantier en le lisant : l'ecart est signale, il
-    # attend une confirmation.
-    #
-    # Les versements du vendredi, eux, restent bien en vigueur pour les points
-    # relais (D13) et les entreprises de livraison (D11) : ce sont des cycles
-    # differents, que cette decision ne touche pas.
-    #
-    # Cette vue emprunte le meme
-    # circuit comptable qu'un reglement par cycle (lot, confirmation,
-    # approbation par un tiers, execution) mais le DECLENCHEUR reste le
-    # vendeur, pas un calendrier — request_withdrawal() ne verse jamais
-    # plus que le montant deja libere (`amount_due`), donc aucun risque de
-    # payer ce qui n'est pas du.
-    # ─────────────────────────────────────────────────────────────────────
-    from apps.payments.bridge.actors import payee_for_vendor
-    from apps.payments.settlements.services import (
-        SettlementError, request_withdrawal,
-    )
-
-    try:
-        profil = VendorProfile.objects.get(user=request.user)
-    except VendorProfile.DoesNotExist:
-        return Response({'detail': 'Profil vendeur introuvable.'},
-                        status=status.HTTP_404_NOT_FOUND)
-
-    if not profil.is_active_vendor:
-        return Response(
-            {'detail': "Votre compte vendeur n'est pas encore approuve."},
-            status=status.HTTP_403_FORBIDDEN,
-        )
-
-    # ── Tache D19 ────────────────────────────────────────────────────────
-    # « Exiger les documents complets avant le premier versement. »
-    #
-    # Le controle porte sur CHAQUE demande, pas seulement la premiere : si
-    # une piece est rejetee ou expire apres un premier versement, verser a
-    # nouveau reviendrait a payer un compte dont l'identite n'est plus
-    # etablie. Un vendeur en regle ne voit jamais ce message.
-    from apps.vendors.kyc import etat_verification, identite_verifiee
-    if not identite_verifiee(request.user):
-        return Response(
-            {
-                'detail': "Vos pieces d'identite doivent etre validees avant "
-                          "tout versement.",
-                'piece_identite': etat_verification(request.user),
-            },
-            status=status.HTTP_403_FORBIDDEN,
-        )
-
-    compte = payee_for_vendor(profil, create=True)
-    if compte is None:
-        return Response(
-            {'detail': "Aucun compte financier n'est rattache a votre "
-                       "boutique. Contactez le support."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    montant = request.data.get('amount_xaf') or 0
-    try:
-        montant = int(montant)
-    except (TypeError, ValueError):
-        montant = 0
-
-    try:
-        demande = request_withdrawal(
-            compte, requested_by=request.user, amount_xaf=montant,
-            justification='Retrait demande depuis l\'espace vendeur',
-        )
-    except SettlementError as exc:
-        # Le message du service, TEL QUEL : il explique ce qui manque et
-        # comment y remedier.
-        return Response({'detail': str(exc)},
-                        status=status.HTTP_400_BAD_REQUEST)
+    from apps.regles import services as regles
 
     return Response(
         {
-            'reference': demande.reference,
-            'amount_xaf': demande.amount_xaf,
-            'status': demande.status,
-            'status_display': demande.get_status_display(),
             'detail': (
-                "Demande enregistree. Elle sera validee par BelivaY puis "
-                "versee sur votre numero Mobile Money."
+                "Plus besoin de demander : vos ventes libérées vous sont versées automatiquement chaque vendredi "
+                f"avant {regles.reglage('r_versement_heure')} h, sur votre numéro vérifié."
             ),
+            'code': 'versement_du_vendredi',
         },
-        status=status.HTTP_201_CREATED,
+        status=status.HTTP_409_CONFLICT,
     )
 
 
@@ -1387,6 +1296,15 @@ def update_fulfillment_status(request, order_id):
                 status=status.HTTP_404_NOT_FOUND,
             )
  
+        # Feuille de route D8 ; spec v2.1, R35.1 : un vendeur qui annule une commande payée la REFUSE ; elle bascule
+        # vers une autre offre ou le client est remboursé (R35.4), jamais une annulation sèche de toute la commande.
+        if request.data.get('fulfillment_status') == Order.FulfillmentStatus.CANCELLED and order.is_paid:
+            from apps.orders.bascule import REFUS, declencher
+
+            declencher(order, request.user, REFUS)
+            order.refresh_from_db()
+            return Response(VendorOrderSerializer(order, context={'request': request, 'vendor': request.user}).data)
+
         serializer = UpdateFulfillmentStatusSerializer(
             order,
             data=request.data,
@@ -8379,20 +8297,36 @@ def ev_order_stockout(request, order_id):
         return Response({'ok': False, 'raison': 'introuvable'})
     if order.fulfillment_status == Order.FulfillmentStatus.READY_FOR_PICKUP:
         return Response({'ok': False, 'raison': 'deja_prete'})
+    return _ev_bascule(request, order, 'rupture', 'Rupture de stock signalée (espace vendeur)')
 
-    order.fulfillment_status = Order.FulfillmentStatus.CANCELLED
-    order.cancellation_reason = Order.CancellationReason.STOCKOUT
-    order.cancelled_at = timezone.now()
-    if order.is_paid:
-        order.escrow_status = Order.EscrowStatus.REFUNDED
-    order.save()
 
+def _ev_bascule(request, order, motif, libelle):
+    """Feuille de route D8 ; spec v2.1, R35.1 : rupture ou refus du vendeur. La commande n'est plus annulée d'office :
+    chaque article bascule vers une autre offre (R35.2, R35.3) ou le client est remboursé le jour même (R35.4)."""
+    from apps.orders.bascule import declencher
     from apps.orders.models import OrderHistory
+
+    resultat = declencher(order, request.user, motif)
     OrderHistory.objects.create(
-        order=order, user=request.user, action='Rupture de stock signalée (espace vendeur)',
-        field_name='fulfillment_status', old_value='', new_value='CANCELLED',
+        order=order, user=request.user, action=libelle,
+        field_name='fulfillment_status', old_value='', new_value=order.fulfillment_status,
     )
-    return Response({'ok': True})
+    return Response({'ok': True, **resultat})
+
+
+@extend_schema(tags=["Vendors"], summary="(Espace vendeur) Refuser la commande — bascule vers un autre vendeur (R35.1)")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def ev_order_refuse(request, order_id):
+    profile, err = _ev_active_vendor(request)
+    if err:
+        return err
+    order = _ev_vendor_order(order_id, request.user)
+    if not order:
+        return Response({'ok': False, 'raison': 'introuvable'})
+    if order.fulfillment_status == Order.FulfillmentStatus.READY_FOR_PICKUP:
+        return Response({'ok': False, 'raison': 'deja_prete'})
+    return _ev_bascule(request, order, 'refus', 'Commande refusée par le vendeur (espace vendeur)')
 
 
 @extend_schema(
@@ -10345,15 +10279,23 @@ def vd_questions_template_delete(request, template_id):
 #     ROLE_TIER_RULES, SanctionRecord) — voir rapport de mission sur V5.4/V5.5.
 #   - OTP deux codes  : apps.otp.services (envoyer/verifier) — pas réinventé.
 #
-# ⚠️ CONFLIT CONNU (signalé, pas résolu ici) : apps.payments.settlements est
-# bâti sur le principe explicite « ni solde, ni bouton de retrait » (cycle de
-# règlement automatique) — voir apps/payments/settlements/models.py, en-tête.
-# Cela contredit la règle produit mémorisée « le vendeur décide quand il
-# retire » (PULL). vendor_withdrawal_create() plus haut a déjà basculé vers ce
-# nouveau chemin et laisse l'ancien chemin (retrait à la demande) commenté
-# comme désactivé. Les vues ci-dessous EXPOSENT la réalité actuelle du moteur
-# financier (lecture seule) sans trancher ce conflit — voir le rapport de
-# mission pour la décision à prendre côté produit.
+# CONFLIT TRANCHÉ — ne plus le rouvrir.
+#
+# Ce bloc a longtemps signalé une contradiction : apps.payments.settlements est
+# bâti sur « ni solde, ni bouton de retrait » (règlement automatique), là où
+# une règle produit du 12 octobre disait « le vendeur décide quand il retire »
+# (PULL).
+#
+# C'est le règlement automatique qui l'emporte. La spec v2.1 le dit sans
+# ambiguïté : R22.2 verse chaque vendredi, R43.1 précise « sans demande et
+# sans minimum ». Confirmé par le porteur le 25 octobre 2026.
+#
+# En pratique : apps/payments/bridge/vendredi.py verse, et
+# vendor_withdrawal_create() plus haut ne crée plus rien — il répond
+# « versement_du_vendredi » pour ne pas casser le front. Il n'existe donc PAS
+# deux chemins qui paient le même vendeur.
+#
+# Les vues ci-dessous exposent l'état du moteur financier, en lecture seule.
 # ══════════════════════════════════════════════════════════════════════════════
 
 from rest_framework.decorators import renderer_classes as renderer_classes

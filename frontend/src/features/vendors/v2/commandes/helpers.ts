@@ -7,6 +7,7 @@
 // updateFulfillmentStatus (voir commentaires ligne à ligne plus bas).
 
 import { useEffect, useState } from 'react';
+import { http } from '@/services/api/http';
 import { vendorsApi, type VendorOrder, type FulfillmentStatus, type VendorProfile } from '@/services/api/vendors';
 
 // ── États et regroupements (CMD-01, VD-05 §3.3) ─────────────────────────────
@@ -234,20 +235,21 @@ export async function markOrderReady(orderId: number, current: FulfillmentStatus
 }
 
 /**
- * Rupture (RUP-01) : VD-05 attend POST /orders/{id}/stockout (réattribution au
- * vendeur suivant si Trust ≥ 75, sinon remboursement — CDE-20). Cette logique
- * serveur n'existe pas encore : on bridge sur CANCELLED + remise du stock à 0.
+ * Rupture (RUP-01) : POST /orders/{id}/stockout. Le serveur bascule chaque
+ * article vers une autre offre (spec v2.1, R35.2) ou rembourse le client le
+ * jour meme (R35.4) ; la commande n'est plus annulee d'office (feuille de
+ * route D8).
  */
 export async function reportStockout(
   orderId: number,
   productIds: number[],
   setStockZero: boolean,
 ): Promise<VendorOrder> {
-  const updated = await vendorsApi.updateFulfillmentStatus(orderId, { fulfillment_status: 'CANCELLED' });
+  await http<{ ok: boolean }>(`/api/vendors/orders/${orderId}/stockout`, { method: 'POST' });
   if (setStockZero) {
     await Promise.all(productIds.map((pid) => vendorsApi.updateProductStock(pid, 0).catch(() => null)));
   }
-  return updated;
+  return vendorsApi.getOrderDetail(orderId);
 }
 
 // ── Livreur, code de remise, journal (bridge sur VendorShipmentTracking) ────

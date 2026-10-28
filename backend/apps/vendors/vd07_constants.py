@@ -15,7 +15,7 @@
 # LIT-VENDEUR-H : deja utilise dans le code Django (backend/apps/orders/admin.py action
 # "contacter le vendeur" -> vendor_reply_deadline = now + 48h ; aussi le help_text du champ
 # Dispute.vendor_reply_deadline). Repris ici, pas invente.
-LIT_VENDEUR_H = 48
+# LIT_VENDEUR_H : réglage de la spec v2.1, voir REGLAGES en fin de fichier.
 
 # LIT-DECISION-H : ecrit dans src/donnees/domaines/litiges.ts ("BelivaY decide ... au plus tard
 # LIT-DECISION-H (24 h) apres l'echeance").
@@ -27,7 +27,7 @@ LIT_RECOURS_H = 48
 
 # LIT-ARRANG-MIN : ecrit dans src/api/domaines/litiges.ts ("arrangement de 40 caracteres au
 # moins").
-LIT_ARRANGEMENT_MIN_CHARS = 40
+# LIT_ARRANGEMENT_MIN_CHARS : réglage de la spec v2.1, voir REGLAGES en fin de fichier.
 
 # LIT-ARRANG-REPONSE-J : AUCUNE valeur trouvee dans le depot (ni backend ni frontend). A CONFIRMER.
 LIT_ARRANGEMENT_REPONSE_J = None
@@ -45,11 +45,11 @@ LIT_AUTO_SEUIL_ELEVE = None
 # ── Retours ───────────────────────────────────────────────────────────────────
 # RET-TRAJET : cout du trajet retour factue a la partie en tort (DP-56 Q-27). AUCUN montant
 # trouve dans le depot. A CONFIRMER.
-RET_TRAJET = None
+# RET_TRAJET : réglage de la spec v2.1, voir REGLAGES en fin de fichier.
 
 # RET-REMPL-DELAI : ecrit dans src/donnees/domaines/retours.ts ("remplacer (expedie sous 72 h
 # ouvrees, dimanche non compte, sinon remboursement automatique, VD07-R31)").
-RET_REMPLACEMENT_DELAI_H = 72
+# RET_REMPLACEMENT_DELAI_H : réglage de la spec v2.1, voir REGLAGES en fin de fichier.
 
 # RET-VICE : fenetre "vice cache" evoquee en reunion d'equipe (~100 jours) mais ABSENTE du
 # depot. A CONFIRMER par le porteur — ne pas deviner le nombre de jours.
@@ -57,20 +57,20 @@ RET_VICE_J = None
 
 # RET-DEFAUT-H : AUCUNE valeur trouvee dans le depot (distinct de RET-02, voir plus bas). A
 # CONFIRMER.
-RET_DEFAUT_H = None
+# RET_DEFAUT_H : réglage de la spec v2.1, voir REGLAGES en fin de fichier.
 
 # RET-FENETRE : fenetre generale de retour evoquee en reunion d'equipe (~7 jours) mais ABSENTE
 # du depot. A CONFIRMER par le porteur — ne pas deviner le nombre de jours.
-RET_FENETRE_J = None
+# RET_FENETRE_J : réglage de la spec v2.1, voir REGLAGES en fin de fichier.
 
 # RET-INSPECT-H : ecrit dans src/donnees/domaines/retours.ts ("inspection a la reception ...
 # sous RET-INSPECT-H (48 h apres la remise reelle du retour, Q-72)").
-RET_INSPECTION_H = 48
+# RET_INSPECTION_H : réglage de la spec v2.1, voir REGLAGES en fin de fichier.
 
 # RET-02 : fenetre de signalement d'un defaut cache apres retrait, ecrite dans
 # src/donnees/domaines/retours.ts ("defaut cache : 48 h apres le retrait, RET-02"). Distincte de
 # RET-DEFAUT-H ci-dessus (non trouvee).
-RET_SIGNALEMENT_H = 48
+# RET_SIGNALEMENT_H : réglage de la spec v2.1, voir REGLAGES en fin de fichier.
 
 # INP-01 : nombre minimum de photos exigees a l'inspection, evoque dans le commentaire de
 # src/donnees/domaines/retours.ts sans un chiffre explicite ("au moins" des photos) — mais le
@@ -84,18 +84,40 @@ def regles_litiges_payload() -> dict:
     Les champs dont la valeur n'est pas confirmee (voir commentaires ci-dessus) sont renvoyes a
     None plutot qu'avec un chiffre invente — a documenter cote produit avant mise en prod."""
     return {
-        "reponseH": LIT_VENDEUR_H,
+        "reponseH": __getattr__("LIT_VENDEUR_H"),
         "decisionH": LIT_DECISION_H,
         "recoursH": LIT_RECOURS_H,
-        "arrangementMin": LIT_ARRANGEMENT_MIN_CHARS,
+        "arrangementMin": __getattr__("LIT_ARRANGEMENT_MIN_CHARS"),
         "arrangementReponseJ": LIT_ARRANGEMENT_REPONSE_J,
         "brouillonH": LIT_BROUILLON_H,
         "seuilStandard": LIT_AUTO_SEUIL_STANDARD,
         "seuilEleve": LIT_AUTO_SEUIL_ELEVE,
-        "trajet": RET_TRAJET,
-        "remplacementH": RET_REMPLACEMENT_DELAI_H,
+        "trajet": __getattr__("RET_TRAJET"),
+        "remplacementH": __getattr__("RET_REMPLACEMENT_DELAI_H"),
         "viceJ": RET_VICE_J,
-        "defautH": RET_DEFAUT_H,
-        "fenetreJ": RET_FENETRE_J,
-        "inspectionH": RET_INSPECTION_H,
+        "defautH": __getattr__("RET_DEFAUT_H"),
+        "fenetreJ": __getattr__("RET_FENETRE_J"),
+        "inspectionH": __getattr__("RET_INSPECTION_H"),
     }
+
+
+# ── Spec v2.1 (feuille de route D18) : ces délais et montants sont désormais des réglages r_… ──────────────
+# Lus à chaque accès (module __getattr__) : un changement dans l'admin des réglages s'applique tout de suite.
+REGLAGES = {
+    "LIT_VENDEUR_H": "r_litige_reponse_h",            # R70.1
+    "LIT_ARRANGEMENT_MIN_CHARS": "r_arrangement_min_car",  # R70.1
+    "RET_TRAJET": "r_retour",                          # R69.1
+    "RET_REMPLACEMENT_DELAI_H": "r_remplacement_h",    # R70.2
+    "RET_DEFAUT_H": "r_defaut_cache_h",                # R67.2
+    "RET_SIGNALEMENT_H": "r_defaut_cache_h",           # R67.2
+    "RET_FENETRE_J": "r_retour_j",                     # R67.1
+    "RET_INSPECTION_H": "r_inspection_h",              # R68.1
+}
+
+
+def __getattr__(nom):
+    if nom in REGLAGES:
+        from apps.regles import services as regles
+
+        return regles.reglage(REGLAGES[nom])
+    raise AttributeError(nom)

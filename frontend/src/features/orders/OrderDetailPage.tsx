@@ -857,6 +857,14 @@ export default function OrderDetailPage() {
                 </div>
               </div>
 
+              {tracking?.delivery_code && (
+                <div className="mt-4 rounded-2xl border border-primary/20 bg-[#fff8f0] p-5 dark:border-primary/30 dark:bg-primary/5">
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-primary">{t("cl2_order_detail.delivery_code_label")}</p>
+                  <p className="mt-1 text-3xl font-black tracking-[0.2em] text-gray-900 dark:text-white">{tracking.delivery_code}</p>
+                  <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{t("cl2_order_detail.delivery_code_hint")}</p>
+                </div>
+              )}
+
               {tracking?.relay_parcel?.pickup_code && (
                 <div className="mt-4 flex flex-col items-center gap-4 rounded-2xl border border-primary/20 bg-[#fff8f0] p-5 dark:border-primary/30 dark:bg-primary/5 sm:flex-row sm:items-center sm:justify-between">
                   <div>

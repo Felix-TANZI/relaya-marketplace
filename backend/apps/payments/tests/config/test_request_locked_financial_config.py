@@ -57,9 +57,10 @@ def test_un_second_compte_peut_approuver_et_les_valeurs_sont_correctes(demandeur
     approve_change(escrow_demande, approved_by=approbateur)
 
     policy = EscrowPolicy.objects.get(config_key="escrow-default", is_active=True)
-    assert policy.auto_confirm_hours == 96
+    # Spec v2.1, R23 : auto-confirmation fixée au retrait (0 au paiement), libération + 3 j, fenêtre de 7 j.
+    assert policy.auto_confirm_hours == 0
     assert policy.release_delay_hours == 72
-    assert policy.dispute_window_days == 4
+    assert policy.dispute_window_days == 7
 
     transport_demande = ConfigChangeRequest.objects.get(target_key="dist-transport-carrier")
     approve_change(transport_demande, approved_by=approbateur)

@@ -1,0 +1,24 @@
+{
+  "id": "/relais/",
+  "name": "BelivaY Point relais",
+  "short_name": "BelivaY Relais",
+  "description": "Votre comptoir : recevoir les lots, remettre les colis, suivre le stock et les départs, même sans réseau.",
+  "lang": "fr",
+  "dir": "ltr",
+  "start_url": "/relais/",
+  "scope": "/relais/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F5F7FC",
+  "theme_color": "#F5F7FC",
+  "categories": ["business"],
+  "icons": [
+    { "src": "/relais/icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/relais/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/relais/icone-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Réception d’un lot", "short_name": "Réception", "url": "/relais/reception", "icons": [{ "src": "/relais/icone-192.png", "sizes": "192x192" }] },
+    { "name": "Retrait par le client", "short_name": "Retrait", "url": "/relais/retrait", "icons": [{ "src": "/relais/icone-192.png", "sizes": "192x192" }] }
+  ]
+}

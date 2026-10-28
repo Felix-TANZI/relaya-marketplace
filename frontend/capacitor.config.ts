@@ -6,12 +6,13 @@ const config: CapacitorConfig = {
   webDir: 'dist-client',
   android: { path: 'android-client' },
   plugins: {
-    GoogleAuth: {
-      scopes: ['profile', 'email'],
-      iosClientId: '582094155516-m8somr2pbk9292ulebgo6338s8a0to0c.apps.googleusercontent.com',
-      androidClientId: '582094155516-insnk09ptfqa6faunktufc5nhrrihsmj.apps.googleusercontent.com',
-      serverClientId: '582094155516-insnk09ptfqa6faunktufc5nhrrihsmj.apps.googleusercontent.com',
-      forceCodeForRefreshToken: true,
+    SocialLogin: {
+      // Seul Google est utilise via ce plugin (Apple passe par
+      // @capacitor-community/apple-sign-in) : les autres fournisseurs ne sont
+      // pas embarques, ce qui evite le SDK Facebook dans les apps.
+      // Les identifiants OAuth sont passes a SocialLogin.initialize()
+      // (src/components/auth/GoogleAuthButton.tsx).
+      providers: { google: true, facebook: false, apple: false, twitter: false },
     },
   },
 };

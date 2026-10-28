@@ -1,0 +1,54 @@
+/* Thème sombre de l'espace livreur : LE fichier de jetons de la nuit, seul endroit où ils sont écrits (chargé en
+   dernier par main.tsx ; livreur.css et ecarts-prototype.css ne portent que le clair).
+   Exigence du porteur (BRIEF-ENRICHISSEMENT.md, 1 et 2 ; ENRICHISSEMENTS.md, partie 4) : sombre GRAPHITE, pas vert.
+   - fonds et surfaces quasi noirs neutres (teinte 150, saturation 6 %), filets blancs translucides ;
+   - le vert n'est qu'un ACCENT : bouton principal (#2FB57F, moins éblouissant que l'ancien #34D399), onglet actif,
+     liens, focus, pastille active ; avatar, bulle de la barre du bas et verre redeviennent neutres ;
+   - l'orange reste réservé aux alertes et à l'urgence ;
+   - contrastes (WCAG, mesurés par tests/accessibilite.spec.ts sur toutes les routes) : encre 16,5:1 sur le fond,
+     --ink-4 5,4:1 sur --card-2, texte vert 9,5:1 sur la carte, texte du bouton principal 7,2:1, accent 6,7:1.
+   Les en-têtes dessinés du prototype (héros « nuit », photo, motif) gardent leurs couleurs : DP-54. */
+html[data-theme=dark]{
+  color-scheme:dark;
+  /* Fonds et surfaces */
+  --sand:#0F1110; --sand-2:#141715; --sand-3:#1B1F1D; --sand-4:#262B28;
+  --card:#171A18; --card-2:#1D211F;
+  --line:rgba(255,255,255,.08); --line-2:rgba(255,255,255,.14);
+  --input-bg:#141715; --input-line:#3A423E;
+  /* Encre */
+  --ink:#EDF0EE; --ink-2:#CDD3CF; --ink-3:#A8AFAB; --ink-4:#8F9792;
+  /* Vert du livreur : accent seulement */
+  --acc:#2FB57F; --acc-2:#5FD3A6; --acc-deep:#A7F3D0; --acc-txt:#5FD3A6;
+  --acc-soft:#162720; --acc-soft-2:#1B3128; --acc-line:#28513F;
+  --acc-btn:#2FB57F; --acc-btn-ink:#04140E; --acc-rgb:47,181,127;
+  --avatar-bg:linear-gradient(135deg,#2A2F2C 0%,#1D211F 100%); --avatar-ink:#EDF0EE;
+  /* Orange BelivaY : alertes et urgence */
+  --or:#FF8A3D; --or-txt:#FFA366; --or-soft:#2A1607; --or-soft-2:#35241A; --or-line:#5A3214;
+  --alerte-btn:#FF8A3D; --alerte-btn-ink:#2A1203;
+  --braise-1:#FF8A3D; --braise-2:#E2701F; --or-deep:#FFB27A;
+  /* États */
+  --green:#4FD08F; --green-soft:#10241A; --green-line:#1F4331;
+  --amber:#F0C04C; --amber-soft:#262110; --amber-line:#51431B;
+  --red:#FF8A80; --red-soft:#2A1412; --red-line:#5A2420;
+  --blue:#93B4FF; --blue-soft:#131D36; --blue-line:#26386A;
+  --violet:#B99AF5; --violet-txt:#C9B2F7; --violet-soft:#211A33; --violet-line:#3E2C6E;
+  /* Verre, ombres, barre du bas : neutres */
+  --verre:rgba(20,23,21,.92); --verre-bord:rgba(255,255,255,.08);
+  --ombre:0 0 0 1px rgba(255,255,255,.06);
+  --ombre-haute:0 18px 40px -12px rgba(0,0,0,.7);
+  --shadow-card:0 1px 2px rgba(0,0,0,.45);
+  --bulle-voile:rgba(30,34,32,.55);
+  --dock-bg:rgba(23,26,24,.82);
+  --dock-lisere:linear-gradient(100deg,rgba(255,255,255,.28),rgba(255,255,255,.10) 24%,rgba(255,255,255,.05) 48%,rgba(255,255,255,.10) 74%,rgba(255,255,255,.26));
+  --dock-cap:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.06));
+  --dock-cap-ombre:inset 0 0 0 .5px rgba(95,211,166,.32),inset 0 1px 0 rgba(255,255,255,.08);
+  --dock-cap-uni:rgba(255,255,255,.08);
+  /* Cartes schématiques et OSM */
+  --map-bg:#141715; --map-block:#1B1F1D; --map-road:#2E3431; --map-road-2:#222724; --map-txt:#C9D0CD; --map-water:#13262E; --map-green:#16261E;
+  /* Barre du haut : curseur de la pilule FR | EN, ombre des pastilles, soleil et lune (livreur.css). */
+  --vie-ombre-bouton:0 1px 2px rgba(0,0,0,.6),0 4px 10px -4px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.07),inset 0 0 0 1px rgba(255,255,255,.08);
+  --vie-curseur:linear-gradient(180deg,#2C312E,#232825);
+  --vie-soleil:#FFC845;--vie-lune:#C9D4F2;
+}
+/* Tracé de l'itinéraire sur la carte : l'accent, pas un vert vif codé en dur. */
+html[data-theme=dark] .lv-trajet{stroke:var(--acc-2)}

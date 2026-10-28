@@ -1,0 +1,38 @@
+/* Ce que l'espace vendeur ajoute à la feuille du prototype vendeur (prototype.css), sans rien redessiner.
+   --sb : zone sûre du téléphone (le prototype dessine une barre d'état de 50 px ; les tests la fixent à 50 px). */
+/* Corrections DP-44 de la spécification sur le prototype (braise, contraste) : feuille à part, posée aussi sur le
+   prototype par tests/identique.spec.ts. */
+@import './ecarts.css';
+#app{--sb:env(safe-area-inset-top,0px)}
+/* Animation d'ouverture posée au-dessus de l'application (le prototype la pose dans #app). */
+.blv-spl[style*="fixed"]{inset:0;z-index:9999}
+/* Pastilles de l'en-tête racine : la rangée ne coupe plus une pastille longue (défaut 1 du prototype, RAPPORT.md :
+   « Free · discovery » sortait de l'écran en anglais) ; elle défile, sans barre visible. La même règle est posée sur
+   le prototype dans tests/identique.spec.ts (DEFAUTS_CORRIGES). */
+.hd-pills{overflow-x:auto;scrollbar-width:none}
+.hd-pills::-webkit-scrollbar{display:none}
+/* Reçu : puce active lisible en sombre (défaut 2 du prototype, RAPPORT.md). */
+html[data-theme=dark] .vx-chips a.on{color:#141415}
+/* « C'est prêt » touché : le bouton passe au vert (V2 du prototype, .vd-okb), le temps d'ouvrir la remise. */
+.btn.vd-okb{transition:background .2s}
+/* Animations : celles du client (animations.css, tout sous html[data-mouv]), aux mêmes durées (--blv-court, --blv-moyen,
+   --blv-long). Ce que le prototype vendeur anime hors de html[data-mouv] est coupé en mouvement réduit et sous navigateur
+   piloté, comme tout le client : menu du profil, coche du bouton vert, curseur du numéro ; le message bref paraît et
+   s'efface sur place (même durée), sans glisser. */
+html:not([data-mouv]) :is(.pm,.vd-okb svg,.vx-num i){animation:none}
+html:not([data-mouv]) .vd-toast{animation-name:vd-toast-fixe}
+@keyframes vd-toast-fixe{0%,85%{opacity:1}100%{opacity:0}}
+html:not([data-mouv]) .chev{transition:none!important}
+/* Annonces des écrans (Ma boutique, Équipe, Paramètres…) : elles glissent comme les messages du client. */
+html[data-mouv] [data-annonce]{animation:blv-toast var(--blv-long) var(--blv-ressort) both}
+/* Minuteurs chiffre à chiffre (Chiffres du client) : l'espace entre heures et minutes (« 2 h 14 ») reste visible. */
+html[data-mouv] .blv-chrono-c{white-space:pre}
+
+/* Accessibilité (vague 4 ; Q-43 : mêmes règles que le client ; tests/accessibilite.spec.ts). Le focus au clavier
+   reprend l'anneau du client (site.css : contour --or-txt sur tout ce qui se touche, .inp:focus-within pour un champ).
+   Cibles de toucher de 24 px au moins (WCAG 2.2, 2.5.8) : un champ de texte dans sa boîte (44 à 60 px) prend au moins
+   24 px de haut, son texte reste centré ; un lien seul dans une ligne « clé · valeur » est agrandi au toucher sans
+   changer la ligne (même procédé que .btn.sm::after du prototype). */
+#app :is(input:not([type=checkbox],[type=radio],[type=range],[type=file],[type=hidden],[type=color]),select){min-height:24px}
+.kv .v>a{position:relative}
+.kv .v>a::after{content:'';position:absolute;left:0;right:0;top:-5px;bottom:-5px}

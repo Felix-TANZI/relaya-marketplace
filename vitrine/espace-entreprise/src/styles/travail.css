@@ -1,0 +1,97 @@
+/* Le travail d'abord (LECONS-PROTOTYPES.md) : gros éléments « verbe + nombre » du tableau de bord, bouton d'action
+   pleine largeur dans les cartes de travail, listes avant les indicateurs. Même famille que le vendeur et le relais
+   finaux (cartes 20 px, chiffres très gras, bordure gauche des cartes chaudes, héros coloré à une seule action).
+   Couleurs : jetons seulement (jetons.css). Chargé après presentation.css. */
+
+/* Tablette (768–1023 px) : pas de barre latérale, le contenu prend toute la largeur. */
+html[data-device=tablet] .cns{grid-template-columns:minmax(0,1fr)}
+
+/* ---- Tableau de bord : Accepter · Affecter · Suivre · Traiter ---- */
+.px .e-travail{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:0 0 4px}
+.px .e-act{position:relative;display:flex;flex-direction:column;min-height:150px;padding:16px 18px 18px;border-radius:20px;background:var(--card);box-shadow:var(--shadow-card);color:var(--ink);text-decoration:none;transition:transform .15s,box-shadow .15s}
+html[data-theme=dark] .px .e-act{box-shadow:inset 0 0 0 1px var(--line)}
+.px .e-act-h{display:flex;align-items:center;justify-content:space-between;color:var(--ink-4)}
+.px .e-act-i{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;background:var(--e-soft);color:var(--e-txt)}
+.px .e-act-v{margin-top:16px;font-size:1.0625rem;font-weight:800;letter-spacing:-.01em;color:var(--ink)}
+.px .e-act-n{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 7px;margin-top:2px;font-size:.9375rem;font-weight:700;color:var(--ink-3);line-height:1.2}
+.px .e-act-n b{font-size:2.5rem;font-weight:800;letter-spacing:-.04em;line-height:1;color:var(--ink)}
+/* Du travail en attente : bordure orange (alerte) comme les cartes chaudes du vendeur. */
+.px .e-act-chaud{box-shadow:var(--shadow-card),inset 4px 0 0 var(--or)}
+html[data-theme=dark] .px .e-act-chaud{box-shadow:inset 0 0 0 1px var(--line),inset 4px 0 0 var(--or)}
+.px .e-act-chaud .e-act-i{background:var(--or-soft);color:var(--or-txt)}
+/* Le premier travail du jour : héros vert sapin, texte posé sur la couleur. */
+.px .e-act-heros{background:var(--e-grad);color:var(--sur-e);box-shadow:var(--ombre-actif)}
+html[data-theme=dark] .px .e-act-heros{box-shadow:var(--ombre-actif)}
+.px .e-act-heros :is(.e-act-h,.e-act-v,.e-act-n,.e-act-n b){color:var(--sur-e)}
+.px .e-act-heros .e-act-i{background:color-mix(in srgb,var(--sur-e) 16%,transparent);color:var(--sur-e)}
+/* Rien à faire : discret, toujours cliquable. */
+.px .e-act-calme .e-act-n b{color:var(--ink-4)}
+.px .e-act-calme .e-act-i{background:var(--sand-2);color:var(--ink-3)}
+.px .e-act:focus-visible{outline:3px solid var(--e-txt);outline-offset:3px}
+@media (hover:hover) and (pointer:fine){
+  .px .e-act:hover{transform:translateY(-2px)}
+  .px .e-act:not(.e-act-heros):hover .e-act-h>svg{color:var(--e-txt)}
+}
+html[data-device=tablet] .px .e-travail{grid-template-columns:repeat(2,minmax(0,1fr))}
+html[data-device=mobile] .px .e-travail{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+html[data-device=mobile] .px .e-act{min-height:136px;padding:14px 14px 16px;border-radius:18px}
+html[data-device=mobile] .px .e-act-v{margin-top:12px;font-size:1rem}
+html[data-device=mobile] .px .e-act-n{font-size:.875rem}
+html[data-device=mobile] .px .e-act-n b{font-size:2.125rem}
+
+/* En-tête du tableau : surtitre daté, salutation, rien d'autre. */
+.px .r-tableau .dk-head.e-tete,.r-tableau .px .dk-head.e-tete{margin-bottom:14px}
+
+/* ---- Cartes de paquet : « Accepter » est le geste principal, pleine largeur ---- */
+.px .entb-pq .entb-pq-act{display:flex;gap:8px;margin-top:14px}
+.px .entb-pq .entb-pq-act .btn{width:auto;min-width:0;height:48px;margin:0}
+.px .entb-pq .entb-pq-act .btn.primary{flex:1 1 auto;font-size:.9375rem}
+.px .entb-pq .entb-pq-act .btn.secondary{flex:0 0 auto;padding:0 16px}
+/* Filtres de la liste : une rangée qui défile au téléphone, sous la recherche. */
+.px .e-filtres{display:flex;flex-wrap:wrap;align-items:center;gap:8px;flex:1 1 auto;min-width:0}
+html:is([data-device=mobile],[data-device=tablet]) .px .e-filtres{flex:1 1 100%;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -2px;padding:2px}
+html:is([data-device=mobile],[data-device=tablet]) .px .e-filtres::-webkit-scrollbar{display:none}
+html:is([data-device=mobile],[data-device=tablet]) .px .e-filtres>*{flex:0 0 auto}
+html:is([data-device=mobile],[data-device=tablet]) .px .e-filtres .sp{display:none}
+
+/* ---- Capacité libre par zone : une rangée compacte, après la liste ---- */
+.px .e-capa{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.px .e-capa a{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:6px 12px;border-radius:12px;background:var(--card);box-shadow:var(--shadow-card);color:var(--ink);text-decoration:none;font-size:.8125rem;font-weight:700}
+html[data-theme=dark] .px .e-capa a{box-shadow:inset 0 0 0 1px var(--line)}
+.px .e-capa a b{font-size:.9375rem;font-weight:800}
+.px .e-capa a .c3{font-weight:600}
+.px .e-capa a.plein{box-shadow:inset 0 0 0 1px var(--red-line);background:var(--red-soft);color:var(--red)}
+
+/* ---- Livreurs : compteurs = filtres segmentés avec leur nombre (comme les onglets du vendeur) ---- */
+.px .g.e-segs{gap:6px;padding:5px;border-radius:16px;background:var(--sand-2);box-shadow:inset 0 0 0 1px var(--line)}
+.px .e-segs .kpi.e-kpi-b{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:2px;min-height:58px;padding:8px 6px;border-radius:12px;background:transparent;box-shadow:none;text-align:center}
+.px .e-segs .kpi.e-kpi-b>.i,.px .e-segs .kpi.e-kpi-b>.s{display:none}
+.px .e-segs .kpi.e-kpi-b>.v{order:-1;margin:0;font-size:1.375rem;color:var(--ink)}
+.px .e-segs .kpi.e-kpi-b>.k{display:block;padding:0;font-size:.75rem;letter-spacing:.02em;text-transform:none;color:var(--ink-3)}
+.px .e-segs .kpi.e-kpi-b.on{background:var(--card);box-shadow:var(--ombre-seg)}
+.px .e-segs .kpi.e-kpi-b.on>.k{color:var(--e-txt)}
+.px .g.g4.e-segs{grid-template-columns:repeat(4,minmax(0,1fr))}
+.px .e-l-acts{display:inline-flex;gap:6px;align-items:center;flex-wrap:nowrap;justify-content:flex-end}
+
+/* Livreurs sur tablette (768–1023 px) : le tableau devient des cartes sur deux colonnes, sans défilement horizontal. */
+html[data-device=tablet] #app.r-flotte .dt-wrap{overflow-x:visible}
+html[data-device=tablet] #app.r-flotte table.dt thead{display:none}
+html[data-device=tablet] #app.r-flotte table.dt{display:block}
+html[data-device=tablet] #app.r-flotte table.dt tbody{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+html[data-device=tablet] #app.r-flotte table.dt tr{display:block;min-width:0;padding:12px 16px;border-bottom:1px solid var(--line)}
+html[data-device=tablet] #app.r-flotte table.dt tr:nth-child(odd){border-right:1px solid var(--line)}
+html[data-device=tablet] #app.r-flotte table.dt tr.hot{box-shadow:inset 3px 0 0 var(--or)}
+html[data-device=tablet] #app.r-flotte table.dt tr.warn{box-shadow:inset 3px 0 0 var(--amber)}
+html[data-device=tablet] #app.r-flotte table.dt tr.bad{box-shadow:inset 3px 0 0 var(--red)}
+html[data-device=tablet] #app.r-flotte table.dt td{display:flex;width:auto!important;min-width:0!important;max-width:none;justify-content:space-between;align-items:flex-start;gap:12px;min-width:0;padding:5px 0;border:0;text-align:right;box-shadow:none!important}
+html[data-device=tablet] #app.r-flotte table.dt td::before{content:attr(data-l);font-size:.75rem;font-weight:700;color:var(--ink-3);text-align:left;flex-shrink:0}
+html[data-device=tablet] #app.r-flotte table.dt td>*{min-width:0}
+html[data-device=tablet] #app.r-flotte table.dt td.main{display:block;text-align:left;padding-bottom:8px}
+html[data-device=tablet] #app.r-flotte table.dt td.main::before{display:none}
+html[data-device=tablet] #app.r-flotte table.dt td:last-child{justify-content:flex-end;padding-top:10px}
+html[data-device=tablet] #app.r-flotte table.dt td:last-child::before{display:none}
+html[data-device=tablet] #app.r-flotte table.dt td>.entA-c{display:flex;flex-direction:column;align-items:flex-end;flex:1 1 auto;min-width:0;text-align:right}
+html[data-device=tablet] #app.r-flotte table.dt td>.entA-c:has(>.entA-zc){flex-direction:row;flex-wrap:wrap;justify-content:flex-end;gap:4px}
+html[data-device=tablet] #app.r-flotte table.dt td>.entA-c>*{max-width:100%}
+html[data-device=tablet] #app.r-flotte table.dt td .pill{white-space:nowrap}
+html[data-device=tablet] #app.r-flotte table.dt td>.entA-c:has(>b:first-child){flex-direction:row;align-items:baseline;justify-content:flex-end;gap:4px}

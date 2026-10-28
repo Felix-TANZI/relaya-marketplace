@@ -1,0 +1,54 @@
+/* Équipe et accès, descentes terrain : jetons de jetons.css seulement (graphite de la console ; orange pour l'action). */
+.px .eq-groupe{margin-top:16px}
+.px .eq-tete{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.px .eq-tete .card-t{display:flex;align-items:center;gap:8px;min-width:0}
+.px .eq-tete .t13{color:var(--ink-3)}
+.px .eq-liste{display:flex;flex-direction:column;margin-top:8px}
+.px .eq-m{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:8px 6px;border:0;background:none;font:inherit;color:inherit;text-align:left;border-top:1px solid var(--line);cursor:pointer;text-decoration:none;min-width:0}
+.px .eq-liste>.eq-m:first-child{border-top:0}
+.px div.eq-m{cursor:default}
+.px .eq-m:hover{background:var(--card-2)}
+.px .eq-m-t{display:flex;flex-direction:column;min-width:0;flex:1}
+.px .eq-m-t b{font-size:.9375rem;font-weight:800;overflow-wrap:anywhere}
+.px .eq-m-s{font-size:.8125rem;color:var(--ink-3);overflow-wrap:anywhere}
+.px .eq-m-p{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end;max-width:50%}
+html[data-device=mobile] .px .eq-m{flex-wrap:wrap}
+html[data-device=mobile] .px .eq-m-p{max-width:none;justify-content:flex-start;padding-left:46px;width:100%}
+.px .eq-non{display:inline-flex;align-items:center;gap:4px;color:var(--ink-3);font-size:.8125rem;font-weight:700}
+.px .eq-lignes{list-style:none;margin:10px 0 0;padding:0}
+.px .eq-lignes li{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.px .eq-lignes li:first-child{border-top:0}
+.px .eq-lignes li .grow{display:flex;flex-direction:column;min-width:0;flex:1 1 200px}
+.px .eq-lignes li .grow>*{overflow-wrap:anywhere}
+.px .eq-2g{display:inline-flex;align-items:center;gap:14px}
+.px .eq-2g .lnk{min-height:44px}
+.px .eq-gestes{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.px .eq-cherche{margin-top:12px}
+.px .eq-res{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.px .eq-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.px .eq-chip{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:4px 10px 4px 4px;border-radius:999px;background:var(--card-2);box-shadow:inset 0 0 0 1px var(--line);font-size:.8125rem;font-weight:700;color:inherit;text-decoration:none}
+.px .eq-chip small{color:var(--ink-3);font-weight:700}
+.px .eq-mx{overflow-x:auto;max-width:100%}
+.px .eq-mx table{min-width:640px}
+.px .eq-charge{height:6px;border-radius:999px;background:var(--sand-3);overflow:hidden;width:80px;flex-shrink:0}
+.px .eq-charge>span{display:block;height:100%;background:var(--e)}
+.px .eq-msg{border-left:3px solid var(--line-2);padding:6px 0 6px 12px;margin-top:10px}
+.px .eq-msg.avertissement{border-left-color:var(--or)}
+.px .eq-msg.non-lu{border-left-color:var(--e)}
+.px .eq-msg p{margin:4px 0 0;overflow-wrap:anywhere}
+/* Descentes terrain */
+.px .dt-liste{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.px .dt-carte{display:flex;flex-direction:column;gap:8px}
+.px .dt-l1{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.px .dt-l1 b{font-size:.9375rem;overflow-wrap:anywhere}
+.px .dt-meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.8125rem;color:var(--ink-3)}
+.px .dt-meta span{display:inline-flex;align-items:center;gap:4px}
+.px .dt-ctrl{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.px .dt-ctrl span{flex:1 1 180px;min-width:0;overflow-wrap:anywhere;font-weight:700;font-size:.875rem}
+.px .dt-ctrl .seg{margin-top:0;flex:0 0 auto;min-width:150px}
+.px .dt-photos{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.px .dt-zone{width:100%;min-height:110px;border-radius:12px;border:1.5px solid var(--input-line);background:var(--input-bg);color:inherit;font:inherit;padding:10px 12px;resize:vertical}
+.px .dt-fichier{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.px .eq-gestes>.btn{width:auto;flex:0 0 auto}
+.px .dt-meta a{display:inline-flex;align-items:center;min-height:44px;color:var(--e-txt);font-weight:700}
+.px .dt-carte .lnk{min-height:44px}

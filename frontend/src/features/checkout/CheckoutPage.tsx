@@ -87,6 +87,9 @@ export default function CheckoutPage() {
   // Frais, livraison offerte, frais Mobile Money et total : calculés par le serveur (spec v2.1, A1 et A2),
   // recalculés à chaque changement du panier ou du lieu (R84.3) ; jamais un forfait ici.
   const [devis, setDevis] = useState<DevisPanier | null>(null);
+  // D14, R42 : au relais, le client peut payer une avance maintenant et le reste par Mobile Money au comptoir.
+  const [auComptoir, setAuComptoir] = useState(false);
+  const moyen = isPickup && auComptoir ? 'comptoir' as const : undefined;
   const [devisLoading, setDevisLoading] = useState(false);
   const frais = devis?.frais ?? null;
   const shipping = frais?.frais_client ?? null;
@@ -113,7 +116,7 @@ export default function CheckoutPage() {
 
   const cleDevis = JSON.stringify([
     checkoutItems.filter((i) => !i.isDemo).map((i) => [i.id, i.quantity]), isPickup, selectedRelay?.id ?? null,
-    formData.district.trim(), formData.deliveryLatitude, formData.deliveryLongitude,
+    formData.district.trim(), formData.deliveryLatitude, formData.deliveryLongitude, moyen ?? null,
   ]);
   useEffect(() => {
     const lignes = checkoutItems.filter((i) => !i.isDemo);
@@ -131,6 +134,7 @@ export default function CheckoutPage() {
         delivery_longitude: isPickup ? undefined : formData.deliveryLongitude,
         relay_point_id: isPickup ? selectedRelay!.id : undefined,
         cart_items: lignes.map((item) => ({ product_id: item.id, qty: item.quantity })),
+        moyen,
       })
         .then((d) => { if (!annule) setDevis(d); })
         .catch(() => { if (!annule) setDevis(null); })
@@ -233,6 +237,7 @@ export default function CheckoutPage() {
         authorized_pickup_name: allowThirdPartyPickup ? thirdPartyPickup.name.trim() : '',
         authorized_pickup_phone: allowThirdPartyPickup ? thirdPartyPickup.phone.trim() : '',
         total_attendu: finalTotal,
+        moyen,
         cart_items: checkoutItems.map((item) => ({
           product_id: item.id, qty: item.quantity, title: item.name,
           price_xaf: item.price, image_url: item.image, is_demo: item.isDemo,
@@ -251,6 +256,7 @@ export default function CheckoutPage() {
             delivery_longitude: isPickup ? undefined : formData.deliveryLongitude,
             relay_point_id: isPickup ? selectedRelay!.id : undefined,
             cart_items: checkoutItems.filter((i) => !i.isDemo).map((item) => ({ product_id: item.id, qty: item.quantity })),
+            moyen,
           }));
         } catch { /* le devis se recalculera au prochain changement */ }
         showToast("Un prix a changé", { description: t('cl1_checkout.price_changed_hint'), type: "warning" });
@@ -569,6 +575,16 @@ export default function CheckoutPage() {
                     {t('cl1_checkout.operator_choice_hint')}
                   </div>
                 </div>
+
+                {isPickup && (
+                  <label className="pf-info-note" style={{ cursor: "pointer", alignItems: "flex-start" }}>
+                    <input type="checkbox" checked={auComptoir} onChange={(e) => setAuComptoir(e.target.checked)} style={{ marginTop: 3 }} />
+                    <div className="pf-muted-sm" style={{ lineHeight: 1.6, color: "var(--pf-text)" }}>
+                      <b>Payer le reste au comptoir du relais</b>
+                      <div>Une avance maintenant, le reste par Mobile Money au retrait. Le code de retrait arrive après ce paiement.</div>
+                    </div>
+                  </label>
+                )}
               </section>
 
               {devis && !devis.ok && devis.messages.length > 0 && (
@@ -635,6 +651,12 @@ export default function CheckoutPage() {
                       <span className="pf-summary-v">{fmt(frais.frais_momo)}</span>
                     </div>
                   )}
+                  {frais?.comptoir ? (
+                    <div className="pf-summary-row">
+                      <span className="pf-muted-sm">Au comptoir, au retrait</span>
+                      <span className="pf-summary-v">{fmt(frais.comptoir.au_comptoir + frais.comptoir.frais_momo_comptoir)}</span>
+                    </div>
+                  ) : null}
                   {frais?.manque_livraison_offerte ? (
                     <div className="pf-muted-sm">{t('cl1_checkout.missing_for_free_delivery', { amount: fmt(frais.manque_livraison_offerte) })}</div>
                   ) : null}

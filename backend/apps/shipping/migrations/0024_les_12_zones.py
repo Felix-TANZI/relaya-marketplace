@@ -1,14 +1,8 @@
-# Les 12 zones de Yaoundé (R73.1), créées depuis t_zones et t_quartiers des réglages (BV-DEV-07).
+# Les 12 zones de Yaoundé (R73.1) ne sont plus créées ici : D34 interdit toute migration de données dans « shipping ».
+# Elles sont créées après chaque `migrate` (signal post_migrate, apps/shipping/apps.py) et à chaque modification de
+# t_zones ou t_quartiers, par apps.shipping.zones.synchroniser_zones. Migration gardée vide pour l'historique.
 
 from django.db import migrations
-
-
-def creer(apps, schema_editor):
-    from apps.regles import services as regles
-    from apps.shipping.zones import synchroniser_zones
-
-    regles.cache.delete(regles.CLE_CACHE)
-    synchroniser_zones(apps.get_model("shipping", "Zone"))
 
 
 class Migration(migrations.Migration):
@@ -17,4 +11,4 @@ class Migration(migrations.Migration):
         ("regles", "0002_valeurs_de_lancement"),
     ]
 
-    operations = [migrations.RunPython(creer, migrations.RunPython.noop)]
+    operations = []

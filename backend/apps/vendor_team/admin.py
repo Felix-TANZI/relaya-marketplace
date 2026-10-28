@@ -9,12 +9,9 @@ from .models import (
     VendorEmployee,
     VendorEmployeeActionLog,
     VendorEmployeeInvitation,
-    VendorKycPiece,
     VendorLocationMeta,
     VendorLocationVerification,
-    VendorOwnerSecurityCode,
     VendorShopMeta,
-    VendorVerificationCode,
 )
 
 
@@ -35,12 +32,6 @@ class VendorEmployeeInvitationAdmin(admin.ModelAdmin):
 class VendorEmployeeActionLogAdmin(admin.ModelAdmin):
     list_display = ("id", "vendor", "employee", "domaine", "categorie", "texte", "created_at")
     list_filter = ("domaine", "categorie")
-
-
-@admin.register(VendorOwnerSecurityCode)
-class VendorOwnerSecurityCodeAdmin(admin.ModelAdmin):
-    list_display = ("id", "vendor", "motif", "target_employee", "used_at", "expires_at", "created_at")
-    list_filter = ("motif",)
 
 
 @admin.register(VendorLocationMeta)
@@ -75,18 +66,8 @@ class VendorShopMetaAdmin(admin.ModelAdmin):
     list_display = ("id", "vendor", "categorie", "statut")
 
 
-@admin.register(VendorKycPiece)
-class VendorKycPieceAdmin(admin.ModelAdmin):
-    list_display = ("id", "vendor", "piece", "etat", "created_at")
-    list_filter = ("piece", "etat")
-
-
 @admin.register(VendorContractSignature)
 class VendorContractSignatureAdmin(admin.ModelAdmin):
     list_display = ("id", "vendor", "version", "immatricule", "signed_at")
 
 
-@admin.register(VendorVerificationCode)
-class VendorVerificationCodeAdmin(admin.ModelAdmin):
-    list_display = ("id", "phone", "purpose", "used_at", "expires_at", "created_at")
-    list_filter = ("purpose",)

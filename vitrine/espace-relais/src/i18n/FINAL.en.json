@@ -1,0 +1,22 @@
+{
+ "Ligne masquée BelivaY": "BelivaY masked line",
+ "Rouvrir l’appel avec {n}": "Reopen the call with {n}",
+ "Micro coupé": "Muted",
+ "Appel terminé": "Call ended",
+ "Réduire l’appel": "Minimise the call",
+ "Terminé · {d}": "Ended · {d}",
+ "Couper le micro": "Mute",
+ "Rétablir le micro": "Unmute",
+ "Micro": "Mic",
+ "Noter l’appel": "Note the call",
+ "Note de l’appel": "Call note",
+ "Ce que vous retenez ou décidez ; jamais le contenu de la conversation.": "What you take away or decide; never the content of the conversation.",
+ "Ex. : client prévenu, retrait débloqué demain 10 h": "E.g.: customer informed, pickup unblocked tomorrow 10 am",
+ "Note enregistrée": "Note saved",
+ "Enregistrer la note": "Save the note",
+ "Notes de l’appel": "Call notes",
+ "Appel noté au journal : durée {d}, sans contenu.": "Call logged: duration {d}, no content.",
+ "Numéros masqués des deux côtés. Vous pouvez réduire l’appel et continuer à naviguer.": "Numbers masked on both sides. You can minimise the call and keep browsing.",
+ "Afficher l’appel": "Show the call",
+ "Appel en cours avec {n} : il reste affiché en bas de l’écran pendant que vous travaillez.": "Call in progress with {n}: it stays at the bottom of the screen while you work."
+}

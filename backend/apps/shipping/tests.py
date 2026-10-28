@@ -184,7 +184,8 @@ class ShipmentTrackingTests(APITestCase):
             status=RelayParcel.Status.EXPECTED,
         )
         serializer = RelayParcelReceiveSerializer(
-            data={"shipment_id": self.shipment.id, "slot_code": "A-07", "proof_note": "3 photos + double signature"},
+            data={"shipment_id": self.shipment.id, "slot_code": "A-07", "proof_note": "3 photos + double signature",
+                  "depot_code": self.shipment.ensure_depot_code()},  # R66.1
             context={"relay_point": self.relay_point},
         )
         serializer.is_valid(raise_exception=True)
@@ -567,6 +568,15 @@ class ShipmentTrackingTests(APITestCase):
         self.assertIsNone(evidence.purged_at)
 
 
+def _relais_de_tournee(city="Yaounde"):
+    """Relais de destination des colis groupés en tournée (R52.1 : les paquets vont vers les relais)."""
+    user, _ = User.objects.get_or_create(username=f"relais_tournee_{city}")
+    relais, _ = RelayPointProfile.objects.get_or_create(
+        user=user, defaults={"name": f"Relais tournée {city}", "phone": "+237690100009", "city": city,
+                             "status": RelayPointProfile.Status.APPROVED, "is_active": True})
+    return relais
+
+
 class TourneeCompositionTests(APITestCase):
     """
     Composeur de tournées (Regles_Systeme_DEV v2.0 §5, règle fondatrice +
@@ -609,6 +619,7 @@ class TourneeCompositionTests(APITestCase):
             city="Yaounde",
             address="Mvan",
             zone=self.zone,
+            relay_point=_relais_de_tournee(),  # R52.1 : seuls les colis vers un relais partent en paquet
             total_xaf=10000,
         )
         shipment = Shipment.objects.create(
@@ -643,6 +654,13 @@ class TourneeCompositionTests(APITestCase):
             shipment.refresh_from_db()
             self.assertEqual(shipment.tournee_id, tournee.id)
             self.assertIsNone(shipment.courier_id)
+
+    def test_home_delivery_is_never_grouped_into_a_tournee(self):
+        # D10 et R52.1 : à domicile, une course par client, jamais un paquet.
+        shipments = [self._make_shipment(vendor_suffix=i) for i in range(5)]
+        Order.objects.filter(shipments__in=shipments).update(relay_point=None)
+
+        self.assertIsNone(compose_tournees_for_zone(self.zone))
 
     def test_oversized_parcel_never_grouped_into_a_tournee(self):
         normal = [self._make_shipment(vendor_suffix=i) for i in range(3)]
@@ -686,7 +704,7 @@ class BourseAuxCoursesTests(APITestCase):
         vendor_user = User.objects.create_user(f"bourse_vendor_{vendor_suffix}", password=TEST_PASSWORD)
         order = Order.objects.create(
             user=self.client_user, customer_phone="+237690500001", city="Douala",
-            address="Akwa", zone=self.zone, total_xaf=10000,
+            address="Akwa", zone=self.zone, relay_point=_relais_de_tournee("Douala"), total_xaf=10000,
         )
         return Shipment.objects.create(order=order, vendor=vendor_user, status=Shipment.Status.CREATED)
 

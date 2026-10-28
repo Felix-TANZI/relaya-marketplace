@@ -41,6 +41,7 @@ import RelayPickup, {
   type PickupCodeCheck,
   type RelayPickupParcel,
 } from "./RelayPickup";
+import RelayComptoir, { type ComptoirParcel } from "./RelayComptoir";
 import RelayReviews from "./RelayReviews";
 import RelayTrust, { type RelayTrustScore } from "./RelayTrust";
 import RelayTraining from "./RelayTraining";
@@ -139,7 +140,10 @@ interface RelayParcel {
   order_id: number;
   status: string;
   slot_code: string;
-  pickup_code: string;
+  /** D12, R66.1 : le relais ne voit jamais le code de retrait, seulement qu'il existe (colis pret a remettre). */
+  pickup_ready: boolean;
+  /** D14, R42.4 : reste a payer par Mobile Money au comptoir avant la remise (0 : rien a payer). */
+  a_payer_comptoir_xaf?: number;
   customer_phone: string;
   delivery_address: string;
   city: string;
@@ -346,6 +350,15 @@ function anonymizedBuyerRef(parcel: RelayParcel) {
   return `BV-ACH-${seed}`;
 }
 
+/**
+ * Cle de retrait d'un colis, cote relais : la commande (§8.3, un code remet
+ * tous les colis de la commande), jamais le code lui-meme (D12, R66.1).
+ * Vide tant que le colis n'est pas pret a remettre.
+ */
+function retraitKey(parcel: RelayParcel) {
+  return parcel.pickup_ready ? `BV-${parcel.order_id}` : "";
+}
+
 export default function RelayPointPage() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
@@ -524,7 +537,7 @@ export default function RelayPointPage() {
           vehicleLabel: parcel.courier_vehicle_label || "",
           sizeLabel: parcel.parcel_size_label || t("rl1_point_page.size_not_specified"),
           buyerRef: anonymizedBuyerRef(parcel),
-          pickupCode: parcel.pickup_code || "",
+          pickupCode: retraitKey(parcel),
         })),
     [relayParcels, t],
   );
@@ -542,7 +555,7 @@ export default function RelayPointPage() {
     () => ({
       reception: arrivals.length,
       stock: parcels.length,
-      retrait: relayParcels.filter((parcel) => ["RECEIVED", "STORED"].includes(parcel.status) && parcel.pickup_code).length,
+      retrait: relayParcels.filter((parcel) => ["RECEIVED", "STORED"].includes(parcel.status) && parcel.pickup_ready).length,
       notifications: notifications.filter((notification) => !notification.is_read).length,
       litiges: relayDisputes.length,
     }),
@@ -655,7 +668,7 @@ export default function RelayPointPage() {
       .sort()[0] ?? null;
 
     return {
-      readyForPickup: inStock.filter((parcel) => parcel.pickup_code).length,
+      readyForPickup: inStock.filter((parcel) => parcel.pickup_ready).length,
       lastDay: lastDayParcels.length,
       // Ce qui doit QUITTER le local au prochain passage du livreur. Un colis
       // deja parti porte une date de retour : il ne compte plus.
@@ -852,18 +865,41 @@ export default function RelayPointPage() {
     shipmentId,
     slotCode,
     proofNote,
+    depotCode,
+    photos,
+    signatures,
   }: {
     shipmentId: number;
     slotCode: string;
     proofNote: string;
+    depotCode: string;
+    photos: File[];
+    signatures: string[];
   }): Promise<boolean> => {
     setOperationBusy(true);
     setOperationMessage(null);
     try {
-      await http<RelayParcel>("/api/shipping/relay-point/receive/", {
+      // R66.1 : le serveur verifie le code de depot du colis avant de le mettre en stock.
+      const parcel = await http<RelayParcel>("/api/shipping/relay-point/receive/", {
         method: "POST",
-        body: JSON.stringify({ shipment_id: shipmentId, slot_code: slotCode, proof_note: proofNote }),
+        body: JSON.stringify({ shipment_id: shipmentId, slot_code: slotCode, proof_note: proofNote, depot_code: depotCode }),
       });
+      // D15 : photos et signatures de la reception, rattachees au colis (lieu fixe, presume connecte).
+      for (const [index, photo] of photos.entries()) {
+        const form = new FormData();
+        form.append("parcel_id", String(parcel.id));
+        form.append("stage", "RELAY_RECEIVED");
+        form.append("file", photo, photo.name || `reception-${index + 1}.jpg`);
+        await http("/api/shipping/relay-point/evidence/", { method: "POST", body: form });
+      }
+      for (const [index, signature] of signatures.entries()) {
+        const form = new FormData();
+        form.append("parcel_id", String(parcel.id));
+        form.append("stage", "RELAY_RECEIVED");
+        form.append("description", index === 0 ? "Signature du gérant" : "Signature du livreur");
+        form.append("file", dataUrlToBlob(signature), `signature-${index + 1}.png`);
+        await http("/api/shipping/relay-point/evidence/", { method: "POST", body: form });
+      }
       setOperationMessage({
         tone: "success",
         text: slotCode
@@ -985,7 +1021,7 @@ export default function RelayPointPage() {
       for (const [index, photo] of input.photos.entries()) {
         const form = new FormData();
         form.append("parcel_id", String(input.parcelId));
-        form.append("stage", "RELAY_RELEASED");
+        form.append("stage", "RELAY_UNPACKING"); // D15 : deballage photographie devant le client
         form.append("file", photo, photo.name || `constat-${index + 1}.jpg`);
         form.append("description", `Constat au comptoir — ${input.description}`);
         await http("/api/shipping/relay-point/evidence/", { method: "POST", body: form });
@@ -1300,7 +1336,7 @@ export default function RelayPointPage() {
           sizeLabel: parcel.parcel_size_label || "Taille non renseignée",
           buyerRef: anonymizedBuyerRef(parcel),
           status: parcel.status,
-          pickupCode: parcel.pickup_code || "",
+          pickupCode: retraitKey(parcel),
           receivedAt: parcel.received_at,
           gardeFreeUntil: parcel.garde_free_until,
           gardeDeadline: parcel.garde_deadline,
@@ -1453,7 +1489,7 @@ export default function RelayPointPage() {
     ref: `BV-${parcel.order_id}`,
     slot: parcel.slot_code || "à définir",
     sizeLabel: parcel.parcel_size_label || "Taille non renseignée",
-    pickupCode: parcel.pickup_code,
+    pickupCode: retraitKey(parcel),
     authorizedName: parcel.authorized_pickup_name || "",
     authorizedPhone: parcel.authorized_pickup_phone || "",
     gardeFeeXaf: parcel.garde_fee_due_xaf || 0,
@@ -1490,7 +1526,70 @@ export default function RelayPointPage() {
     }
   };
 
+  /** D14, R42.4 : le reste se paie par Mobile Money, sur le telephone du client, avant la remise. */
+  const collectAtCounter = async (parcelId: number, phone: string, operator: string): Promise<boolean> => {
+    setOperationBusy(true);
+    setOperationMessage(null);
+    try {
+      const data = await http<{ status: string; message: string; montant_xaf: number }>(
+        "/api/shipping/relay-point/comptoir/encaisser/",
+        {
+          method: "POST",
+          body: JSON.stringify({ parcel_id: parcelId, payer_msisdn: phone.replace(/\s/g, ""), payer_operator: operator }),
+        },
+      );
+      setOperationMessage({
+        tone: "success",
+        text: `Demande de ${data.montant_xaf.toLocaleString("fr-FR")} F envoyée au téléphone du client. Il valide, puis présente son code de retrait.`,
+      });
+      await refreshRelayData();
+      return true;
+    } catch (error) {
+      showOperationError(error);
+      return false;
+    } finally {
+      setOperationBusy(false);
+    }
+  };
+
+  /** D14, R42.5 : refus au comptoir — l'avance est gardee, le colis repart au vendeur. */
+  const refuseAtCounter = async (parcelId: number): Promise<boolean> => {
+    setOperationBusy(true);
+    setOperationMessage(null);
+    try {
+      await http("/api/shipping/relay-point/comptoir/refus/", {
+        method: "POST",
+        body: JSON.stringify({ parcel_id: parcelId }),
+      });
+      setOperationMessage({ tone: "success", text: "Refus enregistré. Le colis repart au vendeur." });
+      await refreshRelayData();
+      return true;
+    } catch (error) {
+      showOperationError(error);
+      return false;
+    } finally {
+      setOperationBusy(false);
+    }
+  };
+
+  const comptoirParcels: ComptoirParcel[] = relayParcels
+    .filter((parcel) => ["RECEIVED", "STORED"].includes(parcel.status) && (parcel.a_payer_comptoir_xaf || 0) > 0)
+    .map((parcel) => ({
+      id: parcel.id,
+      ref: `BV-${parcel.order_id}`,
+      slot: parcel.slot_code || "à définir",
+      amountXaf: parcel.a_payer_comptoir_xaf || 0,
+      customerPhone: parcel.customer_phone || "",
+    }));
+
   const renderRetrait = () => (
+    <>
+    <RelayComptoir
+      parcels={comptoirParcels}
+      busy={operationBusy}
+      onCollect={collectAtCounter}
+      onRefuse={refuseAtCounter}
+    />
     <RelayPickup
       busy={operationBusy}
       onCheckCode={checkPickupCode}
@@ -1506,6 +1605,7 @@ export default function RelayPointPage() {
       }}
       onContactSupport={() => setTab("messagerie")}
     />
+    </>
   );
 
   const renderTrust = () => <RelayTrust onError={showOperationError} onNavigate={setTab} />;
@@ -1586,7 +1686,7 @@ export default function RelayPointPage() {
         ref: `BV-${parcel.order_id}`,
         slot: parcel.slot_code || "",
         sizeLabel: parcel.parcel_size_label || "Taille non renseignée",
-        pickupCode: parcel.pickup_code || "",
+        pickupCode: retraitKey(parcel),
         pickedUpAt: parcel.picked_up_at,
       })),
     [relayParcels],

@@ -86,6 +86,9 @@ class FCMPush(Push):
 
     def envoyer(self, appareil, titre, texte, lien=""):
         verifier_texte(titre, texte)
+        if appareil.type != "fcm":
+            # Une adresse Web Push (site) n'est pas un jeton FCM : FCM la refuserait (D21).
+            return EnvoiPush(False)
         from firebase_admin import messaging
 
         message = messaging.Message(

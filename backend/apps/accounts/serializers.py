@@ -5,6 +5,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.db.models import Q
+from django.utils import timezone
 from django.contrib.auth.password_validation import validate_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from apps.catalog.models import Product
@@ -262,8 +263,6 @@ class PayoutAccountCreateSerializer(serializers.Serializer):
         return data
 
     def create(self, validated_data):
-        import random
-
         user = self.context["request"].user
         normalized = validated_data["normalized_phone"]
         is_primary = validated_data.get("is_primary", True)
@@ -287,10 +286,14 @@ class PayoutAccountCreateSerializer(serializers.Serializer):
                 "verified_at": None,
             },
         )
-        code = f"{random.randint(0, 999999):06d}"
-        account.set_verification_code(code)
-        account.save()
-        account.dev_code = code
+        # D6 : le code part vraiment au numero a verifier, par le moteur de codes unique.
+        from apps.otp import services as codes
+        from apps.otp.models import CodeOtp
+
+        codes.envoyer(objet=CodeOtp.Objet.MOYEN, destination=account.phone_e164, utilisateur=account.user,
+                      exiger_utilisateur=True)
+        account.last_sent_at = timezone.now()
+        account.save(update_fields=["last_sent_at", "updated_at"])
         return account
 
 

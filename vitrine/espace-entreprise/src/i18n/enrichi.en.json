@@ -1,0 +1,21 @@
+{
+ "{n} geste(s) en attente d’envoi": "{n} action(s) waiting to be sent",
+ "gardés sur cet appareil, envoyés dès le retour du réseau": "kept on this device, sent as soon as the network is back",
+ "Envoi…": "Sending…",
+ "Envoyer maintenant": "Send now",
+ "« {g} » n’a pas été accepté à l’envoi": "“{g}” was not accepted when sent",
+ "{j} j {h} h": "{j} d {h} h",
+ "{m} min {s} s": "{m} min {s} s",
+ "{s} s": "{s} s",
+ "Délai dépassé": "Deadline passed",
+ "Effacer la recherche": "Clear search",
+ "Trier": "Sort",
+ "Aucun résultat": "No results",
+ "Rien ne correspond à la recherche ou aux filtres choisis.": "Nothing matches the search or the chosen filters.",
+ "{n} élément(s)": "{n} item(s)",
+ "{n} sur {total}": "{n} of {total}",
+ "Exporter": "Export",
+ "{quoi} : réservé à {r}.": "{quoi}: reserved for {r}.",
+ "Actions principales": "Main actions",
+ "refusé par le serveur (code {c})": "refused by the server (code {c})"
+}

@@ -66,6 +66,18 @@ def zones_de(organisation) -> set:
     return couvertes
 
 
+def couvre(organisation, shipment) -> bool:
+    """R52.1, R74 : la destination du colis est dans une zone que l'entreprise déclare. Une commande sans zone Z1 à Z12
+    (ancienne zone sans code) garde l'ancien contrôle par la ville et l'adresse."""
+    zone = shipment.order.zone
+    if zone is not None and zone.code:
+        return zone.code in zones_de(organisation)
+    texte = f"{shipment.order.city} {shipment.order.address}".casefold()
+    if (organisation.city or "").casefold() not in texte:
+        return False
+    return not organisation.zones or any(str(z).casefold() in texte for z in organisation.zones)
+
+
 def entreprises_actives():
     from apps.accounts.models import DeliveryOrganizationProfile
 

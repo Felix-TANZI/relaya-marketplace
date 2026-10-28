@@ -159,7 +159,6 @@ def _clear_personal_records(user):
 
     from .models import (
         AppleIdentity,
-        OTPCode,
         PayoutAccount,
         UserCart,
         UserFavorite,
@@ -167,7 +166,6 @@ def _clear_personal_records(user):
     )
 
     AppleIdentity.objects.filter(user=user).delete()
-    OTPCode.objects.filter(user=user).delete()
     # Les codes de double authentification vivent desormais dans le moteur
     # unique (tache D6). Sans ces deux lignes, supprimer un compte laisserait
     # derriere lui ses codes et ses jetons de reinitialisation.

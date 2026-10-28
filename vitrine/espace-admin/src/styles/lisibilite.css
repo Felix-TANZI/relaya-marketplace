@@ -1,0 +1,207 @@
+/* Passe de lisibilité (commune à la console et à l'espace entreprise) : droits repliés « peut / ne peut pas ». */
+.px details.drt{border-radius:14px;background:var(--card-2);box-shadow:inset 0 0 0 1px var(--line)}
+.px details.drt>summary{display:flex;align-items:center;gap:10px;min-height:48px;padding:8px 14px;cursor:pointer;list-style:none}
+.px details.drt>summary::-webkit-details-marker{display:none}
+.px details.drt>summary>svg:last-child{flex-shrink:0;color:var(--ink-3);transition:transform .15s}
+.px details.drt[open]>summary>svg:last-child{transform:rotate(180deg)}
+.px .drt-res{display:flex;flex-wrap:wrap;gap:6px 14px;flex:1;min-width:0;font-size:.875rem;font-weight:700;color:var(--ink)}
+.px .drt-res>span{display:inline-flex;align-items:center;gap:5px}
+.px .drt-res>span>svg{flex-shrink:0}
+.px .drt-res .ok svg{color:var(--green)}
+.px .drt-res .lec svg{color:var(--ink-3)}
+.px .drt-res .non svg{color:var(--red)}
+.px .drt-voir{flex-shrink:0;font-size:.8125rem;font-weight:700;color:var(--ink-3)}
+.px .drt-c{padding:2px 14px 14px}
+.px .drt-jamais{display:flex;gap:8px;align-items:flex-start;margin:0 0 12px;padding:10px 12px;border-radius:10px;background:var(--red-soft);color:var(--ink);font-size:.8125rem;line-height:1.45}
+.px .drt-jamais svg{color:var(--red);flex-shrink:0;margin-top:1px}
+.px .drt-2{display:grid;grid-template-columns:1fr;gap:12px}
+@media (min-width:760px){.px .drt-2{grid-template-columns:1fr 1fr;align-items:start}}
+.px .drt-col{border-radius:12px;background:var(--card);box-shadow:inset 0 0 0 1px var(--line);padding:12px 12px 6px}
+.px .drt-h{display:flex;align-items:center;gap:8px;margin:0 0 8px;font-size:.9375rem;font-weight:800;color:var(--ink)}
+.px .drt-col.ok .drt-h svg{color:var(--green)}
+.px .drt-col.non .drt-h svg{color:var(--red)}
+.px .drt-g{margin-bottom:10px}
+.px .drt-g h4{display:flex;align-items:center;gap:6px;margin:0 0 4px;font-size:.75rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3)}
+.px .drt-g ul{list-style:none;margin:0;padding:0}
+.px .drt-g li{display:flex;align-items:center;gap:8px;min-height:32px;padding:4px 0;border-top:1px solid var(--line);font-size:.875rem;line-height:1.3;color:var(--ink)}
+.px .drt-g li:first-child{border-top:0}
+.px .drt-i{width:20px;height:20px;border-radius:6px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center}
+.px .drt-g li.oui .drt-i{background:var(--green-soft);color:var(--green)}
+.px .drt-g li.lecture .drt-i{background:var(--sand-2,var(--card-2));color:var(--ink-2);box-shadow:inset 0 0 0 1px var(--line-2)}
+.px .drt-g li.non .drt-i{background:var(--red-soft);color:var(--red)}
+.px .drt-g li.non{color:var(--ink-2)}
+.px .drt-n{flex-shrink:0;font-size:.75rem;font-weight:700;color:var(--ink-2);padding:2px 8px;border-radius:999px;background:var(--card-2);box-shadow:inset 0 0 0 1px var(--line)}
+.px details.drt-pq{margin-top:4px}
+.px details.drt-pq>summary{display:flex;align-items:center;gap:8px;min-height:44px;cursor:pointer;list-style:none;font-size:.8125rem;font-weight:700;color:var(--ink-2)}
+.px details.drt-pq>summary::-webkit-details-marker{display:none}
+.px details.drt-pq ul{margin:0;padding:0 0 0 18px;font-size:.8125rem;line-height:1.5;color:var(--ink-2)}
+.px details.drt-pq li{margin-bottom:6px}
+.px details.drt-pq li b{color:var(--ink)}
+
+
+/* Plancher de taille : aucun texte utile sous 12 px (pastilles, libellés .k, horodatages, en-têtes de tableau,
+   puces du calendrier). Même sélecteur que la règle d’origine, précédé de « html » pour passer après elle. */
+html .px .admA-ev .cm,
+html .px .pill.sm,
+html .px .t11,
+html .px .stepper .st,
+html .px .photo .ts,
+html .px .mini .mk,
+html .px .kpi .k,
+html .px table.dt th,
+html .px .map-leg,
+html .px .divide,
+html .px .admA-q .ty,
+html .px .admA-q .ag,
+html .px .admA-lk,
+html .px .admA-day .d .k,
+html .px .admA-day .d .s,
+html .px .admA-lhead .amt small,
+html .px .admA-prop .k,
+html .px .admA-prop .ai,
+html .px .admA-x .c .l,
+html .px .admA-ev .photo .ts,
+html .px .admA-ev .cap,
+html .px .admA-ev .cap .st,
+html .px .admA-ev .tile2,
+html .px .admA-ev .tile2 span,
+html .px .admA-chain .s,
+html .px .admA-chain .s b,
+html .px .admA-opt span,
+html .px .admA-motif .cnt,
+html .px .admA-eff .k,
+html .px .admA-4e .v .s,
+html .px .admA-led th,
+html .px .admA-led .key,
+html .px .admA-stepbar .s span,
+html .px .admA-hash,
+html .px .admA-xt th,
+html .px .admA-xt th:first-child,
+html .px .admk-kick,
+html .px .admk-stage .cap,
+html .px .admk-th .l,
+html .px .admk-th .st,
+html .px .admk-conf,
+html .px .admk-seen .k,
+html .px .admk-step .s,
+html .px .admk-ev .g,
+html .px .admk-mini .k,
+html .px .admk-rule .id,
+html .px .admlg-chain .d,
+html .px .admlg-layers .lh,
+html .px .admlg-kv3 .k,
+html .px .admlg-kv3 .s,
+html .px .admlg-label .top,
+html .px .admlg-veh small,
+html .px .admlg-comp .w,
+html .px .admlg-zc .k,
+html .px .admp-crit,
+html .px .admp-mx th,
+html .px .admp-mx td.ok span,
+html .px .admp-mx td.bad span,
+html .px .admp-mx.grid td.admp-rate span,
+html .px .admp-mod .kick,
+html .px .admp-pl .mono,
+html .px .admp-push .pw,
+html .px .admp-dh,
+html .px .admp-ev,
+html .px .admp-cd span,
+html .px .admp-next .admp-ev,
+html .px .admm-sms .from,
+html .px .admm-notif .pw,
+html .px .admm-msg .w,
+html .px .admm-act span:last-child,
+html .px .adme-k,
+html .px .adme-src a,
+html .px .adme-src span.s,
+html .px .adme-src .mono,
+html .px .adme-role span,
+html .px .adme-tip .k,
+html .px .adme-ins,
+html .px .adme-ind .v small,
+html .px .adme-rep-h .k,
+html .px .adme-svc .l,
+html .px .adme-cal,
+html .px .adme-ai-sec,
+html .px .admk-stage.cmp .cap{font-size:.75rem}
+
+/* Actions de la page dans le flux (téléphone) : libellés entiers sur deux lignes au besoin, jamais coupés « … ». */
+html .e-pouce.e-pouce-flux>.btn,html .e-pouce.e-pouce-flux>a.btn{height:auto;min-height:48px;padding-block:8px;white-space:normal;line-height:1.2;text-align:center}
+html .e-pouce.e-pouce-flux .btn span{overflow:visible;text-overflow:clip;white-space:normal}
+
+/* Calendrier commercial au téléphone : le numéro du jour seul, chaque temps fort en barre de couleur (son nom en
+   infobulle ; la légende et la liste « Ventes flash » le disent en clair dessous) — plus de puces coupées « F… ». */
+@media (max-width:599px){
+  html .px .admp-day{min-height:52px;padding:5px 4px}
+  html .px .admp-day .admp-m{display:none}
+  html .px .admp-day .n{font-size:.875rem}
+  html .px .admp-day .admp-ev{font-size:0;line-height:0;height:6px;padding:0;margin-top:4px;border-radius:3px}
+}
+
+/* Libellés courts (tuiles, titres de carte) : un mot ne se coupe plus en plein milieu (« CROISSANC / E ») ; il passe
+   entier à la ligne, ou se coupe à la syllabe. */
+html .px .kpi .k,html .px .card-t,html .px .kick,html .px .tile .t,html .px h2,html .px h3{overflow-wrap:break-word;hyphens:auto}
+
+/* Anneaux (Trust Score, délais, taux) : le cercle se met à l'échelle (SVG en viewBox), le nombre suit la taille du
+   cercle (cqw, posé par Anneau selon la longueur du libellé), en couleur de texte, centré, lisible en clair comme en
+   sombre ; au téléphone, jamais plus petit que --ring-min (48 px dans un tableau, 72 px ailleurs). */
+html .px .ring{container-type:inline-size;aspect-ratio:1}
+html .px .ring svg{display:block}
+html .px .ring b{color:var(--ink);line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em;text-align:center;white-space:nowrap;overflow:hidden}
+html .px .ring b>span{font-size:inherit!important}
+@media (max-width:599px){html .px .ring{min-width:var(--ring-min,0px);min-height:var(--ring-min,0px)}}
+
+/* Portrait (photo de profil) dans un avatar rond : il remplit le cercle. */
+.avatar:has(>img.portrait),.av:has(>img.portrait){overflow:hidden;padding:0}
+img.portrait{width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block}
+
+/* Recadrage d’une photo (Rognage, copié de l’espace entreprise). */
+.pf-rog{position:relative;width:100%;max-width:300px;aspect-ratio:1;margin:14px auto 0;overflow:hidden;border-radius:16px;background:var(--rog-fond);touch-action:none;user-select:none;outline:none}
+.pf-rog:focus-visible{box-shadow:0 0 0 3px var(--e-ciel)}
+.pf-rog img{position:absolute;left:50%;top:50%;max-width:none;transform-origin:center;pointer-events:none}
+.pf-rog-masque{position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 999px var(--rog-voile);border:2px solid var(--rog-bord);pointer-events:none}
+.pf-rog.vd-rog-couv{max-width:560px;aspect-ratio:3}
+.pf-rog.vd-rog-couv .pf-rog-masque{border-radius:12px}
+.pf-rog-zoom{display:flex;align-items:center;gap:6px;max-width:300px;margin:8px auto 0}
+.pf-rog-zoom.vd-rog-couv-z{max-width:560px}
+.pf-rog-zoom input{flex:1;accent-color:var(--e)}
+.pf-rog-act{display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap}
+.pf-rog-act .btn{width:auto;flex:1 1 0;min-width:130px}
+
+/* Mon compte (Profil) : photo, lignes « clé · valeur · Modifier », alertes de sécurité. */
+.mc-photo{display:flex;gap:14px;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.avatar.mc-av{width:72px;height:72px;font-size:1.375rem;margin-left:0;flex-shrink:0}
+.mc-btns{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.mc-btns .btn{width:auto}
+.mc-l{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;min-height:56px;padding:8px 0;border-bottom:1px solid var(--line)}
+.mc-l .btn{width:auto;flex-shrink:0}
+.mc-k{display:block;font-size:.8125rem;font-weight:700;color:var(--ink-3)}
+.mc-v{display:block;font-size:.9375rem;font-weight:700;color:var(--ink);overflow-wrap:anywhere}
+.mc-info{display:flex;gap:8px;align-items:center;margin:10px 0 0;font-size:.875rem;font-weight:700;color:var(--ink)}
+.mc-info svg{color:var(--green);flex-shrink:0}
+.mc-secret-l{display:flex;gap:6px;align-items:center}
+.mc-secret-l input{flex:1;min-width:0}
+.mc-secret-l .btn{width:auto;flex-shrink:0}
+ul.mc-alertes{list-style:none;margin:0}
+ul.mc-alertes li{display:flex;flex-direction:column;gap:2px;padding:8px 0;border-top:1px solid var(--line);font-size:.875rem}
+ul.mc-alertes li:first-child{border-top:0}
+
+/* Connexion : retour sur un appareil gardé, case « se souvenir », lien par e-mail. */
+.cx-retour{display:flex;align-items:center;gap:12px;margin-top:12px;padding:10px 12px;border-radius:14px;background:var(--card-2);box-shadow:inset 0 0 0 1px var(--line)}
+.cx-retour b{display:block;font-size:.9375rem;color:var(--ink)}
+.cx-mail{display:block;font-size:.8125rem;color:var(--ink-2);overflow-wrap:anywhere}
+.cx-retour .btn{width:auto;flex-shrink:0}
+.avatar.cx-av{width:44px;height:44px;margin-left:0;flex-shrink:0}
+.cx-souvenir{display:flex;gap:10px;align-items:flex-start;margin-top:12px;cursor:pointer;min-height:44px}
+.cx-souvenir input{width:20px;height:20px;margin-top:2px;flex-shrink:0;accent-color:var(--e)}
+.cx-souvenir b{display:block;font-size:.875rem;color:var(--ink)}
+.cx-souvenir .t12{display:block}
+.btn.cx-lien{margin-top:8px}
+.cx-lien-b{margin-top:10px;padding:12px;border-radius:12px;background:var(--card-2);box-shadow:inset 0 0 0 1px var(--line)}
+.cx-lien-b .btn{width:auto}
+html .px .mc-l>.grow,html .mc-l>.grow{flex:1 1 160px;min-width:0}
+.cx-retour .grow{min-width:0}
+.cx-pasmoi{display:inline-flex;align-items:center;min-height:44px;margin:-6px 0 -10px;padding:0;border:0;background:none;font:inherit;font-size:.875rem;font-weight:700;color:var(--acc-txt,var(--ink));text-decoration:underline;cursor:pointer}
+/* Barre d'actions dans le flux : à grand texte, les boutons passent à la ligne plutôt que de couper un mot. */
+html .e-pouce.e-pouce-flux{flex-wrap:wrap}
+html .e-pouce.e-pouce-flux>.btn,html .e-pouce.e-pouce-flux>a.btn{flex:1 1 auto}

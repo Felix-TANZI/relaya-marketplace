@@ -1,0 +1,64 @@
+/* Écrans de la journée du livreur (LIV-04) repris sur le prototype : Aujourd'hui, feuilles « Mon statut » et « Mon kit
+   d'emballage » (et sa vue « suivi »), paquet. Le balisage est celui du prototype (src/styles/prototype.css) ;
+   ici seulement ce qui lui manque ou ce qui est propre à ces écrans. Préfixe « l4- ». */
+
+.l4-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- Lecture : chargement, erreur ---------- */
+.l4-charge{display:flex;flex-direction:column;gap:10px;padding:14px 0}
+.l4-charge i{display:block;height:18px;border-radius:9px;background:var(--sand-2)}
+html[data-mouv] .l4-charge i{background-image:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.45) 50%,transparent 70%);background-size:220% 100%;background-repeat:no-repeat;animation:blv-scintille 1.4s linear infinite}
+html[data-mouv][data-theme=dark] .l4-charge i{background-image:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.07) 50%,transparent 70%)}
+.l4-erreur{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:12px}
+.l4-erreur>svg{color:var(--or-txt)}
+.l4-erreur p{margin:4px 0 0;font-size:.875rem;color:var(--ink-3)}
+.l4-court{width:auto;min-height:48px;padding:0 16px}
+.l4-lien{display:inline-flex;align-items:center;gap:4px;min-height:44px;font-weight:800;color:var(--acc-txt)}
+
+/* ---------- Aujourd'hui ---------- */
+.l4-hl-l{display:block;color:inherit;text-decoration:none}
+.hero>.row>.pill.dk{white-space:nowrap;flex-shrink:0}
+.l4-hero-l{color:rgba(255,255,255,.85)}
+.l4-hero-l svg{vertical-align:-3px}
+.l4-hero-a{display:inline-flex;align-items:center;min-height:44px;font-weight:800;color:#fff}
+.l4-depasse{color:#FFC4B8;font-weight:800}
+.hero .l4-depasse{color:#FFC4B8}
+.s.l4-depasse{color:#FFC4B8}
+.hero.red .l4-hk-rouge{color:#FFB4AB}
+.l4-foot{display:block;color:inherit;text-decoration:none;min-height:44px}
+.liva-seg a{min-width:0}
+.li.l4-pq .lt,.li.l4-alerte .lt{overflow-wrap:anywhere}
+.li .pill{flex-shrink:0}
+
+/* ---------- Feuilles ---------- */
+.l4-feuille-t{margin:0}
+.l4-radio-b{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.l4-radio-b:disabled{opacity:.6;cursor:default}
+.l4-actuel{font-size:.75rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--acc-txt)}
+.l4-divide{display:flex;align-items:center;gap:10px;font-size:.75rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin:22px 0 10px}
+.l4-divide::after{content:'';flex:1;height:1px;background:var(--line-2)}
+.l4-plage{margin:6px 4px 0;line-height:1.45}
+.l4-qfmt{width:44px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;background:var(--acc-soft);color:var(--acc-txt);flex-shrink:0}
+.liva-qty .q button{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--sand-2);border:1px solid var(--line-2);font:inherit;font-weight:800;font-size:1.125rem;color:var(--ink);cursor:pointer}
+.liva-qty .q button:disabled{opacity:.45;cursor:default}
+.liva-qty{flex-wrap:wrap}
+.l4-inp{border:0;background:transparent;font:inherit;color:inherit;min-height:44px;outline:none;min-width:0}
+.l4-check{cursor:pointer;min-height:44px}
+.l4-check:focus-within .cbx{box-shadow:0 0 0 3px rgba(var(--acc-rgb),.35)}
+.liva-need .cr{color:var(--red)}
+
+/* ---------- Paquet ---------- */
+.l4-change{box-shadow:var(--shadow-card),inset 3px 0 0 var(--or)}
+.l4-pq-id{letter-spacing:.01em;font-size:1.4375rem;overflow-wrap:anywhere}
+.l4-statut>.row>.pill,.l4-statut>.row>div{min-width:0}
+.l4-statut>.row>.pill{white-space:nowrap;flex-shrink:0}
+/* Cibles et contraste (tests/accessibilite.spec.ts) */
+.sec:has(h2[id^="l4-"]) .a{min-height:44px;display:inline-flex;align-items:center}
+.hero.night:has(.l4-pq-id) .money4 .m4 .s{color:rgba(255,255,255,.92)}
+/* Paquets repliés de l'accueil : le résumé est une ligne de la liste, le chevron tourne à l'ouverture. */
+.l4-plus>summary{list-style:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.l4-plus>summary::-webkit-details-marker{display:none}
+.l4-plus>summary .ls{display:block}
+.l4-plus>summary>svg:last-child{color:var(--ink-3);flex-shrink:0;transition:transform .2s}
+.l4-plus[open]>summary>svg:last-child{transform:rotate(180deg)}
+.l4-plus[open]>summary{border-bottom:1px solid var(--line)}

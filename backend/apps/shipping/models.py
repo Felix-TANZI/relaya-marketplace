@@ -300,6 +300,15 @@ class Shipment(models.Model):
     # de retrait (RelayParcel.pickup_code, relais -> acheteur).
     pickup_confirmation_code = models.CharField(max_length=6, blank=True, default="")
 
+    # Spec v2.1, R66.1 : code de dépôt (livreur -> relais), vérifié par le gérant à la réception ; il voyage dans le QR
+    # du colis montré par l'application du livreur (R66.2).
+    depot_code = models.CharField(max_length=6, blank=True, default="")
+    # Feuille de route D11 : à domicile, remise au client avec le code ; le client le lit dans son suivi et le donne
+    # au livreur, qui le saisit pour certifier la livraison.
+    delivery_code = models.CharField(max_length=6, blank=True, default="")
+    # R66.1 : essais faux par code {"remise"|"depot"|"livraison": {"n": int, "bloque_jusqu": iso}}
+    codes_essais = models.JSONField(default=dict, blank=True)
+
     # Distinct du statut DELIVERED (mis par le livreur) : date a laquelle
     # L'ACHETEUR a confirme la reception de CE colis precis (code saisi).
     buyer_confirmed_at = models.DateTimeField(null=True, blank=True)
@@ -315,10 +324,28 @@ class Shipment(models.Model):
         return self.receipt_confirmation_code
 
     def ensure_pickup_confirmation_code(self) -> str:
+        from apps.shipping.codes import nouveau_code
+
         if not self.pickup_confirmation_code:
-            self.pickup_confirmation_code = f"{secrets.randbelow(1_000_000):06d}"
+            self.pickup_confirmation_code = nouveau_code()  # R66.1
             self.save(update_fields=["pickup_confirmation_code"])
         return self.pickup_confirmation_code
+
+    def ensure_depot_code(self) -> str:
+        from apps.shipping.codes import nouveau_code
+
+        if not self.depot_code:
+            self.depot_code = nouveau_code()  # R66.1
+            self.save(update_fields=["depot_code"])
+        return self.depot_code
+
+    def ensure_delivery_code(self) -> str:
+        from apps.shipping.codes import nouveau_code
+
+        if not self.delivery_code:
+            self.delivery_code = nouveau_code()  # D11
+            self.save(update_fields=["delivery_code"])
+        return self.delivery_code
 
     @property
     def order_items(self):
@@ -497,6 +524,8 @@ class ShipmentEvidence(models.Model):
         RELAY_REFUSED = "RELAY_REFUSED", "Refus au contrôle relais"
         RELAY_RELEASED = "RELAY_RELEASED", "Sortie point relais"
         RELAY_RELEASED_SIGNATURE = "RELAY_RELEASED_SIGNATURE", "Signature au retrait relais"
+        # D15 : contestation au retrait, le gérant photographie le déballage devant le client
+        RELAY_UNPACKING = "RELAY_UNPACKING", "Déballage contesté au comptoir"
         CUSTOMER_DELIVERY = "CUSTOMER_DELIVERY", "Remise client"
         RETURN_DEPOSIT = "RETURN_DEPOSIT", "Dépôt retour"
 

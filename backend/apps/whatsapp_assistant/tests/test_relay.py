@@ -105,6 +105,12 @@ def ecrire(provider, texte, wa_id=RELAIS_WA, langue="fr"):
     return contact
 
 
+def receptionner(provider, colis):
+    """« Colis reçu », puis le code de dépôt que montre le livreur (spec v2.1, R66.1)."""
+    toucher(provider, f"rcv:{colis['parcel'].id}")
+    return ecrire(provider, Shipment.objects.get(pk=colis["shipment"].id).ensure_depot_code())
+
+
 def toucher(provider, bouton, wa_id=RELAIS_WA):
     contact, _ = WhatsAppContact.objects.get_or_create(wa_id=wa_id, defaults={"language": "fr"})
     message = IncomingMessage(
@@ -208,22 +214,42 @@ def test_le_gerant_receptionne_le_colis(relais, provider, django_capture_on_comm
     ramasser(colis, provider, django_capture_on_commit_callbacks)
     provider.sent.clear()
 
-    toucher(provider, f"rcv:{colis['parcel'].id}")
+    contact = toucher(provider, f"rcv:{colis['parcel'].id}")
+    assert "code de dépôt" in provider.last["body"] and contact.state.startswith("relay:depot:")
+    colis["parcel"].refresh_from_db()
+    assert colis["parcel"].status == "EXPECTED"          # rien sans le code de dépôt (R66.1)
+    provider.sent.clear()
+
+    receptionner(provider, colis)
 
     colis["parcel"].refresh_from_db()
     assert colis["parcel"].status == "STORED"
     assert colis["parcel"].received_at is not None
     assert colis["parcel"].pickup_code                 # le code du client vient d'être créé
-    assert "réceptionné" in provider.sent[0]["body"]
+    assert any("réceptionné" in m.get("body", "") for m in provider.sent)
     # Le colis passe côté « à remettre ».
     assert [b.id for b in provider.last["buttons"]] == ["give", "pcls"]
+
+
+def test_un_mauvais_code_de_depot_ne_receptionne_rien(relais, provider,
+                                                       django_capture_on_commit_callbacks):
+    colis = colis_vers_relais(relais)
+    ramasser(colis, provider, django_capture_on_commit_callbacks)
+    toucher(provider, f"rcv:{colis['parcel'].id}")
+    provider.sent.clear()
+
+    ecrire(provider, "000000" if Shipment.objects.get(pk=colis["shipment"].id).ensure_depot_code() != "000000" else "111111")
+
+    colis["parcel"].refresh_from_db()
+    assert colis["parcel"].status == "EXPECTED"                                         # R66.1
+    assert "Code de dépôt incorrect" in provider.sent[0]["body"]
 
 
 def test_le_code_du_client_n_est_jamais_envoye(relais, provider,
                                                django_capture_on_commit_callbacks):
     colis = colis_vers_relais(relais)
     ramasser(colis, provider, django_capture_on_commit_callbacks)
-    toucher(provider, f"rcv:{colis['parcel'].id}")
+    receptionner(provider, colis)
     colis["parcel"].refresh_from_db()
     code = colis["parcel"].pickup_code
     provider.sent.clear()
@@ -239,7 +265,7 @@ def test_receptionner_deux_fois_ne_change_rien(relais, provider,
                                                django_capture_on_commit_callbacks):
     colis = colis_vers_relais(relais)
     ramasser(colis, provider, django_capture_on_commit_callbacks)
-    toucher(provider, f"rcv:{colis['parcel'].id}")
+    receptionner(provider, colis)
     colis["parcel"].refresh_from_db()
     recu_a = colis["parcel"].received_at
     provider.sent.clear()
@@ -257,13 +283,13 @@ def test_le_stockage_plein_est_annonce_clairement(relais, provider,
     relais["profile"].save(update_fields=["storage_capacity"])
     premier = colis_vers_relais(relais)
     ramasser(premier, provider, django_capture_on_commit_callbacks)
-    toucher(provider, f"rcv:{premier['parcel'].id}")     # la place unique est prise
+    receptionner(provider, premier)                      # la place unique est prise
 
     second = colis_vers_relais(relais)
     ramasser(second, provider, django_capture_on_commit_callbacks)
     provider.sent.clear()
 
-    toucher(provider, f"rcv:{second['parcel'].id}")
+    receptionner(provider, second)
 
     second["parcel"].refresh_from_db()
     assert second["parcel"].status == "EXPECTED"        # rien n'a été réceptionné
@@ -275,7 +301,7 @@ def test_le_stockage_plein_est_annonce_clairement(relais, provider,
 def _receptionner(relais, provider, capture):
     colis = colis_vers_relais(relais)
     ramasser(colis, provider, capture)
-    toucher(provider, f"rcv:{colis['parcel'].id}")
+    receptionner(provider, colis)
     colis["parcel"].refresh_from_db()
     return colis
 

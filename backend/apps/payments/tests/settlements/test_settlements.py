@@ -445,20 +445,25 @@ class TestExecution:
         assert trial_balance_total() == 0
         assert run_all()["ok"]
 
-    def test_le_partenaire_recoit_l_integralite(
+    def test_le_beneficiaire_paie_les_frais_de_versement(
         self, acheteur, vendeur, operateur, approbateur,
     ):
         """
-        Les frais PSP sont une CHARGE PLATEFORME, jamais une retenue :
-        le partenaire recoit son net complet (referentiel §7.1).
+        Spec v2.1, R22.3 et R43.2 : frais_versement = ceil(r_versement x montant
+        verse), retenus sur le versement, a la charge du beneficiaire ; plus
+        aucune charge plateforme.
         """
+        from apps.regles import services as regles
+
         demande = self._approuve(acheteur, vendeur, operateur, approbateur)
-        montant = demande.amount_xaf
+        net = demande.batch.net_amount_xaf
+        frais = regles.moteur().versement([net])["frais_versement"]
         demande = execute_payout(demande)
 
-        assert demande.amount_xaf == montant          # inchange
-        assert demande.psp_fee_xaf > 0                # frais preleves
-        assert balance(coa.EXPENSE_PSP_PAYOUT) == demande.psp_fee_xaf
+        assert demande.psp_fee_xaf == frais
+        assert demande.amount_xaf == net - frais      # montant envoye
+        assert balance(coa.EXPENSE_PSP_PAYOUT) == 0
+        assert trial_balance_total() == 0
 
     def test_reference_uuid4_pour_campay(
         self, acheteur, vendeur, operateur, approbateur,

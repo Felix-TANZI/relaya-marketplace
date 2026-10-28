@@ -467,6 +467,9 @@ def return_inspection(request, ref):
         'inspection_passed', 'inspection_controles', 'inspected_at', 'inspected_by',
         'draft_inspection', 'status', 'updated_at',
     ])
+    from apps.orders.retours import attribuer_frais_de_retour
+
+    attribuer_frais_de_retour(ret)  # R69.1
     return Response({'ok': True})
 
 

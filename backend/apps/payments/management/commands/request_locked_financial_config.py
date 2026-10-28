@@ -18,19 +18,25 @@ from apps.payments.config.change_control import ChangeControlError, request_chan
 from apps.payments.config.models import ConfigChangeRequest
 
 
-ESCROW_DEFAULT_PAYLOAD = {
-    "name": "Politique par défaut",
-    "auto_confirm_hours": 96,
-    "release_delay_hours": 72,
-    "dispute_window_days": 4,
-    "vendor_reply_hours": 72,
-    "priority": 0,
-}
+def _escrow_default_payload() -> dict:
+    """Spec v2.1, R23 (feuille de route D17) : l'auto-confirmation se fixe au RETRAIT (retrait + r_retour_j, posé par
+    bridge.signals.ouvrir_le_droit_de_retour), pas au paiement : 0 ici ; libération + r_lib_j_standard, ramené à
+    r_lib_j_rapide au retrait pour Or et Platine ; fenêtre de litige r_retour_j (R67.1)."""
+    from apps.regles import services as regles
+
+    return {
+        "name": "Politique par défaut",
+        "auto_confirm_hours": 0,
+        "release_delay_hours": 24 * regles.reglage("r_lib_j_standard"),
+        "dispute_window_days": regles.reglage("r_retour_j"),
+        "vendor_reply_hours": regles.reglage("r_litige_reponse_h"),
+        "priority": 0,
+    }
 ESCROW_JUSTIFICATION = (
-    "Verrouille par Addendum Decisions v1.0 §3.1 (auto-confirmation 96h depuis "
-    "la remise, liberation 72h depuis la confirmation) et §4.4 (fenetre de "
-    "litige 4 jours, calee sur l'auto-confirmation). Aucune ligne EscrowPolicy "
-    "n'existait en base : le systeme tournait sur les seuls defauts Python."
+    "Spec v2.1, R23 et R67.1 (feuille de route D17) : fermeture du droit de retour "
+    "au retrait + r_retour_j (ou confirmation du client), puis liberation + "
+    "r_lib_j_standard (Bronze, Argent) ou r_lib_j_rapide (Or, Platine). Double "
+    "validation exigee avant la production."
 )
 
 DISTRIBUTION_RULES = [
@@ -158,7 +164,7 @@ class Command(BaseCommand):
             except ChangeControlError as exc:
                 skipped.append((target_key, str(exc)))
 
-        _request("EscrowPolicy", "escrow-default", ESCROW_DEFAULT_PAYLOAD, ESCROW_JUSTIFICATION)
+        _request("EscrowPolicy", "escrow-default", _escrow_default_payload(), ESCROW_JUSTIFICATION)
         for rule in DISTRIBUTION_RULES:
             _request("DistributionRule", rule["target_key"], rule["payload"], rule["justification"])
 

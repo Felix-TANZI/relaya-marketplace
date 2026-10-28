@@ -127,7 +127,12 @@ services:
   # : chaque sous-domaine proxy sa propre route /api/ vers le meme backend
   # (voir nginx.conf), donc les appels restent "same-origin" et on evite
   # d'avoir a gerer CORS entre sous-domaines.
+  # Ancien site client de belivay.com, mis de côté : la vitrine (service
+  # « vitrine » ci-dessous) sert désormais belivay.com. Le service reste
+  # défini (retour arrière : PR-VITRINE.md) mais ne démarre plus que si on
+  # active son profil : `docker compose --profile ancien-front ...`.
   frontend-client:
+    profiles: ["ancien-front"]
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
@@ -137,6 +142,45 @@ services:
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
         VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
         VITE_MAP_PROVIDER: ${VITE_MAP_PROVIDER:-openstreetmap}
+    restart: unless-stopped
+    networks:
+      - relaya-network
+
+  # ── Vitrine BelivaY (vitrine/, PR-VITRINE.md) ──────────────────────────────
+  # Les six espaces web en démonstration sur belivay.com : / (client),
+  # /vendeur/, /entreprise/, /livreur/, /relais/, /admin/. Fichiers seulement :
+  # aucun secret, aucune base. nginx y envoie tout belivay.com sauf /api/,
+  # /django-admin/, /static/, /media/ et les sitemaps du back-end.
+  vitrine:
+    build:
+      context: ./vitrine
+      target: web
+      args:
+        SITE_URL: https://belivay.com
+    read_only: true
+    restart: unless-stopped
+    networks:
+      - relaya-network
+
+  # Comptes réels de la vitrine (vitrine/site/serveur/) : la même base Neon
+  # que le site Vercel, pour que les comptes soient les mêmes des deux côtés.
+  # Seul ce service reçoit ses secrets (pas d'env_file : rien du back-end).
+  # Variables vides = comptes réels fermés, la démonstration continue.
+  # nginx ne lui envoie que /api/auth/* et /api/admin/comptes* portant
+  # ?espace=<un des six espaces> ; tout le reste de /api/ va au back-end.
+  vitrine-comptes:
+    build:
+      context: ./vitrine
+      target: comptes
+    environment:
+      - DATABASE_URL=${COMPTES_DATABASE_URL:-}
+      - TOTP_CLE=${COMPTES_TOTP_CLE:-}
+      - SECRET_COMPTES=${COMPTES_SECRET:-}
+      - ADMIN_BOOTSTRAP_EMAIL=${COMPTES_ADMIN_BOOTSTRAP_EMAIL:-}
+      - ADMIN_BOOTSTRAP_CODE=${COMPTES_ADMIN_BOOTSTRAP_CODE:-}
+      - RESEND_API_KEY=${COMPTES_RESEND_API_KEY:-}
+      - EMAIL_EXPEDITEUR=${COMPTES_EMAIL_EXPEDITEUR:-}
+    read_only: true
     restart: unless-stopped
     networks:
       - relaya-network
@@ -224,7 +268,8 @@ services:
       - ./certbot/www:/var/www/certbot:ro
     depends_on:
       - backend
-      - frontend-client
+      - vitrine
+      - vitrine-comptes
       - frontend-seller
       - frontend-courier
       - frontend-admin

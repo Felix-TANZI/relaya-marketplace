@@ -23,14 +23,11 @@ from apps.shipping.models import RelayParcel, Shipment, ShipmentEvent
 logger = logging.getLogger("apps.shipping")
 
 
-def _sms(order, texte):
-    from apps.otp.prestataires import sms
+def _sms(order, sorte, texte):
+    """Rappel de garde (R50.2), compté dans les SMS de la commande (R78.1, feuille de route D7)."""
+    from apps.orders import sms
 
-    if order.customer_phone:
-        try:
-            sms().envoyer(order.customer_phone, texte)
-        except Exception:
-            logger.exception("Rappel de garde non envoyé pour la commande #%s.", order.pk)
+    sms.envoyer(order, sorte, texte.removeprefix("BelivaY : "))
 
 
 class Command(BaseCommand):
@@ -59,10 +56,10 @@ class Command(BaseCommand):
         au_relais = [c for c in colis if c.status in garde.AU_RELAIS]
         relais = au_relais[0].relay_point.name if au_relais else ""
         envoyes = 0
-        for reglage, champ in (("r_rappel_j1", "rappel_j1_at"), ("r_rappel_j2", "rappel_j2_at")):
+        for reglage, champ, sorte in (("r_rappel_j1", "rappel_j1_at", "rappel_1"), ("r_rappel_j2", "rappel_j2_at", "rappel_2")):
             if j >= regles.reglage(reglage) and any(getattr(c, champ) is None for c in au_relais):
                 total = garde.garde_commande(order, now)["total"]
-                _sms(order, f"BelivaY : ta commande #{order.pk} t'attend au relais {relais} (jour {j} de garde). "
+                _sms(order, sorte, f"BelivaY : ta commande #{order.pk} t'attend au relais {relais} (jour {j} de garde). "
                             f"Garde à payer au retrait : {total} F. Après le jour {regles.reglage('r_garde_jours')}, "
                             f"elle repart au vendeur.")
                 RelayParcel.objects.filter(pk__in=[c.pk for c in au_relais]).update(**{champ: now})
@@ -71,6 +68,14 @@ class Command(BaseCommand):
 
     def _renvoyer(self, order, colis, now):
         au_relais = [c for c in colis if c.status in garde.AU_RELAIS]
+        if order.payment_status == order.PaymentStatus.VALIDATED:
+            # R39.3 (feuille de route D14) : colis à payer au comptoir non retiré, compté comme un refus ; seule
+            # l'avance a été payée et elle est gardée (R42.5) : rien à rembourser.
+            from apps.orders import comptoir
+
+            comptoir.refuser(order, au_relais, comptoir.NON_RETIRE)
+            RelayParcel.objects.filter(pk__in=[c.pk for c in au_relais]).update(non_retrait_processed_at=now)
+            return
         rembourse = garde.rembourse_non_retire(order, au_relais)                         # R39.2
         for parcel in au_relais:
             parcel.status = RelayParcel.Status.RETURNED_TO_VENDOR

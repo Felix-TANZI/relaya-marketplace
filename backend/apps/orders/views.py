@@ -534,8 +534,6 @@ class OrderDisputeListCreateView(generics.ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         order = self.get_order()
-        platform_settings = PlatformSettings.get_settings()
-        dispute_window_days = max(1, getattr(platform_settings, "litige_window_days", 7))
         allowed_statuses = [
             Order.FulfillmentStatus.DELIVERED,
             Order.FulfillmentStatus.BUYER_CONFIRMED,
@@ -547,15 +545,14 @@ class OrderDisputeListCreateView(generics.ListCreateAPIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        expires_at = order.updated_at + timezone.timedelta(days=dispute_window_days)
-        if timezone.now() > expires_at:
-            return Response(
-                {"detail": f"Le delai de {dispute_window_days} jour(s) apres reception est depasse pour cette commande."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        # Spec v2.1 (feuille de route D18) : un litige après réception suit la règle du retour (R67.1, R67.2).
+        from .retours import refus_de_retour
+
+        refus = refus_de_retour(order, serializer.validated_data.get("reason"))
+        if refus:
+            return Response({"detail": refus}, status=status.HTTP_400_BAD_REQUEST)
         files = request.FILES.getlist("files") or request.FILES.getlist("file")
         reason = serializer.validated_data.get("reason")
         # Litige guide par motif — Addendum Decisions v1.0 §4 : nombre de
@@ -606,6 +603,11 @@ class OrderDisputeListCreateView(generics.ListCreateAPIView):
             opened_by=request.user,
             **validated_data,
         )
+        # Spec v2.1, R70.1 : le vendeur a r_litige_reponse_h depuis l'ouverture ; son silence renvoie à l'arbitrage.
+        from .retours import echeance_vendeur
+
+        dispute.vendor_reply_deadline = echeance_vendeur(dispute)
+        dispute.save(update_fields=["vendor_reply_deadline"])
         DisputeMessage.objects.create(
             dispute=dispute,
             sender=request.user,
@@ -680,8 +682,6 @@ class OrderReturnListCreateView(generics.ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         order = self.get_order()
-        platform_settings = PlatformSettings.get_settings()
-        return_window_days = max(1, getattr(platform_settings, "litige_window_days", 7))
         allowed_statuses = [
             Order.FulfillmentStatus.DELIVERED,
             Order.FulfillmentStatus.BUYER_CONFIRMED,
@@ -693,16 +693,15 @@ class OrderReturnListCreateView(generics.ListCreateAPIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        expires_at = order.updated_at + timezone.timedelta(days=return_window_days)
-        if timezone.now() > expires_at:
-            return Response(
-                {"detail": f"Le delai de {return_window_days} jour(s) apres reception est depasse pour cette commande."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         order_item = serializer.validated_data.get("order_item")
+        # Spec v2.1 (feuille de route D18) : r_retour_j après le retrait, sur motif seulement (R67.1, R67.2).
+        from .retours import refus_de_retour
+
+        refus = refus_de_retour(order, serializer.validated_data["reason"], order_item.product.vendor)
+        if refus:
+            return Response({"detail": refus}, status=status.HTTP_400_BAD_REQUEST)
         if order_item.order_id != order.id:
             return Response(
                 {"order_item": "Cet article n'appartient pas a cette commande."},
@@ -891,7 +890,7 @@ class DevisPanierView(APIView):
             selection = selectionner_panier(lignes, destination)
             remplacees = {str(avant.pk): apres.pk for (avant, _), (apres, _) in zip(lignes, selection["lignes"]) if avant.pk != apres.pk}
             lignes = selection["lignes"]
-            devis = frais.calculer(lignes, destination, d.get("moyen") or "momo")
+            devis = frais.calculer(lignes, destination, d.get("moyen") or "momo", user=request.user)
         except frais.FraisImpossibles as exc:
             return Response({"ok": False, "refus": {"refus": exc.code}, "messages": [exc.message]})
         # R12.1 : l'heure promise est montrée avant le paiement (A3), calculée comme si le paiement avait lieu maintenant.

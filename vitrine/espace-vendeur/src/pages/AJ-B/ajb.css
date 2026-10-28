@@ -1,0 +1,104 @@
+/* Pages AJ-B (Mon profil, Rechercher, Ramassages, Apprendre, Activité, Mes ajustements) : la famille du prototype
+   (cartes, lignes, pastilles, carte nuit) et les jetons clair / sombre ; aucune couleur nouvelle. Animations : celles du
+   client (animations.css : tout sous html[data-mouv], coupé en mouvement réduit), plus deux entrées discrètes ici.
+   Téléphone d'abord ; tablette (600–1023 px) : grilles à deux colonnes. */
+
+/* ---------- Mon profil ---------- */
+.ajb-tete{margin-top:14px;padding:20px 16px 16px;text-align:center}
+.ajb-portrait{position:relative;width:92px;height:92px;margin:0 auto}
+.ajb-avatar{width:92px!important;height:92px!important;margin:0!important;font-size:28px!important;overflow:hidden;box-shadow:0 0 0 3px var(--gold-l)}
+.ajb-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
+.ajb-nom{font-size:21px;margin-top:10px;letter-spacing:-.01em}
+.ajb-sous{color:rgba(255,255,255,.75);margin-top:2px}
+.ajb-actions{justify-content:center;gap:8px;margin-top:14px;flex-wrap:wrap}
+.ajb-apercu{width:96px;height:96px;border-radius:50%;display:block;margin:12px auto 0;object-fit:cover}
+.ajb-pastille{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ajb-pastille.proprio{background:var(--or-soft);color:var(--or-txt)}
+.ajb-pastille.prep{background:var(--violet-soft);color:var(--violet-txt)}
+.ajb-droits{list-style:none;margin:12px 0 4px;padding:0;display:grid;gap:8px}
+.ajb-droits li{display:flex;gap:8px;align-items:flex-start;font-size:14px;line-height:1.4;color:var(--ink-2)}
+.ajb-droits li.non{color:var(--ink-3)}
+
+/* ---------- Rechercher ---------- */
+.ajb-barre{margin:14px 0 6px}
+.ajb-barre .inp{box-shadow:var(--shadow-card);height:52px}
+.ajb-effacer{background:none;border:0;color:var(--ink-3);display:flex;min-width:44px;min-height:44px;align-items:center;justify-content:center;cursor:pointer}
+.ajb-lien{background:none;border:0;font:inherit;font-size:13px;font-weight:700;color:var(--or-txt);min-height:44px;padding:0 6px;cursor:pointer}
+.ajb-li-bouton{width:100%;background:none;border:0;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.ajb-raccourcis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.ajb-raccourci{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px;border-radius:var(--r-m);background:var(--card);border:1px solid var(--line);text-align:center;font-size:12px;font-weight:700;color:var(--ink-2);min-height:44px;line-height:1.25}
+.ajb-raccourci-ic{width:40px;height:40px;border-radius:12px;background:var(--or-soft);color:var(--or-txt);display:flex;align-items:center;justify-content:center}
+.ajb-mark{background:var(--or-soft-2);color:inherit;border-radius:3px;padding:0 1px}
+.ajb-exact{margin-left:6px;vertical-align:1px}
+.ajb-coupe{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ajb-tout{font-size:12px;font-weight:800;color:var(--or-txt);text-transform:none;letter-spacing:0;min-height:44px;display:inline-flex;align-items:center}
+.ajb-groupe .divider-t{align-items:center}
+.ajb-vide{text-align:center;padding:22px 16px}
+
+/* ---------- Ramassages ---------- */
+.ajb-prochain{margin-top:14px;padding:16px}
+.ajb-prochain-h{font-size:21px;font-weight:800;margin:4px 0 2px;letter-spacing:-.01em}
+.ajb-compteurs,.ajb-ajust-tuiles{display:flex;gap:8px;margin-top:12px}
+.ajb-compteurs span,.ajb-ajust-tuiles span{flex:1;display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.08);font-size:12px;color:rgba(255,255,255,.78);line-height:1.3}
+.ajb-compteurs b,.ajb-ajust-tuiles b{font-size:20px;color:#fff}
+.ajb-jour.en-cours{border:1.5px solid var(--green-line)}
+.ajb-date{width:40px;height:40px;border-radius:12px;background:var(--or-soft);color:var(--or-txt);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ajb-date.ferme{background:var(--sand-3);color:var(--ink-3)}
+.ajb-colis{gap:10px}
+.ajb-mini{height:40px!important;min-height:40px;padding:0 12px!important;flex-shrink:0;align-self:center}
+
+/* ---------- Apprendre ---------- */
+.ajb-apprendre-tete{margin-top:14px;padding:16px}
+.ajb-anneau{--p:0;width:64px;height:64px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:conic-gradient(var(--gold-l) calc(var(--p)*1%),rgba(255,255,255,.14) 0)}
+.ajb-anneau b{width:50px;height:50px;border-radius:50%;background:var(--esp-1,#1b130e);display:flex;align-items:center;justify-content:center;font-size:15px;color:#fff}
+.ajb-fiches{display:grid;gap:10px}
+.ajb-fiches .card{margin-top:0}
+.ajb-fiche{display:flex;gap:12px;align-items:center;color:inherit}
+.ajb-fiche-ic{width:48px;height:48px;border-radius:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--or-soft);color:var(--or-txt)}
+.ajb-fiche-ic.prix{background:var(--green-soft);color:var(--green)}
+.ajb-fiche-ic.litiges{background:var(--red-soft);color:var(--red)}
+.ajb-fiche-ic.palier{background:var(--bronze-bg);color:var(--bronze)}
+.ajb-fiche-ic.colis{background:var(--violet-soft);color:var(--violet-txt)}
+.ajb-fiche-ic.grande{width:100%;height:130px;border-radius:var(--r-m)}
+.ajb-illu{border-radius:var(--r-m);overflow:hidden;display:flex;justify-content:center;background:var(--sand-2)}
+.ajb-illu.ph .photo{width:100%;height:160px;margin:0;aspect-ratio:auto}
+.ajb-illu.ph .photo svg{width:100%;height:100%;display:block}
+.ajb-illu.art{padding:12px 0}
+.ajb-fiche-tete{margin-top:14px}
+.ajb-fiche-titre{font-size:22px;font-weight:800;margin:4px 0 0;letter-spacing:-.01em}
+.ajb-jauge{height:8px;border-radius:99px;background:var(--sand-3);overflow:hidden}
+.ajb-jauge i{display:block;height:100%;border-radius:99px;background:var(--green);transition:width .3s ease}
+.ajb-etapes{list-style:none;margin:0;padding:0}
+.ajb-etapes li{display:flex;gap:12px;align-items:flex-start}
+.ajb-etapes li.fait{border-color:var(--green-line)}
+.ajb-num{width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;background:var(--sand-3);color:var(--ink-2)}
+.ajb-etapes li.fait .ajb-num{background:var(--green);color:#fff}
+.ajb-coche{width:44px;height:44px;border-radius:12px;flex-shrink:0;border:1.5px solid var(--line-2);background:var(--card);color:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.ajb-coche.on{background:var(--green);border-color:var(--green);color:#fff}
+.ajb-bravo{display:flex;gap:12px;align-items:center;border:1.5px solid var(--green-line);background:var(--green-soft)}
+
+/* ---------- Activité ---------- */
+.ajb-qui{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;background:var(--or-soft);color:var(--or-txt)}
+.ajb-qui.preparation{background:var(--violet-soft);color:var(--violet-txt)}
+.ajb-qui.systeme{background:var(--sand-3);color:var(--ink-3)}
+
+/* ---------- Mes ajustements ---------- */
+.ajb-mois{flex-wrap:nowrap!important;overflow-x:auto!important}
+.ajb-ajust{margin-top:12px;padding:16px}
+.ajb-ajust-total{font-size:30px;font-weight:800;letter-spacing:-.02em;margin:4px 0 0}
+
+/* ---------- Entrées (famille du client : rapides et nettes) ---------- */
+html[data-mouv] .ajb-etapes li.fait .ajb-num,html[data-mouv] .ajb-coche.on{animation:blv-pop .32s ease-out}
+html[data-mouv] .ajb-anneau{animation:blv-pop .45s ease-out}
+
+/* ---------- Tablette (600–1023 px) : deux colonnes ---------- */
+@media (min-width:600px){
+  .ajb-raccourcis{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .ajb-fiches{grid-template-columns:1fr 1fr}
+  .ajb-grille{display:grid;grid-template-columns:1fr 1fr;gap:0 14px;align-items:start}
+  .ajb-semaine{display:grid;grid-template-columns:1fr 1fr;gap:0 14px;align-items:start}
+}
+@media (max-width:360px){
+  .ajb-raccourcis{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+.ajb-barre input::-webkit-search-cancel-button{display:none;-webkit-appearance:none}

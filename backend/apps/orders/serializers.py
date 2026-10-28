@@ -218,8 +218,9 @@ class OrderCreateSerializer(serializers.Serializer):
         help_text="Total affiché au client avant le paiement ; s'il a changé, refus « Un prix a changé » (R93.6).",
     )
     moyen = serializers.ChoiceField(
-        choices=['momo', 'wallet'], required=False, default='momo',
-        help_text="Moyen de paiement (R01.1) ; le Wallet seulement s'il est ouvert (R03).",
+        choices=['momo', 'wallet', 'comptoir'], required=False, default='momo',
+        help_text="Moyen de paiement (R01.1) ; le Wallet seulement s'il est ouvert (R03) ; « comptoir » : avance "
+                  "maintenant, reste par Mobile Money au relais (R42, feuille de route D14).",
     )
 
     def validate_cart_items(self, value):
@@ -384,7 +385,7 @@ class OrderCreateSerializer(serializers.Serializer):
             lignes = selection['lignes']
             subtotal, order_items_data = composer(lignes)
             commission_rate_snapshot = _weighted_commission_rate(order_items_data, settings)
-            devis = frais_v21.calculer(lignes, destination, validated_data.get('moyen', 'momo'))
+            devis = frais_v21.calculer(lignes, destination, validated_data.get('moyen', 'momo'), user=user)
         except frais_v21.FraisImpossibles as exc:
             raise serializers.ValidationError({'frais': {'refus': exc.code, 'messages': [exc.message]}})
         if not devis.ok:
@@ -433,6 +434,11 @@ class OrderCreateSerializer(serializers.Serializer):
             couverture_xaf=devis.detail['couverture'],
             frais_momo_xaf=devis.detail['frais_momo'],
             total_a_payer_xaf=devis.detail['total_a_payer'],
+            # R42 (D14) : avance maintenant, reste au comptoir
+            paiement_comptoir='comptoir' in devis.detail,
+            avance_xaf=devis.detail.get('comptoir', {}).get('avance', 0),
+            reste_comptoir_xaf=devis.detail.get('comptoir', {}).get('au_comptoir', 0),
+            frais_momo_comptoir_xaf=devis.detail.get('comptoir', {}).get('frais_momo_comptoir', 0),
             frais_detail=devis.detail,
             commission_rate_snapshot=commission_rate_snapshot,
             payment_status=Order.PaymentStatus.PENDING,
@@ -588,7 +594,8 @@ class OrderCreateSerializer(serializers.Serializer):
         for shipment in created_shipments:
             zone_covered = order.zone_id is not None
             oversized = shipment.parcel_size in OVERSIZED_PARCEL_SIZES
-            if zone_covered and not oversized:
+            vers_relais = order.relay_point_id is not None  # R52.1 : à domicile, une course par client, publiée tout de suite
+            if zone_covered and not oversized and vers_relais:
                 continue  # attend le composeur de tournees
 
             before_courier_id = shipment.courier_id

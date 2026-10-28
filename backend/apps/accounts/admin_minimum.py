@@ -18,10 +18,10 @@ from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 
 from apps.client_core.masquage import nettoyer_message
+from apps.common.droits import Partie
 
 from .models import (
     ComplianceDocument,
@@ -62,7 +62,7 @@ def _fil(c, avec_messages=False) -> dict:
 
 @extend_schema(tags=TAG, summary="Fils du support, ceux qui attendent une réponse d'abord")
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("support")])  # sécurité main 2 : droits par partie
 def support_liste(request):
     from apps.messaging.models import Conversation
 
@@ -79,7 +79,7 @@ def support_liste(request):
 
 @extend_schema(tags=TAG, summary="Un fil du support ; répondre ou clore")
 @api_view(["GET", "POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("support")])  # sécurité main 2 : droits par partie
 def support_fil(request, pk):
     from apps.messaging.models import Conversation, Message
     from apps.messaging.services import QUI_SUPPORT
@@ -114,7 +114,7 @@ def support_fil(request, pk):
 
 @extend_schema(tags=TAG, summary="Signaux de fraude réunis")
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("fraude")])  # sécurité main 2 : droits par partie
 def fraude(request):
     from apps.orders.models import Dispute
     from apps.otp.models import CodeOtp
@@ -171,7 +171,7 @@ def fraude(request):
 
 @extend_schema(tags=TAG, summary="Vue d'ensemble des livreurs")
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("logistique")])  # sécurité main 2 : droits par partie
 def livreurs_vue(request):
     from apps.shipping.models import CourierSOSAlert, Shipment
 
@@ -225,7 +225,7 @@ def _piece(d: ComplianceDocument) -> dict:
 
 @extend_schema(tags=TAG, summary="File des pièces vendeur, la plus en retard d'abord")
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("conformite")])  # sécurité main 2 : droits par partie
 def kyc_file(request):
     statut = request.query_params.get("statut", ComplianceDocument.Status.PENDING)
     pieces = (ComplianceDocument.objects.filter(owner_role=ComplianceDocument.OwnerRole.VENDOR)
@@ -238,7 +238,7 @@ def kyc_file(request):
 
 @extend_schema(tags=TAG, summary="Décider une pièce vendeur (motif obligatoire pour un refus)")
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("conformite")])  # sécurité main 2 : droits par partie
 def kyc_decision(request, pk):
     from apps.vendors.kyc import LIBELLES, identite_verifiee
 

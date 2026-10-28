@@ -610,7 +610,9 @@ class RelayParcelReceiveSerializer(serializers.Serializer):
 
         # R66.1 : la responsabilité passe du livreur au relais avec le code de dépôt (et la photo de réception, D15).
         from apps.shipping import codes
+        from apps.shipping.preuves import exiger_photo
 
+        exiger_photo(shipment, ShipmentEvidence.Stage.RELAY_RECEIVED)  # R66.3
         codes.verifier(shipment, "depot", shipment.ensure_depot_code(), self.validated_data.get("depot_code"),
                        "depot_code")
 
@@ -763,6 +765,10 @@ class RelayParcelPickupSerializer(serializers.Serializer):
         parcels = resultat["parcels"]
 
         # D14, R42.4 et R51.5 : jamais de remise avant le paiement de ce qui reste dû au relais, par Mobile Money.
+        from apps.shipping.preuves import exiger_photo
+
+        for p in parcels:  # R66.3 : chaque colis remis a sa photo de remise
+            exiger_photo(p.shipment, ShipmentEvidence.Stage.RELAY_RELEASED)
         if any(_dus(p.shipment.order) for p in parcels):
             raise serializers.ValidationError({
                 "comptoir": "Un montant reste à payer pour cette commande : encaissez-le par Mobile Money avant la remise.",
@@ -1058,6 +1064,9 @@ class CourierShipmentActionSerializer(serializers.Serializer):
             # son espace ; le livreur le saisit ici pour valider le transfert.
             from apps.shipping import codes
 
+            from apps.shipping.preuves import exiger_photo
+
+            exiger_photo(shipment, ShipmentEvidence.Stage.COURIER_PICKUP_VENDOR)  # R66.3
             codes.verifier(shipment, "remise", shipment.ensure_pickup_confirmation_code(),
                            self.validated_data.get("pickup_code"), "pickup_code")  # R66.1
             shipment.status = Shipment.Status.PICKED_UP
@@ -1083,6 +1092,9 @@ class CourierShipmentActionSerializer(serializers.Serializer):
                 # R66.1 : au relais, c'est le gérant qui réceptionne avec le code de dépôt (RelayParcelReceiveSerializer)
                 raise serializers.ValidationError(
                     {"action": "Colis pour un point relais : il est réceptionné par le gérant avec le code de dépôt."})
+            from apps.shipping.preuves import exiger_photo
+
+            exiger_photo(shipment, ShipmentEvidence.Stage.CUSTOMER_DELIVERY)  # R66.3
             codes.verifier(shipment, "livraison", shipment.ensure_delivery_code(),
                            self.validated_data.get("delivery_code"), "delivery_code")  # D11
             shipment.status = Shipment.Status.DELIVERED

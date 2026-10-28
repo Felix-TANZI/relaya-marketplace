@@ -323,9 +323,11 @@ def test_whatsapp_demande_la_reference_avec_le_code():
 
 def test_whatsapp_remet_avec_la_reference_et_le_bon_code():
     from apps.whatsapp_assistant.bridge import relay as pont
+    from tests.aide_preuves import photo
 
     parcel = _colis_au_relais("482913")
     _gerant(parcel)
+    photo(parcel.shipment, "RELAY_RELEASED")  # R66.3
     ref = f"BVY-{parcel.shipment.order_id}-{parcel.shipment_id}"
     resultat, refs = pont.hand_over(f"{ref} 482913", parcel.relay_point_id)
     assert resultat == pont.ActionResult.DONE and refs == [ref]

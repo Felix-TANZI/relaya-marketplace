@@ -32,6 +32,16 @@ def _etapes(shipment):
     return etapes
 
 
+def exiger_photo(shipment, etape, champ: str = "photo") -> None:
+    """R66.3, imposé par le serveur (sécurité avant main 2) : pas de changement de main sans la photo de cette étape,
+    déjà envoyée. L'application l'envoie avant l'action ; un appel direct sans photo est refusé."""
+    from rest_framework import serializers
+
+    if not ShipmentEvidence.objects.filter(shipment=shipment, stage=etape).exclude(file="").exists():
+        raise serializers.ValidationError(
+            {champ: f"Photo obligatoire avant ce changement de main (R66.3) : {S(etape).label.lower()}."})
+
+
 def chaine_de_garde(shipment) -> dict:
     """{"etapes": [...], "responsable": acteur ou None, "etape_sans_preuve": étape ou None} (D15)."""
     avec_photo = set(ShipmentEvidence.objects.filter(shipment=shipment).values_list("stage", flat=True))

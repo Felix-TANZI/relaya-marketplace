@@ -35,3 +35,5 @@ class ShippingConfig(AppConfig):
             synchroniser_zones()
 
         post_migrate.connect(_zones_apres_migrate, weak=False, dispatch_uid="shipping_zones_post_migrate")
+
+        from . import appels  # noqa: F401  (DP-61 : enregistre le contrôle de déploiement de l'opérateur d'appel)

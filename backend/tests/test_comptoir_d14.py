@@ -132,6 +132,9 @@ def _au_relais(o):
     RelayParcel.objects.filter(pk=parcel.pk).update(status=RelayParcel.Status.STORED, **RelayParcel.champs_du_code("482913"),
                                                    received_at=timezone.now())
     parcel.refresh_from_db()
+    from tests.aide_preuves import photo
+
+    photo(parcel.shipment, "RELAY_RELEASED")  # R66.3 : la photo de la remise, prise avant d'agir
     return parcel
 
 

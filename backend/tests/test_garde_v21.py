@@ -36,6 +36,9 @@ def commande_au_relais(heures_depuis_arrivee, prix=14000):
     parcel.received_at = timezone.now() - timedelta(hours=heures_depuis_arrivee)
     parcel.pickup_code = "ABC123"
     parcel.save()
+    from tests.aide_preuves import photo
+
+    photo(parcel.shipment, "RELAY_RELEASED")  # R66.3
     return o, parcel
 
 

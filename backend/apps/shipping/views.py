@@ -1,7 +1,7 @@
 import unicodedata
 from datetime import timedelta
 
-from django.db.models import Case, Count, IntegerField, Sum, When
+from django.db.models import Case, Count, IntegerField, Q, Sum, When
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema
@@ -639,11 +639,19 @@ class RelayPointParcelEvidenceUploadView(APIView):
 
     def post(self, request):
         relay_point = _get_active_relay_point(request.user)
-        parcel_id = request.data.get("parcel_id")
-        parcel = get_object_or_404(
-            RelayParcel.objects.select_related("shipment"), id=parcel_id, relay_point=relay_point,
-        )
         stage = request.data.get("stage")
+        if request.data.get("parcel_id"):
+            parcel = get_object_or_404(
+                RelayParcel.objects.select_related("shipment"), id=request.data.get("parcel_id"),
+                relay_point=relay_point,
+            )
+            shipment = parcel.shipment
+        else:
+            # R66.3 : la photo de réception part avant la réception, quand le colis n'est encore qu'attendu ici.
+            shipment = get_object_or_404(
+                Shipment.objects.filter(Q(relay_parcel__relay_point=relay_point) | Q(order__relay_point=relay_point)),
+                id=request.data.get("shipment_id"),
+            )
         if stage not in self.ALLOWED_STAGES:
             return Response(
                 {"stage": f"Choisissez parmi : {', '.join(self.ALLOWED_STAGES)}."},
@@ -654,7 +662,7 @@ class RelayPointParcelEvidenceUploadView(APIView):
             return Response({"file": "Ce champ est requis."}, status=status.HTTP_400_BAD_REQUEST)
 
         evidence = create_shipment_evidence(
-            shipment=parcel.shipment,
+            shipment=shipment,
             user=request.user,
             actor_role="RELAY_POINT",
             stage=stage,

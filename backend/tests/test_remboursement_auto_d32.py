@@ -121,7 +121,11 @@ def test_plafond_mensuel_puis_alerte(ouvert):
 
 def test_droit_retire_apres_validation_humaine(ouvert):
     user = _client("c_abus")
+    from django.contrib.auth.models import Group
+
     chef, adjoint = (User.objects.create_user(n, password="p", is_staff=True) for n in ("ad1", "ad2"))
+    for u in (chef, adjoint):  # sécurité main 2 : écran de la partie « litiges »
+        u.groups.add(Group.objects.get_or_create(name="gestion-litiges")[0])
     c1, c2 = APIClient(), APIClient()
     c1.force_authenticate(chef)
     c2.force_authenticate(adjoint)

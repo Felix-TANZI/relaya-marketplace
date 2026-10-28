@@ -47,8 +47,16 @@ def test_fcm_ignore_les_adresses_du_site():
 
 
 def _staff():
+    """Sécurité avant main 2 : un membre de chaque partie (apps.common.droits), plus seulement « du personnel »."""
+    from django.contrib.auth.models import Group
+
+    from apps.common.droits import PARTIES
+
+    u = User.objects.create_user(username=f"staff{User.objects.count()}", password="p", is_staff=True)
+    for groupe in PARTIES.values():
+        u.groups.add(Group.objects.get_or_create(name=groupe)[0])
     c = APIClient()
-    c.force_authenticate(User.objects.create_user(username=f"staff{User.objects.count()}", password="p", is_staff=True))
+    c.force_authenticate(u)
     return c
 
 
@@ -60,6 +68,9 @@ def test_les_pages_d_administration_repondent():
     autre = APIClient()
     autre.force_authenticate(User.objects.create_user(username="pas_staff", password="p"))
     assert autre.get("/api/auth/admin/fraud/").status_code == 403
+    personnel = APIClient()                                    # sécurité main 2 : être du personnel ne suffit plus
+    personnel.force_authenticate(User.objects.create_user(username="staff_sans_partie", password="p", is_staff=True))
+    assert personnel.get("/api/auth/admin/fraud/").status_code == 403
 
 
 def test_support_repond_au_client():

@@ -58,7 +58,10 @@ def test_le_client_et_le_livreur_s_appellent_par_le_serveur():
     AppelConsole.APPELS.clear()
     r = _client_de(colis).post(f"/api/shipping/shipments/{colis.pk}/appel/")
     assert r.status_code == 200 and r.json()["ok"] is True
-    assert AppelConsole.APPELS[-1]["appele"] == colis.courier.phone
+    from apps.client_core.masquage import masquer_numero
+
+    assert AppelConsole.APPELS[-1]["appele"] == masquer_numero(colis.courier.phone)       # DP-61 : masqué
+    assert colis.courier.phone not in str(AppelConsole.APPELS)
     livreur = APIClient()
     livreur.force_authenticate(colis.courier.user)
     r = livreur.post(f"/api/shipping/shipments/{colis.pk}/appel/")

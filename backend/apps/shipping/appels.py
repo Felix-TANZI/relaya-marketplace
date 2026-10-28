@@ -38,11 +38,17 @@ class PrestataireAppel:
 
 
 class AppelConsole(PrestataireAppel):
+    """Sans opérateur : rien n'est composé. DP-61 (« jamais le vrai numéro ») : le journal ne garde que les numéros
+    masqués, jamais en clair, même en mémoire."""
+
     nom = "console"
     APPELS: list[dict] = []
 
     def relier(self, appelant, appele, reference):
-        AppelConsole.APPELS.append({"appelant": appelant, "appele": appele, "reference": reference})
+        from apps.client_core.masquage import masquer_numero
+
+        AppelConsole.APPELS.append({"appelant": masquer_numero(appelant), "appele": masquer_numero(appele),
+                                    "reference": reference})
         logger.info("Appel masqué (console) %s : aucun opérateur branché, rien n'est composé.", reference)
         return Resultat(True, f"console-{reference}", "Simulation : aucun opérateur d'appel n'est encore branché.")
 
@@ -88,3 +94,18 @@ def appels_au_client(shipment) -> int:
     """R51.1 : nombre d'appels du livreur au client pour ce colis (preuve avant de constater une absence). Un appel
     du mode console n'a pas été composé : il ne prouve rien (DP-61)."""
     return shipment.appels_masques.filter(sens="LIVREUR_CLIENT", ok=True).exclude(prestataire=AppelConsole.nom).count()
+
+
+# DP-61 : un opérateur d'appel masqué est obligatoire avant la mise en service de main 2. `manage.py check --deploy`
+# (avant chaque déploiement) le signale tant que la console est branchée.
+from django.core import checks  # noqa: E402
+
+
+@checks.register(checks.Tags.security, deploy=True)
+def operateur_d_appel_branche(app_configs=None, **kwargs):
+    if masque_actif():
+        return []
+    return [checks.Error(
+        "Aucun opérateur d'appel masqué n'est branché (BELIVAY_APPELS) : les numéros restent visibles entre client "
+        "et livreur.", hint="DP-61 : brancher l'opérateur sous contrat avant la mise en service de main 2.",
+        id="shipping.E061")]

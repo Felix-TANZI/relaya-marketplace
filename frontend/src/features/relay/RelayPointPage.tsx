@@ -879,27 +879,28 @@ export default function RelayPointPage() {
     setOperationBusy(true);
     setOperationMessage(null);
     try {
-      // R66.1 : le serveur verifie le code de depot du colis avant de le mettre en stock.
-      const parcel = await http<RelayParcel>("/api/shipping/relay-point/receive/", {
-        method: "POST",
-        body: JSON.stringify({ shipment_id: shipmentId, slot_code: slotCode, proof_note: proofNote, depot_code: depotCode }),
-      });
-      // D15 : photos et signatures de la reception, rattachees au colis (lieu fixe, presume connecte).
+      // D15, R66.3 : photos et signatures de la reception partent AVANT la reception (le serveur exige la photo),
+      // rattachees a l'expedition attendue ici (lieu fixe, presume connecte).
       for (const [index, photo] of photos.entries()) {
         const form = new FormData();
-        form.append("parcel_id", String(parcel.id));
+        form.append("shipment_id", String(shipmentId));
         form.append("stage", "RELAY_RECEIVED");
         form.append("file", photo, photo.name || `reception-${index + 1}.jpg`);
         await http("/api/shipping/relay-point/evidence/", { method: "POST", body: form });
       }
       for (const [index, signature] of signatures.entries()) {
         const form = new FormData();
-        form.append("parcel_id", String(parcel.id));
+        form.append("shipment_id", String(shipmentId));
         form.append("stage", "RELAY_RECEIVED");
         form.append("description", index === 0 ? "Signature du gérant" : "Signature du livreur");
         form.append("file", dataUrlToBlob(signature), `signature-${index + 1}.png`);
         await http("/api/shipping/relay-point/evidence/", { method: "POST", body: form });
       }
+      // R66.1 : le serveur verifie le code de depot du colis avant de le mettre en stock.
+      await http<RelayParcel>("/api/shipping/relay-point/receive/", {
+        method: "POST",
+        body: JSON.stringify({ shipment_id: shipmentId, slot_code: slotCode, proof_note: proofNote, depot_code: depotCode }),
+      });
       setOperationMessage({
         tone: "success",
         text: slotCode

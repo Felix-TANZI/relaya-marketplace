@@ -29,6 +29,7 @@ from django.db.models import (
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
+from .flash import flash_ouvert
 from .models import PromotionCampaign
 
 
@@ -67,7 +68,7 @@ def annotate_effective_price(qs):
 
     # Campagne active du produit, FLASH prioritaire — meme regle que
     # PromotionCampaign.is_active_now et que le tri de _get_active_campaign().
-    campagne_active = (
+    campagnes = (
         PromotionCampaign.objects
         .filter(
             product=OuterRef("pk"),
@@ -79,6 +80,11 @@ def annotate_effective_price(qs):
             ~Q(campaign_type=PromotionCampaign.CampaignType.FLASH)
             | Q(stock_reserved__gt=F("stock_claimed"))
         )
+    )
+    if not flash_ouvert():  # FF-FLASH fermé : la vente flash ne fait plus le prix (même règle que flash.choisir)
+        campagnes = campagnes.exclude(campaign_type=PromotionCampaign.CampaignType.FLASH)
+    campagne_active = (
+        campagnes
         .annotate(
             priorite=Case(
                 When(campaign_type=PromotionCampaign.CampaignType.FLASH, then=Value(0)),

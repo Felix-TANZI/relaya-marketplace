@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
-from rest_framework.permissions import IsAdminUser
+from apps.common.droits import Partie
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -30,7 +30,7 @@ def _retrait(d: RetraitDroitRemboursementAuto) -> dict:
 
 @extend_schema(tags=TAGS, summary="Suivi : cas journalisés, plafond du mois, vendeurs concernés, droits retirés")
 class SuiviRemboursementAutoView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [Partie("litiges")]  # sécurité main 2 : droits par partie
 
     def get(self, request):
         cas = RemboursementAuto.objects.select_related("client", "vendor", "order_item")[:200]
@@ -41,7 +41,7 @@ class SuiviRemboursementAutoView(APIView):
 
 @extend_schema(tags=TAGS, summary="Proposer de retirer le droit à un client pris en abus")
 class ProposerRetraitView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [Partie("litiges")]  # sécurité main 2 : droits par partie
 
     def post(self, request):
         client = get_object_or_404(User, username=request.data.get("client"))
@@ -55,7 +55,7 @@ class ProposerRetraitView(APIView):
 
 @extend_schema(tags=TAGS, summary="Valider le retrait (un autre membre de l'équipe que celui qui l'a proposé)")
 class ValiderRetraitView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [Partie("litiges")]  # sécurité main 2 : droits par partie
 
     def post(self, request, pk):
         d = get_object_or_404(RetraitDroitRemboursementAuto, pk=pk)

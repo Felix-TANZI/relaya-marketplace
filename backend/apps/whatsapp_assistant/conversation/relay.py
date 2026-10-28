@@ -183,6 +183,9 @@ def _submit_depot(provider, contact, words: str, raw: str) -> None:
         send_text(provider, contact, t(language, "relay_bad_depot"))
         _detail(provider, contact, language, parcel_id, relay_id)
         return
+    elif result == relay_bridge.ActionResult.NEEDS_PHOTO:
+        send_text(provider, contact, t(language, "relay_needs_photo"))
+        return
     else:
         send_text(provider, contact, t(language, "relay_refused"))
         return
@@ -223,6 +226,8 @@ def _submit_code(provider, contact, words: str, raw: str) -> None:
     elif result == relay_bridge.ActionResult.INACTIVE:
         send_text(provider, contact, t(language, "relay_inactive", phone=get_config().support_phone))
         return
+    elif result == relay_bridge.ActionResult.NEEDS_PHOTO:
+        send_text(provider, contact, t(language, "relay_needs_photo"))
     elif result == relay_bridge.ActionResult.LOCKED:
         send_text(provider, contact, t(language, "relay_code_locked", phone=get_config().support_phone))
     elif result == relay_bridge.ActionResult.BAD_REF:

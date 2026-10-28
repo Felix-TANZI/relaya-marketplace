@@ -14,9 +14,19 @@ from django.utils import timezone
 from .models import PromotionCampaign
 
 
+def flash_ouvert() -> bool:
+    """Interrupteur FF-FLASH. Fermé, une vente flash ne fait plus le prix nulle part (liste, fiche, panier, commande) :
+    pas seulement la vitrine des Flash Deals (sécurité avant main 2)."""
+    from apps.client_core import interrupteurs
+
+    return interrupteurs.ouvert("FF-FLASH")
+
+
 def choisir(campagnes):
     """La campagne qui fait le prix parmi celles d'un produit (déjà chargées), ou None."""
     actives = [c for c in campagnes if c.is_active_now]
+    if actives and not flash_ouvert():
+        actives = [c for c in actives if c.campaign_type != PromotionCampaign.CampaignType.FLASH]
     if not actives:
         return None
     return min(actives, key=lambda c: (c.campaign_type != PromotionCampaign.CampaignType.FLASH, c.id))
@@ -42,6 +52,8 @@ def flash_actives(maintenant=None):
     from django.db.models import F
 
     maintenant = maintenant or timezone.now()
+    if not flash_ouvert():
+        return PromotionCampaign.objects.none()
     return (PromotionCampaign.objects
             .filter(campaign_type=PromotionCampaign.CampaignType.FLASH, status=PromotionCampaign.Status.APPROVED,
                     starts_at__lte=maintenant, ends_at__gte=maintenant, stock_reserved__gt=F("stock_claimed"))

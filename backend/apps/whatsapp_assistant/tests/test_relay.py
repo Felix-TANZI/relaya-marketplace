@@ -105,8 +105,13 @@ def ecrire(provider, texte, wa_id=RELAIS_WA, langue="fr"):
     return contact
 
 
-def receptionner(provider, colis):
-    """« Colis reçu », puis le code de dépôt que montre le livreur (spec v2.1, R66.1)."""
+def receptionner(provider, colis, photos=True):
+    """« Colis reçu », puis le code de dépôt que montre le livreur (spec v2.1, R66.1). R66.3 : les photos de la
+    réception et de la remise sont prises dans l'application (WhatsApp ne les prend pas encore)."""
+    if photos:
+        from tests.aide_preuves import photos as prendre
+
+        prendre(colis["shipment"], "RELAY_RECEIVED", "RELAY_RELEASED")
     toucher(provider, f"rcv:{colis['parcel'].id}")
     return ecrire(provider, Shipment.objects.get(pk=colis["shipment"].id).ensure_depot_code())
 
@@ -235,6 +240,9 @@ def test_un_mauvais_code_de_depot_ne_receptionne_rien(relais, provider,
                                                        django_capture_on_commit_callbacks):
     colis = colis_vers_relais(relais)
     ramasser(colis, provider, django_capture_on_commit_callbacks)
+    from tests.aide_preuves import photo
+
+    photo(colis["shipment"], "RELAY_RECEIVED")  # R66.3 : la photo d'abord, le code ensuite
     toucher(provider, f"rcv:{colis['parcel'].id}")
     provider.sent.clear()
 
@@ -415,3 +423,14 @@ def test_le_client_n_est_pas_confondu_avec_le_gerant(relais, provider):
 
     assert "Rien à traiter" not in tout_le_texte(provider)
     assert "colis à traiter" not in tout_le_texte(provider)
+
+
+def test_sans_photo_whatsapp_renvoie_vers_l_application(relais, provider, django_capture_on_commit_callbacks):
+    """R66.3 imposé par le serveur : WhatsApp ne prend pas la photo ; la réception se fait alors dans l'application."""
+    colis = colis_vers_relais(relais)
+    ramasser(colis, provider, django_capture_on_commit_callbacks)
+    provider.sent.clear()
+    receptionner(provider, colis, photos=False)
+    colis["parcel"].refresh_from_db()
+    assert colis["parcel"].status == "EXPECTED"
+    assert "photo est obligatoire" in tout_le_texte(provider)

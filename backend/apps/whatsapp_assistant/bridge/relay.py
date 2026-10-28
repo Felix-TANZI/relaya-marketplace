@@ -166,6 +166,7 @@ class ActionResult:
     BAD_CODE = "bad_code"           # code de retrait faux pour ce colis
     BAD_REF = "bad_ref"             # reference du colis absente ou inconnue ici
     LOCKED = "locked"               # code du colis bloque (R66.1) ou trop de codes faux a ce relais
+    NEEDS_PHOTO = "needs_photo"     # R66.3 : photo du changement de main exigee, prise dans l'application
     NEEDS_APP = "needs_app"         # le coeur demande plus que ce que WhatsApp peut fournir
     INACTIVE = "inactive"           # relais suspendu ou non approuve
     REFUSED = "refused"
@@ -207,6 +208,8 @@ def receive_parcel(parcel_id: int, relay_id: int, depot_code: str = "") -> str:
             serializer.is_valid(raise_exception=True)
             serializer.save()
         except ValidationError as error:
+            if isinstance(error.detail, dict) and "photo" in error.detail:
+                return ActionResult.NEEDS_PHOTO  # R66.3
             if isinstance(error.detail, dict) and "depot_code" in error.detail:
                 return ActionResult.BAD_CODE
             detail = str(error.detail).lower()
@@ -266,6 +269,8 @@ def hand_over(message: str, relay_id: int) -> tuple[str, list[str]]:
             serializer.save()
     except ValidationError as error:
         detail = str(error.detail).lower()
+        if "photo obligatoire" in detail:  # R66.3 : la photo de la remise se prend dans l'application
+            return ActionResult.NEEDS_PHOTO, references
         # Un tiers est autorise a retirer : le coeur exige une piece d'identite,
         # que WhatsApp ne peut pas recueillir proprement.
         if "identit" in detail or "id_reference" in detail or "mandataire" in detail:

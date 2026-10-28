@@ -648,6 +648,11 @@ export default function CourierDashboardPage() {
     setActionFeedback("");
 
     try {
+      if (action === "PICKED_UP" || action === "DELIVERED") {
+        // R66.3 : le serveur exige la photo de ce changement de main ; elle part d'abord (file hors ligne vidée).
+        const { remaining } = await syncPendingEvidence();
+        setPendingEvidenceCount(remaining);
+      }
       const message = action === "NOTE" || action === "INCIDENT" ? noteDraft.trim() : undefined;
       const updated = await courierApi.actOnShipment(selectedShipment.id, {
         action,

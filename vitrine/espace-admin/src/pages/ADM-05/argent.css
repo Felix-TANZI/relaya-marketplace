@@ -1,0 +1,18 @@
+/* Feuille propre aux écrans d'argent (S2). Étape en cours de la barre du vendredi : accent graphite (A-12 : l'orange
+   reste à l'action et à l'alerte) et contraste AA en clair comme en sombre (A-13). */
+.r-versements .px .admA-stepbar .s.cur .n,
+.r-versements.px .admA-stepbar .s.cur .n,
+#app.r-versements .admA-stepbar .s.cur .n {
+  background: var(--acc);
+  color: var(--sur-e);
+}
+
+/* Escrow (prototype : grid-template-columns 340px 1fr) : liste étroite, registre large ; une colonne en dessous. */
+#app.r-escrow .g.g-esc {
+  grid-template-columns: 340px minmax(0, 1fr);
+}
+@media (max-width: 1100px) {
+  #app.r-escrow .g.g-esc {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

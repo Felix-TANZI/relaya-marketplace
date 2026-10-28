@@ -1,0 +1,6869 @@
+{
+ "meta": {
+  "document": "BV-DEV-07",
+  "titre": "BelivaY · données pour l'équipe de développement",
+  "version": "2.0",
+  "date": "17 octobre 2026",
+  "statut": "décisions finales",
+  "monnaie": "XAF (F CFA), francs entiers",
+  "documents": [
+   {
+    "numero": "BV-DEV-01",
+    "titre": "Frais de livraison, paiement et garde",
+    "pour": "tâches D10, D12, D14, D18"
+   },
+   {
+    "numero": "BV-DEV-02",
+    "titre": "Meilleure offre",
+    "pour": "tâche D8"
+   },
+   {
+    "numero": "BV-DEV-03",
+    "titre": "Commission et argent du vendeur",
+    "pour": "tâches D17, D20"
+   },
+   {
+    "numero": "BV-DEV-04",
+    "titre": "Zones et adresses",
+    "pour": "tâche D10"
+   },
+   {
+    "numero": "BV-DEV-05",
+    "titre": "Entreprises de livraison et relais",
+    "pour": "tâches D11, D13"
+   },
+   {
+    "numero": "BV-DEV-06",
+    "titre": "Classeur des données et simulateurs",
+    "pour": ""
+   },
+   {
+    "numero": "BV-DEV-07",
+    "titre": "Données en JSON",
+    "pour": ""
+   },
+   {
+    "numero": "BV-DEV-08",
+    "titre": "Sources de régénération",
+    "pour": ""
+   }
+  ],
+  "note": "Tous les montants sont des réglages de l'admin ; les tests donnent les entrées et les résultats attendus exacts."
+ },
+ "reglages": {
+  "campay": {
+   "valeur": 0.02,
+   "libelle": "Frais CamPay sur un paiement Mobile Money",
+   "regle": "R02"
+  },
+  "campay_taxes": {
+   "valeur": 0.0,
+   "libelle": "Taxes sur les frais CamPay",
+   "regle": "R02"
+  },
+  "retrait_wallet": {
+   "valeur": 0.03,
+   "libelle": "Frais de retrait du Wallet",
+   "regle": "R03"
+  },
+  "retrait_wallet_min": {
+   "valeur": 1000,
+   "libelle": "Retrait minimum du Wallet",
+   "regle": "R03"
+  },
+  "wallet_plafond": {
+   "valeur": 500000,
+   "libelle": "Solde maximal du Wallet",
+   "regle": "R03"
+  },
+  "wallet_code_des": {
+   "valeur": 50000,
+   "libelle": "Code à 4 chiffres au-delà de",
+   "regle": "R03"
+  },
+  "versement": {
+   "valeur": 0.01,
+   "libelle": "Frais CamPay retenus sur chaque versement",
+   "regle": "R22, R43"
+  },
+  "wallet_ouvert": {
+   "valeur": 0,
+   "libelle": "Wallet ouvert (0 = fermé au lancement)",
+   "regle": "R03"
+  },
+  "panier_min": {
+   "valeur": 3000,
+   "libelle": "Panier minimum pour payer",
+   "regle": "R84"
+  },
+  "boutique_min": {
+   "valeur": 2000,
+   "libelle": "Minimum par boutique du panier",
+   "regle": "R84"
+  },
+  "prix_min_publiable": {
+   "valeur": 1000,
+   "libelle": "Prix minimum d'un article publiable",
+   "regle": "R19"
+  },
+  "relais": {
+   "valeur": 900,
+   "libelle": "Livraison au relais, premier colis en pochette",
+   "regle": "R04"
+  },
+  "ramassage": {
+   "valeur": 500,
+   "libelle": "Part ramassage du prix de base",
+   "regle": "R04, R05"
+  },
+  "remise_relais": {
+   "valeur": 400,
+   "libelle": "Part remise au relais",
+   "regle": "R04"
+  },
+  "remise_dom": {
+   "valeur": 1000,
+   "libelle": "Part remise à domicile",
+   "regle": "R05"
+  },
+  "niv_centre": {
+   "valeur": 1500,
+   "libelle": "Niveau centre (domicile)",
+   "regle": "R06"
+  },
+  "niv_periph": {
+   "valeur": 1700,
+   "libelle": "Niveau périphérie (domicile)",
+   "regle": "R06"
+  },
+  "niv_periurbain": {
+   "valeur": 1900,
+   "libelle": "Niveau périurbain (domicile)",
+   "regle": "R06"
+  },
+  "km_inclus": {
+   "valeur": 5,
+   "libelle": "Km compris dans le niveau",
+   "regle": "R05"
+  },
+  "prix_km": {
+   "valeur": 250,
+   "libelle": "Prix d'un km au-delà",
+   "regle": "R05"
+  },
+  "detour_inclus": {
+   "valeur": 5,
+   "libelle": "Km de détour compris",
+   "regle": "R08"
+  },
+  "vol_oiseau": {
+   "valeur": 1.3,
+   "libelle": "Coefficient vol d'oiseau si le service de cartes est en panne",
+   "regle": "R83"
+  },
+  "sup_c1": {
+   "valeur": 500,
+   "libelle": "Supplément carton C1",
+   "regle": "R09"
+  },
+  "sup_c2": {
+   "valeur": 700,
+   "libelle": "Supplément carton C2 ou carton d'origine",
+   "regle": "R09"
+  },
+  "colis_en_plus": {
+   "valeur": 500,
+   "libelle": "Colis en plus d'une même boutique",
+   "regle": "R09"
+  },
+  "xl_base": {
+   "valeur": 4000,
+   "libelle": "XL, prix de base (niveau centre)",
+   "regle": "R10"
+  },
+  "creneau_xl_h": {
+   "valeur": 2,
+   "libelle": "Durée du créneau XL (h)",
+   "regle": "R10"
+  },
+  "hg_min": {
+   "valeur": 8000,
+   "libelle": "Hors gabarit, minimum",
+   "regle": "R10"
+  },
+  "hg_devis_h": {
+   "valeur": 24,
+   "libelle": "Délai du devis hors gabarit (h ouvrées)",
+   "regle": "R10"
+  },
+  "hg_validite_h": {
+   "valeur": 48,
+   "libelle": "Validité du devis (h)",
+   "regle": "R10"
+  },
+  "seuil_relais": {
+   "valeur": 30000,
+   "libelle": "Relais offert dès",
+   "regle": "R07"
+  },
+  "seuil_dom": {
+   "valeur": 50000,
+   "libelle": "Domicile : 1 500 F couverts dès",
+   "regle": "R07"
+  },
+  "boutique_meme_zone": {
+   "valeur": 500,
+   "libelle": "Boutique en plus, zone de la destination",
+   "regle": "R08"
+  },
+  "boutique_autre_zone": {
+   "valeur": 1000,
+   "libelle": "Boutique en plus, autre zone",
+   "regle": "R08"
+  },
+  "retour": {
+   "valeur": 500,
+   "libelle": "Course de retour",
+   "regle": "R69"
+  },
+  "transfert": {
+   "valeur": 400,
+   "libelle": "Transfert entre relais",
+   "regle": "R69"
+  },
+  "marge": {
+   "valeur": 0.1,
+   "libelle": "Marge de sécurité des plafonds d'achat",
+   "regle": "R54"
+  },
+  "remplissage": {
+   "valeur": 0.8,
+   "libelle": "Volume utile d'un carton",
+   "regle": "R64"
+  },
+  "absence_sup": {
+   "valeur": 300,
+   "libelle": "Client absent : supplément de l'entreprise",
+   "regle": "R51"
+  },
+  "refus_sup": {
+   "valeur": 500,
+   "libelle": "Refus d'un colis conforme : supplément",
+   "regle": "R85"
+  },
+  "deplacement_inutile": {
+   "valeur": 300,
+   "libelle": "Déplacement inutile (au vendeur)",
+   "regle": "R85"
+  },
+  "xl_garde_agence_j": {
+   "valeur": 7,
+   "libelle": "Garde d'un XL à l'agence, comprise (jours)",
+   "regle": "R51"
+  },
+  "garde_relais_jour": {
+   "valeur": 100,
+   "libelle": "Part du relais par jour de garde et par colis",
+   "regle": "R38"
+  },
+  "garde_j1_belivay": {
+   "valeur": 1,
+   "libelle": "Jour 1 de garde payé par BelivaY (1 = oui)",
+   "regle": "R38"
+  },
+  "garde_heures": {
+   "valeur": 24,
+   "libelle": "Durée d'un jour de garde (h)",
+   "regle": "R37"
+  },
+  "garde_jours": {
+   "valeur": 7,
+   "libelle": "Jours de garde avant renvoi",
+   "regle": "R39"
+  },
+  "cpt_nouveau": {
+   "valeur": 15000,
+   "libelle": "Comptoir : panier max., compte sans commande livrée",
+   "regle": "R42"
+  },
+  "cpt_panier": {
+   "valeur": 50000,
+   "libelle": "Comptoir : panier max.",
+   "regle": "R42"
+  },
+  "cpt_confirme": {
+   "valeur": 100000,
+   "libelle": "Comptoir : panier max. après 5 commandes",
+   "regle": "R42"
+  },
+  "cpt_confirme_cmd": {
+   "valeur": 5,
+   "libelle": "Comptoir : commandes sans incident pour le plafond haut",
+   "regle": "R42"
+  },
+  "cpt_refus_max": {
+   "valeur": 2,
+   "libelle": "Refus avant paiement d'avance obligatoire",
+   "regle": "R42"
+  },
+  "relais_comptoir_bonus": {
+   "valeur": 50,
+   "libelle": "Relais : bonus par colis payé au comptoir",
+   "regle": "R41"
+  },
+  "relais_saturation": {
+   "valeur": 0.9,
+   "libelle": "Relais : remplissage qui arrête les paquets",
+   "regle": "R41"
+  },
+  "agence_relais": {
+   "valeur": 150,
+   "libelle": "Agence d'entreprise qui sert de relais, par colis",
+   "regle": "R40"
+  },
+  "prep_h": {
+   "valeur": 4,
+   "libelle": "Préparation (h ouvrées)",
+   "regle": "R44"
+  },
+  "echeance_h": {
+   "valeur": 24,
+   "libelle": "Échéance absolue (h)",
+   "regle": "R44"
+  },
+  "sur_commande_j": {
+   "valeur": 7,
+   "libelle": "Article sur commande, au plus (jours)",
+   "regle": "R44"
+  },
+  "promesse_h": {
+   "valeur": 5,
+   "libelle": "Promesse à domicile (h après « C'est prêt »)",
+   "regle": "R45"
+  },
+  "heure_limite": {
+   "valeur": 13,
+   "libelle": "Heure limite du jour même",
+   "regle": "R47"
+  },
+  "ouverture": {
+   "valeur": 8,
+   "libelle": "Ouverture du service (h)",
+   "regle": "R46"
+  },
+  "fermeture": {
+   "valeur": 18,
+   "libelle": "Fin du service (h)",
+   "regle": "R46"
+  },
+  "prise_paquet_min": {
+   "valeur": 15,
+   "libelle": "Prise d'un paquet (min)",
+   "regle": "R48"
+  },
+  "ramassage_min": {
+   "valeur": 90,
+   "libelle": "Ramassage après la prise (min)",
+   "regle": "R48"
+  },
+  "retenue_retard": {
+   "valeur": 0.2,
+   "libelle": "Retenue sur une remise en retard",
+   "regle": "R48"
+  },
+  "depart_colis": {
+   "valeur": 5,
+   "libelle": "Départ d'une tournée dès (colis)",
+   "regle": "R49"
+  },
+  "cible_colis": {
+   "valeur": 8,
+   "libelle": "Objectif de colis par tournée",
+   "regle": "R49"
+  },
+  "tournees": {
+   "valeur": 2,
+   "libelle": "Tournées par jour",
+   "regle": "R49"
+  },
+  "client_appels": {
+   "valeur": 2,
+   "libelle": "Client absent : appels",
+   "regle": "R51"
+  },
+  "client_attente_min": {
+   "valeur": 10,
+   "libelle": "Client absent : attente (min)",
+   "regle": "R51"
+  },
+  "com_min": {
+   "valeur": 700,
+   "libelle": "Commission minimale par sous-commande",
+   "regle": "R14, R19"
+  },
+  "com_taux_min": {
+   "valeur": 0.02,
+   "libelle": "Taux minimal sur le sous-total",
+   "regle": "R14"
+  },
+  "marge_min_f": {
+   "valeur": 200,
+   "libelle": "Marge minimale, livraison offerte (F)",
+   "regle": "R14"
+  },
+  "marge_min_part": {
+   "valeur": 0.005,
+   "libelle": "Marge minimale, livraison offerte (part)",
+   "regle": "R14"
+  },
+  "pts_petit_prix": {
+   "valeur": 3,
+   "libelle": "Points en plus sous le seuil de petit prix",
+   "regle": "R17"
+  },
+  "petit_prix": {
+   "valeur": 5000,
+   "libelle": "Seuil de petit prix",
+   "regle": "R17"
+  },
+  "pts_mic": {
+   "valeur": 2,
+   "libelle": "Points en moins Made in Cameroon",
+   "regle": "R17"
+  },
+  "decouverte": {
+   "valeur": 0.8,
+   "libelle": "Coefficient de l'offre de découverte",
+   "regle": "R17"
+  },
+  "decouverte_mois": {
+   "valeur": 3,
+   "libelle": "Durée de l'offre de découverte (mois)",
+   "regle": "R17"
+  },
+  "decouverte_cmd": {
+   "valeur": 50,
+   "libelle": "Ou nombre de commandes",
+   "regle": "R17"
+  },
+  "tva": {
+   "valeur": 0.0,
+   "libelle": "TVA sur la commission (régime actuel)",
+   "regle": "R21"
+  },
+  "tva_reel": {
+   "valeur": 0.1925,
+   "libelle": "TVA au régime réel",
+   "regle": "R21"
+  },
+  "trust_min": {
+   "valeur": 40,
+   "libelle": "Trust Score minimal pour vendre",
+   "regle": "R32"
+  },
+  "trust_rempl": {
+   "valeur": 75,
+   "libelle": "Trust Score minimal du remplaçant",
+   "regle": "R35"
+  },
+  "ecart_rempl": {
+   "valeur": 0.05,
+   "libelle": "Écart de prix payé par BelivaY au remplaçant",
+   "regle": "R35"
+  },
+  "part_max": {
+   "valeur": 0.5,
+   "libelle": "Part cible maximale",
+   "regle": "R31"
+  },
+  "part_max_des": {
+   "valeur": 3,
+   "libelle": "Plafond de part à partir de (offres)",
+   "regle": "R31"
+  },
+  "part_min_nouveau": {
+   "valeur": 0.15,
+   "libelle": "Part cible minimale d'un nouveau vendeur",
+   "regle": "R31"
+  },
+  "periode_parts": {
+   "valeur": 7,
+   "libelle": "Période des parts réelles (jours)",
+   "regle": "R31"
+  },
+  "nouveau_seuil": {
+   "valeur": 10,
+   "libelle": "Nouveau vendeur : moins de (commandes)",
+   "regle": "R32"
+  },
+  "plafond_nouveau": {
+   "valeur": 500000,
+   "libelle": "Nouveau vendeur : commande maximale",
+   "regle": "R32"
+  },
+  "ecart_mediane": {
+   "valeur": 0.5,
+   "libelle": "Écart à la médiane qui met en contrôle",
+   "regle": "R33"
+  },
+  "sms_max": {
+   "valeur": 6,
+   "libelle": "SMS par commande, au plus",
+   "regle": "R78"
+  },
+  "sms_cout": {
+   "valeur": 20,
+   "libelle": "Coût d'un SMS",
+   "regle": "R78"
+  },
+  "sup_autre_zone_tournee": {
+   "valeur": 30,
+   "libelle": "Tournée qui part d'une autre zone, par colis",
+   "regle": "R55"
+  },
+  "wink_exc_prix": {
+   "valeur": 600,
+   "libelle": "Exception Wink ligne 5, prix accepté",
+   "regle": "R86"
+  },
+  "wink_exc_mois": {
+   "valeur": 3,
+   "libelle": "Exception Wink, durée maximale (mois)",
+   "regle": "R86"
+  }
+ },
+ "livraison": {
+  "niveaux": [
+   {
+    "cle": "centre",
+    "nom": "Centre",
+    "prix": 1500,
+    "plafond_course_simple": 1360,
+    "xl": 4000,
+    "plafond_xl": 3630
+   },
+   {
+    "cle": "peripherie",
+    "nom": "Périphérie",
+    "prix": 1700,
+    "plafond_course_simple": 1540,
+    "xl": 4200,
+    "plafond_xl": 3810
+   },
+   {
+    "cle": "periurbain",
+    "nom": "Périurbain",
+    "prix": 1900,
+    "plafond_course_simple": 1720,
+    "xl": 4400,
+    "plafond_xl": 4000
+   }
+  ],
+  "zones_peripherie": [
+   "Z4",
+   "Z5",
+   "Z7",
+   "Z8",
+   "Z11",
+   "Z12"
+  ],
+  "quartiers_periurbains": [
+   "Abom",
+   "Biteng",
+   "Emana",
+   "Etoudi",
+   "Messassi",
+   "Ngoulmekong",
+   "Ngousso-Ntem",
+   "Nkol-Messeng",
+   "Nkolmesseng 1",
+   "Nkolo",
+   "Nkolondom",
+   "Ntui-Essong",
+   "Nyom",
+   "Okolo",
+   "Olembe",
+   "Éleveur",
+   "Afanoya 1",
+   "Afanoya 2",
+   "Afanoya 3",
+   "Afanoya 4",
+   "Mekoumbou 1",
+   "Mekoumbou 2",
+   "Nkolfon",
+   "Ntouessong",
+   "Minkoameyos",
+   "Nkolso",
+   "Nsimalen"
+  ],
+  "formats": [
+   {
+    "code": "P",
+    "nom": "Pochette (S, M ou L)",
+    "emballage": "pochette kraft S 20 × 30, M 25 × 35 ou L 35 × 45 cm, papier bulle si besoin",
+    "poids_facture_max_kg": 2,
+    "dimensions_max_cm": null,
+    "plus_grande_dimension_max_cm": null,
+    "volume_utile_l": 8.0,
+    "places_relais": 1,
+    "part_relais": 200,
+    "supplement": 0,
+    "relais_accepte": true,
+    "plafond_relais": 540
+   },
+   {
+    "code": "C1",
+    "nom": "Carton C1",
+    "emballage": "carton 30 × 20 × 15 cm",
+    "poids_facture_max_kg": 5,
+    "dimensions_max_cm": [
+     30,
+     20,
+     15
+    ],
+    "plus_grande_dimension_max_cm": 30,
+    "volume_utile_l": 9.0,
+    "places_relais": 2,
+    "part_relais": 250,
+    "supplement": 500,
+    "relais_accepte": true,
+    "plafond_relais": 950
+   },
+   {
+    "code": "C2",
+    "nom": "Carton C2",
+    "emballage": "carton 40 × 30 × 25 cm",
+    "poids_facture_max_kg": 15,
+    "dimensions_max_cm": [
+     40,
+     30,
+     25
+    ],
+    "plus_grande_dimension_max_cm": 40,
+    "volume_utile_l": 30.0,
+    "places_relais": 5,
+    "part_relais": 400,
+    "supplement": 700,
+    "relais_accepte": true,
+    "plafond_relais": 1000
+   },
+   {
+    "code": "CO",
+    "nom": "Carton d'origine",
+    "emballage": "carton du fabricant, filmé et étiqueté",
+    "poids_facture_max_kg": 15,
+    "dimensions_max_cm": null,
+    "plus_grande_dimension_max_cm": 80,
+    "volume_utile_l": null,
+    "places_relais": 5,
+    "part_relais": 400,
+    "supplement": 700,
+    "relais_accepte": true,
+    "plafond_relais": 1000
+   },
+   {
+    "code": "XL",
+    "nom": "Très grand (XL)",
+    "emballage": "carton d'origine, filmé, transporté en véhicule",
+    "poids_facture_max_kg": 40,
+    "dimensions_max_cm": null,
+    "plus_grande_dimension_max_cm": 120,
+    "volume_utile_l": null,
+    "places_relais": null,
+    "part_relais": null,
+    "supplement": null,
+    "relais_accepte": false,
+    "plafond_relais": null
+   },
+   {
+    "code": "HG",
+    "nom": "Hors gabarit",
+    "emballage": "selon le devis",
+    "poids_facture_max_kg": null,
+    "dimensions_max_cm": null,
+    "plus_grande_dimension_max_cm": null,
+    "volume_utile_l": null,
+    "places_relais": null,
+    "part_relais": null,
+    "supplement": null,
+    "relais_accepte": false,
+    "plafond_relais": null
+   }
+  ],
+  "carton_obligatoire": "verre, céramique, tablette, ordinateur, écran et télévision, liquide en bouteille de verre",
+  "pochette_papier_bulle": "téléphone, montre ou petit appareil dans sa boîte d'origine",
+  "emballages": [
+   {
+    "code": "S",
+    "dimensions": "pochette 20 × 30 cm",
+    "part_stock_pct": 25
+   },
+   {
+    "code": "M",
+    "dimensions": "pochette 25 × 35 cm",
+    "part_stock_pct": 40
+   },
+   {
+    "code": "L",
+    "dimensions": "pochette 35 × 45 cm",
+    "part_stock_pct": 20
+   },
+   {
+    "code": "C1",
+    "dimensions": "carton 30 × 20 × 15 cm",
+    "part_stock_pct": 10
+   },
+   {
+    "code": "C2",
+    "dimensions": "carton 40 × 30 × 25 cm",
+    "part_stock_pct": 5
+   }
+  ],
+  "garde_par_colis": [
+   0,
+   100,
+   100,
+   100,
+   200,
+   500,
+   1000
+  ],
+  "garde_cumul": [
+   0,
+   100,
+   200,
+   300,
+   500,
+   1000,
+   2000
+  ],
+  "garde_relais": [
+   100,
+   200,
+   300,
+   400,
+   500,
+   600,
+   700
+  ],
+  "frais_absence": {
+   "pochette": 600,
+   "C1": 650,
+   "C2": 800,
+   "XL": 300
+  }
+ },
+ "plafonds": {
+  "relais": {
+   "P": 540,
+   "C1": 950,
+   "C2": 1000,
+   "CO": 1000
+  },
+  "domicile_course_simple": {
+   "centre": 1360,
+   "peripherie": 1540,
+   "periurbain": 1720
+  },
+  "xl": {
+   "centre": 3630,
+   "peripherie": 3810,
+   "periurbain": 4000
+  },
+  "supplement_carton": {
+   "C1": 450,
+   "C2": 630
+  },
+  "par_km": 220,
+  "boutique_en_plus": {
+   "meme_zone": 450,
+   "autre_zone": 900
+  },
+  "retour": 450,
+  "transfert": 360,
+  "agence_relais": 590,
+  "grille_reference": [
+   {
+    "numero": 1,
+    "prestation": "Domicile, trajet entre Z2, Z3 et Z6",
+    "tarif": 1000,
+    "plafond": 1360,
+    "controle": "conforme"
+   },
+   {
+    "numero": 2,
+    "prestation": "Domicile, trajet qui part de Z1 ou y arrive",
+    "tarif": 1200,
+    "plafond": 1360,
+    "controle": "conforme"
+   },
+   {
+    "numero": 3,
+    "prestation": "Domicile, zone de la vague 2 (Z9)",
+    "tarif": 1300,
+    "plafond": 1360,
+    "controle": "conforme"
+   },
+   {
+    "numero": 4,
+    "prestation": "Domicile, zone de périphérie (Z4, Z5, Z7, Z8, Z11, Z12)",
+    "tarif": 1500,
+    "plafond": 1540,
+    "controle": "conforme"
+   },
+   {
+    "numero": 5,
+    "prestation": "Tournée relais, par pochette, paquet de 1 à 4 colis",
+    "tarif": 600,
+    "plafond": 540,
+    "controle": "à renégocier (R86)"
+   },
+   {
+    "numero": 6,
+    "prestation": "Tournée relais, par pochette, paquet de 5 à 9 colis",
+    "tarif": 450,
+    "plafond": 540,
+    "controle": "conforme"
+   },
+   {
+    "numero": 7,
+    "prestation": "Tournée relais, par pochette, paquet de 10 colis et plus",
+    "tarif": 350,
+    "plafond": 540,
+    "controle": "conforme"
+   },
+   {
+    "numero": 8,
+    "prestation": "Tournée qui commence dans une autre zone que le relais, par colis (tarif + 30 F ≤ plafond)",
+    "tarif": 30,
+    "plafond": null,
+    "controle": "conforme (R55)"
+   },
+   {
+    "numero": 9,
+    "prestation": "Supplément carton C2 ou carton d'origine",
+    "tarif": 300,
+    "plafond": 630,
+    "controle": "conforme"
+   },
+   {
+    "numero": 10,
+    "prestation": "Client absent : course due + supplément (refacturé au client)",
+    "tarif": 300,
+    "plafond": null,
+    "controle": "conforme (R51)"
+   },
+   {
+    "numero": 11,
+    "prestation": "Refus d'un produit conforme : course due + supplément (refacturé au client)",
+    "tarif": 500,
+    "plafond": null,
+    "controle": "conforme (R85)"
+   },
+   {
+    "numero": 12,
+    "prestation": "Déplacement inutile (refacturé au vendeur)",
+    "tarif": 300,
+    "plafond": null,
+    "controle": "conforme (R85)"
+   },
+   {
+    "numero": 13,
+    "prestation": "Ramassage dans une boutique en plus (même zone / autre zone)",
+    "tarif": null,
+    "plafond": null,
+    "controle": "plafonds 450 / 900 F"
+   },
+   {
+    "numero": 14,
+    "prestation": "Course de retour · transfert entre relais",
+    "tarif": null,
+    "plafond": null,
+    "controle": "plafonds 450 / 360 F"
+   }
+  ]
+ },
+ "commission": {
+  "familles": {
+   "A": {
+    "nom": "Gros tickets",
+    "tranches": [
+     {
+      "borne_haute": 20000,
+      "taux_pct": 13.5
+     },
+     {
+      "borne_haute": 100000,
+      "taux_pct": 5.0
+     },
+     {
+      "borne_haute": 500000,
+      "taux_pct": 2.5
+     },
+     {
+      "borne_haute": null,
+      "taux_pct": 2.0
+     }
+    ],
+    "tranche_reprise": null
+   },
+   "B": {
+    "nom": "Marges larges",
+    "tranches": [
+     {
+      "borne_haute": 20000,
+      "taux_pct": 23.5
+     },
+     {
+      "borne_haute": 100000,
+      "taux_pct": 18.5
+     },
+     {
+      "borne_haute": 500000,
+      "taux_pct": 13.5
+     },
+     {
+      "borne_haute": null,
+      "taux_pct": 13.5
+     }
+    ],
+    "tranche_reprise": 4
+   },
+   "C": {
+    "nom": "Fréquence",
+    "tranches": [
+     {
+      "borne_haute": 10000,
+      "taux_pct": 7.5
+     },
+     {
+      "borne_haute": 50000,
+      "taux_pct": 6.0
+     },
+     {
+      "borne_haute": null,
+      "taux_pct": 5.0
+     }
+    ],
+    "tranche_reprise": null
+   },
+   "D": {
+    "nom": "Marges moyennes",
+    "tranches": [
+     {
+      "borne_haute": 20000,
+      "taux_pct": 15.0
+     },
+     {
+      "borne_haute": 100000,
+      "taux_pct": 11.5
+     },
+     {
+      "borne_haute": 500000,
+      "taux_pct": 8.5
+     },
+     {
+      "borne_haute": null,
+      "taux_pct": 8.5
+     }
+    ],
+    "tranche_reprise": 4
+   },
+   "E": {
+    "nom": "Petits prix",
+    "tranches": [
+     {
+      "borne_haute": 10000,
+      "taux_pct": 12.5
+     },
+     {
+      "borne_haute": 50000,
+      "taux_pct": 9.0
+     },
+     {
+      "borne_haute": null,
+      "taux_pct": 9.0
+     }
+    ],
+    "tranche_reprise": 3
+   }
+  },
+  "univers": [
+   {
+    "code": "TEL",
+    "nom": "Électronique — téléphones et accessoires",
+    "nom_en": "Electronics — phones and accessories",
+    "famille": "A"
+   },
+   {
+    "code": "ELE",
+    "nom": "Électronique — ordinateurs, tablettes, écrans, audio, jeux, réseau",
+    "nom_en": "Electronics — computers, tablets, screens, audio, gaming, network",
+    "famille": "A"
+   },
+   {
+    "code": "EMG",
+    "nom": "Électroménager",
+    "nom_en": "Home appliances",
+    "famille": "A"
+   },
+   {
+    "code": "MOD",
+    "nom": "Mode femme et homme (vêtements, chaussures, accessoires)",
+    "nom_en": "Fashion (clothing, shoes, accessories)",
+    "famille": "B"
+   },
+   {
+    "code": "BEA",
+    "nom": "Beauté et cosmétique",
+    "nom_en": "Beauty and cosmetics",
+    "famille": "B"
+   },
+   {
+    "code": "SUP",
+    "nom": "Supermarché",
+    "nom_en": "Supermarket",
+    "famille": "C"
+   },
+   {
+    "code": "FRA",
+    "nom": "Frais et premium",
+    "nom_en": "Fresh and premium",
+    "famille": "C"
+   },
+   {
+    "code": "MAI",
+    "nom": "Maison et déco",
+    "nom_en": "Home and decor",
+    "famille": "D"
+   },
+   {
+    "code": "SPO",
+    "nom": "Sport et loisirs",
+    "nom_en": "Sports and leisure",
+    "famille": "D"
+   },
+   {
+    "code": "BEB",
+    "nom": "Bébé et enfant",
+    "nom_en": "Baby and kids",
+    "famille": "D"
+   },
+   {
+    "code": "ANI",
+    "nom": "Animaux",
+    "nom_en": "Pets",
+    "famille": "D"
+   },
+   {
+    "code": "LIV",
+    "nom": "Livres et médias",
+    "nom_en": "Books and media",
+    "famille": "E"
+   }
+  ],
+  "paliers": [
+   {
+    "palier": "Bronze",
+    "multiplicateur": 1.0
+   },
+   {
+    "palier": "Argent",
+    "multiplicateur": 0.85
+   },
+   {
+    "palier": "Or",
+    "multiplicateur": 0.7
+   },
+   {
+    "palier": "Platine",
+    "multiplicateur": 0.6
+   }
+  ],
+  "produits_interdits": [
+   "contrefaçon ou produit qui paraît contrefait",
+   "médicaments et produits de santé",
+   "armes, munitions et répliques",
+   "explosifs et feux d'artifice",
+   "bouteilles de gaz, carburants et produits chimiques dangereux",
+   "tabac et cigarettes électroniques",
+   "alcool (pas de contrôle de l'âge au lancement)",
+   "cartes SIM (leur vente exige l'identification de l'acheteur)",
+   "animaux vivants",
+   "produits illicites",
+   "produits frais, froids ou périssables (lait, yaourt, viande, poisson, fruits et légumes)"
+  ]
+ },
+ "meilleure_offre": {
+  "phases": [
+   {
+    "nom": "Démarrage",
+    "mois_debut": 1,
+    "tolerance_pct": 0.08,
+    "tolerance_max": 1000
+   },
+   {
+    "nom": "Croissance",
+    "mois_debut": 3,
+    "tolerance_pct": 0.05,
+    "tolerance_max": 500
+   },
+   {
+    "nom": "Régime",
+    "mois_debut": 5,
+    "tolerance_pct": 0.03,
+    "tolerance_max": 300
+   }
+  ],
+  "poids_score": {
+   "prix": 35,
+   "trust": 30,
+   "delai": 15,
+   "stock": 10,
+   "avis": 10
+  },
+  "bonus_made_in_cameroon": 5,
+  "exposant": 2,
+  "note_sans_avis": 3.0
+ },
+ "zones": [
+  {
+   "zone": "Z1",
+   "nom": "Centre-ville / Mballa",
+   "ouverture": "lancement",
+   "peripherie": false,
+   "grand_centre": "GC-A (nord)"
+  },
+  {
+   "zone": "Z2",
+   "nom": "Nsam / Obili",
+   "ouverture": "lancement",
+   "peripherie": false,
+   "grand_centre": "GC-B (ouest)"
+  },
+  {
+   "zone": "Z3",
+   "nom": "Mokolo / Mbankolo",
+   "ouverture": "lancement",
+   "peripherie": false,
+   "grand_centre": "GC-C (centre-sud)"
+  },
+  {
+   "zone": "Z4",
+   "nom": "Ngousso / Mvog-Ebanda",
+   "ouverture": "vague 2",
+   "peripherie": true,
+   "grand_centre": "GC-D (sud-est)"
+  },
+  {
+   "zone": "Z5",
+   "nom": "Nsimeyong / Ahala",
+   "ouverture": "vague 2",
+   "peripherie": true,
+   "grand_centre": "GC-C (centre-sud)"
+  },
+  {
+   "zone": "Z6",
+   "nom": "Biyem-Assi / Etoug-Ebe",
+   "ouverture": "lancement",
+   "peripherie": false,
+   "grand_centre": "GC-B (ouest)"
+  },
+  {
+   "zone": "Z7",
+   "nom": "Simbock / Mendong",
+   "ouverture": "vague 3",
+   "peripherie": true,
+   "grand_centre": "GC-B (ouest)"
+  },
+  {
+   "zone": "Z8",
+   "nom": "Nkolbisson / Oyom-Abang",
+   "ouverture": "vague 3",
+   "peripherie": true,
+   "grand_centre": "GC-B (ouest)"
+  },
+  {
+   "zone": "Z9",
+   "nom": "Essos / Nkolmesseng",
+   "ouverture": "vague 2",
+   "peripherie": false,
+   "grand_centre": "GC-D (sud-est)"
+  },
+  {
+   "zone": "Z10",
+   "nom": "Mimboman / Kondengui",
+   "ouverture": "vague 3",
+   "peripherie": false,
+   "grand_centre": "GC-D (sud-est)"
+  },
+  {
+   "zone": "Z11",
+   "nom": "Odza / Ekoumdoum",
+   "ouverture": "vague 3",
+   "peripherie": true,
+   "grand_centre": "GC-D (sud-est)"
+  },
+  {
+   "zone": "Z12",
+   "nom": "Emana / Nkolondom",
+   "ouverture": "vague 3",
+   "peripherie": true,
+   "grand_centre": "GC-A (nord)"
+  }
+ ],
+ "quartiers": [
+  {
+   "commune": "Yaoundé I",
+   "quartier": "Centre commercial",
+   "zone": "Z1",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [
+    "Centre-ville"
+   ],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé I",
+   "quartier": "Elig-Essono",
+   "zone": "Z1",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé I",
+   "quartier": "Etoa-Meki 1",
+   "zone": "Z1",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé I",
+   "quartier": "Etoa-Meki 2",
+   "zone": "Z1",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé I",
+   "quartier": "Nlongkak",
+   "zone": "Z1",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé I",
+   "quartier": "Elig-Edzoa",
+   "zone": "Z1",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé I",
+   "quartier": "Bastos",
+   "zone": "Z1",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé I",
+   "quartier": "Manguier",
+   "zone": "Z1",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé I",
+   "quartier": "Tongolo",
+   "zone": "Z1",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé I",
+   "quartier": "Mballa 1",
+   "zone": "Z1",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé I",
+   "quartier": "Mballa 2",
+   "zone": "Z1",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé I",
+   "quartier": "Mballa 3",
+   "zone": "Z1",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé I",
+   "quartier": "Nkolondom",
+   "zone": "Z12",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "periurbain",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé I",
+   "quartier": "Etoudi",
+   "zone": "Z1",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "periurbain",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé I",
+   "quartier": "Messassi",
+   "zone": "Z12",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "periurbain",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé I",
+   "quartier": "Okolo",
+   "zone": "Z12",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "periurbain",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé I",
+   "quartier": "Olembe",
+   "zone": "Z12",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "periurbain",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé I",
+   "quartier": "Nyom",
+   "zone": "Z12",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "periurbain",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé I",
+   "quartier": "Emana",
+   "zone": "Z12",
+   "officiel": true,
+   "peripherie": true,
+   "niveau": "periurbain",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé I",
+   "quartier": "Nkoleton",
+   "zone": "Z1",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé II",
+   "quartier": "Cité Verte",
+   "zone": "Z3",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé II",
+   "quartier": "Madagascar",
+   "zone": "Z3",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé II",
+   "quartier": "Mokolo",
+   "zone": "Z3",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé II",
+   "quartier": "Grand Messa",
+   "zone": "Z3",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé II",
+   "quartier": "Ekoudou",
+   "zone": "Z3",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé II",
+   "quartier": "Tsinga",
+   "zone": "Z3",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé II",
+   "quartier": "Nkom-Kana",
+   "zone": "Z3",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé II",
+   "quartier": "Oliga",
+   "zone": "Z3",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé II",
+   "quartier": "Messa Carrière",
+   "zone": "Z3",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé II",
+   "quartier": "École de Police",
+   "zone": "Z3",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé II",
+   "quartier": "Febe",
+   "zone": "Z3",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé II",
+   "quartier": "Ntoungou",
+   "zone": "Z3",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé III",
+   "quartier": "Obili",
+   "zone": "Z2",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé III",
+   "quartier": "Ngoa-Ekelé 1",
+   "zone": "Z2",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [
+    "Ngoa Ekellé",
+    "Ngoa-Ekellé"
+   ],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé III",
+   "quartier": "Ngoa-Ekelé 2",
+   "zone": "Z2",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [
+    "Ngoa Ekellé",
+    "Ngoa-Ekellé"
+   ],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé III",
+   "quartier": "Nlong Mvolyé",
+   "zone": "Z2",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé III",
+   "quartier": "Ahala 1",
+   "zone": "Z5",
+   "officiel": true,
+   "peripherie": true,
+   "niveau": "peripherie",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé III",
+   "quartier": "Ahala 2",
+   "zone": "Z5",
+   "officiel": true,
+   "peripherie": true,
+   "niveau": "peripherie",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé III",
+   "quartier": "Efoulan",
+   "zone": "Z2",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé III",
+   "quartier": "Obobogo",
+   "zone": "Z5",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "peripherie",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé III",
+   "quartier": "Nsam",
+   "zone": "Z2",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé III",
+   "quartier": "Melen 2 – Centre administratif",
+   "zone": "Z2",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [
+    "Centre administratif",
+    "Quartier administratif"
+   ],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé III",
+   "quartier": "Etoa",
+   "zone": "Z5",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "peripherie",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé III",
+   "quartier": "Nkolmesseng 1",
+   "zone": "Z5",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "periurbain",
+   "lancement": false,
+   "alias": [
+    "Nkolmesseng"
+   ],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé III",
+   "quartier": "Afanoya 1",
+   "zone": "Z5",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "periurbain",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé III",
+   "quartier": "Afanoya 2",
+   "zone": "Z5",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "periurbain",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé III",
+   "quartier": "Afanoya 3",
+   "zone": "Z5",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "periurbain",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé III",
+   "quartier": "Afanoya 4",
+   "zone": "Z5",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "periurbain",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé III",
+   "quartier": "Nkolfon",
+   "zone": "Z5",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "periurbain",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé III",
+   "quartier": "Mekoumbou 1",
+   "zone": "Z5",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "periurbain",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé III",
+   "quartier": "Mekoumbou 2",
+   "zone": "Z5",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "periurbain",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé III",
+   "quartier": "Ntouessong",
+   "zone": "Z5",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "periurbain",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé III",
+   "quartier": "Nsimeyong 1",
+   "zone": "Z5",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "peripherie",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé III",
+   "quartier": "Nsimeyong 2",
+   "zone": "Z5",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "peripherie",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé III",
+   "quartier": "Nsimeyong 3",
+   "zone": "Z5",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "peripherie",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé III",
+   "quartier": "Olezoa",
+   "zone": "Z5",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "peripherie",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé III",
+   "quartier": "Dakar",
+   "zone": "Z2",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé IV",
+   "quartier": "Mvan-Nord",
+   "zone": "Z11",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "peripherie",
+   "lancement": false,
+   "alias": [
+    "Mvan"
+   ],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé IV",
+   "quartier": "Mvan-Sud",
+   "zone": "Z11",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "peripherie",
+   "lancement": false,
+   "alias": [
+    "Mvan"
+   ],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé IV",
+   "quartier": "Ndamvout",
+   "zone": "Z11",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "peripherie",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé IV",
+   "quartier": "Messame-Ndongo",
+   "zone": "Z11",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "peripherie",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé IV",
+   "quartier": "Odza",
+   "zone": "Z11",
+   "officiel": true,
+   "peripherie": true,
+   "niveau": "peripherie",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé IV",
+   "quartier": "Ekoumdoum",
+   "zone": "Z11",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "peripherie",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé IV",
+   "quartier": "Awae",
+   "zone": "Z11",
+   "officiel": true,
+   "peripherie": true,
+   "niveau": "peripherie",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé IV",
+   "quartier": "Nkomo",
+   "zone": "Z10",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé IV",
+   "quartier": "Ekounou",
+   "zone": "Z11",
+   "officiel": true,
+   "peripherie": true,
+   "niveau": "peripherie",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé IV",
+   "quartier": "Biteng",
+   "zone": "Z10",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "periurbain",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé IV",
+   "quartier": "Kondengui 1",
+   "zone": "Z10",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé IV",
+   "quartier": "Kondengui 2",
+   "zone": "Z10",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé IV",
+   "quartier": "Kondengui 3",
+   "zone": "Z10",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé IV",
+   "quartier": "Mimboman 1",
+   "zone": "Z10",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé IV",
+   "quartier": "Mimboman 3",
+   "zone": "Z10",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé IV",
+   "quartier": "Etam-Bafia",
+   "zone": "Z10",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé IV",
+   "quartier": "Mvog-Mbi",
+   "zone": "Z10",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé IV",
+   "quartier": "Nkol-Ndongo 1",
+   "zone": "Z10",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": false,
+   "alias": [
+    "Nkoldongo"
+   ],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé IV",
+   "quartier": "Nkol-Ndongo 2",
+   "zone": "Z10",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": false,
+   "alias": [
+    "Nkoldongo"
+   ],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé IV",
+   "quartier": "Mebandan",
+   "zone": "Z11",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "peripherie",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé IV",
+   "quartier": "Ekie",
+   "zone": "Z11",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "peripherie",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé IV",
+   "quartier": "Emombo",
+   "zone": "Z10",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé IV",
+   "quartier": "Ntui-Essong",
+   "zone": "Z10",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "periurbain",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé IV",
+   "quartier": "Nkolo",
+   "zone": "Z10",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "periurbain",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé IV",
+   "quartier": "Abom",
+   "zone": "Z9",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "periurbain",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé V",
+   "quartier": "Mvog-Ada",
+   "zone": "Z9",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé V",
+   "quartier": "Essos",
+   "zone": "Z9",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé V",
+   "quartier": "Nkol-Messeng",
+   "zone": "Z9",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "periurbain",
+   "lancement": false,
+   "alias": [
+    "Nkolmesseng",
+    "Nkol Messing"
+   ],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé V",
+   "quartier": "Nkol-Ebogo",
+   "zone": "Z4",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "peripherie",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé V",
+   "quartier": "Quartier Fouda",
+   "zone": "Z9",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé V",
+   "quartier": "Ngousso 1",
+   "zone": "Z4",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "peripherie",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé V",
+   "quartier": "Ngousso 2",
+   "zone": "Z4",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "peripherie",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé V",
+   "quartier": "Ngousso-Ntem",
+   "zone": "Z4",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "periurbain",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé V",
+   "quartier": "Éleveur",
+   "zone": "Z4",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "periurbain",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé V",
+   "quartier": "Mfandena 1",
+   "zone": "Z9",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé V",
+   "quartier": "Mfandena 2",
+   "zone": "Z9",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé V",
+   "quartier": "Ngoulmekong",
+   "zone": "Z4",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "periurbain",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé VI",
+   "quartier": "Biyem-Assi",
+   "zone": "Z6",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé VI",
+   "quartier": "Melen",
+   "zone": "Z6",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé VI",
+   "quartier": "Melen 8",
+   "zone": "Z2",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé VI",
+   "quartier": "Melen 8B et 8C",
+   "zone": "Z2",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé VI",
+   "quartier": "Etoug-Ebe 1",
+   "zone": "Z6",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé VI",
+   "quartier": "Etoug-Ebe 2",
+   "zone": "Z6",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé VI",
+   "quartier": "Mvog-Betsi",
+   "zone": "Z6",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé VI",
+   "quartier": "Mendong 2",
+   "zone": "Z7",
+   "officiel": true,
+   "peripherie": true,
+   "niveau": "peripherie",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé VI",
+   "quartier": "Simbock",
+   "zone": "Z7",
+   "officiel": true,
+   "peripherie": true,
+   "niveau": "peripherie",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé VI",
+   "quartier": "Simbock École de guerre",
+   "zone": "Z7",
+   "officiel": true,
+   "peripherie": true,
+   "niveau": "peripherie",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé VI",
+   "quartier": "Elig-Effa",
+   "zone": "Z6",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé VI",
+   "quartier": "Nkolbikok",
+   "zone": "Z6",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé VII",
+   "quartier": "Nkolbisson",
+   "zone": "Z8",
+   "officiel": true,
+   "peripherie": true,
+   "niveau": "peripherie",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé VII",
+   "quartier": "Etetak",
+   "zone": "Z8",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "peripherie",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé VII",
+   "quartier": "Oyom-Abang",
+   "zone": "Z8",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "peripherie",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé VII",
+   "quartier": "Minkoameyos",
+   "zone": "Z8",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "periurbain",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé VII",
+   "quartier": "Nkolso",
+   "zone": "Z8",
+   "officiel": false,
+   "peripherie": true,
+   "niveau": "periurbain",
+   "lancement": false,
+   "alias": [],
+   "source": "liste CUY"
+  },
+  {
+   "commune": "Yaoundé V",
+   "quartier": "Omnisport",
+   "zone": "Z9",
+   "officiel": false,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": false,
+   "alias": [],
+   "source": "cité parmi les quartiers par la mairie de Yaoundé V"
+  },
+  {
+   "commune": "Yaoundé VI",
+   "quartier": "Mendong (Mendong Camp SIC)",
+   "zone": "Z7",
+   "officiel": true,
+   "peripherie": true,
+   "niveau": "peripherie",
+   "lancement": false,
+   "alias": [
+    "Mendong",
+    "Mendong Camp SIC",
+    "Camp SIC Mendong"
+   ],
+   "source": "cité par la commune de Yaoundé VI"
+  },
+  {
+   "commune": "Yaoundé II",
+   "quartier": "Briqueterie",
+   "zone": "Z3",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "nom courant, cité dans le découpage BelivaY en 12 zones"
+  },
+  {
+   "commune": "Yaoundé I",
+   "quartier": "Golf",
+   "zone": "Z1",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "nom courant, cité dans le découpage BelivaY en 12 zones"
+  },
+  {
+   "commune": "Yaoundé II",
+   "quartier": "Hippodrome",
+   "zone": "Z1",
+   "officiel": true,
+   "peripherie": false,
+   "niveau": "centre",
+   "lancement": true,
+   "alias": [],
+   "source": "quartier cité dans le découpage BelivaY en 12 zones"
+  },
+  {
+   "commune": "Mefou-et-Afamba (aéroport)",
+   "quartier": "Nsimalen",
+   "zone": "Z11",
+   "officiel": true,
+   "peripherie": true,
+   "niveau": "periurbain",
+   "lancement": false,
+   "alias": [],
+   "source": "cité dans le découpage BelivaY en 12 zones ; aéroport, hors du Mfoundi"
+  }
+ ],
+ "entreprises": {
+  "paliers": [
+   {
+    "palier": "Nouveau",
+    "plafond_colis": 75000,
+    "condition": "palier de départ"
+   },
+   {
+    "palier": "Confirmé",
+    "plafond_colis": 250000,
+    "condition": "Trust Score de 70 ou plus tenu 14 jours ; ou, dès l'entrée, assurance des marchandises valide et visite faite (R57)"
+   },
+   {
+    "palier": "Or",
+    "plafond_colis": null,
+    "condition": "Trust Score de 85 ou plus tenu 14 jours, assurance des marchandises valide, visite physique"
+   }
+  ],
+  "pieces": [
+   "RCCM et NIU de l'entreprise",
+   "pièce d'identité du responsable",
+   "autorisation de transport (MINT)",
+   "assurance des véhicules (responsabilité civile)",
+   "assurance des marchandises transportées (obligatoire pour Confirmé dès l'entrée et pour Or)",
+   "adresse de l'agence et lieu de stockage de nuit des colis",
+   "moyen de règlement (Mobile Money ou compte) au nom de l'entreprise",
+   "liste des livreurs (nom, pièce d'identité, téléphone, véhicule)"
+  ],
+  "champs": [
+   {
+    "cle": "raison_sociale",
+    "champ": "Raison sociale",
+    "format": "texte",
+    "obligatoire": "oui"
+   },
+   {
+    "cle": "sigle",
+    "champ": "Nom commercial",
+    "format": "texte",
+    "obligatoire": "non"
+   },
+   {
+    "cle": "rccm",
+    "champ": "Numéro RCCM",
+    "format": "texte",
+    "obligatoire": "oui"
+   },
+   {
+    "cle": "niu",
+    "champ": "NIU",
+    "format": "texte",
+    "obligatoire": "oui"
+   },
+   {
+    "cle": "adresse",
+    "champ": "Adresse de l'agence (quartier, repère)",
+    "format": "texte",
+    "obligatoire": "oui"
+   },
+   {
+    "cle": "gps",
+    "champ": "Position GPS de l'agence",
+    "format": "lat, lon",
+    "obligatoire": "oui"
+   },
+   {
+    "cle": "stockage_nuit",
+    "champ": "Lieu de stockage de nuit des colis",
+    "format": "texte",
+    "obligatoire": "oui"
+   },
+   {
+    "cle": "responsable",
+    "champ": "Nom du responsable",
+    "format": "texte",
+    "obligatoire": "oui"
+   },
+   {
+    "cle": "tel",
+    "champ": "Téléphone",
+    "format": "+237…",
+    "obligatoire": "oui"
+   },
+   {
+    "cle": "reglement",
+    "champ": "Moyen de règlement au nom de l'entreprise",
+    "format": "Mobile Money ou compte",
+    "obligatoire": "oui"
+   },
+   {
+    "cle": "zones",
+    "champ": "Zones BelivaY couvertes (Z1 à Z12)",
+    "format": "liste",
+    "obligatoire": "oui"
+   },
+   {
+    "cle": "capacite",
+    "champ": "Capacité déclarée (colis par jour)",
+    "format": "nombre",
+    "obligatoire": "oui"
+   },
+   {
+    "cle": "vehicules",
+    "champ": "Véhicules (moto, tricycle, voiture) et plaques ; véhicule pour XL par zone",
+    "format": "liste",
+    "obligatoire": "oui"
+   },
+   {
+    "cle": "livreurs",
+    "champ": "Livreurs déclarés et certifiés",
+    "format": "liste",
+    "obligatoire": "oui"
+   },
+   {
+    "cle": "pieces",
+    "champ": "Pièces exigées (8), avec date d'expiration",
+    "format": "fichiers",
+    "obligatoire": "oui"
+   },
+   {
+    "cle": "visite",
+    "champ": "Date de la visite physique",
+    "format": "date",
+    "obligatoire": "oui"
+   },
+   {
+    "cle": "assurance_marchandises",
+    "champ": "Assurance des marchandises : montant couvert par colis et date de fin",
+    "format": "F + date",
+    "obligatoire": "Confirmé dès l'entrée, Or"
+   },
+   {
+    "cle": "grille",
+    "champ": "Grille d'achat signée (version, date d'effet, exceptions datées)",
+    "format": "tableau",
+    "obligatoire": "oui"
+   },
+   {
+    "cle": "garde_agence_xl",
+    "champ": "Garde d'un XL à l'agence comprise (jours)",
+    "format": "nombre",
+    "obligatoire": "si XL"
+   },
+   {
+    "cle": "trust_score",
+    "champ": "Trust Score de l'entreprise",
+    "format": "0 à 100, calculé",
+    "obligatoire": "calculé"
+   },
+   {
+    "cle": "palier",
+    "champ": "Palier",
+    "format": "calculé",
+    "obligatoire": "calculé"
+   },
+   {
+    "cle": "plafond",
+    "champ": "Plafond de valeur par colis",
+    "format": "calculé",
+    "obligatoire": "calculé"
+   },
+   {
+    "cle": "pilote",
+    "champ": "Dates du pilote de 30 jours et bilan",
+    "format": "dates + fichier",
+    "obligatoire": "oui"
+   },
+   {
+    "cle": "statut",
+    "champ": "Statut",
+    "format": "en activation, active, suspendue",
+    "obligatoire": "oui"
+   }
+  ]
+ },
+ "regles": [
+  {
+   "id": "R01",
+   "statut": "décision finale",
+   "titre": "Jamais d'espèces pour une commande",
+   "texte": "Une commande ne se paie jamais en espèces. Seule exception : la garde au relais (R36), payée en espèces au gérant.",
+   "source": "Règles en vigueur § 1",
+   "date": "10/10/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-01 § 7"
+   ]
+  },
+  {
+   "id": "R02",
+   "statut": "décision finale",
+   "titre": "Frais Mobile Money",
+   "texte": "Sur un paiement par Mobile Money, le client paie les 2 % CamPay et les taxes éventuelles (0 % tant que le contrat CamPay n'en prévoit pas), compris dans le total montré avant le paiement. Ils se calculent une seule fois, sur tout le montant payé (produits et livraison) : total = base ÷ (1 − 2 % − taxes), arrondi au franc supérieur ; BelivaY reçoit ainsi exactement la base. Calcul en nombres entiers, sans virgule flottante : sans taxes, total = ⌈base × 100 ÷ 98⌉. La même règle vaut pour tout autre paiement Mobile Money du client (avance au comptoir, frais d'absence). Avec le Wallet : aucun frais.",
+   "source": "Règles en vigueur § 2 ; V2 Élite D17 ; formule : Décision du porteur du 17/10/2026",
+   "date": "10/10/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-01 § 7"
+   ]
+  },
+  {
+   "id": "R03",
+   "statut": "décision finale",
+   "titre": "Wallet",
+   "texte": "Fermé au lancement : réglage « wallet_ouvert » à non tant que la vérification juridique (monnaie électronique CEMAC) n'est pas faite. Tant qu'il est fermé : aucun paiement ni remboursement par le Wallet (remboursement sur le moyen de paiement d'origine, R68) ; un geste commercial devient un bon de réduction sur une prochaine commande, ni retirable ni remboursable. Quand il ouvre : recharge gratuite pour le client (les 2 % CamPay sont payés par BelivaY) ; paiement sans frais ; retrait possible à tout moment, avec 3 % de frais payés par le client, 1 000 F au moins, seulement vers le numéro Mobile Money qui a rechargé ; code à 4 chiffres au-delà de 50 000 F ; solde plafonné à 500 000 F ; les gestes commerciaux crédités par BelivaY ne se retirent pas ; une commande payée par le Wallet est remboursée sur le Wallet.",
+   "source": "Règles en vigueur § 3 ; fermé au lancement : DP-17, confirmé par décision du porteur du 17/10/2026",
+   "date": "10/10/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-01 § 7"
+   ]
+  },
+  {
+   "id": "R04",
+   "statut": "décision finale",
+   "titre": "Livraison au relais",
+   "texte": "900 F pour le premier colis en pochette (500 F de ramassage + 400 F de remise au relais), plus le supplément de format (R09) et les boutiques en plus (R08). Pas de prix au kilomètre au relais : les colis y vont en tournées groupées. Offerte dès 30 000 F d'achat (R07).",
+   "source": "Décision du 22/09 ; règles en vigueur § 5 ; console ADM-02 (décomposition) ; sans km : Décision du porteur du 17/10/2026",
+   "date": "22/09/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-01 § 5"
+   ]
+  },
+  {
+   "id": "R05",
+   "statut": "décision finale",
+   "titre": "Livraison à domicile",
+   "texte": "Prix de la course = niveau de prix (R06) + 250 F par km au-delà de 5 km (R83) + supplément de format (R09) + boutiques et colis en plus (R08, R09). 1 500 F au minimum (500 F de ramassage + 1 000 F de remise), sans plafond et sans distance maximale. Livraison individuelle (un client par course), sans groupage à domicile au lancement.",
+   "source": "Décision du 19/09 ; règles en vigueur § 4 (« selon la commande et la distance, sans plafond ») ; V2 Élite D10 ; prix au km : Décision du porteur du 17/10/2026",
+   "date": "19/09/2026 · 10/10/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-01 § 5"
+   ]
+  },
+  {
+   "id": "R06",
+   "statut": "décision finale",
+   "titre": "Niveaux de prix à domicile",
+   "texte": "Trois niveaux : centre 1 500 F ; périphérie 1 700 F (zones Z4, Z5, Z7, Z8, Z11, Z12) ; périurbain 1 900 F (27 quartiers les moins desservis, R90). Le niveau de la course est le plus haut entre celui de la boutique comprise dans la base (R83) et celui du client.",
+   "source": "Décision du porteur du 17/10/2026 (périphérie et périurbain, chacun 200 F de plus que le niveau précédent)",
+   "date": "17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-01 § 5"
+   ]
+  },
+  {
+   "id": "R07",
+   "statut": "décision finale",
+   "titre": "Livraison offerte",
+   "texte": "Le seuil se calcule sur le sous-total des produits du panier entier (jamais par boutique, jamais frais compris). Relais : dès 30 000 F, BelivaY couvre 900 F. Domicile : dès 50 000 F, BelivaY couvre 1 500 F et le client paie le reste (niveau, km, format, boutiques et colis en plus). Une seule livraison de base est offerte par commande. Affichage : « Livraison offerte » quand tout est couvert ; sinon « Livraison offerte jusqu'à 1 500 F » (900 F au relais) et le reste à payer ; jamais « gratuite ». Un remboursement qui fait repasser sous le seuil ne refacture rien.",
+   "source": "Décisions des 20 et 22/09 ; spécification client du 25/09 ; règles en vigueur § 4 et § 5 ; affichage : Décision du porteur du 17/10/2026",
+   "date": "22/09/2026 · 10/10/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-01 § 6"
+   ]
+  },
+  {
+   "id": "R08",
+   "statut": "décision finale",
+   "titre": "Panier de plusieurs boutiques",
+   "texte": "La première boutique est comprise dans le prix de base : à domicile, celle dont la course seule coûterait le plus (R83) ; au relais, celle qui paierait le supplément le plus haut (une boutique d'une autre zone) ; égalité : la première du panier. Chaque autre boutique ajoute 500 F si elle est dans la zone de la destination (adresse du client ou relais), 1 000 F sinon ; à domicile, une boutique d'une autre zone ajoute aussi 250 F par km de détour au-delà de 5 km. À domicile, c'est une seule course : le livreur ramasse dans chaque boutique puis livre le client en une fois. Au relais, chaque boutique fait son colis ; le code de retrait part à l'arrivée du dernier.",
+   "source": "Académie X01 du 11/10 ; référentiel du 04/10 ; détour : Décision du porteur du 17/10/2026",
+   "date": "04/10/2026 · 11/10/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-01 § 5"
+   ]
+  },
+  {
+   "id": "R09",
+   "statut": "décision finale",
+   "titre": "Supplément de format",
+   "texte": "Pochette (S, M ou L) : aucun supplément. Carton C1 : +500 F. Carton C2 ou carton d'origine (R62) : +700 F. Même supplément au relais et à domicile, pour chaque colis. Quand les articles d'une boutique partent en plusieurs colis (R64), chaque colis en plus de cette boutique ajoute son supplément de format et : au relais, le prix d'un colis (900 F), car il occupe sa place dans la tournée et au relais ; à domicile, 500 F (même course).",
+   "source": "Décision du porteur du 17/10/2026",
+   "date": "17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-01 § 5"
+   ]
+  },
+  {
+   "id": "R10",
+   "statut": "décision finale",
+   "titre": "Colis XL et hors gabarit",
+   "texte": "XL (40 kg et 120 cm au plus) : domicile seulement, en véhicule, jamais au relais ; 4 000 F + écart de niveau (+200 F en périphérie, +400 F en périurbain) + 250 F par km au-delà de 5 km ; créneau de 2 h choisi par le client, au plus tôt le jour de service qui suit le « C'est prêt ». Hors gabarit : domicile seulement, deux personnes ; devis de l'équipe logistique avec une entreprise sous 24 h ouvrées, valable 48 h : prix client = prix d'achat × 1,1, 8 000 F au moins, livraison offerte déduite comme pour une course (R07) ; le prix et le stock sont gelés de la demande de devis à sa fin de validité ; le client paie après avoir accepté le devis, sinon la commande est annulée sans frais. Pour la meilleure offre, la livraison d'un hors gabarit compte 8 000 F. Plusieurs XL d'une même boutique : un colis XL par article (R64). XL et hors gabarit ne sont vendus que si une entreprise active a un véhicule déclaré pour la zone de la boutique et celle du client.",
+   "source": "LIV-XL-RELAIS (spécification client du 25/09) ; prix, créneau et devis : Décision du porteur du 17/10/2026",
+   "date": "25/09/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-01 § 5"
+   ]
+  },
+  {
+   "id": "R11",
+   "statut": "supprimée",
+   "titre": "Supplément d'étage et frais de garantie (supprimés)",
+   "texte": "Le supplément d'étage de 500 F et les frais de garantie de 1 % au-delà de 250 000 F de la console du 26/09 ne sont pas retenus.",
+   "source": "Décision du porteur du 17/10/2026",
+   "date": "17/10/2026",
+   "decide_le_17_10": true,
+   "ou": []
+  },
+  {
+   "id": "R12",
+   "statut": "décision finale",
+   "titre": "Frais et heure montrés avant le paiement",
+   "texte": "Les frais de livraison, le total et l'heure estimée (R45) sont montrés avant le paiement, puis le suivi en direct. La fiche produit montre « Livraison dès X F » : X = frais d'une course seule de la boutique de l'offre affichée jusqu'au point de référence du quartier de l'adresse par défaut du client (BV-DEV-04) ; sans adresse, le prix du relais. Le montant exact est calculé à l'étape du paiement (R83).",
+   "source": "V2 Élite D10 ; estimation : Décision du porteur du 17/10/2026",
+   "date": "16/10/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-01 § 5.2"
+   ]
+  },
+  {
+   "id": "R13",
+   "statut": "décision finale",
+   "titre": "Principe de la commission",
+   "texte": "Commission selon l'univers du produit et le palier du vendeur, sur tout le prix payé, sans plafond par article, hors taxe ; figée au paiement (taux, palier, univers, offre de découverte) ; prélevée à la libération ; annulée si le remboursement est total, au prorata s'il est partiel (R20).",
+   "source": "V2 Élite D17 ; registre vendeur D1 à D5 ; ADM-P25R-01",
+   "date": "22/09/2026 · 16/10/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-03 § 1"
+   ]
+  },
+  {
+   "id": "R14",
+   "statut": "décision finale",
+   "titre": "Planchers de la commission",
+   "texte": "La commission d'une sous-commande (une commande chez une boutique) vaut au moins 700 F (R19), au moins 2 % du sous-total, et, quand la livraison est offerte, au moins la part de la livraison couverte par BelivaY plus 200 F ou 0,5 % du sous-total (le plus grand des deux).",
+   "source": "Spécification vendeur VD-02 (planchers) ; 2 % : Décision du porteur du 17/10/2026",
+   "date": "24/09/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-03 § 4"
+   ]
+  },
+  {
+   "id": "R15",
+   "statut": "décision finale",
+   "titre": "Effet du palier",
+   "texte": "La commission de l'article est multipliée par le coefficient du palier : Bronze 1 ; Argent 0,85 ; Or 0,70 ; Platine 0,60.",
+   "source": "Spécification vendeur VD-02 (multiplicateurs décidés)",
+   "date": "24/09/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-03 § 3"
+   ]
+  },
+  {
+   "id": "R16",
+   "statut": "décision finale",
+   "titre": "Barème par familles et par tranches de prix",
+   "texte": "Chaque univers appartient à une famille ; chaque tranche du prix de l'article a son taux (Bronze) : famille A (gros tickets) : 13,5 % jusqu'à 20 000 F · 5 % de 20 000 F à 100 000 F · 2,5 % de 100 000 F à 500 000 F · 2 % au-delà de 500 000 F ; famille B (marges larges) : 23,5 % jusqu'à 20 000 F · 18,5 % de 20 000 F à 100 000 F · 13,5 % de 100 000 F à 500 000 F · 13,5 % au-delà de 500 000 F ; famille C (fréquence) : 7,5 % jusqu'à 10 000 F · 6 % de 10 000 F à 50 000 F · 5 % au-delà de 50 000 F ; famille D (marges moyennes) : 15 % jusqu'à 20 000 F · 11,5 % de 20 000 F à 100 000 F · 8,5 % de 100 000 F à 500 000 F · 8,5 % au-delà de 500 000 F ; famille E (petits prix) : 12,5 % jusqu'à 10 000 F · 9 % de 10 000 F à 50 000 F · 9 % au-delà de 50 000 F. Quand le document du 24/09 ne donne pas de taux pour une tranche (familles B et D au-delà de 500 000 F, famille E au-delà de 50 000 F), le taux de la tranche précédente continue.",
+   "source": "ADM-P25R-02 (tranches, 22/09) ; familles et taux du document M01 dans les documents vendeur du 24/09 ; familles et tranche sans taux : Décision du porteur du 17/10/2026",
+   "date": "22/09/2026 · 24/09/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-03 § 2"
+   ]
+  },
+  {
+   "id": "R17",
+   "statut": "décision finale",
+   "titre": "Ajustements du taux",
+   "texte": "+3 points sur chaque taux si le prix de l'article est sous 5 000 F ; −2 points pour un produit Made in Cameroon déclaré et contrôlé. Offre de découverte : commission × 0,8 pendant 3 mois ou 50 commandes payées et non remboursées, dès la première commande payée ; le vendeur voit « −20 % de commission pendant l'offre de découverte ». Abonnements Boost (−1 point) et Pro (−2 points) : après le lancement.",
+   "source": "Registre vendeur D2, D3, D11 ; VD-02 ; règles en vigueur § 12 ; × 0,80 : Décision du porteur du 17/10/2026",
+   "date": "21/09/2026 · 24/09/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-03 § 3"
+   ]
+  },
+  {
+   "id": "R18",
+   "statut": "décision finale",
+   "titre": "Produits chers",
+   "texte": "Pas de plafond : la commission monte toujours avec le prix, mais de moins en moins vite grâce aux tranches (R16), pour ne pas faire monter les prix affichés. Aucun taux particulier n'est promis à un vendeur.",
+   "source": "Décision du 22/09 (sans plafond, rééquilibrée) ; Académie X02-2 du 11/10",
+   "date": "22/09/2026 · 11/10/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-03 § 1"
+   ]
+  },
+  {
+   "id": "R19",
+   "statut": "décision finale",
+   "titre": "Petits prix",
+   "texte": "Prix minimum d'un article publiable : 1 000 F. La commission minimale de 700 F par sous-commande est fixe ; avec le minimum de 2 000 F par boutique (R84), elle ne dépasse jamais 35 % du sous-total et le vendeur garde toujours au moins 1 300 F.",
+   "source": "VD-02 (700 F) ; prix minimum publiable et minimum par boutique : Décision du porteur du 17/10/2026",
+   "date": "24/09/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-03 § 4"
+   ]
+  },
+  {
+   "id": "R20",
+   "statut": "décision finale",
+   "titre": "Arrondi",
+   "texte": "Montants en francs entiers ; la commission est arrondie au franc le plus proche. Après un remboursement partiel, commission = commission d'origine × (montant gardé ÷ sous-total d'origine), arrondie au franc le plus proche ; le minimum de 700 F ne se réapplique pas. Exemple : 2 articles à 1 000 F, commission 700 F, un article rendu : 350 F.",
+   "source": "Spécification vendeur VD-02 ; registre vendeur D4 (prorata) ; formule : Décision du porteur du 17/10/2026",
+   "date": "24/09/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-03 § 4"
+   ]
+  },
+  {
+   "id": "R21",
+   "statut": "décision finale",
+   "titre": "TVA",
+   "texte": "La commission s'entend hors taxe. TVA de 19,25 % ajoutée seulement quand BelivaY sera assujettie (régime réel), annoncée 30 jours avant ; 0 F au régime actuel (IGS).",
+   "source": "Registre vendeur D6 ; ADM-P25R-09",
+   "date": "21/09/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-03 § 7"
+   ]
+  },
+  {
+   "id": "R22",
+   "statut": "décision finale",
+   "titre": "Versement du vendeur",
+   "texte": "Versement automatique chaque vendredi avant 12 h de tout ce qui est libéré au plus tard le jeudi à minuit, sans demande et sans minimum, vers le seul numéro vérifié ; 1 % CamPay retenu sur le versement (à la charge du vendeur), arrondi au franc supérieur.",
+   "source": "Arbitrages du 21/09 ; règles en vigueur § 10",
+   "date": "21/09/2026 · 10/10/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-03 § 7"
+   ]
+  },
+  {
+   "id": "R23",
+   "statut": "décision finale",
+   "titre": "Libération",
+   "texte": "L'argent se libère 3 jours (Bronze, Argent) ou 1 jour (Or, Platine) après la fermeture du droit de retour : confirmation du client, sinon 7 jours après le retrait. Carte : 14 jours, après le lancement. Un litige ou un retour gèle la sous-commande.",
+   "source": "Arbitrages du 21/09 ; règles en vigueur § 10",
+   "date": "21/09/2026 · 10/10/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-03 § 7"
+   ]
+  },
+  {
+   "id": "R24",
+   "statut": "décision finale",
+   "titre": "Paliers du vendeur",
+   "texte": "Bronze : identité vérifiée. Argent : Trust Score de 65 ou plus, 10 commandes livrées, note de 4,0 ou plus. Or : 80 ou plus, 50 commandes, note de 4,3 ou plus, visite physique. Platine : 90 ou plus tenu 6 mois, audit trimestriel. Pendant les 2 premiers mois après la signature, le palier suit le nombre de produits actifs (Argent 15, Or 40, Platine 80). Montée : seuil tenu 14 jours ; descente : 5 points sous le seuil pendant 14 jours, puis validation humaine.",
+   "source": "Registre vendeur B5, C3, C4",
+   "date": "21/09/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-03 § 8"
+   ]
+  },
+  {
+   "id": "R25",
+   "statut": "décision finale",
+   "titre": "Gestes commerciaux et reprises",
+   "texte": "Un geste commercial ne dépasse jamais la commission de la commande. Tout remboursement avancé par BelivaY est repris sur les versements du vendeur fautif, sauf le remboursement automatique (R71).",
+   "source": "V2 Élite D17 ; arbitrages du 21/09",
+   "date": "21/09/2026 · 16/10/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-03 § 9"
+   ]
+  },
+  {
+   "id": "R26",
+   "statut": "décision finale",
+   "titre": "Ce que voit le vendeur",
+   "texte": "L'espace vendeur montre ce que le vendeur garde, vente par vente et au total, jamais ce qui est retenu ; la console montre les deux.",
+   "source": "Décision du 22/09 ; ADM-P25R-08",
+   "date": "22/09/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-03 § 1"
+   ]
+  },
+  {
+   "id": "R27",
+   "statut": "décision finale",
+   "titre": "Principe de la meilleure offre",
+   "texte": "Le client cherche un produit, jamais un vendeur. L'offre retenue est celle du coût total livré le plus bas (prix + livraison réelle depuis la boutique), régulée par le Trust Score et la répartition entre vendeurs. La position GPS de chaque boutique est obligatoire. Une boutique dont la zone n'est couverte par aucune entreprise active ne reçoit pas de commande (R74). L'attribution ne s'achète jamais.",
+   "source": "Décisions des 17/09 et 10/10 ; V2 Élite D8 ; registre vendeur D9 ; zones couvertes : Décision du porteur du 17/10/2026",
+   "date": "17/09/2026 · 10/10/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-02 § 1"
+   ]
+  },
+  {
+   "id": "R28",
+   "statut": "décision finale",
+   "titre": "Règle progressive",
+   "texte": "Les offres proches du meilleur coût total livré se partagent les commandes ; l'écart toléré se resserre de phase en phase, ce qui pousse les prix à la baisse.",
+   "source": "Décision du porteur du 17/10/2026",
+   "date": "17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-02 § 1"
+   ]
+  },
+  {
+   "id": "R29",
+   "statut": "décision finale",
+   "titre": "Écart toléré par phase",
+   "texte": "Mois 1 et 2 (Démarrage) : 8 % du meilleur coût total livré, 1 000 F au plus ; mois 3 et 4 (Croissance) : 5 %, 500 F au plus ; dès le mois 5 (Régime) : 3 %, 300 F au plus. Les mois se comptent depuis l'ouverture des achats ; la tolérance est arrondie au franc inférieur.",
+   "source": "Décision du porteur du 17/10/2026",
+   "date": "17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-02 § 4"
+   ]
+  },
+  {
+   "id": "R30",
+   "statut": "décision finale",
+   "titre": "Score d'une offre en course",
+   "texte": "Score sur 100 : prix livré 35, Trust Score 30, délai de préparation 15, stock 10, avis 10 ; +5 points pour un produit Made in Cameroon. Une offre sans avis compte une note de 3 sur 5.",
+   "source": "Dossier de référence § 6.9 (juin) ; Décision du porteur du 17/10/2026",
+   "date": "17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-02 § 5"
+   ]
+  },
+  {
+   "id": "R31",
+   "statut": "décision finale",
+   "titre": "Parts des commandes",
+   "texte": "La part cible de chaque offre suit le carré de son score. Plafond de 50 % seulement quand 3 offres ou plus sont en course ; un nouveau vendeur a au moins 15 % (1/n au-delà de 6 offres). Les parts réelles se mesurent sur 7 jours glissants, par produit et par zone. La commande va à l'offre la plus en retard sur sa part cible ; égalité : meilleur score, puis vendeur servi le moins récemment.",
+   "source": "Décision du porteur du 17/10/2026",
+   "date": "17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-02 § 6"
+   ]
+  },
+  {
+   "id": "R32",
+   "statut": "décision finale",
+   "titre": "Vendeur éligible et nouveau vendeur",
+   "texte": "Pour recevoir une commande : Trust Score de 40 ou plus (un vendeur à 39 ou moins est suspendu), stock disponible, boutique non marquée « Fermé aujourd'hui » (une commande payée boutique fermée part à l'ouverture, R44). Nouveau vendeur : moins de 10 commandes livrées sans incident ; 500 000 F au plus par commande.",
+   "source": "Registre vendeur C10, N1 ; Décision du porteur du 17/10/2026",
+   "date": "21/09/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-02 § 2"
+   ]
+  },
+  {
+   "id": "R33",
+   "statut": "décision finale",
+   "titre": "Prix anormal",
+   "texte": "Une offre dont le prix s'écarte de plus de 50 % de la médiane des prix des offres actives du même produit (elle comprise) passe en contrôle avant de recevoir des commandes. Avec moins de 3 offres, pas de contrôle automatique.",
+   "source": "Console ADM-P14R-02",
+   "date": "26/09/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-02 § 2"
+   ]
+  },
+  {
+   "id": "R34",
+   "statut": "décision finale",
+   "titre": "Conseils de prix au vendeur",
+   "texte": "Le prix conseillé n'est jamais plus haut que le prix tapé ; il vaut 100 F sous le meilleur prix livré concurrent, arrondi à la centaine inférieure, zone par zone. Le vendeur voit le nombre d'offres, le prix le plus bas et la fourchette, jamais le nom d'un autre vendeur. Une relance par semaine au plus. Prix automatique (au choix du vendeur) : il ne fait que baisser, de 3 % par semaine au plus, jamais sous le prix plancher fixé par le vendeur. L'offre la moins chère reçoit le badge « Meilleur prix ».",
+   "source": "Décisions du 23/09 (spécification vendeur, décisions arrêtées)",
+   "date": "23/09/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-02 § 8"
+   ]
+  },
+  {
+   "id": "R35",
+   "statut": "décision finale",
+   "titre": "Bascule vers un autre vendeur",
+   "texte": "En cas de rupture, d'échéance absolue dépassée (24 h, ou le délai annoncé d'un article sur commande, R44) ou de refus : l'offre remplaçante est la mieux placée parmi les offres en course dont le vendeur a un Trust Score de 75 ou plus. Si son prix dépasse le prix payé de 5 % au plus, BelivaY avance l'écart (dans la limite de la commission de la commande) et le reprend sur les versements du vendeur défaillant (R25) ; s'il est plus bas, la différence est remboursée au client. Sans remplaçant : remboursement intégral le jour même.",
+   "source": "Registre vendeur I1 ; REMPL-TRUST-MIN et REMPL-ECART fixés le 25/09 ; V2 Élite D17",
+   "date": "25/09/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-02 § 10"
+   ]
+  },
+  {
+   "id": "R36",
+   "statut": "décision finale",
+   "titre": "Garde au relais",
+   "texte": "Par colis, quel que soit son format : jour 1 : 0 F ; jours 2, 3, 4 : 100 F ; jour 5 : 200 F ; jour 6 : 500 F ; jour 7 : 1 000 F, soit 2 000 F sur 7 jours, jamais plus que la valeur des articles du colis. Une commande de plusieurs colis paie la garde de chaque colis ; l'écran l'écrit « par colis ». Payée en espèces au gérant, en une fois, au retrait ; le système calcule le montant, le gérant confirme l'encaissement dans son application, la remise reste bloquée tant qu'il ne l'a pas fait ; chaque encaissement est inscrit au journal signé. Le relais reçoit sa part même quand la garde est plafonnée (R38).",
+   "source": "Règles en vigueur § 5 ; V2 Élite D12 ; par colis et plafond : Décision du porteur du 17/10/2026",
+   "date": "10/10/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-01 § 9"
+   ]
+  },
+  {
+   "id": "R37",
+   "statut": "décision finale",
+   "titre": "Décompte des jours de garde",
+   "texte": "Les jours se comptent par tranches de 24 h depuis le scan d'arrivée du dernier colis du client au relais (le moment où le code de retrait part). Le compteur s'arrête pendant une fermeture déclarée du relais, et la date de renvoi au vendeur recule d'autant : le colis reste toujours 7 jours de garde.",
+   "source": "Décision du porteur du 17/10/2026 (« 100 F par colis pendant 24 h », 10/10)",
+   "date": "17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-01 § 9"
+   ]
+  },
+  {
+   "id": "R38",
+   "statut": "décision finale",
+   "titre": "Part du relais sur la garde",
+   "texte": "Le relais reçoit 100 F par jour et par colis dès le jour 1, soit 700 F sur 7 jours ; le jour 1 est payé par BelivaY (règle de lancement, désactivable, 6 mois à 1 an). Le reste des espèces encaissées revient à BelivaY par le versement du vendredi du relais.",
+   "source": "Règles en vigueur § 5",
+   "date": "10/10/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-01 § 9"
+   ]
+  },
+  {
+   "id": "R39",
+   "statut": "décision finale",
+   "titre": "Colis non retiré",
+   "texte": "Après 7 jours de garde (R37), le colis repart au vendeur. Commande déjà payée : la livraison n'est plus offerte ; remboursement = prix des produits − livraison offerte par BelivaY − garde de chaque colis (2 000 F, ou la valeur du colis si elle est plus basse, R36) − frais d'absence non payés (R51), jamais négatif, sans autre frais ; la livraison payée et les frais Mobile Money ne sont pas rendus (R72). Commande à payer au comptoir : comptée comme un refus (R42).",
+   "source": "Académie X01 du 11/10 ; V2 Élite D12 ; règles en vigueur § 5 ; frais d'absence : Décision du porteur du 17/10/2026",
+   "date": "10/10/2026 · 11/10/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-01 § 9"
+   ]
+  },
+  {
+   "id": "R40",
+   "statut": "décision finale",
+   "titre": "Rémunération du relais",
+   "texte": "Par colis remis au client ou retour déposé : 200 F pour une pochette, 250 F pour un carton C1, 400 F pour un C2 ou un carton d'origine, en plus de la garde (R38). Places occupées : 1, 2 et 5. L'agence d'une entreprise de livraison qui sert de relais touche 150 F par colis remis.",
+   "source": "Convention relais, annexe 1 (21/09) ; ADM-TAR-02 et ADM-TAR-03 ; par format : Décision du porteur du 17/10/2026",
+   "date": "21/09/2026 · 26/09/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-05 § 7"
+   ]
+  },
+  {
+   "id": "R41",
+   "statut": "décision finale",
+   "titre": "Paliers des relais et capacité",
+   "texte": "Paliers Starter, Confirmé, Premium, gagnés sur le Trust Score ; valeur maximale d'un colis gardé : 150 000 F, 400 000 F, 1 000 000 F ; un relais n'est proposé au client que si son plafond couvre la valeur de chaque colis. +50 F par colis payé au comptoir. Un relais rempli à 90 % de ses places ne reçoit plus de nouveaux paquets. Aucune caution n'est demandée au relais.",
+   "source": "Académie du 11/10 (fiche relais 11, leçon X02-5) ; console ADM-P17R-04",
+   "date": "26/09/2026 · 11/10/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-01 § 9",
+    "BV-DEV-05 § 7"
+   ]
+  },
+  {
+   "id": "R42",
+   "statut": "décision finale",
+   "titre": "Paiement au comptoir",
+   "texte": "Le client paie la commande par Mobile Money sur place, jamais en espèces ; la commande reste « Validée » et le code de retrait reste invisible jusqu'au paiement. Panier : 15 000 F au plus pour un compte sans commande livrée, 50 000 F ensuite, 100 000 F après 5 commandes sans incident. La livraison est payée d'avance et gardée en cas de refus ; quand elle est offerte, le client paie d'avance le reste éventuel (carton, boutiques en plus) plus 900 F, et les 900 F sont déduits au comptoir. Deux refus : paiement d'avance obligatoire. Jamais pour un colis XL, un paiement par carte ni une commande de la diaspora.",
+   "source": "Règles en vigueur § 6 ; V2 Élite D14 ; avance de 900 F : Décision du porteur du 17/10/2026",
+   "date": "10/10/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-01 § 7"
+   ]
+  },
+  {
+   "id": "R43",
+   "statut": "décision finale",
+   "titre": "Versement des relais et des entreprises",
+   "texte": "Chaque vendredi avant 12 h, sans demande, sans minimum ; 1 % CamPay retenu sur chaque versement, payé par celui qui le reçoit (relais, entreprise de livraison, vendeur).",
+   "source": "Académie du 11/10 (« 1 % sur chaque versement, payé par celui qui le reçoit ») ; arbitrages du 21/09 ; Décision du porteur du 17/10/2026",
+   "date": "21/09/2026 · 11/10/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-05 § 7"
+   ]
+  },
+  {
+   "id": "R44",
+   "statut": "décision finale",
+   "titre": "Préparation par le vendeur",
+   "texte": "Prêt (« C'est prêt ») sous 4 heures ouvrées de la boutique, ou dans le délai déclaré sur l'offre ; échéance absolue de 24 h pour un article en stock ; jusqu'à 7 jours pour un article sur commande annoncé. Aucune étape d'acceptation. Payée boutique fermée : le délai part de l'ouverture suivante.",
+   "source": "Registre vendeur E4, E10 ; règles en vigueur",
+   "date": "21/09/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-01 § 8"
+   ]
+  },
+  {
+   "id": "R45",
+   "statut": "décision finale",
+   "titre": "Promesse de livraison",
+   "texte": "Domicile : moins de 5 h après « C'est prêt » (le jour de service suivant avant 13 h si le colis est prêt après 13 h, R47). Relais : l'heure du créneau où le paquet part au plus tard (R49). XL : le créneau choisi (R10). Avant le paiement, le client voit l'heure estimée, calculée selon la section « Délais et heure promise » de BV-DEV-01.",
+   "source": "Décision du 25/09 (ADM-ZON-04) ; promesse relais : ADM question 12 et Décision du porteur du 17/10/2026",
+   "date": "25/09/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-01 § 8"
+   ]
+  },
+  {
+   "id": "R46",
+   "statut": "décision finale",
+   "titre": "Jours et heures de service",
+   "texte": "Du lundi au samedi, de 8 h à 18 h ; pas de livraison le dimanche.",
+   "source": "Décision du 25/09 (ADM-ZON-05)",
+   "date": "25/09/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-01 § 8"
+   ]
+  },
+  {
+   "id": "R47",
+   "statut": "décision finale",
+   "titre": "Heure limite du jour même",
+   "texte": "Un colis prêt à 13 h au plus tard est livré à domicile le jour même ; prêt après 13 h : le jour de service suivant avant 13 h (lundi si l'on est samedi après 13 h ou dimanche).",
+   "source": "Décision du 25/09 (offre de référence)",
+   "date": "25/09/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-01 § 8"
+   ]
+  },
+  {
+   "id": "R48",
+   "statut": "décision finale",
+   "titre": "Délais des entreprises",
+   "texte": "Prise d'un paquet publié : 15 minutes, sinon publication élargie aux autres entreprises éligibles. Domicile : ramassage au plus 1 h 30 après la prise ; relais : ramassage dans la fenêtre du créneau (R49). Heure limite de remise : à domicile, l'heure calculée comme la promesse (R45, R47) à partir du vrai « C'est prêt » ; au relais et pour un XL, la fin du créneau. Remise après l'heure limite : la prestation est payée 20 % de moins, sauf incident d'un tiers validé.",
+   "source": "Décision du 25/09 (ADM-P20R-02, ADM-P20R-03, offre de référence)",
+   "date": "25/09/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-05 § 5"
+   ]
+  },
+  {
+   "id": "R49",
+   "statut": "décision finale",
+   "titre": "Tournées vers les relais",
+   "texte": "Deux tournées par jour. Colis prêts avant 9 h : ramassage de 9 h 30 à 11 h 30, dépôt avant 13 h. Colis prêts de 9 h à 13 h : ramassage de 14 h à 16 h, dépôt avant 17 h 30. Prêts après 13 h : tournée du matin suivant. Un paquet part dès 5 colis ; avec moins de 5 colis, il attend le créneau suivant et part alors quel que soit son nombre de colis (ligne 5 de la grille, R86) ; objectif de 8 colis par tournée. Un paquet regroupe les colis d'un même relais prêts pour le même créneau, toutes boutiques confondues, et part dans une seule tournée.",
+   "source": "Décisions du 25/09 (offre de référence, PQ-TOURNEES-JOUR, PQ-SEUIL-DEPART, PQ-CIBLE-COLIS)",
+   "date": "25/09/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-05 § 5"
+   ]
+  },
+  {
+   "id": "R50",
+   "statut": "décision finale",
+   "titre": "Code de retrait et rappels",
+   "texte": "Le code de retrait part à l'arrivée réelle du dernier colis du client au relais ; rappels par SMS au jour 3 et au jour 5 de garde (J+2 et J+4).",
+   "source": "ADM-PRV-03 ; ADM-P27R-01",
+   "date": "26/09/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-01 § 8.1"
+   ]
+  },
+  {
+   "id": "R51",
+   "statut": "décision finale",
+   "titre": "Client absent à domicile",
+   "texte": "Le livreur appelle 2 fois et attend 10 minutes, avec une preuve (journal d'appels, position, photo) ; puis le colis part au relais de la zone du client, sans 2e passage. Le client paie les frais d'absence : 300 F (supplément de l'entreprise) + pour chaque colis la part du relais et le jour 1 de garde, soit 600 F pour une pochette, 650 F pour un C1, 800 F pour un C2 ou un carton d'origine. Il reçoit : « Ta commande a été transférée au relais [nom]. Frais d'absence : X F, à payer avant le retrait. » Il les paie dans l'application (Mobile Money avec ses frais R02, ou Wallet quand il est ouvert) ou au relais par Mobile Money, jamais en espèces ; le code de retrait se débloque après ce paiement. BelivaY ne paie rien. Si le relais de la zone ne peut pas garder le colis (valeur au-dessus de son plafond R41, relais plein ou absent), le colis est traité comme un XL. XL : 300 F de frais d'absence ; le colis attend à l'agence de l'entreprise (garde comprise 7 jours, écrite au contrat) ; 2e passage sur un nouveau créneau, payé au prix de la course ; sans créneau sous 7 jours : retour au vendeur, la livraison n'est plus offerte ; remboursement = prix des produits − livraison offerte par BelivaY − 300 F − course de retour au prix d'une course XL (même calcul que la livraison), jamais négatif.",
+   "source": "Académie O02, L05, L06 du 11/10 ; grille de référence du 25/09 (ENT-OFR-04 : refacturé à la partie responsable) ; montants et XL : Décision du porteur du 17/10/2026",
+   "date": "25/09/2026 · 11/10/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-01 § 10"
+   ]
+  },
+  {
+   "id": "R52",
+   "statut": "décision finale",
+   "titre": "Publication des paquets",
+   "texte": "BelivaY publie les commandes par zone, en paquets : groupées vers les relais, individuelles à domicile. L'entreprise prend le paquet et affecte son livreur ; BelivaY n'affecte jamais un livreur.",
+   "source": "Décisions logistiques v2.0 ; V2 Élite D11 ; ADM-MOD-04",
+   "date": "16/10/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-05 § 1"
+   ]
+  },
+  {
+   "id": "R53",
+   "statut": "décision finale",
+   "titre": "Grille de référence",
+   "texte": "Chaque entreprise signe sa grille d'achat, contrôlée ligne par ligne contre les plafonds (R54). Elle couvre : domicile par zone ou paire de zones, km au-delà de 5 km, suppléments C1 et C2, boutique en plus, tournée relais par taille de paquet et par format, XL si l'entreprise a un véhicule, retour, transfert et incidents. La grille de référence (offre Wink Express du 25/09) sert de modèle : domicile 1 000 F (Z2, Z3, Z6), 1 200 F (Z1), 1 300 F (vague 2), 1 500 F (périphérie) ; tournée relais 600 / 450 / 350 F par pochette selon la taille du paquet ; carton C2 +300 F ; client absent +300 F ; refus d'un produit conforme +500 F ; déplacement inutile 300 F. Les lignes sans tarif de référence se négocient sous leur plafond.",
+   "source": "Offre de référence du 25/09 (annexe 1 du contrat type)",
+   "date": "25/09/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-05 § 4"
+   ]
+  },
+  {
+   "id": "R54",
+   "statut": "décision finale",
+   "titre": "Plafond d'achat",
+   "texte": "BelivaY n'achète jamais une prestation au-dessus de son plafond : (prix payé par le client pour cette prestation − part du relais − jour 1 de garde payé par BelivaY) ÷ 1,1, arrondi à la dizaine inférieure. À domicile, le plafond se calcule course par course, sur les frais avant couverture. Calcul en nombres entiers : plafond = ⌊(prix − part − jour 1) ÷ 11⌋ × 10. Une ligne de grille au-dessus du plafond est bloquée jusqu'à une décision écrite du porteur (exception : R86).",
+   "source": "ADM-TAR-05 et ADM-TAR-06 ; jour 1 de garde et course par course : Décision du porteur du 17/10/2026",
+   "date": "26/09/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-05 § 4"
+   ]
+  },
+  {
+   "id": "R55",
+   "statut": "décision finale",
+   "titre": "Tournée qui part d'une autre zone",
+   "texte": "Quand la tournée commence dans une autre zone que celle du relais : +30 F par colis (au lieu des +100 F de l'offre du 25/09, qui dépassaient le plafond), à condition que tarif + 30 F reste sous le plafond (R54). Le supplément ne s'ajoute pas aux paquets de 1 à 4 colis (ligne 5 et exception R86).",
+   "source": "Décision du porteur du 17/10/2026",
+   "date": "17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-05 § 4"
+   ]
+  },
+  {
+   "id": "R56",
+   "statut": "décision finale",
+   "titre": "Paliers des entreprises",
+   "texte": "Nouveau : colis de 75 000 F au plus. Confirmé : 250 000 F au plus (Trust Score de 70 ou plus). Or : sans plafond (85 ou plus), avec assurance des marchandises et visite physique. Plafond effectif d'une entreprise = le plus grand du plafond de son palier et du montant couvert par son assurance des marchandises valide ; un colis au-dessus n'est jamais visible de l'entreprise. Montée : seuil tenu 14 jours ; descente : 5 points sous le seuil pendant 14 jours, puis validation humaine ; assurance expirée au palier Or : plafond de Confirmé jusqu'au renouvellement.",
+   "source": "Décisions logistiques v2.0 ; ADM-P18R-02 ; ENT-PAL-03",
+   "date": "26/09/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-05 § 2"
+   ]
+  },
+  {
+   "id": "R57",
+   "statut": "décision finale",
+   "titre": "Entreprises au lancement",
+   "texte": "Une entreprise qui présente une assurance des marchandises valide et a reçu la visite physique démarre au palier Confirmé. Son plafond effectif (R56) couvre aussi les colis que son assurance couvre (attestation vérifiée). Un produit dont aucune entreprise active n'a un plafond effectif suffisant n'est pas vendable (BV-DEV-02).",
+   "source": "Décision du porteur du 17/10/2026",
+   "date": "17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-05 § 2"
+   ]
+  },
+  {
+   "id": "R58",
+   "statut": "décision finale",
+   "titre": "Trust Score des livreurs et des entreprises",
+   "texte": "Ponctualité 30, qualité 25, litiges 20, ancienneté 15, formation 10 ; départ au neutre (lissage bayésien, moyenne 50, poids 10) ; aucune rétrogradation automatique.",
+   "source": "Trust Score V5.4 ; ADM-TSC-01 à 06",
+   "date": "13/08/2026 · 26/09/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-05 § 2"
+   ]
+  },
+  {
+   "id": "R59",
+   "statut": "décision finale",
+   "titre": "Conditions d'entrée",
+   "texte": "Aucune caution, aucun frais d'entrée, aucune exclusivité, aucun volume garanti. Chaque livreur a un smartphone Android et est certifié (R80). Objectif : au moins 2 entreprises actives par zone exploitée ; en dessous, alerte à l'équipe logistique, sans blocage. Pour transporter des XL, l'entreprise déclare un véhicule par zone couverte.",
+   "source": "ADM-P18R-01, ADM-P18R-04, ADM-P18R-05 ; ADM-ZON-03 ; véhicule XL : Décision du porteur du 17/10/2026",
+   "date": "26/09/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-05 § 3"
+   ]
+  },
+  {
+   "id": "R60",
+   "statut": "décision finale",
+   "titre": "Responsabilité",
+   "texte": "À la remise par le vendeur (code de remise), la responsabilité passe à l'entreprise : un colis perdu ou abîmé ensuite est payé au vendeur (son net) par l'entreprise, dans la limite de son plafond effectif (R56).",
+   "source": "ADM-PRV-11 ; ENT-RES-01",
+   "date": "26/09/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-05 § 6"
+   ]
+  },
+  {
+   "id": "R61",
+   "statut": "décision finale",
+   "titre": "Changement de grille",
+   "texte": "Toute nouvelle grille est annoncée 30 jours avant et ne touche jamais un paquet déjà publié.",
+   "source": "ADM-P18R-06",
+   "date": "26/09/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-05 § 4.1"
+   ]
+  },
+  {
+   "id": "R62",
+   "statut": "décision finale",
+   "titre": "Formats de colis",
+   "texte": "Poids facturé = le plus grand du poids réel et de (longueur × largeur × hauteur en cm ÷ 5 000), sans arrondi pour les comparaisons. Pochette (S, M ou L) : 2 kg au plus, article qui tient à plat dans la pochette L (épaisseur 12 cm au plus, longueur + épaisseur 45 cm au plus, largeur + épaisseur 35 cm au plus), sans carton obligatoire (R87). Carton C1 : 5 kg, tient dans 30 × 20 × 15 cm. Carton C2 : 15 kg, tient dans 40 × 30 × 25 cm. Carton d'origine : 15 kg, plus grande dimension de 80 cm au plus (prix d'un C2). XL : 40 kg et 120 cm. Hors gabarit au-delà. Le format d'un article est le premier de cette liste qui le contient.",
+   "source": "Console ADM-02 ; LIV-POIDS-VOL fixé le 25/09 ; formats : Décision du porteur du 17/10/2026",
+   "date": "25/09/2026 · 26/09/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-01 § 4"
+   ]
+  },
+  {
+   "id": "R63",
+   "statut": "décision finale",
+   "titre": "Qui fixe le format",
+   "texte": "Le format, le poids et les dimensions de chaque article sont portés par la fiche maître (équipe catalogue). Le vendeur déclare, le livreur contrôle au ramassage. Un écart dû à une déclaration fausse est facturé au vendeur ; un écart dû à l'estimation (R64) est pris par BelivaY et l'équipe catalogue corrige la fiche ; jamais facturé au client.",
+   "source": "ADM-P13R-06 ; console ADM-02 (calculs) ; écart d'estimation : Décision du porteur du 17/10/2026",
+   "date": "26/09/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-01 § 4"
+   ]
+  },
+  {
+   "id": "R64",
+   "statut": "décision finale",
+   "titre": "Plusieurs articles d'une même boutique",
+   "texte": "Avant le paiement, les articles d'une boutique sont regroupés. Un article hors gabarit : devis pour toute la sous-commande. Chaque article XL fait un colis XL ; les autres articles voyagent avec le premier XL. Chaque carton d'origine fait son propre colis. Les autres articles sont rangés par volume décroissant (puis poids) : chacun entre dans le premier colis ouvert où le poids total reste à 15 kg au plus et le volume total à 80 % du C2 au plus, sinon il ouvre un nouveau colis. Chaque colis prend ensuite le plus petit format qui le contient : un seul article, son propre format ; plusieurs articles, pochette (seulement des articles en pochette, 2 kg et 8 litres au plus), puis C1 (articles en pochette ou en C1, 5 kg, 80 % de son volume), sinon C2. Volume d'un article : longueur × largeur × hauteur. Le livreur corrige au ramassage (R63).",
+   "source": "Décision du porteur du 17/10/2026",
+   "date": "17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-01 § 4"
+   ]
+  },
+  {
+   "id": "R65",
+   "statut": "décision finale",
+   "titre": "Emballages",
+   "texte": "Cinq formats en kraft neutre : S (pochette 20 × 30 cm), M (25 × 35), L (35 × 45), C1 (carton 30 × 20 × 15), C2 (carton 40 × 30 × 25), plus le papier bulle, achetés et stockés par BelivaY, avancés aux entreprises. Le livreur contrôle, emballe et scelle chez le vendeur ; un carton d'origine ou un XL garde son carton, filmé et étiqueté. Un écart d'emballage de plus de 5 % sur le mois est facturé à l'entreprise.",
+   "source": "ADM-PRV-07, ADM-PRV-09 ; décisions logistiques v2.0 ; papier bulle : Décision du porteur du 17/10/2026",
+   "date": "02/09/2026 · 26/09/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-05 § 6"
+   ]
+  },
+  {
+   "id": "R66",
+   "statut": "décision finale",
+   "titre": "Codes et photos",
+   "texte": "Trois codes à 6 chiffres par colis (remise, dépôt, retrait), usage unique, 3 essais puis blocage 24 h. Au relais, un QR par colis vérifié au scan ; chez le vendeur, pas de QR : le code de remise est donné au livreur affiché dans l'application. Une photo est obligatoire à chaque changement de main ; photos seulement, jamais de vidéo.",
+   "source": "ADM-PRV-01, ADM-PRV-02 ; V2 Élite D12, D15",
+   "date": "26/09/2026 · 16/10/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-05 § 6"
+   ]
+  },
+  {
+   "id": "R67",
+   "statut": "décision finale",
+   "titre": "Retours",
+   "texte": "Retour possible pendant 7 jours après le retrait, sur motif : non conforme, abîmé, contrefaçon ; un défaut caché se signale dans les 48 h après le retrait.",
+   "source": "Règles en vigueur § 8 ; V2 Élite D18 ; registre vendeur H2",
+   "date": "10/10/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-01 § 11"
+   ]
+  },
+  {
+   "id": "R68",
+   "statut": "décision finale",
+   "titre": "Remboursement",
+   "texte": "Le remboursement part quand le colis est récupéré et inspecté (48 h après réception au plus, sinon il part d'office), toujours sur le moyen de paiement d'origine.",
+   "source": "Règles en vigueur § 8 ; ADM-P03R-04",
+   "date": "10/10/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-01 § 11"
+   ]
+  },
+  {
+   "id": "R69",
+   "statut": "décision finale",
+   "titre": "Course de retour et transfert",
+   "texte": "Course de retour : 500 F, payée après arbitrage par la partie en tort (vendeur, transporteur ou client) ; gratuite pour le client si le problème est validé. Transfert entre relais : 400 F, payé par la partie qui le demande ou qui est en tort. Un XL se retourne en véhicule, au prix d'une course XL.",
+   "source": "Console ADM-02 ; ADM-P03R-03 ; XL : Décision du porteur du 17/10/2026",
+   "date": "26/09/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-01 § 11"
+   ]
+  },
+  {
+   "id": "R70",
+   "statut": "décision finale",
+   "titre": "Litiges",
+   "texte": "Le vendeur a 48 h pour répondre (accepter, contester, proposer un arrangement de 40 caractères au moins) ; son silence renvoie à l'arbitrage BelivaY. Client silencieux 5 jours : litige clos. Remplacement : 72 h ouvrées, puis remboursement.",
+   "source": "Registre vendeur G1, G2, G6, H6",
+   "date": "21/09/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-01 § 11"
+   ]
+  },
+  {
+   "id": "R71",
+   "statut": "décision finale",
+   "titre": "Remboursement automatique",
+   "texte": "Sans retour du colis, pour un article de 3 000 F au plus (10 000 F pour un client au palier Élevé de la spécification client), livraison exclue, selon les règles strictes du 10/10 (5 commandes livrées sans litige perdu, photo, demande sous 48 h, 1 par 30 jours et 3 par an). Payé par BelivaY ; le vendeur est payé normalement.",
+   "source": "Règles en vigueur § 7",
+   "date": "10/10/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-01 § 11"
+   ]
+  },
+  {
+   "id": "R72",
+   "statut": "décision finale",
+   "titre": "Frais Mobile Money à un remboursement",
+   "texte": "Remboursés au client quand il n'est pas en faute (rupture, annulation par le vendeur ou par BelivaY, retour validé, remboursement automatique) ; gardés quand il annule lui-même, refuse un colis conforme ou ne le retire pas.",
+   "source": "Décision du porteur du 17/10/2026 (« le client ne paie jamais une erreur dont il n'est pas responsable », Académie 11/10)",
+   "date": "17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-01 § 11"
+   ]
+  },
+  {
+   "id": "R73",
+   "statut": "décision finale",
+   "titre": "Les 12 zones",
+   "texte": "12 zones à Yaoundé ; chaque quartier est dans une seule zone. Quatre zones exploitées au lancement : Z1 Centre-ville, Z2 Nsam, Z3 Mokolo, Z6 Biyem-Assi ; les huit autres sont ouvertes à la vente. Un point relais par zone ; quatre Grands Centres pour les gros colis après le lancement.",
+   "source": "Décisions logistiques v2.0 ; ADM-ZON-01, ADM-ZON-02 ; décision du 25/09",
+   "date": "02/09/2026 · 25/09/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-04 § 2"
+   ]
+  },
+  {
+   "id": "R74",
+   "statut": "décision finale",
+   "titre": "Zones sans entreprise active",
+   "texte": "Dans les huit zones non exploitées au lancement, la livraison à domicile n'est proposée que si une entreprise active couvre la zone ; sinon le client choisit le relais actif le plus proche. À domicile, une même entreprise active doit couvrir les zones de toutes les boutiques de la course et celle du client ; au relais, la zone de la boutique et celle du relais. Un relais n'est proposé que si sa zone est couverte. Une boutique dont la zone n'est couverte par aucune entreprise active ne reçoit pas de commande : son offre n'entre pas dans la course (BV-DEV-02).",
+   "source": "Décision du porteur du 17/10/2026",
+   "date": "17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-04 § 2"
+   ]
+  },
+  {
+   "id": "R75",
+   "statut": "décision finale",
+   "titre": "Rattachement des quartiers",
+   "texte": "Les quartiers cités dans le découpage officiel sont marqués « officiel » ; les autres quartiers de la liste de la Communauté urbaine sont rattachés par BelivaY à la zone voisine sur la carte, marqués « rattaché ». La carte BelivaY fait foi ; l'équipe logistique vérifie sur le terrain chaque rattachement avant l'ouverture de la zone.",
+   "source": "Décision du porteur du 17/10/2026 ; ENT-P04R-05",
+   "date": "17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-04 § 5"
+   ]
+  },
+  {
+   "id": "R76",
+   "statut": "décision finale",
+   "titre": "Adresse",
+   "texte": "Le client pose l'épingle de sa porte (précision de 50 m ou mieux), ajoute un repère écrit et, s'il le veut, une photo de l'entrée ; le livreur corrige le point à la livraison. Une position fausse de plus de 1,5 km ou hors zone fait basculer la livraison au relais, traitée comme une absence (R51). Soa, Mfou et Nkolfoulou sont hors zone ; Nsimalen est en Z11.",
+   "source": "Référentiel adresses (08/08) ; référentiel du 04/10",
+   "date": "08/08/2026 · 04/10/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-04 § 4"
+   ]
+  },
+  {
+   "id": "R77",
+   "statut": "supprimée",
+   "titre": "Distance maximale (supprimée)",
+   "texte": "La distance maximale de 25 km de la version 1.4 n'a aucune source : supprimée. La distance se paie au kilomètre (R05, R83).",
+   "source": "Décision du porteur du 17/10/2026",
+   "date": "17/10/2026",
+   "decide_le_17_10": true,
+   "ou": []
+  },
+  {
+   "id": "R78",
+   "statut": "décision finale",
+   "titre": "SMS",
+   "texte": "Code de connexion ; puis 6 SMS au plus par commande : paiement protégé, code de retrait, deux rappels de retrait, incident, remerciement. Jamais de promotion par SMS. Fournisseur : un agrégateur qui couvre les numéros +237 (Africa's Talking écarté le 26/09). Coût d'un SMS : 20 F, réglage à mettre à jour à la signature du contrat.",
+   "source": "Règles en vigueur § 11 ; ADM-P27R-01 ; console ADM (fournisseur) ; coût : Décision du porteur du 17/10/2026",
+   "date": "10/10/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-03 § 10"
+   ]
+  },
+  {
+   "id": "R79",
+   "statut": "décision finale",
+   "titre": "Domicile payé d'avance",
+   "texte": "À domicile, tout est payé d'avance ; le livreur ne touche jamais d'argent.",
+   "source": "Académie X01 et L05 du 11/10",
+   "date": "11/10/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-01 § 7"
+   ]
+  },
+  {
+   "id": "R80",
+   "statut": "décision finale",
+   "titre": "Certification des livreurs",
+   "texte": "Chaque livreur est déclaré par son entreprise et certifié par BelivaY (modules et quiz réussi à 16/20 au moins, puis mise en situation) avant toute mission ; une pièce expirée suspend sans sanctionner.",
+   "source": "Règles entreprise v1.1 ; Académie O04, L01",
+   "date": "26/09/2026 · 11/10/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-05 § 3"
+   ]
+  },
+  {
+   "id": "R81",
+   "statut": "décision finale",
+   "titre": "Pièces de l'entreprise",
+   "texte": "Pièces vérifiées avant activation : RCCM et NIU de l'entreprise ; pièce d'identité du responsable ; autorisation de transport (MINT) ; assurance des véhicules (responsabilité civile) ; assurance des marchandises transportées (obligatoire pour Confirmé dès l'entrée et pour Or) ; adresse de l'agence et lieu de stockage de nuit des colis ; moyen de règlement (Mobile Money ou compte) au nom de l'entreprise ; liste des livreurs (nom, pièce d'identité, téléphone, véhicule). Les sept pièces sans mention sont obligatoires pour toute entreprise ; l'assurance des marchandises l'est pour le palier Confirmé dès l'entrée et pour Or.",
+   "source": "Contrat de partenariat livraison, article 4 (modèle v2 du 26/09)",
+   "date": "26/09/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-05 § 3"
+   ]
+  },
+  {
+   "id": "R82",
+   "statut": "décision finale",
+   "titre": "Pilote",
+   "texte": "Toute entreprise commence par un pilote de 30 jours avec un bilan conjoint écrit ; puis contrat ordinaire. Wink Express : pilote du 25/09 au 24/10/2026 sur Z1, Z3, Z6, Z7 (ancienne carte ; sur la carte du 23/10/2026 : Z1, Z2, Z3, Z6).",
+   "source": "Lettre d'engagement de la phase pilote (26/09)",
+   "date": "26/09/2026",
+   "decide_le_17_10": false,
+   "ou": [
+    "BV-DEV-05 § 3"
+   ]
+  },
+  {
+   "id": "R83",
+   "statut": "décision finale",
+   "titre": "Distance et trajet",
+   "texte": "Distance par la route, de la boutique à l'épingle du client, donnée par le service de cartes, arrondie au km le plus proche ; calculée une seule fois, à l'étape du paiement, et figée. Panne du service : distance à vol d'oiseau × 1,3. Plusieurs boutiques : le trajet part de la boutique de base, passe par les autres boutiques dans l'ordre le plus court, puis va au client ; la boutique de base est celle dont la course seule (niveau + km) coûterait le plus ; le détour d'une autre boutique = arrondi au km de (trajet complet − même trajet sans elle).",
+   "source": "Décision du porteur du 17/10/2026",
+   "date": "17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-01 § 5"
+   ]
+  },
+  {
+   "id": "R84",
+   "statut": "décision finale",
+   "titre": "Panier minimum",
+   "texte": "Pour payer : 3 000 F de produits dans le panier et 2 000 F par boutique, quel que soit le moyen de paiement (Mobile Money, Wallet, comptoir). La sélection des offres du panier respecte ces minimums (BV-DEV-02). En dessous, le panier reste ouvert et le bouton « Payer » est bloqué, avec « Encore X F pour commander » ou « Le colis de [produit] doit atteindre 2 000 F : ajoute X F » (jamais le nom du vendeur). Un remboursement partiel ultérieur ne change rien.",
+   "source": "Décision du porteur du 17/10/2026",
+   "date": "17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-01 § 3"
+   ]
+  },
+  {
+   "id": "R85",
+   "statut": "décision finale",
+   "titre": "Refus à la porte et déplacement inutile",
+   "texte": "Le colis ne s'ouvre jamais à la porte. Refus d'un colis conforme à la porte : le colis repart au vendeur, la livraison n'est plus offerte ; remboursement = prix des produits − livraison offerte par BelivaY − 500 F (supplément de l'entreprise), jamais négatif ; la livraison payée et les frais Mobile Money ne sont pas rendus (R72). Déplacement inutile (boutique fermée, produit non conforme au ramassage) : 300 F payés à l'entreprise et facturés au vendeur.",
+   "source": "Offre de référence du 25/09 (ENT-OFR-04 : refacturé à la partie responsable) ; Académie du 11/10 ; Décision du porteur du 17/10/2026",
+   "date": "25/09/2026 · 11/10/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-01 § 10"
+   ]
+  },
+  {
+   "id": "R86",
+   "statut": "décision finale",
+   "titre": "Exception de la grille Wink",
+   "texte": "Si Wink Express refuse 540 F pour la ligne 5 (paquet de 1 à 4 colis vers un relais), 600 F par colis sont acceptés pendant 3 mois au plus après la signature de la grille, puis 540 F au plus. L'exception est datée dans la fiche de l'entreprise ; BelivaY reste gagnante sur ces colis grâce à la commission (BV-DEV-03, contrôle de rentabilité).",
+   "source": "Décision du porteur du 17/10/2026",
+   "date": "17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-05 § 4.1"
+   ]
+  },
+  {
+   "id": "R87",
+   "statut": "décision finale",
+   "titre": "Fragile et liquides",
+   "texte": "Carton obligatoire (C1 au moins) : verre, céramique, tablette, ordinateur, écran et télévision, liquide en bouteille de verre ; un grand écran a plus de 7 pouces de diagonale. Pochette avec papier bulle : téléphone, montre ou petit appareil dans sa boîte d'origine, écran de 7 pouces au plus. Liquide en plastique scellé d'usine (huile, eau, jus en bouteille) : pochette avec sachet fermé s'il tient dans ses limites (2 kg), sinon carton selon son poids. Tout liquide doit être scellé d'usine.",
+   "source": "Décision du porteur du 17/10/2026",
+   "date": "17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-01 § 4",
+    "BV-DEV-05 § 6"
+   ]
+  },
+  {
+   "id": "R88",
+   "statut": "décision finale",
+   "titre": "Produits interdits",
+   "texte": "Ne sont jamais publiés : contrefaçon ou produit qui paraît contrefait ; médicaments et produits de santé ; armes, munitions et répliques ; explosifs et feux d'artifice ; bouteilles de gaz, carburants et produits chimiques dangereux ; tabac et cigarettes électroniques ; alcool (pas de contrôle de l'âge au lancement) ; cartes SIM (leur vente exige l'identification de l'acheteur) ; animaux vivants ; produits illicites ; produits frais, froids ou périssables (lait, yaourt, viande, poisson, fruits et légumes). Dans le doute, on ne publie pas ; l'équipe catalogue refuse la fiche.",
+   "source": "Académie X02-1 et X02-6 du 11/10 ; liste complète : Décision du porteur du 17/10/2026",
+   "date": "11/10/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-03 § 2"
+   ]
+  },
+  {
+   "id": "R89",
+   "statut": "décision finale",
+   "titre": "Retrait par un tiers",
+   "texte": "Le client peut partager son code de retrait (règle en vigueur) ; pas de code nominatif au lancement. Quand une autre personne retire, le gérant saisit son nom et son numéro ; le client en est averti par une notification dans l'application, pas par SMS.",
+   "source": "Académie X02-7 du 11/10 ; saisie du tiers : Décision du porteur du 17/10/2026",
+   "date": "11/10/2026 · 17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-01 § 9"
+   ]
+  },
+  {
+   "id": "R90",
+   "statut": "décision finale",
+   "titre": "Quartiers périurbains",
+   "texte": "Niveau périurbain (1 900 F, R06) : les 16 quartiers marqués périurbains par la liste de la Communauté urbaine (Abom, Biteng, Emana, Etoudi, Messassi, Ngoulmekong, Ngousso-Ntem, Nkol-Messeng, Nkolmesseng 1, Nkolo, Nkolondom, Ntui-Essong, Nyom, Okolo, Olembe, Éleveur) et 11 quartiers du bord de la ville (Afanoya 1, Afanoya 2, Afanoya 3, Afanoya 4, Mekoumbou 1, Mekoumbou 2, Nkolfon, Ntouessong, Minkoameyos, Nkolso, Nsimalen). La liste est un réglage de l'admin. Le niveau se lit à l'épingle : l'équipe logistique trace le contour de ces 27 quartiers, en plus des contours de zone ; une épingle dans un de ces contours paie le niveau périurbain, quel que soit le quartier choisi dans la liste.",
+   "source": "Décision du porteur du 17/10/2026",
+   "date": "17/10/2026",
+   "decide_le_17_10": true,
+   "ou": [
+    "BV-DEV-04 § 3"
+   ]
+  }
+ ],
+ "tests": {
+  "livraison": [
+   {
+    "id": "L01",
+    "cas": "Relais, une pochette",
+    "mode": "relais",
+    "destination": {
+     "zone": "Z6",
+     "niveau": "centre",
+     "quartier": null
+    },
+    "boutiques": [
+     {
+      "zone": "Z6",
+      "colis": [
+       "P"
+      ],
+      "km": 0,
+      "detour": 0,
+      "niveau": "centre"
+     }
+    ],
+    "sous_totaux": [
+     14000
+    ],
+    "attendu": {
+     "mode": "relais",
+     "niveau": null,
+     "xl": false,
+     "base": 900,
+     "km": 0,
+     "sup_formats": 0,
+     "colis_en_plus": 0,
+     "boutiques": 0,
+     "detour": 0,
+     "brut": 900,
+     "couverture": 0,
+     "client": 900,
+     "n_boutiques": 1,
+     "n_colis": 1,
+     "i_base": 0,
+     "sous_total": 14000,
+     "base_paiement": 14900,
+     "campay": 305,
+     "total_momo": 15205,
+     "total_wallet": 14900
+    }
+   },
+   {
+    "id": "L02",
+    "cas": "Relais offert",
+    "mode": "relais",
+    "destination": {
+     "zone": "Z6",
+     "niveau": "centre",
+     "quartier": null
+    },
+    "boutiques": [
+     {
+      "zone": "Z6",
+      "colis": [
+       "P"
+      ],
+      "km": 0,
+      "detour": 0,
+      "niveau": "centre"
+     }
+    ],
+    "sous_totaux": [
+     30000
+    ],
+    "attendu": {
+     "mode": "relais",
+     "niveau": null,
+     "xl": false,
+     "base": 900,
+     "km": 0,
+     "sup_formats": 0,
+     "colis_en_plus": 0,
+     "boutiques": 0,
+     "detour": 0,
+     "brut": 900,
+     "couverture": 900,
+     "client": 0,
+     "n_boutiques": 1,
+     "n_colis": 1,
+     "i_base": 0,
+     "sous_total": 30000,
+     "base_paiement": 30000,
+     "campay": 613,
+     "total_momo": 30613,
+     "total_wallet": 30000
+    }
+   },
+   {
+    "id": "L03",
+    "cas": "Relais, carton C1",
+    "mode": "relais",
+    "destination": {
+     "zone": "Z6",
+     "niveau": "centre",
+     "quartier": null
+    },
+    "boutiques": [
+     {
+      "zone": "Z6",
+      "colis": [
+       "C1"
+      ],
+      "km": 0,
+      "detour": 0,
+      "niveau": "centre"
+     }
+    ],
+    "sous_totaux": [
+     18000
+    ],
+    "attendu": {
+     "mode": "relais",
+     "niveau": null,
+     "xl": false,
+     "base": 900,
+     "km": 0,
+     "sup_formats": 500,
+     "colis_en_plus": 0,
+     "boutiques": 0,
+     "detour": 0,
+     "brut": 1400,
+     "couverture": 0,
+     "client": 1400,
+     "n_boutiques": 1,
+     "n_colis": 1,
+     "i_base": 0,
+     "sous_total": 18000,
+     "base_paiement": 19400,
+     "campay": 396,
+     "total_momo": 19796,
+     "total_wallet": 19400
+    }
+   },
+   {
+    "id": "L04",
+    "cas": "Relais offert, carton C2 d'une autre zone",
+    "mode": "relais",
+    "destination": {
+     "zone": "Z3",
+     "niveau": "centre",
+     "quartier": null
+    },
+    "boutiques": [
+     {
+      "zone": "Z1",
+      "colis": [
+       "C2"
+      ],
+      "km": 0,
+      "detour": 0,
+      "niveau": "centre"
+     }
+    ],
+    "sous_totaux": [
+     45000
+    ],
+    "attendu": {
+     "mode": "relais",
+     "niveau": null,
+     "xl": false,
+     "base": 900,
+     "km": 0,
+     "sup_formats": 700,
+     "colis_en_plus": 0,
+     "boutiques": 0,
+     "detour": 0,
+     "brut": 1600,
+     "couverture": 900,
+     "client": 700,
+     "n_boutiques": 1,
+     "n_colis": 1,
+     "i_base": 0,
+     "sous_total": 45000,
+     "base_paiement": 45700,
+     "campay": 933,
+     "total_momo": 46633,
+     "total_wallet": 45700
+    }
+   },
+   {
+    "id": "L05",
+    "cas": "Relais, colis XL",
+    "mode": "relais",
+    "destination": {
+     "zone": "Z6",
+     "niveau": "centre",
+     "quartier": null
+    },
+    "boutiques": [
+     {
+      "zone": "Z6",
+      "colis": [
+       "XL"
+      ],
+      "km": 0,
+      "detour": 0,
+      "niveau": "centre"
+     }
+    ],
+    "sous_totaux": [
+     120000
+    ],
+    "attendu": {
+     "refuse": "XL : jamais au relais (R10)"
+    }
+   },
+   {
+    "id": "L06",
+    "cas": "Domicile centre, 3 km",
+    "mode": "domicile",
+    "destination": {
+     "zone": "Z2",
+     "niveau": "centre",
+     "quartier": "Obili"
+    },
+    "boutiques": [
+     {
+      "zone": "Z2",
+      "colis": [
+       "P"
+      ],
+      "km": 3,
+      "detour": 0,
+      "niveau": "centre"
+     }
+    ],
+    "sous_totaux": [
+     9000
+    ],
+    "attendu": {
+     "mode": "domicile",
+     "niveau": "centre",
+     "xl": false,
+     "base": 1500,
+     "km": 0,
+     "sup_formats": 0,
+     "colis_en_plus": 0,
+     "boutiques": 0,
+     "detour": 0,
+     "brut": 1500,
+     "couverture": 0,
+     "client": 1500,
+     "n_boutiques": 1,
+     "n_colis": 1,
+     "i_base": 0,
+     "sous_total": 9000,
+     "base_paiement": 10500,
+     "campay": 215,
+     "total_momo": 10715,
+     "total_wallet": 10500
+    }
+   },
+   {
+    "id": "L07",
+    "cas": "Domicile centre, 10 km",
+    "mode": "domicile",
+    "destination": {
+     "zone": "Z6",
+     "niveau": "centre",
+     "quartier": "Biyem-Assi"
+    },
+    "boutiques": [
+     {
+      "zone": "Z3",
+      "colis": [
+       "P"
+      ],
+      "km": 10,
+      "detour": 0,
+      "niveau": "centre"
+     }
+    ],
+    "sous_totaux": [
+     14000
+    ],
+    "attendu": {
+     "mode": "domicile",
+     "niveau": "centre",
+     "xl": false,
+     "base": 1500,
+     "km": 1250,
+     "sup_formats": 0,
+     "colis_en_plus": 0,
+     "boutiques": 0,
+     "detour": 0,
+     "brut": 2750,
+     "couverture": 0,
+     "client": 2750,
+     "n_boutiques": 1,
+     "n_colis": 1,
+     "i_base": 0,
+     "sous_total": 14000,
+     "base_paiement": 16750,
+     "campay": 342,
+     "total_momo": 17092,
+     "total_wallet": 16750
+    }
+   },
+   {
+    "id": "L08",
+    "cas": "Domicile périphérie, 12 km, C1",
+    "mode": "domicile",
+    "destination": {
+     "zone": "Z11",
+     "niveau": "peripherie",
+     "quartier": "Ekounou"
+    },
+    "boutiques": [
+     {
+      "zone": "Z6",
+      "colis": [
+       "C1"
+      ],
+      "km": 12,
+      "detour": 0,
+      "niveau": "centre"
+     }
+    ],
+    "sous_totaux": [
+     14000
+    ],
+    "attendu": {
+     "mode": "domicile",
+     "niveau": "peripherie",
+     "xl": false,
+     "base": 1700,
+     "km": 1750,
+     "sup_formats": 500,
+     "colis_en_plus": 0,
+     "boutiques": 0,
+     "detour": 0,
+     "brut": 3950,
+     "couverture": 0,
+     "client": 3950,
+     "n_boutiques": 1,
+     "n_colis": 1,
+     "i_base": 0,
+     "sous_total": 14000,
+     "base_paiement": 17950,
+     "campay": 367,
+     "total_momo": 18317,
+     "total_wallet": 17950
+    }
+   },
+   {
+    "id": "L09",
+    "cas": "Domicile périurbain, 7 km",
+    "mode": "domicile",
+    "destination": {
+     "zone": "Z12",
+     "niveau": "periurbain",
+     "quartier": "Emana"
+    },
+    "boutiques": [
+     {
+      "zone": "Z1",
+      "colis": [
+       "P"
+      ],
+      "km": 7,
+      "detour": 0,
+      "niveau": "centre"
+     }
+    ],
+    "sous_totaux": [
+     20000
+    ],
+    "attendu": {
+     "mode": "domicile",
+     "niveau": "periurbain",
+     "xl": false,
+     "base": 1900,
+     "km": 500,
+     "sup_formats": 0,
+     "colis_en_plus": 0,
+     "boutiques": 0,
+     "detour": 0,
+     "brut": 2400,
+     "couverture": 0,
+     "client": 2400,
+     "n_boutiques": 1,
+     "n_colis": 1,
+     "i_base": 0,
+     "sous_total": 20000,
+     "base_paiement": 22400,
+     "campay": 458,
+     "total_momo": 22858,
+     "total_wallet": 22400
+    }
+   },
+   {
+    "id": "L10",
+    "cas": "Domicile offert, 2 km",
+    "mode": "domicile",
+    "destination": {
+     "zone": "Z1",
+     "niveau": "centre",
+     "quartier": "Bastos"
+    },
+    "boutiques": [
+     {
+      "zone": "Z1",
+      "colis": [
+       "P"
+      ],
+      "km": 2,
+      "detour": 0,
+      "niveau": "centre"
+     }
+    ],
+    "sous_totaux": [
+     50000
+    ],
+    "attendu": {
+     "mode": "domicile",
+     "niveau": "centre",
+     "xl": false,
+     "base": 1500,
+     "km": 0,
+     "sup_formats": 0,
+     "colis_en_plus": 0,
+     "boutiques": 0,
+     "detour": 0,
+     "brut": 1500,
+     "couverture": 1500,
+     "client": 0,
+     "n_boutiques": 1,
+     "n_colis": 1,
+     "i_base": 0,
+     "sous_total": 50000,
+     "base_paiement": 50000,
+     "campay": 1021,
+     "total_momo": 51021,
+     "total_wallet": 50000
+    }
+   },
+   {
+    "id": "L11",
+    "cas": "Domicile offert, 8 km, C1",
+    "mode": "domicile",
+    "destination": {
+     "zone": "Z1",
+     "niveau": "centre",
+     "quartier": "Bastos"
+    },
+    "boutiques": [
+     {
+      "zone": "Z6",
+      "colis": [
+       "C1"
+      ],
+      "km": 8,
+      "detour": 0,
+      "niveau": "centre"
+     }
+    ],
+    "sous_totaux": [
+     60000
+    ],
+    "attendu": {
+     "mode": "domicile",
+     "niveau": "centre",
+     "xl": false,
+     "base": 1500,
+     "km": 750,
+     "sup_formats": 500,
+     "colis_en_plus": 0,
+     "boutiques": 0,
+     "detour": 0,
+     "brut": 2750,
+     "couverture": 1500,
+     "client": 1250,
+     "n_boutiques": 1,
+     "n_colis": 1,
+     "i_base": 0,
+     "sous_total": 60000,
+     "base_paiement": 61250,
+     "campay": 1250,
+     "total_momo": 62500,
+     "total_wallet": 61250
+    }
+   },
+   {
+    "id": "L12",
+    "cas": "Domicile, 2 boutiques de la même zone",
+    "mode": "domicile",
+    "destination": {
+     "zone": "Z6",
+     "niveau": "centre",
+     "quartier": "Biyem-Assi"
+    },
+    "boutiques": [
+     {
+      "zone": "Z6",
+      "colis": [
+       "P"
+      ],
+      "km": 3,
+      "detour": 0,
+      "niveau": "centre"
+     },
+     {
+      "zone": "Z6",
+      "colis": [
+       "C1"
+      ],
+      "km": 2,
+      "detour": 0,
+      "niveau": "centre"
+     }
+    ],
+    "sous_totaux": [
+     12000,
+     10000
+    ],
+    "attendu": {
+     "mode": "domicile",
+     "niveau": "centre",
+     "xl": false,
+     "base": 1500,
+     "km": 0,
+     "sup_formats": 500,
+     "colis_en_plus": 0,
+     "boutiques": 500,
+     "detour": 0,
+     "brut": 2500,
+     "couverture": 0,
+     "client": 2500,
+     "n_boutiques": 2,
+     "n_colis": 2,
+     "i_base": 0,
+     "sous_total": 22000,
+     "base_paiement": 24500,
+     "campay": 500,
+     "total_momo": 25000,
+     "total_wallet": 24500
+    }
+   },
+   {
+    "id": "L13",
+    "cas": "Domicile offert, 3 boutiques",
+    "mode": "domicile",
+    "destination": {
+     "zone": "Z6",
+     "niveau": "centre",
+     "quartier": "Biyem-Assi"
+    },
+    "boutiques": [
+     {
+      "zone": "Z6",
+      "colis": [
+       "P"
+      ],
+      "km": 3,
+      "detour": 0,
+      "niveau": "centre"
+     },
+     {
+      "zone": "Z3",
+      "colis": [
+       "P"
+      ],
+      "km": 6,
+      "detour": 3,
+      "niveau": "centre"
+     },
+     {
+      "zone": "Z1",
+      "colis": [
+       "C1"
+      ],
+      "km": 11,
+      "detour": 8,
+      "niveau": "centre"
+     }
+    ],
+    "sous_totaux": [
+     20000,
+     15000,
+     25000
+    ],
+    "attendu": {
+     "mode": "domicile",
+     "niveau": "centre",
+     "xl": false,
+     "base": 1500,
+     "km": 1500,
+     "sup_formats": 500,
+     "colis_en_plus": 0,
+     "boutiques": 1500,
+     "detour": 0,
+     "brut": 5000,
+     "couverture": 1500,
+     "client": 3500,
+     "n_boutiques": 3,
+     "n_colis": 3,
+     "i_base": 2,
+     "sous_total": 60000,
+     "base_paiement": 63500,
+     "campay": 1296,
+     "total_momo": 64796,
+     "total_wallet": 63500
+    }
+   },
+   {
+    "id": "L14",
+    "cas": "Domicile, boutique en plus à 9 km de détour",
+    "mode": "domicile",
+    "destination": {
+     "zone": "Z6",
+     "niveau": "centre",
+     "quartier": "Biyem-Assi"
+    },
+    "boutiques": [
+     {
+      "zone": "Z1",
+      "colis": [
+       "P"
+      ],
+      "km": 11,
+      "detour": 0,
+      "niveau": "centre"
+     },
+     {
+      "zone": "Z9",
+      "colis": [
+       "P"
+      ],
+      "km": 9,
+      "detour": 9,
+      "niveau": "centre"
+     }
+    ],
+    "sous_totaux": [
+     15000,
+     5000
+    ],
+    "attendu": {
+     "mode": "domicile",
+     "niveau": "centre",
+     "xl": false,
+     "base": 1500,
+     "km": 1500,
+     "sup_formats": 0,
+     "colis_en_plus": 0,
+     "boutiques": 2000,
+     "detour": 1000,
+     "brut": 5000,
+     "couverture": 0,
+     "client": 5000,
+     "n_boutiques": 2,
+     "n_colis": 2,
+     "i_base": 0,
+     "sous_total": 20000,
+     "base_paiement": 25000,
+     "campay": 511,
+     "total_momo": 25511,
+     "total_wallet": 25000
+    }
+   },
+   {
+    "id": "L15",
+    "cas": "Relais offert, 2 boutiques",
+    "mode": "relais",
+    "destination": {
+     "zone": "Z6",
+     "niveau": "centre",
+     "quartier": null
+    },
+    "boutiques": [
+     {
+      "zone": "Z6",
+      "colis": [
+       "P"
+      ],
+      "km": 0,
+      "detour": 0,
+      "niveau": "centre"
+     },
+     {
+      "zone": "Z3",
+      "colis": [
+       "P"
+      ],
+      "km": 0,
+      "detour": 0,
+      "niveau": "centre"
+     }
+    ],
+    "sous_totaux": [
+     20000,
+     12000
+    ],
+    "attendu": {
+     "mode": "relais",
+     "niveau": null,
+     "xl": false,
+     "base": 900,
+     "km": 0,
+     "sup_formats": 0,
+     "colis_en_plus": 0,
+     "boutiques": 500,
+     "detour": 0,
+     "brut": 1400,
+     "couverture": 900,
+     "client": 500,
+     "n_boutiques": 2,
+     "n_colis": 2,
+     "i_base": 1,
+     "sous_total": 32000,
+     "base_paiement": 32500,
+     "campay": 664,
+     "total_momo": 33164,
+     "total_wallet": 32500
+    }
+   },
+   {
+    "id": "L16",
+    "cas": "Domicile offert, XL, 4 km",
+    "mode": "domicile",
+    "destination": {
+     "zone": "Z3",
+     "niveau": "centre",
+     "quartier": "Mokolo"
+    },
+    "boutiques": [
+     {
+      "zone": "Z3",
+      "colis": [
+       "XL"
+      ],
+      "km": 4,
+      "detour": 0,
+      "niveau": "centre"
+     }
+    ],
+    "sous_totaux": [
+     180000
+    ],
+    "attendu": {
+     "mode": "domicile",
+     "niveau": "centre",
+     "xl": true,
+     "base": 4000,
+     "km": 0,
+     "sup_formats": 0,
+     "colis_en_plus": 0,
+     "boutiques": 0,
+     "detour": 0,
+     "brut": 4000,
+     "couverture": 1500,
+     "client": 2500,
+     "n_boutiques": 1,
+     "n_colis": 1,
+     "i_base": 0,
+     "sous_total": 180000,
+     "base_paiement": 182500,
+     "campay": 3725,
+     "total_momo": 186225,
+     "total_wallet": 182500
+    }
+   },
+   {
+    "id": "L17",
+    "cas": "Domicile offert, XL en périphérie, 9 km",
+    "mode": "domicile",
+    "destination": {
+     "zone": "Z7",
+     "niveau": "peripherie",
+     "quartier": "Simbock"
+    },
+    "boutiques": [
+     {
+      "zone": "Z3",
+      "colis": [
+       "XL"
+      ],
+      "km": 9,
+      "detour": 0,
+      "niveau": "centre"
+     }
+    ],
+    "sous_totaux": [
+     180000
+    ],
+    "attendu": {
+     "mode": "domicile",
+     "niveau": "peripherie",
+     "xl": true,
+     "base": 4200,
+     "km": 1000,
+     "sup_formats": 0,
+     "colis_en_plus": 0,
+     "boutiques": 0,
+     "detour": 0,
+     "brut": 5200,
+     "couverture": 1500,
+     "client": 3700,
+     "n_boutiques": 1,
+     "n_colis": 1,
+     "i_base": 0,
+     "sous_total": 180000,
+     "base_paiement": 183700,
+     "campay": 3749,
+     "total_momo": 187449,
+     "total_wallet": 183700
+    }
+   },
+   {
+    "id": "L18",
+    "cas": "Domicile, hors gabarit",
+    "mode": "domicile",
+    "destination": {
+     "zone": "Z3",
+     "niveau": "centre",
+     "quartier": "Mokolo"
+    },
+    "boutiques": [
+     {
+      "zone": "Z3",
+      "colis": [
+       "HG"
+      ],
+      "km": 4,
+      "detour": 0,
+      "niveau": "centre"
+     }
+    ],
+    "sous_totaux": [
+     300000
+    ],
+    "attendu": {
+     "refuse": "hors gabarit : sur devis, 8 000 F au moins, domicile seulement (R10)"
+    }
+   },
+   {
+    "id": "L19",
+    "cas": "Domicile offert, 2 colis d'une boutique, 9 km",
+    "mode": "domicile",
+    "destination": {
+     "zone": "Z2",
+     "niveau": "centre",
+     "quartier": "Obili"
+    },
+    "boutiques": [
+     {
+      "zone": "Z2",
+      "colis": [
+       "C2",
+       "C1"
+      ],
+      "km": 9,
+      "detour": 0,
+      "niveau": "centre"
+     }
+    ],
+    "sous_totaux": [
+     52000
+    ],
+    "attendu": {
+     "mode": "domicile",
+     "niveau": "centre",
+     "xl": false,
+     "base": 1500,
+     "km": 1000,
+     "sup_formats": 1200,
+     "colis_en_plus": 500,
+     "boutiques": 0,
+     "detour": 0,
+     "brut": 4200,
+     "couverture": 1500,
+     "client": 2700,
+     "n_boutiques": 1,
+     "n_colis": 2,
+     "i_base": 0,
+     "sous_total": 52000,
+     "base_paiement": 54700,
+     "campay": 1117,
+     "total_momo": 55817,
+     "total_wallet": 54700
+    }
+   },
+   {
+    "id": "L20",
+    "cas": "Relais offert, 2 colis d'une boutique",
+    "mode": "relais",
+    "destination": {
+     "zone": "Z6",
+     "niveau": "centre",
+     "quartier": null
+    },
+    "boutiques": [
+     {
+      "zone": "Z6",
+      "colis": [
+       "C2",
+       "C2"
+      ],
+      "km": 0,
+      "detour": 0,
+      "niveau": "centre"
+     }
+    ],
+    "sous_totaux": [
+     30000
+    ],
+    "attendu": {
+     "mode": "relais",
+     "niveau": null,
+     "xl": false,
+     "base": 900,
+     "km": 0,
+     "sup_formats": 1400,
+     "colis_en_plus": 900,
+     "boutiques": 0,
+     "detour": 0,
+     "brut": 3200,
+     "couverture": 900,
+     "client": 2300,
+     "n_boutiques": 1,
+     "n_colis": 2,
+     "i_base": 0,
+     "sous_total": 30000,
+     "base_paiement": 32300,
+     "campay": 660,
+     "total_momo": 32960,
+     "total_wallet": 32300
+    }
+   },
+   {
+    "id": "L21",
+    "cas": "Panier sous 3 000 F",
+    "mode": "relais",
+    "destination": {
+     "zone": "Z6",
+     "niveau": "centre",
+     "quartier": null
+    },
+    "boutiques": [
+     {
+      "zone": "Z6",
+      "colis": [
+       "P"
+      ],
+      "km": 0,
+      "detour": 0,
+      "niveau": "centre"
+     }
+    ],
+    "sous_totaux": [
+     2500
+    ],
+    "attendu": {
+     "refuse": "Encore 500 F pour commander"
+    }
+   },
+   {
+    "id": "L22",
+    "cas": "Boutique sous 2 000 F",
+    "mode": "domicile",
+    "destination": {
+     "zone": "Z6",
+     "niveau": "centre",
+     "quartier": "Biyem-Assi"
+    },
+    "boutiques": [
+     {
+      "zone": "Z6",
+      "colis": [
+       "P"
+      ],
+      "km": 2,
+      "detour": 0,
+      "niveau": "centre"
+     },
+     {
+      "zone": "Z6",
+      "colis": [
+       "P"
+      ],
+      "km": 3,
+      "detour": 0,
+      "niveau": "centre"
+     }
+    ],
+    "sous_totaux": [
+     2500,
+     1500
+    ],
+    "attendu": {
+     "refuse": "Ajoute 500 F chez la boutique 2"
+    }
+   }
+  ],
+  "comptoir": [
+   {
+    "id": "C01",
+    "cas": "Relais, une pochette, nouveau compte",
+    "destination": {
+     "zone": "Z6",
+     "niveau": "centre",
+     "quartier": null
+    },
+    "boutiques": [
+     {
+      "zone": "Z6",
+      "colis": [
+       "P"
+      ],
+      "km": 0,
+      "detour": 0,
+      "niveau": "centre"
+     }
+    ],
+    "sous_totaux": [
+     12000
+    ],
+    "attendu": {
+     "mode": "relais",
+     "niveau": null,
+     "xl": false,
+     "base": 900,
+     "km": 0,
+     "sup_formats": 0,
+     "colis_en_plus": 0,
+     "boutiques": 0,
+     "detour": 0,
+     "brut": 900,
+     "couverture": 0,
+     "client": 900,
+     "n_boutiques": 1,
+     "n_colis": 1,
+     "i_base": 0,
+     "sous_total": 12000,
+     "avance": 900,
+     "campay_avance": 19,
+     "au_comptoir": 12000,
+     "campay_comptoir": 245
+    }
+   },
+   {
+    "id": "C02",
+    "cas": "Relais offert, compte avec une commande livrée",
+    "destination": {
+     "zone": "Z6",
+     "niveau": "centre",
+     "quartier": null
+    },
+    "boutiques": [
+     {
+      "zone": "Z6",
+      "colis": [
+       "P"
+      ],
+      "km": 0,
+      "detour": 0,
+      "niveau": "centre"
+     }
+    ],
+    "sous_totaux": [
+     32000
+    ],
+    "attendu": {
+     "mode": "relais",
+     "niveau": null,
+     "xl": false,
+     "base": 900,
+     "km": 0,
+     "sup_formats": 0,
+     "colis_en_plus": 0,
+     "boutiques": 0,
+     "detour": 0,
+     "brut": 900,
+     "couverture": 900,
+     "client": 0,
+     "n_boutiques": 1,
+     "n_colis": 1,
+     "i_base": 0,
+     "sous_total": 32000,
+     "avance": 900,
+     "campay_avance": 19,
+     "au_comptoir": 31100,
+     "campay_comptoir": 635
+    }
+   },
+   {
+    "id": "C03",
+    "cas": "Relais offert, carton C1 + boutique d'une autre zone, compte avec une commande livrée",
+    "destination": {
+     "zone": "Z6",
+     "niveau": "centre",
+     "quartier": null
+    },
+    "boutiques": [
+     {
+      "zone": "Z6",
+      "colis": [
+       "C1"
+      ],
+      "km": 0,
+      "detour": 0,
+      "niveau": "centre"
+     },
+     {
+      "zone": "Z3",
+      "colis": [
+       "P"
+      ],
+      "km": 0,
+      "detour": 0,
+      "niveau": "centre"
+     }
+    ],
+    "sous_totaux": [
+     26000,
+     9000
+    ],
+    "attendu": {
+     "mode": "relais",
+     "niveau": null,
+     "xl": false,
+     "base": 900,
+     "km": 0,
+     "sup_formats": 500,
+     "colis_en_plus": 0,
+     "boutiques": 500,
+     "detour": 0,
+     "brut": 1900,
+     "couverture": 900,
+     "client": 1000,
+     "n_boutiques": 2,
+     "n_colis": 2,
+     "i_base": 1,
+     "sous_total": 35000,
+     "avance": 1900,
+     "campay_avance": 39,
+     "au_comptoir": 34100,
+     "campay_comptoir": 696
+    }
+   }
+  ],
+  "format_article": [
+   {
+    "cas": "Robe pliée",
+    "poids_kg": 0.4,
+    "dimensions_cm": [
+     30,
+     25,
+     3
+    ],
+    "carton_obligatoire": false,
+    "poids_facture_kg": 0.45,
+    "attendu": "P"
+   },
+   {
+    "cas": "Téléphone dans sa boîte",
+    "poids_kg": 0.5,
+    "dimensions_cm": [
+     18,
+     10,
+     7
+    ],
+    "carton_obligatoire": false,
+    "poids_facture_kg": 0.5,
+    "attendu": "P"
+   },
+   {
+    "cas": "Boîte de chaussures",
+    "poids_kg": 1.0,
+    "dimensions_cm": [
+     33,
+     21,
+     12
+    ],
+    "carton_obligatoire": false,
+    "poids_facture_kg": 1.663,
+    "attendu": "P"
+   },
+   {
+    "cas": "Bouteille de parfum (verre)",
+    "poids_kg": 0.4,
+    "dimensions_cm": [
+     12,
+     8,
+     6
+    ],
+    "carton_obligatoire": true,
+    "poids_facture_kg": 0.4,
+    "attendu": "C1"
+   },
+   {
+    "cas": "Bidon d'huile 5 L",
+    "poids_kg": 4.7,
+    "dimensions_cm": [
+     27,
+     18,
+     15
+    ],
+    "carton_obligatoire": false,
+    "poids_facture_kg": 4.7,
+    "attendu": "C1"
+   },
+   {
+    "cas": "Ordinateur portable",
+    "poids_kg": 2.5,
+    "dimensions_cm": [
+     38,
+     27,
+     5
+    ],
+    "carton_obligatoire": true,
+    "poids_facture_kg": 2.5,
+    "attendu": "C2"
+   },
+   {
+    "cas": "Micro-ondes",
+    "poids_kg": 12.0,
+    "dimensions_cm": [
+     50,
+     40,
+     30
+    ],
+    "carton_obligatoire": true,
+    "poids_facture_kg": 12.0,
+    "attendu": "CO"
+   },
+   {
+    "cas": "Téléviseur 43 pouces",
+    "poids_kg": 9.0,
+    "dimensions_cm": [
+     105,
+     65,
+     13
+    ],
+    "carton_obligatoire": true,
+    "poids_facture_kg": 17.745,
+    "attendu": "XL"
+   },
+   {
+    "cas": "Téléviseur 55 pouces",
+    "poids_kg": 18.0,
+    "dimensions_cm": [
+     135,
+     80,
+     15
+    ],
+    "carton_obligatoire": true,
+    "poids_facture_kg": 32.4,
+    "attendu": "HG"
+   },
+   {
+    "cas": "Matelas 2 places",
+    "poids_kg": 25.0,
+    "dimensions_cm": [
+     190,
+     140,
+     20
+    ],
+    "carton_obligatoire": false,
+    "poids_facture_kg": 106.4,
+    "attendu": "HG"
+   }
+  ],
+  "regroupement": [
+   {
+    "cas": "Deux tee-shirts",
+    "articles": [
+     {
+      "format": "P",
+      "poids_facture_kg": 0.3,
+      "volume_l": 1.5
+     },
+     {
+      "format": "P",
+      "poids_facture_kg": 0.3,
+      "volume_l": 1.5
+     }
+    ],
+    "attendu": [
+     "P"
+    ]
+   },
+   {
+    "cas": "Trois pochettes, 2,4 kg",
+    "articles": [
+     {
+      "format": "P",
+      "poids_facture_kg": 0.8,
+      "volume_l": 2.0
+     },
+     {
+      "format": "P",
+      "poids_facture_kg": 0.8,
+      "volume_l": 2.0
+     },
+     {
+      "format": "P",
+      "poids_facture_kg": 0.8,
+      "volume_l": 2.0
+     }
+    ],
+    "attendu": [
+     "C1"
+    ]
+   },
+   {
+    "cas": "Téléphone dans sa boîte + coque",
+    "articles": [
+     {
+      "format": "P",
+      "poids_facture_kg": 0.5,
+      "volume_l": 0.8
+     },
+     {
+      "format": "P",
+      "poids_facture_kg": 0.1,
+      "volume_l": 0.2
+     }
+    ],
+    "attendu": [
+     "P"
+    ]
+   },
+   {
+    "cas": "Deux boîtes de chaussures",
+    "articles": [
+     {
+      "format": "P",
+      "poids_facture_kg": 1.66,
+      "volume_l": 8.3
+     },
+     {
+      "format": "P",
+      "poids_facture_kg": 1.66,
+      "volume_l": 8.3
+     }
+    ],
+    "attendu": [
+     "C2"
+    ]
+   },
+   {
+    "cas": "Trois boîtes de chaussures",
+    "articles": [
+     {
+      "format": "P",
+      "poids_facture_kg": 1.66,
+      "volume_l": 8.3
+     },
+     {
+      "format": "P",
+      "poids_facture_kg": 1.66,
+      "volume_l": 8.3
+     },
+     {
+      "format": "P",
+      "poids_facture_kg": 1.66,
+      "volume_l": 8.3
+     }
+    ],
+    "attendu": [
+     "C2",
+     "P"
+    ]
+   },
+   {
+    "cas": "Bidon d'huile de 5 L seul",
+    "articles": [
+     {
+      "format": "C1",
+      "poids_facture_kg": 4.7,
+      "volume_l": 7.3
+     }
+    ],
+    "attendu": [
+     "C1"
+    ]
+   },
+   {
+    "cas": "Bidon d'huile de 5 L + savon",
+    "articles": [
+     {
+      "format": "C1",
+      "poids_facture_kg": 4.7,
+      "volume_l": 7.3
+     },
+     {
+      "format": "P",
+      "poids_facture_kg": 0.2,
+      "volume_l": 0.3
+     }
+    ],
+    "attendu": [
+     "C2"
+    ]
+   },
+   {
+    "cas": "Micro-ondes (carton d'origine) + ustensiles",
+    "articles": [
+     {
+      "format": "CO",
+      "poids_facture_kg": 12.0,
+      "volume_l": 60.0
+     },
+     {
+      "format": "P",
+      "poids_facture_kg": 0.6,
+      "volume_l": 1.0
+     }
+    ],
+    "attendu": [
+     "CO",
+     "P"
+    ]
+   },
+   {
+    "cas": "Réfrigérateur + télécommande",
+    "articles": [
+     {
+      "format": "XL",
+      "poids_facture_kg": 40.0,
+      "volume_l": 200.0
+     },
+     {
+      "format": "P",
+      "poids_facture_kg": 0.2,
+      "volume_l": 0.2
+     }
+    ],
+    "attendu": [
+     "XL"
+    ]
+   },
+   {
+    "cas": "Deux réfrigérateurs",
+    "articles": [
+     {
+      "format": "XL",
+      "poids_facture_kg": 40.0,
+      "volume_l": 200.0
+     },
+     {
+      "format": "XL",
+      "poids_facture_kg": 40.0,
+      "volume_l": 200.0
+     }
+    ],
+    "attendu": [
+     "XL",
+     "XL"
+    ]
+   }
+  ],
+  "commission": [
+   {
+    "id": "CO01",
+    "cas": "Téléphone ITEL",
+    "lignes": [
+     {
+      "prix": 20000,
+      "quantite": 1,
+      "univers": "TEL",
+      "made_in_cameroon": false
+     }
+    ],
+    "palier": "Bronze",
+    "decouverte": false,
+    "couverture": 0,
+    "attendu": {
+     "sous_total": 20000,
+     "bareme": 2700.0,
+     "commission": 2700,
+     "motif": "barème",
+     "tva": 0,
+     "net": 17300,
+     "frais_versement": 173,
+     "recu": 17127
+    }
+   },
+   {
+    "id": "CO02",
+    "cas": "Même téléphone, offre de découverte",
+    "lignes": [
+     {
+      "prix": 20000,
+      "quantite": 1,
+      "univers": "TEL",
+      "made_in_cameroon": false
+     }
+    ],
+    "palier": "Bronze",
+    "decouverte": true,
+    "couverture": 0,
+    "attendu": {
+     "sous_total": 20000,
+     "bareme": 2160.0,
+     "commission": 2160,
+     "motif": "barème",
+     "tva": 0,
+     "net": 17840,
+     "frais_versement": 179,
+     "recu": 17661
+    }
+   },
+   {
+    "id": "CO03",
+    "cas": "Même téléphone, palier Argent",
+    "lignes": [
+     {
+      "prix": 20000,
+      "quantite": 1,
+      "univers": "TEL",
+      "made_in_cameroon": false
+     }
+    ],
+    "palier": "Argent",
+    "decouverte": false,
+    "couverture": 0,
+    "attendu": {
+     "sous_total": 20000,
+     "bareme": 2295.0,
+     "commission": 2295,
+     "motif": "barème",
+     "tva": 0,
+     "net": 17705,
+     "frais_versement": 178,
+     "recu": 17527
+    }
+   },
+   {
+    "id": "CO04",
+    "cas": "Téléphone à 150 000 F",
+    "lignes": [
+     {
+      "prix": 150000,
+      "quantite": 1,
+      "univers": "TEL",
+      "made_in_cameroon": false
+     }
+    ],
+    "palier": "Bronze",
+    "decouverte": false,
+    "couverture": 0,
+    "attendu": {
+     "sous_total": 150000,
+     "bareme": 7950.0,
+     "commission": 7950,
+     "motif": "barème",
+     "tva": 0,
+     "net": 142050,
+     "frais_versement": 1421,
+     "recu": 140629
+    }
+   },
+   {
+    "id": "CO05",
+    "cas": "iPhone à 350 000 F, palier Or",
+    "lignes": [
+     {
+      "prix": 350000,
+      "quantite": 1,
+      "univers": "TEL",
+      "made_in_cameroon": false
+     }
+    ],
+    "palier": "Or",
+    "decouverte": false,
+    "couverture": 0,
+    "attendu": {
+     "sous_total": 350000,
+     "bareme": 9065.0,
+     "commission": 9065,
+     "motif": "barème",
+     "tva": 0,
+     "net": 340935,
+     "frais_versement": 3410,
+     "recu": 337525
+    }
+   },
+   {
+    "id": "CO06",
+    "cas": "Pagne à 84 000 F",
+    "lignes": [
+     {
+      "prix": 84000,
+      "quantite": 1,
+      "univers": "MOD",
+      "made_in_cameroon": false
+     }
+    ],
+    "palier": "Bronze",
+    "decouverte": false,
+    "couverture": 0,
+    "attendu": {
+     "sous_total": 84000,
+     "bareme": 16540.0,
+     "commission": 16540,
+     "motif": "barème",
+     "tva": 0,
+     "net": 67460,
+     "frais_versement": 675,
+     "recu": 66785
+    }
+   },
+   {
+    "id": "CO07",
+    "cas": "Pagne Made in Cameroon",
+    "lignes": [
+     {
+      "prix": 84000,
+      "quantite": 1,
+      "univers": "MOD",
+      "made_in_cameroon": true
+     }
+    ],
+    "palier": "Bronze",
+    "decouverte": false,
+    "couverture": 0,
+    "attendu": {
+     "sous_total": 84000,
+     "bareme": 14860.0,
+     "commission": 14860,
+     "motif": "barème",
+     "tva": 0,
+     "net": 69140,
+     "frais_versement": 692,
+     "recu": 68448
+    }
+   },
+   {
+    "id": "CO08",
+    "cas": "Chargeur à 5 000 F",
+    "lignes": [
+     {
+      "prix": 5000,
+      "quantite": 1,
+      "univers": "TEL",
+      "made_in_cameroon": false
+     }
+    ],
+    "palier": "Bronze",
+    "decouverte": false,
+    "couverture": 0,
+    "attendu": {
+     "sous_total": 5000,
+     "bareme": 675.0,
+     "commission": 700,
+     "motif": "minimum de 700 F",
+     "tva": 0,
+     "net": 4300,
+     "frais_versement": 43,
+     "recu": 4257
+    }
+   },
+   {
+    "id": "CO09",
+    "cas": "Deux articles à 1 000 F (minimum par boutique)",
+    "lignes": [
+     {
+      "prix": 1000,
+      "quantite": 2,
+      "univers": "SUP",
+      "made_in_cameroon": false
+     }
+    ],
+    "palier": "Bronze",
+    "decouverte": false,
+    "couverture": 0,
+    "attendu": {
+     "sous_total": 2000,
+     "bareme": 210.0,
+     "commission": 700,
+     "motif": "minimum de 700 F",
+     "tva": 0,
+     "net": 1300,
+     "frais_versement": 13,
+     "recu": 1287
+    }
+   },
+   {
+    "id": "CO10",
+    "cas": "Panier supermarché, relais offert",
+    "lignes": [
+     {
+      "prix": 2500,
+      "quantite": 4,
+      "univers": "SUP",
+      "made_in_cameroon": false
+     },
+     {
+      "prix": 4000,
+      "quantite": 5,
+      "univers": "SUP",
+      "made_in_cameroon": false
+     }
+    ],
+    "palier": "Platine",
+    "decouverte": false,
+    "couverture": 900,
+    "attendu": {
+     "sous_total": 30000,
+     "bareme": 1890.0,
+     "commission": 1890,
+     "motif": "barème",
+     "tva": 0,
+     "net": 28110,
+     "frais_versement": 282,
+     "recu": 27828
+    }
+   },
+   {
+    "id": "CO11",
+    "cas": "Télévision à 300 000 F, palier Platine",
+    "lignes": [
+     {
+      "prix": 300000,
+      "quantite": 1,
+      "univers": "ELE",
+      "made_in_cameroon": false
+     }
+    ],
+    "palier": "Platine",
+    "decouverte": false,
+    "couverture": 0,
+    "attendu": {
+     "sous_total": 300000,
+     "bareme": 7020.0,
+     "commission": 7020,
+     "motif": "barème",
+     "tva": 0,
+     "net": 292980,
+     "frais_versement": 2930,
+     "recu": 290050
+    }
+   },
+   {
+    "id": "CO12",
+    "cas": "Livre à 6 000 F",
+    "lignes": [
+     {
+      "prix": 6000,
+      "quantite": 1,
+      "univers": "LIV",
+      "made_in_cameroon": false
+     }
+    ],
+    "palier": "Bronze",
+    "decouverte": false,
+    "couverture": 0,
+    "attendu": {
+     "sous_total": 6000,
+     "bareme": 750.0,
+     "commission": 750,
+     "motif": "barème",
+     "tva": 0,
+     "net": 5250,
+     "frais_versement": 53,
+     "recu": 5197
+    }
+   },
+   {
+    "id": "CO13",
+    "cas": "Canapé à 600 000 F",
+    "lignes": [
+     {
+      "prix": 600000,
+      "quantite": 1,
+      "univers": "MAI",
+      "made_in_cameroon": false
+     }
+    ],
+    "palier": "Bronze",
+    "decouverte": false,
+    "couverture": 0,
+    "attendu": {
+     "sous_total": 600000,
+     "bareme": 54700.0,
+     "commission": 54700,
+     "motif": "barème",
+     "tva": 0,
+     "net": 545300,
+     "frais_versement": 5453,
+     "recu": 539847
+    }
+   }
+  ],
+  "rentabilite": [
+   {
+    "libelle": "Relais, chargeur à 5 000 F, Bronze",
+    "mode": "relais",
+    "format": "P",
+    "prix": 5000,
+    "palier": "Bronze",
+    "commission": 700,
+    "motif": "minimum de 700 F",
+    "livraison": 900,
+    "couverture": 0,
+    "recettes": 1600,
+    "achat": 540,
+    "relais": 300,
+    "sms": 120,
+    "couts": 960,
+    "contribution": 640,
+    "n_colis": 1,
+    "decouverte": false,
+    "mic": false,
+    "ok": true,
+    "objectif": true
+   },
+   {
+    "libelle": "Relais offert, supermarché à 30 000 F, Platine",
+    "mode": "relais",
+    "format": "P",
+    "prix": 30000,
+    "palier": "Platine",
+    "commission": 1170,
+    "motif": "barème",
+    "livraison": 0,
+    "couverture": 900,
+    "recettes": 1170,
+    "achat": 540,
+    "relais": 300,
+    "sms": 120,
+    "couts": 960,
+    "contribution": 210,
+    "n_colis": 1,
+    "decouverte": false,
+    "mic": false,
+    "ok": true,
+    "objectif": true
+   },
+   {
+    "libelle": "Relais offert, même cas, ligne Wink à 600 F (R86)",
+    "mode": "relais",
+    "format": "P",
+    "prix": 30000,
+    "palier": "Platine",
+    "commission": 1170,
+    "motif": "barème",
+    "livraison": 0,
+    "couverture": 900,
+    "recettes": 1170,
+    "achat": 600,
+    "relais": 300,
+    "sms": 120,
+    "couts": 1020,
+    "contribution": 150,
+    "n_colis": 1,
+    "decouverte": false,
+    "mic": false,
+    "ok": true,
+    "objectif": true
+   },
+   {
+    "libelle": "Relais, chargeur à 5 000 F, ligne Wink à 600 F (R86)",
+    "mode": "relais",
+    "format": "P",
+    "prix": 5000,
+    "palier": "Bronze",
+    "commission": 700,
+    "motif": "minimum de 700 F",
+    "livraison": 900,
+    "couverture": 0,
+    "recettes": 1600,
+    "achat": 600,
+    "relais": 300,
+    "sms": 120,
+    "couts": 1020,
+    "contribution": 580,
+    "n_colis": 1,
+    "decouverte": false,
+    "mic": false,
+    "ok": true,
+    "objectif": true
+   },
+   {
+    "libelle": "Relais, 2e boutique même zone, livres à 2 000 F, Platine",
+    "mode": "relais",
+    "format": "P",
+    "prix": 2000,
+    "palier": "Platine",
+    "commission": 700,
+    "motif": "minimum de 700 F",
+    "livraison": 500,
+    "couverture": 0,
+    "recettes": 1200,
+    "achat": 540,
+    "relais": 300,
+    "sms": 0,
+    "couts": 840,
+    "contribution": 360,
+    "n_colis": 1,
+    "decouverte": false,
+    "mic": false,
+    "ok": true,
+    "objectif": true
+   },
+   {
+    "libelle": "Relais offert, carton C2 à 40 000 F (maison), Bronze",
+    "mode": "relais",
+    "format": "C2",
+    "prix": 40000,
+    "palier": "Bronze",
+    "commission": 5300,
+    "motif": "barème",
+    "livraison": 700,
+    "couverture": 900,
+    "recettes": 6000,
+    "achat": 1000,
+    "relais": 500,
+    "sms": 120,
+    "couts": 1620,
+    "contribution": 4380,
+    "n_colis": 1,
+    "decouverte": false,
+    "mic": false,
+    "ok": true,
+    "objectif": true
+   },
+   {
+    "libelle": "Domicile centre, robe à 15 000 F, Bronze",
+    "mode": "domicile",
+    "format": "P",
+    "prix": 15000,
+    "palier": "Bronze",
+    "commission": 3525,
+    "motif": "barème",
+    "livraison": 1500,
+    "couverture": 0,
+    "recettes": 5025,
+    "achat": 1360,
+    "relais": 0,
+    "sms": 120,
+    "couts": 1480,
+    "contribution": 3545,
+    "n_colis": 1,
+    "decouverte": false,
+    "mic": false,
+    "ok": true,
+    "objectif": true
+   },
+   {
+    "libelle": "Domicile offert, téléphone à 50 000 F, Platine",
+    "mode": "domicile",
+    "format": "P",
+    "prix": 50000,
+    "palier": "Platine",
+    "commission": 2520,
+    "motif": "barème",
+    "livraison": 0,
+    "couverture": 1500,
+    "recettes": 2520,
+    "achat": 1360,
+    "relais": 0,
+    "sms": 120,
+    "couts": 1480,
+    "contribution": 1040,
+    "n_colis": 1,
+    "decouverte": false,
+    "mic": false,
+    "ok": true,
+    "objectif": true
+   },
+   {
+    "libelle": "Domicile offert, supermarché à 50 000 F, Platine",
+    "mode": "domicile",
+    "format": "P",
+    "prix": 50000,
+    "palier": "Platine",
+    "commission": 1890,
+    "motif": "barème",
+    "livraison": 0,
+    "couverture": 1500,
+    "recettes": 1890,
+    "achat": 1360,
+    "relais": 0,
+    "sms": 120,
+    "couts": 1480,
+    "contribution": 410,
+    "n_colis": 1,
+    "decouverte": false,
+    "mic": false,
+    "ok": true,
+    "objectif": true
+   },
+   {
+    "libelle": "Domicile périurbain, 12 km, C1, maison à 25 000 F, Bronze",
+    "mode": "domicile",
+    "format": "C1",
+    "prix": 25000,
+    "palier": "Bronze",
+    "commission": 3575,
+    "motif": "barème",
+    "livraison": 4150,
+    "couverture": 0,
+    "recettes": 7725,
+    "achat": 3770,
+    "relais": 0,
+    "sms": 120,
+    "couts": 3890,
+    "contribution": 3835,
+    "n_colis": 1,
+    "decouverte": false,
+    "mic": false,
+    "ok": true,
+    "objectif": true
+   },
+   {
+    "libelle": "Domicile, 2e boutique autre zone, 9 km de détour, 2 000 F, Platine",
+    "mode": "domicile",
+    "format": "P",
+    "prix": 2000,
+    "palier": "Platine",
+    "commission": 700,
+    "motif": "minimum de 700 F",
+    "livraison": 2000,
+    "couverture": 0,
+    "recettes": 2700,
+    "achat": 1810,
+    "relais": 0,
+    "sms": 0,
+    "couts": 1810,
+    "contribution": 890,
+    "n_colis": 1,
+    "decouverte": false,
+    "mic": false,
+    "ok": true,
+    "objectif": true
+   },
+   {
+    "libelle": "Domicile, 2e boutique même zone, 2 000 F, Platine",
+    "mode": "domicile",
+    "format": "P",
+    "prix": 2000,
+    "palier": "Platine",
+    "commission": 700,
+    "motif": "minimum de 700 F",
+    "livraison": 500,
+    "couverture": 0,
+    "recettes": 1200,
+    "achat": 450,
+    "relais": 0,
+    "sms": 0,
+    "couts": 450,
+    "contribution": 750,
+    "n_colis": 1,
+    "decouverte": false,
+    "mic": false,
+    "ok": true,
+    "objectif": true
+   },
+   {
+    "libelle": "Relais offert, supermarché à 30 000 F en 2 cartons C2, Platine + découverte",
+    "mode": "relais",
+    "format": "C2",
+    "prix": 30000,
+    "palier": "Platine",
+    "commission": 1100,
+    "motif": "livraison offerte",
+    "livraison": 2300,
+    "couverture": 900,
+    "recettes": 3400,
+    "achat": 2000,
+    "relais": 1000,
+    "sms": 120,
+    "couts": 3120,
+    "contribution": 280,
+    "n_colis": 2,
+    "decouverte": true,
+    "mic": false,
+    "ok": true,
+    "objectif": false
+   },
+   {
+    "libelle": "Relais offert, supermarché Made in Cameroon à 30 000 F, Platine, ligne Wink à 600 F",
+    "mode": "relais",
+    "format": "P",
+    "prix": 30000,
+    "palier": "Platine",
+    "commission": 1100,
+    "motif": "livraison offerte",
+    "livraison": 0,
+    "couverture": 900,
+    "recettes": 1100,
+    "achat": 600,
+    "relais": 300,
+    "sms": 120,
+    "couts": 1020,
+    "contribution": 80,
+    "n_colis": 1,
+    "decouverte": false,
+    "mic": true,
+    "ok": true,
+    "objectif": false
+   }
+  ],
+  "meilleure_offre": [
+   {
+    "id": "MO01",
+    "cas": "Exemple, phase Régime",
+    "phase": "Régime",
+    "mode": "domicile",
+    "destination": {
+     "zone": "Z6",
+     "niveau": "centre",
+     "quartier": "Biyem-Assi"
+    },
+    "offres": [
+     {
+      "id": "A",
+      "prix": 12300,
+      "zone": "Z11",
+      "niveau": "peripherie",
+      "km": 6,
+      "format": "P",
+      "trust": 86,
+      "nouveau": false,
+      "part_reelle": 0.3,
+      "dernier_service": 1,
+      "delai_h": 4,
+      "stock": 6,
+      "note": 4.5,
+      "mic": false,
+      "couverte": true
+     },
+     {
+      "id": "B",
+      "prix": 12700,
+      "zone": "Z6",
+      "niveau": "centre",
+      "km": 2,
+      "format": "P",
+      "trust": 82,
+      "nouveau": false,
+      "part_reelle": 0.45,
+      "dernier_service": 2,
+      "delai_h": 4,
+      "stock": 10,
+      "note": 4.2,
+      "mic": false,
+      "couverte": true
+     },
+     {
+      "id": "C",
+      "prix": 12800,
+      "zone": "Z3",
+      "niveau": "centre",
+      "km": 5,
+      "format": "P",
+      "trust": 50,
+      "nouveau": true,
+      "part_reelle": 0.0,
+      "dernier_service": 3,
+      "delai_h": 4,
+      "stock": 3,
+      "note": null,
+      "mic": false,
+      "couverte": true
+     },
+     {
+      "id": "D",
+      "prix": 12950,
+      "zone": "Z6",
+      "niveau": "centre",
+      "km": 3,
+      "format": "P",
+      "trust": 90,
+      "nouveau": false,
+      "part_reelle": 0.25,
+      "dernier_service": 4,
+      "delai_h": 2,
+      "stock": 8,
+      "note": 4.8,
+      "mic": false,
+      "couverte": true
+     },
+     {
+      "id": "E",
+      "prix": 12200,
+      "zone": "Z2",
+      "niveau": "centre",
+      "km": 7,
+      "format": "P",
+      "trust": 37,
+      "nouveau": false,
+      "part_reelle": 0.0,
+      "dernier_service": 5,
+      "delai_h": 4,
+      "stock": 4,
+      "note": 3.9,
+      "mic": false,
+      "couverte": true
+     },
+     {
+      "id": "F",
+      "prix": 12900,
+      "zone": "Z2",
+      "niveau": "centre",
+      "km": 7,
+      "format": "P",
+      "trust": 88,
+      "nouveau": false,
+      "part_reelle": 0.0,
+      "dernier_service": 6,
+      "delai_h": 4,
+      "stock": 5,
+      "note": 4.6,
+      "mic": false,
+      "couverte": true
+     }
+    ],
+    "attendu": {
+     "meilleur_ctl": 14200,
+     "tolerance": 300,
+     "mediane": 12800,
+     "en_course": [
+      {
+       "id": "A",
+       "ctl": 14250,
+       "score": 88.9667,
+       "part_cible": 0.311865
+      },
+      {
+       "id": "B",
+       "ctl": 14200,
+       "score": 93.0,
+       "part_cible": 0.340783
+      },
+      {
+       "id": "C",
+       "ctl": 14300,
+       "score": 65.3333,
+       "part_cible": 0.168183
+      },
+      {
+       "id": "D",
+       "ctl": 14450,
+       "score": 67.4333,
+       "part_cible": 0.179168
+      }
+     ],
+     "retenue": "C"
+    }
+   },
+   {
+    "id": "MO02",
+    "cas": "Même produit, phase Démarrage",
+    "phase": "Démarrage",
+    "mode": "domicile",
+    "destination": {
+     "zone": "Z6",
+     "niveau": "centre",
+     "quartier": "Biyem-Assi"
+    },
+    "offres": [
+     {
+      "id": "A",
+      "prix": 12300,
+      "zone": "Z11",
+      "niveau": "peripherie",
+      "km": 6,
+      "format": "P",
+      "trust": 86,
+      "nouveau": false,
+      "part_reelle": 0.3,
+      "dernier_service": 1,
+      "delai_h": 4,
+      "stock": 6,
+      "note": 4.5,
+      "mic": false,
+      "couverte": true
+     },
+     {
+      "id": "B",
+      "prix": 12700,
+      "zone": "Z6",
+      "niveau": "centre",
+      "km": 2,
+      "format": "P",
+      "trust": 82,
+      "nouveau": false,
+      "part_reelle": 0.45,
+      "dernier_service": 2,
+      "delai_h": 4,
+      "stock": 10,
+      "note": 4.2,
+      "mic": false,
+      "couverte": true
+     },
+     {
+      "id": "C",
+      "prix": 12800,
+      "zone": "Z3",
+      "niveau": "centre",
+      "km": 5,
+      "format": "P",
+      "trust": 50,
+      "nouveau": true,
+      "part_reelle": 0.0,
+      "dernier_service": 3,
+      "delai_h": 4,
+      "stock": 3,
+      "note": null,
+      "mic": false,
+      "couverte": true
+     },
+     {
+      "id": "D",
+      "prix": 12950,
+      "zone": "Z6",
+      "niveau": "centre",
+      "km": 3,
+      "format": "P",
+      "trust": 90,
+      "nouveau": false,
+      "part_reelle": 0.25,
+      "dernier_service": 4,
+      "delai_h": 2,
+      "stock": 8,
+      "note": 4.8,
+      "mic": false,
+      "couverte": true
+     },
+     {
+      "id": "E",
+      "prix": 12200,
+      "zone": "Z2",
+      "niveau": "centre",
+      "km": 7,
+      "format": "P",
+      "trust": 37,
+      "nouveau": false,
+      "part_reelle": 0.0,
+      "dernier_service": 5,
+      "delai_h": 4,
+      "stock": 4,
+      "note": 3.9,
+      "mic": false,
+      "couverte": true
+     },
+     {
+      "id": "F",
+      "prix": 12900,
+      "zone": "Z2",
+      "niveau": "centre",
+      "km": 7,
+      "format": "P",
+      "trust": 88,
+      "nouveau": false,
+      "part_reelle": 0.0,
+      "dernier_service": 6,
+      "delai_h": 4,
+      "stock": 5,
+      "note": 4.6,
+      "mic": false,
+      "couverte": true
+     }
+    ],
+    "attendu": {
+     "meilleur_ctl": 14200,
+     "tolerance": 1000,
+     "mediane": 12800,
+     "en_course": [
+      {
+       "id": "A",
+       "ctl": 14250,
+       "score": 93.05,
+       "part_cible": 0.244017
+      },
+      {
+       "id": "B",
+       "ctl": 14200,
+       "score": 93.0,
+       "part_cible": 0.243755
+      },
+      {
+       "id": "C",
+       "ctl": 14300,
+       "score": 73.5,
+       "part_cible": 0.152252
+      },
+      {
+       "id": "D",
+       "ctl": 14450,
+       "score": 87.85,
+       "part_cible": 0.217506
+      },
+      {
+       "id": "F",
+       "ctl": 14900,
+       "score": 71.1,
+       "part_cible": 0.142471
+      }
+     ],
+     "retenue": "C"
+    }
+   },
+   {
+    "id": "MO03",
+    "cas": "Hors tolérance",
+    "phase": "Régime",
+    "mode": "relais",
+    "destination": {
+     "zone": "Z6",
+     "niveau": "centre",
+     "quartier": null
+    },
+    "offres": [
+     {
+      "id": "A",
+      "prix": 10000,
+      "zone": "Z6",
+      "niveau": "centre",
+      "km": 3,
+      "format": "P",
+      "trust": 70,
+      "nouveau": false,
+      "part_reelle": 0.9,
+      "dernier_service": 1,
+      "delai_h": 4,
+      "stock": 5,
+      "note": 4.0,
+      "mic": false,
+      "couverte": true
+     },
+     {
+      "id": "B",
+      "prix": 10400,
+      "zone": "Z6",
+      "niveau": "centre",
+      "km": 3,
+      "format": "P",
+      "trust": 95,
+      "nouveau": false,
+      "part_reelle": 0.0,
+      "dernier_service": 2,
+      "delai_h": 4,
+      "stock": 5,
+      "note": 5.0,
+      "mic": false,
+      "couverte": true
+     }
+    ],
+    "attendu": {
+     "meilleur_ctl": 10900,
+     "tolerance": 300,
+     "mediane": 10200.0,
+     "en_course": [
+      {
+       "id": "A",
+       "ctl": 10900,
+       "score": 89.0,
+       "part_cible": 1.0
+      }
+     ],
+     "retenue": "A"
+    }
+   },
+   {
+    "id": "MO04",
+    "cas": "Deux offres : pas de plafond",
+    "phase": "Régime",
+    "mode": "relais",
+    "destination": {
+     "zone": "Z6",
+     "niveau": "centre",
+     "quartier": null
+    },
+    "offres": [
+     {
+      "id": "A",
+      "prix": 10000,
+      "zone": "Z6",
+      "niveau": "centre",
+      "km": 3,
+      "format": "P",
+      "trust": 95,
+      "nouveau": false,
+      "part_reelle": 0.8,
+      "dernier_service": 2,
+      "delai_h": 4,
+      "stock": 5,
+      "note": 4.8,
+      "mic": false,
+      "couverte": true
+     },
+     {
+      "id": "B",
+      "prix": 10100,
+      "zone": "Z3",
+      "niveau": "centre",
+      "km": 3,
+      "format": "P",
+      "trust": 60,
+      "nouveau": false,
+      "part_reelle": 0.2,
+      "dernier_service": 1,
+      "delai_h": 4,
+      "stock": 5,
+      "note": 4.0,
+      "mic": false,
+      "couverte": true
+     }
+    ],
+    "attendu": {
+     "meilleur_ctl": 10900,
+     "tolerance": 300,
+     "mediane": 10050.0,
+     "en_course": [
+      {
+       "id": "A",
+       "ctl": 10900,
+       "score": 98.1,
+       "part_cible": 0.635261
+      },
+      {
+       "id": "B",
+       "ctl": 11000,
+       "score": 74.3333,
+       "part_cible": 0.364739
+      }
+     ],
+     "retenue": "B"
+    }
+   },
+   {
+    "id": "MO05",
+    "cas": "Plafond de 50 % à trois offres",
+    "phase": "Régime",
+    "mode": "relais",
+    "destination": {
+     "zone": "Z3",
+     "niveau": "centre",
+     "quartier": null
+    },
+    "offres": [
+     {
+      "id": "A",
+      "prix": 20000,
+      "zone": "Z3",
+      "niveau": "centre",
+      "km": 3,
+      "format": "P",
+      "trust": 95,
+      "nouveau": false,
+      "part_reelle": 0.5,
+      "dernier_service": 1,
+      "delai_h": 4,
+      "stock": 5,
+      "note": 4.8,
+      "mic": false,
+      "couverte": true
+     },
+     {
+      "id": "B",
+      "prix": 20100,
+      "zone": "Z3",
+      "niveau": "centre",
+      "km": 3,
+      "format": "P",
+      "trust": 60,
+      "nouveau": false,
+      "part_reelle": 0.3,
+      "dernier_service": 2,
+      "delai_h": 4,
+      "stock": 5,
+      "note": 4.0,
+      "mic": false,
+      "couverte": true
+     },
+     {
+      "id": "C",
+      "prix": 20200,
+      "zone": "Z3",
+      "niveau": "centre",
+      "km": 3,
+      "format": "P",
+      "trust": 60,
+      "nouveau": false,
+      "part_reelle": 0.2,
+      "dernier_service": 3,
+      "delai_h": 4,
+      "stock": 5,
+      "note": 4.0,
+      "mic": false,
+      "couverte": true
+     }
+    ],
+    "attendu": {
+     "meilleur_ctl": 20900,
+     "tolerance": 300,
+     "mediane": 20100,
+     "en_course": [
+      {
+       "id": "A",
+       "ctl": 20900,
+       "score": 98.1,
+       "part_cible": 0.5
+      },
+      {
+       "id": "B",
+       "ctl": 21000,
+       "score": 74.3333,
+       "part_cible": 0.292273
+      },
+      {
+       "id": "C",
+       "ctl": 21100,
+       "score": 62.6667,
+       "part_cible": 0.207727
+      }
+     ],
+     "retenue": "C"
+    }
+   },
+   {
+    "id": "MO06",
+    "cas": "Nouveau vendeur : 15 % au moins",
+    "phase": "Régime",
+    "mode": "relais",
+    "destination": {
+     "zone": "Z1",
+     "niveau": "centre",
+     "quartier": null
+    },
+    "offres": [
+     {
+      "id": "A",
+      "prix": 15000,
+      "zone": "Z1",
+      "niveau": "centre",
+      "km": 3,
+      "format": "P",
+      "trust": 95,
+      "nouveau": false,
+      "part_reelle": 0.3,
+      "dernier_service": 1,
+      "delai_h": 4,
+      "stock": 5,
+      "note": 4.5,
+      "mic": false,
+      "couverte": true
+     },
+     {
+      "id": "B",
+      "prix": 15000,
+      "zone": "Z1",
+      "niveau": "centre",
+      "km": 3,
+      "format": "P",
+      "trust": 95,
+      "nouveau": false,
+      "part_reelle": 0.3,
+      "dernier_service": 2,
+      "delai_h": 4,
+      "stock": 5,
+      "note": 4.5,
+      "mic": false,
+      "couverte": true
+     },
+     {
+      "id": "C",
+      "prix": 15000,
+      "zone": "Z1",
+      "niveau": "centre",
+      "km": 3,
+      "format": "P",
+      "trust": 95,
+      "nouveau": false,
+      "part_reelle": 0.3,
+      "dernier_service": 3,
+      "delai_h": 4,
+      "stock": 5,
+      "note": 4.5,
+      "mic": false,
+      "couverte": true
+     },
+     {
+      "id": "D",
+      "prix": 15000,
+      "zone": "Z1",
+      "niveau": "centre",
+      "km": 3,
+      "format": "P",
+      "trust": 50,
+      "nouveau": true,
+      "part_reelle": 0.1,
+      "dernier_service": 4,
+      "delai_h": 24,
+      "stock": 1,
+      "note": null,
+      "mic": false,
+      "couverte": true
+     }
+    ],
+    "attendu": {
+     "meilleur_ctl": 15900,
+     "tolerance": 300,
+     "mediane": 15000.0,
+     "en_course": [
+      {
+       "id": "A",
+       "ctl": 15900,
+       "score": 97.5,
+       "part_cible": 0.283333
+      },
+      {
+       "id": "B",
+       "ctl": 15900,
+       "score": 97.5,
+       "part_cible": 0.283333
+      },
+      {
+       "id": "C",
+       "ctl": 15900,
+       "score": 97.5,
+       "part_cible": 0.283333
+      },
+      {
+       "id": "D",
+       "ctl": 15900,
+       "score": 65.5,
+       "part_cible": 0.15
+      }
+     ],
+     "retenue": "D"
+    }
+   },
+   {
+    "id": "MO07",
+    "cas": "Prix anormal mis en contrôle",
+    "phase": "Régime",
+    "mode": "relais",
+    "destination": {
+     "zone": "Z6",
+     "niveau": "centre",
+     "quartier": null
+    },
+    "offres": [
+     {
+      "id": "A",
+      "prix": 4000,
+      "zone": "Z6",
+      "niveau": "centre",
+      "km": 3,
+      "format": "P",
+      "trust": 80,
+      "nouveau": false,
+      "part_reelle": 0.0,
+      "dernier_service": 1,
+      "delai_h": 4,
+      "stock": 5,
+      "note": null,
+      "mic": false,
+      "couverte": true
+     },
+     {
+      "id": "B",
+      "prix": 10000,
+      "zone": "Z6",
+      "niveau": "centre",
+      "km": 3,
+      "format": "P",
+      "trust": 80,
+      "nouveau": false,
+      "part_reelle": 0.6,
+      "dernier_service": 2,
+      "delai_h": 4,
+      "stock": 5,
+      "note": 4.0,
+      "mic": false,
+      "couverte": true
+     },
+     {
+      "id": "C",
+      "prix": 10100,
+      "zone": "Z6",
+      "niveau": "centre",
+      "km": 3,
+      "format": "P",
+      "trust": 80,
+      "nouveau": false,
+      "part_reelle": 0.4,
+      "dernier_service": 3,
+      "delai_h": 4,
+      "stock": 5,
+      "note": 4.0,
+      "mic": false,
+      "couverte": true
+     }
+    ],
+    "attendu": {
+     "meilleur_ctl": 10900,
+     "tolerance": 300,
+     "mediane": 10000,
+     "en_course": [
+      {
+       "id": "B",
+       "ctl": 10900,
+       "score": 92.0,
+       "part_cible": 0.567389
+      },
+      {
+       "id": "C",
+       "ctl": 11000,
+       "score": 80.3333,
+       "part_cible": 0.432611
+      }
+     ],
+     "retenue": "C"
+    }
+   },
+   {
+    "id": "MO08",
+    "cas": "Domicile : boutique lointaine",
+    "phase": "Régime",
+    "mode": "domicile",
+    "destination": {
+     "zone": "Z2",
+     "niveau": "centre",
+     "quartier": "Obili"
+    },
+    "offres": [
+     {
+      "id": "A",
+      "prix": 20000,
+      "zone": "Z11",
+      "niveau": "peripherie",
+      "km": 8,
+      "format": "P",
+      "trust": 70,
+      "nouveau": false,
+      "part_reelle": 0.0,
+      "dernier_service": 1,
+      "delai_h": 4,
+      "stock": 5,
+      "note": 4.0,
+      "mic": false,
+      "couverte": true
+     },
+     {
+      "id": "B",
+      "prix": 20150,
+      "zone": "Z2",
+      "niveau": "centre",
+      "km": 3,
+      "format": "P",
+      "trust": 70,
+      "nouveau": false,
+      "part_reelle": 0.5,
+      "dernier_service": 2,
+      "delai_h": 4,
+      "stock": 5,
+      "note": 4.0,
+      "mic": false,
+      "couverte": true
+     }
+    ],
+    "attendu": {
+     "meilleur_ctl": 21650,
+     "tolerance": 300,
+     "mediane": 20075.0,
+     "en_course": [
+      {
+       "id": "B",
+       "ctl": 21650,
+       "score": 89.0,
+       "part_cible": 1.0
+      }
+     ],
+     "retenue": "B"
+    }
+   },
+   {
+    "id": "MO09",
+    "cas": "Zone sans entreprise active",
+    "phase": "Régime",
+    "mode": "relais",
+    "destination": {
+     "zone": "Z6",
+     "niveau": "centre",
+     "quartier": null
+    },
+    "offres": [
+     {
+      "id": "A",
+      "prix": 9000,
+      "zone": "Z9",
+      "niveau": "centre",
+      "km": 3,
+      "format": "P",
+      "trust": 90,
+      "nouveau": false,
+      "part_reelle": 0.0,
+      "dernier_service": 1,
+      "delai_h": 4,
+      "stock": 5,
+      "note": 4.8,
+      "mic": false,
+      "couverte": false
+     },
+     {
+      "id": "B",
+      "prix": 9500,
+      "zone": "Z6",
+      "niveau": "centre",
+      "km": 3,
+      "format": "P",
+      "trust": 70,
+      "nouveau": false,
+      "part_reelle": 0.5,
+      "dernier_service": 2,
+      "delai_h": 4,
+      "stock": 5,
+      "note": 4.0,
+      "mic": false,
+      "couverte": true
+     }
+    ],
+    "attendu": {
+     "meilleur_ctl": 10400,
+     "tolerance": 300,
+     "mediane": 9500,
+     "en_course": [
+      {
+       "id": "B",
+       "ctl": 10400,
+       "score": 89.0,
+       "part_cible": 1.0
+      }
+     ],
+     "retenue": "B"
+    }
+   },
+   {
+    "id": "MO10",
+    "cas": "Égalité : servi le moins récemment",
+    "phase": "Régime",
+    "mode": "relais",
+    "destination": {
+     "zone": "Z6",
+     "niveau": "centre",
+     "quartier": null
+    },
+    "offres": [
+     {
+      "id": "A",
+      "prix": 8000,
+      "zone": "Z6",
+      "niveau": "centre",
+      "km": 3,
+      "format": "P",
+      "trust": 70,
+      "nouveau": false,
+      "part_reelle": 0.5,
+      "dernier_service": 2,
+      "delai_h": 4,
+      "stock": 5,
+      "note": 4.0,
+      "mic": false,
+      "couverte": true
+     },
+     {
+      "id": "B",
+      "prix": 8000,
+      "zone": "Z6",
+      "niveau": "centre",
+      "km": 3,
+      "format": "P",
+      "trust": 70,
+      "nouveau": false,
+      "part_reelle": 0.5,
+      "dernier_service": 1,
+      "delai_h": 4,
+      "stock": 5,
+      "note": 4.0,
+      "mic": false,
+      "couverte": true
+     }
+    ],
+    "attendu": {
+     "meilleur_ctl": 8900,
+     "tolerance": 267,
+     "mediane": 8000.0,
+     "en_course": [
+      {
+       "id": "A",
+       "ctl": 8900,
+       "score": 89.0,
+       "part_cible": 0.5
+      },
+      {
+       "id": "B",
+       "ctl": 8900,
+       "score": 89.0,
+       "part_cible": 0.5
+      }
+     ],
+     "retenue": "B"
+    }
+   }
+  ],
+  "promesse": [
+   {
+    "jour": "lundi",
+    "heure": 8.0,
+    "mode": "domicile",
+    "delai_h": 4,
+    "texte": "Livré aujourd'hui avant 17 h"
+   },
+   {
+    "jour": "lundi",
+    "heure": 9.5,
+    "mode": "domicile",
+    "delai_h": 4,
+    "texte": "Livré demain avant 13 h"
+   },
+   {
+    "jour": "lundi",
+    "heure": 9.5,
+    "mode": "domicile",
+    "delai_h": 1,
+    "texte": "Livré aujourd'hui avant 16 h"
+   },
+   {
+    "jour": "lundi",
+    "heure": 11.0,
+    "mode": "domicile",
+    "delai_h": 4,
+    "texte": "Livré demain avant 13 h"
+   },
+   {
+    "jour": "samedi",
+    "heure": 15.0,
+    "mode": "domicile",
+    "delai_h": 4,
+    "texte": "Livré lundi avant 14 h"
+   },
+   {
+    "jour": "dimanche",
+    "heure": 10.0,
+    "mode": "domicile",
+    "delai_h": 4,
+    "texte": "Livré demain avant 17 h"
+   },
+   {
+    "jour": "mercredi",
+    "heure": 7.0,
+    "mode": "relais",
+    "delai_h": 0.5,
+    "texte": "Disponible au relais aujourd'hui avant 17 h 30"
+   },
+   {
+    "jour": "mercredi",
+    "heure": 10.0,
+    "mode": "relais",
+    "delai_h": 2,
+    "texte": "Disponible au relais demain avant 13 h"
+   },
+   {
+    "jour": "mercredi",
+    "heure": 12.0,
+    "mode": "relais",
+    "delai_h": 4,
+    "texte": "Disponible au relais demain avant 17 h 30"
+   },
+   {
+    "jour": "vendredi",
+    "heure": 19.0,
+    "mode": "relais",
+    "delai_h": 4,
+    "texte": "Disponible au relais lundi avant 13 h"
+   }
+  ]
+ }
+}

@@ -1,0 +1,164 @@
+/* Tablette de l'espace vendeur (DISPOSITION-ECRANS.md du vendeur). Même famille que le client
+   (site/src/styles/larges.css) : mêmes paliers, même capsule de verre, mêmes modales.
+   AUCUNE règle ne s'applique sous 600 px : le téléphone ne change pas d'un pixel. Entre 600 et 767 px, seules jouent
+   la largeur de #app et celle du contenu. Dès 768 px : en-tête de site, titre des pages enfants dans le contenu,
+   barre du bas en capsule centrée, modales, pied de page. Dès 1024 px (avec une session) : vue ordinateur, barre
+   latérale groupée et contenu centré (dernière section).
+   Jetons du thème seulement (aucune couleur nouvelle).
+   Variables (sur #app) : --marge (gouttière : 16, puis 24), --l-max (largeur du contenu : 640), --lg (largeur de
+   l'en-tête et du pied : 960 dès 768), --hd-h (hauteur de l'en-tête de site, MESURÉE par la coque), --pad (marge
+   latérale effective de main, qui centre le contenu). */
+
+/* ================================ Paliers et conteneur ================================ */
+@media (min-width:600px){
+  #app{max-width:none;--marge:16px;--l-max:640px;--lg:100000px;--pad:max(var(--marge),calc((100vw - var(--l-max)) / 2))}
+  #app main{padding-left:var(--pad);padding-right:var(--pad)}
+}
+@media (min-width:768px){
+  #app{--marge:24px;--esp-v:24px;--lg:960px}
+  #app main{scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
+  #app main::-webkit-scrollbar{display:block;width:10px}
+  #app main::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:10px}
+  #app main:focus{outline:none}
+  #app.a-site main{padding-bottom:110px!important}
+}
+
+/* ================================ En-tête de site (dès 768) ================================ */
+/* Les éléments de l'en-tête racine du téléphone (menu, logo, « Espace vendeur · boutique », pastilles, thème,
+   langue, cloche, avatar), mêmes classes, sur une ligne alignée sur le conteneur large. */
+@media (min-width:768px){
+  #app header.hd.hd-site{padding:var(--sb) 0 0;border-radius:0;box-shadow:var(--glass-edge,none),0 1px 0 var(--line)}
+  .hd-site .hs-row{display:flex;align-items:center;gap:4px;min-height:64px;max-width:calc(var(--lg) + 2 * var(--marge));margin:0 auto;padding:6px var(--marge)}
+  .hd-site .hd-logo{flex:0 0 auto;margin-right:8px}
+  .hd-site .hs-id{display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0;flex:0 1 auto}
+  .hd-site .hs-id .hd-label{padding:0 2px}
+  /* Aucune pastille coupée : la rangée passe à la ligne au lieu de défiler. */
+  .hd-site .hs-id .hd-pills{padding:4px 0 0;min-width:0;flex-wrap:wrap;overflow:visible}
+  .hd-site .hd-sp{flex:1 1 0;min-width:8px}
+  .hd-site .avatar{margin-left:6px}
+}
+/* ================================ Barre de titre des pages enfants ================================ */
+@media (min-width:768px){
+  #app .hd-page{margin:0 0 8px}
+  #app .hd-page .hd-sub{height:auto;min-height:52px;padding:0}
+  #app .hd-page .hd-sub h1{font-size:22px;white-space:normal}
+  #app .hd-page .hd-sub>a.ibtn:first-child{margin-left:-10px}
+}
+
+/* ================================ Barre du bas : capsule flottante (tablette portrait) ================================ */
+@media (min-width:768px){
+  #app nav.dock{left:0;right:0;margin:0 auto;width:min(520px,calc(100% - 48px));bottom:calc(20px + env(safe-area-inset-bottom));height:64px;padding:0 5px;border-radius:999px}
+  #app nav.dock .tab{height:54px;border-radius:999px}
+}
+
+
+/* ================================ Menu du profil (ancré sous l'avatar) ================================ */
+@media (min-width:768px){
+  #app{--pop-droite:calc(max(0px,(100vw - var(--lg) - 2 * var(--marge)) / 2) + var(--marge))}
+  #app.a-site .pm-veil{background:transparent}
+  #app.a-site .pm{top:calc(var(--sb) + var(--hd-h, 76px) - 6px);right:var(--pop-droite);width:340px;max-width:calc(100% - 32px);max-height:calc(100vh - var(--sb) - var(--hd-h, 76px) - 16px);overflow:auto}
+}
+
+/* ================================ Feuilles : modales centrées ================================ */
+@media (min-width:768px){
+  #app .veil{position:absolute;inset:0}
+  #app .sheet{top:0;right:0;bottom:0;left:0;margin:auto;width:min(560px,calc(100% - 48px));height:fit-content;max-height:86vh;overflow-y:auto;overscroll-behavior:contain;border-radius:24px;padding:20px 24px 24px;box-shadow:var(--shadow-pop,0 24px 50px -18px rgba(16,14,20,.55)),0 0 0 1px var(--line)}
+  #app .sheet>.grab{display:none}
+  #app .sheet[data-forme=large]{width:min(720px,calc(100% - 48px))}
+  #app .sheet .sheet-x{position:sticky;top:-8px;z-index:3;display:flex;align-items:center;justify-content:center;width:36px;height:36px;margin:-8px -12px -28px auto;border:0;border-radius:50%;background:var(--sand-2);color:var(--ink-2);cursor:pointer}
+  html[data-mouv] #app .sheet{animation:blv-modale var(--blv-long) var(--blv-ressort) both}
+  @keyframes blv-modale{from{opacity:0;transform:translate3d(0,14px,0) scale(.97)}}
+}
+
+/* ================================ Toasts ================================ */
+/* Centrés sur le contenu, au-dessus de la capsule de navigation. */
+@media (min-width:768px){
+  #app .vd10-toast,#app .vd11-toast{left:0;right:0;margin:0 auto;width:calc(100% - 48px);max-width:480px}
+  /* Annonces des écrans VD-11 (style en ligne) : dans la largeur du contenu. */
+  #app [data-annonce][role=status]{left:var(--pad)!important;right:var(--pad)!important}
+}
+
+/* ================================ Pied de page ================================ */
+@media (min-width:768px){
+  #app main>.pied{margin:var(--esp-v) calc(-1 * var(--pad)) 0;background:var(--card);border-top:1px solid var(--line);color:var(--ink-2)}
+  .pied .pp-in{max-width:calc(var(--lg) + 2 * var(--marge));margin:0 auto;padding:32px var(--marge) 24px}
+  .pied .pp-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 24px}
+  .pied .kick{margin:0 0 12px}
+  .pied ul{list-style:none;margin:0;padding:0;display:grid;gap:4px;font-size:14px}
+  .pied .pp-col a{display:inline-flex;align-items:center;min-height:32px;color:var(--ink-2)}
+  .pied .pp-marque p{margin:12px 0 12px;max-width:320px;font-size:13.5px;line-height:1.5;color:var(--ink-3)}
+  .pied .rs-liens{display:flex;gap:8px;list-style:none;margin:0;padding:0}
+  .pied .rs-liens a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;background:var(--sand-2);color:var(--ink-2)}
+  .pied .pp-bas{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line);font-size:13px;color:var(--ink-3)}
+  .pied .pp-bas .grow{flex:1}
+  .pied .pp-bas a{display:inline-flex;align-items:center;min-height:32px;color:var(--or-txt);font-weight:700}
+}
+@media (min-width:768px) and (hover:hover) and (pointer:fine){
+  .pied a:hover{color:var(--or-txt)}
+}
+
+/* ================================ Survol (souris seulement) ================================ */
+@media (min-width:768px) and (hover:hover) and (pointer:fine){
+  #app :is(.btn,.chip):hover{filter:brightness(1.05)}
+}
+
+@media (min-width:768px){
+  .pied a[aria-current=page]{color:var(--or-txt);font-weight:800}
+}
+
+/* ================================ Tiroir latéral (dès 768) ================================ */
+/* Ouvert par l'icône Menu de l'en-tête de site : les groupes de l'interface vendeur réelle (config/navigation.ts). */
+@media (min-width:768px){
+  #app .tr-veil{position:absolute;inset:0;z-index:58;background:rgba(20,12,6,.32)}
+  #app .tr{position:absolute;z-index:59;left:0;top:0;bottom:0;width:min(340px,calc(100% - 64px));display:flex;flex-direction:column;background:var(--card);color:var(--ink);box-shadow:var(--shadow-pop,0 24px 50px -18px rgba(16,14,20,.55)),1px 0 0 var(--line);padding-top:var(--sb)}
+  html[data-theme=dark] #app .tr-veil{background:rgba(0,0,0,.55)}
+  html[data-mouv] #app .tr{animation:blv-tiroir-g var(--blv-long) var(--blv-doux) both}
+  html[data-mouv] #app .tr-veil{animation:blv-voile var(--blv-moyen) ease both}
+  @keyframes blv-tiroir-g{from{transform:translate3d(-48px,0,0);opacity:.4}}
+  @keyframes blv-voile{from{opacity:0}}
+  #app .tr-hd{display:flex;align-items:center;gap:12px;padding:16px 12px 14px 18px;border-bottom:1px solid var(--line)}
+  #app .tr-hd .avatar{width:40px;height:40px;margin:0;font-size:14px;box-shadow:none}
+  #app .tr-hd .grow{flex:1;min-width:0}
+  #app .tr-hd b{display:block;font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #app .tr-hd span:not(.avatar){display:block;font-size:12.5px;color:var(--ink-3)}
+  #app .tr-ls{flex:1;min-height:0;overflow:auto;padding:8px 10px 20px;scrollbar-width:thin}
+  #app .tr-g{padding:6px 0;border-bottom:1px solid var(--line)}
+  #app .tr-g:last-child{border-bottom:0}
+  #app .tr-gt{margin:8px 10px 4px;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+  #app .tr-it{display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;border-radius:12px;font-size:15px;font-weight:700;color:var(--ink-2)}
+  #app .tr-it svg{flex-shrink:0;color:var(--ink-3)}
+  #app .tr-it.on{background:var(--or-soft);color:var(--or-txt);font-weight:800}
+  #app .tr-it.on svg{color:var(--or-txt)}
+  #app .tr-it:focus-visible{outline:2px solid var(--or-txt);outline-offset:-2px}
+}
+@media (min-width:768px) and (hover:hover) and (pointer:fine){
+  #app .tr-it:not(.on):hover{background:var(--sand-2)}
+}
+
+/* ================================ Ordinateur (dès 1024 px) ================================ */
+/* D'après l'interface vendeur réelle (logique-metier/vendeur/INTERFACE-REELLE.md), en plus simple : barre latérale
+   groupée à gauche (logo, carte de la boutique, Ventes, Catalogue, Croissance, Boutique, Mon compte, « Retour au
+   site »), en-tête fin à sa droite (boutique et pastilles, thème, langue, cloche, avatar → Mon profil), pas de barre
+   du bas ni de tiroir. Contenu centré : 760 px, 1080 px pour les pages de listes et de tableaux (#app.l-large,
+   config/navigation.ts : ROUTES_LARGES). Classes posées par Ecran : a-ord, l-large, r-<route>. */
+@media (min-width:1024px){
+  #app.a-ord{--sl:264px;--marge:32px;--l-max:760px;--pad:max(var(--marge),calc((100vw - var(--sl) - var(--l-max)) / 2))}
+  #app.a-ord.l-large{--l-max:1080px}
+  #app.a-ord main{left:var(--sl);padding-bottom:0!important}
+  #app.a-ord header.hd.hd-site{left:var(--sl)}
+  #app.a-ord .hd-site .hs-row{max-width:none;min-height:56px;padding:4px var(--marge)}
+  #app.a-ord .vd10-toast,#app.a-ord .vd11-toast{left:var(--sl)}
+  #app.a-ord [data-annonce][role=status]{left:calc(var(--sl) + var(--pad))!important}
+  #app.a-ord .sl{position:absolute;z-index:31;left:0;top:0;bottom:0;width:var(--sl);display:flex;flex-direction:column;padding-top:var(--sb);background:var(--card);box-shadow:1px 0 0 var(--line)}
+  #app.a-ord .sl-logo{display:flex;align-items:center;flex-shrink:0;height:60px;padding:0 20px}
+  #app.a-ord .sl-logo img{height:30px;width:auto}
+  #app.a-ord .sl .tr-hd{margin:0 12px;padding:12px;border:1px solid var(--line);border-radius:16px;background:var(--sand)}
+  #app.a-ord .sl .tr-ls{padding-top:4px}
+  #app.a-ord .sl .tr-it{min-height:40px;font-size:14.5px}
+  #app .tr-bdg{margin-left:auto;min-width:22px;height:22px;padding:0 6px;border-radius:11px;display:inline-flex;align-items:center;justify-content:center;background:var(--or-txt);color:var(--card);font-size:12px;font-weight:800}
+
+  /* Tableau de bord, grille de 12 colonnes, barre latérale nuit : styles/pro.css (signature « espace pro »). */
+}
+@media (min-width:1024px) and (hover:hover) and (pointer:fine){
+  #app.a-ord .sl .tr-it:not(.on):hover{background:var(--sand-2)}
+}

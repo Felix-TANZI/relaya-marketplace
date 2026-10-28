@@ -1,0 +1,577 @@
+[
+ {
+  "route": "planning",
+  "page": "LIV-P05",
+  "titre": "Mon planning",
+  "groupe": "AJ-L",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "aujourdhui",
+  "onglet": "aujourdhui",
+  "etats": [
+   {
+    "adresse": "#statut",
+    "libelle": "disponible"
+   }
+  ]
+ },
+ {
+  "route": "connexion",
+  "page": "LIV-P01",
+  "titre": "Connexion",
+  "groupe": "LIV-03",
+  "statut": "repris",
+  "entete": "aucun",
+  "retour": null,
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#connexion",
+    "libelle": "ouverture par code PIN"
+   },
+   {
+    "adresse": "#connexion?s=charge",
+    "libelle": "chargement de la journée"
+   }
+  ]
+ },
+ {
+  "route": "activation",
+  "page": "LIV-P02",
+  "titre": "Activation du compte",
+  "groupe": "LIV-03",
+  "statut": "repris",
+  "entete": "racine",
+  "retour": null,
+  "onglet": "aujourdhui",
+  "etats": [
+   {
+    "adresse": "#activation",
+    "libelle": "liste d'activation (première connexion)"
+   }
+  ]
+ },
+ {
+  "route": "certification",
+  "page": "LIV-P03",
+  "titre": "Certification",
+  "groupe": "LIV-03",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "activation",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#certification",
+    "libelle": "modules à faire (Hervé Fouda, 5 sur 7)"
+   }
+  ]
+ },
+ {
+  "route": "compte",
+  "page": "LIV-P32",
+  "titre": "État du compte",
+  "groupe": "LIV-03",
+  "statut": "repris",
+  "entete": "aucun",
+  "retour": null,
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#compte",
+    "libelle": "en activation (Hervé Fouda)"
+   }
+  ]
+ },
+ {
+  "route": "aujourdhui",
+  "page": "LIV-P04",
+  "titre": "Aujourd’hui",
+  "groupe": "LIV-04",
+  "statut": "repris",
+  "entete": "racine",
+  "retour": null,
+  "onglet": "aujourdhui",
+  "etats": [
+   {
+    "adresse": "#aujourdhui",
+    "libelle": "paquet en cours"
+   }
+  ]
+ },
+ {
+  "route": "statut",
+  "page": "LIV-P05",
+  "titre": "Mon statut",
+  "groupe": "LIV-04",
+  "statut": "repris",
+  "entete": "racine",
+  "retour": null,
+  "onglet": "aujourdhui",
+  "etats": [
+   {
+    "adresse": "#statut",
+    "libelle": "disponible"
+   }
+  ]
+ },
+ {
+  "route": "paquet",
+  "page": "LIV-P06",
+  "titre": "Mon paquet",
+  "groupe": "LIV-04",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "aujourdhui",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#paquet",
+    "libelle": "affecté, prêt à démarrer"
+   }
+  ]
+ },
+ {
+  "route": "kit",
+  "page": "LIV-P07",
+  "titre": "Mon kit d’emballage",
+  "groupe": "LIV-04",
+  "statut": "repris",
+  "entete": "racine",
+  "retour": null,
+  "onglet": "aujourdhui",
+  "etats": [
+   {
+    "adresse": "#kit",
+    "libelle": "suffisant (avant le départ)"
+   }
+  ]
+ },
+ {
+  "route": "tournee",
+  "page": "LIV-P08",
+  "titre": "Ma tournée",
+  "groupe": "LIV-05",
+  "statut": "repris",
+  "entete": "racine",
+  "retour": null,
+  "onglet": "tournee",
+  "etats": [
+   {
+    "adresse": "#tournee",
+    "libelle": "en route vers l'arrêt 2"
+   }
+  ]
+ },
+ {
+  "route": "navigation",
+  "page": "LIV-P09",
+  "titre": "Navigation",
+  "groupe": "LIV-05",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "tournee",
+  "onglet": "tournee",
+  "etats": [
+   {
+    "adresse": "#navigation",
+    "libelle": "itinéraire vers l'arrêt 2"
+   }
+  ]
+ },
+ {
+  "route": "appel",
+  "page": "LIV-P33",
+  "titre": "Appel",
+  "groupe": "LIV-05",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "tournee",
+  "onglet": null,
+  "etats": []
+ },
+ {
+  "route": "arrivee",
+  "page": "LIV-P10",
+  "titre": "Arrivée chez le vendeur",
+  "groupe": "LIV-06",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "tournee",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#arrivee?a=1",
+    "libelle": "arrivé, articles attendus"
+   }
+  ]
+ },
+ {
+  "route": "controle",
+  "page": "LIV-P11",
+  "titre": "Contrôle et photos",
+  "groupe": "LIV-06",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "arrivee",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#controle?a=1",
+    "libelle": "à contrôler, liste vide"
+   }
+  ]
+ },
+ {
+  "route": "audit",
+  "page": "LIV-P12",
+  "titre": "Audit par échantillon",
+  "groupe": "LIV-06",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "controle",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#audit",
+    "libelle": "demandé par BelivaY"
+   }
+  ]
+ },
+ {
+  "route": "emballage",
+  "page": "LIV-P13",
+  "titre": "Emballage et scellé",
+  "groupe": "LIV-06",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "controle",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#emballage?a=1",
+    "libelle": "format conseillé"
+   }
+  ]
+ },
+ {
+  "route": "code-remise",
+  "page": "LIV-P14",
+  "titre": "Code de remise",
+  "groupe": "LIV-06",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "arrivee",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#code-remise?a=1",
+    "libelle": "saisie"
+   }
+  ]
+ },
+ {
+  "route": "refus",
+  "page": "LIV-P15",
+  "titre": "Refus au ramassage",
+  "groupe": "LIV-06",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "arrivee",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#refus?a=1",
+    "libelle": "motif, liste fermée"
+   }
+  ]
+ },
+ {
+  "route": "depot-relais",
+  "page": "LIV-P16",
+  "titre": "Dépôt au point relais",
+  "groupe": "LIV-07",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "tournee",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#depot-relais",
+    "libelle": "arrivée, QR de mission et code de dépôt"
+   }
+  ]
+ },
+ {
+  "route": "domicile",
+  "page": "LIV-P17",
+  "titre": "Remise à domicile",
+  "groupe": "LIV-07",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "tournee",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#domicile",
+    "libelle": "en approche"
+   }
+  ]
+ },
+ {
+  "route": "echec-domicile",
+  "page": "LIV-P18",
+  "titre": "Remise impossible",
+  "groupe": "LIV-07",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "domicile",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#echec-domicile",
+    "libelle": "motif"
+   }
+  ]
+ },
+ {
+  "route": "collecte",
+  "page": "LIV-P19",
+  "titre": "Collecte au relais",
+  "groupe": "LIV-07",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "tournee",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#collecte",
+    "libelle": "à collecter, colis par colis"
+   }
+  ]
+ },
+ {
+  "route": "retour-vendeur",
+  "page": "LIV-P20",
+  "titre": "Retour chez le vendeur",
+  "groupe": "LIV-07",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "tournee",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#retour-vendeur",
+    "libelle": "en route vers le vendeur"
+   }
+  ]
+ },
+ {
+  "route": "incident",
+  "page": "LIV-P21",
+  "titre": "Signaler un incident",
+  "groupe": "LIV-08",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "tournee",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#incident",
+    "libelle": "les six familles (feuille ouverte)"
+   }
+  ]
+ },
+ {
+  "route": "synchronisation",
+  "page": "LIV-P22",
+  "titre": "Synchronisation",
+  "groupe": "LIV-08",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "moi",
+  "onglet": "moi",
+  "etats": [
+   {
+    "adresse": "#synchronisation",
+    "libelle": "en ligne, tout est envoyé"
+   }
+  ]
+ },
+ {
+  "route": "cloture",
+  "page": "LIV-P23",
+  "titre": "Clôture de journée",
+  "groupe": "LIV-08",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "aujourdhui",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#cloture",
+    "libelle": "contrôles, clôture impossible (14 h 05)"
+   }
+  ]
+ },
+ {
+  "route": "historique",
+  "page": "LIV-P24",
+  "titre": "Historique et preuves",
+  "groupe": "LIV-09",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "moi",
+  "onglet": "moi",
+  "etats": [
+   {
+    "adresse": "#historique",
+    "libelle": "jours et missions"
+   }
+  ]
+ },
+ {
+  "route": "activite",
+  "page": "LIV-P25",
+  "titre": "Mes gains",
+  "groupe": "LIV-09",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "moi",
+  "onglet": "moi",
+  "etats": [
+   {
+    "adresse": "#activite",
+    "libelle": "jour (compteur choisi par Yafé Express)"
+   }
+  ]
+ },
+ {
+  "route": "trust",
+  "page": "LIV-P26",
+  "titre": "Mon Trust Score",
+  "groupe": "LIV-09",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "moi",
+  "onglet": "moi",
+  "etats": [
+   {
+    "adresse": "#trust",
+    "libelle": "mon score, jauge et critères"
+   }
+  ]
+ },
+ {
+  "route": "messages",
+  "page": "LIV-P27",
+  "titre": "Messages",
+  "groupe": "LIV-10",
+  "statut": "repris",
+  "entete": "racine",
+  "retour": null,
+  "onglet": "messages",
+  "etats": [
+   {
+    "adresse": "#messages",
+    "libelle": "fils par mission et par interlocuteur"
+   }
+  ]
+ },
+ {
+  "route": "notifications",
+  "page": "LIV-P28",
+  "titre": "Notifications",
+  "groupe": "LIV-10",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "aujourdhui",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#notifications",
+    "libelle": "liste par priorité"
+   }
+  ]
+ },
+ {
+  "route": "menu",
+  "page": "LIV-P29",
+  "titre": "Menu",
+  "groupe": "LIV-10",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "aujourdhui",
+  "onglet": "",
+  "etats": [
+   {
+    "adresse": "#moi",
+    "libelle": "pièces à jour"
+   }
+  ]
+ },
+ {
+  "route": "moi",
+  "page": "LIV-P29",
+  "titre": "Moi",
+  "groupe": "LIV-10",
+  "statut": "repris",
+  "entete": "racine",
+  "retour": null,
+  "onglet": "moi",
+  "etats": [
+   {
+    "adresse": "#moi",
+    "libelle": "pièces à jour"
+   }
+  ]
+ },
+ {
+  "route": "aide",
+  "page": "LIV-P30",
+  "titre": "Aide et SOS",
+  "groupe": "LIV-10",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "moi",
+  "onglet": "moi",
+  "etats": [
+   {
+    "adresse": "#aide",
+    "libelle": "fiches par sujet"
+   }
+  ]
+ },
+ {
+  "route": "mon-compte",
+  "page": "LIV-P29",
+  "titre": "Mon compte",
+  "groupe": "LIV-10",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "moi",
+  "onglet": "moi",
+  "etats": [
+   {
+    "adresse": "#mon-compte",
+    "libelle": "photo, numéro, e-mail, mot de passe"
+   }
+  ]
+ },
+ {
+  "route": "reglages",
+  "page": "LIV-P31",
+  "titre": "Réglages",
+  "groupe": "LIV-10",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "moi",
+  "onglet": "moi",
+  "etats": [
+   {
+    "adresse": "#reglages",
+    "libelle": "liste des préférences"
+   }
+  ]
+ }
+]

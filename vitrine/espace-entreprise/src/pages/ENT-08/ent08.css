@@ -1,0 +1,110 @@
+/* Écrans d'ENT-08 (emballages, messages, notifications, paramètres, rapports, intégrations) : complète ENT-07/ent07.css.
+   Couleurs : jetons de styles/jetons.css seulement. */
+.e8-mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8125rem}
+.e8-qtes{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:0 10px}
+
+/* Paramètres */
+.e8-param{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:1024px){.e8-param{grid-template-columns:220px minmax(0,1fr);align-items:start}}
+.e8-sections{display:none}
+@media (min-width:1024px){
+  .e8-sections{display:flex;flex-direction:column;gap:2px;position:sticky;top:76px}
+  .e8-sections a{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border-radius:10px;color:var(--ink-2);font-weight:700;font-size:.875rem}
+  .e8-sections a:hover{background:var(--sand-2)}
+}
+.e8-param section{scroll-margin-top:84px}
+.e8-matrice{width:100%;border-collapse:collapse;font-size:.8125rem;margin-top:10px}
+.e8-matrice th,.e8-matrice td{padding:2px;border-bottom:1px solid var(--line);text-align:center}
+.e8-matrice th:first-child,.e8-matrice td:first-child{text-align:left}
+.e8-matrice input{width:20px;height:20px;margin:0;accent-color:var(--e)}
+.e8-case{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;cursor:pointer}
+.e8-zones{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.e8-zones label{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border-radius:999px;background:var(--sand-2);font-size:.8125rem;font-weight:700;box-shadow:inset 0 0 0 1px var(--line)}
+.e8-zones input{accent-color:var(--e)}
+.e8-matrice-boite{overflow-x:auto}
+
+/* Rapports */
+.e8-filtres{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));align-items:end}
+.e8-filtres .champ{margin-top:0}
+.e8-def{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));margin-top:10px}
+.e8-def>div{padding:12px;border-radius:var(--r-m);background:var(--card-2);box-shadow:inset 0 0 0 1px var(--line);font-size:.8125rem;color:var(--ink-3)}
+.e8-def b{display:block;color:var(--ink);font-size:.875rem}
+.e8-evol{font-size:.75rem;font-weight:700}
+.e8-evol.haut{color:var(--green)}
+.e8-evol.bas{color:var(--red)}
+.e8-filtres-btn{display:none}
+@media (max-width:767px){
+  .e8-filtres-btn{display:flex;margin-bottom:10px}
+  .e8-filtres.ferme{display:none}
+}
+
+/* ── paramètres / rapports / intégrations (reprise sur le prototype) ─────────────────────────────────────────── */
+.px .e8-col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.px .e8-col>.panel+.panel{margin-top:0}
+.px .ec8-snav a{min-height:44px}
+.px .ec8-snav a:hover{background:var(--sand-2)}
+.px .ec8-snav a.on:hover{background:var(--acc-soft)}
+.px .e8-mx-boite{overflow-x:auto}
+.px table.ec8-mx .tg{display:block}
+.px .e8-confort{display:flex;align-items:center;gap:12px;min-height:44px;padding:6px 0;border-top:1px solid var(--line)}
+.px .e8-confort:first-of-type{margin-top:6px}
+.px .chips .chip{min-height:44px}
+.px .chip.on{background:var(--acc-soft);border-color:var(--acc-line);color:var(--acc-txt)}
+.px button.radio{width:100%;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.px .e8-journal .kv .v{text-align:right}
+/* Filtres des rapports : les pastilles du prototype portent un vrai choix (liste ou date). */
+.px .e8-outils{flex-wrap:wrap;gap:8px}
+.px .e8-outils .flt{min-height:44px;cursor:pointer}
+.px .e8-outils .flt select,.px .e8-outils .flt input{border:0;background:transparent;color:inherit;font:inherit;font-weight:700;padding:0;min-height:40px;max-width:100%;cursor:pointer}
+.px .e8-outils .flt select:focus-visible,.px .e8-outils .flt input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.px .e8-seul{margin-top:16px}
+.px .e8-hb-l{width:104px;flex-shrink:0}
+.px .e8-hb-r{width:78px;text-align:right}
+.px .e8-puce{display:inline-block;width:10px;height:10px;border-radius:3px}
+@media (max-width:767.98px){
+  .px .ec8-ind{grid-template-columns:1fr 1fr}
+  /* Le prototype masque au téléphone les pastilles inactives ; ici ce sont de vrais filtres : elles restent. */
+  .px .dt-tools.e8-outils .flt{display:inline-flex;flex:1 1 calc(50% - 8px);white-space:normal}
+  .px .e8-outils .sp{display:none}
+  .px .e8-hb-l{width:92px}
+}
+
+/* ── emballages / messages / notifications (reprise sur le prototype) ───────────────────────────────────────── */
+.px .ec8-fmt .ring b{font-size:0.875rem}
+.px button.ec8-th{width:100%;font:inherit;color:inherit;text-align:left;cursor:pointer;min-height:44px}
+.px button.ec8-th:not(.on){background:none}
+.px button.ec8-th:not(.on):hover{background:var(--sand-2)}
+.px .ec8-th .ic>b{color:var(--ink-2)}
+.px .ec8-defile{max-height:60vh;overflow-y:auto}
+.px .ec8-ta{flex:1;min-width:0;min-height:44px;max-height:160px;padding:10px 13px;border:1.5px solid var(--input-line);border-radius:12px;background:var(--input-bg);color:var(--ink);font:inherit;font-size:1rem;resize:vertical}
+.px .ec8-ta:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 4px color-mix(in srgb,var(--e) 14%,transparent)}
+.px .ec8-compose .btn{min-height:44px}
+.px button.li.ec8-n{width:100%;border:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.px .ec8-n.nonlue .lt::after{content:"";display:inline-block;width:8px;height:8px;margin-left:8px;border-radius:50%;background:var(--or);vertical-align:middle}
+
+/* ── enrichissements (recherche, réglages, rapport programmé, clés d'API) ───────────────────────────────────── */
+.px .e8-outils-n{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+.px .e8-reglages-n{margin-top:10px}
+.px .e8-roles{margin-top:12px;border-top:1px solid var(--line);padding-top:8px}
+.px .e8-roles summary{display:flex;align-items:center;gap:8px;min-height:44px;cursor:pointer;font-weight:700;font-size:.875rem;color:var(--ink-2)}
+.px .e8-prog{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;padding:8px 12px;border-radius:var(--r-m);background:var(--card-2);box-shadow:inset 0 0 0 1px var(--line);color:var(--ink-2)}
+.px .e8-prog .btn{min-height:44px}
+.px .e8-cle{display:flex;flex-direction:column;gap:8px;padding:12px 0;border-bottom:1px solid var(--line)}
+.px .e8-cle:last-of-type{border-bottom:0}
+.px .e8-cle-v{display:block;padding:8px 10px;border-radius:10px;background:var(--sand-2);color:var(--ink);font-size:.8125rem;overflow-wrap:anywhere;word-break:break-all}
+.px .e8-cle-b{display:flex;flex-wrap:wrap;gap:8px}
+.px .e8-cle-b .btn{min-height:44px}
+.px .e8-mono{overflow-wrap:anywhere;word-break:break-word;min-width:0}
+.px .li .e8-mono{display:block}
+/* Recherche des listes hors d'une barre d'outils de tableau (Messages, Notifications, Paramètres, journal des appels). */
+.px .e8-q .e-srch{display:flex;align-items:center;gap:8px;min-height:44px;margin-bottom:8px;padding:0 6px 0 12px;border-radius:11px;border:1px solid var(--line-2);background:var(--input-bg);color:var(--ink-3)}
+.px .e8-q .e-srch:focus-within{border-color:var(--acc);box-shadow:0 0 0 3px color-mix(in srgb,var(--e) 14%,transparent)}
+.px .e8-q .e-srch input{flex:1;min-width:0;min-height:42px;border:0;background:transparent;color:var(--ink);font:inherit;font-size:1rem}
+.px .e8-q .e-srch input:focus{outline:none}
+.px .e8-q .e-srch input::placeholder{color:var(--ink-4)}
+.px .e8-q .e-srch-x{min-width:44px;min-height:44px}
+/* Puces en une ligne qui défile dans son cadre au téléphone (jamais la page). */
+@media (max-width:767.98px){
+  .px .e8-outils-n .e-puces{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+  .px .e8-outils-n .e-puces .chip{flex-shrink:0}
+}

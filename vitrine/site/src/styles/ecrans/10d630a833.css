@@ -1,0 +1,9 @@
+/* Généré par outils/styles.mjs (styles insérés dans l’écran par le prototype). */
+.dev-seg{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--card);border-radius:18px;padding:12px 14px;box-shadow:var(--shadow-card);margin:12px 0}
+.dev-seg .lb{font-size:13px;font-weight:700;color:var(--ink);flex:1 1 100%}
+.dev-seg .ch{display:flex;gap:8px;flex:1 1 auto}
+.dev-seg a{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border:1.5px solid var(--line-2);border-radius:14px;padding:10px 8px;font-weight:700;font-size:14px;color:var(--ink);text-decoration:none;background:var(--card)}
+.dev-seg a b{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--sand-2);font-size:13px}
+.dev-seg a.on{border-color:var(--or);background:var(--or-soft);color:var(--or-txt)}
+.dev-seg a.on b{background:var(--or);color:#fff}
+.dev-seg .rt{font-size:12px;color:var(--ink-3);flex:1 1 100%}

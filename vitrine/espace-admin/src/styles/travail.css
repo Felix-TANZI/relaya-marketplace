@@ -1,0 +1,109 @@
+/* Fonctions d'abord (LECONS-PROTOTYPES.md) : tuiles « verbe + nombre » en tête de page (composants/Fonctions.tsx),
+   héros au dégradé graphite pour la première fonction qui a du travail, bordure orange pour une alerte, calme quand il
+   n'y a rien. Même famille que l'entreprise (travail.css) et le vendeur : cartes 20 px, chiffres très gras.
+   Couleurs : jetons seulement (jetons.css). Chargé après console.css. */
+.px .a-travail{display:grid;grid-template-columns:repeat(var(--a-cols,4),minmax(0,1fr));gap:12px;margin:2px 0 16px}
+.px .a-travail.a-n1{--a-cols:1}.px .a-travail.a-n2{--a-cols:2}.px .a-travail.a-n3{--a-cols:3}.px .a-travail.a-n4{--a-cols:4}.px .a-travail.a-n5{--a-cols:5}
+.px .a-act{position:relative;display:flex;flex-direction:column;align-items:stretch;min-width:0;min-height:128px;padding:14px 16px 16px;border:0;border-radius:20px;background:var(--card);box-shadow:var(--shadow-card);color:var(--ink);text-decoration:none;text-align:left;font:inherit;cursor:pointer;transition:transform .15s,box-shadow .15s}
+html[data-theme=dark] .px .a-act{box-shadow:inset 0 0 0 1px var(--line)}
+.px .a-act-h{display:flex;align-items:center;justify-content:space-between;color:var(--ink-4)}
+.px .a-act-i{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--e-soft);color:var(--e-txt)}
+.px .a-act-v{margin-top:12px;font-size:1rem;font-weight:800;letter-spacing:-.01em;color:var(--ink);overflow-wrap:anywhere}
+.px .a-act-n{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 6px;margin-top:2px;font-size:.875rem;font-weight:700;color:var(--ink-3);line-height:1.2;overflow-wrap:anywhere}
+.px .a-act-n b{font-size:2.25rem;font-weight:800;letter-spacing:-.04em;line-height:1;color:var(--ink)}
+.px .a-act-d{margin-top:4px;font-size:.8125rem;font-weight:700;color:var(--ink-3)}
+.px .a-act-chaud{box-shadow:var(--shadow-card),inset 4px 0 0 var(--or)}
+html[data-theme=dark] .px .a-act-chaud{box-shadow:inset 0 0 0 1px var(--line),inset 4px 0 0 var(--or)}
+.px .a-act-chaud .a-act-i{background:var(--or-soft);color:var(--or-txt)}
+.px .a-act-actif{box-shadow:var(--shadow-card),inset 4px 0 0 var(--e)}
+html[data-theme=dark] .px .a-act-actif{box-shadow:inset 0 0 0 1px var(--line),inset 4px 0 0 var(--e-ciel)}
+.px .a-act-heros{background:var(--e-grad);color:var(--sur-e);box-shadow:var(--ombre-actif)}
+html[data-theme=dark] .px .a-act-heros{box-shadow:var(--ombre-actif)}
+.px .a-act-heros :is(.a-act-h,.a-act-v,.a-act-n,.a-act-n b,.a-act-d){color:var(--sur-e)}
+.px .a-act-heros .a-act-i{background:color-mix(in srgb,var(--sur-e) 16%,transparent);color:var(--sur-e)}
+.px .a-act-calme .a-act-n b{color:var(--ink-4)}
+.px .a-act-calme .a-act-i{background:var(--sand-2);color:var(--ink-3)}
+.px .a-act:focus-visible{outline:3px solid var(--e-txt);outline-offset:3px}
+@media (hover:hover){
+  .px .a-act:hover{transform:translateY(-2px)}
+  .px .a-act:not(.a-act-heros):hover .a-act-h>svg{color:var(--e-txt)}
+}
+/* Compact (pages secondaires) : moins haut, chiffre plus petit. */
+.px .a-travail-c .a-act{min-height:96px;padding:12px 14px 14px}
+.px .a-travail-c .a-act-v{margin-top:8px;font-size:.9375rem}
+.px .a-travail-c .a-act-n b{font-size:1.75rem}
+/* Tablette : trois au plus par rangée ; téléphone : deux. */
+html[data-device=tablet] .px .a-travail:is(.a-n4,.a-n5){--a-cols:3}
+html[data-device=mobile] .px .a-travail{gap:10px}
+html[data-device=mobile] .px .a-travail:is(.a-n3,.a-n4,.a-n5){--a-cols:2}
+html[data-device=mobile] .px .a-act{min-height:112px;padding:12px 12px 14px;border-radius:18px}
+html[data-device=mobile] .px .a-act-i{width:36px;height:36px;border-radius:11px}
+html[data-device=mobile] .px .a-act-v{margin-top:10px;font-size:.9375rem}
+html[data-device=mobile] .px .a-act-n{font-size:.8125rem}
+html[data-device=mobile] .px .a-act-n b{font-size:1.875rem}
+
+/* Filtres segmentés avec leur nombre : une rangée qui défile au téléphone et à la tablette (jamais la page). */
+.px .a-segs{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;min-width:0}
+html:is([data-device=mobile],[data-device=tablet]) .px .a-segs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding:2px;margin-left:-2px;margin-right:-2px}
+html:is([data-device=mobile],[data-device=tablet]) .px .a-segs::-webkit-scrollbar{display:none}
+html:is([data-device=mobile],[data-device=tablet]) .px .a-segs>*{flex:0 0 auto}
+
+/* Détails repliés : un résumé d'une ligne, le reste à la demande. */
+.px details.a-plie{margin-top:12px;border-radius:14px;background:var(--card-2);box-shadow:inset 0 0 0 1px var(--line)}
+.px details.a-plie>summary{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;cursor:pointer;font-weight:700;font-size:.875rem;color:var(--ink-2);list-style:none}
+.px details.a-plie>summary::-webkit-details-marker{display:none}
+.px details.a-plie>summary::after{content:'';margin-left:auto;width:8px;height:8px;border-right:2px solid var(--ink-4);border-bottom:2px solid var(--ink-4);transform:rotate(45deg);transition:transform .15s}
+.px details.a-plie[open]>summary::after{transform:rotate(-135deg)}
+.px details.a-plie>.a-plie-c{padding:0 14px 14px}
+
+/* Activation d'un compte d'employé (ADM-03/Activation.tsx) : clé du second facteur, charte, case d'acceptation. */
+.px .s1-cle{display:flex;justify-content:center;padding:14px;border-radius:14px;background:var(--e-soft);box-shadow:inset 0 0 0 1px var(--e-line)}
+.px .s1-cle code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:1.0625rem;font-weight:700;letter-spacing:.08em;color:var(--e-txt);word-break:break-all;text-align:center}
+.px .s1-charte{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.px .s1-charte li{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:var(--card-2);box-shadow:inset 0 0 0 1px var(--line);font-size:.875rem;line-height:1.4;color:var(--ink-2)}
+.px .s1-charte li svg{flex:0 0 auto;margin-top:2px;color:var(--e-txt)}
+.px .s1-accepte{display:flex;gap:10px;align-items:center;min-height:44px;font-weight:700;font-size:.9375rem;color:var(--ink);cursor:pointer}
+.px .s1-accepte input{width:20px;height:20px;accent-color:var(--e)}
+/* « Autres » : les types moins chargés dans une liste, à la taille d'une puce. */
+.px .chip.a-autres{position:relative;padding:0}
+.px .chip.a-autres select{appearance:none;-webkit-appearance:none;border:0;background:transparent;color:inherit;font:inherit;font-weight:700;min-height:40px;padding:0 30px 0 14px;cursor:pointer}
+.px .chip.a-autres::after{content:'';position:absolute;right:13px;top:50%;width:7px;height:7px;margin-top:-6px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);pointer-events:none}
+.px .chip.a-autres select option{color:var(--ink);background:var(--card)}
+
+/* Connexion et activation à la tablette (768–1023 px) : le panneau d'identité passe au-dessus, court (logo, titre),
+   la boîte dessous, pleine largeur utile ; rien n'est coupé. */
+html[data-device=tablet] .px .admA-login{grid-template-columns:minmax(0,1fr);min-height:100vh}
+html[data-device=tablet] .px .admA-login .side{padding:28px 40px 30px}
+html[data-device=tablet] .px .admA-login .side h1{font-size:2rem;margin:20px 0 6px}
+html[data-device=tablet] .px .admA-login .side :is(.facts,.foot2,.art){display:none}
+html[data-device=tablet] .px .admA-login .side .pg-k{margin-top:22px!important}
+html[data-device=tablet] .px .admA-login .main{padding:28px 40px 40px;align-items:flex-start}
+
+/* Tablette (768–1023 px) : barre latérale en tiroir, le contenu prend toute la largeur. */
+html[data-device=tablet] .cns{grid-template-columns:minmax(0,1fr)}
+.px .a-act.a-act-ici{cursor:default}.px .a-act.a-act-ici .a-act-h>svg:last-child{visibility:hidden}
+.px .a-act.a-act-on:not(.a-act-heros){box-shadow:var(--shadow-card),inset 0 0 0 2px var(--e)}
+
+/* File d'action : la colonne du dossier ne déborde jamais (largeurs intermédiaires de l'ordinateur). */
+html[data-device=desktop] .px .admA-file{grid-template-columns:minmax(0,430px) minmax(0,1fr)}
+.px .admA-file>*{min-width:0}
+
+/* Onglets de page : une rangée qui défile dans sa largeur, jamais la page. */
+.px .tabs{max-width:100%;overflow-x:auto;scrollbar-width:none}
+.px .tabs::-webkit-scrollbar{display:none}
+.px .tabs>*{flex:0 0 auto}
+.px .row.wrap>.pill{max-width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis}
+
+/* Pages secondaires (composants/rang.ts) : jamais de tuiles. Les fonctions deviennent une rangée de filtres avec leur
+   nombre (puces), les indicateurs une ligne de résumé (chiffre puis libellé), sobre, sous le titre. */
+.px .a-travail.a-fil{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 14px}
+.px .a-fil>.chip{margin:0;text-decoration:none;cursor:pointer;font-size:.8125rem;font-weight:700}
+.px .a-fil>span.chip{cursor:default}
+.px .a-fil>.chip .n{min-width:20px;padding:0 6px;border-radius:999px;background:var(--sand-2);text-align:center;line-height:20px;opacity:1}
+.px .a-fil>.chip.on .n{background:color-mix(in srgb,currentColor 18%,transparent)}
+.px .a-fil>.chip.a-fil-chaud:not(.on) .n{background:var(--or-soft);color:var(--or-txt)}
+.px .a-fil>.chip:focus-visible{outline:3px solid var(--e-txt);outline-offset:2px}
+@media (hover:hover){.px .a-fil>:is(a,button).chip:not(.on):hover{border-color:var(--ink-4);color:var(--ink)}}
+html:is([data-device=mobile],[data-device=tablet]) .px .a-travail.a-fil{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding:2px;margin-left:-2px;margin-right:-2px}
+html:is([data-device=mobile],[data-device=tablet]) .px .a-fil::-webkit-scrollbar{display:none}
+html:is([data-device=mobile],[data-device=tablet]) .px .a-fil>*{flex:0 0 auto}

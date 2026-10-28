@@ -1,0 +1,1000 @@
+[
+ {
+  "route": "connexion",
+  "ecran": "Connexion",
+  "titre": "Connexion",
+  "groupe": "PR-03",
+  "statut": "repris",
+  "entete": "aucun",
+  "retour": null,
+  "barre": false,
+  "onglet": null,
+  "sansSession": true,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Connexion",
+    "adresse": "connexion"
+   },
+   {
+    "id": "pin",
+    "libelle": "Saisie du code PIN",
+    "adresse": "connexion?etat=pin"
+   },
+   {
+    "id": "oubli",
+    "libelle": "PIN oublié",
+    "adresse": "connexion?etat=oubli"
+   }
+  ]
+ },
+ {
+  "route": "invitation",
+  "ecran": "Invitation",
+  "titre": "Rejoindre un relais",
+  "groupe": "PR-03",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "connexion",
+  "barre": false,
+  "onglet": null,
+  "sansSession": true,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Invitation du gérant",
+    "adresse": "invitation"
+   },
+   {
+    "id": "s2",
+    "libelle": "Création du code PIN",
+    "adresse": "invitation?etat=s2"
+   },
+   {
+    "id": "s3",
+    "libelle": "Formation obligatoire",
+    "adresse": "invitation?etat=s3"
+   },
+   {
+    "id": "ok",
+    "libelle": "Prêt à travailler",
+    "adresse": "invitation?etat=ok"
+   }
+  ]
+ },
+ {
+  "route": "inscription",
+  "ecran": "Inscription",
+  "titre": "Devenir point relais",
+  "groupe": "PR-03",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "connexion",
+  "barre": false,
+  "onglet": null,
+  "sansSession": true,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Inscription du relais",
+    "adresse": "inscription"
+   },
+   {
+    "id": "s2",
+    "libelle": "Étape 2 · le gérant",
+    "adresse": "inscription?etat=s2"
+   },
+   {
+    "id": "s3",
+    "libelle": "Étape 3 · le local",
+    "adresse": "inscription?etat=s3"
+   },
+   {
+    "id": "s4",
+    "libelle": "Étape 4 · le versement",
+    "adresse": "inscription?etat=s4"
+   },
+   {
+    "id": "s5",
+    "libelle": "Étape 5 · la convention",
+    "adresse": "inscription?etat=s5"
+   },
+   {
+    "id": "ok",
+    "libelle": "Demande envoyée",
+    "adresse": "inscription?etat=ok"
+   }
+  ]
+ },
+ {
+  "route": "activation",
+  "ecran": "Activation",
+  "titre": "Activation et partenariat",
+  "groupe": "PR-03",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "menu",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Activation en 6 étapes",
+    "adresse": "activation"
+   }
+  ]
+ },
+ {
+  "route": "installer",
+  "ecran": "Installer",
+  "titre": "Installer l’application",
+  "groupe": "PR-03",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "connexion",
+  "barre": false,
+  "onglet": null,
+  "sansSession": true,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Installer l’application",
+    "adresse": "installer"
+   },
+   {
+    "id": "and",
+    "libelle": "Android",
+    "adresse": "installer?etat=and"
+   }
+  ]
+ },
+ {
+  "route": "statut-relais",
+  "ecran": "StatutRelais",
+  "titre": "Statut du relais",
+  "groupe": "PR-03",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "accueil",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Statut du relais",
+    "adresse": "statut-relais"
+   },
+   {
+    "id": "sus",
+    "libelle": "Relais suspendu",
+    "adresse": "statut-relais?etat=sus"
+   },
+   {
+    "id": "fer",
+    "libelle": "Relais fermé",
+    "adresse": "statut-relais?etat=fer"
+   }
+  ]
+ },
+ {
+  "route": "decision",
+  "ecran": "StatutRelais",
+  "titre": "Décision de BelivaY",
+  "groupe": "PR-03",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "statut-relais",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": []
+ },
+ {
+  "route": "convention",
+  "ecran": "Activation",
+  "titre": "Convention de partenariat",
+  "groupe": "PR-03",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "inscription",
+  "barre": false,
+  "onglet": null,
+  "sansSession": true,
+  "etats": []
+ },
+ {
+  "route": "accueil",
+  "ecran": "Accueil",
+  "titre": "Aujourd’hui",
+  "groupe": "PR-04",
+  "statut": "repris",
+  "entete": "racine",
+  "retour": null,
+  "barre": true,
+  "onglet": "accueil",
+  "sansSession": false,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Aujourd’hui",
+    "adresse": "accueil"
+   },
+   {
+    "id": "vide",
+    "libelle": "Aujourd’hui · journée calme",
+    "adresse": "accueil?etat=vide"
+   },
+   {
+    "id": "hors-ligne",
+    "libelle": "Hors connexion",
+    "adresse": "accueil?etat=hors-ligne"
+   }
+  ]
+ },
+ {
+  "route": "reception",
+  "ecran": "Reception",
+  "titre": "Réception d’un lot",
+  "groupe": "PR-04",
+  "statut": "repris",
+  "entete": "racine",
+  "retour": null,
+  "barre": true,
+  "onglet": "reception",
+  "sansSession": false,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Réception d’un lot",
+    "adresse": "reception"
+   },
+   {
+    "id": "check",
+    "libelle": "Contrôle du lot",
+    "adresse": "reception?etat=check"
+   },
+   {
+    "id": "done",
+    "libelle": "Lot validé",
+    "adresse": "reception?etat=done"
+   }
+  ]
+ },
+ {
+  "route": "camera",
+  "ecran": "Camera",
+  "titre": "Appareil photo de preuve",
+  "groupe": "PR-04",
+  "statut": "repris",
+  "entete": "aucun",
+  "retour": null,
+  "barre": false,
+  "onglet": null,
+  "sansSession": false,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Appareil photo de preuve",
+    "adresse": "camera"
+   },
+   {
+    "id": "photo",
+    "libelle": "Photo de remise",
+    "adresse": "camera?etat=photo"
+   }
+  ]
+ },
+ {
+  "route": "retrait",
+  "ecran": "Retrait",
+  "titre": "Retrait par le client",
+  "groupe": "PR-05",
+  "statut": "repris",
+  "entete": "racine",
+  "retour": null,
+  "barre": true,
+  "onglet": "retrait",
+  "sansSession": false,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Retrait par le client",
+    "adresse": "retrait"
+   },
+   {
+    "id": "colis",
+    "libelle": "Code correct · colis trouvé",
+    "adresse": "retrait?etat=colis"
+   },
+   {
+    "id": "ordre",
+    "libelle": "Tout est en ordre ?",
+    "adresse": "retrait?etat=ordre"
+   },
+   {
+    "id": "preuve",
+    "libelle": "Preuve de remise",
+    "adresse": "retrait?etat=preuve"
+   },
+   {
+    "id": "done",
+    "libelle": "Colis remis",
+    "adresse": "retrait?etat=done"
+   }
+  ]
+ },
+ {
+  "route": "file",
+  "ecran": "File",
+  "titre": "File du comptoir",
+  "groupe": "PR-05",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "retrait",
+  "barre": true,
+  "onglet": "retrait",
+  "sansSession": false,
+  "etats": []
+ },
+ {
+  "route": "pin-remise",
+  "ecran": "PinRemise",
+  "titre": "PIN de remise",
+  "groupe": "PR-05",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "retrait",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Code PIN de remise",
+    "adresse": "pin-remise"
+   },
+   {
+    "id": "err",
+    "libelle": "PIN erroné",
+    "adresse": "pin-remise?etat=err"
+   }
+  ]
+ },
+ {
+  "route": "erreurs",
+  "ecran": "Erreurs",
+  "titre": "États d’erreur",
+  "groupe": "PR-05",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "retrait",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Erreurs et cas limites",
+    "adresse": "erreurs"
+   },
+   {
+    "id": "bloque",
+    "libelle": "Colis bloqué",
+    "adresse": "erreurs?etat=bloque"
+   },
+   {
+    "id": "pay",
+    "libelle": "Paiement",
+    "adresse": "erreurs?etat=pay"
+   },
+   {
+    "id": "qr",
+    "libelle": "Mauvais QR",
+    "adresse": "erreurs?etat=qr"
+   },
+   {
+    "id": "res",
+    "libelle": "Sans réseau",
+    "adresse": "erreurs?etat=res"
+   },
+   {
+    "id": "rem",
+    "libelle": "Non remettable",
+    "adresse": "erreurs?etat=rem"
+   }
+  ]
+ },
+ {
+  "route": "stock",
+  "ecran": "Stock",
+  "titre": "Stock et emplacements",
+  "groupe": "PR-06",
+  "statut": "repris",
+  "entete": "racine",
+  "retour": null,
+  "barre": true,
+  "onglet": "stock",
+  "sansSession": false,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Stock et emplacements",
+    "adresse": "stock"
+   },
+   {
+    "id": "pay",
+    "libelle": "Onglet payants",
+    "adresse": "stock?etat=pay"
+   },
+   {
+    "id": "grp",
+    "libelle": "Onglet groupage",
+    "adresse": "stock?etat=grp"
+   },
+   {
+    "id": "free",
+    "libelle": "Onglet gratuits",
+    "adresse": "stock?etat=free"
+   }
+  ]
+ },
+ {
+  "route": "colis",
+  "ecran": "ColisDetail",
+  "titre": "Fiche colis",
+  "groupe": "PR-06",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "stock",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Détail d’un colis",
+    "adresse": "colis"
+   }
+  ]
+ },
+ {
+  "route": "inventaire",
+  "ecran": "Inventaire",
+  "titre": "Inventaire des étagères",
+  "groupe": "PR-06",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "stock",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": []
+ },
+ {
+  "route": "departs",
+  "ecran": "Departs",
+  "titre": "À faire partir",
+  "groupe": "PR-06",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "accueil",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Départs et collecte",
+    "adresse": "departs"
+   },
+   {
+    "id": "plan",
+    "libelle": "Collectes prévues",
+    "adresse": "departs?etat=plan"
+   },
+   {
+    "id": "done",
+    "libelle": "Colis partis",
+    "adresse": "departs?etat=done"
+   }
+  ]
+ },
+ {
+  "route": "litiges",
+  "ecran": "Litiges",
+  "titre": "Constats et retours",
+  "groupe": "PR-07",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "menu",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Constats et litiges",
+    "adresse": "litiges"
+   },
+   {
+    "id": "r",
+    "libelle": "Dépôt de retour",
+    "adresse": "litiges?etat=r"
+   },
+   {
+    "id": "d",
+    "libelle": "Dossiers en cours",
+    "adresse": "litiges?etat=d"
+   }
+  ]
+ },
+ {
+  "route": "dossier-litige",
+  "ecran": "Litiges",
+  "titre": "Dossier",
+  "groupe": "PR-07",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "litiges",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": []
+ },
+ {
+  "route": "fermeture",
+  "ecran": "Fermeture",
+  "titre": "Fermeture exceptionnelle",
+  "groupe": "PR-07",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "menu",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Fermeture déclarée",
+    "adresse": "fermeture"
+   },
+   {
+    "id": "d1",
+    "libelle": "Durée de moins de 24 h",
+    "adresse": "fermeture?etat=d1"
+   },
+   {
+    "id": "d9",
+    "libelle": "Durée de plus de 3 jours",
+    "adresse": "fermeture?etat=d9"
+   }
+  ]
+ },
+ {
+  "route": "historique",
+  "ecran": "Historique",
+  "titre": "Historique",
+  "groupe": "PR-07",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "menu",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Historique",
+    "adresse": "historique"
+   }
+  ]
+ },
+ {
+  "route": "notifications",
+  "ecran": "Notifications",
+  "titre": "Notifications",
+  "groupe": "PR-08",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "menu",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Notifications",
+    "adresse": "notifications"
+   }
+  ]
+ },
+ {
+  "route": "messagerie",
+  "ecran": "Messagerie",
+  "titre": "Messagerie",
+  "groupe": "PR-08",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "menu",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Messagerie",
+    "adresse": "messagerie"
+   },
+   {
+    "id": "sup",
+    "libelle": "Fil du support",
+    "adresse": "messagerie?etat=sup"
+   },
+   {
+    "id": "log",
+    "libelle": "Fil collectes et livraisons",
+    "adresse": "messagerie?etat=log"
+   }
+  ]
+ },
+ {
+  "route": "aide",
+  "ecran": "Aide",
+  "titre": "Aide",
+  "groupe": "PR-08",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "menu",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Aide",
+    "adresse": "aide"
+   }
+  ]
+ },
+ {
+  "route": "aide-fiche",
+  "ecran": "Aide",
+  "titre": "Fiche du comptoir",
+  "groupe": "PR-08",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "aide",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": []
+ },
+ {
+  "route": "appel",
+  "ecran": "Messagerie",
+  "titre": "Appel masqué",
+  "groupe": "PR-08",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "messagerie",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": []
+ },
+ {
+  "route": "mode-papier",
+  "ecran": "Aide",
+  "titre": "Mode papier",
+  "groupe": "PR-08",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "aide",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": []
+ },
+ {
+  "route": "versements",
+  "ecran": "Versements",
+  "titre": "Versements",
+  "groupe": "PR-09",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "menu",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Versements du vendredi",
+    "adresse": "versements"
+   }
+  ]
+ },
+ {
+  "route": "releve",
+  "ecran": "Versements",
+  "titre": "Relevés des versements",
+  "groupe": "PR-09",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "versements",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": []
+ },
+ {
+  "route": "changer-momo",
+  "ecran": "ChangerMoMo",
+  "titre": "Numéro de versement",
+  "groupe": "PR-09",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "versements",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Changer le numéro de versement",
+    "adresse": "changer-momo"
+   },
+   {
+    "id": "code",
+    "libelle": "Code de confirmation",
+    "adresse": "changer-momo?etat=code"
+   },
+   {
+    "id": "ok",
+    "libelle": "Numéro changé",
+    "adresse": "changer-momo?etat=ok"
+   }
+  ]
+ },
+ {
+  "route": "rapports",
+  "ecran": "Rapports",
+  "titre": "Rapports",
+  "groupe": "PR-09",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "menu",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Rapports",
+    "adresse": "rapports"
+   },
+   {
+    "id": "t",
+    "libelle": "Trimestre",
+    "adresse": "rapports?etat=t"
+   }
+  ]
+ },
+ {
+  "route": "trust",
+  "ecran": "TrustScore",
+  "titre": "Trust Score",
+  "groupe": "PR-09",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "menu",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Trust Score",
+    "adresse": "trust"
+   }
+  ]
+ },
+ {
+  "route": "trust-journal",
+  "ecran": "TrustScore",
+  "titre": "Journal du Trust Score",
+  "groupe": "PR-09",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "trust",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": []
+ },
+ {
+  "route": "paliers",
+  "ecran": "Paliers",
+  "titre": "Paliers",
+  "groupe": "PR-09",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "trust",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Paliers",
+    "adresse": "paliers"
+   }
+  ]
+ },
+ {
+  "route": "avis",
+  "ecran": "Avis",
+  "titre": "Avis des clients",
+  "groupe": "PR-09",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "trust",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Avis clients",
+    "adresse": "avis"
+   }
+  ]
+ },
+ {
+  "route": "documents",
+  "ecran": "Documents",
+  "titre": "Documents",
+  "groupe": "PR-10",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "menu",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Documents",
+    "adresse": "documents"
+   }
+  ]
+ },
+ {
+  "route": "formation",
+  "ecran": "Formation",
+  "titre": "Formation",
+  "groupe": "PR-10",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "menu",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Formation",
+    "adresse": "formation"
+   }
+  ]
+ },
+ {
+  "route": "capacite",
+  "ecran": "Capacite",
+  "titre": "Capacité et horaires",
+  "groupe": "PR-10",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "menu",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Capacité et horaires",
+    "adresse": "capacite"
+   }
+  ]
+ },
+ {
+  "route": "equipe",
+  "ecran": "Equipe",
+  "titre": "Mon équipe",
+  "groupe": "PR-10",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "parametres",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Équipe et codes PIN",
+    "adresse": "equipe"
+   },
+   {
+    "id": "open",
+    "libelle": "Ajout d’un employé",
+    "adresse": "equipe?etat=open"
+   }
+  ]
+ },
+ {
+  "route": "parametres",
+  "ecran": "Parametres",
+  "titre": "Paramètres",
+  "groupe": "PR-10",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "menu",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Paramètres",
+    "adresse": "parametres"
+   }
+  ]
+ },
+ {
+  "route": "zone",
+  "ecran": "Parametres",
+  "titre": "Ma zone sur la carte",
+  "groupe": "PR-10",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "parametres",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": []
+ },
+ {
+  "route": "mon-compte",
+  "ecran": "Parametres",
+  "titre": "Mon compte",
+  "groupe": "PR-10",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "parametres",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": []
+ },
+ {
+  "route": "menu",
+  "ecran": "Menu",
+  "titre": "Menu",
+  "groupe": "PR-10",
+  "statut": "repris",
+  "entete": "enfant",
+  "retour": "accueil",
+  "barre": true,
+  "onglet": null,
+  "sansSession": false,
+  "etats": [
+   {
+    "id": "defaut",
+    "libelle": "Menu",
+    "adresse": "menu"
+   }
+  ]
+ }
+]

@@ -1,0 +1,12 @@
+/* Généré par outils/styles.mjs (styles insérés dans l’écran par le prototype). */
+.mn-sec{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin:18px 4px 8px}
+.mn-uni{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mn-uni a{display:flex;align-items:center;gap:9px;padding:7px 10px 7px 7px;border-radius:14px;background:var(--card);box-shadow:var(--shadow-card);min-width:0}
+.mn-uni .th{width:36px;height:36px;border-radius:10px;overflow:hidden;background:var(--prod-bg);flex-shrink:0}
+.mn-uni .th svg{width:100%;height:100%;display:block}
+.mn-uni b{display:block;font-size:13px;font-weight:700;line-height:1.2}
+.mn-uni small{display:block;font-size:12px;color:var(--ink-3)}
+.mn-uni span.g{min-width:0}
+.mn-all{display:flex;align-items:center;justify-content:center;gap:6px;height:40px;margin-top:8px;border-radius:12px;box-shadow:inset 0 0 0 1.5px var(--or-line);color:var(--or-txt);font-size:13.5px;font-weight:800}
+.mn-foot{display:flex;justify-content:center;flex-wrap:wrap;gap:4px 16px;margin:18px 0 0;font-size:13px}
+.mn-foot a{color:var(--ink-3)}

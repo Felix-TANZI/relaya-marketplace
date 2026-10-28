@@ -1,0 +1,94 @@
+/* PR-07 Incidents (Constats et retours, Dossier, Fermeture exceptionnelle, Historique) : feuille préfixée « r7- »,
+   et réglages des classes du prototype SOUS .r7 seulement. Aucune couleur écrite : jetons de jetons.css. Cibles de
+   toucher d'au moins 48 px (44 au minimum, accessibilité), 56 px pour l'action principale, dans la zone du pouce. */
+
+/* Onglets, puces et cases du prototype : cibles agrandies (le dessin ne change pas). */
+.r7 .p-h01hlk,.r7 .p-bq7aiq{min-height:48px}
+.r7 .p-ncx7qc.r7-action{min-height:56px;font-size:1rem}
+.r7 .p-ncx7qc:disabled,.r7 .p-keaeoe:disabled{opacity:.5;cursor:default}
+.r7 .p-2xyesk,.r7 .p-dmjvf6{min-width:48px;min-height:48px}
+.r7 .p-py2cpj,.r7 .p-ryg5iy{min-height:48px;background:var(--card);color:var(--ink)}
+.r7 button.p-rpzy79,.r7 button.p-6z26dm{min-height:44px;padding:0 14px;cursor:pointer;font-family:inherit}
+.r7 .p-rbzobc{min-height:48px}
+.r7 button.p-rbnapz,.r7 button.p-axsmpa{min-height:52px;font-family:inherit;cursor:pointer}
+.r7 .p-rbnapz.r7-passe{opacity:.45;cursor:default}
+.r7 .p-rbnapz.r7-auj{border-color:var(--acc);border-width:2px}
+.r7 .p-are0kx.r7-neutre{color:var(--ink-3)}
+.r7 .p-are0kx.r7-ambre{color:var(--amber)}
+.r7 .p-are0kx.r7-alerte{color:var(--or-txt)}
+.r7 .r7-tuile-info[aria-expanded="true"]{border-color:var(--acc-line);background:var(--acc-soft-3)}
+.r7 .p-08e163.r7-prise{border:0;font-family:inherit;cursor:pointer;position:relative;overflow:hidden;padding:0}
+.r7 .r7-prise .r7-vignette{position:absolute;inset:0;width:100%;height:100%;border-radius:0;opacity:.35}
+.r7 .r7-prise>span:last-child{position:relative;display:flex;align-items:center;gap:6px}
+.r7-panneau{display:flex;flex-direction:column;gap:12px}
+
+/* Textes et avis. */
+.r7-note{font-size:.8125rem;line-height:1.55;color:var(--ink-3);margin:0}
+.r7-texte{font-size:.9375rem;line-height:1.55;color:var(--ink);margin:0}
+.r7-manque{font-size:.8125rem;color:var(--ink-3);text-align:center;margin:-4px 0 0}
+.r7-mt{margin-top:12px}
+.r7-avis{border:1px solid transparent;border-radius:12px;padding:12px 14px;font-size:.875rem;line-height:1.5}
+.r7-lien{color:var(--acc-txt);font-weight:800;text-decoration:underline;display:inline-flex;align-items:center;min-height:44px}
+.r7-refus{display:flex;gap:12px;align-items:flex-start;padding:14px;border-radius:14px;background:var(--red-soft);color:var(--red);border:1px solid var(--red-line)}
+.r7-refus strong{font-size:1rem}
+.r7-refus p{margin:6px 0 0;font-size:.8125rem;line-height:1.5}
+.r7-charge{display:flex;align-items:center;gap:10px;min-height:48px;color:var(--ink-3);font-size:.875rem}
+.r7-roue{width:18px;height:18px;border-radius:50%;border:2.5px solid var(--line-2);border-top-color:var(--acc);flex-shrink:0}
+html[data-mouv] .r7-roue{animation:r7-tour .9s linear infinite}
+@keyframes r7-tour{to{transform:rotate(360deg)}}
+
+/* Champs. */
+.r7-champ-l{display:block;font-size:.8125rem;font-weight:700;color:var(--ink-2);margin:4px 0 6px}
+.r7-champ{width:100%;min-height:48px;border-radius:12px;border:1px solid var(--line-2);background:var(--card);color:var(--ink);padding:10px 12px;font-size:1rem}
+.r7-zone{resize:vertical;line-height:1.45}
+.r7-champ-pin{letter-spacing:.5em;text-align:center;font-size:1.375rem}
+.r7-deux{display:grid;grid-template-columns:1fr 1.4fr;gap:10px;margin-top:10px}
+.r7-sheet-h{font-size:1.125rem;font-weight:800;margin:0 48px 10px 0}
+
+/* Interrupteur et case. */
+.r7-interrupteur{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;padding:6px 0;border:0;background:transparent;color:var(--ink);font-family:inherit;font-size:.875rem;font-weight:600;text-align:left;cursor:pointer}
+.r7-int{flex-shrink:0;width:44px;height:26px;border-radius:13px;background:var(--line-2);position:relative}
+.r7-int::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--card);box-shadow:0 1px 2px var(--ombre-2)}
+.r7-interrupteur[aria-checked="true"] .r7-int{background:var(--acc)}
+.r7-interrupteur[aria-checked="true"] .r7-int::after{left:21px}
+.r7-case{flex-shrink:0;width:26px;height:26px;border-radius:8px;border:2px solid var(--line-2);display:flex;align-items:center;justify-content:center;color:var(--acc-btn-ink)}
+.r7-interrupteur[aria-checked="true"] .r7-case{background:var(--acc);border-color:var(--acc)}
+
+/* Photos. */
+.r7-vignettes{display:flex;gap:8px;flex-wrap:wrap}
+.r7-vignette{width:64px;height:64px;border-radius:10px;object-fit:cover;display:block;background:var(--sand-2)}
+.r7-vignette-vide{display:flex;align-items:center;justify-content:center;color:var(--ink-3);border:1px solid var(--line)}
+.r7-viseur{aspect-ratio:4/3;border-radius:16px;overflow:hidden;background:var(--nuit-1);color:var(--nuit-ink-3);margin-bottom:12px}
+.r7-viseur video{width:100%;height:100%;object-fit:cover;display:block}
+.r7-viseur-vide{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px;text-align:center;font-size:.875rem;line-height:1.5}
+.sheet .r7-note{margin-bottom:12px}
+
+/* Lignes touchables (retours attendus, fermetures). */
+.r7-ligne{width:100%;border:0;background:transparent;font-family:inherit;text-align:left;cursor:pointer;padding:0}
+.r7-actions{display:flex;gap:8px;flex-wrap:wrap}
+.r7-actions .r-btn{flex:1 1 140px;min-height:48px;font-size:.875rem}
+
+/* Fil du dossier. */
+.r7-fil{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.r7-msg{padding:10px 12px;border-radius:12px;font-size:.875rem;line-height:1.5;background:var(--sand-2);color:var(--ink)}
+.r7-msg-relais{background:var(--acc-soft);margin-left:24px}
+.r7-msg-belivay{margin-right:24px;border:1px solid var(--line)}
+.r7-msg-systeme{background:transparent;border:1px dashed var(--line-2);color:var(--ink-3)}
+.r7-msg-h{font-size:.75rem;font-weight:700;color:var(--ink-3);margin-bottom:2px}
+
+/* Historique : compteurs touchables, lignes repliables. */
+.r7 .p-fkc6m2 .r7-ligne-btn{flex-grow:1;padding:0 0 16px;border:0;background:transparent;font-family:inherit;text-align:left;cursor:pointer;color:var(--ink);min-width:0;overflow-wrap:anywhere}
+.r7-sous{display:flex;flex-direction:column;gap:2px;margin:6px 0 0}
+.r7-sous a{display:flex;align-items:center;min-height:44px;color:var(--acc-txt);font-weight:700;font-size:.8125rem}
+.r7-montant{font-weight:800;color:var(--ink)}
+
+/* Fermeture : semaine et flèches. */
+.r7-entete{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.r7-fleches{display:flex;gap:4px}
+.r7-fleches .r-ibtn:disabled{opacity:.35;cursor:default}
+.r7-petit{width:auto;min-height:44px;padding:0 14px;font-size:.8125rem;flex-shrink:0}
+/* Semaine : sept cases d'au moins 44 px dès 360 px de large (la bande déborde un peu sur la marge de la carte). */
+.r7 .p-340snk{gap:2px;margin:0 -12px}
+.r7 .p-340snk>button{min-width:44px;padding:8px 0}
+.r7 .p-zg9k0q{min-height:46px;color:var(--ink)}
+.r7 .p-7o0fo7{width:auto;min-width:42px;white-space:nowrap;flex-shrink:0}

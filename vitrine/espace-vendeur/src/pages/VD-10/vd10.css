@@ -1,0 +1,71 @@
+/* Écrans du groupe VD-10 (Trust Score, paliers, croissance) : seulement ce que la feuille du prototype n'a pas.
+   Les animations suivent celles du client (animations.css : tout est sous html[data-mouv], donc coupé en mouvement
+   réduit et sous navigateur piloté). */
+
+/* Squelette de chargement (scintille comme le client : .cl13-skel). */
+.vd10-skel{display:block;border-radius:18px;background:var(--sand-3);margin-top:12px}
+html[data-theme=dark] .vd10-skel{background:rgba(255,255,255,.06)}
+
+/* Bandeau « Pas de connexion » (VD10-R09) et note d'erreur. */
+.vd10-hl{display:flex;gap:10px;align-items:flex-start;margin-top:12px;padding:10px 12px;border-radius:12px;background:var(--sand-2);border:1px solid var(--line-2);font-size:13px;line-height:1.45;color:var(--ink-2)}
+.vd10-hl svg{flex-shrink:0;margin-top:1px}
+
+/* Anneau du score : l'arc se dessine (stroke-dashoffset) depuis zéro. */
+.vd10-ring circle.arc{transition:stroke-dasharray .42s var(--blv-doux)}
+html:not([data-mouv]) .vd10-ring circle.arc{transition:none}
+
+/* Courbe du score sur 30 jours. */
+.vd10-courbe{display:block;width:100%;height:76px;margin-top:10px;overflow:visible}
+.vd10-courbe .ligne{fill:none;stroke:var(--braise-1);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.vd10-courbe .aire{fill:var(--braise-1);opacity:.1}
+.vd10-courbe .seuil{stroke:var(--green);stroke-width:1.5;stroke-dasharray:4 4}
+html[data-mouv] .vd10-courbe .ligne{stroke-dasharray:600;animation:vd10-trace .42s var(--blv-doux) both}
+@keyframes vd10-trace{from{stroke-dashoffset:600}to{stroke-dashoffset:0}}
+.vd10-courbe-l{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-3);margin-top:4px}
+
+/* Curseur réel posé sur le dessin du prototype (piste, remplissage, pastille). */
+.vd10-curseur{position:absolute;inset:0;width:100%;height:28px;margin:0;opacity:0;cursor:pointer;touch-action:none}
+.vd10-curseur:focus-visible + .vd10-pouce{outline:3px solid #fff;outline-offset:2px}
+html[data-mouv] .vd10-pouce,html[data-mouv] .vd10-plein{transition:left .18s ease,width .18s ease}
+
+/* Montant gagnant qui « respire » une fois quand le meilleur plan change. */
+html[data-mouv] .vd10-gagne{animation:vd10-gagne var(--blv-long) var(--blv-ressort)}
+@keyframes vd10-gagne{0%{transform:scale(.94)}60%{transform:scale(1.04)}100%{transform:none}}
+
+/* Barres des ventes par jour qui montent l'une après l'autre. */
+html[data-mouv] .spark i{transform-origin:bottom;animation:vd10-monte var(--blv-long) var(--blv-doux) both}
+html[data-mouv] .spark i:nth-child(2){animation-delay:.04s}
+html[data-mouv] .spark i:nth-child(3){animation-delay:.08s}
+html[data-mouv] .spark i:nth-child(4){animation-delay:.12s}
+html[data-mouv] .spark i:nth-child(5){animation-delay:.16s}
+html[data-mouv] .spark i:nth-child(6){animation-delay:.2s}
+html[data-mouv] .spark i:nth-child(7){animation-delay:.24s}
+@keyframes vd10-monte{from{transform:scaleY(0)}}
+.spark i.vd10-zero{opacity:.5}
+/* Barre d'un jour touchable : toute la colonne du graphique est la cible (WCAG 2.2, 2.5.8 : 24 px au moins), même pour
+   un jour sans vente dont la barre fait 4 px. */
+.spark i[role=button]{position:relative}
+.spark i[role=button]::before{content:'';position:absolute;left:0;right:0;bottom:0;height:96px}
+
+/* Champ réel (zone de texte de la contestation, remise de la vente flash). */
+.vd10-area{display:block;width:100%;min-height:120px}
+.vd10-err{margin-top:6px;font-size:13px;font-weight:700;color:var(--red)}
+.cnt.trop{color:var(--red)}
+.vd10-prv{position:relative}
+.vd10-prv button{position:absolute;top:4px;right:4px;width:30px;height:30px;border-radius:50%;border:0;background:rgba(0,0,0,.55);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.vd10-prv img{width:100%;height:100%;object-fit:cover;display:block}
+.vd10-fichier{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+
+/* Message bref en bas de l'écran (comme cl05-toast du client). */
+.vd10-toast{position:fixed;left:16px;right:16px;bottom:96px;z-index:80;display:flex;gap:10px;align-items:center;padding:12px 14px;border-radius:14px;background:var(--ink);color:var(--card);font-size:14px;font-weight:700;box-shadow:0 12px 30px -12px rgba(0,0,0,.5)}
+html[data-mouv] .vd10-toast{animation:blv-toast var(--blv-long) var(--blv-ressort) both}
+
+/* Choix en ligne (puces) et lignes de conseils. */
+.vd10-gain{margin-left:auto;flex-shrink:0;font-size:12px;font-weight:800;color:var(--green)}
+.vd10-filtres{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.vd10-filtres .chip{height:36px}
+.vd10-filtres .chip.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
+html[data-theme=dark] .vd10-filtres .chip.on{color:#141415}
+
+/* Feuille d'un écran repris : fixe dans #app, au-dessus de la barre. */
+.vd10-feuille{max-height:88%;overflow-y:auto}

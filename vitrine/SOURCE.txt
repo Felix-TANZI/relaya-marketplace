@@ -1,0 +1,5 @@
+Sources de la vitrine : dépôt PG-BelivaY (équipe produit BelivaY)
+branche  : l/final-ligne
+commit   : c3fae00fe0c9c1d290db49f8b2efbf41f88d2358
+date     : 2026-10-25T20:03:41+09:00
+importé  : 2026-10-25T12:04:49Z par vitrine/outils/importer.sh

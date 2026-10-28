@@ -1,0 +1,84 @@
+/* Gestes du terrain (terrain.tsx) : jetons du prototype seulement, cibles de 48 px, lisibles en plein soleil. */
+
+/* Bandeau « Arrêt suivant » : au-dessus du bouton principal (zone du pouce). */
+.lvt-suivant{position:relative;overflow:hidden;display:flex;align-items:center;gap:10px;padding:10px 10px 12px 12px;margin-bottom:10px;border-radius:var(--r-m);background:var(--card);border:2px solid var(--acc);box-shadow:var(--shadow-card)}
+.lvt-suivant .lvt-grow{flex:1;min-width:0}
+.lvt-suivant b{display:block;font-size:var(--fs-15);font-weight:800;color:var(--ink)}
+.lvt-suivant .lvt-grow>span{display:block;font-size:var(--fs-13);color:var(--ink-2);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lvt-n{flex-shrink:0;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:1.125rem;font-variant-numeric:tabular-nums;background:var(--acc-btn);color:var(--acc-btn-ink)}
+.lvt-annuler{flex:none;width:auto!important;min-height:48px;padding:0 14px}
+.lvt-barre{position:absolute;left:0;bottom:0;height:4px;width:100%;background:var(--acc);transform-origin:left;animation:lvt-avance linear forwards}
+@keyframes lvt-avance{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+html[data-anim=reduites] .lvt-barre{animation:none;transform:scaleX(1);opacity:.35}
+@media (prefers-reduced-motion:reduce){.lvt-barre{animation:none;opacity:.35}}
+
+/* « Un problème ? » : un seul bouton, une feuille d'options de l'étape. */
+.lvt-probleme{min-height:48px}
+.lvt-feuille-h{font-size:1.1875rem;font-weight:800;letter-spacing:-.015em}
+.lvt-feuille-s{font-size:var(--fs-13);color:var(--ink-3);margin:2px 0 10px}
+.lvt-options{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.lvt-option{display:flex;align-items:center;gap:12px;width:100%;min-height:64px;padding:10px 12px;border-radius:var(--r-m);background:var(--card);border:1.5px solid var(--line-2);font:inherit;color:var(--ink);text-align:left;text-decoration:none;cursor:pointer}
+.lvt-option:active{background:var(--sand-2)}
+.lvt-option .lvt-grow{flex:1;min-width:0}
+.lvt-option b{display:block;font-size:var(--fs-15);font-weight:800}
+.lvt-option .lvt-grow>span{display:block;font-size:var(--fs-13);color:var(--ink-2);margin-top:2px;line-height:1.35}
+.lvt-option>svg{color:var(--ink-4);flex-shrink:0}
+.lvt-option .ic{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.lvt-option .ic.red{background:var(--red-soft);color:var(--red)}
+.lvt-option .ic.or{background:var(--or-soft);color:var(--or-txt)}
+.lvt-option .ic.amber{background:var(--amber-soft);color:var(--amber)}
+.lvt-option .ic.acc{background:var(--acc-soft);color:var(--acc-txt)}
+.lvt-option .ic.blue{background:var(--blue-soft);color:var(--blue)}
+.lvt-retards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.lvt-retard{min-height:56px;font-size:1.0625rem;font-weight:800}
+.lvt-ok{display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:var(--r-m);background:var(--acc-soft);color:var(--acc-txt);font-weight:700;font-size:var(--fs-14);line-height:1.4}
+.lvt-ok svg{flex-shrink:0}
+.lvt-feuille-b{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.lvt-feuille-b .btn{min-height:48px;width:100%}
+.lvt-feuille-b .btn:only-child{grid-column:1/-1}
+
+/* Contact de l'arrêt : « Appeler » en un toucher, messages prêts. */
+.lvt-contact{margin-top:12px}
+.lvt-contact-r{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.lvt-contact-r .btn{min-height:48px;width:100%}
+.lvt-contact-r .btn:only-child{grid-column:1/-1}
+.lvt-messages{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.lvt-message{min-height:48px;white-space:normal;text-align:left;line-height:1.25}
+.lvt-envoye{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:var(--fs-13);font-weight:700;color:var(--acc-txt)}
+.lvt-masque{margin-top:6px;font-size:var(--fs-12);color:var(--ink-3)}
+
+/* Récupération groupée chez le vendeur. */
+.lvt-recup-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.lvt-compteur{font-size:1.75rem;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--ink)}
+.lvt-compteur small{font-size:1rem;color:var(--ink-3)}
+.lvt-colis{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line);min-height:64px}
+.lvt-colis:first-of-type{border-top:0}
+.lvt-colis .lvt-grow{flex:1;min-width:0}
+.lvt-colis b{display:block;font-size:var(--fs-14);font-weight:800}
+.lvt-colis .lvt-grow>span{display:block;font-size:var(--fs-12);color:var(--ink-3);margin-top:1px}
+.lvt-coche{flex-shrink:0;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--line-2);color:transparent}
+.lvt-colis.ok .lvt-coche{background:var(--acc-btn);border-color:var(--acc-btn);color:var(--acc-btn-ink)}
+.lvt-colis.ko .lvt-coche{border-color:var(--amber);color:var(--amber)}
+.lvt-colis .btn{flex:none;width:auto!important;min-width:48px;min-height:48px;padding:0 12px}
+.lvt-colis .btn+.btn{margin-left:-2px}
+.lvt-scan{width:100%;min-height:56px;margin-top:10px}
+
+/* Pastilles discrètes du terrain : hors réseau, batterie faible (en haut du contenu, sans bouton). */
+.lvt-etats{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.lvt-etat{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:4px 12px;border-radius:999px;font-size:var(--fs-13);font-weight:700;text-decoration:none;background:var(--amber-soft);color:var(--amber);box-shadow:inset 0 0 0 1px var(--amber-line)}
+.lvt-etat.batterie{background:var(--sand-2);color:var(--ink-2);box-shadow:inset 0 0 0 1px var(--line-2)}
+
+/* Mode sobre (batterie faible) : aucune animation, pas de carte animée, ombres et flous retirés. */
+html[data-sobre] *,html[data-sobre] *::before,html[data-sobre] *::after{animation:none!important;transition:none!important}
+html[data-sobre] .l-verre,html[data-sobre] .glass,html[data-sobre] .dock{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+html[data-sobre] .liva-mini-map{display:none}
+
+/* Fin de tournée : résumé simple. */
+.lvt-resume{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.lvt-resume>div{padding:12px;border-radius:var(--r-m);background:rgba(255,255,255,.12)}
+.lvt-resume b{display:block;font-size:1.5rem;font-weight:800}
+.lvt-resume span{font-size:var(--fs-13);opacity:.9}
+
+/* « Faire cet arrêt d'abord » dans la liste. */
+.lvt-dabord{width:auto;display:flex;align-items:center;gap:6px;min-height:48px;padding:0 12px;margin:0 0 6px 46px;border-radius:12px;border:1.5px solid var(--line-2);background:var(--card);font:inherit;font-size:var(--fs-13);font-weight:700;color:var(--acc-txt);cursor:pointer}
+.lvt-refus{margin:0 0 8px 46px;font-size:var(--fs-13);color:var(--red);font-weight:600}

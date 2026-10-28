@@ -1,0 +1,46 @@
+// Connecteurs du domaine « session » (backend-kit/apps/vendeur_session). Appareil : champ `appareil` du corps ou de
+// l'adresse (identifiant gardé dans localStorage « blv_v_appareil »), à défaut l'en-tête X-Device-Id.
+import { c, type ConnecteursDe } from './types'
+
+const D = 'Session'
+
+export const ROUTES_SESSION: ConnecteursDe<'session'> = {
+  'session.session': c(D, 'branche', 'GET /api/vendors/session', '→ SessionVendeur', 'sans jeton : connecte false ; compte avec un dossier sans boutique : connecte true, boutique null'),
+  'session.connecter': c(D, 'branche', 'POST /api/vendors/auth/login {identifiant, motDePasse, seSouvenir?, appareil}', '→ ResultatConnexion + jetons {access, refresh}', 'identifiants faux : 200 {ok: false, raison: identifiants} (VD03-R03) ; 5 faux : 15 min, propriétaire prévenu (CNX-03)'),
+  'session.connecterAvec': c(D, 'branche', 'POST /api/vendors/auth/provider {fournisseur: google|apple, jeton, seSouvenir?, appareil}', '→ ResultatConnexion + jetons | {ok: false, raison: indisponible|refuse|inconnu}', 'jeton d’identité de Google Identity Services ou Sign in with Apple JS (src/api/identite.ts, VITE_GOOGLE_CLIENT_ID, VITE_APPLE_CLIENT_ID) vérifié par le serveur (apps.client_accounts.identite) ; sans identifiant du fournisseur : indisponible'),
+  'session.validerDeuxiemeFacteur': c(D, 'branche', 'POST /api/vendors/auth/2fa {code, appareil, challenge_id?}', '→ ResultatCode + jetons', 'appareil reconnu ensuite'),
+  'session.defiEnCours': c(D, 'branche', 'GET /api/vendors/auth/2fa?appareil=', '→ DefiConnexion ; 404 → null'),
+  'session.renvoyerDeuxiemeFacteur': c(D, 'branche', 'POST /api/vendors/auth/2fa/resend {appareil}', '→ ResultatRenvoi'),
+  'session.demanderCodeNumero': c(D, 'branche', 'POST /api/vendors/auth/otp {telephone, canal: sms|whatsapp, seSouvenir?, appareil}', '→ ResultatCodeNumero ; 400 appareil'),
+  'session.envoiNumero': c(D, 'branche', 'GET /api/vendors/auth/otp?appareil=', '→ EnvoiCode ; 404 → null'),
+  'session.validerCodeNumero': c(D, 'branche', 'POST /api/vendors/auth/verify {code, appareil}', '→ ResultatCode + jetons'),
+  'session.renvoyerCodeNumero': c(D, 'branche', 'POST /api/vendors/auth/otp/resend {canal, appareil}', '→ ResultatRenvoi'),
+  'session.demanderLienMotDePasse': c(D, 'branche', 'POST /api/vendors/auth/password-reset {identifiant}', '→ {ok, lien} | {ok: false, raison: vide}', 'même réponse que le compte existe ou non ; lien 15 min par SMS (et e-mail)'),
+  'session.ouvrirLienMotDePasse': c(D, 'branche', 'POST /api/vendors/auth/password-reset/open {jeton}', '→ {ok, nouveau} | {ok: false, raison: expire}', 'code SMS au titulaire'),
+  'session.choisirMotDePasse': c(D, 'branche', 'POST /api/vendors/auth/password-reset/confirm {jeton, code, motDePasse}', '→ ResultatCode | {ok: false, raison: faible}', 'MDP-LONG et validateurs Django'),
+  'session.deconnecter': c(D, 'branche', 'POST /api/vendors/auth/logout {refresh}', '→ SessionVendeur', 'jetons effacés sur l’appareil quoi qu’il arrive'),
+  'session.changerMembre': c(D, 'demo', 'démonstration : changer de membre', undefined, 'en production, chaque membre se connecte avec son compte'),
+  'session.oublierAppareil': c(D, 'branche', 'POST /api/vendors/auth/devices/forget {appareil}', '→ {ok}'),
+  'session.demanderLienConnexion': c(D, 'branche', 'POST /api/vendors/auth/email-link {email}', '→ {ok, destination, valideMinutes} | {ok: false, raison: email}', 'même réponse que l’adresse ait une boutique ou non ; lien à usage unique (CNX-LIEN-MIN, apps.otp) vers /vendeur/connexion?lien='),
+  'session.ouvrirLienConnexion': c(D, 'branche', 'POST /api/vendors/auth/email-link/verify {jeton, seSouvenir?, appareil}', '→ ResultatConnexion + jetons | {ok: false, raison: expire|invalide}', 'appareil inconnu : code SMS d’abord (CNX-01)'),
+  'session.categories': c(D, 'branche', 'GET /api/vendors/categories', '→ string[]', 'familles du barème'),
+  'session.zoneDuPoint': c(D, 'branche', 'GET /api/vendors/zone?lat=&lon=', '→ Zone ; 404 → null (hors zone)', 'zones exploitées (ZONES-EXPLOITEES)'),
+  'session.ouverture': c(D, 'branche', 'GET /api/vendors/shops/current?appareil=', '→ DossierOuverture ; 404 → null'),
+  'session.demarrerOuverture': c(D, 'branche', 'POST /api/vendors/shops {nom, categorie, statut, telephone, point, appareil} (Idempotency-Key)', '→ {ok, envoi} | {ok: false, raison: nom|categorie|numero|point|hors_zone|deux_comptes} ; 409 dossier_en_cours ; 429 trop_d_envois'),
+  'session.envoiOuverture': c(D, 'branche', 'GET /api/vendors/shops/current/code?appareil=', '→ EnvoiCode ; 404 → null'),
+  'session.validerCodeOuverture': c(D, 'branche', 'POST /api/vendors/shops/current/verify {code, appareil}', '→ ResultatCode + jetons', 'le compte vendeur existe (un numéro = un compte)'),
+  'session.renvoyerCodeOuverture': c(D, 'branche', 'POST /api/vendors/shops/current/resend {appareil}', '→ ResultatRenvoi'),
+  'session.envoyerPiece': c(D, 'branche', 'POST /api/vendors/shops/{id}/kyc {piece: recto|verso|selfie, image}', '→ {ok, dossier} | {ok: false, raison: illisible|visage} ; 404 not_found', '{id} = current ou la référence ; image en data: URL ou multipart ; fichiers privés'),
+  'session.demanderCodeVersement': c(D, 'branche', 'POST /api/vendors/shops/{id}/payout-number {telephone}', '→ {ok, envoi} | {ok: false, raison: numero|operateur}'),
+  'session.validerCodeVersement': c(D, 'branche', 'POST /api/vendors/shops/{id}/payout-number/verify {code}', '→ ResultatCode'),
+  'session.envoyerPourVerification': c(D, 'branche', 'POST /api/vendors/shops/{id}/submit (Idempotency-Key)', '→ {ok, dossier} | {ok: false, raison: incomplet}', 'réponse avant : 48 h ouvrées'),
+  'session.reponseVerificationDemo': c(D, 'demo', 'prestataire de vérification', undefined, 'serveur d’essai : vendeur_session.ouverture.repondre_verification(ref, accord, motif)'),
+  'session.signerContrat': c(D, 'branche', 'POST /api/vendors/contract/sign {immatricule, rccm?, niu?} (Idempotency-Key)', '→ {ok, dossier} | {ok: false, raison: rccm|niu|etape}', 'version, horodatage, IP, appareil'),
+  'session.arriveeClient': c(D, 'branche', 'GET /api/vendors/shops/from-client', '→ ArriveeClient ; 404 → null', 'compte client connecté, numéro déjà vérifié'),
+  'session.confirmerArriveeClient': c(D, 'branche', 'POST /api/vendors/shops/from-client {point, appareil} (Idempotency-Key)', '→ {ok, dossier} | {ok: false, raison: point|hors_zone}'),
+  'session.biometrie': c(D, 'branche', 'GET /api/vendors/me/biometrics', '→ Biometrie'),
+  'session.reglerBiometrie': c(D, 'branche', 'PUT /api/vendors/me/biometrics {active}', '→ Biometrie', 'n’ouvre que l’application, jamais à la place d’un code (DP-57 S-1)'),
+  'session.saisieAssistee': c(D, 'branche', 'GET /api/vendors/assisted-entry', '→ SaisieAssistee', 'accès Préparation : aucune fiche, prixSession null'),
+  'session.validerFiches': c(D, 'branche', 'POST /api/vendors/assisted-entry/approve {ids} (Idempotency-Key)', '→ SaisieAssistee ; 403 owner_only', 'offres créées « en vérification »'),
+  'session.modifierFiche': c(D, 'branche', 'PUT /api/vendors/assisted-entry/{id} {prix, stock}', '→ {ok, saisie} | {ok: false, raison: prix|stock} ; 404 not_found ; 403 owner_only'),
+}

@@ -1,0 +1,79 @@
+/* Écrans LIV-08 (incident, synchronisation, clôture) : préfixe l8-. */
+
+@keyframes l8-va{from{transform:translateX(-10%)}to{transform:translateX(160%)}}
+
+/* Synchronisation */
+.l8-barres{display:flex;align-items:flex-end;gap:6px;height:120px;margin-top:12px}
+.l8-barres div{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px}
+.l8-barres i{display:block;width:100%;min-height:3px;border-radius:6px 6px 2px 2px;background:var(--acc-2)}
+.l8-barres div.maintenant i{background:var(--or)}
+.l8-barres span{font-size:.75rem;font-weight:700;color:var(--ink-3)}
+
+/* Clôture */
+.l8-pas{display:inline-flex;align-items:center;gap:4px;flex-shrink:0}
+.l8-pas button{width:44px;height:44px;border:0;border-radius:12px;background:var(--sand-2);color:var(--ink);font:inherit;font-size:1.125rem;font-weight:800;cursor:pointer}
+.l8-pas button:disabled{opacity:.4;cursor:default}
+.l8-pas b{min-width:32px;text-align:center;font-size:1.125rem}
+.l8-ecart{display:flex;flex-direction:column;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+
+/* ── Repris sur le prototype (balisage livc-*, sous .lvp) : ce que le kit n'a pas ─────────────────────────── */
+/* Surface de la feuille du prototype posée dans la page (incident) : même fond, même arrondi, sans voile. */
+.lvp.l8 .l8-feuille{position:relative;background:var(--card);border-radius:28px;padding:16px 18px 20px;box-shadow:var(--ombre)}
+html[data-theme=dark] .lvp.l8 .l8-feuille{background:var(--card-2);box-shadow:inset 0 0 0 1px var(--line)}
+.lvp.l8 .livc-x{width:44px;height:44px;border:0;cursor:pointer;font:inherit}
+.lvp.l8 .livc-fam a{color:var(--ink)}
+/* Puces de type (le prototype dessine des span) : boutons radio accessibles. */
+.lvp.l8 .livc-types button{min-height:44px;padding:0 14px;border-radius:14px;border:1.5px solid var(--line-2);background:var(--card);display:inline-flex;align-items:center;gap:7px;font:inherit;font-size:.875rem;font-weight:700;color:var(--ink-2);cursor:pointer;text-align:left}
+.lvp.l8 .livc-types button.on{border-color:var(--acc);background:var(--acc-soft);color:var(--acc-txt);box-shadow:0 0 0 3px rgba(var(--acc-rgb),.10)}
+.lvp.l8 .livc-fam a:focus-visible,.lvp.l8 .livc-types button:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.lvp.l8 .livc-types button.red.on{border-color:var(--red);background:var(--red-soft);color:var(--red);box-shadow:0 0 0 3px rgba(180,35,24,.1)}
+.lvp.l8 .livc-lab .cnt{text-align:right}
+.lvp.l8 .l8-chg{min-height:44px;display:inline-flex;align-items:center}
+.lvp.l8 .cr{color:var(--red)}
+/* Note : champ de saisie dans .inp.area. */
+.lvp.l8 .inp:focus-within{border-color:var(--acc);box-shadow:0 0 0 4px rgba(var(--acc-rgb),.14)}
+.lvp.l8 .inp textarea{flex:1;min-width:0;min-height:72px;border:0;background:transparent;color:var(--ink);font:inherit;line-height:1.45;resize:vertical;outline:0;padding:0}
+.lvp.l8 .inp textarea::placeholder{color:var(--ink-4)}
+/* Photos prises : image, heure et poids, « reprendre ». */
+.lvp.l8 .l8-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.lvp.l8 .l8-reprendre{position:absolute;top:2px;left:2px;width:44px;height:44px;border:0;border-radius:12px;background:transparent;color:#fff;display:flex;align-items:flex-start;justify-content:flex-start;padding:6px;cursor:pointer}
+.lvp.l8 .l8-reprendre svg{background:rgba(0,0,0,.5);border-radius:8px;padding:3px;box-sizing:content-box}
+.lvp.l8 button.addph{font:inherit;font-size:.75rem;font-weight:800;cursor:pointer;width:100%}
+.lvp.l8 .l8-pos .btn.sm{min-height:44px;width:auto;flex-shrink:0}
+/* SOS à appui long : la bande et le grand bouton se remplissent pendant l'appui. */
+.lvp.l8 .l8-appui{position:relative;overflow:hidden;border:0;font:inherit;text-align:left;cursor:pointer;width:100%;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.lvp.l8 .livc-sos .b.l8-appui{width:170px;text-align:center}
+.lvp.l8 .l8-appui>*{position:relative}
+.lvp.l8 .l8-appui .l8-appui-p{position:absolute;inset:0;border-radius:inherit;background:rgba(0,0,0,.24);transform-origin:left;transform:scaleX(var(--p,0));pointer-events:none}
+.lvp.l8 .livc-sos .b .l8-appui-p{transform-origin:bottom;transform:scaleY(var(--p,0))}
+.lvp.l8 .livc-sos .b{overflow:hidden}
+.lvp.l8 .hero.red .hk{color:#FFB4AB}
+.lvp.l8 .l8-avatar{width:52px;height:52px;flex-shrink:0}
+/* Synchronisation : barre d'envoi sans fin connue, graphique par heure (valeurs au-dessus), puces de légende. */
+.lvp.l8 .bar.l8-indefini{overflow:hidden}
+.lvp.l8 .bar.l8-indefini i{width:40%}
+html[data-mouv] .lvp.l8 .bar.l8-indefini i{animation:l8-va 1.1s ease-in-out infinite alternate}
+.lvp.l8 .l8-barres em{font-style:normal;font-size:.75rem;font-weight:800;color:var(--ink-2)}
+.lvp.l8 .l8-puce{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:baseline}
+.lvp.l8 .lc-anneau b{background:var(--card)}
+/* Contraste AA : le dégradé d'accent du kit est trop clair sous un texte blanc. */
+.lvp.l8 .hero.acc{background:radial-gradient(80% 60% at 100% 0%,rgba(255,255,255,.14) 0%,rgba(255,255,255,0) 60%),linear-gradient(160deg,#0F6A31 0%,#0B5426 60%,#08431E 100%)}
+.lvp.l8 .livc-hm span{color:rgba(255,255,255,.92)}
+.lvp.l8 .livc-hm div{background:rgba(0,0,0,.16)}
+/* Clôture : case « en file » (ambre, ne bloque pas), case liée à la synchronisation, tableau du kit avec compteur. */
+.lvp.l8 .cbx.l8-cbx-wait{border-color:var(--amber);background:var(--amber-soft);color:var(--amber)}
+.lvp.l8 .l8-lien-case{display:block;color:inherit;border-top:1px solid var(--line)}
+.lvp.l8 .l8-lien-case .check{border-top:0}
+.lvp.l8 .livc-kit td,.lvp.l8 .livc-kit th{padding-left:4px}
+.lvp.l8 .livc-kit td:last-child{padding:4px 0 4px 4px}
+.lvp.l8 .livc-kit .l8-pas{gap:2px;justify-content:flex-end}
+.lvp.l8 .livc-kit .l8-pas b{min-width:22px;font-size:1rem}
+.lvp.l8 .l8-ecart-n{display:block;font-size:.75rem;margin-top:2px}
+.lvp.l8 .l8-ecart{display:block;margin:0;padding:0;border:0}
+.lvp.l8 .l8-ecart .lc-photos{margin-top:10px}
+/* Le tableau du kit tient à 360 px dans les deux langues : en-têtes sans capitales, compteur serré, retour à la ligne. */
+.lvp.l8 .livc-kit{table-layout:auto}
+.lvp.l8 .livc-kit th{text-transform:none;letter-spacing:0;white-space:normal;vertical-align:bottom;line-height:1.2}
+.lvp.l8 .livc-kit .l8-pas{gap:0}
+.lvp.l8 .livc-kit .l8-pas button{width:44px}
+.lvp.l8 .livc-kit .l8-pas b{min-width:20px}

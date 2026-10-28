@@ -1,0 +1,2818 @@
+[
+ {
+  "code": "LIV-ACCEPT-MIN",
+  "libelle": "Délai d'acceptation d'une course par l'entreprise",
+  "valeur": "15",
+  "unite": "minutes au plus",
+  "statut": "D (25 sept.)",
+  "ref": "p.10 LIV-ZON-05"
+ },
+ {
+  "code": "LIV-RAMASSAGE-MAX",
+  "libelle": "Délai de ramassage après acceptation",
+  "valeur": "1 h 30",
+  "unite": "au plus",
+  "statut": "D (25 sept.)",
+  "ref": "p.10 LIV-ZON-05 ; p5 LIV-ZON-05"
+ },
+ {
+  "code": "PAY-CARTE-PROVISION",
+  "libelle": "Provision de rétrofacturation carte",
+  "valeur": "1,5",
+  "unite": "%",
+  "statut": "V",
+  "ref": "p.10 §5 ; p6"
+ },
+ {
+  "code": "REMB-AUTO-STD",
+  "libelle": "Remboursement automatique sans enquête, client Standard",
+  "valeur": "3 000",
+  "unite": "F (sous ce seuil)",
+  "statut": "D",
+  "ref": "p.11 LIV-ARG-06"
+ },
+ {
+  "code": "REMB-AUTO-ELEVE",
+  "libelle": "Remboursement automatique sans enquête, client Élevé",
+  "valeur": "10 000",
+  "unite": "F (sous ce seuil)",
+  "statut": "D",
+  "ref": "p.11 LIV-ARG-06"
+ },
+ {
+  "code": "LIV-RAM-AUTRE-ZONE",
+  "libelle": "Ramassage suivant, autre zone",
+  "valeur": "500",
+  "unite": "F, jamais offert",
+  "statut": "D",
+  "ref": "p.12 §6"
+ },
+ {
+  "code": "LIV-HORS-GABARIT-MIN",
+  "libelle": "Devis minimal hors gabarit",
+  "valeur": "8 000",
+  "unite": "F",
+  "statut": "document ; à rapprocher de DP-07 (LIV-SUPPL-XL)",
+  "ref": "p.12 §6"
+ },
+ {
+  "code": "LIV-OFFERTE-RELAIS",
+  "libelle": "Seuil de livraison offerte, relais",
+  "valeur": "30 000",
+  "unite": "F de panier",
+  "statut": "D (22 sept.)",
+  "ref": "p.12 §6"
+ },
+ {
+  "code": "LIV-OFFERTE-DOM",
+  "libelle": "Seuil de livraison offerte, domicile",
+  "valeur": "50 000",
+  "unite": "F de panier",
+  "statut": "D (22 sept.)",
+  "ref": "p.12 §6"
+ },
+ {
+  "code": "LIV-ETAGE",
+  "libelle": "Supplément d'étage (au-delà du 2e sans ascenseur)",
+  "valeur": "500",
+  "unite": "F",
+  "statut": "P",
+  "ref": "p.12 §6"
+ },
+ {
+  "code": "LIV-GARANTIE",
+  "libelle": "Frais de garantie au-delà de 250 000 F",
+  "valeur": "1",
+  "unite": "% du prix",
+  "statut": "P",
+  "ref": "p.12 §6"
+ },
+ {
+  "code": "LIV-MARGE-SECU",
+  "libelle": "Marge de sécurité de tout calcul tarifaire",
+  "valeur": "10",
+  "unite": "% (division par 1,1)",
+  "statut": "D (19 et 22 sept.)",
+  "ref": "p.13 LIV-TAR-06"
+ },
+ {
+  "code": "LIV-HORS-ZONE",
+  "libelle": "Réduction du plafond hors zone contractuelle (L01)",
+  "valeur": "−200",
+  "unite": "F",
+  "statut": "document ; plafond concerné ambigu (LIV-D01.A06)",
+  "ref": "p.13 §6"
+ },
+ {
+  "code": "EMB-FORMATS",
+  "libelle": "Formats d'emballage BelivaY",
+  "valeur": "S 20×30 · M 25×35 · L 35×45 · C1 carton 30×20×15 · C2 carton 40×30×25 ; kraft neutre",
+  "unite": "cm",
+  "statut": "V",
+  "ref": "p.14 LIV-PRV-09"
+ },
+ {
+  "code": "C4-DEBUT",
+  "libelle": "Audit C4 : premières commandes d'un nouveau vendeur",
+  "valeur": "100 % des 5 premières",
+  "unite": null,
+  "statut": "V",
+  "ref": "p.15 LIV-PRV-10"
+ },
+ {
+  "code": "C4-SOUS-70",
+  "libelle": "Audit C4 sous un Trust Score de 70",
+  "valeur": "1 sur 20",
+  "unite": null,
+  "statut": "V",
+  "ref": "p.15 LIV-PRV-10 ; p11"
+ },
+ {
+  "code": "C4-NORMAL",
+  "libelle": "Audit C4 ensuite",
+  "valeur": "1 sur 100",
+  "unite": null,
+  "statut": "V",
+  "ref": "p.15 LIV-PRV-10"
+ },
+ {
+  "code": "TSC-LISSAGE",
+  "libelle": "Lissage bayésien du Trust Score",
+  "valeur": "µ = 50, k = 10 ; demi-vie d'un événement 90 jours",
+  "unite": null,
+  "statut": "V",
+  "ref": "p.15 LIV-TSC-01"
+ },
+ {
+  "code": "TSC-VETO-PLAFOND",
+  "libelle": "Plafond du score après un veto",
+  "valeur": "39",
+  "unite": "points",
+  "statut": "V",
+  "ref": "p.15 LIV-TSC-02"
+ },
+ {
+  "code": "TSC-HYSTERESIS",
+  "libelle": "Hystérésis des paliers",
+  "valeur": "montée : seuil tenu 14 jours ; descente : 5 points sous le seuil pendant 14 jours + validation humaine",
+  "unite": null,
+  "statut": "V ; à rapprocher de DP-21/DP-57 A-5",
+  "ref": "p.15 LIV-TSC-03"
+ },
+ {
+  "code": "TSC-BAISSE-MAX",
+  "libelle": "Baisse maximale par recalcul",
+  "valeur": "8",
+  "unite": "points",
+  "statut": "V",
+  "ref": "p.15 LIV-TSC-04"
+ },
+ {
+  "code": "TSC-GEL",
+  "libelle": "Gel des critères après inactivité",
+  "valeur": "30 jours ; revue à 90 jours",
+  "unite": null,
+  "statut": "V",
+  "ref": "p.15 LIV-TSC-04"
+ },
+ {
+  "code": "LIV-TYPE-COMPTE",
+  "libelle": "Type de compte livreur",
+  "valeur": "partenaire (seul au lancement) · BelivaY",
+  "unite": null,
+  "statut": "P",
+  "ref": "p.18 LIV-STA-04"
+ },
+ {
+  "code": "RECEPISSE-CNI-J",
+  "libelle": "Validité d'un récépissé de renouvellement de CNI",
+  "valeur": "90",
+  "unite": "jours au plus",
+  "statut": "fixé",
+  "ref": "p.28 LIV-P02"
+ },
+ {
+  "code": "LIV-AGE-MIN",
+  "libelle": "Âge minimum du livreur",
+  "valeur": "18",
+  "unite": "ans révolus",
+  "statut": "Δ",
+  "ref": "p.20 LIV-ENT-06 ; LIV-ENT-06"
+ },
+ {
+  "code": "LIV-ANDROID-MIN",
+  "libelle": "Version Android minimale",
+  "valeur": "8",
+  "unite": null,
+  "statut": "P",
+  "ref": "p.21 §12"
+ },
+ {
+  "code": "LIV-RAM-MIN",
+  "libelle": "Mémoire vive minimale",
+  "valeur": "2",
+  "unite": "Go",
+  "statut": "P",
+  "ref": "p.21 §12"
+ },
+ {
+  "code": "LIV-PHOTO-MPX",
+  "libelle": "Appareil photo arrière minimal",
+  "valeur": "8",
+  "unite": "mégapixels",
+  "statut": "P",
+  "ref": "p.21 §12"
+ },
+ {
+  "code": "LIV-DATA-JOUR-MO",
+  "libelle": "Consommation de données par jour de tournée",
+  "valeur": "< 30",
+  "unite": "Mo",
+  "statut": "P",
+  "ref": "p.21 §12"
+ },
+ {
+  "code": "LIV-BATTERIE-ALERTE",
+  "libelle": "Alerte de batterie faible",
+  "valeur": "15 (§12) ou 20 (LIV-P04R-05)",
+  "unite": "%",
+  "statut": "P ; à trancher (LIV-D01.Q07)",
+  "ref": "p.21 §12 ; p.30 LIV-P04R-05"
+ },
+ {
+  "code": "LIV-BATTERIE-ECO",
+  "libelle": "Mode économie de la tournée",
+  "valeur": "10",
+  "unite": "%",
+  "statut": "P",
+  "ref": "p.30 LIV-P04R-05"
+ },
+ {
+  "code": "UI-CIBLE-PX",
+  "libelle": "Cible tactile minimale",
+  "valeur": "48",
+  "unite": "px",
+  "statut": "Δ",
+  "ref": "p.24 LIV-UIX-02"
+ },
+ {
+  "code": "UI-TEXTE-PX",
+  "libelle": "Texte minimal des champs",
+  "valeur": "16",
+  "unite": "px",
+  "statut": "Δ",
+  "ref": "p.24 LIV-UIX-02"
+ },
+ {
+  "code": "LIV-SMS-CAS",
+  "libelle": "Cas où un SMS payant est envoyé au livreur",
+  "valeur": "code de connexion ; « paquet affecté » si le push n'est pas délivré en 5 min",
+  "unite": null,
+  "statut": "Δ ; à lister en console (LIV-D01.A37)",
+  "ref": "p.25 LIV-P01R-04"
+ },
+ {
+  "code": "RETARD-PONCTUALITE-MIN",
+  "libelle": "Retard sur le créneau déclenchant un événement Ponctualité",
+  "valeur": "15",
+  "unite": "minutes (borne exacte à documenter)",
+  "statut": "P",
+  "ref": "p.36 LIV-P08"
+ },
+ {
+  "code": "RELAIS-SATURATION",
+  "libelle": "Taux d'occupation d'un relais saturé",
+  "valeur": "90",
+  "unite": "% des places",
+  "statut": "D",
+  "ref": "p.49 LIV-P16R-11 ; p29"
+ },
+ {
+  "code": "PUSH-APPROCHE-MIN",
+  "libelle": "Push d'approche au client",
+  "valeur": "10",
+  "unite": "minutes avant l'arrivée",
+  "statut": "fixé",
+  "ref": "p.50 LIV-P17"
+ },
+ {
+  "code": "LIV-CODE-RECEPTION-VENDEUR",
+  "libelle": "Code de réception du vendeur (course de retour)",
+  "valeur": 6,
+  "unite": "chiffres",
+  "statut": "corps du document",
+  "ref": "§34 LIV-P20"
+ },
+ {
+  "code": "LIV-ECART-HORODATAGE-H",
+  "libelle": "Écart signalé entre horodatage d'origine et serveur",
+  "valeur": 24,
+  "unite": "heures",
+  "statut": "déduite (Δ)",
+  "ref": "LIV-P22R-04"
+ },
+ {
+  "code": "LIV-REVUE-RELANCE-J",
+  "libelle": "Mission en revue : relance de l'entreprise au-delà de",
+  "valeur": 7,
+  "unite": "jours",
+  "statut": "corps du document",
+  "ref": "§39 LIV-P25"
+ },
+ {
+  "code": "LIV-TSC-DEMI-VIE-J",
+  "libelle": "Demi-vie d'un événement",
+  "valeur": 90,
+  "unite": "jours",
+  "statut": "verrouillée (V)",
+  "ref": "LIV-TSC-01"
+ },
+ {
+  "code": "LIV-TSC-BAISSE-MAX",
+  "libelle": "Baisse maximale par recalcul ; gel après 30 j d'inactivité, revue à 90 j",
+  "valeur": 8,
+  "unite": "points",
+  "statut": "verrouillée (V)",
+  "ref": "LIV-TSC-04"
+ },
+ {
+  "code": "LIV-RETARD-BORNES",
+  "libelle": "Bornes de retard Ponctualité",
+  "valeur": "15-60 min = g1 ; > 60 min = g2",
+  "unite": "minutes",
+  "statut": "proposée (P)",
+  "ref": "§40 barème"
+ },
+ {
+  "code": "LIV-SMS-SECOURS-MIN",
+  "libelle": "SMS de secours « paquet affecté » si push non délivré",
+  "valeur": 5,
+  "unite": "minutes",
+  "statut": "proposée (P)",
+  "ref": "LIV-P28R-01"
+ },
+ {
+  "code": "LIV-LIT-REPONSE-H",
+  "libelle": "Réponse de l'entreprise à un litige",
+  "valeur": 48,
+  "unite": "heures",
+  "statut": "déduite (Δ)",
+  "ref": "LIV-LIT-01"
+ },
+ {
+  "code": "LIV-LIT-ARRANG-CAR",
+  "libelle": "Longueur minimale d'une proposition d'arrangement",
+  "valeur": 40,
+  "unite": "caractères",
+  "statut": "déduite (Δ)",
+  "ref": "LIV-LIT-02"
+ },
+ {
+  "code": "LIV-SANCTION-NIVEAUX",
+  "libelle": "Niveaux de sanction sur l'accès",
+  "valeur": "1 avertissement · 2 accès restreint · 3 suspension (score gelé sous 40) · 4 retrait + liste noire",
+  "unite": "niveau",
+  "statut": "corps du document",
+  "ref": "§50"
+ },
+ {
+  "code": "LIV-DON-CONSERV-J",
+  "libelle": "Conservation des données du livreur après le rattachement",
+  "valeur": 180,
+  "unite": "jours",
+  "statut": "proposée (P)",
+  "ref": "LIV-DON-01"
+ },
+ {
+  "code": "LIV-PAQ-PUBLICATION",
+  "libelle": "Publication d'un paquet relais",
+  "valeur": "8 colis ou 2 créneaux d'attente",
+  "unite": "colis / créneaux",
+  "statut": "verrouillée (V) ; contredit ENT-PQS-02 (5 colis)",
+  "ref": "LIV-PAQ-01"
+ },
+ {
+  "code": "LIV-PAQ-ARRETS-MAX",
+  "libelle": "Nombre d'arrêts d'un paquet",
+  "valeur": "1 à 12",
+  "unite": "arrêts",
+  "statut": "corps du document",
+  "ref": "§52"
+ },
+ {
+  "code": "LIV-C4-FREQ",
+  "libelle": "Fréquence de l'audit C4",
+  "valeur": "100 % des 5 premières ; 1/20 sous Trust 70 ; puis 1/100",
+  "unite": "ratio",
+  "statut": "verrouillée (V)",
+  "ref": "LIV-PRV-10, LIV-P12R-01"
+ },
+ {
+  "code": "LIV-CER-SEUIL",
+  "libelle": "Seuil de réussite de la certification",
+  "valeur": "16/20 ; nouvel essai après 2 h ; 3 essais par jour",
+  "unite": "réponses",
+  "statut": "proposée (P)",
+  "ref": "LIV-CER-02, LIV-P03R-04"
+ },
+ {
+  "code": "LIV-CER-VALIDITE-MOIS",
+  "libelle": "Validité du badge ; alerte 30 j avant",
+  "valeur": 12,
+  "unite": "mois",
+  "statut": "proposée (P)",
+  "ref": "LIV-P03R-02"
+ },
+ {
+  "code": "LIV-PIN-SESSION",
+  "libelle": "Réouverture de session par PIN",
+  "valeur": "12 h ; 5 min d'inactivité pendant une preuve",
+  "unite": "heures/minutes",
+  "statut": "proposée (P)",
+  "ref": "LIV-P01R-01"
+ },
+ {
+  "code": "LIV-PIN-ESSAIS",
+  "libelle": "PIN faux consécutifs avant blocage 30 min puis code SMS",
+  "valeur": 5,
+  "unite": "essais",
+  "statut": "proposée (P)",
+  "ref": "LIV-P01R-02"
+ },
+ {
+  "code": "LIV-BATTERIE-SEUILS",
+  "libelle": "Alerte batterie / mode économie",
+  "valeur": "20 % / 10 %",
+  "unite": "%",
+  "statut": "proposée (P) ; 15 % au §12",
+  "ref": "LIV-P04R-05"
+ },
+ {
+  "code": "LIV-DISPO-RAPPEL-H",
+  "libelle": "Rappel de pause après disponibilité continue",
+  "valeur": 10,
+  "unite": "heures",
+  "statut": "proposée (P)",
+  "ref": "LIV-P05R-03"
+ },
+ {
+  "code": "LIV-POCHETTES-ABIMEES",
+  "libelle": "Alerte entreprise si pochettes abîmées sur la semaine",
+  "valeur": 5,
+  "unite": "%",
+  "statut": "proposée (P)",
+  "ref": "LIV-P07R-02"
+ },
+ {
+  "code": "LIV-COMPTE-REBOURS",
+  "libelle": "Compte à rebours de l'heure limite",
+  "valeur": "ambre à 30 min, rouge à 10 min",
+  "unite": "minutes",
+  "statut": "proposée (P)",
+  "ref": "LIV-P08R-06"
+ },
+ {
+  "code": "LIV-POSITION-EFFACEE-MIN",
+  "libelle": "Effacement de la position de remise après la remise",
+  "valeur": 30,
+  "unite": "minutes",
+  "statut": "proposée (P)",
+  "ref": "LIV-P09R-01"
+ },
+ {
+  "code": "LIV-ARRIVEE-ECART-M",
+  "libelle": "Écart à la position enregistrée demandant confirmation",
+  "valeur": 150,
+  "unite": "m",
+  "statut": "proposée (P)",
+  "ref": "LIV-P09R-03"
+ },
+ {
+  "code": "LIV-ATTENTE-VENDEUR-MIN",
+  "libelle": "Attente maximale chez le vendeur",
+  "valeur": 10,
+  "unite": "minutes",
+  "statut": "proposée (P)",
+  "ref": "LIV-P10R-02"
+ },
+ {
+  "code": "LIV-C1-DUREE-S",
+  "libelle": "Durée du contrôle C1 par colis",
+  "valeur": "60 à 90",
+  "unite": "secondes",
+  "statut": "verrouillée (V)",
+  "ref": "LIV-P11R-02"
+ },
+ {
+  "code": "LIV-C4-DUREE-MIN",
+  "libelle": "Durée maximale de l'audit C4",
+  "valeur": 5,
+  "unite": "minutes",
+  "statut": "proposée (P)",
+  "ref": "LIV-P12R-02"
+ },
+ {
+  "code": "LIV-DEPOT-CONFIRM-MIN",
+  "libelle": "Confirmation du dépôt par le livreur, sinon « à confirmer »",
+  "valeur": 10,
+  "unite": "minutes",
+  "statut": "décidée (D)",
+  "ref": "LIV-P16R-06"
+ },
+ {
+  "code": "LIV-RELAIS-SATURATION",
+  "libelle": "Saturation d'un relais",
+  "valeur": 90,
+  "unite": "% des places",
+  "statut": "décidée (D)",
+  "ref": "LIV-P16R-11"
+ },
+ {
+  "code": "LIV-VALIDATION-ECART-M",
+  "libelle": "Validation à domicile signalée au-delà de",
+  "valeur": 300,
+  "unite": "m",
+  "statut": "proposée (P)",
+  "ref": "LIV-P17R-06"
+ },
+ {
+  "code": "LIV-CLIENT-ABSENT",
+  "libelle": "Client absent : attente et appels",
+  "valeur": "10 min + 2 appels masqués à 5 min d'intervalle au moins",
+  "unite": "minutes",
+  "statut": "proposée (P)",
+  "ref": "LIV-P18R-01"
+ },
+ {
+  "code": "LIV-NOUVELLE-TENTATIVE",
+  "libelle": "Nouvelle tentative à domicile payée par le client",
+  "valeur": 1000,
+  "unite": "F",
+  "statut": "proposée (P)",
+  "ref": "LIV-P18R-05"
+ },
+ {
+  "code": "LIV-CIBLE-PX",
+  "libelle": "Cible tactile minimale ; texte des champs",
+  "valeur": "48 px ; 16 px",
+  "unite": "px",
+  "statut": "déduite (Δ)",
+  "ref": "LIV-UIX-02"
+ },
+ {
+  "code": "LIV-REMB-AUTO-SEUIL",
+  "libelle": "Remboursement automatique sans enquête",
+  "valeur": "3 000 F (Standard) ; 10 000 F (Élevé)",
+  "unite": "F",
+  "statut": "décidée (D)",
+  "ref": "LIV-ARG-06"
+ },
+ {
+  "code": "LIV-MARGE-SECURITE",
+  "libelle": "Marge de sécurité de tout calcul tarifaire",
+  "valeur": 10,
+  "unite": "%",
+  "statut": "décidée (D)",
+  "ref": "LIV-MOD-06, LIV-TAR-06"
+ },
+ {
+  "code": "LIV-KYC-DOUTE-H",
+  "libelle": "Doute sur une pièce tranché par un humain",
+  "valeur": 48,
+  "unite": "heures ouvrées",
+  "statut": "verrouillée (V)",
+  "ref": "LIV-P02R-04"
+ },
+ {
+  "code": "LIV-PLAFOND-RELAIS-S",
+  "libelle": "Plafond d'achat tournée relais S",
+  "valeur": 630,
+  "unite": "F",
+  "statut": "règle client",
+  "ref": "§56"
+ },
+ {
+  "code": "LIV-PLAFOND-DOM-S",
+  "libelle": "Plafond d'achat domicile S",
+  "valeur": "1 350 (écrit) / 1 360 (calcul)",
+  "unite": "F",
+  "statut": "à trancher",
+  "ref": "§56 ; guide A01, A43"
+ },
+ {
+  "code": "LIV-PLAFOND-TRANSFERT",
+  "libelle": "Plafond d'achat d'un transfert",
+  "valeur": 360,
+  "unite": "F",
+  "statut": "règle client (sur base 400 F)",
+  "ref": "§56"
+ },
+ {
+  "code": "SLA-MINORATION",
+  "libelle": "Minoration au-delà de 5 h (offre de référence)",
+  "valeur": 20,
+  "unite": "%",
+  "statut": "règle client",
+  "ref": "§56 SLA-ZONE-H"
+ },
+ {
+  "code": "PAY-CPT-SEUILS",
+  "libelle": "Payable au retrait",
+  "valeur": "15 000 F (compte neuf) · 50 000 F · 100 000 F après 5 commandes sans incident ; 2 refus = paiement d'avance définitif",
+  "unite": "F",
+  "statut": "règle client",
+  "ref": "§56"
+ },
+ {
+  "code": "STK-08",
+  "libelle": "Garde gratuite d'un groupage au relais",
+  "valeur": 21,
+  "unite": "jours",
+  "statut": "règle relais",
+  "ref": "§56"
+ },
+ {
+  "code": "CAL-15",
+  "libelle": "Marge minimale par petit colis relais",
+  "valeur": 70,
+  "unite": "F",
+  "statut": "règle relais",
+  "ref": "§56"
+ },
+ {
+  "code": "LIV-COULEUR-ACCENT",
+  "libelle": "Accent « validé / en route » de l'espace livreur",
+  "valeur": "#047857 (vert émeraude) sur base noir et blanc + orange",
+  "unite": "couleur",
+  "statut": "proposée (question n° 8)",
+  "ref": "§57"
+ },
+ {
+  "code": "LIV-ASSURANCE-VEHICULE",
+  "libelle": "Attestation d'assurance du véhicule",
+  "valeur": "selon le contrat de l'entreprise ; obligatoire pour le palier Or",
+  "unite": "—",
+  "statut": "proposée (question n° 9)",
+  "ref": "§57"
+ },
+ {
+  "code": "LIV-GAINS-AFFICHAGE",
+  "libelle": "Affichage des gains au livreur partenaire",
+  "valeur": "au choix de l'entreprise : tarif par mission ou compteur",
+  "unite": "—",
+  "statut": "proposée (question n° 5)",
+  "ref": "§57"
+ },
+ {
+  "code": "LIV-PRODUITS-FRAIS",
+  "libelle": "Produits frais et liquides",
+  "valeur": "seulement emballage fabricant fermé ; catégorie Supermarché fermée tant que non tranché",
+  "unite": "—",
+  "statut": "proposée (question n° 4)",
+  "ref": "§57"
+ },
+ {
+  "code": "LIV-REGISTRE-TOTAL",
+  "libelle": "Nombre de règles numérotées",
+  "valeur": "270 (V 104, D 32, Δ 64, P 70)",
+  "unite": "règles",
+  "statut": "corps du document",
+  "ref": "§59"
+ },
+ {
+  "code": "LIV-Q01-PROMESSE-5H",
+  "libelle": "Question n° 1 — promesse < 5 h relais, deux tournées relais/jour, départ obligatoire au 2e créneau",
+  "valeur": "5 h pleinement à domicile ; au relais, heure réelle calculée sur les créneaux et affichée au client",
+  "unite": null,
+  "statut": "P (à trancher)",
+  "ref": "LIV-00 p6 ; LIV-RG §57 n° 1"
+ },
+ {
+  "code": "LIV-Q02-DEPART-5H",
+  "libelle": "Question n° 2 — point de départ des 5 heures",
+  "valeur": "« C'est prêt » (le vendeur a déjà 4 h ouvrées)",
+  "unite": null,
+  "statut": "P (à trancher)",
+  "ref": "LIV-00 p6 n° 2"
+ },
+ {
+  "code": "LIV-Q03-CLIENT-ABSENT",
+  "libelle": "Question n° 3 — client absent à domicile : attente et suite",
+  "valeur": "10 min d'attente + 2 appels masqués, puis relais de la zone avec code ; nouvelle tentative payée 1 000 F",
+  "unite": "min / F",
+  "statut": "P (à trancher)",
+  "ref": "LIV-00 p6 n° 3"
+ },
+ {
+  "code": "LIV-Q04-FRAIS-LIQUIDES",
+  "libelle": "Question n° 4 — produits frais et liquides",
+  "valeur": "Seulement emballage fabricant fermé ; catégorie Supermarché fermée tant que non tranché",
+  "unite": null,
+  "statut": "P (à trancher)",
+  "ref": "LIV-00 p6 n° 4"
+ },
+ {
+  "code": "LIV-Q05-AFFICHAGE-GAINS",
+  "libelle": "Question n° 5 — affichage des gains au livreur partenaire",
+  "valeur": "Au choix de l'entreprise : tarif par mission ou compteur",
+  "unite": null,
+  "statut": "P (à trancher)",
+  "ref": "LIV-00 p6 n° 5"
+ },
+ {
+  "code": "LIV-Q06-TRUST-ENTREPRISE",
+  "libelle": "Question n° 6 — calcul du Trust Score de l'entreprise",
+  "valeur": "Moyenne des livreurs pondérée par volume − pénalités propres",
+  "unite": "/100",
+  "statut": "P (à trancher)",
+  "ref": "LIV-00 p6 n° 6"
+ },
+ {
+  "code": "LIV-Q07-LIVREURS-INTERNES",
+  "libelle": "Question n° 7 — livreurs BelivaY internes",
+  "valeur": "Prévus dans le modèle, non activés au lancement",
+  "unite": null,
+  "statut": "P (à trancher)",
+  "ref": "LIV-00 p6 n° 7"
+ },
+ {
+  "code": "LIV-Q08-COULEUR",
+  "libelle": "Question n° 8 — couleur signature de l'espace livreur",
+  "valeur": "Base noir et blanc + orange ; accent vert émeraude #047857 pour « validé / en route »",
+  "unite": null,
+  "statut": "P (à trancher)",
+  "ref": "LIV-00 p6 n° 8"
+ },
+ {
+  "code": "LIV-Q09-ASSURANCE",
+  "libelle": "Question n° 9 — attestation d'assurance du véhicule",
+  "valeur": "Selon le contrat de l'entreprise ; obligatoire pour le palier Or",
+  "unite": null,
+  "statut": "P (à trancher)",
+  "ref": "LIV-00 p6 n° 9"
+ },
+ {
+  "code": "LIV-Q10-CERTIF-SEUIL",
+  "libelle": "Question n° 10 — seuil de réussite et fréquence de recertification",
+  "valeur": "16/20 ; recertification annuelle",
+  "unite": "points / an",
+  "statut": "P (à trancher)",
+  "ref": "LIV-00 p6 n° 10"
+ },
+ {
+  "code": "LIV01-ECRAN-REF",
+  "libelle": "Taille de référence d'un écran mobile",
+  "valeur": "390 × 844",
+  "unite": "px",
+  "statut": "fixé",
+  "ref": "p4"
+ },
+ {
+  "code": "LIV01-TOUCHES-MAX",
+  "libelle": "Nombre maximal de touches depuis un onglet pour atteindre un écran secondaire",
+  "valeur": 2,
+  "unite": "touches",
+  "statut": "Verrouillé (LIV-UIX-01)",
+  "ref": "p3, p7"
+ },
+ {
+  "code": "LIV01-CIBLE-MIN",
+  "libelle": "Taille minimale d'une cible tactile",
+  "valeur": 48,
+  "unite": "px",
+  "statut": "Déduit (LIV-UIX-02)",
+  "ref": "p3, p15, p16"
+ },
+ {
+  "code": "LIV01-ESPACEMENT-CIBLES",
+  "libelle": "Espacement minimal entre deux cibles",
+  "valeur": 8,
+  "unite": "px",
+  "statut": "fixé",
+  "ref": "p16"
+ },
+ {
+  "code": "LIV01-CHAMP-POLICE-MIN",
+  "libelle": "Taille minimale du texte dans un champ",
+  "valeur": 16,
+  "unite": "px",
+  "statut": "Déduit (LIV-UIX-02)",
+  "ref": "p3, p14"
+ },
+ {
+  "code": "LIV01-DOCK-HAUTEUR",
+  "libelle": "Hauteur du dock",
+  "valeur": 64,
+  "unite": "px",
+  "statut": "fixé",
+  "ref": "p7"
+ },
+ {
+  "code": "LIV01-DOCK-MARGE-BORDS",
+  "libelle": "Écart du dock aux bords latéraux",
+  "valeur": 12,
+  "unite": "px",
+  "statut": "fixé",
+  "ref": "p7"
+ },
+ {
+  "code": "LIV01-DOCK-MARGE-BAS",
+  "libelle": "Écart du dock au bas de l'écran",
+  "valeur": 30,
+  "unite": "px",
+  "statut": "fixé",
+  "ref": "p7"
+ },
+ {
+  "code": "LIV01-ZONE-SURE-HAUT",
+  "libelle": "Hauteur barre d'état + Dynamic Island",
+  "valeur": 50,
+  "unite": "px",
+  "statut": "fixé",
+  "ref": "p7"
+ },
+ {
+  "code": "LIV01-MARGE-BASSE-CONTENU",
+  "libelle": "Marge basse du contenu (au-dessus du dock et de la barre d'action)",
+  "valeur": 150,
+  "unite": "px",
+  "statut": "fixé",
+  "ref": "p7"
+ },
+ {
+  "code": "LIV01-BOUTON-PRINCIPAL-HAUTEUR",
+  "libelle": "Hauteur du bouton principal (action du moment) / bouton standard",
+  "valeur": "58 / 48",
+  "unite": "px",
+  "statut": "fixé",
+  "ref": "p14, p16"
+ },
+ {
+  "code": "LIV01-CODE-LONGUEUR",
+  "libelle": "Longueur du code de remise / livraison / PIN",
+  "valeur": 6,
+  "unite": "chiffres",
+  "statut": "Verrouillé (LIV-MOD-05)",
+  "ref": "p2, p11, p15"
+ },
+ {
+  "code": "LIV01-SESSION-DUREE",
+  "libelle": "Durée après laquelle le PIN est redemandé au lancement",
+  "valeur": 12,
+  "unite": "h",
+  "statut": "fixé (LIV-P01R-01)",
+  "ref": "p4, p11"
+ },
+ {
+  "code": "LIV01-PIN-INACTIVITE-PREUVE",
+  "libelle": "Inactivité sur une étape de preuve avant redemande du PIN",
+  "valeur": 5,
+  "unite": "min",
+  "statut": "fixé (LIV-P01R-01)",
+  "ref": "p4, p7"
+ },
+ {
+  "code": "LIV01-SOS-APPUI",
+  "libelle": "Durée de l'appui long du SOS",
+  "valeur": 2,
+  "unite": "s",
+  "statut": "Proposé (LIV-P30R-01)",
+  "ref": "p7, p8, p19"
+ },
+ {
+  "code": "LIV01-SOS-POSITION-DUREE",
+  "libelle": "Durée du partage de position après SOS, puis arrêt automatique",
+  "valeur": 30,
+  "unite": "min",
+  "statut": "Proposé (LIV-P30R-04)",
+  "ref": "p7, p19"
+ },
+ {
+  "code": "LIV01-PHOTO-TAILLE-MAX",
+  "libelle": "Taille maximale d'une photo compressée avant envoi",
+  "valeur": 250,
+  "unite": "Ko",
+  "statut": "Proposé (LIV-UIX-07)",
+  "ref": "p3"
+ },
+ {
+  "code": "LIV01-RESTE-AMBRE",
+  "libelle": "Temps restant avant la limite à partir duquel l'indicateur passe en ambre",
+  "valeur": 30,
+  "unite": "min",
+  "statut": "fixé",
+  "ref": "p9, p12"
+ },
+ {
+  "code": "LIV01-RESTE-ROUGE",
+  "libelle": "Temps restant avant la limite à partir duquel l'indicateur passe en rouge",
+  "valeur": 10,
+  "unite": "min",
+  "statut": "fixé",
+  "ref": "p9, p12"
+ },
+ {
+  "code": "LIV01-TAILLE-TEXTE",
+  "libelle": "Tailles du texte proposées",
+  "valeur": "Normale 100 % · Grande 115 % · Très grande 130 %",
+  "unite": "%",
+  "statut": "fixé",
+  "ref": "p16"
+ },
+ {
+  "code": "LIV01-BATTERIE-ECO",
+  "libelle": "Seuil de batterie du mode économie (carte simplifiée)",
+  "valeur": 10,
+  "unite": "%",
+  "statut": "fixé (LIV-P04R-05)",
+  "ref": "p16"
+ },
+ {
+  "code": "LIV01-WIFI-ATTENTE-MAX",
+  "libelle": "Attente maximale des photos en mode « Wi-Fi seulement »",
+  "valeur": 6,
+  "unite": "h",
+  "statut": "fixé (LIV-P31R-03)",
+  "ref": "p19"
+ },
+ {
+  "code": "LIV01-LANGUES",
+  "libelle": "Langues de l'application livreur",
+  "valeur": "fr, en, pcm (repli fr)",
+  "unite": null,
+  "statut": "Verrouillé (LIV-UIX-04) · voir DP-13",
+  "ref": "p3, p16"
+ },
+ {
+  "code": "LIV01-MARGE-SECURITE",
+  "libelle": "Marge de sécurité dans tout calcul tarifaire",
+  "valeur": 10,
+  "unite": "%",
+  "statut": "Décidé (LIV-MOD-06) · DP-55",
+  "ref": "p2"
+ },
+ {
+  "code": "LIV01-CERTIF-MODULES",
+  "libelle": "Certification : nombre de modules / quiz / validité du badge",
+  "valeur": "7 modules · quiz 16 bonnes réponses sur 20 · badge 12 mois",
+  "unite": null,
+  "statut": "à trancher (7 ou 9 modules, LIV-D03.Q02)",
+  "ref": "p24"
+ },
+ {
+  "code": "LIV01-PREUVES-CONSERVATION",
+  "libelle": "Conservation des preuves visibles dans l'historique",
+  "valeur": 180,
+  "unite": "jours",
+  "statut": "fixé",
+  "ref": "p25"
+ },
+ {
+  "code": "LIV01-CAPTURE-LARGEUR",
+  "libelle": "Largeur de référence des captures / double densité",
+  "valeur": "390 / 824",
+  "unite": "px",
+  "statut": "fixé",
+  "ref": "p19"
+ },
+ {
+  "code": "LIV-DELAI-5H",
+  "libelle": "Délai « C'est prêt » → remise",
+  "valeur": "5",
+  "unite": "h",
+  "statut": "Décidé",
+  "ref": "p5 LIV-ZON-04"
+ },
+ {
+  "code": "LIV-SERVICE-HEURES",
+  "libelle": "Heures de service logistique",
+  "valeur": "lundi-samedi 8 h - 18 h",
+  "unite": "horaire",
+  "statut": "Décidé",
+  "ref": "p5 LIV-ZON-05"
+ },
+ {
+  "code": "LIV-ACCEPT-MAX",
+  "libelle": "Acceptation d'une course après publication",
+  "valeur": "15",
+  "unite": "min",
+  "statut": "Décidé",
+  "ref": "p5 LIV-ZON-05"
+ },
+ {
+  "code": "RETARD-PENALITE-ENT",
+  "libelle": "Prestation payée au-delà de 5 h",
+  "valeur": "−20",
+  "unite": "%",
+  "statut": "ENT-REM-06",
+  "ref": "p28"
+ },
+ {
+  "code": "PAR-PANIER-MAX",
+  "libelle": "Payable au retrait : panier maximum",
+  "valeur": "50 000",
+  "unite": "F",
+  "statut": "Verrouillé",
+  "ref": "p6"
+ },
+ {
+  "code": "PAR-PANIER-MAX-CONFIRME",
+  "libelle": "Payable au retrait après 5 commandes sans incident",
+  "valeur": "100 000",
+  "unite": "F",
+  "statut": "Verrouillé",
+  "ref": "p6"
+ },
+ {
+  "code": "PAR-PANIER-MAX-NEUF",
+  "libelle": "Payable au retrait : compte neuf",
+  "valeur": "15 000",
+  "unite": "F",
+  "statut": "ajout du guide LIV-D04.A08",
+  "ref": "guide p4"
+ },
+ {
+  "code": "LIB-DELAIS",
+  "libelle": "Libération : Bronze/Argent, Or/Platine, carte",
+  "valeur": "J+3 · J+1 · J+14",
+  "unite": "jours",
+  "statut": "Verrouillé",
+  "ref": "p4"
+ },
+ {
+  "code": "REMB-AUTO-SEUIL",
+  "libelle": "Remboursement automatique sans enquête",
+  "valeur": "3 000 (Standard) · 10 000 (Élevé)",
+  "unite": "F",
+  "statut": "Décidé",
+  "ref": "p7 LIV-ARG-06"
+ },
+ {
+  "code": "PREUVE-CONSERV",
+  "libelle": "Conservation des preuves et journaux financiers",
+  "valeur": "180 au moins",
+  "unite": "jours",
+  "statut": "Verrouillé",
+  "ref": "p7 LIV-ARG-07"
+ },
+ {
+  "code": "HORS-GABARIT-DEVIS-MIN",
+  "libelle": "Devis hors gabarit minimum",
+  "valeur": "8 000",
+  "unite": "F",
+  "statut": "Proposé",
+  "ref": "p8"
+ },
+ {
+  "code": "ETAGE-SUPPL",
+  "libelle": "Supplément d'étage au-delà du 2e sans ascenseur",
+  "valeur": "500",
+  "unite": "F",
+  "statut": "Proposé",
+  "ref": "p8"
+ },
+ {
+  "code": "GARANTIE-FRAIS",
+  "libelle": "Frais de garantie au-delà de 250 000 F",
+  "valeur": "1 % du prix",
+  "unite": "%",
+  "statut": "Proposé",
+  "ref": "p8"
+ },
+ {
+  "code": "MARGE-SECURITE",
+  "libelle": "Marge de sécurité tarifaire",
+  "valeur": "10 % (÷ 1,1)",
+  "unite": "%",
+  "statut": "Décidé",
+  "ref": "p3, p9 LIV-TAR-06"
+ },
+ {
+  "code": "PLAFOND-HORS-ZONE",
+  "libelle": "Réduction du plafond hors zone contractuelle",
+  "valeur": "−200",
+  "unite": "F",
+  "statut": "Décidé",
+  "ref": "p9"
+ },
+ {
+  "code": "PLAFONDS-REF",
+  "libelle": "Plafonds d'achat de référence",
+  "valeur": "relais S 630 · M 860 · L 1 900 ; domicile S 1 350 (1 360 calculé) · XL 3 630 ; ramassage suivant 340 / 450 ; retour 450 ; transfert 360",
+  "unite": "F",
+  "statut": "Décidé ; à recalculer après DP-07/25/37",
+  "ref": "p9-10"
+ },
+ {
+  "code": "YAFE-GRILLE",
+  "libelle": "Grille Yafé Express (jeu d'essai)",
+  "valeur": "relais 600 (1-4) · 450 (5-9) · 350 (10+), +100 autre zone ; domicile 1 000 (Z2, Z3, Z6) · 1 200 (Z1)",
+  "unite": "F",
+  "statut": "exemple",
+  "ref": "p9"
+ },
+ {
+  "code": "SUPPL-INCIDENTS",
+  "libelle": "Suppléments imputés au responsable",
+  "valeur": "client absent +300 · refus produit conforme +500 · déplacement 300",
+  "unite": "F",
+  "statut": "exemple",
+  "ref": "p10"
+ },
+ {
+  "code": "CODE-BLOCAGE",
+  "libelle": "Blocage après 3 codes faux",
+  "valeur": "24",
+  "unite": "h",
+  "statut": "Verrouillé ; DP-26",
+  "ref": "p10"
+ },
+ {
+  "code": "C4-NOUVEAU",
+  "libelle": "Audit C4 : premières commandes d'un vendeur",
+  "valeur": "100 % des 5 premières",
+  "unite": "%",
+  "statut": "Verrouillé",
+  "ref": "p11 LIV-PRV-10"
+ },
+ {
+  "code": "C4-SINON",
+  "libelle": "Audit C4 sinon",
+  "valeur": "1 sur 100",
+  "unite": "ratio",
+  "statut": "Verrouillé",
+  "ref": "p11"
+ },
+ {
+  "code": "TRUST-NEUTRE",
+  "libelle": "Lissage bayésien",
+  "valeur": "µ = 50, k = 10",
+  "unite": "—",
+  "statut": "Verrouillé",
+  "ref": "p13 LIV-TSC-01"
+ },
+ {
+  "code": "TRUST-DEMI-VIE",
+  "libelle": "Demi-vie d'un événement",
+  "valeur": "90",
+  "unite": "jours",
+  "statut": "Verrouillé",
+  "ref": "p13"
+ },
+ {
+  "code": "TRUST-VETO",
+  "libelle": "Plafond après veto",
+  "valeur": "39",
+  "unite": "points",
+  "statut": "Verrouillé",
+  "ref": "p13"
+ },
+ {
+  "code": "TRUST-GRAVITE",
+  "libelle": "Échelle de gravité",
+  "valeur": "Succès · g1 = 1 · g2 = 2 · g3 = 4 · veto",
+  "unite": "échecs",
+  "statut": "Verrouillé",
+  "ref": "p13"
+ },
+ {
+  "code": "TRUST-HYSTERESIS",
+  "libelle": "Hystérésis montée/descente",
+  "valeur": "14 jours ; descente 5 points sous le seuil",
+  "unite": "jours",
+  "statut": "Verrouillé",
+  "ref": "p13"
+ },
+ {
+  "code": "TRUST-BAISSE-MAX",
+  "libelle": "Baisse maximale par recalcul",
+  "valeur": "8",
+  "unite": "points",
+  "statut": "Verrouillé",
+  "ref": "p13"
+ },
+ {
+  "code": "TRUST-GEL",
+  "libelle": "Gel après inactivité / revue",
+  "valeur": "30 / 90",
+  "unite": "jours",
+  "statut": "Verrouillé",
+  "ref": "p13"
+ },
+ {
+  "code": "TRUST-POIDS-LIVREUR",
+  "libelle": "Poids Trust livreur",
+  "valeur": "P 0,30 · Q 0,25 · L 0,20 · A 0,15 · F 0,10",
+  "unite": "—",
+  "statut": "Verrouillé",
+  "ref": "p13"
+ },
+ {
+  "code": "TRUST-PALIERS-LIVREUR",
+  "libelle": "Paliers livreur",
+  "valeur": "Nouveau · Confirmé ≥ 70 · Or ≥ 85",
+  "unite": "points",
+  "statut": "Verrouillé",
+  "ref": "p13"
+ },
+ {
+  "code": "TRUST-CONTEST-J",
+  "libelle": "Contestation d'un événement Trust",
+  "valeur": "1 fois, 7 jours",
+  "unite": "jours",
+  "statut": "Verrouillé",
+  "ref": "p23"
+ },
+ {
+  "code": "DEMARCHAGE-INTERDIT",
+  "libelle": "Démarchage interdit après contrat",
+  "valeur": "12",
+  "unite": "mois",
+  "statut": "Verrouillé",
+  "ref": "p14 LIV-ANO-04"
+ },
+ {
+  "code": "POSITION-DOMICILE-APRES",
+  "libelle": "Position de remise plus servie après la remise",
+  "valeur": "30",
+  "unite": "min",
+  "statut": "Verrouillé",
+  "ref": "p14"
+ },
+ {
+  "code": "KYC-HUMAIN-H",
+  "libelle": "Revue humaine en cas de doute",
+  "valeur": "48 heures ouvrées",
+  "unite": "h",
+  "statut": "Verrouillé",
+  "ref": "p16"
+ },
+ {
+  "code": "AGE-MIN",
+  "libelle": "Âge minimum",
+  "valeur": "18 ans révolus",
+  "unite": "ans",
+  "statut": "Déduit",
+  "ref": "p17"
+ },
+ {
+  "code": "QUIZ-SEUIL",
+  "libelle": "Seuil du quiz",
+  "valeur": "16 / 20",
+  "unite": "réponses",
+  "statut": "Proposé",
+  "ref": "p17"
+ },
+ {
+  "code": "QUIZ-ATTENTE",
+  "libelle": "Attente entre deux essais",
+  "valeur": "2",
+  "unite": "h",
+  "statut": "Proposé",
+  "ref": "p17"
+ },
+ {
+  "code": "QUIZ-ESSAIS-JOUR",
+  "libelle": "Essais de quiz par jour",
+  "valeur": "3",
+  "unite": "essais",
+  "statut": "Proposé",
+  "ref": "p17"
+ },
+ {
+  "code": "CERTIF-VALIDITE",
+  "libelle": "Validité de la certification",
+  "valeur": "12",
+  "unite": "mois",
+  "statut": "Proposé",
+  "ref": "p17, p22"
+ },
+ {
+  "code": "ANDROID-MIN",
+  "libelle": "Android minimum",
+  "valeur": "8",
+  "unite": "version",
+  "statut": "Proposé",
+  "ref": "p18"
+ },
+ {
+  "code": "RAM-MIN",
+  "libelle": "Mémoire vive minimum",
+  "valeur": "2",
+  "unite": "Go",
+  "statut": "Proposé",
+  "ref": "p18"
+ },
+ {
+  "code": "CAMERA-MIN",
+  "libelle": "Appareil photo arrière minimum",
+  "valeur": "8",
+  "unite": "Mpx",
+  "statut": "Proposé",
+  "ref": "p18"
+ },
+ {
+  "code": "DATA-JOUR-MAX",
+  "libelle": "Données par jour de tournée",
+  "valeur": "< 30",
+  "unite": "Mo",
+  "statut": "Proposé",
+  "ref": "p18"
+ },
+ {
+  "code": "BATTERIE-ALERTE",
+  "libelle": "Alerte batterie avec paquet en cours",
+  "valeur": "< 20 (§12 : 15)",
+  "unite": "%",
+  "statut": "Proposé ; question n° 15",
+  "ref": "p18, p29"
+ },
+ {
+  "code": "BATTERIE-ECO",
+  "libelle": "Mode économie",
+  "valeur": "< 10",
+  "unite": "%",
+  "statut": "Proposé",
+  "ref": "p18, p29"
+ },
+ {
+  "code": "PIN-BLOCAGE",
+  "libelle": "Blocage après 5 PIN faux",
+  "valeur": "30 (puis code SMS)",
+  "unite": "min",
+  "statut": "Proposé",
+  "ref": "p21, p29"
+ },
+ {
+  "code": "SESSION-REOUVERTURE",
+  "libelle": "Réouverture de session",
+  "valeur": "12",
+  "unite": "h",
+  "statut": "Proposé",
+  "ref": "p21, p29"
+ },
+ {
+  "code": "SESSION-INACTIVITE-PREUVE",
+  "libelle": "Inactivité sur une étape de preuve",
+  "valeur": "5",
+  "unite": "min",
+  "statut": "Proposé",
+  "ref": "p21, p29"
+ },
+ {
+  "code": "OTP-RENVOI-S",
+  "libelle": "Délai avant renvoi du code SMS",
+  "valeur": "60",
+  "unite": "s",
+  "statut": "Verrouillé",
+  "ref": "p21"
+ },
+ {
+  "code": "OTP-RENVOI-MAX",
+  "libelle": "Renvois du code SMS",
+  "valeur": "3 au plus, puis support",
+  "unite": "envois",
+  "statut": "Verrouillé",
+  "ref": "p21"
+ },
+ {
+  "code": "INVITATION-EXPIRATION-J",
+  "libelle": "Expiration d'une invitation",
+  "valeur": "7",
+  "unite": "jours",
+  "statut": "ENT-P07R-03",
+  "ref": "p27"
+ },
+ {
+  "code": "PAQUET-ARRETS-MAX",
+  "libelle": "Arrêts par paquet",
+  "valeur": "1 à 12",
+  "unite": "arrêts",
+  "statut": "Verrouillé",
+  "ref": "p22"
+ },
+ {
+  "code": "INCIDENT-VALIDATION-MIN",
+  "libelle": "Validation d'un incident bloquant par l'entreprise avant l'opérateur de zone",
+  "valeur": "15",
+  "unite": "min",
+  "statut": "Décidé",
+  "ref": "p23, p25"
+ },
+ {
+  "code": "INCIDENT-NOTE-MIN",
+  "libelle": "Note d'un refus ou d'un incident",
+  "valeur": "25",
+  "unite": "caractères",
+  "statut": "Décidé",
+  "ref": "p23"
+ },
+ {
+  "code": "MARGE-FERMETURE-RELAIS",
+  "libelle": "Marge avant fermeture du relais (heure limite)",
+  "valeur": "15",
+  "unite": "min",
+  "statut": "Proposé",
+  "ref": "p28"
+ },
+ {
+  "code": "ALERTE-AMBRE-MIN",
+  "libelle": "Compte à rebours ambre",
+  "valeur": "30",
+  "unite": "min",
+  "statut": "Proposé",
+  "ref": "p28"
+ },
+ {
+  "code": "ALERTE-ROUGE-MIN",
+  "libelle": "Compte à rebours rouge",
+  "valeur": "10",
+  "unite": "min",
+  "statut": "Proposé",
+  "ref": "p28"
+ },
+ {
+  "code": "RETARD-TOLERANCE-MIN",
+  "libelle": "Retard avant événement Ponctualité",
+  "valeur": "15",
+  "unite": "min",
+  "statut": "Proposé",
+  "ref": "p28"
+ },
+ {
+  "code": "ECART-ARRIVEE-M",
+  "libelle": "Écart d'arrivée à confirmer",
+  "valeur": "150",
+  "unite": "m",
+  "statut": "Proposé",
+  "ref": "p28"
+ },
+ {
+  "code": "ECART-REMISE-M",
+  "libelle": "Écart de remise signalé à la console",
+  "valeur": "300",
+  "unite": "m",
+  "statut": "Proposé",
+  "ref": "p28"
+ },
+ {
+  "code": "CLIENT-ABSENT-ATTENTE",
+  "libelle": "Attente avant client absent",
+  "valeur": "10",
+  "unite": "min",
+  "statut": "Proposé",
+  "ref": "p28"
+ },
+ {
+  "code": "CLIENT-ABSENT-APPELS",
+  "libelle": "Appels masqués sans réponse",
+  "valeur": "2 à 5 min d'intervalle au moins",
+  "unite": "appels",
+  "statut": "Proposé",
+  "ref": "p28"
+ },
+ {
+  "code": "CLOTURE-PROPOSEE",
+  "libelle": "Clôture proposée",
+  "valeur": "18 h 00",
+  "unite": "heure",
+  "statut": "Proposé",
+  "ref": "p29 ; p38"
+ },
+ {
+  "code": "DEPOT-CONFIRMATION-MIN",
+  "libelle": "Confirmation du dépôt par le livreur",
+  "valeur": "10",
+  "unite": "min",
+  "statut": "Décidé",
+  "ref": "p29"
+ },
+ {
+  "code": "NOTIF-RAPPEL-MIN",
+  "libelle": "Rappel d'une notification de tournée non lue",
+  "valeur": "5 (une fois)",
+  "unite": "min",
+  "statut": "Proposé",
+  "ref": "p29, p32"
+ },
+ {
+  "code": "SMS-SECOURS-MIN",
+  "libelle": "SMS de secours si push « paquet affecté » non délivré",
+  "valeur": "5 (une fois par affectation)",
+  "unite": "min",
+  "statut": "Proposé",
+  "ref": "p29, p32"
+ },
+ {
+  "code": "WIFI-ATTENTE-MAX",
+  "libelle": "Attente Wi-Fi des photos lourdes",
+  "valeur": "6",
+  "unite": "h",
+  "statut": "Proposé",
+  "ref": "p29, p34"
+ },
+ {
+  "code": "FILE-EXPIRATION",
+  "libelle": "Expiration d'un élément de file",
+  "valeur": "72",
+  "unite": "h",
+  "statut": "Verrouillé",
+  "ref": "p23, p34"
+ },
+ {
+  "code": "ECART-HORAIRE-H",
+  "libelle": "Écart heure serveur / origine signalé",
+  "valeur": "24",
+  "unite": "h",
+  "statut": "Déduit",
+  "ref": "p29, p34"
+ },
+ {
+  "code": "IDEMPOTENCE-J",
+  "libelle": "Conservation des clés d'idempotence",
+  "valeur": "7",
+  "unite": "jours",
+  "statut": "Verrouillé",
+  "ref": "p33"
+ },
+ {
+  "code": "SOS-DUREE",
+  "libelle": "Partage de position SOS",
+  "valeur": "30",
+  "unite": "min",
+  "statut": "Verrouillé",
+  "ref": "p24, p39"
+ },
+ {
+  "code": "ROUTE-REPORT-H",
+  "libelle": "Visibilité d'un signalement de route",
+  "valeur": "24",
+  "unite": "h",
+  "statut": "Verrouillé",
+  "ref": "p24"
+ },
+ {
+  "code": "KIT-ABIME-ALERTE",
+  "libelle": "Alerte pochettes abîmées sur la semaine",
+  "valeur": "> 5",
+  "unite": "%",
+  "statut": "LIV-P07R-02",
+  "ref": "p23"
+ },
+ {
+  "code": "DONNEES-CONSERV-J",
+  "libelle": "Conservation des données du livreur après rattachement",
+  "valeur": "180",
+  "unite": "jours",
+  "statut": "Verrouillé",
+  "ref": "p24"
+ },
+ {
+  "code": "HISTORIQUE-J",
+  "libelle": "Historique et preuves visibles par le livreur",
+  "valeur": "180",
+  "unite": "jours",
+  "statut": "Verrouillé",
+  "ref": "p27, p38"
+ },
+ {
+  "code": "RECOURS-J",
+  "libelle": "Recours sur une suspension",
+  "valeur": "1 fois, 7 jours",
+  "unite": "jours",
+  "statut": "Verrouillé",
+  "ref": "p30"
+ },
+ {
+  "code": "TIER-CAP-NOUVEAU",
+  "libelle": "Plafond de valeur par colis palier Nouveau (jeu d'essai)",
+  "valeur": "75 000",
+  "unite": "F",
+  "statut": "VD02-P02",
+  "ref": "p42"
+ },
+ {
+  "code": "session_pin_heures",
+  "libelle": "PIN exigé toutes les … heures",
+  "valeur": "12",
+  "unite": "heures",
+  "statut": "Proposé",
+  "ref": "p10 ; LIV-P01R-01 (Direction, console)"
+ },
+ {
+  "code": "pin_inactivite_preuve_min",
+  "libelle": "PIN exigé après … d'inactivité sur une étape de preuve",
+  "valeur": "5",
+  "unite": "minutes",
+  "statut": "Proposé",
+  "ref": "p10 ; LIV-P01R-01"
+ },
+ {
+  "code": "pin_echecs_max_blocage",
+  "libelle": "PIN faux consécutifs avant blocage · durée du blocage",
+  "valeur": "5 · 30",
+  "unite": "échecs · minutes",
+  "statut": "Proposé",
+  "ref": "p10 ; LIV-P01R-02"
+ },
+ {
+  "code": "sms_delai_renvoi_envois_max",
+  "libelle": "Délai entre deux SMS · envois au plus",
+  "valeur": "60 · 3",
+  "unite": "secondes · envois",
+  "statut": "Déduit",
+  "ref": "p10 ; exception « SMS non reçu »"
+ },
+ {
+  "code": "verification_auto_max",
+  "libelle": "Vérification automatique d'une pièce (KycService)",
+  "valeur": "15",
+  "unite": "minutes",
+  "statut": "Verrouillé",
+  "ref": "p21"
+ },
+ {
+  "code": "revue_humaine_max",
+  "libelle": "Revue humaine d'une pièce douteuse (ADM-P09)",
+  "valeur": "48",
+  "unite": "heures ouvrées",
+  "statut": "Verrouillé",
+  "ref": "p21"
+ },
+ {
+  "code": "recepisse_CNI_max",
+  "libelle": "Récépissé de renouvellement de CNI accepté",
+  "valeur": "90",
+  "unite": "jours",
+  "statut": "Déduit",
+  "ref": "p21 ; exception « CNI expirée »"
+ },
+ {
+  "code": "echecs_visage_blocage",
+  "libelle": "Échecs de comparaison du visage bloquant l'activation",
+  "valeur": "2",
+  "unite": "échecs",
+  "statut": "Déduit",
+  "ref": "p21 ; exception « Visage différent du selfie »"
+ },
+ {
+  "code": "assurance_vehicule_exigee",
+  "libelle": "Assurance du véhicule exigée",
+  "valeur": "selon le contrat de l'entreprise (oui pour Yafé Express) ; obligatoire au palier Or",
+  "unite": null,
+  "statut": "Proposé (question ouverte n° 9)",
+  "ref": "p21"
+ },
+ {
+  "code": "quiz_seuil",
+  "libelle": "Seuil de réussite du quiz",
+  "valeur": "16 sur 20",
+  "unite": "bonnes réponses",
+  "statut": "Proposé (question ouverte n° 10)",
+  "ref": "p28 ; LIV-P03R-04, LIV-CER-02"
+ },
+ {
+  "code": "quiz_delai_essais_par_jour",
+  "libelle": "Délai entre deux essais · essais par jour",
+  "valeur": "2 · 3",
+  "unite": "heures · essais",
+  "statut": "Proposé",
+  "ref": "p28 ; LIV-CER-02"
+ },
+ {
+  "code": "certification_validite_alerte",
+  "libelle": "Validité du badge · alerte avant expiration",
+  "valeur": "12 · 30",
+  "unite": "mois · jours",
+  "statut": "Proposé",
+  "ref": "p28 ; LIV-P03R-02"
+ },
+ {
+  "code": "modules_complementaires_obligatoires",
+  "libelle": "Modules complémentaires obligatoires",
+  "valeur": "aucun au lancement",
+  "unite": null,
+  "statut": "Proposé",
+  "ref": "p28 ; LIV-CER-05"
+ },
+ {
+  "code": "modules_certification",
+  "libelle": "Modules obligatoires · cartes par module",
+  "valeur": "7 · 3 à 6",
+  "unite": "modules · cartes",
+  "statut": "Proposé",
+  "ref": "p20, p26"
+ },
+ {
+  "code": "recours_delai_jours",
+  "libelle": "Délai de recours, une fois par décision",
+  "valeur": "7",
+  "unite": "jours",
+  "statut": "Proposé",
+  "ref": "p36 ; LIV-P32R-02"
+ },
+ {
+  "code": "duree_restriction_plafond_reduit",
+  "libelle": "Durée d'une restriction · plafond réduit (exemple, fixé dans la décision)",
+  "valeur": "30 · 30 000",
+  "unite": "jours · F CFA par colis",
+  "statut": "Proposé",
+  "ref": "p36 ; console ADM-P12"
+ },
+ {
+  "code": "duree_suspension",
+  "libelle": "Durée d'une suspension (exemple, fixée dans la décision)",
+  "valeur": "14",
+  "unite": "jours",
+  "statut": "Proposé",
+  "ref": "p36 ; console ADM-P12"
+ },
+ {
+  "code": "age_minimum_ans",
+  "libelle": "Âge minimum du livreur (CNI)",
+  "valeur": "18",
+  "unite": "ans révolus",
+  "statut": "Déduit",
+  "ref": "LIV-ENT-06"
+ },
+ {
+  "code": "photo_max_ko",
+  "libelle": "Taille maximale d'une photo compressée",
+  "valeur": "250",
+  "unite": "Ko",
+  "statut": "Proposé",
+  "ref": "LIV-UIX-07"
+ },
+ {
+  "code": "conservation_donnees_jours",
+  "libelle": "Conservation des données après le rattachement",
+  "valeur": "180",
+  "unite": "jours",
+  "statut": "Proposé",
+  "ref": "LIV-DON-01"
+ },
+ {
+  "code": "non_concurrence_mois",
+  "libelle": "Aucune course hors plateforme après la fin du contrat de l'entreprise",
+  "valeur": "12",
+  "unite": "mois",
+  "statut": "Verrouillé",
+  "ref": "LIV-STA-05"
+ },
+ {
+  "code": "invitation_expiration_jours",
+  "libelle": "Expiration d'une invitation non utilisée",
+  "valeur": "7",
+  "unite": "jours",
+  "statut": "règle Entreprise",
+  "ref": "ENT-P07R-03"
+ },
+ {
+  "code": "comptes_par_appareil",
+  "libelle": "Comptes par appareil",
+  "valeur": "2 vendeur · 1 livreur",
+  "unite": "comptes",
+  "statut": "règle Console",
+  "ref": "ADM-P09R-03, LIV-P01R-05"
+ },
+ {
+  "code": "cible_tactile_min_px",
+  "libelle": "Cible tactile minimale · texte minimal dans les champs",
+  "valeur": "48 · 16",
+  "unite": "px",
+  "statut": "Déduit",
+  "ref": "LIV-UIX-02"
+ },
+ {
+  "code": "touche_pin_px",
+  "libelle": "Touches du pavé PIN (3 × 4)",
+  "valeur": "52",
+  "unite": "px",
+  "statut": "Déduit",
+  "ref": "p8"
+ },
+ {
+  "code": "pin_longueur",
+  "libelle": "Longueur du PIN et du code SMS",
+  "valeur": "6",
+  "unite": "chiffres",
+  "statut": "Déduit",
+  "ref": "p4, p8"
+ },
+ {
+  "code": "formation_poids_trust",
+  "libelle": "Poids du critère Formation dans le Trust Score livreur",
+  "valeur": "10",
+  "unite": "%",
+  "statut": "Déduit",
+  "ref": "LIV-CER-04, ADM-P19R-03"
+ },
+ {
+  "code": "chargement_journee_s",
+  "libelle": "Durée cible du chargement de la journée / ouverture par PIN",
+  "valeur": "10",
+  "unite": "secondes",
+  "statut": "critère d'acceptation",
+  "ref": "p7, p12"
+ },
+ {
+  "code": "alerte_pièce_avant_expiration",
+  "libelle": "Alerte avant expiration d'une pièce datée",
+  "valeur": "30",
+  "unite": "jours",
+  "statut": "Verrouillé (§ 11 CNI, appliqué à toutes les pièces datées)",
+  "ref": "p11"
+ },
+ {
+  "code": "BADGE-ALERTE",
+  "libelle": "Alerte avant expiration du badge",
+  "valeur": "30",
+  "unite": "jours",
+  "statut": "Proposé",
+  "ref": "p10 ; LIV-P03R-02"
+ },
+ {
+  "code": "SMS-SECOURS-DELAI",
+  "libelle": "SMS de secours si push d'affectation sans accusé",
+  "valeur": "5",
+  "unite": "minutes",
+  "statut": "Déduit",
+  "ref": "p11, p12 ; LIV-P28"
+ },
+ {
+  "code": "rappel_pause_après",
+  "libelle": "Rappel de pause après disponibilité continue",
+  "valeur": "10",
+  "unite": "heures d'affilée",
+  "statut": "Proposé (Direction, console)",
+  "ref": "p18 ; LIV-P05R-03"
+ },
+ {
+  "code": "marge_fermeture_relais",
+  "libelle": "Marge avant fermeture du relais pour l'heure limite",
+  "valeur": "15",
+  "unite": "minutes",
+  "statut": "Proposé (Direction, console)",
+  "ref": "p27"
+ },
+ {
+  "code": "temps_par_ramassage",
+  "libelle": "Temps fixe par ramassage",
+  "valeur": "4",
+  "unite": "minutes",
+  "statut": "Proposé (Direction, console)",
+  "ref": "p27"
+ },
+ {
+  "code": "temps_par_colis_déposé",
+  "libelle": "Temps fixe par colis déposé (contrôle et emballage ~90 s compris)",
+  "valeur": "2",
+  "unite": "minutes",
+  "statut": "Proposé (Direction, console)",
+  "ref": "p27"
+ },
+ {
+  "code": "promesse_délai",
+  "libelle": "Délai de livraison depuis « C'est prêt »",
+  "valeur": "5",
+  "unite": "heures",
+  "statut": "Décidé (LIV-ZON-04, 25 sept.)",
+  "ref": "p27"
+ },
+ {
+  "code": "alerte_pochettes_abîmées",
+  "libelle": "Taux de pochettes abîmées déclenchant l'alerte entreprise",
+  "valeur": "5",
+  "unite": "% sur la semaine",
+  "statut": "Proposé (Direction, console)",
+  "ref": "p36 ; LIV-P07R-02"
+ },
+ {
+  "code": "taille_plage",
+  "libelle": "Taille d'une plage d'étiquettes (exemple)",
+  "valeur": "29",
+  "unite": "étiquettes",
+  "statut": "Proposé (console, ADM-P23)",
+  "ref": "p36"
+ },
+ {
+  "code": "PAQ-PUBLICATION-COLIS",
+  "libelle": "Publication d'un paquet relais",
+  "valeur": "8 (ENT-PQS-02 : 5)",
+  "unite": "colis",
+  "statut": "Verrouillé dans LIV-RG mais divergent (LIV-D06.Q02)",
+  "ref": "p2 ; LIV-PAQ-01"
+ },
+ {
+  "code": "PAQ-PUBLICATION-CRENEAUX",
+  "libelle": "Publication d'un paquet relais après attente",
+  "valeur": "2",
+  "unite": "créneaux",
+  "statut": "Verrouillé",
+  "ref": "p2 ; LIV-PAQ-01"
+ },
+ {
+  "code": "CIBLE-TACTILE-MIN",
+  "libelle": "Cible tactile minimale",
+  "valeur": "48",
+  "unite": "px",
+  "statut": "Déduit (LIV-UIX-02)",
+  "ref": "p3"
+ },
+ {
+  "code": "TEXTE-CHAMP-MIN",
+  "libelle": "Taille minimale du texte dans les champs",
+  "valeur": "16",
+  "unite": "px",
+  "statut": "Déduit (LIV-UIX-02)",
+  "ref": "p3"
+ },
+ {
+  "code": "ENT-EMB-ECART-MOIS",
+  "libelle": "Écart non justifié facturé à l'entreprise",
+  "valeur": "> 5",
+  "unite": "% sur un mois",
+  "statut": "autre espace (ENT-EMB-04)",
+  "ref": "p36"
+ },
+ {
+  "code": "ENT-EMB-KIT-CONSEILLE",
+  "libelle": "Kit journalier conseillé moto",
+  "valeur": "8 S, 12 M, 6 L, 3 C1, 1 C2",
+  "unite": "unités",
+  "statut": "autre espace (ENT-EMB-05), conseil",
+  "ref": "p36"
+ },
+ {
+  "code": "FORMATS-EMBALLAGE",
+  "libelle": "Formats d'emballage",
+  "valeur": "S 20×30, M 25×35, L 35×45, C1 30×20×15, C2 40×30×25",
+  "unite": "cm",
+  "statut": "Verrouillé (LIV-PRV-09)",
+  "ref": "p35"
+ },
+ {
+  "code": "CAR-AMBRE-MIN",
+  "libelle": "Compte à rebours de la tournée : passage en ambre",
+  "valeur": 30,
+  "unite": "min",
+  "statut": "Proposé",
+  "ref": "LIV-P08R-06 ; o05 p12"
+ },
+ {
+  "code": "CAR-ROUGE-MIN",
+  "libelle": "Compte à rebours de la tournée : passage en rouge",
+  "valeur": 10,
+  "unite": "min",
+  "statut": "Proposé",
+  "ref": "LIV-P08R-06 ; o05 p12"
+ },
+ {
+  "code": "SEUIL-RETARD-PONCTUALITE",
+  "libelle": "Retard au-delà duquel un événement Ponctualité est créé (après la fin du créneau annoncé)",
+  "valeur": 15,
+  "unite": "min",
+  "statut": "Proposé",
+  "ref": "o05 p10, p12"
+ },
+ {
+  "code": "HEURE-LIMITE",
+  "libelle": "Heure limite du paquet",
+  "valeur": "min(prêt le plus ancien + 5 h ; fermeture du relais − 15 min)",
+  "unite": "heure",
+  "statut": "Déduit",
+  "ref": "o05 p12 (LIV-P06)"
+ },
+ {
+  "code": "DELAI-ZONE-H",
+  "libelle": "Délai de livraison par zone, de « C'est prêt » à la remise",
+  "valeur": "< 5",
+  "unite": "h",
+  "statut": "Décidé",
+  "ref": "LIV-ZON-04"
+ },
+ {
+  "code": "POSITION-EMISSION-S",
+  "libelle": "Fréquence d'émission de la position pendant une mission active",
+  "valeur": 30,
+  "unite": "s",
+  "statut": "Proposé",
+  "ref": "o05 p13 (LIV-JOU-02)"
+ },
+ {
+  "code": "POSITION-CONSERVATION-J",
+  "libelle": "Conservation de la position du livreur (preuve), puis suppression",
+  "valeur": 180,
+  "unite": "jours",
+  "statut": "",
+  "ref": "o05 p20 ; ENT-P06R-05"
+ },
+ {
+  "code": "POSITION-CLIENT-APRES-REMISE-MIN",
+  "libelle": "Durée d'affichage de la position du client après la remise",
+  "valeur": 30,
+  "unite": "min",
+  "statut": "Proposé",
+  "ref": "LIV-P09R-01"
+ },
+ {
+  "code": "SEUIL-CONFIRMATION-POSITION-M",
+  "libelle": "Distance au point enregistré déclenchant la confirmation",
+  "valeur": 150,
+  "unite": "m",
+  "statut": "Proposé",
+  "ref": "LIV-P09R-03"
+ },
+ {
+  "code": "DUREE-SIGNALEMENT-ROUTE-H",
+  "libelle": "Visibilité d'un signalement de route coupée pour les livreurs de la zone",
+  "valeur": 24,
+  "unite": "h",
+  "statut": "Déduit",
+  "ref": "o05 p19"
+ },
+ {
+  "code": "ZONES-TELECHARGEES",
+  "libelle": "Zones téléchargées pour le hors-connexion",
+  "valeur": "zones des paquets du jour (Z6, Z3, Z7 pour Serge)",
+  "unite": "",
+  "statut": "Déduit",
+  "ref": "o05 p19 (LIV-UIX-06)"
+ },
+ {
+  "code": "WAIT-MAX-MIN",
+  "libelle": "Attente maximale chez le vendeur avant « vendeur pas prêt » (wait_max_minutes)",
+  "valeur": 10,
+  "unite": "min",
+  "statut": "Proposé",
+  "ref": "LIV-P10R-02"
+ },
+ {
+  "code": "SUSPENSION-DELAI-VENDEUR",
+  "libelle": "Délai de préparation du vendeur si le livreur arrive hors créneau",
+  "valeur": "suspendu jusqu'au nouveau créneau",
+  "unite": "",
+  "statut": "Proposé",
+  "ref": "LIV-P10R-04"
+ },
+ {
+  "code": "OUVERTURE-BOITE",
+  "libelle": "Ouverture de la boîte au contrôle",
+  "valeur": "non scellée d'usine : ouverte ; scellée : photographiée sur toutes les faces",
+  "unite": "",
+  "statut": "Proposé",
+  "ref": "LIV-P11R-01"
+ },
+ {
+  "code": "TEST-FONCTIONNEMENT",
+  "libelle": "Test de fonctionnement d'un appareil",
+  "valeur": "seulement en audit C4 ou à la demande de la console",
+  "unite": "",
+  "statut": "Proposé",
+  "ref": "LIV-P11R-03"
+ },
+ {
+  "code": "DUREE-CONTROLE-S",
+  "libelle": "Durée du contrôle par colis",
+  "valeur": "60 à 90",
+  "unite": "s",
+  "statut": "Verrouillé",
+  "ref": "LIV-P11R-02"
+ },
+ {
+  "code": "PHOTO-POIDS-MAX",
+  "libelle": "Poids maximal d'une photo après compression",
+  "valeur": 250,
+  "unite": "Ko",
+  "statut": "Proposé",
+  "ref": "LIV-UIX-07"
+ },
+ {
+  "code": "CIBLE-TACTILE-PX",
+  "libelle": "Cible tactile minimale / texte des champs / bouton principal des étapes",
+  "valeur": "48 / 16 / 58",
+  "unite": "px",
+  "statut": "Déduit",
+  "ref": "LIV-UIX-02 ; o06 p3"
+ },
+ {
+  "code": "AUDIT-TAUX",
+  "libelle": "Fréquence de l'audit C4",
+  "valeur": "100 % des 5 premières commandes ; 1/20 si Trust < 70 ; 1/100 ; 100 % si le score chute [DP-57 : 100 % si Trust < 60 ou −8 points/semaine ; 20 commandes à 100 % après suspension]",
+  "unite": "",
+  "statut": "Verrouillé",
+  "ref": "LIV-P12R-01, LIV-PRV-10"
+ },
+ {
+  "code": "AUDIT-DUREE-MAX-MIN",
+  "libelle": "Durée maximale d'un audit, comptée dans la tournée",
+  "valeur": 5,
+  "unite": "min",
+  "statut": "Proposé",
+  "ref": "LIV-P12R-02"
+ },
+ {
+  "code": "AUDIT-DECISION-CONSOLE-H",
+  "libelle": "Délai de décision de la console (appareil qui ne s'allume pas)",
+  "valeur": 1,
+  "unite": "h",
+  "statut": "Proposé",
+  "ref": "o06 p22"
+ },
+ {
+  "code": "PLAGE-ETIQUETTES",
+  "libelle": "Plage d'étiquettes par livreur",
+  "valeur": "rouleau rattaché au livreur",
+  "unite": "",
+  "statut": "Proposé",
+  "ref": "LIV-P07R-01"
+ },
+ {
+  "code": "SEUIL-POCHETTES-ABIMEES",
+  "libelle": "Seuil d'alerte de pochettes déclarées abîmées",
+  "valeur": 5,
+  "unite": "% sur la semaine",
+  "statut": "Proposé",
+  "ref": "LIV-P07R-02"
+ },
+ {
+  "code": "CODE-VERIF-HORS-LIGNE",
+  "libelle": "Vérification du code hors connexion",
+  "valeur": "empreinte salée téléchargée avec la tournée",
+  "unite": "",
+  "statut": "Proposé",
+  "ref": "LIV-P14R-03"
+ },
+ {
+  "code": "CORRECTION-SUR-PLACE",
+  "libelle": "Correction sur place après refus",
+  "valeur": "reprise du contrôle depuis la photo 1",
+  "unite": "",
+  "statut": "Proposé",
+  "ref": "LIV-P15R-04"
+ },
+ {
+  "code": "NOTE-REFUS-MIN",
+  "libelle": "Longueur minimale de la note (refus, boutique fermée)",
+  "valeur": 25,
+  "unite": "caractères",
+  "statut": "Décidé",
+  "ref": "o06 p40 ; o06 p9"
+ },
+ {
+  "code": "PLAFOND-YAFE-NOUVEAU",
+  "libelle": "Plafond de valeur par colis, Yafé Express (palier Nouveau)",
+  "valeur": 75000,
+  "unite": "F CFA",
+  "statut": "",
+  "ref": "o05 p2 ; o06 p38 ; VD E8"
+ },
+ {
+  "code": "FILE-HORS-LIGNE-H",
+  "libelle": "Durée de vie d'une action en file",
+  "valeur": 72,
+  "unite": "h",
+  "statut": "Verrouillé",
+  "ref": "LIV-P22R-01"
+ },
+ {
+  "code": "DELAI-CONFIRMATION-LOT-MIN",
+  "libelle": "Délai de confirmation d'un lot au relais, puis « à confirmer »",
+  "valeur": 10,
+  "unite": "min",
+  "statut": "Décidé",
+  "ref": "LIV-P16R-06"
+ },
+ {
+  "code": "SATURATION-RELAIS",
+  "libelle": "Seuil de saturation d'un relais",
+  "valeur": 90,
+  "unite": "% des places",
+  "statut": "Décidé",
+  "ref": "LIV-P16R-11"
+ },
+ {
+  "code": "PLACES-CLASSE",
+  "libelle": "Places occupées au relais par classe",
+  "valeur": "S 1 · M 2 · L 5 (L : garde doublée selon LIV-TAR-04, remplacé par DP-08)",
+  "unite": "places",
+  "statut": "Proposé",
+  "ref": "LIV-TAR-04 ; o07 p9"
+ },
+ {
+  "code": "CLASSES-COLIS",
+  "libelle": "Limites de classe (poids facturé et plus grande dimension)",
+  "valeur": "document : S 2 kg et 30 cm ; DP-57 VD-COLIS : S 2 kg/35 cm · M 5 kg/50 cm · L 15 kg/80 cm · XL 30 kg/120 cm ; diviseur volumétrique 5 000",
+  "unite": "",
+  "statut": "",
+  "ref": "o06 p15 ; DP-57"
+ },
+ {
+  "code": "DISTANCE-ALERTE-VALIDATION-M",
+  "libelle": "Distance d'alerte de validation à domicile",
+  "valeur": 300,
+  "unite": "m",
+  "statut": "Proposé",
+  "ref": "LIV-P17R-06"
+ },
+ {
+  "code": "CONSTAT-AVANT-VALIDATION",
+  "libelle": "Ouverture du colis devant le livreur à domicile",
+  "valeur": "permise ; constat avant validation ; reprise si défaut",
+  "unite": "",
+  "statut": "Proposé",
+  "ref": "LIV-P17R-05"
+ },
+ {
+  "code": "PAIEMENT-ESSAIS",
+  "libelle": "Essais de paiement sur place avant échec « refuse de payer »",
+  "valeur": 3,
+  "unite": "essais",
+  "statut": "",
+  "ref": "o07 p16"
+ },
+ {
+  "code": "PAIEMENT-DELAI-MIN",
+  "libelle": "Délai de paiement sur place avant échec",
+  "valeur": 10,
+  "unite": "min",
+  "statut": "",
+  "ref": "o07 p16"
+ },
+ {
+  "code": "PREAVIS-ARRIVEE-MIN",
+  "libelle": "Push au client « votre livreur arrive dans … »",
+  "valeur": 10,
+  "unite": "min",
+  "statut": "",
+  "ref": "o07 p15"
+ },
+ {
+  "code": "ECHEC-ATTENTE-MIN",
+  "libelle": "Attente sur place avant échec « absent / injoignable »",
+  "valeur": 10,
+  "unite": "min",
+  "statut": "Proposé",
+  "ref": "LIV-P18R-01"
+ },
+ {
+  "code": "ECHEC-APPELS",
+  "libelle": "Appels masqués exigés avant échec « absent / injoignable »",
+  "valeur": 2,
+  "unite": "appels",
+  "statut": "Proposé",
+  "ref": "LIV-P18R-01"
+ },
+ {
+  "code": "ECHEC-ECART-APPELS-MIN",
+  "libelle": "Écart minimal entre les deux appels masqués",
+  "valeur": 5,
+  "unite": "min",
+  "statut": "Proposé",
+  "ref": "LIV-P18R-01"
+ },
+ {
+  "code": "NOTE-SIGNALEMENT-MIN",
+  "libelle": "Longueur minimale d'un signalement (lieu dangereux)",
+  "valeur": 25,
+  "unite": "caractères",
+  "statut": "Proposé",
+  "ref": "o07 p23"
+ },
+ {
+  "code": "REMISE-NOUVELLE-TENTATIVE",
+  "libelle": "Remise sur la nouvelle course demandée par le client",
+  "valeur": 1000,
+  "unite": "F CFA",
+  "statut": "Proposé",
+  "ref": "LIV-P18R-05"
+ },
+ {
+  "code": "ALERTE-DEPART-ABSENT-H",
+  "libelle": "Alerte support pour un départ absent",
+  "valeur": 48,
+  "unite": "h",
+  "statut": "Proposé",
+  "ref": "LIV-P19R-03"
+ },
+ {
+  "code": "INSPECTION-RETOUR-H",
+  "libelle": "Délai d'inspection d'un retour par le vendeur",
+  "valeur": 48,
+  "unite": "h",
+  "statut": "Proposé",
+  "ref": "LIV-P20R-02 ; RET-INSPECT-H"
+ },
+ {
+  "code": "SUITE-VENDEUR-ABSENT",
+  "libelle": "Suite si vendeur absent",
+  "valeur": "relais de la zone du vendeur ou stockage de l'entreprise ; nouvelle course au prochain jour de service",
+  "unite": "",
+  "statut": "Proposé",
+  "ref": "LIV-P20R-03"
+ },
+ {
+  "code": "COURSE-RETOUR-PRIX",
+  "libelle": "Prix de la course de retour (payeur : partie en tort)",
+  "valeur": 500,
+  "unite": "F CFA",
+  "statut": "Déduit",
+  "ref": "LIV-P20R-01 ; DP-35"
+ },
+ {
+  "code": "incident_validation_fallback_min",
+  "libelle": "Délai avant décision de l'opérateur de zone sur un incident bloquant",
+  "valeur": "15",
+  "unite": "minutes",
+  "statut": "P",
+  "ref": "LIV-08 p13 (Direction, console Paramétrage et simulation)"
+ },
+ {
+  "code": "incident_note_min_chars",
+  "libelle": "Longueur minimale de la note d'incident",
+  "valeur": "25",
+  "unite": "caractères",
+  "statut": "P",
+  "ref": "LIV-08 p13"
+ },
+ {
+  "code": "incident_photos_required[type]",
+  "libelle": "Photos exigées par type d'incident",
+  "valeur": "Boutique fermée, relais fermé, lieu : 1 ; colis abîmé, scellé rompu : 2 ; sécurité : 0",
+  "unite": "photos",
+  "statut": "P",
+  "ref": "LIV-08 p13"
+ },
+ {
+  "code": "sos_hold_seconds",
+  "libelle": "Durée d'appui long du SOS",
+  "valeur": "2",
+  "unite": "secondes",
+  "statut": "P",
+  "ref": "LIV-08 p13 (voir LIV-P30) ; LIV-10 p33 (LIV-P30R-01)"
+ },
+ {
+  "code": "emergency_numbers",
+  "libelle": "Numéros d'urgence de l'espace pays Cameroun",
+  "valeur": "119 SAMU · 118 sapeurs-pompiers · 117 police · 113 gendarmerie | 119 SAMU · 118 sapeurs-pompiers · 117 police secours · 113 gendarmerie",
+  "unite": "",
+  "statut": "P (à confirmer)",
+  "ref": "LIV-08 p13 (Espace pays Cameroun, console) ; LIV-10 p33"
+ },
+ {
+  "code": "sos_position_share_min",
+  "libelle": "Partage de position après SOS",
+  "valeur": "30 minutes puis arrêt automatique",
+  "unite": "minutes",
+  "statut": "",
+  "ref": "LIV-08 p9 fig.8"
+ },
+ {
+  "code": "offline_queue_encryption",
+  "libelle": "Chiffrement de la file hors ligne",
+  "valeur": "Activée, désinstallation bloquée par un avertissement si la file n'est pas vide",
+  "unite": "",
+  "statut": "P",
+  "ref": "LIV-08 p22 (LIV-P22R-02)"
+ },
+ {
+  "code": "sync_order",
+  "libelle": "Ordre de synchronisation",
+  "valeur": "Chronologique ; photos avant statistiques",
+  "unite": "",
+  "statut": "P",
+  "ref": "LIV-08 p23 (LIV-P22R-03)"
+ },
+ {
+  "code": "photo_wifi_max_wait",
+  "libelle": "Attente maximale Wi-Fi des photos",
+  "valeur": "6 heures, jamais pour une preuve de colis sous garde",
+  "unite": "heures",
+  "statut": "P",
+  "ref": "LIV-08 p23 ; LIV-10 p42 (LIV-P22R-03)"
+ },
+ {
+  "code": "timestamp_gap_alert",
+  "libelle": "Écart d'horodatage signalé",
+  "valeur": "24",
+  "unite": "heures",
+  "statut": "Δ (Déduit de LIV-P22R-04)",
+  "ref": "LIV-08 p23"
+ },
+ {
+  "code": "proof_upload_max_size",
+  "libelle": "Poids maximal d'une photo",
+  "valeur": "250",
+  "unite": "Ko par photo",
+  "statut": "P",
+  "ref": "LIV-08 p23 (LIV-UIX-07)"
+ },
+ {
+  "code": "offline_queue_max_hours",
+  "libelle": "Durée de vie d'un élément en file avant expiration",
+  "valeur": "72",
+  "unite": "heures",
+  "statut": "V",
+  "ref": "LIV-08 p21 (LIV-P22R-01)"
+ },
+ {
+  "code": "closing_auto_proposal_time",
+  "libelle": "Heure de proposition automatique de clôture",
+  "valeur": "18 h (fin des heures de service)",
+  "unite": "heure",
+  "statut": "P",
+  "ref": "LIV-08 p31 (LIV-P23R-05)"
+ },
+ {
+  "code": "closing_with_queue",
+  "libelle": "Clôture avec preuves en file",
+  "valeur": "Autorisée, statut « preuves à envoyer »",
+  "unite": "",
+  "statut": "P",
+  "ref": "LIV-08 p31 (LIV-P23R-02)"
+ },
+ {
+  "code": "damaged_pouch_weekly_alert",
+  "libelle": "Seuil d'alerte pochettes abîmées sur la semaine",
+  "valeur": "5",
+  "unite": "% des pochettes de la semaine",
+  "statut": "P",
+  "ref": "LIV-08 p31 (LIV-P07R-02)"
+ },
+ {
+  "code": "custody_alert_hours",
+  "libelle": "Colis sous garde sans dépôt ni incident signalé",
+  "valeur": "5",
+  "unite": "heures",
+  "statut": "V (ENT-P15R-01)",
+  "ref": "LIV-08 p31"
+ },
+ {
+  "code": "courier_status_propagation_s",
+  "libelle": "Délai de visibilité du statut hors service par l'entreprise",
+  "valeur": "< 10 (LIV-08) ; retenu 5 s (LIV-11 Q19)",
+  "unite": "secondes",
+  "statut": "",
+  "ref": "LIV-08 p32"
+ },
+ {
+  "code": "courier_history_days",
+  "libelle": "Durée de consultation de l'historique livreur",
+  "valeur": "180",
+  "unite": "jours",
+  "statut": "Δ (LIV-P24R-01, LIV-ARG-07)",
+  "ref": "LIV-09 p8"
+ },
+ {
+  "code": "history_client_fields_after_handover",
+  "libelle": "Données client affichées après la remise",
+  "valeur": "Numéro de commande et zone",
+  "unite": "",
+  "statut": "P",
+  "ref": "LIV-09 p8 (LIV-P24R-02)"
+ },
+ {
+  "code": "courier_history_export",
+  "libelle": "Export de l'historique par le livreur",
+  "valeur": "Désactivé pour le livreur",
+  "unite": "",
+  "statut": "P",
+  "ref": "LIV-09 p9 (LIV-P24R-04)"
+ },
+ {
+  "code": "signed_url_ttl_min",
+  "libelle": "Validité des URL signées des vignettes de preuve",
+  "valeur": "10",
+  "unite": "minutes",
+  "statut": "",
+  "ref": "LIV-09 p9"
+ },
+ {
+  "code": "courier_earnings_display",
+  "libelle": "Affichage des gains au livreur",
+  "valeur": "Au choix de l'entreprise : compteur (défaut) ou tarif par mission",
+  "unite": "",
+  "statut": "P (question ouverte n° 5)",
+  "ref": "LIV-09 p17 (Entreprise, portail)"
+ },
+ {
+  "code": "review_reminder_days",
+  "libelle": "Relance de l'entreprise pour une mission en revue",
+  "valeur": "7",
+  "unite": "jours",
+  "statut": "P",
+  "ref": "LIV-09 p17"
+ },
+ {
+  "code": "belivay_courier_enabled",
+  "libelle": "Livreurs BelivaY activés",
+  "valeur": "Non (livreurs BelivaY non activés au lancement)",
+  "unite": "",
+  "statut": "P",
+  "ref": "LIV-09 p17 (LIV-P25R-03, LIV-STA-04)"
+ },
+ {
+  "code": "courier_trust_scale",
+  "libelle": "Barème des événements Trust Score livreur",
+  "valeur": "Barème des 16 événements (Succès, g1, g2, g3, veto, niveau de sanction) — voir règle barème LIV-09 (16 lignes)",
+  "unite": "",
+  "statut": "P",
+  "ref": "LIV-09 p28 (Direction, console Paliers et Trust Score)"
+ },
+ {
+  "code": "contest_window_days",
+  "libelle": "Fenêtre de contestation d'un événement",
+  "valeur": "7 jours, une contestation par événement",
+  "unite": "jours",
+  "statut": "P",
+  "ref": "LIV-09 p28 (LIV-P26R-03)"
+ },
+ {
+  "code": "company_trust_formula",
+  "libelle": "Formule du Trust Score entreprise",
+  "valeur": "Moyenne des livreurs actifs pondérée par volume − pénalités propres",
+  "unite": "",
+  "statut": "P (question ouverte n° 6)",
+  "ref": "LIV-09 p28"
+ },
+ {
+  "code": "seniority_formula",
+  "libelle": "Formule du critère Ancienneté",
+  "valeur": "50 × min(1 ; mois ÷ 12) + 50 × min(1 ; missions ÷ 100)",
+  "unite": "",
+  "statut": "P",
+  "ref": "LIV-09 p28 (LIV-TSC-07)"
+ },
+ {
+  "code": "trust_weights_courier",
+  "libelle": "Poids des critères Trust livreur",
+  "valeur": "Ponctualité 30 · Qualité 25 · Litiges 20 · Ancienneté 15 · Formation 10",
+  "unite": "%",
+  "statut": "V (ADM-P19R-03)",
+  "ref": "LIV-09 p26"
+ },
+ {
+  "code": "trust_tiers_courier",
+  "libelle": "Paliers livreur",
+  "valeur": "Nouveau < 70 · Confirmé ≥ 70 · Or ≥ 85",
+  "unite": "points",
+  "statut": "V",
+  "ref": "LIV-09 p24"
+ },
+ {
+  "code": "trust_neutral_start",
+  "libelle": "Départ au neutre",
+  "valeur": "µ = 50, k = 10",
+  "unite": "",
+  "statut": "V (LIV-TSC-01)",
+  "ref": "LIV-09 p27"
+ },
+ {
+  "code": "trust_half_life_days",
+  "libelle": "Demi-vie des événements",
+  "valeur": "90",
+  "unite": "jours",
+  "statut": "V (LIV-TSC-01)",
+  "ref": "LIV-09 p27"
+ },
+ {
+  "code": "trust_max_drop_per_recalc",
+  "libelle": "Baisse maximale par recalcul",
+  "valeur": "8",
+  "unite": "points",
+  "statut": "V (LIV-TSC-04)",
+  "ref": "LIV-09 p27"
+ },
+ {
+  "code": "trust_veto_cap",
+  "libelle": "Plafond après veto",
+  "valeur": "39",
+  "unite": "points",
+  "statut": "V (LIV-TSC-02)",
+  "ref": "LIV-09 p27"
+ },
+ {
+  "code": "trust_hysteresis",
+  "libelle": "Hystérésis des paliers",
+  "valeur": "montée : seuil tenu 14 jours ; descente : 5 points sous le seuil 14 jours + validation humaine",
+  "unite": "jours / points",
+  "statut": "V (LIV-TSC-03)",
+  "ref": "LIV-09 p27"
+ },
+ {
+  "code": "trust_inactivity_freeze",
+  "libelle": "Gel et revue pour inactivité",
+  "valeur": "gel à 30 jours, revue à 90 jours",
+  "unite": "jours",
+  "statut": "V (LIV-TSC-04)",
+  "ref": "LIV-09 p27"
+ },
+ {
+  "code": "mission_thread_close_after",
+  "libelle": "Fermeture d'un fil de mission",
+  "valeur": "2 heures après la fin de la mission",
+  "unite": "heures",
+  "statut": "P",
+  "ref": "LIV-10 p9 (LIV-P27R-01)"
+ },
+ {
+  "code": "quick_replies_courier",
+  "libelle": "Messages rapides du livreur",
+  "valeur": "4 messages de mission, 4 messages pour l'entreprise",
+  "unite": "",
+  "statut": "P",
+  "ref": "LIV-10 p9 (textes traduits, LIV-P31R-02)"
+ },
+ {
+  "code": "masking_patterns",
+  "libelle": "Motifs masqués dans les messages",
+  "valeur": "Téléphones (formats de l'espace pays : +237, 6 ou 2 suivis de 8 chiffres, avec ou sans espaces), e-mails (« @ »), identifiants sociaux (liens de réseaux sociaux)",
+  "unite": "",
+  "statut": "P",
+  "ref": "LIV-10 p9 (Espace pays, console)"
+ },
+ {
+  "code": "push_fallback_sms_delay",
+  "libelle": "Délai avant SMS de secours (paquet affecté seulement)",
+  "valeur": "5",
+  "unite": "minutes",
+  "statut": "P",
+  "ref": "LIV-10 p15 (LIV-P28R-01)"
+ },
+ {
+  "code": "tour_notification_reminder",
+  "libelle": "Rappel d'une notification de tournée non lue",
+  "valeur": "1 rappel à 5 minutes",
+  "unite": "minutes",
+  "statut": "P",
+  "ref": "LIV-10 p15 (LIV-P28R-03)"
+ },
+ {
+  "code": "document_expiry_notice",
+  "libelle": "Alerte avant expiration d'une pièce ou de la certification",
+  "valeur": "30",
+  "unite": "jours avant l'expiration",
+  "statut": "P",
+  "ref": "LIV-10 p15, p25 (LIV-P29, LIV-P03R-02)"
+ },
+ {
+  "code": "kyc_auto_check_target",
+  "libelle": "Délai de vérification automatique des pièces",
+  "valeur": "15 minutes ; revue humaine sous 48 h ouvrées",
+  "unite": "minutes / heures ouvrées",
+  "statut": "P",
+  "ref": "LIV-10 p25"
+ },
+ {
+  "code": "vehicle_insurance_required",
+  "libelle": "Assurance du véhicule exigée",
+  "valeur": "Selon le contrat de l'entreprise ; obligatoire pour le palier Or",
+  "unite": "",
+  "statut": "P (question ouverte n° 9)",
+  "ref": "LIV-10 p25"
+ },
+ {
+  "code": "sos_location_share_minutes",
+  "libelle": "Durée du partage de position après SOS",
+  "valeur": "30",
+  "unite": "minutes",
+  "statut": "Δ (LIV-P30R-04)",
+  "ref": "LIV-10 p33"
+ },
+ {
+  "code": "courier_support_whatsapp",
+  "libelle": "Numéro WhatsApp du support livreur (aide seulement)",
+  "valeur": "à fournir",
+  "unite": "",
+  "statut": "P",
+  "ref": "LIV-10 p33 (Direction, console) ; DP-40 : numéro WhatsApp fourni plus tard"
+ },
+ {
+  "code": "sos_position_interval_s",
+  "libelle": "Fréquence d'envoi de la position pendant un SOS",
+  "valeur": "30",
+  "unite": "secondes",
+  "statut": "",
+  "ref": "LIV-10 p34"
+ },
+ {
+  "code": "languages_courier",
+  "libelle": "Langues de l'application livreur",
+  "valeur": "Français, anglais, pidgin (pidgin : français affiché tant que la traduction n'est pas livrée)",
+  "unite": "",
+  "statut": "P",
+  "ref": "LIV-10 p42 (LIV-UIX-04) ; DP-13 (site client : pas de pidgin) à confirmer pour le livreur"
+ },
+ {
+  "code": "text_size_levels",
+  "libelle": "Tailles de texte",
+  "valeur": "Normale, grande, très grande",
+  "unite": "",
+  "statut": "P",
+  "ref": "LIV-10 p42"
+ },
+ {
+  "code": "home_wait_min",
+  "libelle": "Attente minimale chez un client absent",
+  "valeur": "10",
+  "unite": "minutes",
+  "statut": "P",
+  "ref": "LIV-11 Q3 (LIV-P18R-01)"
+ },
+ {
+  "code": "home_calls",
+  "libelle": "Appels masqués avant échec à domicile",
+  "valeur": "2",
+  "unite": "appels",
+  "statut": "P",
+  "ref": "LIV-11 Q3"
+ },
+ {
+  "code": "home_call_gap_min",
+  "libelle": "Écart entre les deux appels",
+  "valeur": "5",
+  "unite": "minutes",
+  "statut": "P",
+  "ref": "LIV-11 Q3"
+ },
+ {
+  "code": "home_new_attempt_price",
+  "libelle": "Nouvelle tentative à domicile payée par le client",
+  "valeur": "1 000",
+  "unite": "F",
+  "statut": "P",
+  "ref": "LIV-11 Q3, T8"
+ },
+ {
+  "code": "battery_alert_pct",
+  "libelle": "Alerte batterie avec un paquet en cours",
+  "valeur": "20",
+  "unite": "%",
+  "statut": "P",
+  "ref": "LIV-11 Q15 (LIV-P04R-05)"
+ },
+ {
+  "code": "battery_eco_pct",
+  "libelle": "Mode économie (carte simplifiée, photos compressées)",
+  "valeur": "10",
+  "unite": "%",
+  "statut": "P",
+  "ref": "LIV-11 Q15"
+ },
+ {
+  "code": "certification_pass_score",
+  "libelle": "Seuil de réussite du quiz de certification",
+  "valeur": "16/20 ; 3 essais par jour, nouvel essai après 2 h ; badge valable 12 mois",
+  "unite": "",
+  "statut": "P",
+  "ref": "LIV-11 Q10 (LIV-CER-02, LIV-P03R-02)"
+ },
+ {
+  "code": "courier_status_portal_s",
+  "libelle": "Statut du livreur visible dans le portail",
+  "valeur": "5 (réseau présent)",
+  "unite": "secondes",
+  "statut": "P",
+  "ref": "LIV-11 Q19 (LIV-P05) ; remplace < 10 s de LIV-08 p32"
+ },
+ {
+  "code": "relay_packet_publish",
+  "libelle": "Publication d'un paquet relais",
+  "valeur": "dès 5 colis à son créneau, obligatoire au 2e créneau d'attente, objectif 8 colis",
+  "unite": "colis",
+  "statut": "P",
+  "ref": "LIV-11 Q13 (ENT-PQS-02, ADM-P20R-09)"
+ },
+ {
+  "code": "mission_thread_archive",
+  "libelle": "Conservation du fil de mission en lecture (console)",
+  "valeur": "jusqu'à l'expiration du délai de litige (écriture fermée à fin + 2 h)",
+  "unite": "",
+  "statut": "P",
+  "ref": "LIV-11 Q14"
+ },
+ {
+  "code": "courier_kind",
+  "libelle": "Type de livreur",
+  "valeur": "partner (seul activé) | belivay (prévu, non activé)",
+  "unite": "",
+  "statut": "P",
+  "ref": "LIV-11 Q7"
+ },
+ {
+  "code": "courier_color",
+  "libelle": "Couleur de l'espace livreur",
+  "valeur": "#047857 émeraude",
+  "unite": "",
+  "statut": "P",
+  "ref": "LIV-11 Q8"
+ },
+ {
+  "code": "audit_c4_rate",
+  "libelle": "Fréquence d'audit C4",
+  "valeur": "100 % des 5 premières commandes, puis 1/20 sous Trust 70, puis 1/100 ; retour à 100 % si le Trust Score du vendeur chute (LIV-PRV-10)",
+  "unite": "",
+  "statut": "P",
+  "ref": "LIV-11 p7 (C6 · C8 · G4 vendeur)"
+ }
+]

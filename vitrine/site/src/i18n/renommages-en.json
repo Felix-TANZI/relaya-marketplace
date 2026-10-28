@@ -1,0 +1,50 @@
+[
+ [
+  "Saved items and favourites",
+  "Favourites"
+ ],
+ [
+  "the cart’s saved items",
+  "the cart’s favourites"
+ ],
+ [
+  "My saved items",
+  "My favourites"
+ ],
+ [
+  "Nothing saved yet",
+  "No favourites yet"
+ ],
+ [
+  "Price drop since you saved it",
+  "Price drop since you added it to favourites"
+ ],
+ [
+  "^Save for later$",
+  "Move to favourites"
+ ],
+ [
+  "^Save$",
+  "Add to favourites"
+ ],
+ [
+  "^saved: ",
+  "moved to favourites: "
+ ],
+ [
+  "\\bsaved items\\b",
+  "favourites"
+ ],
+ [
+  "\\bSaved items\\b",
+  "Favourites"
+ ],
+ [
+  "^Saved\\b",
+  "Favourites"
+ ],
+ [
+  "\\b(\\d+) saved items\\b",
+  "$1 favourites"
+ ]
+]

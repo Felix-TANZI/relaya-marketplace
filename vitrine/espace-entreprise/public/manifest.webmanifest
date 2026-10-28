@@ -1,0 +1,23 @@
+{
+  "id": "/entreprise/",
+  "name": "BelivaY Entreprise de livraison",
+  "short_name": "BelivaY Entreprise",
+  "description": "Paquets, affectation, flotte, missions, preuves et règlements de votre entreprise de livraison partenaire.",
+  "lang": "fr",
+  "dir": "ltr",
+  "start_url": "/entreprise/",
+  "scope": "/entreprise/",
+  "display": "standalone",
+  "background_color": "#F5F6F4",
+  "theme_color": "#F5F6F4",
+  "categories": ["business", "productivity"],
+  "icons": [
+    { "src": "/entreprise/icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/entreprise/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/entreprise/icone-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Paquets disponibles", "short_name": "Paquets", "url": "/entreprise/paquets", "icons": [{ "src": "/entreprise/icone-192.png", "sizes": "192x192" }] },
+    { "name": "Missions et carte", "short_name": "Missions", "url": "/entreprise/missions", "icons": [{ "src": "/entreprise/icone-192.png", "sizes": "192x192" }] }
+  ]
+}

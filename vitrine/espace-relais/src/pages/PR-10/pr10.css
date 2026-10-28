@@ -1,0 +1,110 @@
+/* PR-10 Mon relais : compléments des écrans repris (préfixe p10-), jetons de styles/jetons.css seulement. Les classes
+   p-… du prototype restent la structure ; ici, ce que les règles ajoutent (états, demandes, feuilles) et les cibles de
+   toucher de 44 px au moins (zone agrandie par ::before quand le dessin du prototype est plus petit). */
+.p10-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.p10-col{display:flex;flex-direction:column;gap:12px}
+.p10-ligne{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.p10-txt{margin:0}
+.p10-charge{min-height:60vh}
+.p10-os{height:96px;border-radius:14px;background:var(--sand-2)}
+.p10-os-titre{height:40px;width:60%}
+html[data-mouv] .p10-os{animation:p10-pouls 1.2s ease-in-out infinite alternate}
+@keyframes p10-pouls{to{opacity:.55}}
+
+/* Cibles de toucher : interrupteurs (30 px), petits boutons de tuile (36 px), pastilles de droits (26 px). */
+.p10-tg{position:relative}
+.p10-tg::before,.p10-cible::before{content:'';position:absolute;inset:-8px -2px}
+.p10-cible{position:relative}
+.p10-verrou{opacity:.6;cursor:not-allowed}
+.p-wn9elb.p10-cible{min-height:44px;color:var(--ink);text-decoration:none;display:flex;align-items:center;justify-content:center}
+.p10-droit{cursor:pointer;font-family:inherit;min-height:44px;padding:0 12px}
+.p10-droit[aria-pressed=false]{text-decoration:line-through;text-decoration-color:var(--ink-4)}
+
+/* Annonce du résultat d'un geste. */
+.p10-annonce{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;font-size:.875rem;line-height:1.45;font-weight:700}
+.p10-annonce svg{flex-shrink:0;margin-top:1px}
+.p10-ok{background:var(--green-soft);color:var(--green);border:1px solid var(--green-line)}
+.p10-ko{background:var(--or-soft);color:var(--or-txt);border:1px solid var(--or-line)}
+.p10-file{background:var(--amber-soft);color:var(--amber);border:1px solid var(--amber-line)}
+
+/* Demande en cours auprès de BelivaY (capacité, horaires, fiche, fin). */
+.p10-demande{display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:12px;background:var(--info-soft);border:1px solid var(--info-line);color:var(--info);font-size:.8125rem;line-height:1.5}
+.p10-demande b{font-weight:800}
+.p10-demande svg{flex-shrink:0;margin-top:2px}
+.p10-lien{border:0;background:none;padding:0;min-height:44px;font:inherit;font-weight:800;color:var(--acc-txt);cursor:pointer;text-align:left;text-decoration:underline}
+
+/* Capacité : chiffre proposé, barre au seuil. */
+.p10-barre{display:block;height:8px;border-radius:999px;background-image:linear-gradient(90deg,var(--heros-1),var(--heros-3))}
+.p10-barre.p10-sature{background:var(--alerte-btn)}
+.p10-propose{color:var(--acc-txt)}
+.p10-jour{min-height:44px;width:100%;border:0;padding:0;background:none;cursor:pointer;display:block;font:inherit}
+.p10-jour .p-hvhy64{height:28px;margin:8px 0}
+.p10-change{font-size:.6875rem;font-weight:800;color:var(--acc-txt)}
+
+/* Feuilles du groupe. */
+.p10-feuille h2{margin:0 0 4px;font-size:1.125rem;font-weight:800;letter-spacing:-.02em}
+.p10-feuille .p10-col{margin-top:12px}
+.p10-heures{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.p10-choix{display:flex;flex-direction:column;gap:8px}
+.p10-choix label{display:flex;align-items:center;gap:10px;min-height:48px;padding:0 12px;border:1px solid var(--line);border-radius:12px;font-size:.875rem;font-weight:700;color:var(--ink);cursor:pointer}
+.p10-choix input{width:20px;height:20px;accent-color:var(--acc);flex-shrink:0}
+.p10-zone{min-height:96px;padding:12px 14px;resize:vertical;font-weight:600}
+.p10-liste{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:.875rem;line-height:1.5;color:var(--ink-2)}
+
+/* Formation : leçons et quiz. */
+.p10-q{font-weight:800;font-size:.9375rem;line-height:1.4}
+.p10-faux{border-color:var(--or-line)!important;background:var(--or-soft)}
+.p10-attestation{border:1.5px dashed var(--acc-line);border-radius:14px;padding:16px;text-align:center;display:flex;flex-direction:column;gap:6px}
+
+/* Menu : se déconnecter, sous la dernière section. */
+.p10-sortie{margin-top:4px}
+.p-edt6n8.p10-btn{width:100%;border:0;background:none;padding:0;font:inherit;cursor:pointer;text-align:left}
+.p10-rouge{color:var(--red)}
+
+/* Contrat : articles. */
+.p10-article h3{margin:0 0 6px;font-size:.9375rem;font-weight:800}
+.p10-coche{display:inline-flex;align-items:center;gap:6px;color:var(--green);font-weight:700;font-size:.8125rem}
+ul.p-8dmjde{margin:0;padding:0;list-style:none}
+.p-36va56 a.p10-cible{text-decoration:none}
+.p-aygyk8.p10-ambre{background:var(--amber-soft);border-color:var(--amber-line)}
+.p10-ambre .p-rou2l0{background:var(--amber)}
+.p10-ambre .p-mhwr8x,.p10-ambre .p-zxu25x{color:var(--amber)}
+.p10-onglets{display:flex;gap:6px;flex-wrap:wrap}
+.p10-onglet{flex:0 0 auto;display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink-2);font-size:.8125rem;font-weight:700;text-decoration:none}
+.p10-onglet[aria-current=page]{background:var(--acc-soft);border-color:var(--acc-line);color:var(--acc-txt)}
+.p10-select{width:auto;min-width:104px;flex-shrink:0}
+.p-o24hsm.p10-btn{width:100%;border:0;background:none;padding:0;font:inherit;color:var(--ink);text-align:left;cursor:pointer}
+/* Cibles de 44 px et texte à 140 % (accessibilité) : bandeau du Menu, liens sous une carte, tuiles en grille. */
+.p-36va56 .p-jb3jyo{flex-shrink:0}
+.p-36va56 .p10-cible{min-height:44px}
+.p-4u28q4.p10-cible{display:inline-flex;align-items:center;min-height:44px}
+.p-0cipe3>*{min-width:0}
+.p-g52657,.p-2z3538,.p-4mbhbo{overflow-wrap:anywhere}
+/* Photo de profil (PhotoProfil.tsx) : avatar en photo, aperçu, cadre de recadrage carré avec le cercle gardé. */
+.p10-avatar-photo{overflow:hidden;padding:0}
+.p10-avatar-photo img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
+.p10-avatar-btn{border:0;padding:0;background:none;cursor:pointer;position:relative;border-radius:999px;font:inherit}
+.p10-avatar-btn .p10-avatar-badge{position:absolute;right:-2px;bottom:-2px;width:30px;height:30px;border-radius:999px;background:var(--acc-btn);color:var(--acc-btn-ink);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px var(--sand)}
+.p10-photo-apercu{display:flex;justify-content:center;padding:8px 0}
+.p10-recadre{position:relative;align-self:center;overflow:hidden;border-radius:16px;background:var(--nuit-1);touch-action:none;cursor:grab;user-select:none}
+.p10-recadre:focus-visible{outline:3px solid var(--acc);outline-offset:3px}
+.p10-recadre img{position:absolute;left:0;top:0;max-width:none;pointer-events:none}
+.p10-recadre-rond{position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 999px var(--noir-55);pointer-events:none}
+.p10-zoom{width:100%;accent-color:var(--acc);min-height:44px}
+/* Ma zone sur la carte (Zone.tsx) : zones BelivaY dessinées au-dessus du fond OSM ou du plan schématique. */
+.p10-onglet[aria-checked=true]{background:var(--acc-soft);border-color:var(--acc-line);color:var(--acc-txt)}
+.p10-carte{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+.p10-carte svg{display:block;width:100%;height:auto}
+.p10-carte-fond{fill:var(--sand-2)}
+.p10-zone-autre{fill:var(--card);fill-opacity:.35;stroke:var(--ink-3);stroke-opacity:.45;stroke-width:1}
+.p10-zone-relais{fill:var(--acc);fill-opacity:.2;stroke:var(--acc);stroke-width:2.5;stroke-linejoin:round}
+.p10-zone-nom{font-size:11px;font-weight:800;fill:var(--ink-2);paint-order:stroke;stroke:var(--card);stroke-width:3px}
+.p10-zone-nom-relais{fill:var(--acc-txt);font-size:13px}
+.mq-l.p10-leg-zone{margin:0 4px;width:14px;height:14px;border-radius:4px;background:color-mix(in srgb,var(--acc) 22%,transparent);border:2px solid var(--acc)}
+.p10-quartiers{margin:0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:6px}
+.p10-quartiers li{padding:6px 10px;border-radius:999px;background:var(--acc-soft);color:var(--acc-txt);font-size:.8125rem;font-weight:700}
+.p10-semaine{margin:0;padding:0;list-style:none;display:flex;flex-direction:column}
+.p10-semaine li{display:flex;justify-content:space-between;gap:12px;padding:10px 4px;border-bottom:1px solid var(--line);font-size:.875rem;font-weight:600;color:var(--ink-2)}
+.p10-semaine li:last-child{border-bottom:0}
+.p10-semaine li small{font-size:.75rem;color:var(--ink-3)}
+.p10-semaine .p10-auj{font-weight:800;color:var(--ink);background:var(--acc-soft);border-radius:10px;padding:10px 8px}

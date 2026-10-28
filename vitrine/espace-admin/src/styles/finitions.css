@@ -1,0 +1,180 @@
+/* Finitions (demande du porteur, 19 oct.) — commun à l'espace entreprise et à la console, chargé après vie.css.
+   1. Barre du haut : verre léger, pastilles rondes, cloche qui bouge doucement à l'arrivée d'une notification, point
+      « en ligne » sur l'avatar. Le LOGO (en-tête, barre latérale, marque des pages secondaires) garde sa forme : ni fond,
+      ni ombre, ni inclinaison, ni mouvement.
+   2. En-tête de page en bandeau (dégradé discret de la couleur de l'interface, motif de points), chiffre clé.
+   3. Recherche aux coins doux (14 px, comme le client), halo au focus, recherches récentes.
+   4. Boutons aux coins doux comme le client et le vendeur (14 px, petits 11 px ; 24 oct. 2026 : plus de pilule élargie) (reflet léger sur le principal, enfoncement à l'appui, chargement puis coche : finitions.ts),
+      boutons-icônes ronds ; filtres, onglets segmentés, champs et étiquettes aux rayons des jetons (--r-s, --r-m, --r-l).
+   5. Barre du bas : la capsule active glisse depuis l'onglet quitté, les compteurs « sautent » quand ils changent.
+   6. Suivi : points des livreurs en mission qui pulsent doucement ; retard en orange discret.
+   7. Chargements en squelette scintillant, icône des listes vides dans un cercle doux, contour fin en sombre (blocs héros),
+      barres d'accent arrondies au lieu des liserés qui suivent l'arrondi.
+   Tout ce qui bouge vaut sous html[data-mouv] (ni « Animations réduites », ni prefers-reduced-motion). Aucune couleur
+   écrite ici : jetons.css (--fin-…). */
+
+/* ---------- 1. Barre du haut ---------- */
+html body .tb.glass{background:var(--fin-verre);-webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%);border-bottom-color:color-mix(in srgb,var(--line) 70%,transparent)}
+html body header.hd.glass{background:var(--fin-verre);-webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%)}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))){html body :is(.tb,header.hd).glass{background:var(--card)}}
+html body :is(header,.tb) :is(.ibtn,.avatar,.lang){border-radius:999px!important}
+/* Le logo et la marque : aucun effet (ni fond, ni ombre, ni relief, ni mouvement). */
+html body :is(header,.tb) .ibtn.cart,html body .tb .tb-marque,html body :is(.hd-logo,.sd-logo,.tb-tab>a){background:transparent!important;box-shadow:none!important;transform:none!important;transition:none!important;animation:none!important;border:0;filter:none}
+html body :is(.hd-logo,.sd-logo,.tb-tab>a,.ibtn.cart,.tb-marque) img{transform:none;filter:none;box-shadow:none}
+/* Point « en ligne » sur l'avatar (anneau de l'interface, point vert). */
+html body .fin-av{position:relative;display:inline-flex;flex-shrink:0;border-radius:999px}
+html body .fin-en-ligne{position:absolute;right:-2px;bottom:-2px;width:12px;height:12px;border-radius:50%;background:var(--fin-en-ligne);box-shadow:0 0 0 2.5px var(--card);pointer-events:none}
+/* Cloche : un léger balancement quand une notification arrive (coque : classe fin-sonne). */
+@keyframes fin-cloche{0%,100%{transform:rotate(0)}15%{transform:rotate(14deg)}30%{transform:rotate(-11deg)}45%{transform:rotate(7deg)}60%{transform:rotate(-4deg)}75%{transform:rotate(2deg)}}
+@keyframes fin-saute{0%{transform:scale(1)}40%{transform:scale(1.28)}70%{transform:scale(.92)}100%{transform:scale(1)}}
+html[data-mouv] body .ibtn.fin-sonne>svg{transform-origin:50% 10%;animation:fin-cloche .9s var(--blv-doux,ease) 1}
+html[data-mouv] body .ibtn.fin-sonne>.bdg{animation:fin-saute .5s var(--blv-ressort,ease) .1s 1}
+
+/* ---------- 2. En-tête de page en bandeau ---------- */
+html body .px>.dk-head{position:relative;isolation:isolate;padding:18px 22px;border-radius:var(--r-l);background:var(--fin-bandeau);box-shadow:var(--shadow-card);margin-bottom:18px}
+html body .px>.dk-head::before{content:'';position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;background-image:radial-gradient(var(--fin-motif) 1.3px,transparent 1.7px);background-size:16px 16px;-webkit-mask-image:linear-gradient(100deg,transparent 40%,currentColor 100%);mask-image:linear-gradient(100deg,transparent 40%,currentColor 100%)}
+html[data-device=mobile] body .px>.dk-head{padding:14px 16px;margin:10px 0 14px}
+html body .px>.dk-head .pg-t{letter-spacing:-.03em}
+html body .px .fin-chiffre{order:3;align-self:flex-start;display:inline-flex;align-items:baseline;gap:6px;margin-top:10px;padding:5px 12px 5px 10px;border-radius:999px;background:var(--card);box-shadow:inset 0 0 0 1px var(--e-line);font-size:.8125rem;font-weight:700;color:var(--ink-3);line-height:1.3}
+html body .px .fin-chiffre b{font-size:1.0625rem;font-weight:800;letter-spacing:-.02em;color:var(--e-txt)}
+html body .px .fin-chiffre.alerte{box-shadow:inset 0 0 0 1px var(--or-line)}
+html body .px .fin-chiffre.alerte b{color:var(--or-txt)}
+
+/* ---------- 3. Recherche ---------- */
+html body .tb .srch{border-radius:999px!important}
+html body .px label.srch{border-radius:14px!important}
+html body .tb .srch{background:color-mix(in srgb,var(--sand-2) 60%,var(--card));border-color:color-mix(in srgb,var(--line-2) 70%,transparent);padding:0 8px 0 14px}
+html body :is(.tb .srch,.px label.srch):focus-within{border-color:var(--e);background:var(--card);box-shadow:var(--fin-halo)}
+html body :is(.tb .srch,.px .srch) kbd{border-radius:999px;padding:2px 8px}
+html body .srch-l{border-radius:var(--r-l)}
+html body .srch-l .srch-r{padding:8px 12px 4px;font-size:.75rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-4)}
+html[data-mouv] body :is(.tb .srch,.px label.srch){transition:box-shadow .2s,border-color .2s,background .2s}
+
+/* ---------- 4. Boutons, filtres, champs : arrondis cohérents ---------- */
+html body .btn,html body .px .dk-head .btn{border-radius:14px!important}
+html body .btn.sm,html body .px .btn.sm{border-radius:11px!important}
+html body .btn:is(.primary,.acc,.green,.red)::before{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(180deg,var(--fin-reflet-btn),transparent 58%)}
+html body .ibtn,html body .px :is(.entb-open,.po-c-b),html body .px table.dt td .btn.sm:only-child:empty{border-radius:999px!important}
+/* Filtres et puces : pastilles (comme les puces du client) ; onglets segmentés : coins doux (13 px, segment 10 px). */
+html body .px :is(label.flt,button.flt,.flt,.chip,.tag,kbd),html body .tb .srch{border-radius:999px!important}
+html body .px .seg{border-radius:13px!important}
+html body .px :is(.seg>button,.seg>a,.seg :is(a,button)){border-radius:10px!important}
+html body .px .seg :is(a,button) .n{border-radius:999px!important}
+html body .px :is(input:not([type=checkbox],[type=radio],[type=range],[type=color],[type=search]),textarea){border-radius:var(--r-m)}
+html body .tb .srch input{border-radius:999px!important}
+html body .px label.srch input{border-radius:14px!important}
+html body .px select{border-radius:var(--r-m)!important}
+html body .px .cbx{border-radius:8px}
+html body .px .lv-simu-c input{border-radius:var(--r-s)}
+html body .px :is(.bdg,.pill){border-radius:999px!important}
+/* Appui : le bouton s'enfonce (le reflet s'éteint). */
+html[data-mouv] body .btn:not(:disabled):active{transform:translateY(1px) scale(.975)}
+html[data-mouv] body .btn:not(:disabled):active::before{opacity:.4}
+/* Chargement puis coche (finitions.ts) : seulement sous html[data-mouv]. */
+html body .btn{--fin-c:var(--e-txt)}
+html body .btn:is(.primary,.acc,.green,.red){--fin-c:var(--sur-e)}
+html body .btn.danger{--fin-c:var(--red)}
+@keyframes fin-tourne{to{transform:rotate(360deg)}}
+@keyframes fin-coche{from{opacity:0;transform:rotate(-45deg) scale(.4)}to{opacity:1;transform:rotate(-45deg) scale(1)}}
+html[data-mouv] body .btn:is(.fin-charge,.fin-ok){color:transparent!important}
+html[data-mouv] body .btn:is(.fin-charge,.fin-ok)>*{opacity:0}
+html[data-mouv] body .btn.fin-charge[disabled]{opacity:.85}
+html[data-mouv] body .btn.fin-charge::after{content:'';position:absolute;left:50%;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;border:2.5px solid color-mix(in srgb,var(--fin-c) 28%,transparent);border-top-color:var(--fin-c);animation:fin-tourne .7s linear infinite}
+html[data-mouv] body .btn.fin-ok::after{content:'';position:absolute;left:50%;top:50%;width:14px;height:7px;margin:-6px 0 0 -7px;border:solid var(--fin-c);border-width:0 0 3px 3px;border-radius:1px;animation:fin-coche .3s var(--blv-ressort,ease) both}
+
+/* ---------- 5. Barre du bas ---------- */
+html[data-mouv] body nav.dock .tab.on.fin-glisse{background:transparent;box-shadow:none}
+html[data-mouv] body nav.dock .tab.on.fin-glisse::before{content:'';position:absolute;inset:0;z-index:-1;border-radius:inherit;background:var(--dock-cap);box-shadow:var(--dock-cap-ombre);animation:fin-glisse .4s var(--blv-ressort,cubic-bezier(.3,1.25,.5,1)) both}
+@keyframes fin-glisse{from{transform:translateX(var(--fin-dx,0))}to{transform:none}}
+html[data-mouv] body nav.dock .bdg.fin-saute{animation:fin-saute .5s var(--blv-ressort,ease) 1}
+
+/* ---------- 6. Suivi : points qui pulsent, retard en orange discret ---------- */
+@keyframes fin-pouls{0%{box-shadow:0 0 0 0 var(--fin-pouls)}70%{box-shadow:0 0 0 6px transparent}100%{box-shadow:0 0 0 0 transparent}}
+html[data-mouv] body #app:is(.r-missions,.r-tableau,.r-flotte) .px .pill.acc>i.d{animation:fin-pouls 2.2s ease-out infinite}
+html body #app.r-missions .px .dk-banner.red.fin-retard{background:var(--or-soft);border-color:var(--or-line);color:var(--or-txt)}
+html body #app.r-missions .px .dk-banner.red.fin-retard>svg{color:var(--or-txt)}
+html body #app.r-missions .px table.dt tr.bad td:first-child{box-shadow:inset 3px 0 0 var(--or)}
+html body #app.r-missions .px table.dt tr.bad :is(.cr,.c-red){color:var(--or-txt)}
+html body #app.r-missions .px table.dt tr.bad .bar.red>i{background:var(--or)}
+html body #app.r-missions .px table.dt tr.bad .rebours.critique :is(b,svg){color:var(--or-txt)}
+html body #app.r-missions .px table.dt tr.bad .rebours.critique{color:var(--or-txt)}
+
+/* ---------- 7. Finitions ---------- */
+/* Barres d'accent : une barre arrondie posée dans la carte, au lieu d'un liseré qui épouse l'arrondi. */
+html body .px :is(.e-act-chaud,.a-act-chaud,.a-act-actif){box-shadow:var(--shadow-card)}
+html[data-theme=dark] body .px :is(.e-act-chaud,.a-act-chaud,.a-act-actif){box-shadow:inset 0 0 0 1px var(--line)}
+html body .px :is(.e-act-chaud,.a-act-chaud,.a-act-actif)::before{content:'';position:absolute;left:0;top:18px;bottom:18px;width:4px;border-radius:0 4px 4px 0;background:var(--or);pointer-events:none}
+html body .px .a-act-actif::before{background:var(--e)}
+html[data-theme=dark] body .px .a-act-actif::before{background:var(--e-ciel)}
+/* Contour fin en sombre sur les blocs héros (jamais sur les listes), sans lueur. */
+html[data-theme=dark] body #app.p-pri .px :is(.e-act-heros,.a-act-heros,[data-heros=score],[data-heros=vendredi],.vie-relief){box-shadow:var(--fin-lueur)}
+/* Chargement en squelette scintillant. */
+@keyframes fin-scintille{from{background-position:120% 0}to{background-position:-20% 0}}
+html body :is(.chargement,.fin-squelette){border-radius:var(--r-l);background-color:var(--fin-squelette);background-image:linear-gradient(100deg,transparent 30%,var(--fin-scintille) 50%,transparent 70%);background-size:220% 100%;background-repeat:no-repeat}
+html[data-mouv] body :is(.chargement,.fin-squelette){animation:fin-scintille 1.3s linear infinite}
+/* Listes vides : l'icône dans un cercle doux, sans décor (sobriété, porteur). */
+html body .px :is(.empty,.vide) .ei{position:relative;isolation:isolate;border-radius:999px;overflow:visible;box-shadow:inset 0 0 0 1px var(--e-line)}
+/* Icônes en pastilles teintées (en plus de vie.css). */
+html body .px :is(.po-q-i,.li>.ic,.ph .ic){background-image:linear-gradient(145deg,color-mix(in srgb,currentColor 14%,transparent),color-mix(in srgb,currentColor 4%,transparent));box-shadow:inset 0 0 0 1px color-mix(in srgb,currentColor 12%,transparent)}
+/* Compteurs (finitions.ts) : le chiffre monte pendant qu'il compte. */
+html[data-mouv] body .fin-compte{display:inline-block;font-variant-numeric:tabular-nums}
+
+@media (prefers-reduced-motion:reduce){html body :is(.ibtn,.btn,nav.dock .tab,.pill,.ei)>*,html body .btn::after,html body :is(.chargement,.fin-squelette),html body nav.dock .tab::before{animation:none!important}}
+
+/* ---------- 8. Chiffres dans un bloc : à plat (sobriété, porteur, phase finale) ----------
+   Les chiffres posés DANS un bloc (montants de l'escrow, indicateurs d'une fiche, état d'un pays…) ne sont plus des
+   petites cartes dans une carte : une colonne par chiffre, un filet fin au-dessus, sans fond ni cadre. */
+html body .px :is(.m4,.entb-m){background:none!important;border:0!important;border-top:1px solid var(--line)!important;border-radius:0!important;box-shadow:none!important;padding:10px 2px 4px!important}
+html body .px .hero.night :is(.m4,.entb-m){border-top-color:var(--e-line)!important}
+
+/* ---------- 9. Pages secondaires : ligne de résumé au lieu des indicateurs en tuiles (composants/rang.ts) ---------- */
+html body .px .g:has(>.kpi-r){display:flex!important;flex-wrap:wrap;align-items:baseline;gap:6px 22px;padding:2px 2px 12px;border-bottom:1px solid var(--line);margin-bottom:4px}
+html body .px .kpi-r{display:inline-flex;align-items:baseline;gap:6px;min-width:0;color:var(--ink);text-decoration:none}
+html body .px .kpi-r .kr-v{font-size:1.0625rem;font-weight:800;letter-spacing:-.01em;font-variant-numeric:tabular-nums;white-space:nowrap}
+html body .px .kpi-r .kr-v small{margin-left:3px;font-size:.8125rem;font-weight:700;color:var(--ink-3)}
+html body .px .kpi-r .kr-k{font-size:.8125rem;font-weight:600;color:var(--ink-3)}
+html body .px .kpi-r:is(.kr-or,.kr-amber) .kr-v{color:color-mix(in srgb,var(--or-txt) 80%,var(--ink))}
+html body .px .kpi-r.kr-red .kr-v{color:var(--red)}
+html body .px a.kpi-r{min-height:44px;align-items:center}
+html body .px a.kpi-r .kr-k{text-decoration:underline;text-decoration-color:var(--line-2);text-underline-offset:3px}
+@media (hover:hover){html body .px a.kpi-r:hover .kr-k{color:var(--ink);text-decoration-color:currentColor}}
+html body .px a.kpi-r:focus-visible{outline:3px solid var(--e-txt);outline-offset:2px;border-radius:6px}
+/* Tuiles posées dans un bloc (indicateurs d'une fiche) : à plat, comme les chiffres ci-dessus. */
+html body .px :is(.panel,.card) .tile{background:none!important;border-radius:0;box-shadow:none!important;border-top:1px solid var(--line);padding:10px 2px 4px}
+html body .px :is(.panel,.card) .tile .tv{font-size:1.375rem!important}
+
+/* ---------- 4. En-tête des pages secondaires (finitions, 23 oct.) ----------
+   Pages principales : le bandeau ci-dessus (2). Pages secondaires : bande discrète, sans carte ni motif — un filet de
+   la couleur de l'espace à gauche, le titre net, la ligne d'information (surtitre, sous-titre) et le chiffre clé, les
+   actions principales à droite (au téléphone : dessous, ou dans la zone du pouce), un trait fin pour finir. Au
+   téléphone, le titre déjà écrit dans l'en-tête secondaire n'est pas répété (coque.tsx, .vh) ; une bande vide s'efface. */
+html body #app.p-sec .px>.dk-head{background:transparent;box-shadow:none;border-radius:0;padding:2px 0 14px 16px;margin:2px 0 18px;border-bottom:1px solid var(--line)}
+html body #app.p-sec .px>.dk-head::before{inset:2px auto 14px 0;width:3px;border-radius:3px;background:var(--e);background-image:none;-webkit-mask-image:none;mask-image:none}
+html body #app.p-sec .px>.dk-head .pg{padding-top:0}
+html body #app.p-sec .px>.dk-head .pg-t{font-size:1.625rem}
+html body #app.p-sec .px>.dk-head .pg-k{margin:0 0 4px}
+html body #app.p-sec .px>.dk-head .pg-s{margin-top:6px}
+html body #app.p-sec .px>.dk-head .fin-chiffre{margin-top:8px;padding:3px 10px 3px 9px}
+html[data-device=mobile] body #app.p-sec .px>.dk-head{padding:0 0 12px 12px;margin:12px 0 14px}
+html[data-device=mobile] body #app.p-sec .px>.dk-head .pg-t{font-size:1.3125rem}
+html[data-device=mobile] body #app.p-sec .px>.dk-head .fin-chiffre{margin-top:6px}
+html[data-device=mobile] body #app.p-sec .px>.dk-head .pg:has(>.vh) :is(.pg-k,.pg-s,.fin-chiffre):not(:empty){margin-top:0}
+html[data-device=mobile] body #app.p-sec .px>.dk-head .pg:has(>.vh) .pg-s:not(:empty)~.fin-chiffre{margin-top:6px}
+html body #app.p-sec .px>.dk-head:not(:has(.pg-k:not(:empty),.pg-s:not(:empty),.fin-chiffre,.acts:not(:empty),.pg-t:not(.vh))){padding:0;margin:0;border:0}
+html body #app.p-sec .px>.dk-head:not(:has(.pg-k:not(:empty),.pg-s:not(:empty),.fin-chiffre,.acts:not(:empty),.pg-t:not(.vh)))::before{display:none}
+
+/* ---------- 5. Rien ne déborde en largeur (téléphone de 320 px, texte agrandi jusqu'à 140 %) ----------
+   Le texte agrandi élargit les contenus (rem) : une colonne de grille, un champ ou un sélecteur qui garde sa largeur de
+   contenu poussait la page (défilement horizontal de l'accueil, des versements, des clients, des commissions, des
+   promotions, des rapports). Ici, chaque enfant peut rétrécir sous la largeur de son contenu et un texte qui ne tient
+   plus passe à la ligne. Sans effet quand tout tient déjà (taille du texte normale). */
+html body .px :is(.admA-day,.admA-stepbar,.admk-idgrid,.admk-rules,.admp-next)>*{min-width:0;overflow-wrap:break-word;hyphens:auto}
+html body .px .admk-rule>:not(.id){min-width:0;overflow-wrap:anywhere}
+html body .px .row.wrap>:is(.fld,.seg){min-width:0;max-width:100%}
+html body .px .fld :is(.inp,select,input){min-width:0;max-width:100%}
+html body .px .seg :is(a,button){min-width:0}
+html[data-device=mobile] body .px .seg :is(a,button){white-space:normal;text-align:center;line-height:1.2;height:auto;min-height:44px}
+html body .px .admp-next .admp-ev{max-width:100%}
+html body .px .admA-hero4>*{min-width:0;overflow-wrap:break-word;hyphens:auto}
+html body .px .dt-tools>*{min-width:0;max-width:100%}
+html body .px .s4-filtres .srch{min-width:0}

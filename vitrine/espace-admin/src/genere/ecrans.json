@@ -1,0 +1,738 @@
+{
+ "connexion": {
+  "page": "ADM-P01",
+  "titre": "Connexion et second facteur",
+  "doc": "ADM-03",
+  "kicker": "",
+  "sous": "",
+  "etats": [
+   "Connexion · identifiant et mot de passe",
+   "Connexion · second facteur",
+   "Connexion · rôle rappelé et nouvel appareil",
+   "Connexion · bloqué 30 minutes",
+   "Connexion · erreur, saisie conservée"
+  ],
+  "sections": []
+ },
+ "file": {
+  "page": "ADM-P02",
+  "titre": "File d’action",
+  "doc": "ADM-03",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "Ce qui demande une décision humaine, du plus urgent au moins urgent. Aucune carte ne disparaît sans décision ou résolution automatique journalisée.",
+  "etats": [
+   "File d’action · douze cartes, dossier ouvert",
+   "File d’action · surcharge, 12 dossiers en retard",
+   "File d’action · file vide, indicateurs en grand",
+   "File d’action · hors périmètre (Finance)"
+  ],
+  "sections": [
+   "Indicateurs"
+  ]
+ },
+ "litige": {
+  "page": "ADM-P03",
+  "titre": "Dossier de litige et arbitrage",
+  "doc": "ADM-04",
+  "kicker": "",
+  "sous": "",
+  "etats": [
+   "Litige · ouvert, compte à rebours du vendeur",
+   "Litige · à arbitrer (proposition, preuves, croisement)",
+   "Litige · décidé, effet escrow et motif",
+   "Litige · en recours, médiateur senior",
+   "Litige · hors périmètre (Finance)"
+  ],
+  "sections": [
+   "Croisement cliente × vendeur",
+   "Chaîne de preuves",
+   "Positions des parties",
+   "Décision"
+  ]
+ },
+ "commandes": {
+  "page": "ADM-P04",
+  "titre": "Commandes",
+  "doc": "ADM-04",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "Retrouver n’importe quelle commande par numéro, étiquette, paquet ou téléphone (Support), et voir toute son histoire en une page.",
+  "etats": [
+   "Commandes · liste filtrable",
+   "Fiche commande · payée, escrow bloqué",
+   "Fiche commande · validée, payable au retrait",
+   "Fiche commande · gelée (litige)",
+   "Fiche commande · libérée et versée"
+  ],
+  "sections": []
+ },
+ "escrow": {
+  "page": "ADM-P05",
+  "titre": "Escrow et registre",
+  "doc": "ADM-05",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "Voir l’état de l’argent et, quand la règle le permet, le faire changer d’état — jamais le montant.",
+  "etats": [
+   "Escrow · bloqué (montant, date de paiement)",
+   "Escrow · se libère (date de libération)",
+   "Escrow · gelé (dossier lié)",
+   "Escrow · libéré (date, lot du vendredi)"
+  ],
+  "sections": [
+   "Escrow détenu chez l’agrégateur · samedi 26 septembre · 11 h 20",
+   "Commandes bloquées",
+   "Actions permises dans cet état",
+   "Registre en partie double · BLV-00008"
+  ]
+ },
+ "remboursements": {
+  "page": "ADM-P06",
+  "titre": "Remboursements",
+  "doc": "ADM-05",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "Suivre chaque remboursement de la décision à la réception par le client : origine, montant calculé, moyen d’origine, statut de l’opérateur, auteur.",
+  "etats": [
+   "Remboursements · liste et compteur des non instruits",
+   "Remboursement · décidé (origine, montant calculé)",
+   "Remboursement · en cours (statut opérateur)",
+   "Remboursement · échoué, moyen fermé, quatre yeux",
+   "Remboursement · remboursé (date, moyen)",
+   "Remboursement · au-delà de 100 000 F, quatre yeux"
+  ],
+  "sections": [
+   "Compteur séparé · non instruits",
+   "D’où vient un remboursement"
+  ]
+ },
+ "versements": {
+  "page": "ADM-P07",
+  "titre": "Versements du vendredi",
+  "doc": "ADM-05",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "Payer tous les acteurs le même jour, à l’heure, sans demande ni frais : préparation le jeudi à 23 h 59, contrôle et exécution le vendredi matin, rapprochement.",
+  "etats": [
+   "Versements · cycle clos et prochain vendredi",
+   "Versements · préparation (lot du jeudi 23 h 59)",
+   "Versements · contrôlé, prêt à lancer",
+   "Versements · en cours (statut par versement)",
+   "Versements · terminé, rapprochement et clôture",
+   "Versements · montant élevé, contrôle à quatre yeux",
+   "Versements · hors périmètre (Support)"
+  ],
+  "sections": [
+   "Prochain versement · vendredi 2 octobre",
+   "À traiter avant jeudi 23 h 59",
+   "Versements des vendredis",
+   "Dernier cycle · vendredi 25 septembre"
+  ]
+ },
+ "rapprochement": {
+  "page": "ADM-P08",
+  "titre": "Rapprochement, revenus et obligations",
+  "doc": "ADM-05",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "Faire parler le registre, l’agrégateur et la comptabilité d’une seule voix, et produire les chiffres officiels.",
+  "etats": [
+   "Rapprochement · vert, aucun écart",
+   "Rapprochement · écart, origine probable",
+   "Rapprochement · clôture mensuelle, exports prêts",
+   "Rapprochement · erreur de chargement"
+  ],
+  "sections": [
+   "Revenus BelivaY · aujourd’hui à 11 h 20",
+   "Hier · ven. 25 sept. · registre ↔ agrégateur",
+   "Revenus des 7 derniers jours",
+   "Coûts enregistrés aujourd’hui",
+   "Relevés et obligations"
+  ]
+ },
+ "kyc": {
+  "page": "ADM-P09",
+  "titre": "Revue KYC",
+  "doc": "ADM-06",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "Une seule file pour les pièces de tous les acteurs. Vérification automatique en moins de 15 minutes ; un doute est tranché ici, sous 48 heures ouvrées, après avoir ouvert chaque pièce.",
+  "etats": [
+   "Revue KYC · à revoir (visionneuse, doute sur le visage)",
+   "Revue KYC · rejeter une pièce avec motif",
+   "Revue KYC · doublon de CNI entre deux rôles",
+   "Revue KYC · complément demandé",
+   "Revue KYC · pièce approuvée",
+   "Revue KYC · pièce rejetée (faux document)",
+   "Revue KYC · pièce impossible à afficher"
+  ],
+  "sections": [
+   "Résultats automatiques",
+   "Déduplication interne",
+   "Règles appliquées sur cet écran"
+  ]
+ },
+ "vendeurs": {
+  "page": "ADM-P10",
+  "titre": "Vendeurs",
+  "doc": "ADM-06",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "Une seule page pour le réseau : liste, carte et fiche. Vue d’ensemble, gestion et certifications sont réunies ici.",
+  "etats": [
+   "Vendeurs · liste du réseau (actifs, fermé aujourd’hui, suspendu)",
+   "Vendeurs · carte des boutiques",
+   "Vendeurs · fiche d’un vendeur actif",
+   "Vendeurs · fiche · fermé aujourd’hui",
+   "Vendeurs · fiche · suspendu",
+   "Vendeurs · erreur de chargement"
+  ],
+  "sections": [
+   "Répartition par palier",
+   "À suivre aujourd’hui",
+   "Règles appliquées sur cet écran"
+  ]
+ },
+ "paliers": {
+  "page": "ADM-P11",
+  "titre": "Paliers et Trust Score à valider",
+  "doc": "ADM-06",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "Le système propose, un humain confirme : aucune descente de palier n’est automatique. Le croisement des historiques est affiché avant toute décision.",
+  "etats": [
+   "Paliers · proposition de descente avec croisement des historiques",
+   "Paliers · confirmer avec motif écrit",
+   "Paliers · descente confirmée",
+   "Paliers · descente contestée (recours)",
+   "Paliers · erreur à l’enregistrement"
+  ],
+  "sections": [
+   "Événements qui expliquent la proposition",
+   "Décomposition du score",
+   "Croisement des historiques",
+   "Règles appliquées sur cet écran"
+  ]
+ },
+ "sanctions": {
+  "page": "ADM-P12",
+  "titre": "Sanctions et recours",
+  "doc": "ADM-06",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "Appliquer l’échelle des sanctions avec la même rigueur pour tous : proposition du système, décision humaine motivée, recours une fois ; exclusion et levée de liste noire à quatre yeux.",
+  "etats": [
+   "Sanctions · proposée (niveau 2, motif à écrire)",
+   "Sanctions · exclusion et liste noire à quatre yeux",
+   "Sanctions · en recours (décision du médiateur)",
+   "Sanctions · en vigueur (suspension)",
+   "Sanctions · levée"
+  ],
+  "sections": [
+   "Déclencheurs",
+   "Historique",
+   "La même rigueur pour tous les acteurs",
+   "Règles appliquées sur cet écran"
+  ]
+ },
+ "catalogue": {
+  "page": "ADM-P13",
+  "titre": "Catalogue : fiches maîtres",
+  "doc": "ADM-07",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "Le client cherche un produit, jamais un vendeur : chaque produit n’existe qu’une fois comme fiche maître, les vendeurs s’y rattachent. Les demandes de création sont traitées sous 24 heures ouvrées.",
+  "etats": [
+   "Catalogue · demande de création (variante probable)",
+   "Catalogue · fusion proposée par l’IA",
+   "Catalogue · fiche maître publiée et offres rattachées",
+   "Catalogue · taxonomie sans doublon (création refusée)",
+   "Catalogue · demande refusée : produit interdit",
+   "Catalogue · erreur de chargement"
+  ],
+  "sections": [
+   "Recherche faite par le vendeur avant sa demande",
+   "Maîtres proches trouvés par l’IA",
+   "Données du maître après décision",
+   "Règles appliquées sur cet écran"
+  ]
+ },
+ "moderation": {
+  "page": "ADM-P14",
+  "titre": "Modération des offres et des prix",
+  "doc": "ADM-07",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "Protéger le client contre les faux prix, les faux rabais et les produits interdits, sans bloquer le vendeur honnête. La console suggère des prix plus bas ; elle n’impose jamais un prix.",
+  "etats": [
+   "Modération · à modérer (écart de prix, suggestion à la baisse)",
+   "Modération · prix barré non pratiqué, retiré",
+   "Modération · dépubliée (produit interdit), recours à traiter",
+   "Modération · acceptée",
+   "Modération · erreur de chargement"
+  ],
+  "sections": [
+   "Écart avec la médiane du maître",
+   "Prix du maître sur 30 jours",
+   "Règles appliquées sur cet écran"
+  ]
+ },
+ "avis": {
+  "page": "ADM-P15",
+  "titre": "Avis et droit de réponse",
+  "doc": "ADM-07",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "Des avis vrais, rattachés à des achats reçus, cumulés sur la fiche maître, que personne ne peut acheter ni effacer à sa convenance.",
+  "etats": [
+   "Avis · signalé (avis négatif légitime)",
+   "Avis · retrait motivé par le médiateur senior",
+   "Avis · contenu masqué",
+   "Avis · réponse privée anonymisée",
+   "Avis · erreur de chargement"
+  ],
+  "sections": [
+   "Le signalement",
+   "Règles appliquées sur cet écran"
+  ]
+ },
+ "clients": {
+  "page": "ADM-P16",
+  "titre": "Clients et IFA",
+  "doc": "ADM-07",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "Voir le client comme un acteur à protéger et, quand il le faut, à plafonner — jamais à bannir. L’indice de fiabilité acheteur (IFA) est interne : le client ne le voit jamais.",
+  "etats": [
+   "Clients · fiche au palier Standard",
+   "Clients · proposition de rétrogradation (croisement vendeurs)",
+   "Clients · plafonné (jamais banni)",
+   "Clients · erreur de chargement"
+  ],
+  "sections": [
+   "Identité minimale et moyens de paiement",
+   "Palier IFA et ses raisons",
+   "Plafonds et avantages appliqués",
+   "Historique",
+   "Règles appliquées sur cet écran"
+  ]
+ },
+ "relais": {
+  "page": "ADM-P17",
+  "titre": "Points relais",
+  "doc": "ADM-08",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "Un relais par zone exploitée : choisi, visité, formé, contrôlé et payé chaque vendredi. Le remplissage est suivi en temps réel.",
+  "etats": [
+   "Points relais · réseau : liste, carte et remplissage",
+   "Points relais · fiche d’un relais ouvert (Relais Melen)",
+   "Points relais · relais en configuration (Mama René, Z4)",
+   "Points relais · relais saturé, bascule proposée (15 h 10)",
+   "Points relais · fermeture imprévue, transfert des colis (16 h 05)"
+  ],
+  "sections": [
+   "Carte des relais",
+   "Saturation et fermetures",
+   "Du candidat à l’ouverture",
+   "Versement du vendredi 2 octobre",
+   "Fermer ou ouvrir un relais"
+  ]
+ },
+ "entreprises": {
+  "page": "ADM-P18",
+  "titre": "Entreprises de livraison",
+  "doc": "ADM-08",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "Recruter, activer et suivre les entreprises partenaires : zones, palier, plafond de valeur, grille sous les plafonds, qualité.",
+  "etats": [
+   "Entreprises · liste, couverture par zone et alertes",
+   "Entreprises · fiche en pilote (Yafé Express, jour 2 sur 30)",
+   "Entreprises · grille contrôlée ligne par ligne sous les plafonds",
+   "Entreprises · chaîne d’activation en configuration (Taty’s)",
+   "Entreprises · entreprise suspendue (motif, niveau, recours)"
+  ],
+  "sections": [
+   "Couverture par zone exploitée",
+   "Entreprises en négociation au lancement",
+   "Correspondance quartier → zone",
+   "Adresses non placées"
+  ]
+ },
+ "livreurs": {
+  "page": "ADM-P19",
+  "titre": "Livreurs",
+  "doc": "ADM-08",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "Contrôler l’activation, la certification et le score des livreurs de toutes les entreprises.",
+  "etats": [
+   "Livreurs · liste (tous rattachés à une entreprise)",
+   "Livreurs · fiche d’un livreur actif en mission (Serge Atangana)",
+   "Livreurs · livreur en activation (Hervé Fouda)",
+   "Livreurs · livreur suspendu (niveau 3, motif et recours)",
+   "Livreurs · retirés et liste noire"
+  ],
+  "sections": [
+   "Pièces qui expirent",
+   "Certification et types"
+  ]
+ },
+ "paquets": {
+  "page": "ADM-P20",
+  "titre": "Paquets et dispatch",
+  "doc": "ADM-08",
+  "kicker": "Samedi 26 septembre · 14 h 05",
+  "sous": "Observer le marché des paquets et escalader ce qui ne part pas, sans jamais affecter. Tableau par zone, puis fiche du paquet.",
+  "etats": [
+   "Paquets · tableau par zone (14 h 05)",
+   "Paquets · en constitution (PQ-Z6-260926-014, 12 h 40)",
+   "Paquets · publié, compte à rebours de 15 min (12 h 48)",
+   "Paquets · accepté, affecté, en cours (14 h 05)",
+   "Paquets · sans preneur, escaladé (PQ-Z1-260926-004, 11 h 20)",
+   "Paquets · en retard, marge négative, escalader (15 h 25)",
+   "Paquets · prévenir le vendeur et le client d’un décalage",
+   "Paquets · clos, preuves complètes (15 h 10)"
+  ],
+  "sections": [
+   "Paquets à suivre",
+   "Paquets en cours",
+   "Règles du dispatch"
+  ]
+ },
+ "zones": {
+  "page": "ADM-P21",
+  "titre": "Pilotage des zones",
+  "doc": "ADM-09",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "Décider où concentrer l’effort : santé de chaque zone, délai sous 5 h, demande non servie, où ouvrir. Revue chaque lundi par la Direction.",
+  "etats": [
+   "Zones · tableau des 12 zones et santé",
+   "Zones · zone vente seulement, préparer l’ouverture (Z4)",
+   "Zones · zone exploitée, santé et volume (Z6, 15 h 10)",
+   "Zones · zone en alerte, plan d’action (Z1, 16 h 00)",
+   "Zones · erreur de chargement"
+  ],
+  "sections": [
+   "Les 12 zones de Yaoundé",
+   "Où ouvrir",
+   "État des 12 zones",
+   "Comment la santé est calculée",
+   "Recherches sans résultat · 7 jours",
+   "Revue hebdomadaire · lundi 28 septembre"
+  ]
+ },
+ "carte": {
+  "page": "ADM-P22",
+  "titre": "Carte opérationnelle",
+  "doc": "ADM-09",
+  "kicker": "Samedi 26 septembre · 14 h 05",
+  "sous": "Tout le réseau sur une carte : zones, relais et remplissage, boutiques, entreprises, livreurs en mission, paquets en cours et alertes. Un clic ouvre une fiche courte.",
+  "etats": [
+   "Carte · calques par défaut, paquet sélectionné (14 h 05)",
+   "Carte · filtrée sur les relais et leur remplissage",
+   "Carte · livreur hors connexion, dernière position",
+   "Carte · erreur de chargement du fond de carte"
+  ],
+  "sections": [
+   "Sur la carte maintenant",
+   "Confidentialité de la carte"
+  ]
+ },
+ "emballages": {
+  "page": "ADM-P23",
+  "titre": "Emballages et étiquettes",
+  "doc": "ADM-09",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "Un stock acheté et tenu par BelivaY, avancé aux entreprises, jamais donné ; la chaîne des étiquettes rattachée à chaque livreur.",
+  "etats": [
+   "Emballages · stock suffisant, avances et étiquettes",
+   "Emballages · format sous le seuil de 14 jours (jeudi 1er octobre, 17 h 50)",
+   "Emballages · écart d’une entreprise, contrôle de la semaine (jeudi 1er octobre, 18 h 40)",
+   "Emballages · erreur de chargement"
+  ],
+  "sections": [
+   "Mouvements",
+   "Répartition prévue et réelle",
+   "Plages d’étiquettes",
+   "L’étiquette",
+   "Scellés",
+   "Avances aux entreprises"
+  ]
+ },
+ "parametrage": {
+  "page": "ADM-P24",
+  "titre": "Paramétrage et simulation",
+  "doc": "ADM-10",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "Chaque seuil, prix ou délai est un paramètre versionné de l’espace pays. Rien ne change sans simulation sur les 30 derniers jours ; les paramètres critiques passent à quatre yeux.",
+  "etats": [
+   "Paramétrage · lecture du catalogue",
+   "Paramétrage · simulation sur 30 jours",
+   "Paramétrage · en attente de quatre yeux",
+   "Paramétrage · appliqué (nouvelle version)",
+   "Paramétrage · validation bloquée (marge négative)"
+  ],
+  "sections": [
+   "COM-GRILLE · grille de commission",
+   "Recommandation de l’assistant",
+   "Nouveautés EX-01 à EX-06 · inactives au lancement"
+  ]
+ },
+ "commissions": {
+  "page": "ADM-P25",
+  "titre": "Commissions et abonnements",
+  "doc": "ADM-10",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "La monétisation du vendeur : juste, lisible, rentable pour BelivaY. La console montre ce qui est retenu et ce que le vendeur garde ; l’espace vendeur ne montre que ce qu’il garde.",
+  "etats": [
+   "Commissions · grille en vigueur",
+   "Commissions · nouvelle version annoncée",
+   "Commissions · abonnements et options à la carte",
+   "Commissions · relevés mensuels",
+   "Commissions · erreur d’enregistrement"
+  ],
+  "sections": [
+   "Grille v2 en vigueur · palier Bronze, taux par tranche de prix",
+   "Cas types · ce qui est retenu, ce que le vendeur garde",
+   "Ce qui s’applique au taux de la grille"
+  ]
+ },
+ "promotions": {
+  "page": "ADM-P26",
+  "titre": "Promotions et fidélité",
+  "doc": "ADM-10",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "La promotion dirige la demande vers les tournées et les relais ; elle ne brade pas. Vrai compte à rebours, vrai stock, remise calculée sur un prix réellement pratiqué, budget borné.",
+  "etats": [
+   "Promotions · calendrier commercial et budget",
+   "Promotions · vente flash en brouillon",
+   "Promotions · vente flash programmée",
+   "Promotions · vente flash en cours",
+   "Promotions · vente flash terminée (bilan)",
+   "Promotions · stock épuisé, arrêt automatique",
+   "Promotions · sponsorisé, fidélité et budget"
+  ],
+  "sections": [
+   "Calendrier commercial camerounais · 21 septembre – 1er novembre",
+   "Ventes flash",
+   "Accueil · 24 emplacements en rotation",
+   "La promotion au service du groupage"
+  ]
+ },
+ "messagerie": {
+  "page": "ADM-P27",
+  "titre": "Messagerie et notifications",
+  "doc": "ADM-11",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "Chaque message utile arrive, chaque franc de SMS est compté. Un événement donne un seul envoi ; le code de retrait n’apparaît jamais, ni ici ni dans le journal.",
+  "etats": [
+   "Messagerie · journal des envois",
+   "Messagerie · échec critique à renvoyer",
+   "Messagerie · budget SMS",
+   "Messagerie · modèles de messages",
+   "Messagerie · diffusion générale",
+   "Messagerie · erreur de chargement"
+  ],
+  "sections": [
+   "Envois du jour par canal",
+   "Garde-fous"
+  ]
+ },
+ "panne": {
+  "page": "ADM-P28",
+  "titre": "Panne et mode papier",
+  "doc": "ADM-11",
+  "kicker": "Samedi 26 septembre · 09 h 45",
+  "sous": "Déclarer, diffuser, suivre, clore : quand un service tombe, tout le réseau le sait en moins de 5 minutes, et le terrain continue sur papier.",
+  "etats": [
+   "Panne · normal, services verts",
+   "Panne · déclarer un incident",
+   "Panne · panne déclarée, bandeau diffusé",
+   "Panne · mode papier",
+   "Panne · rétabli, rapport à rédiger"
+  ],
+  "sections": [
+   "Normal · tous les services sont verts",
+   "État des services",
+   "Prêts pour le mode papier",
+   "Relais de la vague 1",
+   "Derniers incidents"
+  ]
+ },
+ "support": {
+  "page": "ADM-P29",
+  "titre": "Nouvelle demande",
+  "doc": "ADM-11",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "Une seule porte d’entrée humaine : l’application et WhatsApp Business. Chaque demande est rattachée à une commande ou à un dossier ; la décision se prend dans le dossier, jamais dans la conversation.",
+  "etats": [
+   "Support · nouvelle demande à rattacher",
+   "Support · demande en cours, délai restant",
+   "Support · demande résolue avec geste commercial",
+   "Support · réponses types et centre d’aide",
+   "Support · erreur d’envoi"
+  ],
+  "sections": [
+   "Demandes du jour",
+   "Patrick Mbida · WhatsApp Business clients",
+   "À rattacher",
+   "Délai de première réponse"
+  ]
+ },
+ "fraude": {
+  "page": "ADM-P30",
+  "titre": "Fraude et anneaux",
+  "doc": "ADM-12",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "Détecter tôt, instruire avec rigueur, ne jamais sanctionner sur un simple soupçon. Chaque alerte se termine par une issue motivée : classée, revue ou sanction.",
+  "etats": [
+   "Fraude · signal à instruire",
+   "Fraude · revue (graphe des liens)",
+   "Fraude · demande de gel à quatre yeux",
+   "Fraude · gel conservatoire (14 jours au plus)",
+   "Fraude · erreur de chargement"
+  ],
+  "sections": [
+   "Nouvelle alerte · à instruire",
+   "Signaux relevés sur 30 jours",
+   "Toutes les alertes"
+  ]
+ },
+ "journal": {
+  "page": "ADM-P31",
+  "titre": "Journal d’audit",
+  "doc": "ADM-12",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "Retrouver qui a fait quoi, quand, pourquoi — et reconstituer l’état de n’importe quel objet à n’importe quelle date. Recherche → ligne → objet.",
+  "etats": [
+   "Journal d’audit · recherche",
+   "Journal d’audit · ligne et reconstitution",
+   "Journal d’audit · export signé (quatre yeux)",
+   "Journal d’audit · erreur de chargement"
+  ],
+  "sections": [
+   "Demandes d’accès aux données",
+   "Conservation"
+  ]
+ },
+ "roles": {
+  "page": "ADM-P32",
+  "titre": "Rôles et accès",
+  "doc": "ADM-12",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "Donner à chacun juste ce qu’il lui faut, et le retirer le jour de son départ. Chaque compte est nominatif, avec un rôle, un périmètre écrit et un second facteur.",
+  "etats": [
+   "Rôles et accès · liste des comptes",
+   "Rôles et accès · matrice des droits",
+   "Rôles et accès · création (quatre yeux pour Direction)",
+   "Rôles et accès · erreur de chargement"
+  ],
+  "sections": [
+   "Revue trimestrielle des accès",
+   "Sécurité des accès"
+  ]
+ },
+ "pays": {
+  "page": "ADM-P33",
+  "titre": "Espaces pays",
+  "doc": "ADM-12",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "Yaoundé d’abord, la CEMAC ensuite : chaque paramètre est porté par un espace pays, jamais codé en dur. Le Cameroun est un espace comme les autres.",
+  "etats": [
+   "Espaces pays · Cameroun actif",
+   "Espaces pays · pays en préparation",
+   "Espaces pays · erreur de chargement"
+  ],
+  "sections": [
+   "Espace pays actif",
+   "Identité et paiement",
+   "Tarifs, garde et fiscalité",
+   "Textes, langues et calendrier",
+   "Zones de Yaoundé",
+   "Conditions d’ouverture"
+  ]
+ },
+ "comptes": {
+  "page": "ADM-P34",
+  "titre": "Comptes et agents terrain",
+  "doc": "ADM-12",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "Faire entrer boutiques et relais vite, grâce aux agents, sans jamais décider à leur place : l’agent prépare, l’acteur valide sur son propre téléphone.",
+  "etats": [
+   "Comptes et agents terrain · tournée de visites",
+   "Comptes et agents terrain · préparé par l’agent (brouillon)",
+   "Comptes et agents terrain · validé par l’acteur",
+   "Comptes et agents terrain · erreur de chargement"
+  ],
+  "sections": [
+   "Tournée du samedi 26 septembre",
+   "Visites",
+   "Rendement des agents par zone",
+   "En attente de l’acteur",
+   "Règles du terrain"
+  ]
+ },
+ "rapports": {
+  "page": "ADM-P35",
+  "titre": "Rapports et indicateurs",
+  "doc": "ADM-13",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "Peu d’indicateurs, bien définis, que toute l’équipe lit de la même façon. Chaque indicateur a une définition écrite : formule, source, période. Survolez un titre pour la lire.",
+  "etats": [
+   "Rapports · tableau du jour et tendances",
+   "Rapports · rapport du lundi",
+   "Rapports · erreur de chargement"
+  ],
+  "sections": [
+   "Revenu BelivaY du jour",
+   "Tendance de la semaine",
+   "Logistique · 7 derniers jours",
+   "Marge par commande",
+   "Qualité · 7 derniers jours",
+   "Coûts variables · aujourd’hui"
+  ]
+ },
+ "sante": {
+  "page": "ADM-P36",
+  "titre": "Santé du système et maintenance",
+  "doc": "ADM-13",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "Voir avant les utilisateurs que quelque chose ne va pas : l’état de chaque service, les files en attente, le coût de l’IA, les sauvegardes et les maintenances.",
+  "etats": [
+   "Santé du système · tous les services au vert",
+   "Santé du système · service dégradé",
+   "Santé du système · maintenance annoncée",
+   "Santé du système · erreur de chargement"
+  ],
+  "sections": [
+   "Tous les services sont opérationnels",
+   "Maintenances planifiées",
+   "Services",
+   "Files en attente",
+   "Coût de l’IA",
+   "Journal des appels aux services externes"
+  ]
+ },
+ "legal": {
+  "page": "ADM-P37",
+  "titre": "Contenus légaux et produits interdits",
+  "doc": "ADM-13",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "Les textes qui engagent BelivaY : versionnés, acceptés, opposables. Un texte modifié est annoncé 30 jours avant son effet et accepté de nouveau à la connexion suivante.",
+  "etats": [
+   "Contenus légaux · textes en vigueur",
+   "Contenus légaux · nouvelle version annoncée (30 jours)",
+   "Contenus légaux · erreur de chargement"
+  ],
+  "sections": [
+   "Textes et versions",
+   "Produits interdits",
+   "Cadre juridique",
+   "Contrôle du vocabulaire",
+   "Politique de retour en vigueur"
+  ]
+ },
+ "assistant": {
+  "page": "ADM-P38",
+  "titre": "Assistant IA de la console",
+  "doc": "ADM-13",
+  "kicker": "Samedi 26 septembre · 11 h 20",
+  "sous": "Un assistant qui prépare, résume et propose — et qui ne décide jamais. Il s’ouvre en panneau latéral dans chaque dossier ; ses appels passent par la couche AIService.",
+  "etats": [
+   "Assistant IA · proposition sourcée dans un dossier",
+   "Assistant IA · recherche dans les règles",
+   "Assistant IA · hors budget (réponses préécrites)",
+   "Assistant IA · erreur"
+  ],
+  "sections": [
+   "Dossier FR-260926-01 · Comptes multiples et auto-achat présumé",
+   "Ce que fait l’assistant, et ce qu’il ne fait jamais"
+  ]
+ }
+}

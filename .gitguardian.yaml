@@ -23,6 +23,12 @@
 # ci-dessus, ceux-ci sont ignores par valeur exacte (ignored_matches) et
 # non par chemin : un vrai secret ajoute plus tard dans ces memes fichiers
 # resterait detecte, puisque seules ces valeurs precises sont couvertes.
+#
+# PR #71 (fusion main dans espace-vendeur-belivay) : meme bruit, "Relay2026"
+# (deja cite comme exemple plus haut, PR #53) resurgit dans
+# backend/apps/accounts/tests.py a une nouvelle ligne — meme mot de passe
+# factice de test, nouvelle occurrence puisque ce fichier n'est couvert
+# que par valeur exacte, pas par chemin entier.
 
 version: 2
 
@@ -41,3 +47,5 @@ secret:
       match: "ClientSolide2026!"
     - name: "accounts/tests.py - mot de passe test compte existant"
       match: "Existing2026"
+    - name: "accounts/tests.py - mot de passe test relais (notifications)"
+      match: "Relay2026"

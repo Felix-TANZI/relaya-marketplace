@@ -173,7 +173,11 @@ const CommissionsPage = lazy(() => import('@/features/admin/finances/Commissions
 // ── Vendeurs ─────────────────────────────────────────────────────────────────
 const VendorsListPage = lazy(() => import('@/features/admin/vendors/VendorsListPage'));
 const VendorDetailPage = lazy(() => import('@/features/admin/vendors/VendorDetailPage'));
-const KYCPage = lazy(() => import('@/features/admin/vendors/KYCPage'));
+// Feuilles de route D19 et D24 : la file des pièces vendeur décide pièce par pièce.
+const KYCPage = lazy(() => import('@/features/admin/d24/KycPiecesPage'));
+const SupportPage = lazy(() => import('@/features/admin/system/SupportPage'));
+const FraudPage = lazy(() => import('@/features/admin/d24/FraudPage'));
+const CouriersOverviewPage = lazy(() => import('@/features/admin/d24/CouriersOverviewPage'));
 const WithdrawalsPage = lazy(() => import('@/features/admin/vendors/WithdrawalsPage'));
 const ModificationsPage = lazy(() => import('@/features/admin/vendors/ModificationsPage'));
 const CertificationsPage = lazy(() => import('@/features/admin/vendors/CertificationsPage'));
@@ -458,7 +462,7 @@ export const router = createBrowserRouter([
       // ── DELIVERY MANAGEMENT ───────────────────────────────────────────────
       {
         path: 'deliveries/overview',
-        element: <AdminStub title="Vue d'ensemble — Livreurs" description="Dashboard livreurs en cours de développement. Bientôt disponible." icon={Truck} />,
+        element: <CouriersOverviewPage />,
       },
       {
         path: 'deliveries',
@@ -509,11 +513,11 @@ export const router = createBrowserRouter([
       { path: 'ia',        element: <AdminStub title="IA Conseiller"            description="Bientôt disponible." icon={Bot}        /> },
 
       // ── SECURITY (SOON) ─────────────────────────────────────────────────
-      { path: 'security', element: <AdminStub title="Sécurité & Fraude" description="Bientôt disponible." icon={Shield} /> },
+      { path: 'security', element: <FraudPage /> },
 
       // ── SYSTEM ──────────────────────────────────────────────────────────
       { path: 'notifications', element: <NotificationsAdminPage /> },
-      { path: 'support',       element: <AdminStub title="Support & Tickets" description="Bientôt disponible." icon={HeadphonesIcon} /> },
+      { path: 'support',       element: <SupportPage /> },
       { path: 'audit',         element: <AuditPage /> },
       { path: 'logs',          element: <LogsPage /> },
       { path: 'settings',      element: <SettingsPage /> },

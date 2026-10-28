@@ -33,6 +33,11 @@ GOOGLE_EXTRA_CLIENT_IDS = [
 # statique frontend, qui ne lit jamais cette cle.
 GOOGLE_TRANSLATE_API_KEY = os.getenv("GOOGLE_TRANSLATE_API_KEY", "").strip()
 
+# Distance par la route des frais de livraison (spec v2.1, R83.2) : Google Maps Distance Matrix. Sans clé, ou si le
+# service ne répond pas, distance à vol d'oiseau × r_vol_oiseau (R83.3) — apps/shipping/itineraire.py.
+GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "").strip()
+BELIVAY_ITINERAIRE = os.getenv("BELIVAY_ITINERAIRE", "apps.shipping.cartes_google.distance_km" if GOOGLE_MAPS_API_KEY else "")
+
 # Identifiants Apple acceptés dans l'audience ("aud") du jeton "Sign in with
 # Apple" : le Bundle ID de l'app native (flux natif iOS) et/ou le Services ID
 # (flux web), séparés par des virgules si plusieurs.
@@ -81,6 +86,7 @@ INSTALLED_APPS = [
     "apps.contact",
     # Module détachable : voir apps/whatsapp_assistant/README.md (activation, retrait).
     "apps.whatsapp_assistant",
+    "apps.regles",
 
     # Espace client (kit espace-client-belivay/backend-kit, socle uniquement pour
     # l'instant : client_core/otp/client_accounts/notifications_client — voir
@@ -91,6 +97,8 @@ INSTALLED_APPS = [
     "apps.otp",
     "apps.client_accounts",
     "apps.notifications_client",
+    # Feuille de route D6 (option A, 23/10) : messagerie client sur le socle accounts/orders.
+    "apps.messaging",
 ]
 
 MIDDLEWARE = [
@@ -343,7 +351,9 @@ SPECTACULAR_SETTINGS = {
 BELIVAY_PARAMETRES_JSON = BASE_DIR / "apps" / "client_core" / "donnees" / "parametres-en-vigueur.json"
 BELIVAY_INTERRUPTEURS_JSON = BASE_DIR / "apps" / "client_core" / "donnees" / "interrupteurs.json"
 BELIVAY_SITE_URL = os.getenv("BELIVAY_SITE_URL", "https://belivay.com")
-BELIVAY_SMS = "apps.otp.prestataires.SmsConsole"
+# Feuille de route D7 : aiguillage SMS / WhatsApp, prestataire SMS reel a brancher a la signature du contrat (R78.2).
+BELIVAY_SMS = os.getenv("BELIVAY_SMS", "apps.otp.prestataires.Aiguillage")
+BELIVAY_SMS_FOURNISSEUR = os.getenv("BELIVAY_SMS_FOURNISSEUR", "apps.otp.prestataires.SmsConsole")
 # BELIVAY_PUSH et FCM_CREDENTIALS_PATH : console par defaut (journal seulement,
 # aucun compte Firebase requis). Pour activer un vrai envoi (D21) une fois le
 # projet Firebase cree : poser FCM_CREDENTIALS_PATH vers le fichier JSON du
@@ -411,10 +421,22 @@ LOGGING = {
 
 # EMAIL CONFIGURATION 
 
-EMAIL_BACKEND = os.getenv(
-    "EMAIL_BACKEND", 
-    "django.core.mail.backends.console.EmailBackend"  # Console par défaut
+# Deux niveaux, volontairement :
+#
+#   EMAIL_BACKEND       ce que traverse TOUT envoi du projet. Par défaut, il met
+#                       le message en file Celery et rend la main : aucun
+#                       aller-retour SMTP dans la requête de l'utilisateur.
+#   EMAIL_BACKEND_REEL  celui qui parle vraiment au serveur de mail. C'est lui
+#                       qu'utilise la tâche Celery. Sans cette séparation, la
+#                       tâche se remettrait elle-même en file, indéfiniment.
+#
+# Mettre EMAIL_BACKEND en variable d'environnement court-circuite la file (par
+# exemple en développement, pour voir les mails dans la console tout de suite).
+EMAIL_BACKEND_REEL = os.getenv(
+    "EMAIL_BACKEND_REEL",
+    "django.core.mail.backends.console.EmailBackend",  # Console par défaut
 )
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "apps.common.mail.CeleryEmailBackend")
 EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
 EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"
@@ -472,6 +494,61 @@ PURCHASES_TEST_USERNAMES = [
     for u in os.getenv("PURCHASES_TEST_USERNAMES", "").split(",")
     if u.strip()
 ]
+
+# ── Comptes de demonstration (tache D27) ────────────────────────────────────
+# `POST /api/auth/bootstrap-demo-accounts/` fabrique admin_demo, vendeur_demo
+# et livreur_demo avec un mot de passe par defaut. C'est commode sur un
+# serveur de developpement, et c'est precisement ce que D27 demande de retirer
+# de la version en ligne : « Retirer toutes les simulations de connexion ».
+#
+# Le jeton X-Bootstrap-Token ne suffisait pas comme garde-fou : il est fourni
+# a la production par .github/workflows/deploy.yml, donc l'endpoint y etait
+# bel et bien joignable. Un compte superutilisateur au mot de passe connu sur
+# le site public n'est pas un risque qu'on prend a l'ouverture.
+#
+# Desormais il faut DEUX conditions : le jeton ET cet interrupteur. Vide par
+# defaut, donc ferme partout tant qu'on ne l'ouvre pas — le serveur de test
+# de D23 posera COMPTES_DEMO_AUTORISES=1, la production ne le posera jamais.
+#
+# `bootstrap_admin`, lui, reste joignable : il cree le PREMIER administrateur
+# reel d'un serveur neuf, avec un mot de passe choisi par l'appelant. Ce n'est
+# pas une simulation de connexion, c'est l'amorcage.
+COMPTES_DEMO_AUTORISES = os.getenv("COMPTES_DEMO_AUTORISES", "0").strip().lower() in {
+    "1", "true", "yes", "on",
+}
+
+# ── Jeux de donnees de demonstration (tache D31) ────────────────────────────
+# Douze commandes `seed_*_demo` peuplent la base de boutiques, de relais,
+# d'avis et de commandes fictifs. D31 demande qu'« aucune donnee inventee »
+# n'atteigne le visiteur : « Relais : aucun relais de demonstration (par
+# exemple "Relais Mvog-Ada") ».
+#
+# On ne supprime pas ces jeux — ils servent a juger les ecrans, et le serveur
+# de test de D23 en aura besoin. On les ferme par defaut, comme les comptes de
+# D27 : il faut poser la variable explicitement, ce que la production ne fait
+# jamais. Voir apps/common/demonstration.py.
+#
+# Reglage distinct de COMPTES_DEMO_AUTORISES : on peut vouloir des comptes de
+# test sur un serveur sans y deverser un faux catalogue.
+DONNEES_DEMO_AUTORISEES = os.getenv("DONNEES_DEMO_AUTORISEES", "0").strip().lower() in {
+    "1", "true", "yes", "on",
+}
+
+# ── Catégories trop vides (tâche D29) ───────────────────────────────────────
+# « N'afficher que les catégories assez remplies ; masquer celles qui sont
+# presque vides. » Une catégorie vide est une promesse non tenue : le visiteur
+# clique, arrive sur une page sans rien, et doute du reste du site.
+#
+# 1 par défaut : on masque ce qui est strictement vide, et rien d'autre. C'est
+# le seul choix qui ne demande aucun arbitrage. Monter le seuil (3, 5…) est une
+# décision produit — d'où ce réglage, modifiable sans toucher au code.
+#
+# Le compte porte sur la catégorie ET sa descendance : « Téléphonie » peut
+# n'avoir aucune offre en propre et trois smartphones dans sa sous-catégorie.
+# Voir apps/catalog/vitrine.py.
+CATALOGUE_OFFRES_MINIMUM_PAR_CATEGORIE = int(
+    os.getenv("CATALOGUE_OFFRES_MINIMUM_PAR_CATEGORIE", "1")
+)
 
 
 # ========================================

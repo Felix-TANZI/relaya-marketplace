@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="fr" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#F5F6F4" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0E1113" media="(prefers-color-scheme: dark)" />
+    <title>BelivaY — Entreprise de livraison</title>
+    <meta name="description" content="BelivaY, espace entreprise de livraison : paquets, affectation, flotte, missions, preuves et règlements." />
+    <meta name="application-name" content="BelivaY entreprise" />
+    <meta name="apple-mobile-web-app-title" content="BelivaY entreprise" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="icon" href="/entreprise/favicon.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/entreprise/apple-touch-icon.png" />
+    <link rel="manifest" href="/entreprise/manifest.webmanifest" />
+    <!-- Partage et référencement : __SITE_URL__ devient l'adresse du site à la publication (outils/publication.mjs). -->
+    <link rel="canonical" href="__SITE_URL__/entreprise/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="BelivaY" />
+    <meta property="og:url" content="__SITE_URL__/entreprise/" />
+    <meta property="og:title" content="BelivaY — Entreprise de livraison" />
+    <meta property="og:description" content="BelivaY, espace entreprise de livraison : paquets, affectation, flotte, missions, preuves et règlements." />
+    <meta property="og:image" content="__SITE_URL__/partage.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="L’équipe BelivaY autour d’une tablette et d’un colis, au coucher du soleil sur la ville, avec le logo BelivaY" />
+    <meta property="og:locale" content="fr_CM" />
+    <meta property="og:locale:alternate" content="en_GB" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <!-- Fond posé avant le premier rendu (aucun éclair blanc en sombre, aucun noir en clair) : thème et taille du texte
+         lus dans les préférences gardées (src/preferences.tsx), mêmes clés et mêmes fonds que src/styles/jetons.css. -->
+    <script src="%BASE_URL%theme-initial.js"></script>
+    <style>
+      html{background:#F5F6F4;color-scheme:light}
+      html[data-theme=dark]{background:#0E1113;color-scheme:dark}
+      body{margin:0;background:inherit}
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

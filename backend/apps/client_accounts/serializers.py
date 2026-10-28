@@ -65,6 +65,8 @@ class NouvelleAdresseSerializer(serializers.Serializer):
     reperes = serializers.CharField(max_length=300)
     position = serializers.BooleanField(default=False)
     coords = CoordsSerializer(required=False, allow_null=True)
+    # R76.2 : quartier absent de la liste ; l'épingle est alors obligatoire et l'équipe logistique le rattache.
+    autreQuartier = serializers.BooleanField(required=False, default=False)
     instructions = serializers.CharField(max_length=300, required=False, allow_blank=True)
     destinataire = serializers.CharField(max_length=80, required=False, allow_blank=True)
     creneau = serializers.ChoiceField(choices=["matin", "apres-midi", "soir"], required=False, allow_null=True)

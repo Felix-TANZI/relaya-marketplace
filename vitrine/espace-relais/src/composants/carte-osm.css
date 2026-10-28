@@ -1,0 +1,7 @@
+/* Fond OpenStreetMap des cartes (CarteOsm.tsx) : tuiles adoucies en clair, inversées en sombre (routes claires sur fond
+   nuit, lisibles sous les zones et marqueurs aux jetons) ; mention et bouton « Afficher le fond de carte » en coin. */
+.osm-tuile{opacity:.9}
+html[data-theme=dark] .osm-tuile{filter:invert(1) hue-rotate(180deg) brightness(.8) contrast(.92) saturate(.6);opacity:.85}
+.osm-mention{position:absolute;right:6px;bottom:6px;z-index:1;padding:2px 6px;border-radius:6px;background:color-mix(in srgb,var(--card) 92%,transparent);font-size:.6875rem;line-height:1.4;color:var(--ink-3)}
+.osm-mention a{color:var(--ink-2);text-decoration:underline}
+.osm-demande{border:0;font:inherit;font-size:.75rem;font-weight:700;color:var(--acc-txt);cursor:pointer;padding:6px 10px;min-height:44px;box-shadow:0 0 0 1px var(--line)}

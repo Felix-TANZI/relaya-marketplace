@@ -2,6 +2,7 @@
 # Enregistrement complet des modèles catalog dans Django Admin.
 # Remplace le fichier existant (ajoute ProductAttribute, ProductAttributeValue, ProductReview).
 
+from django import forms
 from django.contrib import admin, messages
 from django.utils.html import format_html
 from django.urls import reverse
@@ -20,6 +21,7 @@ from .models import (
     MasterProduct,
     ColorDictionary,
     AttributeRole,
+    ModerationStatus,
     ProductVariant,
 )
 
@@ -822,12 +824,41 @@ class ColorDictionaryAdmin(admin.ModelAdmin):
         self.message_user(request, f"{n} entrée(s) démarquée(s).", level=messages.SUCCESS)
 
 
+class MasterProductAdminForm(forms.ModelForm):
+    """Univers choisi dans t_univers ; une fiche n'est validée que complète (R16.1, R63.1)."""
+
+    univers = forms.ChoiceField(required=False, label="Univers", help_text=MasterProduct._meta.get_field("univers").help_text)
+
+    class Meta:
+        model = MasterProduct
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from apps.catalog.regles_catalogue import univers_connus
+        self.fields["univers"].choices = [("", "—")] + [
+            (code, f"{code} · {u['nom']} (famille {u['famille']})") for code, u in univers_connus().items()
+        ]
+
+    def clean(self):
+        from apps.catalog.regles_catalogue import manques_fiche
+        data = super().clean()
+        if data.get("moderation_status") == ModerationStatus.APPROVED:
+            fiche = MasterProduct(**{f: data.get(f) for f in ("univers", "poids_kg", "dim_l1_cm", "dim_l2_cm", "dim_l3_cm")})
+            manques = manques_fiche(fiche)
+            if manques:
+                raise forms.ValidationError("Fiche incomplète, elle ne peut pas être validée : " + " ; ".join(manques) + ".")
+        return data
+
+
 @admin.register(MasterProduct)
 class MasterProductAdmin(admin.ModelAdmin):
     """
     Admin des fiches produits canoniques.
     Gère la modération, la marque (registre), et les axes de variante.
     """
+
+    form = MasterProductAdminForm
 
     list_display = [
         "title",
@@ -840,15 +871,24 @@ class MasterProductAdmin(admin.ModelAdmin):
     ]
     list_filter = [
         "moderation_status",
+        "univers",
         "category",
         "brand_fk",
     ]
     search_fields = ["title", "slug", "brand", "brand_fk__name"]
     autocomplete_fields = ["category", "brand_fk"]
     prepopulated_fields = {"slug": ("title",)}
-    readonly_fields = ("created_at", "updated_at")
+    readonly_fields = ("created_at", "updated_at", "format_colis_display")
     ordering = ["-created_at"]
     list_per_page = 50
+
+    @admin.display(description="Format de colis (R62)")
+    def format_colis_display(self, obj):
+        from apps.catalog.regles_catalogue import colis_fiche
+        c = colis_fiche(obj) if obj and obj.pk else None
+        if not c:
+            return "— (poids et dimensions à remplir)"
+        return f"{c['format']} · poids facturé {c['pf_kg']:.3f} kg · {c['volume_l']:.1f} L"
 
     fieldsets = (
         ("Identité", {
@@ -859,6 +899,13 @@ class MasterProductAdmin(admin.ModelAdmin):
             "description": (
                 "brand_fk : registre centralisé (Phase 1.2, recommandé).<br>"
                 "brand : ancien champ texte libre, conservé pour rétrocompatibilité."
+            ),
+        }),
+        ("Livraison et commission (spécification v2.1)", {
+            "fields": ("univers", ("poids_kg", "dim_l1_cm", "dim_l2_cm", "dim_l3_cm"), "carton", "made_in_cameroon", "format_colis_display"),
+            "description": (
+                "Rempli par l'équipe catalogue : sans univers, poids et dimensions, la fiche ne peut pas être "
+                "validée (R16.1, R63.1). Le format de colis est calculé (R62)."
             ),
         }),
         ("Modèle de variantes", {
@@ -933,12 +980,22 @@ class MasterProductAdmin(admin.ModelAdmin):
     @admin.action(description="✅ Approuver la sélection")
     def approve_selected(self, request, queryset):
         from django.utils import timezone
-        n = queryset.update(
+        from apps.catalog.regles_catalogue import manques_fiche
+        # R16.1, R63.1 : les fiches incomplètes restent en attente.
+        incompletes = [m for m in queryset if manques_fiche(m)]
+        n = queryset.exclude(pk__in=[m.pk for m in incompletes]).update(
             moderation_status="APPROVED",
             moderated_by=request.user,
             moderated_at=timezone.now(),
         )
         self.message_user(request, f"{n} fiche(s) approuvée(s).", level=messages.SUCCESS)
+        if incompletes:
+            self.message_user(
+                request,
+                f"{len(incompletes)} fiche(s) incomplète(s) non approuvée(s) (univers, poids ou dimensions) : "
+                + ", ".join(m.title for m in incompletes[:10]),
+                level=messages.WARNING,
+            )
 
     @admin.action(description="❌ Rejeter la sélection")
     def reject_selected(self, request, queryset):

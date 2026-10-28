@@ -503,29 +503,17 @@ class ConfirmReceiptView(APIView):
     summary="Prolonger une fois la garde d'un colis en attente de retrait au relais",
 )
 class ExtendRelayGardeView(APIView):
+    """Ancienne prolongation gratuite de la garde (Addendum v1.0) : la spec v2.1 ne la prévoit pas (R36, R37) —
+    la garde suit t_garde et le colis repart au vendeur quand j dépasse r_garde_jours. La route répond donc 410."""
+
     permission_classes = [IsAuthenticated]
 
     def post(self, request, id):
-        from apps.shipping.models import RelayParcel
-
-        order = get_user_order_or_404(request, id)
-        parcel = RelayParcel.objects.filter(
-            shipment__order=order,
-            status__in=[RelayParcel.Status.RECEIVED, RelayParcel.Status.STORED],
-        ).first()
-        if not parcel:
-            return Response({"detail": "Aucun colis en attente de retrait pour cette commande."}, status=status.HTTP_404_NOT_FOUND)
-        if parcel.garde_extended:
-            return Response({"detail": "La prolongation de garde a deja ete utilisee pour ce colis."}, status=status.HTTP_400_BAD_REQUEST)
-        if timezone.now() >= parcel.garde_deadline:
-            return Response({"detail": "Le delai de garde est deja depasse."}, status=status.HTTP_400_BAD_REQUEST)
-
-        parcel.garde_extended = True
-        parcel.save(update_fields=["garde_extended", "updated_at"])
-
-        from apps.shipping.serializers import RelayParcelSerializer
-        return Response(RelayParcelSerializer(parcel, context={"request": request}).data)
-
+        get_user_order_or_404(request, id)
+        return Response(
+            {"detail": "La prolongation de garde n'existe plus : la garde se paie par jour au retrait."},
+            status=status.HTTP_410_GONE,
+        )
 
 @extend_schema(tags=["Orders"], summary="Lister ou ouvrir un litige pour une commande")
 class OrderDisputeListCreateView(generics.ListCreateAPIView):
@@ -546,8 +534,6 @@ class OrderDisputeListCreateView(generics.ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         order = self.get_order()
-        platform_settings = PlatformSettings.get_settings()
-        dispute_window_days = max(1, getattr(platform_settings, "litige_window_days", 7))
         allowed_statuses = [
             Order.FulfillmentStatus.DELIVERED,
             Order.FulfillmentStatus.BUYER_CONFIRMED,
@@ -559,15 +545,14 @@ class OrderDisputeListCreateView(generics.ListCreateAPIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        expires_at = order.updated_at + timezone.timedelta(days=dispute_window_days)
-        if timezone.now() > expires_at:
-            return Response(
-                {"detail": f"Le delai de {dispute_window_days} jour(s) apres reception est depasse pour cette commande."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        # Spec v2.1 (feuille de route D18) : un litige après réception suit la règle du retour (R67.1, R67.2).
+        from .retours import refus_de_retour
+
+        refus = refus_de_retour(order, serializer.validated_data.get("reason"))
+        if refus:
+            return Response({"detail": refus}, status=status.HTTP_400_BAD_REQUEST)
         files = request.FILES.getlist("files") or request.FILES.getlist("file")
         reason = serializer.validated_data.get("reason")
         # Litige guide par motif — Addendum Decisions v1.0 §4 : nombre de
@@ -618,6 +603,11 @@ class OrderDisputeListCreateView(generics.ListCreateAPIView):
             opened_by=request.user,
             **validated_data,
         )
+        # Spec v2.1, R70.1 : le vendeur a r_litige_reponse_h depuis l'ouverture ; son silence renvoie à l'arbitrage.
+        from .retours import echeance_vendeur
+
+        dispute.vendor_reply_deadline = echeance_vendeur(dispute)
+        dispute.save(update_fields=["vendor_reply_deadline"])
         DisputeMessage.objects.create(
             dispute=dispute,
             sender=request.user,
@@ -692,8 +682,6 @@ class OrderReturnListCreateView(generics.ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         order = self.get_order()
-        platform_settings = PlatformSettings.get_settings()
-        return_window_days = max(1, getattr(platform_settings, "litige_window_days", 7))
         allowed_statuses = [
             Order.FulfillmentStatus.DELIVERED,
             Order.FulfillmentStatus.BUYER_CONFIRMED,
@@ -705,16 +693,15 @@ class OrderReturnListCreateView(generics.ListCreateAPIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        expires_at = order.updated_at + timezone.timedelta(days=return_window_days)
-        if timezone.now() > expires_at:
-            return Response(
-                {"detail": f"Le delai de {return_window_days} jour(s) apres reception est depasse pour cette commande."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         order_item = serializer.validated_data.get("order_item")
+        # Spec v2.1 (feuille de route D18) : r_retour_j après le retrait, sur motif seulement (R67.1, R67.2).
+        from .retours import refus_de_retour
+
+        refus = refus_de_retour(order, serializer.validated_data["reason"], order_item.product.vendor)
+        if refus:
+            return Response({"detail": refus}, status=status.HTTP_400_BAD_REQUEST)
         if order_item.order_id != order.id:
             return Response(
                 {"order_item": "Cet article n'appartient pas a cette commande."},
@@ -866,3 +853,53 @@ class DisputeEvidenceRequestRespondView(APIView):
         evidence_request.responded_at = timezone.now()
         evidence_request.save(update_fields=["status", "responded_at", "updated_at"])
         return Response(DisputeEvidenceRequestSerializer(evidence_request, context={"request": request}).data)
+
+
+@extend_schema(tags=["Orders"], summary="Frais et total d'un panier avant le paiement (A1, A2)")
+class DevisPanierView(APIView):
+    """Frais de livraison, livraison offerte, frais Mobile Money et total, ou les refus et messages de R84.2 qui
+    bloquent « Payer ». Recalculé à chaque changement du panier (R84.3) ; le montant figé l'est à la commande."""
+
+    permission_classes = []
+
+    def post(self, request):
+        from apps.accounts.models import RelayPointProfile
+        from apps.catalog.models import Product
+
+        from . import frais
+
+        d = request.data
+        try:
+            lignes = []
+            for item in d.get("cart_items") or []:
+                produit = Product.objects.select_related("master", "vendor").filter(pk=item.get("product_id")).first()
+                if produit is None or int(item.get("qty") or 0) < 1:
+                    return Response({"detail": "Article introuvable."}, status=status.HTTP_400_BAD_REQUEST)
+                lignes.append((produit, int(item["qty"])))
+            if not lignes:
+                return Response({"detail": "Panier vide."}, status=status.HTTP_400_BAD_REQUEST)
+            if d.get("delivery_mode") == "PICKUP":
+                relais = RelayPointProfile.objects.filter(pk=d.get("relay_point_id"), is_active=True).first()
+                if relais is None:
+                    return Response({"detail": "Choisissez un point relais."}, status=status.HTTP_400_BAD_REQUEST)
+                destination = frais.destination_relais(relais)
+            else:
+                destination = frais.destination_domicile(d.get("district", ""), d.get("delivery_latitude"), d.get("delivery_longitude"))
+            # R93.2 : la sélection des offres est refaite pour le panier entier et la destination (A12).
+            from apps.catalog.meilleure_offre import selectionner_panier
+            selection = selectionner_panier(lignes, destination)
+            remplacees = {str(avant.pk): apres.pk for (avant, _), (apres, _) in zip(lignes, selection["lignes"]) if avant.pk != apres.pk}
+            lignes = selection["lignes"]
+            devis = frais.calculer(lignes, destination, d.get("moyen") or "momo", user=request.user)
+        except frais.FraisImpossibles as exc:
+            return Response({"ok": False, "refus": {"refus": exc.code}, "messages": [exc.message]})
+        # R12.1 : l'heure promise est montrée avant le paiement (A3), calculée comme si le paiement avait lieu maintenant.
+        from django.utils import timezone as _tz
+
+        from .delais import promesse_commande
+        vendeurs = list({p.vendor_id: p.vendor for p, _ in lignes if p.vendor_id}.values())
+        promesse = promesse_commande(_tz.now(), destination.mode, vendeurs)
+        return Response({"ok": devis.ok, "refus": devis.refus or None, "messages": devis.messages, "frais": devis.detail or None,
+                         "promesse": {"texte": promesse["texte"], "a": promesse["promesse"]},
+                         # Offres retenues par la sélection du panier : {offre du panier: offre retenue} (R93.2)
+                         "offres_retenues": remplacees})

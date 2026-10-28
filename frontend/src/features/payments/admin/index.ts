@@ -16,6 +16,7 @@ export { default as PayoutsPage } from './payouts/PayoutsPage';
 export { default as ReconciliationPage } from './reconciliation/ReconciliationPage';
 export { default as RiskPage } from './risk/RiskPage';
 export { default as SchedulerPage } from './scheduler/SchedulerPage';
+export { default as WalletAdminPage } from './wallet/WalletAdminPage';
 
 export { default as AdminCard } from './components/AdminCard';
 export { default as AdminPageShell } from './components/AdminPageShell';

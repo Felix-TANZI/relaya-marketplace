@@ -64,6 +64,17 @@ class Zone(models.Model):
         VAGUE_2 = "VAGUE_2", "Vague 2"
         VAGUE_3 = "VAGUE_3", "Vague 3 (périphérie)"
 
+    # Spécification v2.1 (R73) : les 12 zones de Yaoundé, Z1 à Z12, créées et tenues à jour depuis t_zones et
+    # t_quartiers (apps/shipping/zones.py, synchroniser_zones) ; nom, vague et quartiers suivent ces tables.
+    code = models.CharField(
+        max_length=4, unique=True, null=True, blank=True,
+        help_text="Z1 à Z12 (t_zones). Vide : ancienne zone hors référentiel v2.1.",
+    )
+    contour = models.JSONField(
+        null=True, blank=True,
+        help_text="Contour GeoJSON (Polygon ou MultiPolygon, coordonnées [longitude, latitude]) tracé par l'équipe "
+                  "logistique (R75.2) ; l'épingle du client doit y tomber (R76.4).",
+    )
     name = models.CharField(max_length=120, unique=True)
     city = models.CharField(max_length=80)
     tier = models.CharField(max_length=20, choices=Tier.choices, default=Tier.STANDARD)
@@ -106,7 +117,19 @@ class Zone(models.Model):
 
     @classmethod
     def match(cls, city: str, district: str):
-        """Résout la zone d'un quartier par correspondance texte. None si aucune zone ne le couvre."""
+        """Résout la zone d'un quartier. None si aucune zone ne le couvre.
+
+        Un quartier du référentiel v2.1 (t_quartiers, alias compris, sans tenir compte des accents, tirets,
+        espaces ni majuscules : R76.2) donne sa zone Z1 à Z12 ; un nom qui mène à deux quartiers de zones
+        différentes ne donne aucune zone. Sinon, ancienne correspondance texte sur `districts`.
+        """
+        from apps.shipping.zones import chercher_quartiers
+
+        trouves = {q["zone"] for q in chercher_quartiers(district)}
+        if len(trouves) == 1:
+            zone = cls.objects.filter(code=trouves.pop(), is_active=True).first()
+            if zone is not None:
+                return zone
         district_norm = (district or "").strip().lower()
         if not district_norm:
             return None
@@ -234,6 +257,9 @@ class Shipment(models.Model):
         help_text="Vendeur de ce colis — un Shipment = un colis = un vendeur (règle mère).",
     )
     status = models.CharField(max_length=32, choices=Status.choices, default=Status.CREATED)
+    # Spec v2.1 (A3), figés au paiement : « C'est prêt » attendu (R44.1, R45.2) et échéance du vendeur (R44.2).
+    pret_prevu = models.DateTimeField(null=True, blank=True, help_text="pret : debut + delai_h heures ouvrées (R45.2)")
+    echeance_vendeur = models.DateTimeField(null=True, blank=True, help_text="echeance (R44.2) ; au-delà, la bascule s'applique (R35.1)")
 
     # Infos livreur (V1 simple)
     courier = models.ForeignKey(
@@ -274,6 +300,15 @@ class Shipment(models.Model):
     # de retrait (RelayParcel.pickup_code, relais -> acheteur).
     pickup_confirmation_code = models.CharField(max_length=6, blank=True, default="")
 
+    # Spec v2.1, R66.1 : code de dépôt (livreur -> relais), vérifié par le gérant à la réception ; il voyage dans le QR
+    # du colis montré par l'application du livreur (R66.2).
+    depot_code = models.CharField(max_length=6, blank=True, default="")
+    # Feuille de route D11 : à domicile, remise au client avec le code ; le client le lit dans son suivi et le donne
+    # au livreur, qui le saisit pour certifier la livraison.
+    delivery_code = models.CharField(max_length=6, blank=True, default="")
+    # R66.1 : essais faux par code {"remise"|"depot"|"livraison": {"n": int, "bloque_jusqu": iso}}
+    codes_essais = models.JSONField(default=dict, blank=True)
+
     # Distinct du statut DELIVERED (mis par le livreur) : date a laquelle
     # L'ACHETEUR a confirme la reception de CE colis precis (code saisi).
     buyer_confirmed_at = models.DateTimeField(null=True, blank=True)
@@ -289,10 +324,28 @@ class Shipment(models.Model):
         return self.receipt_confirmation_code
 
     def ensure_pickup_confirmation_code(self) -> str:
+        from apps.shipping.codes import nouveau_code
+
         if not self.pickup_confirmation_code:
-            self.pickup_confirmation_code = f"{secrets.randbelow(1_000_000):06d}"
+            self.pickup_confirmation_code = nouveau_code()  # R66.1
             self.save(update_fields=["pickup_confirmation_code"])
         return self.pickup_confirmation_code
+
+    def ensure_depot_code(self) -> str:
+        from apps.shipping.codes import nouveau_code
+
+        if not self.depot_code:
+            self.depot_code = nouveau_code()  # R66.1
+            self.save(update_fields=["depot_code"])
+        return self.depot_code
+
+    def ensure_delivery_code(self) -> str:
+        from apps.shipping.codes import nouveau_code
+
+        if not self.delivery_code:
+            self.delivery_code = nouveau_code()  # D11
+            self.save(update_fields=["delivery_code"])
+        return self.delivery_code
 
     @property
     def order_items(self):
@@ -471,6 +524,8 @@ class ShipmentEvidence(models.Model):
         RELAY_REFUSED = "RELAY_REFUSED", "Refus au contrôle relais"
         RELAY_RELEASED = "RELAY_RELEASED", "Sortie point relais"
         RELAY_RELEASED_SIGNATURE = "RELAY_RELEASED_SIGNATURE", "Signature au retrait relais"
+        # D15 : contestation au retrait, le gérant photographie le déballage devant le client
+        RELAY_UNPACKING = "RELAY_UNPACKING", "Déballage contesté au comptoir"
         CUSTOMER_DELIVERY = "CUSTOMER_DELIVERY", "Remise client"
         RETURN_DEPOSIT = "RETURN_DEPOSIT", "Dépôt retour"
 
@@ -540,48 +595,46 @@ class RelayParcel(models.Model):
         help_text="Type + numero de piece d'identite du tiers ayant retire le colis, loggue par le relais.",
     )
 
-    # Garde au relais / non-retrait (Addendum Décisions v1.0 §3.2) : gratuite
-    # J0->J+3, 200F/jour de J+3 a J+7, prolongeable UNE fois par l'acheteur.
+    # Garde au relais (spec v2.1, A4 : apps/shipping/garde.py). La prolongation gratuite de l'ancienne règle
+    # (Addendum v1.0 §3.2) n'existe plus dans la spec : le champ est gardé pour l'historique, sans effet.
     garde_extended = models.BooleanField(
         default=False,
-        help_text="L'acheteur a utilise sa prolongation unique de garde (repousse l'echeance J+7).",
+        help_text="Ancienne prolongation de garde (Addendum v1.0) : sans effet depuis la spec v2.1.",
     )
     non_retrait_processed_at = models.DateTimeField(
         null=True, blank=True,
         help_text="Date a laquelle le non-retrait a ete traite (retour vendeur + remboursement partiel).",
     )
+    # R36.3 : la garde se paie en espèces au gérant ; il confirme l'encaissement avant la remise.
+    garde_encaissee_xaf = models.PositiveIntegerField(null=True, blank=True, help_text="garde_colis encaissée (R36.2)")
+    garde_encaissee_at = models.DateTimeField(null=True, blank=True)
+    garde_encaissee_par = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
+    # R50.2 : rappels par SMS aux jours r_rappel_j1 et r_rappel_j2 de garde.
+    rappel_j1_at = models.DateTimeField(null=True, blank=True)
+    rappel_j2_at = models.DateTimeField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    GARDE_FREE_DAYS = 3
-    GARDE_DEADLINE_DAYS = 7
-    GARDE_EXTENSION_DAYS = 4
-    GARDE_DAILY_FEE_XAF = 200
-
     @property
     def garde_free_until(self):
-        if not self.received_at:
-            return None
-        return self.received_at + timezone.timedelta(days=self.GARDE_FREE_DAYS)
+        """Fin du jour 1, sans garde (t_garde) ; compté depuis l'arrivée du dernier colis de la commande (R37.1)."""
+        from apps.shipping.garde import fin_du_jour_1
+
+        return fin_du_jour_1(self.shipment.order)
 
     @property
     def garde_deadline(self):
-        if not self.received_at:
-            return None
-        days = self.GARDE_DEADLINE_DAYS + (self.GARDE_EXTENSION_DAYS if self.garde_extended else 0)
-        return self.received_at + timezone.timedelta(days=days)
+        """Renvoi au vendeur quand j dépasse r_garde_jours (R37.2)."""
+        from apps.shipping.garde import echeance_renvoi
+
+        return echeance_renvoi(self.shipment.order)
 
     def garde_fee_due(self, at=None):
-        """Frais de garde accumules a la date donnee (200F/jour au-dela de J+3)."""
-        if not self.received_at:
-            return 0
-        moment = min(at or timezone.now(), self.garde_deadline)
-        free_until = self.garde_free_until
-        if moment <= free_until:
-            return 0
-        days_over = (moment - free_until).days + (1 if (moment - free_until).seconds else 0)
-        return max(0, days_over) * self.GARDE_DAILY_FEE_XAF
+        """garde_colis de ce colis (R36.2) : grille t_garde au jour j de la commande, plafonnée à sa valeur."""
+        from apps.shipping.garde import garde_colis, jour
+
+        return garde_colis(self, jour(self.shipment.order, at))
 
     class Meta:
         ordering = ["-updated_at"]
@@ -598,9 +651,6 @@ class RelayPickupAttempt(models.Model):
     §8.2) : 3 essais faux consécutifs sur un même code bloquent ce code 24 h
     pour ce relais — seul le support peut lever le blocage.
     """
-
-    MAX_ATTEMPTS = 3
-    LOCK_HOURS = 24
 
     relay_point = models.ForeignKey(
         "accounts.RelayPointProfile",
@@ -621,6 +671,20 @@ class RelayPickupAttempt(models.Model):
         etat = "ok" if self.success else "echec"
         return f"RelayPickupAttempt(relay={self.relay_point_id}, code={self.code}, {etat})"
 
+    @staticmethod
+    def max_essais() -> int:
+        """Spec v2.1, R66.1 : r_code_essais essais faux bloquent le code."""
+        from apps.regles import services as regles
+
+        return regles.reglage("r_code_essais")
+
+    @staticmethod
+    def heures_blocage() -> int:
+        """Spec v2.1, R66.1 : blocage de r_code_blocage_h heures."""
+        from apps.regles import services as regles
+
+        return regles.reglage("r_code_blocage_h")
+
     @classmethod
     def register(cls, relay_point, code, success):
         return cls.objects.create(relay_point=relay_point, code=(code or "").strip().upper(), success=success)
@@ -629,7 +693,7 @@ class RelayPickupAttempt(models.Model):
     def _recent_failures(cls, relay_point, code):
         """Les echecs consecutifs les plus recents pour ce code, du plus recent au plus ancien."""
         code = (code or "").strip().upper()
-        recent = cls.objects.filter(relay_point=relay_point, code=code).order_by("-created_at")[: cls.MAX_ATTEMPTS]
+        recent = cls.objects.filter(relay_point=relay_point, code=code).order_by("-created_at")[: cls.max_essais()]
         failures = []
         for attempt in recent:
             if attempt.success:
@@ -641,15 +705,15 @@ class RelayPickupAttempt(models.Model):
     def locked_until(cls, relay_point, code):
         """Date de levee du blocage si ce code vient de subir 3 echecs consecutifs, sinon None."""
         failures = cls._recent_failures(relay_point, code)
-        if len(failures) < cls.MAX_ATTEMPTS:
+        if len(failures) < cls.max_essais():
             return None
-        until = failures[0].created_at + timezone.timedelta(hours=cls.LOCK_HOURS)
+        until = failures[0].created_at + timezone.timedelta(hours=cls.heures_blocage())
         return until if timezone.now() < until else None
 
     @classmethod
     def attempts_left(cls, relay_point, code):
         """Essais encore disponibles avant blocage (0 si deja au seuil)."""
-        return max(0, cls.MAX_ATTEMPTS - len(cls._recent_failures(relay_point, code)))
+        return max(0, cls.max_essais() - len(cls._recent_failures(relay_point, code)))
 
 
 class ShipmentMessage(models.Model):
@@ -765,3 +829,102 @@ class RelayPointReview(models.Model):
         if not initiales:
             initiales = [f"{(self.author.username or '?')[0].upper()}."]
         return " ".join(initiales)
+
+
+class DemandeAdresse(models.Model):
+    """Adresse que BelivaY ne sait pas encore servir (BV-DEV-04) : épingle hors des 12 zones (R76.5, demande non
+    servie) ou quartier absent de la liste (R76.2, « Autre quartier », que l'équipe logistique rattache)."""
+
+    class Type(models.TextChoices):
+        HORS_ZONE = "HORS_ZONE", "Hors des 12 zones (R76.5)"
+        AUTRE_QUARTIER = "AUTRE_QUARTIER", "Autre quartier à rattacher (R76.2)"
+
+    type = models.CharField(max_length=20, choices=Type.choices)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
+    quartier_saisi = models.CharField(max_length=120, blank=True, default="")
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
+    precision_m = models.FloatField(null=True, blank=True)
+    quartier_rattache = models.CharField(
+        max_length=120, blank=True, default="",
+        help_text="Quartier de t_quartiers auquel l'équipe logistique rattache ce nom (R76.2).",
+    )
+    traitee = models.BooleanField(default=False)
+    cree_le = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["traitee", "-cree_le"]
+        verbose_name = "Demande d'adresse non servie"
+        verbose_name_plural = "Demandes d'adresse non servies"
+
+    def __str__(self):
+        return f"{self.get_type_display()} · {self.quartier_saisi or '—'}"
+
+
+class GrilleAchat(models.Model):
+    """Grille d'achat signée par une entreprise de livraison (spec v2.1, R53) ; chaque ligne est contrôlée contre son
+    plafond d'achat (R54, A10 : apps/shipping/grille.py)."""
+
+    organisation = models.ForeignKey("accounts.DeliveryOrganizationProfile", on_delete=models.CASCADE, related_name="grilles_achat")
+    signee_le = models.DateField(help_text="Date de signature (départ de l'exception R86)")
+    annoncee_le = models.DateField(help_text="Annonce de la grille (R61.1 : préavis de r_preavis_grille_j jours)")
+    entree_en_vigueur = models.DateField()
+    note = models.TextField(blank=True, default="")
+    cree_le = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-entree_en_vigueur"]
+        verbose_name = "Grille d'achat d'une entreprise"
+        verbose_name_plural = "Grilles d'achat des entreprises"
+
+    def __str__(self):
+        return f"{self.organisation} · en vigueur le {self.entree_en_vigueur:%d/%m/%Y}"
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        from apps.shipping.grille import entree_en_vigueur_min
+
+        if self.annoncee_le and self.entree_en_vigueur and self.entree_en_vigueur < entree_en_vigueur_min(self.annoncee_le):
+            raise ValidationError({"entree_en_vigueur": "R61.1 : une grille est annoncée au moins 30 jours avant d'entrer en vigueur."})
+
+
+class LigneGrille(models.Model):
+    class Type(models.TextChoices):
+        DOMICILE = "DOMICILE", "Course à domicile (paramètre : niveau)"
+        XL = "XL", "Course XL (paramètre : niveau)"
+        RELAIS = "RELAIS", "Tournée relais, par colis (paramètre : format)"
+        AUTRE_ZONE_TOURNEE = "AUTRE_ZONE_TOURNEE", "Tournée qui part d'une autre zone, par colis (R55)"
+        SUPPLEMENT_FORMAT = "SUPPLEMENT_FORMAT", "Supplément de format (paramètre : C1, C2)"
+        KM = "KM", "Km au-delà de r_km_inclus"
+        BOUTIQUE_EN_PLUS = "BOUTIQUE_EN_PLUS", "Boutique en plus (paramètre : meme_zone, autre_zone)"
+        RETOUR = "RETOUR", "Course de retour"
+        TRANSFERT = "TRANSFERT", "Transfert entre relais"
+        AGENCE_RELAIS = "AGENCE_RELAIS", "Agence qui sert de relais"
+        INCIDENT = "INCIDENT", "Supplément d'incident (absence, refus, déplacement inutile)"
+
+    grille = models.ForeignKey(GrilleAchat, on_delete=models.CASCADE, related_name="lignes")
+    numero = models.PositiveSmallIntegerField()
+    prestation = models.CharField(max_length=160)
+    type = models.CharField(max_length=24, choices=Type.choices)
+    param = models.CharField(max_length=20, blank=True, default="", help_text="Niveau, format ou zone selon le type")
+    petit_paquet = models.BooleanField(default=False, help_text="Paquet de moins de r_depart_colis colis (ligne 5, R86, R55.2)")
+    tarif = models.PositiveIntegerField()
+    plafond_achat = models.PositiveIntegerField(null=True, blank=True, editable=False)
+    controle = models.CharField(max_length=16, blank=True, default="", editable=False)
+    controle_note = models.CharField(max_length=200, blank=True, default="", editable=False)
+
+    class Meta:
+        ordering = ["grille", "numero"]
+        unique_together = [("grille", "numero")]
+        verbose_name = "Ligne de grille d'achat"
+        verbose_name_plural = "Lignes de grille d'achat"
+
+    def __str__(self):
+        return f"{self.numero}. {self.prestation} : {self.tarif} F ({self.controle})"
+
+    def save(self, *args, **kwargs):
+        from apps.shipping.grille import controler
+
+        self.controle, self.plafond_achat, self.controle_note = controler(self, self.grille.signee_le)
+        super().save(*args, **kwargs)

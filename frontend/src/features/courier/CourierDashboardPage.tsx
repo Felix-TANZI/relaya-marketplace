@@ -282,6 +282,9 @@ export default function CourierDashboardPage() {
   const [selectedShipmentId, setSelectedShipmentId] = useState<number | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
   const [pickupCodeDraft, setPickupCodeDraft] = useState("");
+  /** D11 : a domicile, code que le client lit dans son suivi et donne a la porte. */
+  const [deliveryCodeDraft, setDeliveryCodeDraft] = useState("");
+  const [depotQrDataUrl, setDepotQrDataUrl] = useState("");
   const [capturedEvidence, setCapturedEvidence] = useState<Record<string, boolean>>({});
   const [pendingEvidenceCount, setPendingEvidenceCount] = useState(0);
   const [scanCode, setScanCode] = useState("");
@@ -649,10 +652,12 @@ export default function CourierDashboardPage() {
         message,
         location: selectedShipment.city,
         pickup_code: action === "PICKED_UP" ? pickupCodeDraft.trim() : undefined,
+        delivery_code: action === "DELIVERED" ? deliveryCodeDraft.trim() : undefined,
       });
       setShipments((current) => current.map((shipment) => (shipment.id === updated.id ? updated : shipment)));
       if (action === "NOTE" || action === "INCIDENT") setNoteDraft("");
       if (action === "PICKED_UP") setPickupCodeDraft("");
+      if (action === "DELIVERED") setDeliveryCodeDraft("");
       setActionFeedback(
         action === "ACCEPT"
           ? t("cr1_dashboard.feedback.action_accept")
@@ -920,6 +925,18 @@ export default function CourierDashboardPage() {
       .then(setReceiptQrDataUrl)
       .catch(() => setReceiptQrDataUrl(""));
   }, [receiptCode]);
+
+  // R66.1, R66.2 : au relais, le QR du colis porte son code de depot ; le gerant le scanne a la reception.
+  const depotCode = selectedShipment?.delivery_mode === "relais" ? selectedShipment?.depot_code || "" : "";
+  useEffect(() => {
+    if (!depotCode || !selectedShipment) {
+      setDepotQrDataUrl("");
+      return;
+    }
+    QRCode.toDataURL(JSON.stringify({ shipment_id: selectedShipment.id, depot_code: depotCode }), { width: 220, margin: 1 })
+      .then(setDepotQrDataUrl)
+      .catch(() => setDepotQrDataUrl(""));
+  }, [depotCode, selectedShipment]);
 
   const nextTourStop = activeShipments[0] ?? tourShipments[0] ?? null;
   const estimatedTourMinutes =
@@ -1551,7 +1568,19 @@ export default function CourierDashboardPage() {
                   {actionLoading === "OUT_FOR_DELIVERY" ? t("cr1_dashboard.courses.updating") : t("cr1_dashboard.courses.mark_out_for_delivery")}
                 </button>
               )}
-              {selectedShipment.status === "OUT_FOR_DELIVERY" && (
+              {depotCode && ["PICKED_UP", "OUT_FOR_DELIVERY"].includes(selectedShipment.status) && (
+                <div className="flex w-full items-center gap-4 rounded-[22px] border border-emerald-500/20 bg-[#0d1520] p-4">
+                  {depotQrDataUrl ? (
+                    <img src={depotQrDataUrl} alt={t("cr1_dashboard.courses.depot_qr_alt")} className="h-[110px] w-[110px] rounded-2xl bg-white p-2" />
+                  ) : null}
+                  <div>
+                    <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-300">{t("cr1_dashboard.courses.depot_title")}</div>
+                    <div className="mt-1 text-2xl font-black tracking-[0.3em] text-white">{depotCode}</div>
+                    <p className="mt-1 text-[12px] leading-5 text-[#8B949E]">{t("cr1_dashboard.courses.depot_hint")}</p>
+                  </div>
+                </div>
+              )}
+              {selectedShipment.status === "OUT_FOR_DELIVERY" && selectedShipment.delivery_mode !== "relais" && (
                 <>
                   {!capturedEvidence[`${selectedShipment.id}:CUSTOMER_DELIVERY`] && (
                     <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-sky-500/25 bg-sky-500/10 px-5 py-3 text-[12px] font-extrabold text-sky-300 transition hover:-translate-y-0.5">
@@ -1568,11 +1597,25 @@ export default function CourierDashboardPage() {
                       />
                     </label>
                   )}
+                  <input
+                    value={deliveryCodeDraft}
+                    onChange={(event) => setDeliveryCodeDraft(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                    inputMode="numeric"
+                    placeholder={t("cr1_dashboard.courses.delivery_code_placeholder")}
+                    maxLength={6}
+                    className="w-[168px] rounded-full border border-emerald-500/25 bg-[#0D1117] px-4 py-3 text-center text-[13px] font-black tracking-widest text-emerald-300 outline-none placeholder:text-[10px] placeholder:font-bold placeholder:tracking-normal placeholder:text-emerald-300/50"
+                  />
                   <button
                     type="button"
                     onClick={() => handleShipmentAction("DELIVERED")}
-                    disabled={Boolean(actionLoading) || !capturedEvidence[`${selectedShipment.id}:CUSTOMER_DELIVERY`]}
-                    title={!capturedEvidence[`${selectedShipment.id}:CUSTOMER_DELIVERY`] ? t("cr1_dashboard.courses.hint_photo_delivery_first") : undefined}
+                    disabled={Boolean(actionLoading) || !capturedEvidence[`${selectedShipment.id}:CUSTOMER_DELIVERY`] || deliveryCodeDraft.length !== 6}
+                    title={
+                      !capturedEvidence[`${selectedShipment.id}:CUSTOMER_DELIVERY`]
+                        ? t("cr1_dashboard.courses.hint_photo_delivery_first")
+                        : deliveryCodeDraft.length !== 6
+                          ? t("cr1_dashboard.courses.hint_ask_delivery_code")
+                          : undefined
+                    }
                     className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#10B981,#065F46)] px-5 py-3 text-[12px] font-extrabold text-white transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(16,185,129,.28)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {actionLoading === "DELIVERED" ? <LoaderCircle size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}

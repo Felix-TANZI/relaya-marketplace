@@ -335,8 +335,8 @@ class PayoutRequest(models.Model):
     amount_xaf = models.PositiveBigIntegerField(validators=[MinValueValidator(1)])
     psp_fee_xaf = models.PositiveBigIntegerField(
         default=0,
-        help_text="Charge PLATEFORME. Jamais retenue au partenaire : "
-                  "il recoit l'integralite de son net (referentiel §7.1).",
+        help_text="Spec v2.1, R22.3 et R43.2 : frais de versement (r_versement) retenus sur le montant envoyé, "
+                  "payés par le bénéficiaire.",
     )
     currency = models.CharField(max_length=3, default="XAF")
 

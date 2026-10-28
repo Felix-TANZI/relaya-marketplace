@@ -1,0 +1,84 @@
+/* PR-09 · Argent et performance : compléments des classes transcrites du prototype (préfixe r9-). Aucune couleur écrite :
+   jetons de styles/jetons.css seulement ; tailles en rem (8 tailles de texte) ; cibles de 44 px au moins ; mouvements
+   seulement sous html[data-mouv]. */
+
+.r9-cache{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* Chargement : la forme de l'écran en gris (pulsation seulement quand le mouvement est permis). */
+.r9-squelette{min-height:72px;border-radius:14px;background:var(--sand-2)}
+.r9-squelette-haut{min-height:160px;border-radius:18px}
+html[data-mouv] .r9-squelette{animation:r9-pulse 1.4s ease-in-out infinite}
+@keyframes r9-pulse{50%{opacity:.55}}
+
+/* Relevé : colonnes souples (les montants ne débordent jamais, même à 140 %). */
+.r9-table{display:flex;flex-direction:column;gap:6px}
+.r9-ligne{grid-template-columns:minmax(0,1fr) auto auto minmax(4.5rem,auto)!important;column-gap:10px}
+.r9-ligne>span:first-child{min-width:0;overflow-wrap:anywhere}
+.r9-deduit .p-06slq2{color:var(--ink-2)}
+.r9-sous-total{font-weight:800;border-top:1.5px solid var(--line-2)}
+.r9-periode{font-size:.8125rem;color:var(--ink-3);margin-top:-4px}
+.r9-report{font-size:.8125rem;color:var(--amber);font-weight:700}
+
+/* Carte de versement : note sous le montant, opérateur Orange. */
+.r9-heros-note{font-size:.8125rem;line-height:1.45;color:var(--heros-ink-2);margin:6px 0 10px}
+.r9-orange{background:var(--or-soft);color:var(--or-txt);width:auto;padding:0 8px}
+.r-pill.r9-pastille{min-height:26px;padding:0 10px;border-radius:999px;font-size:.75rem;font-weight:700;display:inline-flex;align-items:center;white-space:nowrap}
+.r9-alerte{border-color:var(--or-line);border-width:1.5px}
+
+/* Listes : lignes touchables entières. */
+.r9-liste{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.r9-lien{text-decoration:none;color:var(--ink);border-radius:12px;min-height:56px}
+.r9-lien:active{background:var(--sand-2)}
+.r9-etat{font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-weight:800}
+.r9-ton-vert{color:var(--green)}
+.r9-ton-accent{color:var(--acc-txt)}
+.r9-ton-ambre{color:var(--amber)}
+.r9-ton-rouge{color:var(--red)}
+.r9-ton-neutre{color:var(--ink-2)}
+.r9-essais{margin:0;padding:0 0 0 18px;font-size:.8125rem;color:var(--ink-2);line-height:1.6}
+
+/* Formulaires. */
+.r9-erreur{font-size:.8125rem;font-weight:700;color:var(--red);line-height:1.45}
+.r9-lien-texte{min-height:44px;border:0;background:none;color:var(--acc-txt);font-weight:800;font-size:.875rem;cursor:pointer;padding:0 8px;align-self:center}
+.r9-lien-texte:disabled{opacity:.5;cursor:default}
+.r9-confirmer{display:flex;flex-direction:column;gap:8px;width:100%}
+.r9-danger{color:var(--red);border-color:var(--red-line)}
+.p-ncx7qc:disabled,.p-rbzobc:disabled{opacity:.5;cursor:default}
+.r9-texte{min-height:96px;padding:12px 14px;font-weight:600;line-height:1.5;resize:vertical}
+.r9-choix{display:grid;grid-template-columns:repeat(auto-fit,minmax(7.5rem,1fr));gap:8px}
+
+/* Rapports : onglets de 44 px, colonne en cours atténuée, lignes de téléchargement en boutons. */
+.r9-onglet{min-height:44px}
+.r9-en-cours .r9-colonne{opacity:.55}
+.r9-colonne{max-height:150px}
+html[data-mouv] .r9-colonne{transition:height .4s ease}
+.r9-bouton-ligne{width:100%;border:0;background:none;padding:0;font:inherit;text-align:left;cursor:pointer;border-radius:12px}
+.r9-bouton-ligne:disabled{opacity:.7;cursor:progress}
+
+/* Trust Score. */
+.r9-grandir{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.r9-dans-alerte{margin-top:4px}
+.r9-effet{flex-shrink:0;min-width:2.5rem;min-height:2rem;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-variant-numeric:tabular-nums}
+.r9-plus{background:var(--green-soft);color:var(--green)}
+.r9-moins{background:var(--red-soft);color:var(--red)}
+.r9-neutre{background:var(--sand-2);color:var(--ink-2)}
+.r9-entree{display:flex;flex-direction:column;gap:8px;padding:10px 0;border-top:1px solid var(--line)}
+.r9-entree:first-child{border-top:0}
+.r9-contestation{display:flex;flex-direction:column;gap:4px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:var(--card-2)}
+
+/* Feuilles. */
+.r9-feuille{display:flex;flex-direction:column;gap:12px;padding-bottom:4px}
+.r9-sous-titre{font-size:.9375rem;font-weight:800;margin-top:6px}
+
+/* Avis : chaque bulle s'ouvre (répondre, signaler). */
+.r9-bulles{list-style:none;margin:0;padding:0}
+.r9-bulle{display:block;width:100%;min-height:44px;border:0;background:none;padding:0;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.r9-suivi{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.r9-etoiles-feuille{display:flex;align-items:center;gap:3px}
+.r9-etoiles-feuille .p-46lk2m{margin-left:8px}
+.r9-etoile-pleine{fill:var(--acc)}
+.r9-etoile-vide{fill:var(--sand-2)}
+
+/* Barres des critères et des étoiles : le parent n'a qu'une hauteur minimale, la barre s'étire sur sa hauteur. */
+.r9-barre{display:flex}
+.r9-barre>div{height:auto!important;align-self:stretch}

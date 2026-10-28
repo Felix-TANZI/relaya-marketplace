@@ -1,0 +1,126 @@
+/* Écrans d'accès (PR-03) : compléments au balisage du prototype (prototype.css), préfixés « pr3 ». Jetons seulement
+   (styles/jetons.css) ; cibles ≥ 44 px, action principale à 56 px dans la zone du pouce ; mouvement réduit respecté. */
+
+.pr3-sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+/* Action principale : 56 px (zone du pouce) ; secondaires et liens : 44 px au moins. */
+.pr3 .p-ncx7qc,.pr3 .p-v96i0s{min-height:56px;width:100%;box-sizing:border-box;text-decoration:none;cursor:pointer}
+.pr3 .p-ncx7qc:disabled,.pr3 .p-v96i0s:disabled,.pr3 .p-rbzobc:disabled{opacity:.55;cursor:default}
+.pr3 .p-rbzobc{min-height:48px}
+.pr3 .p-ja9yqp,.pr3 .p-3b809k,.pr3 .p-hw1nv0{min-height:44px;align-items:center;display:inline-flex;padding:0 6px}
+.pr3 .p-ja9yqp{display:flex}
+.pr3 .p-3ml6k6:disabled{opacity:.45;cursor:default}
+.pr3 .p-h01hlk,.pr3 .p-bq7aiq{min-height:44px}
+.pr3 .p-o24hsm{min-height:48px}
+.pr3 a.p-o24hsm,.pr3 button.p-o24hsm{width:100%;border:0;background:transparent;font:inherit;text-align:left;padding:0;cursor:pointer}
+
+/* Puces choisissables (type de commerce, opérateur) : cibles de 44 px. */
+.pr3 .pr3-puce{min-height:44px;padding:0 14px;cursor:pointer;font-family:inherit}
+.pr3 .pr3-puce[aria-checked=true]{background:var(--acc-soft);color:var(--acc-txt);border-color:var(--acc-line)}
+
+/* Interrupteur « J'ai lu la convention » : 44 px de zone de toucher autour du dessin du prototype. */
+.pr3 .p-bgyo12{min-height:30px;box-shadow:0 0 0 7px transparent}
+.pr3 .pr3-inter{display:flex;align-items:center;gap:12px;min-height:44px;border:0;background:transparent;padding:0;font:inherit;color:inherit;text-align:left;cursor:pointer;width:100%}
+.pr3 .pr3-inter[aria-checked=true] .p-bgyo12{background:var(--acc)}
+.pr3 .pr3-inter[aria-checked=true] .p-p91l1v{left:23px}
+.pr3 .p-p91l1v{transition:left .18s ease}
+
+/* Champs : texte d'au moins 16 px (pas de zoom forcé), erreur visible. */
+.pr3 input[aria-invalid=true]{border-color:var(--red)}
+.pr3 .p-ko4uav:focus-within{outline:3px solid var(--acc);outline-offset:2px}
+.pr3 .p-im8rz3:focus-visible{outline:none}
+
+/* Messages en ligne. */
+.pr3-note{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;border:1px solid transparent;font-size:.875rem;line-height:1.5;font-weight:600}
+.pr3-note svg{flex-shrink:0;margin-top:1px}
+.pr3-lien{color:inherit;font-weight:800;text-decoration:underline;text-underline-offset:2px;display:inline-flex;align-items:center;min-height:44px}
+
+/* Chargement. */
+.pr3-charge{display:flex;flex-direction:column;gap:10px;padding:16px;border-radius:14px;background:var(--card);border:1px solid var(--line)}
+.pr3-charge i{display:block;height:14px;border-radius:7px;background:var(--sand-2)}
+.pr3-charge i:nth-child(2){width:92%}.pr3-charge i:nth-child(3){width:74%}.pr3-charge i:nth-child(4){width:56%}
+
+/* PIN faux : les points tremblent (sauf mouvement réduit). */
+@media (prefers-reduced-motion:no-preference){
+  .pr3-secoue{animation:pr3-secoue .38s ease}
+  @keyframes pr3-secoue{20%{transform:translateX(-8px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(3px)}}
+}
+
+/* Photos et pièces prises (inscription) : vignette et coche. */
+.pr3 .pr3-piece{position:relative;width:100%;box-sizing:border-box}
+.pr3 .pr3-piece.a-fait{border-style:solid;background:var(--green-soft);color:var(--green);border-color:var(--green-line)}
+.pr3 .pr3-piece.a-fait svg{color:var(--green)}
+.pr3 .pr3-piece img{width:44px;height:44px;border-radius:8px;object-fit:cover}
+.pr3 .pr3-pleine{grid-column:1 / -1}
+.pr3 .pr3-fichier{display:none}
+
+/* Signature au doigt. */
+.pr3 .pr3-signature{position:relative;padding:0;overflow:hidden;touch-action:none}
+.pr3 .pr3-signature canvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair}
+.pr3 .pr3-signature span{pointer-events:none}
+.pr3 .pr3-signature.a-signe span{display:none}
+.pr3 .pr3-signature:focus-within{outline:3px solid var(--acc);outline-offset:2px}
+
+/* Étapes de suivi (pastille d'état à droite). */
+.pr3 .pr3-etat{flex-shrink:0}
+.pr3 .pr3-ligne-action{display:flex;gap:10px;flex-wrap:wrap}
+.pr3 .pr3-ligne-action>*{flex:1 1 140px}
+.pr3 textarea.p-afs6hh{min-height:96px;padding:12px 14px;resize:vertical;font-weight:600;line-height:1.45}
+.pr3 select.p-afs6hh{appearance:auto}
+.pr3 .pr3-compte{font-size:.75rem;color:var(--ink-3);text-align:right;font-weight:600}
+
+/* Feuilles du groupe. */
+.pr3-feuille{padding:8px 18px calc(env(safe-area-inset-bottom,0px) + 20px);display:flex;flex-direction:column;gap:12px}
+.pr3-feuille h2{margin:0;font-size:1.125rem;font-weight:800}
+.pr3-feuille p{margin:0;color:var(--ink-2);font-size:.875rem;line-height:1.5}
+
+/* Convention : articles. */
+.pr3 .pr3-article h3{margin:0;font-size:.9375rem;font-weight:800}
+.pr3 .pr3-article p,.pr3 .pr3-article li{margin:0;color:var(--ink-2);font-size:.875rem;line-height:1.55}
+.pr3 .pr3-article ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.pr3 .pr3-grille{width:100%;border-collapse:collapse;font-size:.8125rem}
+.pr3 .pr3-grille th,.pr3 .pr3-grille td{padding:6px 4px;text-align:center;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.pr3 .pr3-grille th:first-child,.pr3 .pr3-grille td:first-child{text-align:left}
+
+@media print{
+  .pr3 .pr3-pas-imprime,.r-hd,nav.dock{display:none!important}
+}
+
+
+/* Activation : étapes restantes, numéro dans le rond, état de l'étape. */
+.pr3 .pr3-rond-afaire{background:var(--acc-soft);background-image:none;border:1.5px solid var(--acc-line)}
+.pr3 .pr3-num{font-weight:800;font-size:.8125rem;color:var(--acc-txt)}
+.pr3 .pr3-fait{color:var(--green);font-weight:700}
+.pr3 .pr3-afaire{color:var(--or-txt);font-weight:800}
+.pr3 .pr3-etape-lien{display:block;min-height:44px;text-decoration:none;color:inherit}
+.pr3 .pr3-etape-lien .p-dfc4i3::after{content:' ›';color:var(--acc-txt)}
+
+/* Statut : panneau d'onglet, carte « nuit » (texte clair), pile de cartes. */
+.pr3 .pr3-panneau,.pr3 .pr3-pile{display:flex;flex-direction:column;gap:12px}
+.pr3 .pr3-nuit{color:var(--nuit-ink, var(--heros-ink))}
+.pr3 .pr3-petit{width:40px;height:40px;border-radius:11px}
+.pr3 h2.p-nlvkht,.pr3 h2.p-blzquz{margin:0}
+
+/* Tableau large (grille de garde) : il défile dans sa boîte, jamais la page. */
+.pr3 .pr3-defile{overflow-x:auto;max-width:100%}
+.pr3 .pr3-defile:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+
+/* Pages d'accès au cadre commun (compte/acces.tsx) : les cartes du prototype posées à plat dans la carte du cadre. */
+.axc-carte .pr3-pile{display:flex;flex-direction:column;gap:12px}
+.axc-carte .pr3 .p-yi6rkz{background:none;border:0;box-shadow:none;padding:0;border-radius:0}
+.axc-carte .pr3 .p-yi6rkz+.p-yi6rkz{border-top:1px solid var(--line);padding-top:16px;margin-top:4px}
+.axc-carte .pr3 .acc-tete{margin:0}
+.pr3 h1.p-fdt7cn{margin:0}
+/* Gouttière de 16 px autour du cadre d'accès (connexion, inscription, invitation). */
+.r-main.r-seul>.axc{padding-left:16px;padding-right:16px}
+@media (min-width:1024px){.r-main.r-seul>.axc{padding-left:0;padding-right:0}}
+/* Comptes réels (AccesReel.tsx) : champs de la candidature, en colonne. */
+.pr3-reel{margin:0;padding:0;border:0;min-width:0;display:flex;flex-direction:column}
+.pr3-reel legend{padding:0;margin:0 0 2px}
+/* Texte d'appoint replié (« En savoir plus ») : lien discret de 44 px, contenu sous le lien. */
+.pr3-plus>summary{display:inline-flex;align-items:center;min-height:44px;padding:0 4px;font-size:.875rem;font-weight:700;color:var(--acc-txt);cursor:pointer;list-style:none}
+.pr3-plus>summary::-webkit-details-marker{display:none}
+.pr3-plus>summary::after{content:"";width:8px;height:8px;margin-left:8px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translateY(-2px)}
+.pr3-plus[open]>summary::after{transform:rotate(-135deg) translateY(-2px)}
+.pr3-plus>summary:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:8px}
+.pr3-plus-c{display:flex;flex-direction:column;gap:12px;padding-top:4px}

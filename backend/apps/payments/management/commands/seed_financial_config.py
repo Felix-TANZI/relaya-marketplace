@@ -147,6 +147,15 @@ DISTRIBUTION_RULES = [
         "basis": DistributionRule.Basis.REMAINDER,
         "priority": 10,
     },
+    {
+        "config_key": "dist-payment-fee-platform",
+        "name": "Frais Mobile Money payes par le client",
+        "component": DistributionRule.Component.PAYMENT_FEE,
+        "payee_type": DistributionRule.PayeeType.PLATFORM,
+        "basis": DistributionRule.Basis.REMAINDER,
+        "priority": 10,
+        "notes": "Spec v2.1, R02.2 et R02.3 : couvre les frais du prestataire de paiement.",
+    },
 ]
 
 # ── Politiques de sequestre — referentiel §9.5 ───────────────────────────────
@@ -154,8 +163,10 @@ ESCROW_POLICIES = [
     {
         "config_key": "escrow-default",
         "name": "Politique par defaut",
-        "auto_confirm_hours": 48,
-        "release_delay_hours": 24,
+        # Spec v2.1, R23 : auto-confirmation fixee au retrait (bridge.signals.ouvrir_le_droit_de_retour),
+        # liberation + r_lib_j_standard (3 j, 1 j pour Or et Platine), fenetre r_retour_j (7 j).
+        "auto_confirm_hours": 0,
+        "release_delay_hours": 72,
         "dispute_window_days": 7,
         "vendor_reply_hours": 72,
         "priority": 0,

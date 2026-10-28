@@ -31,6 +31,7 @@ def _cree_relais(django_user_model, suffixe, **surcharges):
         "manager_name": "Awa Gerante",
         "city": "YAOUNDE",
         "address": "Carrefour Mvan",
+        "zones": ["Mvan"],  # quartier de t_quartiers : rattache le relais à sa zone (R74.3)
         "opening_hours": "08h - 18h",
         "storage_capacity": 20,
         "status": RelayPointProfile.Status.APPROVED,
@@ -42,6 +43,13 @@ def _cree_relais(django_user_model, suffixe, **surcharges):
 
 @pytest.fixture
 def relais(django_user_model):
+    from apps.accounts.models import DeliveryOrganizationProfile
+
+    # Spec v2.1, R74.3 : un relais n'est proposé que si une entreprise active couvre sa zone.
+    DeliveryOrganizationProfile.objects.create(
+        user=django_user_model.objects.create_user(username="entreprise_mvan", password=TEST_PASSWORD),
+        company_name="Wink", phone="+237650000009", city="YAOUNDE", zones=["Yaoundé"],
+        status=DeliveryOrganizationProfile.Status.APPROVED, is_active=True)
     return _cree_relais(django_user_model, "mvan")
 
 

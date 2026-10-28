@@ -1,0 +1,622 @@
+[
+ {
+  "route": "menu",
+  "ecran": "socle",
+  "titre": "Menu",
+  "groupe": "ADM-00",
+  "statut": "repris",
+  "parent": null,
+  "onglet": "menu",
+  "sansSession": false
+ },
+ {
+  "route": "profil",
+  "ecran": "socle",
+  "titre": "Mon profil",
+  "groupe": "ADM-00",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": "menu",
+  "sansSession": false
+ },
+ {
+  "route": "connexion",
+  "ecran": "ADM-P01",
+  "titre": "Connexion et second facteur",
+  "groupe": "ADM-03",
+  "statut": "repris",
+  "parent": null,
+  "onglet": null,
+  "sansSession": true
+ },
+ {
+  "route": "activation",
+  "ecran": "AJ-A",
+  "titre": "Activation du compte",
+  "groupe": "ADM-03",
+  "statut": "repris",
+  "parent": null,
+  "onglet": null,
+  "sansSession": true
+ },
+ {
+  "route": "direct",
+  "ecran": "AJ-A",
+  "titre": "Vue d’ensemble",
+  "groupe": "ADM-03",
+  "statut": "repris",
+  "parent": "file",
+  "onglet": "file",
+  "sansSession": false
+ },
+ {
+  "route": "file",
+  "ecran": "ADM-P02",
+  "titre": "File d’action",
+  "groupe": "ADM-03",
+  "statut": "repris",
+  "parent": null,
+  "onglet": "file",
+  "sansSession": false
+ },
+ {
+  "route": "litige",
+  "ecran": "ADM-P03",
+  "titre": "Dossier de litige et arbitrage",
+  "groupe": "ADM-04",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "commandes",
+  "ecran": "ADM-P04",
+  "titre": "Commandes et fiche commande",
+  "groupe": "ADM-04",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "escrow",
+  "ecran": "ADM-P05",
+  "titre": "Escrow et registre",
+  "groupe": "ADM-05",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "remboursements",
+  "ecran": "ADM-P06",
+  "titre": "Remboursements",
+  "groupe": "ADM-05",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "versements",
+  "ecran": "ADM-P07",
+  "titre": "Versements du vendredi",
+  "groupe": "ADM-05",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "wallet",
+  "ecran": "AJ-A",
+  "titre": "Suivi du Wallet",
+  "groupe": "ADM-05",
+  "statut": "repris",
+  "parent": "escrow",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "remb-auto",
+  "ecran": "AJ-A",
+  "titre": "Remboursements automatiques",
+  "groupe": "ADM-05",
+  "statut": "repris",
+  "parent": "remboursements",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "frais-paiement",
+  "ecran": "AJ-A",
+  "titre": "Frais de paiement du mois",
+  "groupe": "ADM-05",
+  "statut": "repris",
+  "parent": "rapprochement",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "rapprochement",
+  "ecran": "ADM-P08",
+  "titre": "Rapprochement, revenus et obligations",
+  "groupe": "ADM-05",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "kyc",
+  "ecran": "ADM-P09",
+  "titre": "Revue KYC",
+  "groupe": "ADM-06",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "vendeurs",
+  "ecran": "ADM-P10",
+  "titre": "Vendeurs",
+  "groupe": "ADM-06",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "paliers",
+  "ecran": "ADM-P11",
+  "titre": "Paliers et Trust Score à valider",
+  "groupe": "ADM-06",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "sanctions",
+  "ecran": "ADM-P12",
+  "titre": "Sanctions et recours",
+  "groupe": "ADM-06",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "catalogue",
+  "ecran": "ADM-P13",
+  "titre": "Catalogue : fiches maîtres et demandes de création",
+  "groupe": "ADM-07",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "moderation",
+  "ecran": "ADM-P14",
+  "titre": "Modération des offres et des prix",
+  "groupe": "ADM-07",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "avis",
+  "ecran": "ADM-P15",
+  "titre": "Avis et droit de réponse",
+  "groupe": "ADM-07",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "clients",
+  "ecran": "ADM-P16",
+  "titre": "Clients et IFA",
+  "groupe": "ADM-07",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "relais",
+  "ecran": "ADM-P17",
+  "titre": "Points relais",
+  "groupe": "ADM-08",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "entreprises",
+  "ecran": "ADM-P18",
+  "titre": "Entreprises de livraison",
+  "groupe": "ADM-08",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "livreurs",
+  "ecran": "ADM-P19",
+  "titre": "Livreurs",
+  "groupe": "ADM-08",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "paquets",
+  "ecran": "ADM-P20",
+  "titre": "Paquets et dispatch",
+  "groupe": "ADM-08",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "zones",
+  "ecran": "ADM-P21",
+  "titre": "Pilotage des zones",
+  "groupe": "ADM-09",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "carte",
+  "ecran": "ADM-P22",
+  "titre": "Carte opérationnelle",
+  "groupe": "ADM-09",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "emballages",
+  "ecran": "ADM-P23",
+  "titre": "Emballages et étiquettes",
+  "groupe": "ADM-09",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "parametrage",
+  "ecran": "ADM-P24",
+  "titre": "Paramétrage et simulation",
+  "groupe": "ADM-10",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "commissions",
+  "ecran": "ADM-P25",
+  "titre": "Commissions, grilles et abonnements vendeur",
+  "groupe": "ADM-10",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "promotions",
+  "ecran": "ADM-P26",
+  "titre": "Promotions, ventes flash, sponsorisé et fidélité",
+  "groupe": "ADM-10",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "messagerie",
+  "ecran": "ADM-P27",
+  "titre": "Messagerie et notifications",
+  "groupe": "ADM-11",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "panne",
+  "ecran": "ADM-P28",
+  "titre": "Diffusion de panne et mode papier",
+  "groupe": "ADM-11",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "support",
+  "ecran": "ADM-P29",
+  "titre": "Support et centre d’aide",
+  "groupe": "ADM-11",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "fraude",
+  "ecran": "ADM-P30",
+  "titre": "Fraude et anneaux",
+  "groupe": "ADM-12",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "journal",
+  "ecran": "ADM-P31",
+  "titre": "Journal d’audit",
+  "groupe": "ADM-12",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "roles",
+  "ecran": "ADM-P32",
+  "titre": "Équipe et accès",
+  "groupe": "ADM-12",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "pays",
+  "ecran": "ADM-P33",
+  "titre": "Espaces pays",
+  "groupe": "ADM-12",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "comptes",
+  "ecran": "ADM-P34",
+  "titre": "Création de comptes multi-rôles et agents terrain",
+  "groupe": "ADM-12",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "rapports",
+  "ecran": "ADM-P35",
+  "titre": "Rapports et indicateurs",
+  "groupe": "ADM-13",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "sante",
+  "ecran": "ADM-P36",
+  "titre": "Santé du système et maintenance",
+  "groupe": "ADM-13",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "legal",
+  "ecran": "ADM-P37",
+  "titre": "Contenus légaux et produits interdits",
+  "groupe": "ADM-13",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "assistant",
+  "ecran": "ADM-P38",
+  "titre": "Assistant IA de la console",
+  "groupe": "ADM-13",
+  "statut": "provisoire",
+  "parent": null,
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "postes",
+  "ecran": "AJ-A",
+  "titre": "Postes de décision",
+  "groupe": "AJ-A",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "quatreyeux",
+  "ecran": "AJ-A",
+  "titre": "Quatre yeux en attente",
+  "groupe": "AJ-A",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "export",
+  "ecran": "AJ-A",
+  "titre": "Export comptable",
+  "groupe": "AJ-A",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "qualite",
+  "ecran": "AJ-A",
+  "titre": "Qualité des acteurs",
+  "groupe": "AJ-A",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "candidatures",
+  "ecran": "AJ-A",
+  "titre": "Candidatures des partenaires",
+  "groupe": "AJ-A",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "interrupteurs",
+  "ecran": "AJ-A",
+  "titre": "Interrupteurs de fonctions",
+  "groupe": "AJ-A",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "modeles",
+  "ecran": "AJ-A",
+  "titre": "Modèles de messages",
+  "groupe": "AJ-A",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "taches",
+  "ecran": "AJ-A",
+  "titre": "Tâches planifiées",
+  "groupe": "AJ-A",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "conservation",
+  "ecran": "AJ-A",
+  "titre": "Conservation des données",
+  "groupe": "AJ-A",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "abonnements",
+  "ecran": "AJ-A",
+  "titre": "Abonnements des clients",
+  "groupe": "AJ-A",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "vue-client",
+  "ecran": "AJ-A",
+  "titre": "Voir comme le client",
+  "groupe": "AJ-A",
+  "statut": "repris",
+  "parent": "clients",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "contenu-site",
+  "ecran": "AJ-A",
+  "titre": "Contenu du site",
+  "groupe": "AJ-A",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "recherche",
+  "ecran": "AJ-A",
+  "titre": "Rechercher partout",
+  "groupe": "AJ-A",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": "menu",
+  "sansSession": false
+ },
+ {
+  "route": "membre",
+  "ecran": "AJ-A",
+  "titre": "Fiche d’un membre",
+  "groupe": "EQUIPE",
+  "statut": "repris",
+  "parent": "roles",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "mon-equipe",
+  "ecran": "AJ-A",
+  "titre": "Mon équipe",
+  "groupe": "EQUIPE",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "descentes",
+  "ecran": "AJ-A",
+  "titre": "Descentes terrain",
+  "groupe": "EQUIPE",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ },
+ {
+  "route": "mes-descentes",
+  "ecran": "AJ-A",
+  "titre": "Mes descentes",
+  "groupe": "EQUIPE",
+  "statut": "repris",
+  "parent": "menu",
+  "onglet": null,
+  "sansSession": false
+ }
+]

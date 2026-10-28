@@ -19,7 +19,6 @@ from django.utils import timezone
 
 from apps.accounts.models import UserNotification
 from apps.orders.models import Order
-from apps.orders.reassignment import attempt_automatic_reassignment
 from apps.shipping.tournees import _slot_boundaries
 
 ADMIN_ALERT_DELAY_HOURS = 2   # +2h après le rappel de 4h = 6h depuis l'accusé vendeur
@@ -75,39 +74,23 @@ class Command(BaseCommand):
                 order.save(update_fields=["prep_admin_alert_sent_at"])
                 alerts += 1
 
-            if order.zone_id:
+            # Spec v2.1, R35.1 : la bascule se déclenche quand l'échéance du vendeur (R44.2), figée au paiement sur son
+            # colis, est dépassée. Commande antérieure sans échéance : l'ancien calcul (créneaux supplémentaires).
+            echeances = [e for e in order.shipments.values_list("echeance_vendeur", flat=True) if e is not None]
+            if echeances:
+                reassignment_at = min(echeances)
+            elif order.zone_id:
                 boundaries = _slot_boundaries(order.zone, admin_alert_at, admin_alert_at + timezone.timedelta(days=3))
                 reassignment_at = boundaries[1] if len(boundaries) >= 2 else None
             else:
                 reassignment_at = admin_alert_at + timezone.timedelta(hours=REASSIGNMENT_FALLBACK_HOURS)
 
             if reassignment_at and now >= reassignment_at and order.prep_reassignment_flagged_at is None:
-                late_vendor_ids = {u.id for u in vendor_users}
-                manual_items = []
-                for item in order.items.select_related("product"):
-                    if not item.product.vendor_id or item.product.vendor_id not in late_vendor_ids:
-                        continue
-                    replacement = attempt_automatic_reassignment(
-                        item, reason="Bon de préparation dépassé (2 créneaux supplémentaires).",
-                    )
-                    if replacement is None:
-                        manual_items.append(item)
+                # Spec v2.1, R35.1 : échéance dépassée ; bascule (R35.2, R35.3) ou remboursement intégral (R35.4).
+                from apps.orders.bascule import ECHEANCE, declencher
 
-                if manual_items:
-                    labels = ", ".join(item.title_snapshot for item in manual_items)
-                    for admin_user in User.objects.filter(is_staff=True):
-                        UserNotification.objects.create(
-                            user=admin_user,
-                            title=f"Réattribution manuelle nécessaire — commande #{order.id}",
-                            message=(
-                                f"Le vendeur de la commande #{order.id} n'a toujours pas préparé le colis "
-                                f"après deux créneaux supplémentaires, et aucun remplaçant ne remplit les "
-                                f"4 conditions strictes (même Master Produit, même état, prix ≤, même zone) "
-                                f"pour : {labels}. Proposez une alternative au client, ne l'imposez pas."
-                            ),
-                            notification_type=UserNotification.NotificationType.SYSTEM,
-                            action_url=f"/admin/operations/orders/{order.id}",
-                        )
+                for vendeur in vendor_users:
+                    declencher(order, vendeur, ECHEANCE)
                 order.prep_reassignment_flagged_at = now
                 order.save(update_fields=["prep_reassignment_flagged_at"])
                 reassignments += 1

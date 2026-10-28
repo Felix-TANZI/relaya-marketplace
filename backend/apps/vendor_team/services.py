@@ -30,6 +30,46 @@ def masquer_numero(numero: str) -> str:
     return f"{numero[:3]}••••{numero[-2:]}"
 
 
+# Motifs des gestes sensibles du propriétaire (code au téléphone personnel avant d'agir).
+MOTIF_RETRAIT = "retrait"
+MOTIF_DROITS = "droits"
+MOTIF_REACTIVATION = "reactivation"
+MOTIF_INVITATION = "invitation"
+MOTIF_LIEU_PRINCIPAL = "lieu_principal"
+MOTIF_CHANGE_REQUEST = "change_request"
+
+
+def envoyer_code_proprietaire(vendor, motif: str, cible=None) -> bool:
+    """Feuille de route D6 : un seul système de codes. Le code part au téléphone du propriétaire par apps.otp et se
+    range sous la boutique, le motif et le membre visé. Faux si rien n'est parti (pas de numéro, trop d'envois)."""
+    from apps.client_core.erreurs import ErreurClient
+    from apps.otp import services as otp
+    from apps.otp.models import CodeOtp
+
+    telephone = (vendor.phone or "").strip()
+    if not telephone:
+        return False
+    try:
+        otp.envoyer(objet=CodeOtp.Objet.VENDEUR_SECURITE, destination=telephone, utilisateur=vendor.user,
+                    cle=_cle_proprietaire(vendor, motif, cible))
+    except ErreurClient:
+        return False
+    return True
+
+
+def code_proprietaire_valide(vendor, motif: str, cible, code: str) -> bool:
+    from apps.otp import services as otp
+    from apps.otp.models import CodeOtp
+
+    resultat = otp.verifier(objet=CodeOtp.Objet.VENDEUR_SECURITE, code=code,
+                            cle=_cle_proprietaire(vendor, motif, cible))
+    return bool(resultat.get("ok"))
+
+
+def _cle_proprietaire(vendor, motif: str, cible) -> str:
+    return f"boutique:{vendor.pk}:{motif}:{getattr(cible, 'pk', '') or ''}"
+
+
 def generer_code(longueur: int = 6) -> str:
     return f"{secrets.randbelow(10 ** longueur):0{longueur}d}"
 

@@ -10,7 +10,7 @@ from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from PIL import Image
 
-from apps.catalog.models import Category, Product
+from apps.catalog.models import Category, MasterProduct, Product
 from apps.catalog.serializers import ProductCreateUpdateSerializer
 
 pytestmark = pytest.mark.django_db
@@ -322,7 +322,27 @@ def _approved_vendor(username="vendeur-parcours"):
         description="Entrée principale, à côté de la pharmacie.",
         is_active=True, is_main=True,
     )
+    # Tâche D19 : un produit n'est plus publiable tant que l'identité du
+    # vendeur n'est pas vérifiée. Ce test porte sur les catégories, pas sur
+    # le KYC — on met donc le vendeur en règle pour qu'il atteigne ce qu'il
+    # vérifie vraiment.
+    _identite_vendeur_verifiee(user)
     return user
+
+
+def _identite_vendeur_verifiee(user):
+    """Dépose les trois pièces exigées par D19, déjà validées."""
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    from apps.accounts.models import ComplianceDocument
+    from apps.vendors.kyc import PIECES_EXIGEES
+
+    for piece in PIECES_EXIGEES:
+        ComplianceDocument.objects.create(
+            user=user, owner_role=ComplianceDocument.OwnerRole.VENDOR,
+            document_type=piece, file=SimpleUploadedFile(f"{piece}.jpg", b"x"),
+            status=ComplianceDocument.Status.APPROVED,
+        )
 
 
 def _public_titles(api_client, **params):
@@ -372,7 +392,11 @@ def test_parcours_admin_vendeur_client(admin_client, _media_root):
     # 3. Tant que l'admin n'a pas validé l'offre, le client ne la voit pas.
     assert "Robe wax ceinturée" not in _public_titles(anonymous, category=robes["id"])
 
-    # 4. L'admin valide : le client la trouve dans « Robes » ET dans « Mode Femme ».
+    # 4. L'équipe catalogue rattache l'offre à une fiche complète (R16.1, R63.1), puis l'admin valide :
+    #    le client la trouve dans « Robes » ET dans « Mode Femme ».
+    fiche = MasterProduct.objects.create(title="Robe wax ceinturée", category_id=robes["id"], univers="MOD",
+                                         poids_kg="0.4", dim_l1_cm="40", dim_l2_cm="30", dim_l3_cm="3")
+    Product.objects.filter(pk=product_id).update(master=fiche)
     approved = admin_client.post(f"/api/vendors/admin/products/{product_id}/approve/", {}, format="json")
     assert approved.status_code == 200, approved.content
     assert "Robe wax ceinturée" in _public_titles(anonymous, category=robes["id"])

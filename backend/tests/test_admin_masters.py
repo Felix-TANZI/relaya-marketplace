@@ -22,10 +22,14 @@ def test_liste_fiches_tous_statuts_et_filtre(api_client, django_user_model):
     assert len(r.json()) == 1 and r.json()[0]["title"] == "B"
 
 
+# Fiche publiable selon la spécification v2.1 : univers (R16.1), poids et dimensions (R63.1).
+FICHE_COMPLETE = dict(univers="TEL", poids_kg="0.3", dim_l1_cm="15", dim_l2_cm="8", dim_l3_cm="2")
+
+
 def test_approuver_fiche(api_client, django_user_model):
     _admin(api_client, django_user_model)
     cat = Category.objects.create(name="Tel", slug="tel")
-    m = MasterProduct.objects.create(title="A", category=cat, moderation_status="PENDING")
+    m = MasterProduct.objects.create(title="A", category=cat, moderation_status="PENDING", **FICHE_COMPLETE)
     r = api_client.post(f"/api/vendors/admin/masters/{m.id}/approve/")
     assert r.status_code == 200 and r.json()["moderation_status"] == "APPROVED"
 

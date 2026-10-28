@@ -1,0 +1,374 @@
+# backend/apps/payments/wallet/services.py
+# Le Wallet du client — feuille de route D16 ; spec v2.1 :
+#
+#   R03.1  r_wallet_ouvert faux au lancement (verification juridique, monnaie electronique CEMAC)
+#   R03.2  ferme : aucune recharge, aucun paiement, aucun remboursement par le Wallet
+#   R03.3  recharge gratuite pour le client (BelivaY paie les frais CamPay), paiement par le Wallet sans frais
+#   R03.4  retrait >= r_retrait_wallet_min ; frais = ceil(montant x r_retrait_wallet), payes par le client ;
+#          seulement vers le numero Mobile Money qui a recharge
+#   R03.5  paiement de plus de r_wallet_code_des : code a 4 chiffres ; solde jamais au-dela de r_wallet_plafond
+#   R03.6  un geste commercial ne se retire jamais ; une commande payee par le Wallet est remboursee sur le Wallet
+#
+# Ecritures au grand livre (compte 2050, dette envers les clients) :
+#   recharge      DEBIT tresorerie PSP (net) + DEBIT 5010 frais CamPay   CREDIT 2050
+#   paiement      DEBIT 2050                                             CREDIT 2010 sequestre + produits
+#   remboursement DEBIT 2010                                             CREDIT 2050
+#   geste         DEBIT 5030 gestes commerciaux                          CREDIT 2050
+#   retrait       DEBIT 2050                                             CREDIT tresorerie PSP + CREDIT 4030 frais
+
+from __future__ import annotations
+
+import logging
+import math
+import re
+import uuid
+from datetime import timedelta
+
+from django.db import transaction as db_transaction
+from django.utils import timezone
+
+from apps.payments.ledger import chart_of_accounts as coa
+from apps.payments.ledger.models import LedgerTransaction
+from apps.payments.ledger.posting import credit, debit, post
+from apps.regles import services as regles
+
+from .models import GestePortefeuille, MouvementPortefeuille, Portefeuille
+
+logger = logging.getLogger("apps.payments.wallet")
+
+PRESTATAIRE = "WALLET"          # provider_code d'une tentative payee par le Wallet
+CLE_RECHARGE = "wallet-topup-"  # prefixe de la cle d'idempotence d'une recharge
+
+
+class WalletError(Exception):
+    def __init__(self, code: str, message: str):
+        super().__init__(message)
+        self.code, self.message = code, message
+
+
+def ouvert() -> bool:
+    return bool(regles.reglage("r_wallet_ouvert"))
+
+
+def _exiger_ouvert() -> None:
+    if not ouvert():  # R03.2
+        raise WalletError("wallet_ferme", "Le Wallet n'est pas encore ouvert.")
+
+
+def portefeuille_de(user, *, verrou: bool = False) -> Portefeuille:
+    p, _ = Portefeuille.objects.get_or_create(client=user)
+    return Portefeuille.objects.select_for_update().get(pk=p.pk) if verrou else p
+
+
+def _mouvement(p: Portefeuille, sorte, reference, retirable=0, geste=0, **extra) -> MouvementPortefeuille:
+    p.solde_retirable_xaf += retirable
+    p.solde_geste_xaf += geste
+    if p.solde_retirable_xaf < 0 or p.solde_geste_xaf < 0:
+        raise WalletError("solde_insuffisant", "Solde du Wallet insuffisant.")
+    p.save(update_fields=["solde_retirable_xaf", "solde_geste_xaf", "updated_at"])
+    return MouvementPortefeuille.objects.create(portefeuille=p, sorte=sorte, reference=reference,
+                                                part_retirable_xaf=retirable, part_geste_xaf=geste, **extra)
+
+
+def _plafond(p: Portefeuille, montant: int) -> None:
+    if p.solde_xaf + montant > regles.reglage("r_wallet_plafond"):  # R03.5
+        raise WalletError("wallet_plafond",
+                          f"Le solde du Wallet ne peut pas dépasser {regles.reglage('r_wallet_plafond')} F.")
+
+
+# ── Code a 4 chiffres (R03.5) ────────────────────────────────────────────────────────────────────────────
+
+def definir_code(user, code: str, ancien: str = "") -> None:
+    if not re.fullmatch(r"\d{4}", code or ""):
+        raise WalletError("code_format", "Le code du Wallet compte 4 chiffres.")
+    p = portefeuille_de(user, verrou=True)
+    if p.code_hash and not p.code_valide(ancien):
+        raise WalletError("code_faux", "L'ancien code est faux.")
+    p.definir_code(code)
+    p.save(update_fields=["code_hash", "updated_at"])
+
+
+# ── Recharge (R03.3) ─────────────────────────────────────────────────────────────────────────────────────
+
+@db_transaction.atomic
+def preparer_recharge(user, *, montant: int, msisdn: str, operator: str, cle: str = ""):
+    """L'intention de recharge : tout le montant va au Wallet, les frais CamPay sont a la charge de BelivaY."""
+    from apps.payments.application.collect import _config_snapshot
+    from apps.payments.domain.money import Money
+    from apps.payments.intents.models import PaymentIntent
+
+    _exiger_ouvert()
+    montant = int(montant)
+    if montant <= 0:
+        raise WalletError("montant", "Montant de recharge invalide.")
+    _plafond(portefeuille_de(user), montant)
+    cle = f"{CLE_RECHARGE}{cle or uuid.uuid4()}"
+    existante = PaymentIntent.objects.filter(idempotency_key=cle, buyer=user).first()
+    if existante is not None:
+        return existante
+    intent = PaymentIntent(
+        idempotency_key=cle, buyer=user, amount_xaf=montant, currency="XAF",
+        distribution_plan={"total_distributed": montant, "currency": "XAF", "platform_revenue": 0,
+                           "unresolved_rules": [], "needs_reallocation": False, "psp_cost": 0, "holds": [],
+                           "wallet": montant},
+        correlation_id=str(uuid.uuid4()), expires_at=timezone.now() + timedelta(minutes=30),
+    )
+    intent.set_payer(msisdn, operator)
+    intent.config_snapshot = _config_snapshot(Money(montant), operator)
+    intent.save()
+    return intent
+
+
+def crediter_recharge(intent) -> MouvementPortefeuille:
+    """Appelee par confirm_payment, dans sa transaction, apres l'ecriture CREDIT 2050."""
+    p = portefeuille_de(intent.buyer, verrou=True)
+    reference = f"recharge-{intent.reference}"
+    deja = MouvementPortefeuille.objects.filter(reference=reference).first()
+    if deja is not None:
+        return deja
+    if p.solde_xaf + intent.amount_xaf > regles.reglage("r_wallet_plafond"):
+        # L'argent est encaisse : on le credite, et l'equipe tranche (jamais de perte pour le client).
+        logger.error("Recharge %s : le solde depasse r_wallet_plafond (R03.5).", intent.reference)
+    return _mouvement(p, MouvementPortefeuille.Sorte.RECHARGE, reference, retirable=intent.amount_xaf,
+                      intent_reference=intent.reference, libelle="Recharge par Mobile Money")
+
+
+# ── Paiement d'une commande (R02.5, R03.3, R03.5) ────────────────────────────────────────────────────────
+
+@db_transaction.atomic
+def payer(intent, *, user, code: str = ""):
+    """Paie l'intention d'une commande avec le Wallet, sans frais ; les gestes servent en premier."""
+    from apps.payments.application.collect import confirm_payment
+    from apps.payments.intents.models import PaymentAttempt, PaymentIntent
+
+    _exiger_ouvert()
+    intent = PaymentIntent.objects.select_for_update().get(pk=intent.pk, buyer=user)
+    if intent.status == PaymentIntent.Status.SUCCEEDED:
+        return intent
+    if intent.idempotency_key.startswith(CLE_RECHARGE):
+        raise WalletError("intention", "Une recharge ne se paie pas avec le Wallet.")
+    if intent.is_final or intent.is_expired:
+        raise WalletError("intention", "Ce paiement n'est plus ouvert.")
+    p = portefeuille_de(user, verrou=True)
+    montant = intent.amount_xaf
+    if montant > regles.reglage("r_wallet_code_des") and not p.code_valide(code):  # R03.5
+        raise WalletError("code_requis" if not code else "code_faux",
+                          f"Au-delà de {regles.reglage('r_wallet_code_des')} F, le code du Wallet est demandé.")
+    if p.solde_xaf < montant:
+        raise WalletError("solde_insuffisant", "Solde du Wallet insuffisant.")
+    geste = min(p.solde_geste_xaf, montant)
+    _mouvement(p, MouvementPortefeuille.Sorte.PAIEMENT, f"paiement-{intent.reference}",
+               retirable=-(montant - geste), geste=-geste, intent_reference=intent.reference,
+               libelle="Paiement d'une commande")
+    intent.provider_code = PRESTATAIRE
+    if intent.status == PaymentIntent.Status.DRAFT:
+        intent.transition_to(PaymentIntent.Status.REQUIRES_ACTION, save=False)
+    intent.save(update_fields=["provider_code", "status", "updated_at"])
+    tentative = PaymentAttempt.objects.create(
+        intent=intent, external_reference=f"{intent.reference}-W", provider_code=PRESTATAIRE, amount_xaf=montant,
+        payer_msisdn_masked=intent.payer_msisdn_masked, payer_operator=intent.payer_operator,
+        request_payload={"amount_xaf": montant, "wallet": True})
+    confirm_payment(tentative)
+    intent.refresh_from_db()
+    return intent
+
+
+def rembourser(refund) -> None:
+    """R03.6 : une commande payee par le Wallet est remboursee sur le Wallet, dans la part d'ou l'argent venait."""
+    intent = refund.intent
+    p = portefeuille_de(intent.buyer, verrou=True)
+    paiement = MouvementPortefeuille.objects.filter(reference=f"paiement-{intent.reference}").first()
+    payes = -paiement.montant_xaf if paiement else 0
+    part_geste = math.floor(refund.amount_xaf * -paiement.part_geste_xaf / payes) if payes else 0
+    _mouvement(p, MouvementPortefeuille.Sorte.REMBOURSEMENT, f"remboursement-{refund.reference}",
+               retirable=refund.amount_xaf - part_geste, geste=part_geste, intent_reference=intent.reference,
+               libelle="Remboursement sur le Wallet")
+    post(kind=LedgerTransaction.Kind.REFUND,
+         lines=[debit(coa.ESCROW_LIABILITY, refund.amount_xaf, label=f"Remboursement {refund.reference}"),
+                credit(coa.WALLET_LIABILITY, refund.amount_xaf, label="Credit du Wallet")],
+         description=f"Remboursement {refund.reference} sur le Wallet ({intent.reference}) — R03.6",
+         source_type="Refund", source_ref=refund.reference, correlation_id=intent.correlation_id,
+         created_by_label="wallet.services.rembourser")
+
+
+# ── Geste commercial (R03.6) : demande, puis approbation par un autre membre de l'equipe ─────────────────
+
+def demander_geste(user, *, montant: int, motif: str, demande_par) -> GestePortefeuille:
+    _exiger_ouvert()
+    if int(montant) <= 0 or not (motif or "").strip():
+        raise WalletError("geste", "Montant et motif obligatoires.")
+    return GestePortefeuille.objects.create(client=user, montant_xaf=int(montant), motif=motif.strip()[:200],
+                                            demande_par=demande_par)
+
+
+@db_transaction.atomic
+def decider_geste(geste: GestePortefeuille, *, par, accepte: bool) -> GestePortefeuille:
+    geste = GestePortefeuille.objects.select_for_update().get(pk=geste.pk)
+    if geste.statut != GestePortefeuille.Statut.EN_ATTENTE:
+        raise WalletError("geste_decide", "Ce geste est déjà décidé.")
+    if par.pk == geste.demande_par_id:
+        raise WalletError("separation", "Le demandeur ne peut pas approuver son propre geste.")
+    geste.decide_par, geste.decide_le = par, timezone.now()
+    if not accepte:
+        geste.statut = GestePortefeuille.Statut.REFUSE
+        geste.save(update_fields=["statut", "decide_par", "decide_le"])
+        return geste
+    _exiger_ouvert()
+    p = portefeuille_de(geste.client, verrou=True)
+    _plafond(p, geste.montant_xaf)
+    _mouvement(p, MouvementPortefeuille.Sorte.GESTE, f"geste-{geste.pk}", geste=geste.montant_xaf,
+               libelle=geste.motif)
+    post(kind=LedgerTransaction.Kind.ADJUSTMENT,
+         lines=[debit(coa.EXPENSE_COMMERCIAL_GESTURE, geste.montant_xaf, label=f"Geste commercial #{geste.pk}"),
+                credit(coa.WALLET_LIABILITY, geste.montant_xaf, label="Credit du Wallet")],
+         description=f"Geste commercial #{geste.pk} : {geste.motif} — R03.6",
+         source_type="GestePortefeuille", source_ref=str(geste.pk), created_by_label="wallet.services.decider_geste")
+    geste.statut = GestePortefeuille.Statut.CREDITE
+    geste.save(update_fields=["statut", "decide_par", "decide_le"])
+    return geste
+
+
+# ── Retrait (R03.4) ──────────────────────────────────────────────────────────────────────────────────────
+
+def frais_retrait(montant: int) -> int:
+    return math.ceil(int(montant) * regles.reglage("r_retrait_wallet"))
+
+
+def numeros_de_recharge(user) -> list:
+    """Les numeros qui ont recharge ce Wallet, du plus recent au plus ancien (seules destinations d'un retrait)."""
+    from apps.payments.intents.models import PaymentIntent
+
+    vus, numeros = set(), []
+    for intent in PaymentIntent.objects.filter(buyer=user, idempotency_key__startswith=CLE_RECHARGE,
+                                               status=PaymentIntent.Status.SUCCEEDED).order_by("-confirmed_at"):
+        if intent.payer_msisdn_fingerprint not in vus:
+            vus.add(intent.payer_msisdn_fingerprint)
+            numeros.append(intent)
+    return numeros
+
+
+def devis_retrait(user, montant: int) -> dict:
+    """Montre avant validation : frais et somme recue (R03.4, feuille de route D16)."""
+    montant = int(montant)
+    frais = frais_retrait(montant)
+    p = portefeuille_de(user)
+    return {"montant": montant, "frais": frais, "recu": montant - frais, "retirable": p.solde_retirable_xaf,
+            "minimum": regles.reglage("r_retrait_wallet_min"),
+            "numeros": [i.payer_msisdn_masked for i in numeros_de_recharge(user)]}
+
+
+@db_transaction.atomic
+def retirer(user, *, montant: int, numero_masque: str = "", cle: str = ""):
+    """
+    Le client retire `montant` de la part retirable ; il recoit montant - frais sur un numero qui a recharge.
+    Meme chemin et memes garde-fous qu'un versement : jamais de reessai, une issue inconnue reste a reconcilier.
+    """
+    from apps.payments.bridge.actors import payee_for_buyer
+    from apps.payments.infrastructure.providers.base import ProviderTimeout, WithdrawRequest
+    from apps.payments.infrastructure.providers.registry import get_active_provider
+    from apps.payments.settlements.models import PayoutRequest
+
+    _exiger_ouvert()
+    montant = int(montant)
+    if montant < regles.reglage("r_retrait_wallet_min"):
+        raise WalletError("retrait_min", f"Le retrait minimum est de {regles.reglage('r_retrait_wallet_min')} F.")
+    reference = f"retrait-{cle or uuid.uuid4()}"
+    deja = MouvementPortefeuille.objects.filter(reference=reference).first()
+    if deja is not None:
+        return deja
+    numeros = numeros_de_recharge(user)
+    source = next((i for i in numeros if not numero_masque or i.payer_msisdn_masked == numero_masque), None)
+    if source is None:
+        raise WalletError("numero", "Le retrait part seulement vers un numéro qui a rechargé ce Wallet.")
+    frais = frais_retrait(montant)
+    p = portefeuille_de(user, verrou=True)
+    if p.solde_retirable_xaf < montant:  # R03.6 : jamais les gestes
+        raise WalletError("solde_insuffisant", "Montant supérieur à la part retirable du Wallet.")
+    mouvement = _mouvement(p, MouvementPortefeuille.Sorte.RETRAIT, reference, retirable=-montant, frais_xaf=frais,
+                           libelle="Retrait vers Mobile Money")
+
+    prestataire = get_active_provider()
+    beneficiaire = payee_for_buyer(user, create=True)
+    beneficiaire.set_momo_number(source.payer_msisdn, source.payer_operator or "MTN")
+    beneficiaire.save(update_fields=["momo_number_enc", "momo_number_masked", "momo_fingerprint", "momo_operator",
+                                     "updated_at"])
+    versement = PayoutRequest(
+        batch=None, payee=beneficiaire, amount_xaf=montant - frais, required_approvals=0,
+        payee_msisdn_masked=source.payer_msisdn_masked, payee_operator=source.payer_operator, requested_by=user,
+        justification=f"Retrait du Wallet {reference} — R03.4", provider_code=prestataire.code,
+        status=PayoutRequest.Status.DRAFT)
+    versement.save()
+    for etat in (PayoutRequest.Status.PENDING_APPROVAL, PayoutRequest.Status.APPROVED,
+                 PayoutRequest.Status.PROCESSING):
+        versement.transition_to(etat, save=False)
+    versement.executed_at = timezone.now()
+    versement.save()
+    mouvement.payout_reference = versement.reference
+    mouvement.save(update_fields=["payout_reference"])
+
+    tresorerie = coa.psp_account_for(source.payer_operator, degraded=True)
+    try:
+        resultat = prestataire.withdraw(WithdrawRequest(
+            external_reference=versement.provider_external_reference, amount_xaf=montant - frais,
+            msisdn=source.payer_msisdn, operator=source.payer_operator or "", description=f"BelivaY {reference}"))
+    except Exception as exc:  # ProviderTimeout ou incident : on ne sait pas si l'argent est parti
+        message = str(exc) if isinstance(exc, ProviderTimeout) else f"Incident technique : {type(exc).__name__} — {exc}"
+        logger.error("Issue INCONNUE sur le retrait %s : %s. Ne JAMAIS retenter sans reconciliation.",
+                     reference, message)
+        versement.error_message = message
+        versement.transition_to(PayoutRequest.Status.UNKNOWN, save=False)
+        versement.save(update_fields=["status", "error_message"])
+        post(kind=LedgerTransaction.Kind.PAYOUT,
+             lines=[debit(coa.PSP_IN_TRANSIT, montant - frais, label=f"Retrait a issue inconnue {reference}"),
+                    credit(tresorerie, montant - frais, label="Sortie presumee")],
+             description=f"Retrait du Wallet {reference} — issue INCONNUE. Reconciliation obligatoire.",
+             source_type="PayoutRequest", source_ref=versement.reference,
+             created_by_label="wallet.services.retirer")
+        return mouvement
+
+    versement.provider_reference = resultat.provider_reference
+    versement.provider_status_raw = resultat.raw_status
+    versement.response_payload = resultat.raw_response or {}
+    versement.error_code, versement.error_message = resultat.error_code, resultat.error_message
+    if not resultat.accepted:
+        versement.transition_to(PayoutRequest.Status.FAILED, save=False)
+        versement.save()
+        # Rien n'est parti : la part retirable est rendue, aucune ecriture au grand livre.
+        return _mouvement(p, MouvementPortefeuille.Sorte.RETRAIT_ANNULE, f"{reference}-annule", retirable=montant,
+                          payout_reference=versement.reference,
+                          libelle=(resultat.error_message or "Retrait refusé par l'opérateur")[:200])
+    versement.save()
+    lignes = [debit(coa.WALLET_LIABILITY, montant, label=f"Retrait {reference}"),
+              credit(tresorerie, montant - frais, label="Sortie de tresorerie")]
+    if frais:
+        lignes.append(credit(coa.REVENUE_WALLET_WITHDRAWAL_FEE, frais, label="Frais de retrait (R03.4)"))
+    post(kind=LedgerTransaction.Kind.PAYOUT, lines=lignes,
+         description=f"Retrait du Wallet {reference} vers {source.payer_msisdn_masked} — R03.4",
+         source_type="PayoutRequest", source_ref=versement.reference, created_by_label="wallet.services.retirer")
+    versement.transition_to(PayoutRequest.Status.PAID, save=False)
+    versement.settled_at = timezone.now()
+    versement.save(update_fields=["status", "settled_at"])
+    return mouvement
+
+
+# ── Suivi pour l'administration (feuille de route D16) ───────────────────────────────────────────────────
+
+def suivi() -> dict:
+    """Somme des Wallets contre le solde du compte 2050 ; les retraits a issue inconnue restent dus au grand livre."""
+    from django.db.models import Sum
+
+    from apps.payments.ledger.balances import balance
+    from apps.payments.settlements.models import PayoutRequest
+
+    totaux = Portefeuille.objects.aggregate(r=Sum("solde_retirable_xaf"), g=Sum("solde_geste_xaf"))
+    inconnus = list(MouvementPortefeuille.objects.filter(
+        sorte=MouvementPortefeuille.Sorte.RETRAIT,
+        payout_reference__in=PayoutRequest.objects.filter(status=PayoutRequest.Status.UNKNOWN)
+        .values_list("reference", flat=True)))
+    en_suspens = sum(-m.montant_xaf for m in inconnus)
+    detail = (totaux["r"] or 0) + (totaux["g"] or 0)
+    grand_livre = int(balance(coa.WALLET_LIABILITY))
+    return {"ouvert": ouvert(), "retirable_xaf": totaux["r"] or 0, "geste_xaf": totaux["g"] or 0,
+            "wallets": Portefeuille.objects.count(), "retraits_inconnus_xaf": en_suspens,
+            "grand_livre_2050_xaf": grand_livre, "ecart_xaf": grand_livre - detail - en_suspens,
+            "gestes_en_attente": GestePortefeuille.objects.filter(statut=GestePortefeuille.Statut.EN_ATTENTE).count()}

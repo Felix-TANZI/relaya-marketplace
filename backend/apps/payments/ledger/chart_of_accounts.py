@@ -90,6 +90,9 @@ CHART = [
     _a("2030", "Remboursements a verser", LIABILITY, CREDIT, is_auxiliary=True),
     _a("2040", "Ajustements a verser", LIABILITY, CREDIT, is_auxiliary=True,
        description="Compensations et bonus dus a un partenaire."),
+    _a("2050", "Soldes des Wallets clients", LIABILITY, CREDIT,
+       description="Spec v2.1, R03 (feuille de route D16) : argent des clients, detaille par Wallet. Aucun "
+                   "mouvement tant que r_wallet_ouvert = 0."),
 
     # ── ATTENTE ──────────────────────────────────────────────────────────────
     _a("3010", "Compte d'attente", SUSPENSE, DEBIT,
@@ -99,6 +102,8 @@ CHART = [
     # ── PRODUITS — chiffre d'affaires BelivaY, base fiscale ──────────────────
     _a("4010", "Commissions sur ventes", REVENUE, CREDIT),
     _a("4015", "Part plateforme sur transport", REVENUE, CREDIT),
+    _a("4030", "Frais de retrait du Wallet", REVENUE, CREDIT,
+       description="R03.4 : r_retrait_wallet paye par le client (frais de son depot et de son retrait)."),
     _a("4020", "Abonnements vendeurs", REVENUE, CREDIT, is_reserved=True,
        description="Reserve. Les abonnements sont hors perimetre du lancement."),
 
@@ -109,6 +114,8 @@ CHART = [
        description="Charge plateforme. Aucun frais n'est retenu au partenaire : "
                    "il recoit l'integralite de son net."),
     _a("5020", "Pertes et abandons de creance", EXPENSE, DEBIT),
+    _a("5030", "Gestes commerciaux", EXPENSE, DEBIT,
+       description="R03.6 : gestes credites par BelivaY sur un Wallet ; ils ne se retirent jamais."),
 ]
 
 #: Index par code
@@ -128,7 +135,7 @@ PSP_PROVIDER_CODES = frozenset(
 
 #: Comptes de dette envers des tiers — entrent dans le calcul de solvabilite
 THIRD_PARTY_LIABILITY_CODES = frozenset(
-    {"2010", "2020", "2021", "2022", "2023", "2030", "2040"}
+    {"2010", "2020", "2021", "2022", "2023", "2030", "2040", "2050"}
 )
 
 #: Comptes reserves — declares mais sans mouvement en Phase 1
@@ -141,6 +148,7 @@ PAYABLE_DELIVERY_COMPANY = "2022"
 PAYABLE_RELAY_POINT = "2023"
 REFUND_PAYABLE = "2030"
 PAYABLE_ADJUSTMENT = "2040"
+WALLET_LIABILITY = "2050"
 RECEIVABLE_PARTNER = "1030"
 SUSPENSE_ACCOUNT = "3010"
 REVENUE_COMMISSION = "4010"
@@ -148,6 +156,8 @@ REVENUE_TRANSPORT_SHARE = "4015"
 EXPENSE_PSP_COLLECT = "5010"
 EXPENSE_PSP_PAYOUT = "5011"
 EXPENSE_WRITEOFF = "5020"
+EXPENSE_COMMERCIAL_GESTURE = "5030"
+REVENUE_WALLET_WITHDRAWAL_FEE = "4030"
 PSP_AVAILABLE = "1010"
 PSP_AVAILABLE_MTN = "1011"
 PSP_AVAILABLE_ORANGE = "1012"

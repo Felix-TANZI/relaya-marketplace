@@ -4,7 +4,7 @@
 #
 # Cette commande cree des ConfigChangeRequest (maker) pour EscrowPolicy et les
 # DistributionRule GOODS/TRANSPORT/RELAY_HANDLING — aucune ligne n'existait en
-# base avant elle. On verifie qu'elle cree bien 5 demandes PENDING, sans rien
+# base avant elle. On verifie qu'elle cree bien 6 demandes PENDING, sans rien
 # appliquer, et que la separation des roles reste en vigueur (le demandeur ne
 # peut pas approuver lui-meme via le flux normal).
 
@@ -28,14 +28,15 @@ def approbateur():
     return User.objects.create_user("approbateur_finance", "approbateur@belivay.cm", "x")
 
 
-def test_cree_cinq_demandes_pending_sans_rien_appliquer(demandeur):
+def test_cree_six_demandes_pending_sans_rien_appliquer(demandeur):
     assert EscrowPolicy.objects.count() == 0
     assert DistributionRule.objects.count() == 0
 
     call_command("request_locked_financial_config", username=demandeur.username)
 
     demandes = ConfigChangeRequest.objects.filter(status=ConfigChangeRequest.Status.PENDING)
-    assert demandes.count() == 5  # 1 EscrowPolicy + 4 DistributionRule (goods, transport-carrier, transport-platform, relay)
+    # 1 EscrowPolicy + 5 DistributionRule (goods, transport-carrier, transport-platform, relay, payment-fee)
+    assert demandes.count() == 6
     # Aucune version reelle n'existe tant que personne n'a approuve.
     assert EscrowPolicy.objects.count() == 0
     assert DistributionRule.objects.count() == 0
@@ -56,9 +57,10 @@ def test_un_second_compte_peut_approuver_et_les_valeurs_sont_correctes(demandeur
     approve_change(escrow_demande, approved_by=approbateur)
 
     policy = EscrowPolicy.objects.get(config_key="escrow-default", is_active=True)
-    assert policy.auto_confirm_hours == 96
+    # Spec v2.1, R23 : auto-confirmation fixée au retrait (0 au paiement), libération + 3 j, fenêtre de 7 j.
+    assert policy.auto_confirm_hours == 0
     assert policy.release_delay_hours == 72
-    assert policy.dispute_window_days == 4
+    assert policy.dispute_window_days == 7
 
     transport_demande = ConfigChangeRequest.objects.get(target_key="dist-transport-carrier")
     approve_change(transport_demande, approved_by=approbateur)

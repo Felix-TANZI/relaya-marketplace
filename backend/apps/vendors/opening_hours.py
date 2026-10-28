@@ -22,7 +22,9 @@
 #   remplacer quand la vraie tournée (Tournee, apps.shipping) sera exposée
 #   au vendeur.
 
-from datetime import datetime, timedelta, timezone as dt_timezone
+from datetime import datetime, timedelta
+from datetime import timezone as dt_timezone
+from typing import overload
 
 H = 3_600_000          # 1 heure en ms
 J = 24 * H             # 1 jour en ms
@@ -33,8 +35,22 @@ def now_ms() -> int:
     return int(datetime.now(dt_timezone.utc).timestamp() * 1000)
 
 
+@overload
+def dt_to_ms(dt: None) -> None: ...
+@overload
+def dt_to_ms(dt: datetime) -> int: ...
+
+
 def dt_to_ms(dt) -> int | None:
-    """datetime (aware ou naïf, interprété UTC) → Instant (ms). None → None."""
+    """
+    datetime (aware ou naïf, interprété UTC) → Instant (ms). None → None.
+
+    Les deux surcharges ci-dessus ne changent rien à l'exécution : elles
+    disent seulement ce que le corps fait déjà, à savoir que le resultat ne
+    vaut None que si l'entree valait None. Sans elles, les appelants qui ont
+    deja verifie leur date recevaient un `int | None` et devaient le
+    retester — six fausses erreurs dans `apps/vendors/views.py`.
+    """
     if dt is None:
         return None
     if dt.tzinfo is None:

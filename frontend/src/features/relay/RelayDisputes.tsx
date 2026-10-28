@@ -349,15 +349,14 @@ export default function RelayDisputes({
     }
   };
 
-  // La référence saisie désigne un colis par son numéro de commande ou par le
-  // code de retrait du client — les deux figurent sur ce que le client montre.
+  // La référence saisie désigne un colis par son numéro de commande. Le code de
+  // retrait n'est jamais connu du relais (D12, R66.1) : il ne sert pas ici.
   const matched = useMemo(() => {
     const texte = query.trim().toUpperCase();
     if (texte.length < 3) return null;
     const chiffres = texte.replace(/\D/g, "");
     return (
       parcels.find((parcel) => parcel.ref.toUpperCase() === texte)
-      ?? parcels.find((parcel) => parcel.pickupCode && parcel.pickupCode.toUpperCase() === texte)
       ?? (chiffres ? parcels.find((parcel) => String(parcel.orderId) === chiffres) : undefined)
       ?? null
     );

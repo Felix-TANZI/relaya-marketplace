@@ -316,8 +316,8 @@ function OrderCard({ order, onAdvance, onInvoice, updating }: {
         style={{ padding: '12px 20px', background: T.cream, borderTop: `1px solid ${T.border}` }}>
         <p className="flex items-center gap-1.5 font-medium flex-wrap" style={{ fontSize: 11.5, color: T.muted }}>
           <Lock size={12} style={{ color: escrow.color }} />
-          {t('sl3_orders.gross_commission', { gross: fmtXAF(order.vendor_subtotal), rate: order.commission_rate.toFixed(1) })}
-          <span style={{ color: T.red }}>− {nf(order.commission_amount)}</span>
+          {/* R26.1 : le vendeur ne voit que le net */}
+          {t('sl3_orders.net_label')}
         </p>
         <p className="font-black" style={{ fontSize: 15, color: T.orange }}>
           {fmtXAF(order.vendor_net_amount ?? 0)}

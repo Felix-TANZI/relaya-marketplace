@@ -129,14 +129,39 @@ def mirror_payment_confirmed(intent) -> int:
         if not commandes:
             return 0
 
-        modifiees = Order.objects.filter(
+        from django.utils import timezone
+
+        # Spec v2.1, R42.4 (feuille de route D14) : le reste paye au comptoir rend la commande « Payée » et revele
+        # son code de retrait ; l'avance seule la laisse « Validée », mais le vendeur prepare deja.
+        if intent.idempotency_key.endswith("-comptoir"):
+            return _comptoir_paye(intent, [c.pk for c in commandes])
+
+        a_payer = Order.objects.filter(
             pk__in=[c.pk for c in commandes],
             payment_status=Order.PaymentStatus.PENDING,
-        ).update(
+        )
+        payees = list(a_payer.values_list("pk", flat=True))
+        modifiees = a_payer.filter(paiement_comptoir=True).update(
+            payment_status=Order.PaymentStatus.VALIDATED,
+            fulfillment_status=Order.FulfillmentStatus.PAID_IN_ESCROW,
+            escrow_status=Order.EscrowStatus.BLOCKED,
+        )
+        modifiees += a_payer.update(
             payment_status=Order.PaymentStatus.PAID,
             fulfillment_status=Order.FulfillmentStatus.PAID_IN_ESCROW,
             escrow_status=Order.EscrowStatus.BLOCKED,
         )
+        # Spec v2.1 (A3) : heure promise et echeances figees au paiement (R45.7). Un echec n'annule jamais le
+        # miroir : la commande est payee, quoi qu'il arrive au calcul de la promesse.
+        from apps.orders.delais import figer_au_paiement
+        for commande in Order.objects.filter(pk__in=payees):
+            try:
+                figer_au_paiement(commande, intent.confirmed_at or timezone.now())
+            except Exception:
+                logger.exception("Promesse non figee pour la commande #%s.", commande.pk)
+            # Feuille de route D7, R78.1 : SMS « paiement protege » (ne bloque jamais le miroir).
+            from apps.orders import sms
+            sms.paiement_protege(commande)
         return modifiees
     except Exception:
         logger.exception(
@@ -144,6 +169,27 @@ def mirror_payment_confirmed(intent) -> int:
             getattr(intent, "reference", "?"),
         )
         return 0
+
+
+def _comptoir_paye(intent, pks) -> int:
+    """R42.4 : reste encaisse au comptoir ; le code de retrait du colis deja au relais part au client."""
+    from django.utils import timezone
+
+    from apps.orders import comptoir
+    from apps.orders.models import Order
+    from apps.shipping.models import RelayParcel
+
+    a_payer = Order.objects.filter(pk__in=pks, payment_status=Order.PaymentStatus.VALIDATED)
+    payees = list(a_payer.values_list("pk", flat=True))
+    modifiees = a_payer.update(payment_status=Order.PaymentStatus.PAID,
+                               comptoir_paye_le=intent.confirmed_at or timezone.now())
+    for commande in Order.objects.filter(pk__in=payees):
+        colis = (RelayParcel.objects.filter(shipment__order=commande, status__in=[RelayParcel.Status.RECEIVED,
+                                                                                 RelayParcel.Status.STORED])
+                 .exclude(pickup_code="").select_related("relay_point").first())
+        if colis is not None:
+            comptoir.annoncer_retrait(commande, colis.pickup_code, colis.relay_point.name)
+    return modifiees
 
 
 def compare_states(order_id: int) -> dict:

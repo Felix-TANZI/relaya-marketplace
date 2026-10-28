@@ -1,0 +1,870 @@
+[
+ {
+  "code": "ENT-CRENEAUX-ATTENTE-MAX",
+  "valeur": "2",
+  "unite": "créneaux",
+  "ref": "ENT-PQS-01, glossaire",
+  "source": "01"
+ },
+ {
+  "code": "ENT-TSC-GEL",
+  "valeur": "30 / 90",
+  "unite": "jours",
+  "ref": "ENT-TSC-04",
+  "source": "01"
+ },
+ {
+  "code": "ENT-MARGE-SECURITE",
+  "valeur": "10",
+  "unite": "% (diviseur 1,1)",
+  "ref": "ENT-TAR-06, ENT-MOD-06",
+  "source": "01"
+ },
+ {
+  "code": "ENT-HORS-ZONE-PLAFOND",
+  "valeur": "-200",
+  "unite": "F CFA",
+  "ref": "ENT-RG §15",
+  "source": "01"
+ },
+ {
+  "code": "ENT-PLAFOND-RELAIS-S",
+  "valeur": "630",
+  "unite": "F CFA",
+  "ref": "ENT-RG §15",
+  "source": "01"
+ },
+ {
+  "code": "ENT-PLAFOND-RELAIS-M",
+  "valeur": "860 (doc) ; 590 après DP-07",
+  "unite": "F CFA",
+  "ref": "ENT-RG §15, ENT-02 §15",
+  "source": "01"
+ },
+ {
+  "code": "ENT-PLAFOND-RELAIS-L",
+  "valeur": "1 900 (doc) ; 630 après DP-07/DP-25",
+  "unite": "F CFA",
+  "ref": "ENT-RG §15",
+  "source": "01"
+ },
+ {
+  "code": "ENT-PLAFOND-XL",
+  "valeur": "3 630 (doc) ; 2 720 / 3 180 / 4 090 selon distance après DP-07",
+  "unite": "F CFA",
+  "ref": "ENT-RG §15",
+  "source": "01"
+ },
+ {
+  "code": "ENT-PLAFOND-DOMICILE-S",
+  "valeur": "1 350 (écrit) ; 1 360 par la règle d'arrondi",
+  "unite": "F CFA",
+  "ref": "ENT-RG §15",
+  "source": "01"
+ },
+ {
+  "code": "ENT-PLAFOND-RAMASSAGE-MEME-ZONE",
+  "valeur": "340",
+  "unite": "F CFA",
+  "ref": "ENT-RG §15",
+  "source": "01"
+ },
+ {
+  "code": "ENT-PLAFOND-RAMASSAGE-AUTRE-ZONE",
+  "valeur": "450",
+  "unite": "F CFA",
+  "ref": "ENT-RG §15",
+  "source": "01"
+ },
+ {
+  "code": "ENT-PLAFOND-RETOUR",
+  "valeur": "450",
+  "unite": "F CFA",
+  "ref": "ENT-RG §15",
+  "source": "01"
+ },
+ {
+  "code": "ENT-PLAFOND-TRANSFERT",
+  "valeur": "360 (S, M) ; 540 (L, DP-37)",
+  "unite": "F CFA",
+  "ref": "ENT-RG §15",
+  "source": "01"
+ },
+ {
+  "code": "ENT-PRIX-RELAIS-S",
+  "valeur": "900",
+  "unite": "F CFA",
+  "ref": "ENT-RG §6",
+  "source": "01"
+ },
+ {
+  "code": "ENT-PRIX-DOMICILE-S",
+  "valeur": "1500",
+  "unite": "F CFA minimum",
+  "ref": "ENT-RG §6",
+  "source": "01"
+ },
+ {
+  "code": "ENT-PRIX-RAMASSAGE-SUIVANT",
+  "valeur": "380 / 500",
+  "unite": "F CFA",
+  "ref": "ENT-RG §6",
+  "source": "01"
+ },
+ {
+  "code": "ENT-LIVRAISON-OFFERTE",
+  "valeur": "30 000 / 50 000",
+  "unite": "F CFA",
+  "ref": "ENT-RG §6",
+  "source": "01"
+ },
+ {
+  "code": "ENT-PRIX-ETAGE",
+  "valeur": "500",
+  "unite": "F CFA",
+  "ref": "ENT-RG §6",
+  "source": "01"
+ },
+ {
+  "code": "ENT-FRAIS-GARANTIE",
+  "valeur": "1",
+  "unite": "% du prix",
+  "ref": "ENT-RG §6",
+  "source": "01"
+ },
+ {
+  "code": "ENT-GARDE-GRILLE",
+  "valeur": "0, 100, 100, 100, 200, 500, 1 000 (DP-08) ; doc : 0/100/100/200/200/400/400",
+  "unite": "F CFA par jour",
+  "ref": "ENT-RG §6, DP-08",
+  "source": "01"
+ },
+ {
+  "code": "ENT-GARDE-GROS-AJOUT",
+  "valeur": "300",
+  "unite": "F CFA par jour dès J1",
+  "ref": "DP-08",
+  "source": "01"
+ },
+ {
+  "code": "ENT-RENVOI-CLIENT",
+  "valeur": "500",
+  "unite": "F CFA",
+  "ref": "ENT-RG §6, GARDE-RENVOI",
+  "source": "01"
+ },
+ {
+  "code": "ENT-GERANT-PART",
+  "valeur": "200 / 250 / 400",
+  "unite": "F CFA",
+  "ref": "ENT-TAR-02",
+  "source": "01"
+ },
+ {
+  "code": "ENT-GERANT-GARDE",
+  "valeur": "100 (300 gros colis, DP-08)",
+  "unite": "F CFA",
+  "ref": "ENT-TAR-02",
+  "source": "01"
+ },
+ {
+  "code": "ENT-AGENCE-RELAIS",
+  "valeur": "150 / 500 à 1 000 / 100",
+  "unite": "F CFA",
+  "ref": "ENT-TAR-03",
+  "source": "01"
+ },
+ {
+  "code": "ENT-YAFE-ZONES-FUTURES",
+  "valeur": "1 300 / 1 500 (si prix client ≥ 1 650 F)",
+  "unite": "F CFA",
+  "ref": "ENT-RG §16",
+  "source": "01"
+ },
+ {
+  "code": "ENT-REMB-AUTO",
+  "valeur": "3 000 (Standard) / 10 000 (Élevé)",
+  "unite": "F CFA",
+  "ref": "ENT-ARG-06",
+  "source": "01"
+ },
+ {
+  "code": "ENT-C4",
+  "valeur": "100 % des 5 premières ; 1/20 si Trust vendeur < 70 ; 1/100 ensuite",
+  "unite": "fréquence",
+  "ref": "ENT-PRV-10",
+  "source": "01"
+ },
+ {
+  "code": "ENT-LITIGE-REPONSE",
+  "valeur": "48",
+  "unite": "heures",
+  "ref": "ENT-P17R-01",
+  "source": "01"
+ },
+ {
+  "code": "ENT-LITIGE-ARRANGEMENT-MIN",
+  "valeur": "40",
+  "unite": "caractères",
+  "ref": "ENT-RG ENT-P17",
+  "source": "01"
+ },
+ {
+  "code": "ENT-MEDIATION",
+  "valeur": "48 h puis 3 jours",
+  "unite": "—",
+  "ref": "ENT-P17R-04",
+  "source": "01"
+ },
+ {
+  "code": "ENT-SUPPORT-DELAI",
+  "valeur": "4 h ouvrées (Nouveau), 2 h (Confirmé), interlocuteur désigné (Or)",
+  "unite": "—",
+  "ref": "ENT-P22R-03",
+  "source": "01"
+ },
+ {
+  "code": "ENT-INVITATION-EXPIRE",
+  "valeur": "7",
+  "unite": "jours",
+  "ref": "ENT-P07R-03",
+  "source": "01"
+ },
+ {
+  "code": "ENT-CERTIF-QUIZ",
+  "valeur": "16 sur 20 au moins",
+  "unite": "quiz",
+  "ref": "ENT-P07R-05",
+  "source": "01"
+ },
+ {
+  "code": "ENT-PAGE-SIZE",
+  "valeur": "50",
+  "unite": "éléments",
+  "ref": "ENT-02 §31",
+  "source": "01"
+ },
+ {
+  "code": "ENT-REMUN-CONTROLE-EMBALLAGE",
+  "valeur": "90",
+  "unite": "secondes environ par colis",
+  "ref": "ENT-REM-03",
+  "source": "01"
+ },
+ {
+  "code": "ENT-TOUCH-MIN",
+  "valeur": "44",
+  "unite": "px",
+  "ref": "ENT-UIX-03",
+  "source": "01"
+ },
+ {
+  "code": "ENT-BREAKPOINT",
+  "valeur": "> 999 px ordinateur ; 700–999 tablette ; < 700 mobile (prototype 760 px)",
+  "unite": "px",
+  "ref": "ENT-UIX-03, ENT-01, ENT-00",
+  "source": "01"
+ },
+ {
+  "code": "ENT-DOCK-HAUTEUR",
+  "valeur": "64",
+  "unite": "px",
+  "ref": "ENT-01",
+  "source": "01"
+ },
+ {
+  "code": "ENT-SIDEBAR-LARGEUR",
+  "valeur": "268",
+  "unite": "px",
+  "ref": "ENT-01",
+  "source": "01"
+ },
+ {
+  "code": "ENT-LANGUES",
+  "valeur": "français, anglais (DP-13 ; le doc demande aussi le pidgin)",
+  "unite": "—",
+  "ref": "ENT-UIX-05",
+  "source": "01"
+ },
+ {
+  "code": "heures_service_logistique",
+  "valeur": "lundi au samedi, 8 h – 18 h",
+  "unite": "plage horaire",
+  "ref": "ENT-04 p15",
+  "source": "02"
+ },
+ {
+  "code": "delai_livraison_zone",
+  "valeur": "moins de 5 h (de « C'est prêt » à la remise)",
+  "unite": "h",
+  "ref": "ENT-04 p15 ; ENT-ZON-04",
+  "source": "02"
+ },
+ {
+  "code": "acceptation_course_max",
+  "valeur": "15",
+  "unite": "minutes",
+  "ref": "ENT-ZON-05",
+  "source": "02"
+ },
+ {
+  "code": "ramassage_apres_acceptation_max",
+  "valeur": "1 h 30",
+  "unite": "h",
+  "ref": "ENT-ZON-05",
+  "source": "02"
+ },
+ {
+  "code": "type_livreur_au_lancement",
+  "valeur": "livreur partenaire",
+  "unite": "—",
+  "ref": "ENT-04 p25",
+  "source": "02"
+ },
+ {
+  "code": "tarif_mission_affiche",
+  "valeur": "facultatif, fixé par l'entreprise",
+  "unite": "F",
+  "ref": "ENT-04 p41",
+  "source": "02"
+ },
+ {
+  "code": "quiz_reessai",
+  "valeur": "2 h ; 3 essais par jour au plus",
+  "unite": "h",
+  "ref": "LIV-CER-02 cité ENT-04 p50",
+  "source": "02"
+ },
+ {
+  "code": "plaque_unique",
+  "valeur": "oui, signalée à la console",
+  "unite": "—",
+  "ref": "ENT-04 p61",
+  "source": "02"
+ },
+ {
+  "code": "trust_baisse_max",
+  "valeur": "8",
+  "unite": "points",
+  "ref": "ENT-TSC-04",
+  "source": "02"
+ },
+ {
+  "code": "trust_veto_plafond",
+  "valeur": "39",
+  "unite": "points",
+  "ref": "ENT-TSC-02",
+  "source": "02"
+ },
+ {
+  "code": "trust_neutre",
+  "valeur": "µ = 50, k = 10 ; demi-vie des événements 90 jours",
+  "unite": "—",
+  "ref": "ENT-TSC-01",
+  "source": "02"
+ },
+ {
+  "code": "trust_gel_inactivite",
+  "valeur": "30 jours ; revue à 90 jours",
+  "unite": "jours",
+  "ref": "ENT-TSC-04",
+  "source": "02"
+ },
+ {
+  "code": "delai_acceptation_paquet",
+  "valeur": "15",
+  "unite": "min",
+  "ref": "ENT-05 p14, p24",
+  "source": "02"
+ },
+ {
+  "code": "fenetre_priorite_premier_rang",
+  "valeur": "5",
+  "unite": "min",
+  "ref": "ENT-05 p14 (question ouverte n° 2)",
+  "source": "02"
+ },
+ {
+  "code": "delai_ramassage_apres_acceptation",
+  "valeur": "1 h 30",
+  "unite": "h",
+  "ref": "ENT-05 p14",
+  "source": "02"
+ },
+ {
+  "code": "promesse_livraison_zone",
+  "valeur": "5",
+  "unite": "h",
+  "ref": "ENT-05 p14",
+  "source": "02"
+ },
+ {
+  "code": "marge_depot_avant_fermeture_relais",
+  "valeur": "15",
+  "unite": "min",
+  "ref": "ENT-05 p14",
+  "source": "02"
+ },
+ {
+  "code": "minoration_retard",
+  "valeur": "20",
+  "unite": "%",
+  "ref": "ENT-05 p14 ; ENT-REM-06",
+  "source": "02"
+ },
+ {
+  "code": "preavis_nouvelle_grille",
+  "valeur": "30",
+  "unite": "jours",
+  "ref": "ENT-05 p14",
+  "source": "02"
+ },
+ {
+  "code": "delai_disparition_paquet_pris",
+  "valeur": "moins de 5 s (autre entreprise), moins de 3 s (collègue)",
+  "unite": "s",
+  "ref": "ENT-05 p24",
+  "source": "02"
+ },
+ {
+  "code": "evenement_paquet_rendu",
+  "valeur": "compté au Trust Score ; plus de 3 en 7 jours = perte de la fenêtre de priorité 7 jours",
+  "unite": "—",
+  "ref": "ENT-05 p34",
+  "source": "02"
+ },
+ {
+  "code": "alerte_non_affecte",
+  "valeur": "15 min après l'acceptation",
+  "unite": "min",
+  "ref": "ENT-05 p43",
+  "source": "02"
+ },
+ {
+  "code": "alerte_depart_avant_creneau",
+  "valeur": "30",
+  "unite": "min",
+  "ref": "ENT-05 p43",
+  "source": "02"
+ },
+ {
+  "code": "alerte_ramassage_non_commence",
+  "valeur": "1 h 30 après l'acceptation",
+  "unite": "h",
+  "ref": "ENT-05 p43",
+  "source": "02"
+ },
+ {
+  "code": "plafond_palier_entreprise",
+  "valeur": "Nouveau 75 000 F ; Confirmé 250 000 F ; Or sans plafond",
+  "unite": "F",
+  "ref": "ENT-05 p12 ; ENT-PAL-01",
+  "source": "02"
+ },
+ {
+  "code": "plafond_relais_S",
+  "valeur": "630 (= (900 − 200) ÷ 1,1, dizaine inférieure)",
+  "unite": "F/colis",
+  "ref": "ENT-05 p13",
+  "source": "02"
+ },
+ {
+  "code": "plafond_domicile_S",
+  "valeur": "1 350 (= 1 500 ÷ 1,1)",
+  "unite": "F",
+  "ref": "ENT-05 p13",
+  "source": "02"
+ },
+ {
+  "code": "marge_securite_tarifaire",
+  "valeur": "10",
+  "unite": "%",
+  "ref": "ENT-TAR-06",
+  "source": "02"
+ },
+ {
+  "code": "grille_yafe_v1",
+  "valeur": "domicile 1 000 F (Z3/Z6/Z7), 1 200 F (Z1) ; relais 1–4 : 600, 5–9 : 450, ≥10 : 350 F/colis ; relais autre zone 700/550/450 F",
+  "unite": "F",
+  "ref": "ENT-05 p12",
+  "source": "02"
+ },
+ {
+  "code": "supplements_entreprise",
+  "valeur": "C2 +300 F ; gros colis sur devis ; client absent course + 300 F ; refus produit conforme course + 500 F ; boutique fermée / non conforme 300 F",
+  "unite": "F",
+  "ref": "ENT-05 p12",
+  "source": "02"
+ },
+ {
+  "code": "seuil_depart_paquet_relais",
+  "valeur": "5 colis ; obligatoire au 2e créneau ; 2 tournées relais/jour ; équilibre 8 colis",
+  "unite": "colis",
+  "ref": "ENT-PQS-01/02",
+  "source": "02"
+ },
+ {
+  "code": "kit_journalier_moto",
+  "valeur": "8 S, 12 M, 6 L, 3 C1, 1 C2 (C2 au stockage)",
+  "unite": "pochettes",
+  "ref": "ENT-EMB-05",
+  "source": "02"
+ },
+ {
+  "code": "remuneration_agence_relais",
+  "valeur": "150 F par colis remis ; 500 à 1 000 F par gros colis ; 100 F par jour de garde facturé",
+  "unite": "F",
+  "ref": "ENT-TAR-03",
+  "source": "02"
+ },
+ {
+  "code": "delai_alerte_perte_hors_connexion",
+  "valeur": "2 h sans signe",
+  "unite": "h",
+  "ref": "ENT-06 p14",
+  "source": "02"
+ },
+ {
+  "code": "delai_decision_incident_bloquant",
+  "valeur": "15",
+  "unite": "min",
+  "ref": "ENT-06 p28",
+  "source": "02"
+ },
+ {
+  "code": "longueur_min_note_livreur",
+  "valeur": "25",
+  "unite": "caractères",
+  "ref": "ENT-06 p27, p49",
+  "source": "02"
+ },
+ {
+  "code": "deplacement_boutique_fermee",
+  "valeur": "300",
+  "unite": "F",
+  "ref": "ENT-06 p29",
+  "source": "02"
+ },
+ {
+  "code": "seuil_file_revue_synchronisation",
+  "valeur": "12",
+  "unite": "h",
+  "ref": "ENT-06 p47",
+  "source": "02"
+ },
+ {
+  "code": "heure_arret_taux_quotidien",
+  "valeur": "23 h 59",
+  "unite": "heure",
+  "ref": "ENT-06 p47",
+  "source": "02"
+ },
+ {
+  "code": "codes_essais_blocage",
+  "valeur": "3 essais puis blocage 24 h",
+  "unite": "—",
+  "ref": "ENT-PRV-01",
+  "source": "02"
+ },
+ {
+  "code": "delai_mediation · delai_mediateur_senior",
+  "valeur": "48 h · 3 jours",
+  "unite": "",
+  "ref": "ENT-07 p4-19",
+  "source": "03"
+ },
+ {
+  "code": "conservation_dossier",
+  "valeur": "180 jours",
+  "unite": "",
+  "ref": "ENT-07 p4-19",
+  "source": "03"
+ },
+ {
+  "code": "jour_versement · heure_limite",
+  "valeur": "vendredi · avant 12 h",
+  "unite": "",
+  "ref": "ENT-07 p20-35",
+  "source": "03"
+ },
+ {
+  "code": "cloture_periode",
+  "valeur": "jeudi 23 h 59",
+  "unite": "",
+  "ref": "ENT-07 p20-35",
+  "source": "03"
+ },
+ {
+  "code": "blocage_changement_moyen",
+  "valeur": "7 jours",
+  "unite": "",
+  "ref": "ENT-07 p20-35",
+  "source": "03"
+ },
+ {
+  "code": "tentatives_apres_refus · intervalle",
+  "valeur": "3 · 24 h",
+  "unite": "",
+  "ref": "ENT-07 p20-35",
+  "source": "03"
+ },
+ {
+  "code": "report_max_solde_negatif",
+  "valeur": "4 vendredis, puis plan d’apurement",
+  "unite": "",
+  "ref": "ENT-07 p20-35",
+  "source": "03"
+ },
+ {
+  "code": "format_csv",
+  "valeur": "UTF-8, séparateur « ; », une ligne par prestation et par retenue",
+  "unite": "",
+  "ref": "ENT-07 p36-48",
+  "source": "03"
+ },
+ {
+  "code": "conservation_releves",
+  "valeur": "180 jours après la fin du contrat (lecture seule)",
+  "unite": "",
+  "ref": "ENT-07 p36-48",
+  "source": "03"
+ },
+ {
+  "code": "seuils_paliers",
+  "valeur": "Confirmé 70 · Or 85 (tenus 14 jours)",
+  "unite": "",
+  "ref": "ENT-07 p49-63",
+  "source": "03"
+ },
+ {
+  "code": "ecart_descente · duree",
+  "valeur": "5 points · 14 jours",
+  "unite": "",
+  "ref": "ENT-07 p49-63",
+  "source": "03"
+ },
+ {
+  "code": "baisse_max_par_recalcul",
+  "valeur": "8 points",
+  "unite": "",
+  "ref": "ENT-07 p49-63",
+  "source": "03"
+ },
+ {
+  "code": "evenements_propres_entreprise",
+  "valeur": "paquets rendus, délais d’acceptation et de ramassage, pertes non imputables",
+  "unite": "",
+  "ref": "ENT-07 p49-63",
+  "source": "03"
+ },
+ {
+  "code": "seuil_reassort",
+  "valeur": "30 % du stock avancé",
+  "unite": "",
+  "ref": "ENT-08 p3-15",
+  "source": "03"
+ },
+ {
+  "code": "seuil_facturation_ecart",
+  "valeur": "5 % sur un mois",
+  "unite": "",
+  "ref": "ENT-08 p3-15",
+  "source": "03"
+ },
+ {
+  "code": "kit_conseille_moto",
+  "valeur": "8 S, 12 M, 6 L, 3 C1, 1 C2",
+  "unite": "",
+  "ref": "ENT-08 p3-15",
+  "source": "03"
+ },
+ {
+  "code": "delai_support",
+  "valeur": "4 h ouvrées (Nouveau) · 2 h (Confirmé) · interlocuteur (Or)",
+  "unite": "",
+  "ref": "ENT-08 p16-24",
+  "source": "03"
+ },
+ {
+  "code": "heures_service",
+  "valeur": "lundi–samedi, 8 h–18 h",
+  "unite": "",
+  "ref": "ENT-08 p16-24",
+  "source": "03"
+ },
+ {
+  "code": "langues",
+  "valeur": "français, anglais, pidgin",
+  "unite": "",
+  "ref": "ENT-08 p31-45",
+  "source": "03"
+ },
+ {
+  "code": "seuil_donnees_parlantes",
+  "valeur": "30 missions",
+  "unite": "",
+  "ref": "ENT-08 p46-55",
+  "source": "03"
+ },
+ {
+  "code": "objectif_remplissage",
+  "valeur": "8 colis par tournée",
+  "unite": "",
+  "ref": "ENT-08 p46-55",
+  "source": "03"
+ },
+ {
+  "code": "duree_pilote",
+  "valeur": "30 jours",
+  "unite": "",
+  "ref": "ENT-08 p46-55",
+  "source": "03"
+ },
+ {
+  "code": "duree_tentatives_rappel",
+  "valeur": "24 heures",
+  "unite": "",
+  "ref": "ENT-08 p56-63",
+  "source": "03"
+ },
+ {
+  "code": "PLAFOND-DOMICILE-XL",
+  "valeur": "2 720 · 3 180 · 4 090",
+  "unite": "F (< 5 km · 5–10 km · > 10 km)",
+  "ref": "ENT-CT02 ligne 10",
+  "source": "03"
+ },
+ {
+  "code": "OTP-DUREE / OTP-ESSAIS / OTP-RENVOI",
+  "valeur": "10 min ; 5 essais puis 15 min ; 60 s entre envois, 3 envois par heure",
+  "unite": "—",
+  "ref": "ENT-ACC-02, ENT-P01R-03",
+  "source": "03"
+ },
+ {
+  "code": "fenetre_priorite",
+  "valeur": "5",
+  "unite": "min",
+  "ref": "ENT-09 §57 ; ENT-CT01 art. 3",
+  "source": "03"
+ },
+ {
+  "code": "delai_acceptation",
+  "valeur": "15",
+  "unite": "min",
+  "ref": "ENT-CT01 art. 7",
+  "source": "03"
+ },
+ {
+  "code": "delai_ramassage",
+  "valeur": "1 h 30",
+  "unite": "h",
+  "ref": "ENT-CT01 art. 7",
+  "source": "03"
+ },
+ {
+  "code": "delai_livraison",
+  "valeur": "< 5",
+  "unite": "h",
+  "ref": "ENT-CT01 art. 7",
+  "source": "03"
+ },
+ {
+  "code": "paquet_disparition",
+  "valeur": "< 3 (même entreprise) · < 5 (autre entreprise)",
+  "unite": "s",
+  "ref": "ENT-09 §57",
+  "source": "03"
+ },
+ {
+  "code": "rendus_max",
+  "valeur": "> 3 sur 7 jours glissants ⇒ priorité perdue 7 jours",
+  "unite": "—",
+  "ref": "ENT-09 S20",
+  "source": "03"
+ },
+ {
+  "code": "certification_livreur",
+  "valeur": "16 / 20",
+  "unite": "points",
+  "ref": "ENT-CT01 art. 6",
+  "source": "03"
+ },
+ {
+  "code": "plafond_nouveau",
+  "valeur": "75 000",
+  "unite": "F",
+  "ref": "ENT-CT01 art. 12",
+  "source": "03"
+ },
+ {
+  "code": "plafond_confirme",
+  "valeur": "250 000",
+  "unite": "F",
+  "ref": "ENT-CT01 art. 12",
+  "source": "03"
+ },
+ {
+  "code": "plafond_or",
+  "valeur": "sans plafond (assurance obligatoire)",
+  "unite": "—",
+  "ref": "ENT-CT01 art. 12",
+  "source": "03"
+ },
+ {
+  "code": "trust_veto",
+  "valeur": "39",
+  "unite": "points",
+  "ref": "ENT-07",
+  "source": "03"
+ },
+ {
+  "code": "preuve_expiration",
+  "valeur": "72",
+  "unite": "h",
+  "ref": "ENT-CT03",
+  "source": "03"
+ },
+ {
+  "code": "preavis_evolution",
+  "valeur": "30",
+  "unite": "jours avant",
+  "ref": "ENT-CT01 art. 17",
+  "source": "03"
+ },
+ {
+  "code": "non_sollicitation",
+  "valeur": "12",
+  "unite": "mois",
+  "ref": "ENT-CT01 art. 16",
+  "source": "03"
+ },
+ {
+  "code": "alerte_zone",
+  "valeur": "< 80 % livrés en moins de 5 h sur 14 jours",
+  "unite": "—",
+  "ref": "ENT-CT01 art. 5",
+  "source": "03"
+ },
+ {
+  "code": "verification_pieces",
+  "valeur": "automatique < 15 min, sinon revue humaine sous 48 h ouvrées ; alerte 30 jours avant expiration",
+  "unite": "—",
+  "ref": "ENT-09 p29-41",
+  "source": "03"
+ },
+ {
+  "code": "alertes_operations",
+  "valeur": "départ absent 30 min avant le créneau ; non affecté 15 min après acceptation ; colis sous garde > 5 h ; « introuvable » > 2 h ⇒ enquête ; délai saisonnier +1 h ; invitation expire après 7 jours",
+  "unite": "—",
+  "ref": "ENT-09 p29-41",
+  "source": "03"
+ },
+ {
+  "code": "tournees_relais",
+  "valeur": "2 par jour ; départ dès 5 colis, obligatoire au 2e créneau ; objectif 8 colis",
+  "unite": "—",
+  "ref": "ENT-CT02",
+  "source": "03"
+ }
+]

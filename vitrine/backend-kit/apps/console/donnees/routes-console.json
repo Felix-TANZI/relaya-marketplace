@@ -1,0 +1,2683 @@
+[
+ {
+  "methode": "get",
+  "chemin": "/api/console/moi",
+  "resume": "Agent connecté : rôles, zones, permissions",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/roles",
+  "resume": "Modèle unique des rôles des six espaces, permissions de la console, machines d'activation et règles (qui décide, preuves, délai, double contrôle, qui est prévenu)",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/tableau",
+  "resume": "Tableau de bord : entreprises et livreurs par état, paquets du jour, incidents, litiges, files, alertes",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/sante",
+  "resume": "Santé du système : base, cache, registre lisible, journal intact, tâches, notifications",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/files",
+  "resume": "Files de validation : total et retards de chaque file",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/files/{file}",
+  "resume": "Éléments d'une file (candidatures, pieces_entreprises, pieces_livreurs, quiz, activations, incidents, litiges, revisions_grille, sanctions, argent, donnees, contreseings), action et données préremplies",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/actions",
+  "resume": "Catalogue des décisions : permission, double contrôle, champs",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/decisions",
+  "resume": "Décisions de la console (filtres statut, objet, action ; curseur)",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/decisions",
+  "resume": "Décision motivée {action, donnees, motif, preuves} : 201 appliquée, 202 à contre-signer",
+  "permission": "selon l'action",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "action": "string",
+   "donnees": "object",
+   "motif": "string",
+   "preuves": "array"
+  }
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/decisions/{ref}",
+  "resume": "Une décision",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/decisions/{ref}/contresigner",
+  "resume": "Contre-signature par une autre personne habilitée {accord, motif}",
+  "permission": "selon l'action",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "accord": "boolean",
+   "motif": "string"
+  }
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/candidatures",
+  "resume": "Candidatures d'entreprises de livraison (filtre statut ; curseur)",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/candidatures/{ref}",
+  "resume": "Candidature : pièces, contrôles (RCCM, NIU, zone exploitée, liste noire, doublon), historique",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/entreprises",
+  "resume": "Entreprises de livraison (filtre etat ; curseur)",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/entreprises/{id}",
+  "resume": "Fiche : état, garde des transitions, chaîne d'activation, pièces, documents, zones, flotte, membres, décisions, journal",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/livreurs",
+  "resume": "Livreurs (filtres etat, entreprise ; curseur)",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/livreurs/{id}",
+  "resume": "Fiche : activation, pièces, sanctions, appareil, transitions, décisions, journal (numéro masqué)",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/utilisateurs/{id}/espaces",
+  "resume": "Tous les espaces et rôles d'un compte (six espaces)",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/zones",
+  "resume": "Douze zones : exploitée, entreprises et capacité, livreurs actifs, relais",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/parametres",
+  "resume": "Registre des paramètres en vigueur (recherche q), version",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/parametres/{code}",
+  "resume": "Paramètre : valeur, source, gouvernance, proposition en cours, historique",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/parametres/{code}/propositions",
+  "resume": "Proposer une nouvelle valeur {valeur, motif, effetLe?, brouillon?, reference?} : relue par les moteurs ; brouillon : préparée (simulee), soumise ensuite par son auteur",
+  "permission": "parametres.proposer",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "valeur": "string",
+   "motif": "string",
+   "effetLe": "integer",
+   "brouillon": "boolean",
+   "reference": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/propositions/{id}/valider",
+  "resume": "Valider (autre personne ; argent N3 : finance ou superviseur) {note?}",
+  "permission": "parametres.valider",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "note": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/propositions/{id}/refuser",
+  "resume": "Refuser une proposition {note}",
+  "permission": "parametres.valider",
+  "idempotent": false,
+  "publique": false,
+  "corps": {
+   "note": "string"
+  }
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/interrupteurs",
+  "resume": "Interrupteurs FF-* : état, défaut, fonction d'après lancement (DP-63), branchement, dernière bascule, alerte",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/notifications/modeles",
+  "resume": "Modèles de notification en vigueur (push, sms, email, console)",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/notifications/modeles",
+  "resume": "Publier une nouvelle version d'un modèle {code, canal, langue, titre, corps}",
+  "permission": "notifications.modeles",
+  "idempotent": false,
+  "publique": false,
+  "corps": {
+   "code": "string",
+   "canal": "string",
+   "langue": "string",
+   "titre": "string",
+   "corps": "string"
+  }
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/notifications/envois",
+  "resume": "Envois (filtres statut, destinataire, code ; curseur)",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/taches",
+  "resume": "Tâches planifiées : dernière exécution, retard, échecs",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/taches/{nom}/lancer",
+  "resume": "Lancer une tâche pour la période en cours (sans double effet)",
+  "permission": "taches.lancer",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/conservation",
+  "resume": "Politique de conservation et d'effacement (durées du registre)",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/journal",
+  "resume": "Journal signé (filtres type, objet, acteur, role, entreprise, livreur, depuis, jusqua ; curseur)",
+  "permission": "audit.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/journal/verification",
+  "resume": "Vérification de toute la chaîne signée",
+  "permission": "audit.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/journal/export",
+  "resume": "Export CSV ou JSON Lines (sortie=csv|jsonl ; « format » est pris par DRF), vérification en tête ; l'export est journalisé",
+  "permission": "audit.exporter",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/agents",
+  "resume": "Agents de la console",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/delivery-partners/applications",
+  "resume": "Candidature d'une entreprise de livraison (public)",
+  "permission": "public",
+  "idempotent": true,
+  "publique": true,
+  "corps": {
+   "nom": "string",
+   "nomLegal": "string",
+   "rccm": "string",
+   "niu": "string",
+   "responsable": "string",
+   "telephone": "string",
+   "email": "string",
+   "adresse": "string",
+   "zones": "array",
+   "livreurs": "integer",
+   "vehicules": "object",
+   "documents": "array"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/delivery-partners/applications/{ref}/complement",
+  "resume": "Le candidat complète son dossier {telephone, documents, note?}",
+  "permission": "public",
+  "idempotent": false,
+  "publique": true,
+  "corps": {
+   "telephone": "string",
+   "documents": "array",
+   "note": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/delivery-partners/applications/{ref}/withdraw",
+  "resume": "Le candidat retire sa candidature {telephone}",
+  "permission": "public",
+  "idempotent": false,
+  "publique": true,
+  "corps": {
+   "telephone": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/delivery-partners/applications/{ref}/status",
+  "resume": "Le candidat suit sa candidature {telephone} (jamais dans l'adresse)",
+  "permission": "public",
+  "idempotent": false,
+  "publique": true,
+  "corps": {
+   "telephone": "string"
+  }
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/direct",
+  "resume": "Vue d'ensemble en direct : commandes du jour par état, livraisons à domicile en retard (ENT-SLA-LIVRAISON), colis bloqués (COLIS-BLOQUE-H), colis en garde et occupation des relais, incidents, litiges, files en retard, santé ; limitée aux zones de l'agent",
+  "permission": "direct.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/finances",
+  "resume": "Finances : versements du vendredi courant, commissions et frais CamPay du mois, Wallet (encours, plafond, retraits), dernier rapprochement ; ?jour=AAAA-MM-JJ",
+  "permission": "finances.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/finances/vendredi",
+  "resume": "Versements d'un vendredi (?vendredi=AAAA-MM-JJ) : vendeurs (part de 1 %, au-delà du seuil de contrôle), entreprises (retenues, reports), livreurs (par leur entreprise), relais (dette d'espèces)",
+  "permission": "finances.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/finances/dette-relais",
+  "resume": "Dette d'espèces des relais pour un vendredi (?vendredi=) : garde encaissée au gérant, part du relais, à reverser à BelivaY",
+  "permission": "finances.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/finances/rapprochements",
+  "resume": "Rapprochements CamPay ↔ registre interne, un par jour (?ecarts=1 : seulement ceux en écart) ; curseur",
+  "permission": "finances.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/finances/rapprochements",
+  "resume": "Rapprocher un jour avec un relevé CamPay importé {jour, lignes:[{reference, sens, montant, statut, le, frais?}]} ; écarts expliqués, journalisé",
+  "permission": "finances.rapprocher",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "jour": "string",
+   "lignes": "array"
+  }
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/finances/export",
+  "resume": "Export comptable signé (?du=&au=&sortie=csv|jsonl) : écritures sur un plan de comptes simple, en-tête de période, signature HMAC (X-Signature), journalisé",
+  "permission": "export.comptable",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/fraude",
+  "resume": "Alertes de fraude (?statut=&type=&niveau=) : anneaux, remboursements automatiques, refus au comptoir, avis croisés, retraits Wallet ; décision par l'action « fraude-decision »",
+  "permission": "fraude.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/qualite",
+  "resume": "Trust Score lu (?acteur=vendeurs|entreprises|livreurs|relais) : classement, tendance (QUALITE-TENDANCE-PTS), moyenne ; zones de l'agent",
+  "permission": "qualite.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/relais",
+  "resume": "Points relais (place réservée, l/relais) : actif, zones, capacité, colis en garde et occupation, dette d'espèces du vendredi",
+  "permission": "relais.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/pieces/{id}/lien",
+  "resume": "Lien court signé pour consulter une pièce d'identité (PIECE-LIEN-MIN minutes, personnel à l'agent), journalisé",
+  "permission": "pieces.consulter",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/pieces/ouvrir/{jeton}",
+  "resume": "Ouvrir une pièce par son lien signé : type, statut, 4 derniers chiffres, fichier (chemin du stockage privé) ; chaque ouverture journalisée ; 410 lien_expire",
+  "permission": "pieces.consulter",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/session",
+  "resume": "Session de l'appli espace-admin : agent (rôles, zones), rôle affiché, pays, compteurs de la coque (files visibles), interrupteurs",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/cartes",
+  "resume": "Cartes de la file d'action : éléments de toutes les files visibles du rôle (périmètre de zones), retards d'abord",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/quatre-yeux",
+  "resume": "Décisions à quatre yeux (?vue=attente|historique) : premier et second (rôles), rôles admis au second, état",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/agents",
+  "resume": "Agents sous la forme Agent de l'appli (prénom, nom, initiales, rôles, zones)",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/comptes",
+  "resume": "Comptes de la console (TableauComptes) : agents, état, dernière connexion, superviseurs actifs",
+  "permission": "agents.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/journal",
+  "resume": "Lignes du journal signé (sa part ; ?action=&objet=&limite=) : rang, rôle de la signature, empreinte et précédente",
+  "permission": "audit.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/journal/tableau",
+  "resume": "Tableau du journal (?q=&agentId=&role=&action=&periode=jour|7j|tout) : lignes, compteurs, chaîne vérifiée",
+  "permission": "audit.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/parametres",
+  "resume": "Registre vu par l'appli (ParametreVu) : valeur, unité, critique (N3), version, annonce, proposition ouverte",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/propositions",
+  "resume": "Propositions de paramètres (PropositionParametre) : avant, après, date d'effet, auteur, second validateur",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/versions",
+  "resume": "Versions validées ou appliquées d'un paramètre (?code=) : en vigueur, remplacée, annoncée",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/taches",
+  "resume": "Tâches planifiées (TacheDetail) : dernière exécution et son auteur, prochaine attendue, retard, échecs sur 7 jours",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/taches/courtes",
+  "resume": "Tâches planifiées en une ligne (TachePlanifiee)",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/sante",
+  "resume": "Santé par contrôle (ServiceSante) : ok ou panne, durée mesurée",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/commandes",
+  "resume": "Commandes (CommandeCourte, 300 dernières, zones de l'agent) : montants figés, état, argent, étiquette, paquet, litige",
+  "permission": "direct.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/commandes/{id}",
+  "resume": "Fiche d'une commande (CommandeFiche) : chronologie, sous-commandes, argent figé (finance), code de retrait",
+  "permission": "direct.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/litiges",
+  "resume": "Litiges des clients (LitigeCourt) : niveau, montant en jeu, échéance, état, alerte",
+  "permission": "litiges.contenu",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/litiges/{id}",
+  "resume": "Dossier d'un litige (LitigeDossier) : preuves, positions, options du catalogue (litige-client), décision, recours",
+  "permission": "litiges.contenu",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/remboursements",
+  "resume": "Remboursements (VueRemboursements) : litiges qui demandent ou ont reçu un remboursement, cas automatiques du mois",
+  "permission": "remboursements.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/versements",
+  "resume": "Versements du vendredi (VueVersements) : lots vendeurs (contrôle au-delà du seuil) et entreprises, courant, dernier, historique",
+  "permission": "finances.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/wallet",
+  "resume": "Wallet (VueWallet) : interrupteur FF-WALLET, comptes (solde retirable, recharges du mois, retraits 24 h), mouvements du mois",
+  "permission": "finances.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/vendeurs",
+  "resume": "Vendeurs (VendeurCourt) : palier, Trust Score, produits, commandes sur 30 jours, litiges ouverts, statut",
+  "permission": "direct.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/vendeurs/{id}",
+  "resume": "Fiche d'un vendeur (FicheVendeur) : titulaire, KYC, contrat, offres, commissions (finance), litiges, versements",
+  "permission": "direct.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/kyc",
+  "resume": "Dossiers KYC (DossierKyc) : boutiques à approuver, pièces des livreurs et des entreprises à revoir",
+  "permission": "kyc.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/clients",
+  "resume": "Clients (ClientCourt, masqués) : palier IFA, commandes, ancienneté",
+  "permission": "litiges.contenu",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/clients/{id}",
+  "resume": "Fiche d'un client (FicheClient, masquée) : compteurs de litiges, remboursements, relais habituel",
+  "permission": "litiges.contenu",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/offres",
+  "resume": "Offres à modérer (OffreAModerer) : prix, prix barré, prix des autres offres du maître",
+  "permission": "moderation.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/avis",
+  "resume": "Avis et publicités signalés (Avis)",
+  "permission": "moderation.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/fraude",
+  "resume": "Tableau de la fraude (TableauFraude) : alertes, signaux ouverts, seuils du registre, issues sur 30 jours",
+  "permission": "fraude.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/relais",
+  "resume": "Relais (RelaisCourt) : statut, occupation, garde par classe, versement du vendredi (dette d'espèces)",
+  "permission": "relais.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/relais/{id}",
+  "resume": "Fiche d'un relais (RelaisFiche)",
+  "permission": "relais.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/entreprises",
+  "resume": "Entreprises de livraison (EntrepriseCourte) : capacités du jour par zone, livreurs, palier et plafond, acceptation sur 7 jours",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/entreprises/{id}",
+  "resume": "Fiche d'une entreprise (EntrepriseFiche) : chaîne d'activation, pièces, pilote, suspension, paquets du jour",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/couverture",
+  "resume": "Couverture des douze zones (CouvertureZone) : entreprises déclarées, capacité, actives",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/livreurs",
+  "resume": "Livreurs (LivreurCourt) : statut, véhicule, mission en cours, pièce qui expire, préavis, nouvelle vérification",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/livreurs/{id}",
+  "resume": "Fiche d'un livreur (LivreurFiche) : pièces, plage d'étiquettes, missions, dernière synchronisation",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/departs",
+  "resume": "Départs des livreurs (Depart) : préavis, constat du kit, contestation, clôture, dernier versement figé",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/paquets",
+  "resume": "Paquets (PaquetCourt, 300 derniers) : état, heure limite, marge, entreprise, livreur",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/paquets/{id}",
+  "resume": "Fiche d'un paquet (PaquetFiche) : arrêts, colis, chronologie, achat à l'entreprise (finance)",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/candidatures",
+  "resume": "Candidatures d'entreprises (Candidature) : pièces, contrôles RCCM, NIU, liste noire, doublon",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/demasquer",
+  "resume": "Démasquer une donnée personnelle {genre: commande|client|vendeur, id, champ, motif} : la valeur une fois, journalisée (pii.unmasked)",
+  "permission": "donnees.demasquer",
+  "idempotent": false,
+  "publique": false,
+  "corps": {
+   "genre": "string",
+   "id": "string",
+   "champ": "string",
+   "motif": "string"
+  }
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/direct",
+  "resume": "Vue en direct (VueDirecte) : indicateurs menant à leur liste, zones (colis du jour, retards, relais pleins), relais, incidents ouverts, santé",
+  "permission": "direct.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/indicateurs",
+  "resume": "Indicateurs de la file d'action (IndicateursFile) : litiges ouverts, délai médian sur 7 jours, chiffres du jour (argent : finance)",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/recherche",
+  "resume": "Recherche transversale (?q=) : commande, litige, paquet, étiquette, vendeur, relais, entreprise, livreur, dans le périmètre",
+  "permission": "direct.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/cartes/{id}/ouvrir",
+  "resume": "Ouvrir une carte (« file:id ») : verrou de ADM-VERROU-MIN minutes pour les autres agents, prolongé si c'est le sien",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/cartes/{id}/liberer",
+  "resume": "Libérer le verrou de sa carte",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/journal/consulter",
+  "resume": "Ouverture du journal : une ligne « journal.consulted » par minute et par agent (ADM-P31R-02)",
+  "permission": "audit.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/commissions",
+  "resume": "Commissions du mois (VueCommissions) : par boutique, commandes, ventes, commission et garde figées au paiement ; versions de la grille VD-COM",
+  "permission": "finances.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/conservation",
+  "resume": "Conservation (TableauConservation) : politique, dernière application, paquets gardés pour un litige, demandes de données ouvertes",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/comptes",
+  "resume": "Inviter un employé {prenom, nom, email, roles (ou role), zones?} : compte inactif, lien d'activation par e-mail (ADM-INVITATION-H) → 201 {ok, id, expireLe} ; refus incomplet, sans_role, soi_meme, email_pris, direction_quatre_yeux (rôle Direction : décision « agent-inviter » à quatre yeux)",
+  "permission": "equipe.gerer",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "prenom": "string",
+   "nom": "string",
+   "email": "string",
+   "roles": "array",
+   "zones": "array"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/comptes/{id}/reinitialiser",
+  "resume": "Réinitialiser l'accès d'un employé {motif} : mot de passe désactivé, nouveau lien (mot de passe et second facteur à refaire) → {ok, expireLe}",
+  "permission": "equipe.gerer",
+  "idempotent": false,
+  "publique": false,
+  "corps": {
+   "motif": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/comptes/{id}/suspendre",
+  "resume": "Suspendre un compte d'employé {motif} → {ok, etat} ; refus soi_meme, direction_quatre_yeux, direction_min, etat",
+  "permission": "equipe.gerer",
+  "idempotent": false,
+  "publique": false,
+  "corps": {
+   "motif": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/comptes/{id}/reactiver",
+  "resume": "Rouvrir un compte suspendu {motif} → {ok, etat}",
+  "permission": "equipe.gerer",
+  "idempotent": false,
+  "publique": false,
+  "corps": {
+   "motif": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/comptes/{id}/depart",
+  "resume": "Départ d'un employé {le (AAAA-MM-JJ ou ms), motif} : accès fermé le jour du départ (tâche console.departs_agents ; tout de suite si le jour est arrivé) → {ok, etat, departLe}",
+  "permission": "equipe.gerer",
+  "idempotent": false,
+  "publique": false,
+  "corps": {
+   "le": "string",
+   "motif": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/comptes/{id}/relancer",
+  "resume": "Renvoyer l'invitation d'un compte pas encore activé {motif?} : nouveau lien, l'ancien ne sert plus → {ok, expireLe}",
+  "permission": "equipe.gerer",
+  "idempotent": false,
+  "publique": false,
+  "corps": {
+   "motif": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/comptes/{id}/confirmer",
+  "resume": "Revue trimestrielle : rôle et périmètre confirmés → {ok, confirmeLe}",
+  "permission": "equipe.gerer",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/comptes/{id}/journal",
+  "resume": "Journal d'un compte d'employé : invitation, activation, réinitialisation, suspension, départ, fermeture",
+  "permission": "equipe.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/activation/{jeton}",
+  "resume": "Lien d'activation d'un employé invité (public, limité en débit) → {ok:true, invitation:{jeton, prenom, nom, email, roles, zones, expireLe, cleSecondFacteur}} ou {ok:false, raison: inconnue | expiree | deja_active}",
+  "permission": "public",
+  "idempotent": false,
+  "publique": true,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/activation/{jeton}",
+  "resume": "Activer son compte {motDePasse, confirmation, code, charte} (public, limité en débit) : MDP-LONG, code du second facteur juste, charte acceptée ; journal auth.invitation_used (ou auth.password_reset) → {ok:true} ou {ok:false, raison: inconnue | expiree | deja_active | mot_de_passe_court | mots_de_passe_differents | code_faux | charte}",
+  "permission": "public",
+  "idempotent": false,
+  "publique": true,
+  "corps": {
+   "motDePasse": "string",
+   "confirmation": "string",
+   "code": "string",
+   "charte": "boolean"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/reports",
+  "resume": "Signalement d'un acteur connecté des cinq espaces {espace, objet (« genre:id »), motif, gravite?} → 201 {ok, reference} ; événement report.filed vers la console (file « signalements », modération ou fraude) ; 409 deja_signale",
+  "permission": "public",
+  "idempotent": true,
+  "publique": true,
+  "corps": {
+   "espace": "string",
+   "objet": "string",
+   "motif": "string",
+   "gravite": "string"
+  }
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/equipe",
+  "resume": "Équipe et accès (ACCES-CONSOLE) : membres par équipe, demandes d'accès à valider, accès à revoir, accès temporaires qui finissent, alertes aux administrateurs",
+  "permission": "equipe.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/equipe/qui-peut",
+  "resume": "Qui peut faire quoi : membres actifs par permission, matrice équipe × page",
+  "permission": "equipe.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/equipe/inviter",
+  "resume": "Inviter un membre dans une équipe à un niveau (équipe sensible : à quatre yeux, rien n'est envoyé avant)",
+  "permission": "equipe.demander",
+  "idempotent": true,
+  "publique": false,
+  "corps": [
+   "prenom",
+   "nom",
+   "email",
+   "equipe",
+   "niveau",
+   "zones",
+   "motif"
+  ]
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/equipe/avertissements",
+  "resume": "Avertir un membre ou une équipe (rappel, consigne, avertissement ; accusé de lecture)",
+  "permission": "equipe.demander",
+  "idempotent": true,
+  "publique": false,
+  "corps": [
+   "pour",
+   "genre",
+   "texte"
+  ]
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/equipe/mon-equipe",
+  "resume": "Mon équipe (Responsable d'équipe) : membres, dossiers en cours, revue",
+  "permission": "equipe.demander",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/equipe/membres/{id}",
+  "resume": "Fiche d'un membre : droits effectifs, accès temporaires, repreneurs",
+  "permission": "equipe.demander",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/equipe/membres/{id}/niveau",
+  "resume": "Changer le niveau (Agent, Senior, Responsable d'équipe)",
+  "permission": "equipe.demander",
+  "idempotent": true,
+  "publique": false,
+  "corps": [
+   "niveau",
+   "motif"
+  ]
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/equipe/membres/{id}/perimetre",
+  "resume": "Changer le périmètre (zones, niveau de litige, plafond ; au-dessus du seuil : quatre yeux)",
+  "permission": "equipe.demander",
+  "idempotent": true,
+  "publique": false,
+  "corps": [
+   "perimetre",
+   "motif"
+  ]
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/equipe/membres/{id}/role",
+  "resume": "Rôle additionnel (refusé s'il crée un conflit)",
+  "permission": "equipe.demander",
+  "idempotent": true,
+  "publique": false,
+  "corps": [
+   "role",
+   "motif"
+  ]
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/equipe/membres/{id}/temporaires",
+  "resume": "Donner un accès temporaire (motif et fin obligatoires ; long : quatre yeux)",
+  "permission": "equipe.demander",
+  "idempotent": true,
+  "publique": false,
+  "corps": [
+   "role",
+   "fin",
+   "motif"
+  ]
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/equipe/membres/{id}/temporaires/{t}/retirer",
+  "resume": "Retirer un accès temporaire",
+  "permission": "equipe.demander",
+  "idempotent": true,
+  "publique": false,
+  "corps": [
+   "motif"
+  ]
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/equipe/membres/{id}/suspendre",
+  "resume": "Suspendre (sessions fermées tout de suite ; jamais le dernier compte Direction)",
+  "permission": "equipe.demander",
+  "idempotent": true,
+  "publique": false,
+  "corps": [
+   "motif"
+  ]
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/equipe/membres/{id}/reactiver",
+  "resume": "Réactiver (toujours à quatre yeux)",
+  "permission": "equipe.demander",
+  "idempotent": true,
+  "publique": false,
+  "corps": [
+   "motif"
+  ]
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/equipe/membres/{id}/desactiver",
+  "resume": "Désactiver au départ (dossiers en cours réattribués d'abord)",
+  "permission": "equipe.demander",
+  "idempotent": true,
+  "publique": false,
+  "corps": [
+   "motif",
+   "repreneur"
+  ]
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/equipe/revues/{equipe}",
+  "resume": "Revue des accès d'une équipe pour la période (ADM-REVUE-MOIS)",
+  "permission": "equipe.demander",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/equipe/revues/lignes/{id}",
+  "resume": "Confirmer ou retirer une ligne d'accès (revue)",
+  "permission": "equipe.demander",
+  "idempotent": true,
+  "publique": false,
+  "corps": [
+   "decision",
+   "motif"
+  ]
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/equipe/dossiers/{id}/repartir",
+  "resume": "Répartir un dossier en cours à un autre membre de l'équipe",
+  "permission": "equipe.demander",
+  "idempotent": true,
+  "publique": false,
+  "corps": [
+   "vers"
+  ]
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/moi/messages",
+  "resume": "Mes messages (accusé de lecture) et changements de mes accès",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/moi/messages/{id}/lu",
+  "resume": "Accusé de lecture d'un message",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/moi/descentes",
+  "resume": "Mes descentes (agent terrain : les siennes seulement)",
+  "permission": "descentes.faire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/urgence",
+  "resume": "Ouvrir l'accès d'urgence (Direction, ADM-BRIS-GLACE-H au plus, motif)",
+  "permission": "urgence.ouvrir",
+  "idempotent": true,
+  "publique": false,
+  "corps": [
+   "motif",
+   "heures"
+  ]
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/urgence/fermer",
+  "resume": "Fermer son accès d'urgence",
+  "permission": "urgence.ouvrir",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/urgence/{id}/revoir",
+  "resume": "Revoir l'accès d'urgence d'un autre membre de la Direction",
+  "permission": "urgence.ouvrir",
+  "idempotent": true,
+  "publique": false,
+  "corps": [
+   "motif"
+  ]
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/descentes",
+  "resume": "Descentes terrain (ses zones pour les Opérations)",
+  "permission": "descentes.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/descentes",
+  "resume": "Planifier une descente (inspection d'un relais : relay.inspection.announced au relais)",
+  "permission": "descentes.lire",
+  "idempotent": true,
+  "publique": false,
+  "corps": [
+   "type",
+   "zone",
+   "cible",
+   "lieu",
+   "repere",
+   "prevueLe",
+   "agentId"
+  ]
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/descentes/{id}",
+  "resume": "Une descente (l'agent terrain : la sienne seulement)",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/descentes/{id}/assigner",
+  "resume": "Assigner une descente à un agent terrain de sa zone",
+  "permission": "descentes.planifier",
+  "idempotent": true,
+  "publique": false,
+  "corps": [
+   "agent"
+  ]
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/descentes/{id}/annuler",
+  "resume": "Annuler une descente",
+  "permission": "descentes.planifier",
+  "idempotent": true,
+  "publique": false,
+  "corps": [
+   "motif"
+  ]
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/descentes/{id}/avancer",
+  "resume": "L'agent part, arrive sur place",
+  "permission": "descentes.faire",
+  "idempotent": true,
+  "publique": false,
+  "corps": [
+   "statut"
+  ]
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/descentes/{id}/rapport",
+  "resume": "Compte rendu de l'agent (contrôles, photos, résultat) : relié au dossier",
+  "permission": "descentes.faire",
+  "idempotent": true,
+  "publique": false,
+  "corps": [
+   "controles",
+   "photos",
+   "compteRendu",
+   "resultat"
+  ]
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/contenu-site",
+  "resume": "Contenu du site client piloté : moments de l'accueil, catégories mises en avant (Direction, Support en lecture des moments, Audit)",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/contenu-site",
+  "resume": "Publier le contenu du site (Direction : tout ; Marketing du Support : catégories seulement) ; lu par GET /api/content/home",
+  "permission": "console.lire",
+  "idempotent": true,
+  "publique": false,
+  "corps": [
+   "moments",
+   "categories",
+   "motif"
+  ]
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/abonnements",
+  "resume": "Abonnements des clients (paliers) et plafond de geste de l'agent",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/abonnements/{id}/geste",
+  "resume": "Geste commercial sur un abonnement : au plus un mois du palier et le plafond du niveau",
+  "permission": "console.lire",
+  "idempotent": true,
+  "publique": false,
+  "corps": [
+   "montant",
+   "motif"
+  ]
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/moi/sessions",
+  "resume": "Mes sessions (jetons de rafraîchissement), second facteur, verrouillage",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/moi/sessions/fermer-autres",
+  "resume": "Fermer les autres sessions : jetons révoqués, accès émis avant refusés, paire neuve pour cet appareil",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/clients/{id}/apercu",
+  "resume": "Voir comme le client (lecture seule) : seulement pendant une ouverture motivée en cours",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/clients/{id}/apercu",
+  "resume": "Ouvrir « Voir comme le client » : motif, journalisé, ADM-DEMASQUE-MIN minutes",
+  "permission": "console.lire",
+  "idempotent": true,
+  "publique": false,
+  "corps": [
+   "motif"
+  ]
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/postes",
+  "resume": "File du poste de décision : dossiers visibles du rôle, triés par échéance (tableau ; page suivante : X-Next-Cursor)",
+  "permission": "litiges.contenu",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/postes/ecarts",
+  "resume": "Audit : décisions qui s'écartent de la suggestion de la règle (?echantillon=1 : tirage reproductible du jour, ADM-ECART-ECHANTILLON)",
+  "permission": "journal.tout",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/postes/{genre}/lot",
+  "resume": "Décision en lot de dossiers identiques (ADM-LOT-MAX, même clé, aucun doute, sous le plafond) ; 422 lot_*",
+  "permission": "litiges.contenu",
+  "idempotent": true,
+  "publique": false,
+  "corps": [
+   "ids",
+   "issue",
+   "montant",
+   "motif",
+   "note",
+   "message"
+  ]
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/postes/{genre}/{id}",
+  "resume": "Dossier du poste : pièces, liste de contrôle, lecture, issues permises, droits ; 404 hors de vue",
+  "permission": "litiges.contenu",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/postes/{genre}/{id}/controles",
+  "resume": "Confirmer ou corriger une ligne de la liste de contrôle (journalisé)",
+  "permission": "litiges.contenu",
+  "idempotent": false,
+  "publique": false,
+  "corps": [
+   "controle",
+   "etat"
+  ]
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/postes/{genre}/{id}/appels",
+  "resume": "Noter un appel (devient une pièce) ; 422 accord_hors_issues, note_courte",
+  "permission": "litiges.contenu",
+  "idempotent": false,
+  "publique": false,
+  "corps": [
+   "avec",
+   "nom",
+   "resultat",
+   "resume",
+   "accord"
+  ]
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/postes/{genre}/{id}/decision",
+  "resume": "Décider : 16 contrôles dans l'ordre (422 code de refus) ; au-delà de REMB-CONTROLE-SEUIL : 202 à contre-signer",
+  "permission": "litiges.contenu",
+  "idempotent": true,
+  "publique": false,
+  "corps": [
+   "issue",
+   "montant",
+   "motif",
+   "note",
+   "message",
+   "appel"
+  ]
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/postes/{genre}/{id}/transmettre",
+  "resume": "Transmettre au niveau supérieur (Senior, Médiation niveau 2, Direction)",
+  "permission": "litiges.contenu",
+  "idempotent": false,
+  "publique": false,
+  "corps": [
+   "raison",
+   "issueProposee"
+  ]
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/postes/{genre}/{id}/prolonger",
+  "resume": "Prolonger l'échéance une fois (LIT-PROLONGATION-H) ; 409 prolongation_unique",
+  "permission": "litiges.contenu",
+  "idempotent": false,
+  "publique": false,
+  "corps": [
+   "note"
+  ]
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/journal/exports",
+  "resume": "Exports du journal à quatre yeux (ExportJournal[] : id = qy = référence de la décision « journal-export », portée, lignes, demandeur, état contresignee | a_contresigner | refusee, téléchargé le) ; X-Next-Cursor",
+  "permission": "audit.exporter",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/journal/exports/{id}",
+  "resume": "Fichier d'un export contre-signé {entetes, lignes, nom, verification} (lignes du journal bornées à la contre-signature) ; 409 pas_valide avant la contre-signature, 404 inconnu ; journalisé (audit.export_downloaded)",
+  "permission": "audit.exporter",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/demandes-donnees",
+  "resume": "Demandes de données personnelles (DemandeDonnees[] : accès, rectification, export ; échéance ADM-ACCES-DONNEES-J) ; X-Next-Cursor",
+  "permission": "donnees.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/demandes-donnees",
+  "resume": "Enregistrer une demande {acteur (id ou user:id), espace, type, motif} → 201 {ok, id, echeance} ; 400 motif_court (motif_min_caracteres), 404 inconnu, 422 espace_inconnu, 409 deja_ouverte",
+  "permission": "donnees.traiter",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "acteur": "string",
+   "espace": "string",
+   "type": "string",
+   "motif": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/demandes-donnees/{id}/reponse",
+  "resume": "Répondre une fois {motif} → {entetes, lignes, nom} : seules les lignes du journal qui visent l'acteur dans cet espace, sans données de tiers ; 409 deja_repondue, 404 inconnu",
+  "permission": "donnees.repondre",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "motif": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/comptes/{id}/suspendre",
+  "resume": "Suspendre un compte d'employé {motif} : sessions fermées tout de suite → {ok, etat} ; 409 soi_meme, direction_quatre_yeux (RH sur un compte Direction), etat, direction_min (ADM-DIRECTION-MIN) ; 404 inconnu",
+  "permission": "equipe.gerer",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "motif": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/comptes/{id}/inviter",
+  "resume": "Renvoyer l'invitation : nouveau lien d'activation, l'ancien annulé → {ok, expireLe} ; 409 etat, soi_meme, direction_quatre_yeux ; 404 inconnu",
+  "permission": "equipe.gerer",
+  "idempotent": true,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/pays",
+  "resume": "Espaces pays (EspacePaysDetail[]) : le Cameroun ouvert lu dans le registre, les copies en préparation",
+  "permission": "pays.gerer",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/pays",
+  "resume": "Préparer un espace pays de la CEMAC par copie du Cameroun {code, nom, motif} → 201 {ok, code} ; 409 existe, 404 inconnu, 400 motif_court",
+  "permission": "pays.gerer",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "code": "string",
+   "nom": "string",
+   "motif": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/pays/{code}/parametres",
+  "resume": "Revoir un paramètre d'un espace en préparation {code, valeur} → {ok} ; 422 vide, condition (une condition d'ouverture ne se saisit pas) ; 404 inconnu",
+  "permission": "pays.gerer",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "code": "string",
+   "valeur": "string"
+  }
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/terrain",
+  "resume": "Saisie assistée (TableauTerrain : agents terrain, descentes du jour, fiches de son périmètre, rendement par zone sur 7 jours) ; fiches paginées, X-Next-Cursor",
+  "permission": "terrain.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/terrain",
+  "resume": "Nouvelle fiche {genre, nom, zone, quartier, titulaire, numero} (numéro chiffré, masqué à la sortie) → 201 {ok, id} ; 422 incomplet, hors_zone ; 409 deja_saisie",
+  "permission": "terrain.saisir",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "genre": "string",
+   "nom": "string",
+   "zone": "string",
+   "quartier": "string",
+   "titulaire": "string",
+   "numero": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/terrain/{id}/lien",
+  "resume": "Envoyer le lien de validation (brouillon → lien envoyé) → {ok} ; 409 etat, 403 hors_perimetre, 404 inconnu",
+  "permission": "terrain.saisir",
+  "idempotent": true,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/terrain/{id}/relancer",
+  "resume": "Relancer l'acteur (lien envoyé) → {ok, relances} ; 409 etat, 403 hors_perimetre, 404 inconnu",
+  "permission": "terrain.saisir",
+  "idempotent": true,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/sante/tableau",
+  "resume": "Tableau de santé (TableauSante) : contrôles mesurés de la supervision, files, FF-IA, maintenances, préavis et créneaux interdits du registre ; ce que le kit ne mesure pas est vide",
+  "permission": "sante.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/legal",
+  "resume": "Textes légaux (TableauLegal) : versions et acceptations lues dans client_accounts, annonces en cours, produits interdits, vocabulaire, mentions, retours, préavis",
+  "permission": "legal.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/auth/blocage",
+  "resume": "État du blocage de connexion pour cet appareil (?appareil=) : {jusqua, echecs} (public, limité)",
+  "permission": "public",
+  "idempotent": false,
+  "publique": true,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/auth/login",
+  "resume": "Étape 1 : {identifiant, motDePasse, appareil} → {ok, agent, etape} | {ok: false, raison: invalide (restants) | bloque (jusqua) | suspendu} (echecs_avant_blocage, duree_blocage)",
+  "permission": "public",
+  "idempotent": false,
+  "publique": true,
+  "corps": {
+   "identifiant": "string",
+   "motDePasse": "string",
+   "appareil": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/auth/code",
+  "resume": "Étape 2 : {etape, code, appareil} (TOTP ou code SMS de secours) → {ok, nouvelAppareil, jetons: {access, refresh}} | {ok: false, raison: faux (restants) | retour_etape_1 | expire} (ADM-2FA-CODES-FAUX)",
+  "permission": "public",
+  "idempotent": false,
+  "publique": true,
+  "corps": {
+   "etape": "string",
+   "code": "string",
+   "appareil": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/auth/code/sms",
+  "resume": "Code de secours par SMS au téléphone de l'agent {etape} → {ok, telephone} | {ok: false, raison: sans_etape_1 | application_obligatoire}",
+  "permission": "public",
+  "idempotent": false,
+  "publique": true,
+  "corps": {
+   "etape": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/auth/lien",
+  "resume": "Lien de connexion par e-mail {email} (CNX-LIEN-MIN, usage unique) → {ok, vers} ; même réponse que l'adresse existe ou non ; 400 valeur",
+  "permission": "public",
+  "idempotent": false,
+  "publique": true,
+  "corps": {
+   "email": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/auth/lien/ouvrir",
+  "resume": "Ouvrir le lien {jeton, appareil} : remplace l'étape 1 → {ok, agent, etape} | {ok: false, raison: lien_expire | suspendu}",
+  "permission": "public",
+  "idempotent": false,
+  "publique": true,
+  "corps": {
+   "jeton": "string",
+   "appareil": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/auth/mot-de-passe/oubli",
+  "resume": "Mot de passe oublié {email} : lien (MDP-LIEN) → {ok, vers} ; même réponse que l'adresse existe ou non",
+  "permission": "public",
+  "idempotent": false,
+  "publique": true,
+  "corps": {
+   "email": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/auth/mot-de-passe",
+  "resume": "Nouveau mot de passe {jeton, nouveau} (MDP-LONG) → {ok} | {ok: false, raison: faible | lien_expire} ; toutes les sessions fermées",
+  "permission": "public",
+  "idempotent": false,
+  "publique": true,
+  "corps": {
+   "jeton": "string",
+   "nouveau": "string"
+  }
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/auth/appareil",
+  "resume": "L'appareil se souvient-il d'un agent (?appareil=) → {appareil: {email, prenom, initiales, photo} | null}",
+  "permission": "public",
+  "idempotent": false,
+  "publique": true,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/auth/appareil",
+  "resume": "« Ce n'est pas vous ? » {appareil} : l'appareil oublie → {ok, oublies}",
+  "permission": "public",
+  "idempotent": false,
+  "publique": true,
+  "corps": {
+   "appareil": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/auth/deconnexion",
+  "resume": "Déconnexion {refresh} : session de l'appareil fermée, jeton de rafraîchissement en liste noire → {ok}",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": {
+   "refresh": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/session/role",
+  "resume": "Agir en tant que {role} (ADM-ROL-02) → {ok} | {ok: false, raison: role_non_tenu} ; journalisé",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": {
+   "role": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/moi/appareil",
+  "resume": "Se souvenir de cet appareil {appareil, retenu} → {ok}",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": {
+   "appareil": "string",
+   "retenu": "boolean"
+  }
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/moi/compte",
+  "resume": "Mon compte (CompteVu) : nom, téléphone masqué, e-mail, photo, Google, dernier mot de passe, alertes de sécurité",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/moi/compte/nom/code",
+  "resume": "Code (SMS au numéro du compte, à défaut e-mail) pour changer le nom → {ok, vers}",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/moi/compte/nom",
+  "resume": "Changer le nom {prenom, nom, code} → {ok} | {ok: false, raison: code | essais | valeur}",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": {
+   "prenom": "string",
+   "nom": "string",
+   "code": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/moi/compte/{quoi}/code",
+  "resume": "Code au nouveau numéro (telephone) ou à la nouvelle adresse (email) {valeur} → {ok, vers} | {ok: false, raison: valeur | meme}",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": {
+   "valeur": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/moi/compte/{quoi}",
+  "resume": "Confirmer le nouveau numéro ou la nouvelle adresse {valeur, code} → {ok} | {ok: false, raison: code | essais | valeur} ; alerte à l'ancien canal",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": {
+   "valeur": "string",
+   "code": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/moi/compte/mot-de-passe",
+  "resume": "Changer le mot de passe {ancien, nouveau} → {ok} | {ok: false, raison: mot_de_passe | faible | meme} ; autres sessions fermées",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": {
+   "ancien": "string",
+   "nouveau": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/moi/compte/photo",
+  "resume": "Photo de profil {photo: data: URL | null} (JPEG, PNG, WebP ; 300 Ko) → {ok, photo} | {ok: false, raison: lourde} ; 400 photo_invalide",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": {
+   "photo": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/moi/compte/google",
+  "resume": "Associer un compte Google {jeton} (vérificateur d'identité du kit) → {ok} | {ok: false, raison: indisponible | valeur}",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": {
+   "jeton": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/moi/compte/google/retirer",
+  "resume": "Dissocier le compte Google → {ok}",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/moi/compte/google/synchroniser",
+  "resume": "Nom (et photo) du compte Google associé → {ok} | {ok: false, raison: valeur}",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/promotions",
+  "resume": "Promotions et ventes flash (VuePromotions) : ventes flash des vendeurs (relecture de la console), prix barrés (jours pratiqués lus dans l'historique de l'offre), fonctions fermées, chiffres du mois, accueil, fêtes",
+  "permission": "promotions.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/promotions/flash/{id}/{geste}",
+  "resume": "Vente flash : simuler | programmer (relecture faite, contrôles) | annuler {motif} (avant son début) | arreter {motif} (en cours) → {ok} ; 422 controle ; 409 etat, ferme, non_simulee",
+  "permission": "promotions.lire",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "motif": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/promotions/rabais/{id}/retirer",
+  "resume": "Retirer un prix barré {motif} : l'offre garde son prix, publiée au site, vendeur prévenu → {ok} ; 409 etat",
+  "permission": "promotions.programmer",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "motif": "string"
+  }
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/promotions-plateforme",
+  "resume": "Promotions de la plateforme (VuePromotionsPlateforme) : programmées, en cours, finies, arrêtées ; cibles proposées ; remise au plus ADM-GENEROSITE-LANCEMENT",
+  "permission": "promotions.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/promotions-plateforme",
+  "resume": "Créer une promotion {titre, remise, debut (null : maintenant), fin, cible, motif} (Direction) → 201 {ok, id} ; 422 titre, remise, cible, dates ; reflet sur l'accueil du site",
+  "permission": "promotions.programmer",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "titre": "string",
+   "remise": "object",
+   "debut": "integer",
+   "fin": "integer",
+   "cible": "object",
+   "motif": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/promotions-plateforme/{id}/{geste}",
+  "resume": "Promotion : lancer {motif} (Direction, programmée seulement) | arreter {motif} (Direction, Service client) → {ok} ; 409 etat",
+  "permission": "promotions.lire",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "motif": "string"
+  }
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/photos",
+  "resume": "Photos ajoutées ou remplacées par la console (PhotoConsole[]), celles que le rôle voit",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/photos",
+  "resume": "Ajouter ou remplacer une photo {cible, id, libelle, photo (data: URL réduite), motif} → {ok} ; 422 photo ; 404 inconnu ; publiée (sauf la pièce d'un dossier)",
+  "permission": "console.lire",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "cible": "string",
+   "id": "string",
+   "libelle": "string",
+   "photo": "string",
+   "motif": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/photos/{cible}/{id}/retirer",
+  "resume": "Retirer la photo de la console {motif} : la photo d'origine revient → {ok} ; 409 sans_effet",
+  "permission": "console.lire",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "motif": "string"
+  }
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/envois",
+  "resume": "Journal des envois (Envoi[]) : modèle, version, canal, coût d'un SMS délivré (sms_prix_unitaire), essais, renvois en 24 h, carte d'un message critique non délivré (ADM-MSG-C1-MIN), texte rendu (code masqué) ; 300 derniers",
+  "permission": "messagerie.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/envois/{id}/renvoyer",
+  "resume": "Renvoyer un envoi non délivré, même clé (jamais deux messages) → {ok} ; 409 deja_delivre, quota (CODE-RENVOI)",
+  "permission": "messagerie.agir",
+  "idempotent": true,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/budget-sms",
+  "resume": "Budget des SMS du mois (BudgetSms) : par jour, par modèle, commandes payées du mois et du jour, envois gratuits",
+  "permission": "messagerie.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/diffusions",
+  "resume": "Diffusions générales (Diffusion[]) ; une diffusion programmée part à son heure",
+  "permission": "messagerie.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/diffusions",
+  "resume": "Diffuser {objet, texte, espaces, zones, canaux, promotion, programmeeLe, motif} → 201 {ok, id, etat} ; au-delà de diffusion_quatre_yeux_seuil destinataires : à quatre yeux ; 422 objet, vide, contenu, sms_promo, heures_promo, passe",
+  "permission": "messagerie.agir",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "objet": "string",
+   "texte": "string",
+   "espaces": "array",
+   "zones": "array",
+   "canaux": "array",
+   "promotion": "boolean",
+   "programmeeLe": "integer",
+   "motif": "string"
+  }
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/audience",
+  "resume": "Destinataires d'une diffusion (?espaces=,&zones=,&promotion=) : comptes réels des espaces → {destinataires}",
+  "permission": "messagerie.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/modeles",
+  "resume": "Modèles de messages (ModeleMessage[]) : versions FR et EN publiées, motif, envois en échec du jour",
+  "permission": "messagerie.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/modeles/{id}/publier",
+  "resume": "Publier une nouvelle version {fr, en, motif} sur chaque canal du modèle → {ok, version} ; 422 vide, contenu (numero, code, variable_inconnue, code_hors_modele), sms_promo, inchange",
+  "permission": "messagerie.agir",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "fr": "string",
+   "en": "string",
+   "motif": "string"
+  }
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/services",
+  "resume": "État des services (ServiceEtat[]) : supervision du kit, SMS, réseau des relais, états de l'aide",
+  "permission": "panne.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/pannes",
+  "resume": "Pannes de service (Incident[]) des zones de l'agent : remises papier (registre des relais), journal",
+  "permission": "panne.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/pannes",
+  "resume": "Déclarer une panne {service, zones, effets, consignes, detecteLe} aux six espaces → 201 {ok, id} ; 422 service, zones, perimetre, contenu",
+  "permission": "panne.agir",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "service": "string",
+   "zones": "array",
+   "effets": "array",
+   "consignes": "string",
+   "detecteLe": "integer"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/pannes/{id}/{geste}",
+  "resume": "Panne : papier {relais} (registre papier des relais) | consignes {consignes} | retablir | ressaisie {remise} (relance) | rapport {cause, effets, change} | clore → {ok} ; 409 etat, non_retabli, registre, rapport",
+  "permission": "panne.agir",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "relais": "array",
+   "consignes": "string",
+   "remise": "string",
+   "cause": "string",
+   "effets": "string",
+   "change": "string"
+  }
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/tickets",
+  "resume": "Demandes au support (TicketSupport[]) nées des conversations des espaces (client, vendeur, entreprise) : échéance SUP-DELAI aux heures SUP-HORAIRES, messages, rattachement proposé",
+  "permission": "support.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/tickets/{id}/{geste}",
+  "resume": "Support : rattacher {ref} | brouillon {texte, reponseType} | reponse (versée dans la conversation de l'acteur) | resoudre | geste {motif} (SUP-GESTE, au plus la commission perçue et le plafond de l'agent) → {ok} ; 422 non_rattache, contenu, vide, geste_depasse ; 409 etat, deja_geste",
+  "permission": "support.agir",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "ref": "string",
+   "texte": "string",
+   "reponseType": "string",
+   "motif": "string"
+  }
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/reponses-types",
+  "resume": "Réponses types du support (ReponseType[]), usage sur 30 jours",
+  "permission": "support.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/articles",
+  "resume": "Articles d'aide (ArticleAide[]) : signalés quand une règle citée a une nouvelle version au registre",
+  "permission": "support.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/articles/{id}",
+  "resume": "Article d'aide relu et mis à jour → {ok}",
+  "permission": "aide.mettre_a_jour",
+  "idempotent": true,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/demandes-fiches",
+  "resume": "Demandes de fiche des vendeurs (DemandeCreation[]) : fiches proches (similarité), produit interdit, photos, décision",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/demandes-fiches/{id}/decider",
+  "resume": "Décider une demande {action: rattacher (fiche) | creer | refuser (motif), signaler?} (Direction, Vérification) → {ok, etat} ; 422 lecture_seule, conflit_interets, sans_evenement ; 409 deja_traite",
+  "permission": "console.lire",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "action": "string",
+   "fiche": "string",
+   "motif": "string",
+   "signaler": "boolean"
+  }
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/fiches",
+  "resume": "Fiches maîtres publiées (FicheMaitre[]) : offres, offre attribuée, avis des produits",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/fiches/{id}",
+  "resume": "Modifier le titre du maître {titre, motif} (jamais le prix ni le stock d'une offre) → {ok}",
+  "permission": "console.lire",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "titre": "string",
+   "motif": "string"
+  }
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/appariements",
+  "resume": "Doublons de fiches proposés (Appariement[]) : similarité des titres au-delà de VD-DOUBLON, en tête au-delà de CAT-FUSION-TETE",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/appariements/{id}/decider",
+  "resume": "Décider un doublon {action: fusionner | distincts | separer | annuler, motif} → {ok, etat} ; 422 delai_depasse (CAT-FUSION-RETOUR) ; 409 deja_traite",
+  "permission": "console.lire",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "action": "string",
+   "motif": "string"
+  }
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/taxonomie",
+  "resume": "Taxonomie (Categorie[]) : rayons des fiches et sous-catégories ajoutées par la console",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/taxonomie",
+  "resume": "Ajouter une sous-catégorie {parent, nom} → {ok} | {ok: false, raison: doublon (existe) | vide | lecture_seule}",
+  "permission": "console.lire",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "parent": "string",
+   "nom": "string"
+  }
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/escrow",
+  "resume": "Escrow (VueEscrow) : commandes payées des zones de l'agent, montants figés, écritures du grand livre et soldes, transitions ; aucun geste manuel (raisons écrites)",
+  "permission": "finances.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/remboursements/{id}/relever",
+  "resume": "Statut d'un remboursement relevé chez l'opérateur (paiements.Remboursement, conclu par sa notification) → {ok, etat} ; 409 etat ; 404 inconnu",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/rapprochement",
+  "resume": "Rapprochement, revenus et obligations (VueRapprochement) : revenus du jour, du mois, sept jours, par zone et catégorie ; rapprochements d'hier et du jour, écarts, dernier relevé importé, clôture du mois précédent et ses exports, frais, relevé du jour (CSV)",
+  "permission": "finances.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/rapprochement/releve",
+  "resume": "Importer le relevé de l'agrégateur {nom, contenu « reference;montant;statut »} → {ok, lignes, ecarts} | {ok: false, raison: vide | forme}",
+  "permission": "finances.rapprocher",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "nom": "string",
+   "contenu": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/cartes-finance",
+  "resume": "Ouvrir une carte Finance {objet, texte} (File d'action) → {ok, id} | {ok: false, raison: deja}",
+  "permission": "finances.lire",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "objet": "string",
+   "texte": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/cloture/transmettre",
+  "resume": "Transmettre au comptable la clôture du mois précédent → {ok} | {ok: false, raison: deja}",
+  "permission": "finances.lire",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "mois": "string"
+  }
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/paliers",
+  "resume": "Propositions de descente de palier (Trust Score relevé TS-HYST-J jours sous le seuil de descente) et contestations → PropositionPalier[]",
+  "permission": "paliers.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/paliers/{id}/decider",
+  "resume": "Confirmer, refuser, revue terrain ; recours : maintenir, annuler (motif écrit ; autre personne que l'auteur) → {ok, etat}",
+  "permission": "paliers.decider",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "action": "confirmer|refuser|revue_terrain|maintenir|annuler",
+   "motif": "string",
+   "evenements": [
+    "string"
+   ]
+  }
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/sanctions",
+  "resume": "Dossiers de sanction de la console et décisions des boutiques (recours) → Sanction[]",
+  "permission": "sanctions.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/sanctions",
+  "resume": "Ouvrir un dossier de sanction (proposer ou transmettre ; jamais décider) → {ok, id}",
+  "permission": "sanctions.proposer",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "acteurId": "string",
+   "espace": "vendeur|livreur|entreprise|relais",
+   "niveau": "integer",
+   "motif": "string",
+   "origine": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/sanctions/{id}/decider",
+  "resume": "Valider, niveau inférieur, classer, lever ; recours : maintenir, réduire, lever (niveau 4 : quatre yeux) → {ok, etat, quatreYeux}",
+  "permission": "sanctions.decider",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "action": "string",
+   "motif": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/clients/{id}/ifa",
+  "resume": "Trancher la rétrogradation IFA proposée d'un client → {ok, palier} ; 422 trop_tot ; 409 deja_traite",
+  "permission": "ifa.decider",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "action": "valider|refuser|recours_maintenir|recours_relever",
+   "motif": "string"
+  }
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/acces/{espace}/{id}",
+  "resume": "Accès d'un compte d'acteur (autorisé, bloqué, demande à contresigner, historique) → AccesActeur",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/acces",
+  "resume": "Bloquer (quatre yeux sauf client) ou rétablir l'accès d'un compte d'acteur → {ok, etat: appliquee|a_contresigner, id} | {ok: false, raison: sans_effet|deja_demande}",
+  "permission": "console.lire",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "espace": "client|vendeur|livreur|relais|entreprise",
+   "acteurId": "string",
+   "etat": "bloque|autorise",
+   "motif": "string"
+  }
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/placements",
+  "resume": "Quartiers écrits par les acteurs, lus contre la table quartier → zone (alias reconnus, quartiers à placer) → PlacementQuartier[]",
+  "permission": "logistique.entreprises.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/changements",
+  "resume": "Changements de téléphone et d'appareil des livreurs (journal de la livraison) → ChangementIdentifiant[]",
+  "permission": "logistique.livreurs.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/pilotage",
+  "resume": "Santé des zones sur 7 jours (ZONE-SCORE), plan d'action et délai saisonnier → ZonePilotage[]",
+  "permission": "logistique.zones.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/livreurs/{id}/position",
+  "resume": "Consulter la position d'un livreur en mission (journalisée) → {ok, le} | {ok: false, raison: hors_mission}",
+  "permission": "logistique.carte.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/emballages",
+  "resume": "Stock d'emballages (siège, avancé), écarts du mois, rouleaux d'étiquettes → Emballages",
+  "permission": "logistique.emballages.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/livreurs-activations",
+  "resume": "Livreurs en activation (pièces, charte, certification, approbation) → DossierLivreur[]",
+  "permission": "logistique.livreurs.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/delegues",
+  "resume": "Agents à qui confier des cartes (actifs, autres que soi, familles que leur rôle traite) → Delegue[]",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/cartes-deleguer",
+  "resume": "Confier des cartes de sa file à un autre agent qui peut les traiter (motif écrit, journalisé) → {ok, n} | {ok: false, raison: motif_court|inconnu}",
+  "permission": "console.lire",
+  "idempotent": true,
+  "publique": false,
+  "corps": {
+   "ids": [
+    "string"
+   ],
+   "agentId": "string",
+   "motif": "string"
+  }
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/rapports",
+  "resume": "Rapports et indicateurs par jour, 7 ou 30 jours, par zone (activité, marge, logistique, qualité, coûts ; parties selon le rôle ; rapport du lundi) → TableauRapports",
+  "permission": "rapports.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/journal/ecrire",
+  "resume": "Écrire au journal signé un geste fait dans l'appli (export.csv, appel.masque, appel.note seulement) → LigneJournal ; 422 action_inconnue",
+  "permission": "console.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": {
+   "action": "export.csv|appel.masque|appel.note",
+   "objet": "string",
+   "motif": "string?",
+   "avant": "string?",
+   "apres": "string?"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/vues/fraude/{id}/identifiant",
+  "resume": "Démasquer l'identifiant partagé d'une alerte de fraude (motif écrit, journalisé) → {ok, valeur} | {ok: false, raison: motif_court} ; 404 inconnu",
+  "permission": "donnees.demasquer",
+  "idempotent": false,
+  "publique": false,
+  "corps": {
+   "motif": "string"
+  }
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/propositions/{id}/soumettre",
+  "resume": "Soumettre sa proposition préparée → elle attend la décision d'une autre personne ; 422 pas_demandeur ; 409 deja_soumise, proposition_en_cours",
+  "permission": "parametres.proposer",
+  "idempotent": true,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "post",
+  "chemin": "/api/console/propositions/{id}/retirer",
+  "resume": "Retirer sa proposition (préparée ou soumise) avant toute décision ; 422 pas_demandeur ; 409 deja_soumise",
+  "permission": "parametres.proposer",
+  "idempotent": true,
+  "publique": false,
+  "corps": null
+ },
+ {
+  "methode": "get",
+  "chemin": "/api/console/vues/carte",
+  "resume": "Carte opérationnelle : relais, boutiques, points de stockage, paquets en cours, livreurs en mission (Direction, Opérations), alertes → PointCarte[]",
+  "permission": "logistique.carte.lire",
+  "idempotent": false,
+  "publique": false,
+  "corps": null
+ }
+]

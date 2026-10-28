@@ -24,6 +24,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
 from apps.accounts.models import RelayPointProfile, TrustScoreProfile, UserNotification
+from apps.common.demonstration import exiger_demonstration_autorisee
 
 # Les messages de démonstration portent ce préfixe interne dans leur URL
 # d'action : c'est par là que la purge les reconnaît.
@@ -37,6 +38,8 @@ class Command(BaseCommand):
         parser.add_argument("--relay", default=None, help="Nom d'utilisateur du point relais.")
 
     def handle(self, *args, **options):
+        # Tache D31 : jeux de demonstration fermes par defaut.
+        exiger_demonstration_autorisee()
         relay_point = self._relay_point(options.get("relay"))
         user = relay_point.user
         self.stdout.write(f"Point relais : {relay_point.name} ({user.username})")

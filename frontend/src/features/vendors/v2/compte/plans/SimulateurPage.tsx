@@ -35,9 +35,10 @@ export default function SimulateurPage() {
   }, []);
 
   const plans = (data?.plans ?? []).filter((pl) => mapLegacyPlanCode(pl.code) !== 'CUSTOM');
+  // Spec v2.1 : au lancement, aucun abonnement ne change la commission (R17.5) et aucun taux n'est promis ni montré
+  // (R18.2, R26.1) — la commission est la même pour tous les plans ; ils ne se départagent que par leur prix.
   const kept = plans.map((pl) => {
-    const commission = sales * (Number(pl.commission_rate) / 100);
-    const value = Math.max(0, sales - commission - pl.price_monthly_xaf);
+    const value = Math.max(0, sales - pl.price_monthly_xaf);
     return { plan: pl, value };
   });
   const bestValue = kept.length ? Math.max(...kept.map((k) => k.value)) : 0;

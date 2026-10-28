@@ -1,6 +1,8 @@
 # backend/apps/catalog/models.py
 # Modèles du catalogue produits BelivaY.
 
+from decimal import Decimal
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -622,6 +624,40 @@ class MasterProduct(SoftDeleteModel):
         related_name='moderated_masterproducts',
     )
 
+    # ─── Spécification v2.1 : remplis par l'équipe catalogue (apps/catalog/regles_catalogue.py) ───
+    univers = models.CharField(
+        max_length=3, blank=True, default="", db_index=True,
+        verbose_name="Univers",
+        help_text="Code de t_univers (TEL, MOD, SUP…) ; un seul par fiche, obligatoire pour publier (R16.1).",
+    )
+    poids_kg = models.DecimalField(
+        max_digits=7, decimal_places=3, null=True, blank=True,
+        validators=[MinValueValidator(Decimal("0.001"))],
+        verbose_name="Poids (kg)", help_text="poids_i, poids réel de l'article (R62.1, R63.1).",
+    )
+    dim_l1_cm = models.DecimalField(
+        max_digits=6, decimal_places=1, null=True, blank=True,
+        validators=[MinValueValidator(Decimal("0.1"))], verbose_name="Dimension 1 (cm)",
+    )
+    dim_l2_cm = models.DecimalField(
+        max_digits=6, decimal_places=1, null=True, blank=True,
+        validators=[MinValueValidator(Decimal("0.1"))], verbose_name="Dimension 2 (cm)",
+    )
+    dim_l3_cm = models.DecimalField(
+        max_digits=6, decimal_places=1, null=True, blank=True,
+        validators=[MinValueValidator(Decimal("0.1"))], verbose_name="Dimension 3 (cm)",
+        help_text="Les trois dimensions dans n'importe quel ordre : le calcul les trie (R62.1).",
+    )
+    carton = models.BooleanField(
+        default=False, verbose_name="Exige un carton",
+        help_text="carton_i : verre, céramique, tablette, ordinateur, écran de plus de 7 pouces, "
+                  "liquide en bouteille de verre (R87.1).",
+    )
+    made_in_cameroon = models.BooleanField(
+        default=False, verbose_name="Made in Cameroon (contrôlé)",
+        help_text="mic_i : déclaré et contrôlé par l'équipe catalogue (R17.1).",
+    )
+
     class Meta:
         ordering            = ["-created_at"]
         verbose_name        = "Fiche produit maître"
@@ -680,7 +716,12 @@ class MasterProduct(SoftDeleteModel):
         """
         from django.core.exceptions import ValidationError
         super().clean() if hasattr(super(), 'clean') else None
- 
+
+        if self.univers:
+            from apps.catalog.regles_catalogue import univers_connus
+            if self.univers not in univers_connus():
+                raise ValidationError({"univers": f"Univers « {self.univers} » inconnu de t_univers (R16.1)."})
+
         if not isinstance(self.variant_axes, list):
             raise ValidationError({
                 "variant_axes": "Doit être une liste JSON."
@@ -1747,3 +1788,33 @@ class StockMovement(TimeStampedModel):
     def __str__(self):
         signe = "+" if self.delta >= 0 else ""
         return f"{self.product.title} — {signe}{self.delta} ({self.get_reason_display()})"
+
+
+class SelectionOffre(models.Model):
+    """Journal de chaque sélection de l'offre qui reçoit une commande (spec v2.1, R27.7) : offre retenue, phase,
+    ctl_min, tol, offres en course avec score, part_cible et part_reelle, et la raison du choix."""
+
+    class Raison(models.TextChoices):
+        REPARTITION = "repartition", "Répartition (A6)"
+        PANIER = "panier", "Sélection du panier (A12)"
+        BASCULE = "bascule", "Bascule (R35)"
+
+    cree_le = models.DateTimeField(auto_now_add=True, db_index=True)
+    master = models.ForeignKey(MasterProduct, on_delete=models.CASCADE, related_name="selections")
+    order = models.ForeignKey("orders.Order", on_delete=models.SET_NULL, null=True, blank=True, related_name="selections_offres")
+    mode = models.CharField(max_length=10)
+    zone_dest = models.CharField(max_length=4)
+    raison = models.CharField(max_length=12, choices=Raison.choices)
+    phase = models.CharField(max_length=20, blank=True, default="")
+    ctl_min = models.IntegerField(default=0)
+    tol = models.IntegerField(default=0)
+    retenue = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
+    en_course = models.JSONField(default=list)
+
+    class Meta:
+        ordering = ["-cree_le"]
+        verbose_name = "Sélection d'offre"
+        verbose_name_plural = "Journal des sélections d'offres"
+
+    def __str__(self):
+        return f"{self.get_raison_display()} · {self.master} → {self.retenue_id}"

@@ -72,6 +72,8 @@ export interface Shipment {
   courier: { id: number; user_id: number; phone: string; city: string; vehicle_type: string; is_online: boolean } | null;
   relay_point: string;
   relay_parcel: RelayParcel | null;
+  /** D11 : a domicile, code a donner au livreur a la porte (visible du seul client). */
+  delivery_code?: string | null;
   delivery_evidences: ShipmentEvidence[];
   created_at: string;
   updated_at: string;

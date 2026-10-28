@@ -82,7 +82,7 @@ def test_structure(machine):
 
 
 def test_nombre_de_transitions():
-    assert [len(m.transitions) for m in MACHINES] == [10, 19, 7, 7, 11, 7, 7]
+    assert [len(m.transitions) for m in MACHINES] == [10, 19, 7, 8, 11, 7, 7, 9]
 
 
 def test_parcours_d_une_commande_payee_jusqu_au_retrait():

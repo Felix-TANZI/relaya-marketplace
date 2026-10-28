@@ -1,0 +1,18 @@
+/* Pages ajoutées du livreur (AJ-L) : classes du prototype d'abord ; ici seulement ce qui leur est propre (jetons). */
+.ajl-fiche-t{display:flex;align-items:center;gap:14px}
+.ajl-fiche-t .livc-ic{flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;border-radius:16px}
+.ajl-etapes{margin:0;padding-left:22px;color:var(--ink-2);font-size:.9375rem;line-height:1.5}
+.ajl-etapes li+li{margin-top:10px}
+.ajl-etapes li::marker{color:var(--acc-txt);font-weight:800}
+.ajl-interdits{margin:0;padding-left:20px;color:var(--ink-2);font-size:.875rem;line-height:1.5}
+.ajl-interdits li+li{margin-top:6px}
+.ajl-interdits li::marker{color:var(--red)}
+.ajl-limite{padding-top:4px;padding-bottom:6px}
+.ajl-limite .li{padding-left:0;padding-right:0}
+.ajl-id{display:flex;align-items:center;gap:14px;padding-top:10px}
+.ajl-av{width:64px;height:64px;font-size:1.25rem}
+.ajl-total{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px;margin:10px 0 6px}
+.ajl-total-v{font-size:var(--fs-34);font-weight:800;letter-spacing:-.03em;line-height:1.1;color:var(--ink)}
+.ajl-total-v .lp-masque{font-size:inherit;font-weight:inherit}
+.ajl-pin{padding:4px 2px 8px}
+.ajl-fin{display:flex;align-items:center;justify-content:center;gap:8px;margin:18px 0 6px;font-size:.8125rem;color:var(--ink-3)}

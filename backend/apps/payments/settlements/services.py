@@ -100,12 +100,15 @@ def build_batch(payee: PayeeAccount, *, period_start=None, period_end=None,
         )
         .order_by("released_at")
     )
-    if not liberes:
-        return None
-
     brut = sum(h.payable_amount_xaf for h in liberes)
     if brut <= 0:
-        return None
+        # Spec v2.1, R40.4 : un point relais est payé de ses parts (ajustements dus), sans séquestre ; son lot
+        # se construit alors sur ces seuls ajustements.
+        dus = Adjustment.objects.filter(payee=payee, direction=Adjustment.Direction.DEBIT,
+                                        status=Adjustment.Status.APPROVED, remaining_xaf__gt=0).exists()
+        if not dus:
+            return None
+        liberes, brut = [], 0
 
     lot = SettlementBatch(
         payee=payee, cycle_key=cycle_key or payee.settlement_cycle_key,
@@ -288,7 +291,14 @@ def request_payout(batch: SettlementBatch, *, requested_by,
         )
 
     politique = payout_policy_for(batch.payee)
-    montant = batch.net_amount_xaf
+    # Spec v2.1, R22.3 et R43.2 (feuille de route D17, D20) : frais_versement = ⌈r_versement × montant versé⌉,
+    # retenus sur le versement et payés par celui qui le reçoit (vendeur, relais, entreprise de livraison).
+    from apps.regles import services as regles
+
+    v = regles.moteur().versement([batch.net_amount_xaf])
+    montant, frais_versement = v["recu"], v["frais_versement"]
+    if montant <= 0:
+        raise SettlementError(f"Lot {batch.reference} : rien à verser après les frais de versement.")
 
     minimum = int(_politique_valeur(politique, "min_payout_xaf", 0))
     maximum = int(_politique_valeur(politique, "max_payout_xaf", 0))
@@ -311,7 +321,7 @@ def request_payout(batch: SettlementBatch, *, requested_by,
             requises = max(requises, 2)
 
     demande = PayoutRequest(
-        batch=batch, payee=batch.payee, amount_xaf=montant,
+        batch=batch, payee=batch.payee, amount_xaf=montant, psp_fee_xaf=frais_versement,
         required_approvals=requises,
         payee_msisdn_masked=batch.payee.momo_number_masked,
         payee_operator=batch.payee.momo_operator,
@@ -495,11 +505,11 @@ def execute_payout(payout: PayoutRequest) -> PayoutRequest:
 
     Ecritures en cas de succes :
         DEBIT  2020/2022/2023  dette envers le beneficiaire
-        DEBIT  5011            frais PSP — CHARGE PLATEFORME
-        CREDIT 1011/1012/1010  tresorerie PSP
+        CREDIT 1011/1012/1010  tresorerie PSP (montant envoye + frais du prestataire)
 
-    Le partenaire recoit l'INTEGRALITE de son net : aucun frais n'est
-    retenu (referentiel §7.1).
+    Spec v2.1, R22.3 et R43.2 : le beneficiaire paie les frais de versement
+    (r_versement), retenus sur le montant envoye ; ils ne sont plus une
+    charge de la plateforme.
     """
     payout = PayoutRequest.objects.select_for_update().select_related("payee").get(
         pk=payout.pk
@@ -611,20 +621,9 @@ def _issue_inconnue(payout: PayoutRequest, message: str) -> PayoutRequest:
 
 
 def _comptabiliser_versement(payout: PayoutRequest) -> None:
-    from apps.payments.config.resolver import resolve_fee_for
-    from apps.payments.domain.enums import FeeScope
-    from apps.payments.domain.money import Money
-
-    frais = 0
-    try:
-        resolution = resolve_fee_for(
-            Money(payout.amount_xaf), scope=FeeScope.PAYOUT,
-            provider=payout.provider_code, operator=payout.payee_operator,
-        )
-        if str(resolution.bearer) == "PLATFORM":
-            frais = resolution.fee.amount
-    except Exception:
-        frais = 0
+    # Spec v2.1, R22.3 et R43.2 : les frais de versement, fixés à la demande (psp_fee_xaf), sont retenus sur le
+    # montant envoyé ; la trésorerie sort du montant envoyé plus ces frais, soit la dette soldée, sans charge.
+    frais = payout.psp_fee_xaf or 0
 
     # ─────────────────────────────────────────────────────────────────────────
     # LA COMPENSATION DOIT SOLDER LA CREANCE AU REGISTRE
@@ -659,10 +658,6 @@ def _comptabiliser_versement(payout: PayoutRequest) -> None:
             label=f"Compensation versee sur {payout.reference}",
         ))
 
-    if frais > 0:
-        lignes.append(debit(coa.EXPENSE_PSP_PAYOUT, frais,
-                            label="Frais prestataire sur versement"))
-
     lignes.append(credit(
         coa.psp_account_for(payout.payee_operator, degraded=True),
         payout.amount_xaf + frais, label="Sortie de tresorerie",
@@ -676,7 +671,6 @@ def _comptabiliser_versement(payout: PayoutRequest) -> None:
         created_by_label="settlements.services.execute_payout",
     )
     payout.psp_fee_xaf = frais
-    PayoutRequest.objects.filter(pk=payout.pk).update(psp_fee_xaf=frais)
 
 
 def execute_approved_payouts(limit: int = 50) -> dict:
@@ -964,6 +958,16 @@ def execute_refund(refund):
         )
 
     intent = refund.intent
+    from apps.payments.wallet import services as wallet
+
+    if intent.provider_code == wallet.PRESTATAIRE:
+        # Spec v2.1, R03.6 (feuille de route D16) : paye par le Wallet, rembourse sur le Wallet.
+        wallet.rembourser(refund)
+        refund.status = Refund.Status.PAID
+        refund.save(update_fields=["status"])
+        _solder_sequestres(refund)
+        return refund
+
     numero = intent.payer_msisdn
     if not numero:
         raise SettlementError(
@@ -1521,6 +1525,74 @@ def compensate_relay_parcel(payee: PayeeAccount, *, order_id: int,
 # ─────────────────────────────────────────────────────────────────────────────
 # 6. MONTANT DU — ce que le partenaire voit
 # ─────────────────────────────────────────────────────────────────────────────
+
+# ─────────────────────────────────────────────────────────────────────────────
+# VERSEMENT DU VENDREDI (spec v2.1, R22.2, R43.1 ; feuille de route D11, D13, D20)
+# ─────────────────────────────────────────────────────────────────────────────
+
+VENDREDI = 4  # R22.2, R43.1 : chaque vendredi
+
+
+def _systeme():
+    from django.contrib.auth.models import User
+
+    auteur, _ = User.objects.get_or_create(username="belivay-system", defaults={"is_active": False, "email": ""})
+    return auteur
+
+
+def remunerer_semaine(payee: PayeeAccount, *, montant: int, semaine: str, detail: str):
+    """Spec v2.1, R40.4 et R40.5 : le versement de la semaine d'un point relais, calculé par la formule de la spec
+    (apps.regles), entre au lot comme un ajustement ; négatif, il devient une créance reportée au vendredi suivant.
+    Approuvé par la règle (comme compensate_relay_parcel), jamais par une personne ; idempotent par semaine."""
+    if montant == 0:
+        return None
+    evenement = f"R40.4:{semaine}"
+    existant = Adjustment.objects.filter(payee=payee, source_event=evenement).first()
+    if existant is not None:
+        return existant
+    ajustement = Adjustment(
+        payee=payee,
+        direction=Adjustment.Direction.DEBIT if montant > 0 else Adjustment.Direction.CREDIT,
+        category=Adjustment.Category.REBILLING if montant > 0 else Adjustment.Category.CORRECTION,
+        amount_xaf=abs(montant), remaining_xaf=abs(montant),
+        reason=f"Versement du relais, semaine {semaine} (R40.4). {detail}"[:500],
+        source_event=evenement, source_contract="spec-v2.1#R40.4",
+        status=Adjustment.Status.APPROVED, approved_by=None, approved_at=timezone.now(), created_by=_systeme(),
+    )
+    ajustement.save()
+    _comptabiliser_ajustement(ajustement)
+    return ajustement
+
+
+def versements_du_vendredi(now=None, refus=None) -> dict:
+    """R22.2, R43.1 : chaque vendredi avant r_versement_heure, sans demande et sans minimum, chaque bénéficiaire reçoit
+    ce qui a été libéré au plus tard le jeudi à minuit. Les lots sont construits, confirmés et mis en demande de
+    versement ; l'équipe finance les approuve (maker-checker), puis l'exécution part toute seule."""
+    from apps.regles import services as regles
+
+    local = timezone.localtime(now or timezone.now())
+    if local.weekday() != VENDREDI or local.hour >= regles.reglage("r_versement_heure"):
+        return {"skipped": True}
+    fin = local.replace(hour=0, minute=0, second=0, microsecond=0)  # jeudi à minuit
+    systeme = _systeme()
+    lots, demandes, erreurs = 0, 0, []
+    for payee in PayeeAccount.objects.filter(is_active=True).exclude(payee_type__in=["PLATFORM", "BUYER"]):
+        motif = refus(payee) if refus else None  # règle métier lue par le pont (ex. D19 : pièces du vendeur)
+        if motif:
+            erreurs.append(f"{payee.payee_code} : {motif}")
+            continue
+        try:
+            lot = build_batch(payee, period_end=fin)
+            if lot is None:
+                continue
+            lots += 1
+            confirm_batch(lot)
+            request_payout(lot, requested_by=systeme, justification="Versement du vendredi (R22.2, R43.1).")
+            demandes += 1
+        except Exception as exc:  # un bénéficiaire bloqué (KYC, numéro) n'arrête pas les autres
+            erreurs.append(f"{payee.payee_code} : {exc}")
+    return {"skipped": False, "batches": lots, "payout_requests": demandes, "errors": erreurs[:20]}
+
 
 def _prochaine_date(payee: PayeeAccount):
     """

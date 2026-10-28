@@ -23,7 +23,7 @@ import { useConfirm } from "@/context/ConfirmContext";
 import {
   adminApi,
   type AdminMaster, type AdminMasterDetail,
-  type MasterUpdatePayload, type AdminBrand, type AdminAttribute,
+  type MasterUpdatePayload, type AdminBrand, type AdminAttribute, type Univers,
 } from "@/services/api/admin";
 import { productsApi, type Category } from "@/services/api/products";
 
@@ -143,7 +143,7 @@ export default function MasterProductsPage() {
 
   const handleApprove = async (m: AdminMaster) => {
     try { await adminApi.approveMaster(m.id); showToast(t('ad5a_master_products.toast_approved', { title: m.title }), "success"); load(); }
-    catch { showToast(t('ad5a_master_products.toast_generic_error'), "error"); }
+    catch (err) { showToast(err instanceof Error ? err.message : t('ad5a_master_products.toast_generic_error'), "error"); }
   };
   const handleReject = async (m: AdminMaster) => {
     const ok = await confirm({
@@ -640,7 +640,7 @@ function MasterDetailModal({
   const doApprove = async () => {
     if (!detail) return;
     try { await adminApi.approveMaster(detail.id); showToast(t('ad5a_master_products.toast_approved_short'), "success"); onApproved(); }
-    catch { showToast(t('ad5a_master_products.toast_generic_error'), "error"); }
+    catch (err) { showToast(err instanceof Error ? err.message : t('ad5a_master_products.toast_generic_error'), "error"); }
   };
   const doReject = async () => {
     if (!detail) return;
@@ -758,6 +758,10 @@ function MasterDetailModal({
                   </p>
                 </Section>
               )}
+
+              <Section title={t('ad5a_master_products.section_livraison')} T={T}>
+                <FicheLivraison master={detail} T={T} />
+              </Section>
 
               <Section title={t('ad5a_master_products.section_variant_axes')} T={T}>
                 {detail.axes_resolved.length === 0 ? (
@@ -879,8 +883,21 @@ function MasterEditModal({ master, categories, onClose, onSaved }: {
     category: master.category,
     brand_fk: master.brand_fk_id,
     variant_axes: master.variant_axes,
+    univers: master.univers,
+    poids_kg: master.poids_kg,
+    dim_l1_cm: master.dim_l1_cm,
+    dim_l2_cm: master.dim_l2_cm,
+    dim_l3_cm: master.dim_l3_cm,
+    carton: master.carton,
+    made_in_cameroon: master.made_in_cameroon,
   });
   const [busy, setBusy] = useState(false);
+
+  // Univers de t_univers (réglages de l'admin, spécification v2.1)
+  const [univers, setUnivers] = useState<Univers[]>([]);
+  useEffect(() => {
+    adminApi.listUnivers().then(setUnivers).catch(() => setUnivers([]));
+  }, []);
 
   // Brand autocomplete
   const [brandSearch, setBrandSearch] = useState(master.brand_fk_name ?? "");
@@ -939,12 +956,19 @@ function MasterEditModal({ master, categories, onClose, onSaved }: {
         category: form.category,
         brand_fk: selectedBrand?.id ?? null,
         variant_axes: form.variant_axes,
+        univers: form.univers,
+        poids_kg: form.poids_kg || null,
+        dim_l1_cm: form.dim_l1_cm || null,
+        dim_l2_cm: form.dim_l2_cm || null,
+        dim_l3_cm: form.dim_l3_cm || null,
+        carton: form.carton,
+        made_in_cameroon: form.made_in_cameroon,
       };
       await adminApi.updateMaster(master.id, payload);
       showToast(t('ad5a_master_products.toast_updated'), "success");
       onSaved();
     } catch (err: unknown) {
-      const msg = (err as { detail?: string })?.detail ?? t('ad5a_master_products.toast_generic_error');
+      const msg = err instanceof Error ? err.message : t('ad5a_master_products.toast_generic_error');
       showToast(msg, "error");
     } finally { setBusy(false); }
   };
@@ -1115,6 +1139,55 @@ function MasterEditModal({ master, categories, onClose, onSaved }: {
             </div>
           )}
         </FormField>
+
+        {/* Spécification v2.1 : univers, poids, dimensions, carton, Made in Cameroon */}
+        <Section title={t('ad5a_master_products.section_livraison')} T={T}>
+          <div style={{ fontSize: 11.5, color: T.muted, marginBottom: 12 }}>
+            {t('ad5a_master_products.livraison_aide')}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <FormField label={t('ad5a_master_products.field_univers')} T={T}>
+              <select value={form.univers ?? ""}
+                onChange={(e) => setForm({ ...form, univers: e.target.value })}
+                style={inputStyle(T)}>
+                <option value="">{t('ad5a_master_products.univers_aucun')}</option>
+                {univers.map((u) => (
+                  <option key={u.code} value={u.code}>
+                    {u.code} · {u.nom} ({t('ad5a_master_products.univers_famille', { famille: u.famille })})
+                  </option>
+                ))}
+              </select>
+            </FormField>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10 }}>
+              <FormField label={t('ad5a_master_products.field_poids')} T={T}>
+                <input type="number" min="0" step="0.001" value={form.poids_kg ?? ""}
+                  onChange={(e) => setForm({ ...form, poids_kg: e.target.value })}
+                  style={inputStyle(T)} />
+              </FormField>
+              <div style={{ gridColumn: "span 2" }}>
+                <FormField label={t('ad5a_master_products.field_dimensions')} T={T}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+                    {(["dim_l1_cm", "dim_l2_cm", "dim_l3_cm"] as const).map((champ) => (
+                      <input key={champ} type="number" min="0" step="0.1" value={form[champ] ?? ""}
+                        onChange={(e) => setForm({ ...form, [champ]: e.target.value })}
+                        style={inputStyle(T)} />
+                    ))}
+                  </div>
+                </FormField>
+              </div>
+            </div>
+            <label style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12.5, color: T.text, cursor: "pointer" }}>
+              <input type="checkbox" checked={!!form.carton}
+                onChange={(e) => setForm({ ...form, carton: e.target.checked })} />
+              {t('ad5a_master_products.field_carton')}
+            </label>
+            <label style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12.5, color: T.text, cursor: "pointer" }}>
+              <input type="checkbox" checked={!!form.made_in_cameroon}
+                onChange={(e) => setForm({ ...form, made_in_cameroon: e.target.checked })} />
+              {t('ad5a_master_products.field_mic')}
+            </label>
+          </div>
+        </Section>
       </div>
 
       <div style={{
@@ -1150,6 +1223,44 @@ function ModalShell({ onClose, T, maxWidth = 900, children }: {
         width: "100%", maxWidth, maxHeight: "92vh", overflow: "auto",
         background: T.card, borderRadius: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
       }}>{children}</div>
+    </div>
+  );
+}
+
+/** Univers, format de colis calculé (R62) et ce qui manque pour valider la fiche (R16.1, R63.1). */
+function FicheLivraison({ master, T }: { master: AdminMasterDetail; T: AdminTokens }) {
+  const { t } = useTranslation();
+  const complete = master.manques_publication.length === 0;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 12.5, color: T.text }}>
+      <div>
+        <strong>{t('ad5a_master_products.field_univers')} :</strong> {master.univers || "—"}
+        {master.made_in_cameroon && <> · {t('ad5a_master_products.field_mic')}</>}
+      </div>
+      <div>
+        {master.colis
+          ? t('ad5a_master_products.format_colis', {
+              format: master.colis.format,
+              pf: master.colis.pf_kg.toLocaleString(undefined, { maximumFractionDigits: 3 }),
+              volume: master.colis.volume_l.toLocaleString(undefined, { maximumFractionDigits: 1 }),
+            })
+          : t('ad5a_master_products.format_inconnu')}
+      </div>
+      <div style={{
+        padding: 10, borderRadius: 8,
+        background: complete ? "#05966918" : "#F59E0B18",
+        border: `1px solid ${complete ? "#05966930" : "#F59E0B30"}`,
+        display: "flex", gap: 8, alignItems: "flex-start",
+      }}>
+        {complete ? <Check size={13} color="#059669" /> : <AlertTriangle size={13} color="#F59E0B" style={{ flexShrink: 0, marginTop: 1 }} />}
+        <div>
+          {complete ? t('ad5a_master_products.fiche_complete') : (
+            <>
+              <strong>{t('ad5a_master_products.manques_titre')} :</strong> {master.manques_publication.join(" ; ")}
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

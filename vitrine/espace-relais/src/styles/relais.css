@@ -1,0 +1,255 @@
+/* Espace point relais — feuille du SOCLE : base, coque (positions et comportements ; l'apparence de l'en-tête et de la
+   barre vient des classes transcrites du prototype, prototype.css), composants communs (r-btn, r-vide, r-pill…),
+   mise en page TABLETTE et ORDINATEUR DE COMPTOIR (PR-12). Aucune couleur écrite ici : seulement var(--…) de
+   jetons.css. Téléphone d'abord : cibles de 48 px (56 px pour l'action principale et la barre du bas), tailles en rem
+   (la taille du texte choisie, --zoom, agrandit tout), mouvements de la famille seulement sous html[data-mouv]. */
+
+@font-face{font-family:'Plus Jakarta Sans';font-style:normal;font-weight:400;font-display:swap;src:url(../assets/polices/plus-jakarta-sans-400.woff2) format('woff2')}
+@font-face{font-family:'Plus Jakarta Sans';font-style:normal;font-weight:500;font-display:swap;src:url(../assets/polices/plus-jakarta-sans-500.woff2) format('woff2')}
+@font-face{font-family:'Plus Jakarta Sans';font-style:normal;font-weight:600;font-display:swap;src:url(../assets/polices/plus-jakarta-sans-600.woff2) format('woff2')}
+@font-face{font-family:'Plus Jakarta Sans';font-style:normal;font-weight:700;font-display:swap;src:url(../assets/polices/plus-jakarta-sans-700.woff2) format('woff2')}
+@font-face{font-family:'Plus Jakarta Sans';font-style:normal;font-weight:800;font-display:swap;src:url(../assets/polices/plus-jakarta-sans-800.woff2) format('woff2')}
+
+/* ================================ Base ================================ */
+html{font-size:calc(16px * var(--zoom,1));-webkit-text-size-adjust:100%}
+html,body{margin:0;background:var(--sand);color:var(--ink);font-family:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+body{min-height:100vh;min-height:100dvh;overflow-x:hidden}
+/* Trois halos de la page (DS-04), en jetons : bleu du relais, bleu ciel, un souffle d'orange BelivaY. */
+body{background-image:radial-gradient(60% 30% at 100% 8%,var(--halo-1) 0%,transparent 70%),radial-gradient(70% 30% at 0% 45%,var(--halo-2) 0%,transparent 70%),radial-gradient(60% 30% at 90% 95%,var(--halo-3) 0%,transparent 70%);background-attachment:fixed}
+*,*::before,*::after{box-sizing:border-box}
+a{color:inherit}
+button,input,textarea,select{font-family:inherit}
+h1,h2,h3,p{margin:0}
+:focus-visible{outline:3px solid var(--acc);outline-offset:2px;border-radius:10px}
+.r-grow{flex:1;min-width:0}
+/* Références (BLV-…, codes d'emplacement) en chasse fixe (DS-01), chiffres alignés. */
+.r-ref{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-variant-numeric:tabular-nums}
+
+/* ================================ Application ================================ */
+.r-app{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
+.r-main{flex:1;min-width:0;padding:0 0 32px}
+/* Contenu sous l'en-tête et au-dessus du dock (NAV-06 : marge basse de 136 px au moins avec la barre). */
+.r-app.a-barre .r-main{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 136px)}
+.r-main.r-seul{padding-top:env(safe-area-inset-top,0px)}
+.r-main>.r-horsligne{margin:12px 16px 0}
+/* Bandeaux de la console (panne, maintenance, suspension, pièce à renvoyer : BandeauConsole). */
+.r-main>.r-console{margin:12px 16px 0}
+.r-console{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:14px;background:var(--amber-soft);color:var(--amber);border:1px solid var(--amber-line);font-size:.875rem;line-height:1.4}
+.r-console.rouge{background:var(--red-soft);color:var(--red);border-color:var(--red-line)}
+.r-console svg{flex-shrink:0;margin-top:1px}
+
+/* ---------- En-têtes (verre du prototype : p-hd, p-hs) ---------- */
+.r-hd{position:sticky;top:0;z-index:30;padding-top:env(safe-area-inset-top,0px)}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.r-hd{background-color:var(--verre-repli)!important}}
+@media (prefers-reduced-transparency:reduce){.r-hd,nav.r-dock{background-color:var(--verre-repli)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}}
+.r-ibtn{min-width:48px;min-height:48px;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:14px;background:transparent;color:inherit;cursor:pointer;text-decoration:none}
+.r-ibtn:active{background:var(--sand-2)}
+.r-logo{min-height:48px}
+.r-titre{margin:0;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r-hd .p-hs-sp{display:none}
+.r-label{text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.r-avatar{min-width:48px;min-height:48px;width:48px;height:48px;padding:0;background-clip:content-box;border:6px solid transparent}
+.r-avatar.a-photo img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
+.r-bdg{min-width:20px;height:20px;padding:0 5px;background:var(--badge);color:var(--badge-ink)}
+.r-pastilles{overflow-x:auto;scrollbar-width:none}
+.r-pastilles::-webkit-scrollbar{display:none}
+.r-pill{min-height:44px;text-decoration:none;flex-shrink:0;border:1px solid transparent}
+.r-point{width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block}
+.r-ton-vert{background:var(--green-soft);color:var(--green);border-color:var(--green-line)}
+.r-ton-accent{background:var(--acc-soft);color:var(--acc-txt);border-color:var(--acc-line)}
+.r-ton-alerte{background:var(--or-soft);color:var(--or-txt);border-color:var(--or-line)}
+.r-ton-ambre{background:var(--amber-soft);color:var(--amber);border-color:var(--amber-line)}
+.r-ton-rouge{background:var(--red-soft);color:var(--red);border-color:var(--red-line)}
+.r-ton-neutre{background:var(--sand-2);color:var(--ink-2);border-color:var(--line-2)}
+
+/* ---------- Barre du bas : verre liquide du client (nav.dock), structure du prototype (p-dock-*) ---------- */
+nav.r-dock{position:fixed;z-index:40;display:flex;align-items:center;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);height:68px;padding:0 6px}
+nav.r-dock .tab{flex:1 1 0;min-width:0;min-height:56px;text-decoration:none;position:relative}
+nav.r-dock .tab span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+nav.r-dock .p-dock-i{position:relative;display:flex}
+nav.r-dock .r-bdg,.dock-bulle .tab-copie .r-bdg{position:absolute;top:-7px;right:-14px}
+.dock-bulle .tab-copie{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;height:56px}
+nav.r-dock .tab:focus-visible{outline-color:var(--acc)}
+/* Forme ovale gardée (porteur, 24 oct.) : la barre du client et du vendeur est passée au rectangle aux coins doux
+   (site/src/styles/animations.css, l/barre) ; celle du relais reste une pilule, onglet actif et bulle compris (le rayon
+   de la bulle suit celui de l'onglet, BarreBas.tsx), icônes de 22 px et libellés du prototype. */
+nav.dock.r-dock{--dock-r:999px;--onglet-r:999px;border-radius:999px}
+nav.dock.r-dock .tab{border-radius:999px;font-size:inherit;letter-spacing:normal}
+nav.dock.r-dock .tab svg,.r-app .dock-bulle .tab-copie svg{width:22px;height:22px}
+.r-app .dock-bulle .tab-copie{font-size:inherit}
+.r-app .dock-bulle .tab-copie span:not(.r-bdg){letter-spacing:normal}
+
+/* ---------- Bandeau hors connexion (OFF-03) ---------- */
+.r-horsligne{display:flex;align-items:flex-start;gap:10px;min-height:48px;padding:12px 14px;border-radius:14px;background:var(--amber-soft);color:var(--amber);border:1px solid var(--amber-line);font-size:.875rem;line-height:1.4;text-decoration:none}
+.r-horsligne svg{flex-shrink:0;margin-top:1px}
+
+/* ---------- Composants communs ---------- */
+.r-carte{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--ombre)}
+.r-kicker{font-size:.75rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--acc-txt)}
+.r-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:56px;padding:0 20px;border:0;border-radius:14px;font-size:1rem;font-weight:800;cursor:pointer;text-align:center;text-decoration:none}
+.r-btn.r-principal{background:linear-gradient(180deg,var(--acc-g1),var(--acc-g2));color:var(--acc-btn-ink);box-shadow:0 10px 22px -12px var(--acc-ombre)}
+.r-btn.r-second{background:var(--card);color:var(--ink);border:1.5px solid var(--line-2)}
+.r-btn.r-alerte{background:var(--alerte-btn);color:var(--alerte-btn-ink)}
+.r-btn:disabled{opacity:.5;cursor:default}
+html[data-mouv] .r-btn:active:not(:disabled),html[data-mouv] .r-ibtn:active{transform:scale(.97);transition:transform var(--blv-court,.13s) ease}
+.r-vide{text-align:center;padding:24px 16px 12px}
+.r-vide-i{width:64px;height:64px;margin:0 auto 14px;border-radius:20px;background:var(--acc-soft);color:var(--acc-txt);display:flex;align-items:center;justify-content:center}
+.r-vide-i.r-rouge{background:var(--or-soft);color:var(--or-txt)}
+.r-vide h1,.r-vide h2{font-size:1.375rem;font-weight:800;letter-spacing:-.02em}
+.r-vide p{margin:8px auto 0;max-width:42ch;color:var(--ink-3);line-height:1.5}
+.r-main.r-seul .r-vide~.r-btn,.r-vide~.r-btn{width:auto;margin:16px}
+.r-nombre{min-width:26px;height:24px;padding:0 8px;border-radius:12px;background:var(--acc-soft);color:var(--acc-txt);font-size:.8125rem;font-weight:800;display:inline-flex;align-items:center;justify-content:center}
+
+/* ---------- Page provisoire : bandeau et fiche de travail, sous le balisage transcrit ---------- */
+.r-provisoire{margin:4px 16px 0;padding:14px 16px;border-radius:14px;background:var(--card-2);border:1px dashed var(--line-2);display:flex;flex-direction:column;gap:10px;break-inside:avoid}
+.r-provisoire p{color:var(--ink-3);font-size:.875rem;line-height:1.45}
+.r-etats{display:flex;flex-wrap:wrap;gap:8px}
+.r-etat{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border-radius:999px;background:var(--card);border:1px solid var(--line-2);color:var(--ink-2);font-size:.8125rem;font-weight:700;text-decoration:none}
+.r-etat.on{background:var(--acc-soft);border-color:var(--acc-line);color:var(--acc-txt)}
+.r-fiche{background:var(--card);border-radius:12px;border:1px solid var(--line)}
+.r-fiche summary{display:flex;align-items:center;gap:12px;min-height:52px;padding:0 14px;font-weight:700;cursor:pointer;list-style:none;color:var(--ink)}
+.r-fiche summary::-webkit-details-marker{display:none}
+.r-fiche summary svg{color:var(--acc)}
+.r-fiche ul{margin:0;padding:4px 16px 14px 34px;color:var(--ink-2);font-size:.875rem;line-height:1.5}
+.r-fiche li+li{margin-top:6px}
+
+/* ---------- Feuilles du bas (composant Feuille du client) ---------- */
+.veil{position:fixed;inset:0;z-index:60;background:var(--voile)}
+.sheet{position:fixed;z-index:61;left:0;right:0;bottom:0;max-height:88dvh;overflow-y:auto;padding:10px 18px calc(env(safe-area-inset-bottom,0px) + 24px);border-radius:28px 28px 0 0;background:var(--card);box-shadow:var(--ombre-haute)}
+.sheet .grab{width:44px;height:5px;margin:2px auto 12px;border-radius:3px;background:var(--line-2)}
+.sheet-x{position:absolute;top:8px;right:8px;width:48px;height:48px;border:0;border-radius:14px;background:transparent;color:var(--ink-3);display:flex;align-items:center;justify-content:center;cursor:pointer}
+
+/* ---------- Taille du texte (composants/TailleDuTexte.tsx), comme le client : 8 crans, aperçu en direct ---------- */
+.taille-t{display:flex;align-items:center;gap:10px}
+.taille-n{display:flex;flex-direction:column;min-width:0}
+.taille-n b{font-weight:800}
+.taille-n span{font-size:.8125rem;color:var(--ink-3)}
+.taille-l{display:flex;align-items:center;gap:10px;margin-top:12px}
+.taille-a{font-size:13px;font-weight:700;color:var(--ink-2)}
+.taille-a-g{font-size:22px}
+.taille-barre{flex:1;min-width:0;accent-color:var(--acc);height:44px;margin:0;cursor:pointer}
+.taille-graduation{display:flex;justify-content:space-between;padding:0 30px 0 22px;margin-top:2px}
+.taille-graduation i{width:4px;height:4px;border-radius:50%;background:var(--line-2)}
+.taille-graduation i.ref{background:var(--ink-4)}
+.taille-graduation i.on{background:var(--acc);transform:scale(1.6)}
+.taille-apercu{margin:10px 0 0;font-size:.8125rem;line-height:1.45;color:var(--ink-2)}
+.taille-normale{margin-top:8px;padding:8px 0;border:0;background:none;color:var(--acc-txt);font-weight:800;cursor:pointer;min-height:44px}
+
+/* ---------- Appareil photo : plein écran, sans en-tête ni barre (PR-12, règle 7) ---------- */
+.r-app.a-camera .r-main{padding:0}
+
+/* ---------- Écran repris : interactions transcrites ---------- */
+.r-main a,.r-main button{cursor:pointer}
+.r-main input,.r-main textarea{color:var(--ink);font-size:max(1rem,16px)}
+
+/* ================================ Tablette et ordinateur de comptoir (PR-12) ================================
+   Même application, mêmes données, même en-tête (pleine largeur) et même barre (centrée sur 520 px, à 28 px du bas) ;
+   les cartes de l'écran mobile, dans leur ordre, se rangent sur deux colonnes équilibrées de 370 px au moins (gauche,
+   puis droite), sans jamais être coupées ; le titre de l'écran et sa carte de tête restent en pleine largeur ; les
+   écrans à clavier (connexion, invitation, PIN de remise) gardent une colonne centrée de 540 px. */
+@media (min-width:768px){
+  .r-hd .p-hd-rang,.r-hd .p-hs-rang,.r-hd .p-hd-label,.r-hd .p-hd-pastilles{padding-left:28px;padding-right:28px}
+  .r-main{padding-left:12px;padding-right:12px}
+  .r-pile{display:block!important;columns:2 370px;column-gap:20px;padding-left:16px!important;padding-right:16px!important}
+  .r-pile>*{break-inside:avoid;margin-bottom:12px}
+  .r-pile>:first-child{column-span:all;margin-bottom:18px}
+  .r-app.a-une .r-pile{columns:auto;max-width:540px;margin:0 auto}
+  .r-app.a-une .r-pile>:first-child{column-span:none}
+  .r-provisoire{max-width:760px}
+  nav.r-dock{left:50%;right:auto;width:520px;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 28px)}
+  .sheet{left:50%;right:auto;width:min(560px,100%);transform:translateX(-50%)}
+}
+@media (min-width:1180px){
+  .r-pile{columns:3 340px;max-width:1180px;margin:0 auto}
+  .r-provisoire{margin-left:auto;margin-right:auto}
+}
+@media (hover:hover) and (pointer:fine){
+  .r-ibtn:hover{background:var(--sand-2)}
+  nav.r-dock .tab:not(.on):hover .p-dock-l{color:var(--ink)}
+  .r-fiche summary:hover{background:var(--card-2);border-radius:12px}
+}
+
+/* Plus petit téléphone : cibles de 44 px au moins (en-tête : « Barre du haut » plus bas). */
+@media (max-width:379px){
+  .r-ibtn{min-width:44px}
+}
+
+/* Entrée des pages : l'écran suivant paraît d'emblée, en place, d'un léger glissé SANS fondu (un fondu depuis
+   l'opacité 0 laissait voir le fond de la page pendant quelques images, chez le livreur). */
+@keyframes blv-avant{from{transform:translate3d(10px,0,0)}}
+@keyframes blv-arriere{from{transform:translate3d(-10px,0,0)}}
+@keyframes blv-fondu{from{transform:none}}
+html[data-mouv] main:is(.blv-avant,.blv-arriere,.blv-fondu)>:nth-child(n){animation-delay:0s}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+
+/* Contraste AA (ARL-172) : initiales sur fond ambre et barre des horaires, encre et dégradé par thème (jetons.css). */
+.p-laeb3x,.p-l1wrlu{color:var(--avatar-ink)}
+.p-s1houk,.p-ctu1jq{background-image:linear-gradient(90deg,var(--acc-g1--3a6bea),var(--jour-fin))}
+.p-l3xhlr{background:var(--pastille-etape)}
+
+/* ---------- Barre du haut (porteur, 24 oct.) : la MÊME que la console et l'espace entreprise (espace-admin/src/styles/
+   vie.css). Sobre : seuls le thème et la langue gardent une pastille (44 px, filet qui les détache du verre en clair
+   comme en sombre) ; menu, retour et cloche sont des icônes seules dans une zone tactile de 44 px invisible (survol :
+   l'icône fonce, appui : léger enfoncement, jamais de cercle) ; avatar plein de 44 px à anneau fin ; logo dans sa forme
+   normale (proportions gardées, 30 px de haut au plus), seul à céder de la place. Couleurs : jetons.css. */
+html body .r-hd :is(.p-hd-rang,.p-hs-rang){height:auto;min-height:56px;gap:2px;padding:6px 8px}
+html body .r-hd .p-hd-rang>:not(.p-hd-logo,.p-hd-sp){flex-shrink:0}
+html body .r-hd .r-ibtn{position:relative;width:44px;min-width:44px;height:44px;min-height:44px;padding:0;margin:0;border-radius:999px;background:transparent;color:var(--ink-2)}
+html body .r-hd .r-ibtn:active{background:transparent}
+html body .r-hd .r-ibtn :is(.p-hd-menu-i,.p-hd-cloche-i,.p-hs-retour-i){color:inherit}
+@media (hover:hover) and (pointer:fine){html body .r-hd .r-ibtn:hover{background:transparent;color:var(--ink)}}
+html body .r-hd .p-hd-logo{flex:0 1 auto;min-width:0;min-height:44px;padding:0 4px;border-radius:10px}
+html body .r-hd .p-hd-logo-img{width:auto;height:auto;max-width:100%;max-height:30px;object-fit:contain;object-position:left center}
+html body .r-hd .p-hs-marque-img{width:28px;height:auto}
+/* Cloche : pastille du nombre posée sur l'icône, détachée par un liseré de la couleur de la carte. */
+html body .r-hd .p-hd-bdg{top:4px;right:3px;min-width:18px;height:auto;min-height:18px;padding:0 5px;border-radius:999px;font-size:.75rem;line-height:18px;box-shadow:0 0 0 2px var(--card)}
+/* Avatar : disque plein de 44 px (initiales ou photo), anneau fin carte + filet. */
+html body .r-hd .r-avatar{width:44px;min-width:44px;height:44px;min-height:44px;margin-left:4px;border:0;border-radius:50%;background-clip:border-box;font-size:.875rem;letter-spacing:.02em;box-shadow:0 0 0 2px var(--card),0 0 0 3px var(--line-2)}
+html body .r-hd .r-avatar.a-photo{overflow:hidden;padding:0}
+/* Thème. */
+html body .r-hd .r-theme{position:relative;flex:none;width:44px;height:44px;padding:0;margin:0;border:2px solid transparent;border-radius:999px;background:var(--card);background-clip:padding-box;box-shadow:inset 0 0 0 1px var(--line-2);overflow:visible;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none}
+@media (hover:hover) and (pointer:fine){html body .r-hd .r-theme:hover{background:var(--sand-2);background-clip:padding-box}}
+html .r-theme .vt-ic{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+html .r-theme .vt-ic svg{display:block}
+html .r-theme .vt-soleil{color:var(--vie-soleil)}
+html .r-theme .vt-lune{color:var(--vie-lune)}
+html .r-theme.jour .vt-soleil,html .r-theme.nuit .vt-lune{opacity:0;visibility:hidden;transform:scale(.6)}
+html .r-theme.jour .vt-lune,html .r-theme.nuit .vt-soleil{opacity:1;visibility:visible;transform:none}
+/* Langue : pilule segmentée FR | EN de 44 px, curseur en relief sous la langue choisie (encre pleine), l'autre en
+   retrait (encre secondaire, AA sur le sable). */
+html body .r-hd .lang.vie-lang{position:relative;flex:none;display:inline-flex;align-items:center;gap:0;height:44px;min-width:0;padding:3px;margin:0 2px;border:2px solid transparent;border-radius:999px;background:var(--sand-2);background-clip:padding-box;box-shadow:inset 0 1px 2px color-mix(in srgb,var(--ink) 10%,transparent),inset 0 0 0 1px var(--line-2);color:var(--ink);font:inherit;font-size:.75rem;font-weight:800;letter-spacing:.04em;line-height:1;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none}
+html .vie-lang .vl-o{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;width:29px;height:34px;border-radius:999px;color:var(--ink-3)}
+html .vie-lang .vl-o.on{color:var(--ink)}
+html .vie-lang .vl-curseur{position:absolute;top:3px;left:3px;width:29px;height:34px;border-radius:999px;background:var(--vie-curseur);box-shadow:var(--vie-ombre-bouton)}
+html .vie-lang.en .vl-curseur{transform:translateX(29px)}
+@media (hover:hover) and (pointer:fine){html .vie-lang:hover .vl-o:not(.on){color:var(--ink)}}
+html body .r-hd :is(.r-theme,.vie-lang,.r-ibtn,.r-avatar,.p-hd-logo):focus-visible{outline:2px solid var(--acc-txt);outline-offset:1px}
+/* Mouvement (seulement sous html[data-mouv]) : appui qui enfonce, icône du thème qui tourne, curseur qui glisse. */
+html[data-mouv] body .r-hd :is(.r-ibtn,.r-avatar,.r-theme,.vie-lang){transition:transform var(--blv-moyen,.22s) var(--blv-ressort,ease),background-color .2s}
+html[data-mouv] body .r-hd :is(.r-ibtn,.r-avatar,.r-theme,.vie-lang):active{transform:scale(.93)}
+html[data-mouv] .r-theme .vt-ic{transition:transform .3s cubic-bezier(.3,1.4,.5,1),opacity .2s ease,visibility .2s}
+html[data-mouv] .vie-lang .vl-curseur{transition:transform .32s cubic-bezier(.3,1.4,.5,1)}
+html[data-mouv] .vie-lang .vl-o{transition:color .2s}
+/* Les icônes de la rangée tombent sur la marge du libellé (8 px de zone tactile en plus) : 8 px au téléphone, 20 px
+   sur tablette ; sous 360 px, l'avatar (Mon compte, aussi dans le Menu) laisse sa place au logo. Grand écran : la
+   rangée, le libellé et les pastilles s'alignent sur la colonne du contenu. */
+@media (min-width:768px){html body .r-hd :is(.p-hd-rang,.p-hs-rang){padding-left:20px;padding-right:20px}}
+@media (max-width:359.98px){html body .r-hd .p-hd-rang>.r-avatar{display:none}}
+@media (min-width:1240px){html body .r-hd :is(.p-hd-label,.p-hd-pastilles){box-sizing:border-box;max-width:1212px;margin-left:auto;margin-right:auto;padding-left:16px;padding-right:16px}html body .r-hd :is(.p-hd-rang,.p-hs-rang){box-sizing:border-box;max-width:1212px;margin-left:auto;margin-right:auto;padding-left:8px;padding-right:8px}}
+
+/* En-tête des pages secondaires (finitions, 23 oct.) : titre net (plus grand, une ligne), retour et logo inchangés ;
+   sur grand écran, la rangée s'aligne sur la colonne du contenu (« Barre du haut » ci-dessus). */
+html .r-hd-enfant .p-hs-titre{font-size:1.0625rem;letter-spacing:-.01em}
+@media (min-width:768px){html .r-hd-enfant .p-hs-titre{font-size:1.25rem}}
+
+/* Rien ne déborde en largeur (téléphone de 320 px, texte agrandi jusqu'à 140 %) : le texte agrandi élargit les
+   contenus (rem) ; une case de grille, une pastille sur une ligne ou la rangée des sept jours poussait la page de
+   quelques pixels. Les cases rétrécissent, une pastille passe à la ligne, la rangée des jours (cibles de 44 px gardées)
+   défile dans son cadre. Sans effet quand tout tient déjà (taille du texte normale). */
+html body .r7 .p-340snk{overflow-x:auto;scrollbar-width:none}
+html body :is(.p-zmtdxo,.p-0jgkhm)>*{min-width:0;overflow-wrap:break-word;hyphens:auto}
+html body .p-vdxjav>*{min-width:0;overflow-wrap:break-word}
+html body ul.p-8dmjde>li{max-width:100%;white-space:normal}
+html body .p-oqlq8x{flex-wrap:wrap}
+html body .p-oqlq8x>.p-rpzy79{max-width:100%;white-space:normal}
+html body .pr3 .p-3cmqo0 .p-2erw45{overflow-wrap:break-word}

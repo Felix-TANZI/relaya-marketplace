@@ -9,6 +9,10 @@
 #
 # Paramètres (registre) : OTP-LONG (6 chiffres), OTP-DUREE (10 minutes), OTP-ESSAIS (5, puis 15 minutes),
 # OTP-RENVOI (60 s entre deux envois, 3 envois par heure).
+#
+# Feuille de route D6 : c'est le seul système de codes du projet (2FA, PIN relais, compte de versement, connexion et
+# gestes sensibles du vendeur). Quand le code se retrouve par autre chose que son numéro (un appareil, une boutique),
+# `cle` le range sous cette clé tandis qu'il part toujours vers `destination`.
 
 import hashlib
 import hmac
@@ -23,7 +27,12 @@ from rest_framework import status
 
 from apps.client_core import parametres
 from apps.client_core.erreurs import ErreurClient
-from apps.client_core.masquage import masquer_email, masquer_numero, numero_local, operateur
+from apps.client_core.masquage import (
+    masquer_email,
+    masquer_numero,
+    numero_local,
+    operateur,
+)
 from apps.client_core.temps import ms
 
 from .models import CodeOtp
@@ -54,7 +63,14 @@ def _regles():
     return duree, essais, attente, entre, par_heure, longueur
 
 
-def envoyer(*, objet: str, destination: str, utilisateur=None, canal: str = "sms") -> dict:
+def _cle(destination: str, cle: str | None) -> str:
+    return f"cle:{cle}" if cle else _normaliser(destination)
+
+
+def envoyer(
+    *, objet: str, destination: str, utilisateur=None, canal: str = "sms",
+    exiger_utilisateur: bool = False, cle: str | None = None,
+) -> dict:
     """Crée et envoie un code ; 429 trop_tot / trop_d_envois selon OTP-RENVOI."""
     dest = _normaliser(destination)
     if not dest:
@@ -63,7 +79,8 @@ def envoyer(*, objet: str, destination: str, utilisateur=None, canal: str = "sms
         canal = CodeOtp.Canal.EMAIL
     duree, _, _, entre, par_heure, longueur = _regles()
     maintenant = timezone.now()
-    empreinte_dest = _empreinte(dest)
+    rangement = _cle(dest, cle)
+    empreinte_dest = _empreinte(rangement)
     recents = CodeOtp.objects.filter(objet=objet, destination_empreinte=empreinte_dest, cree_le__gte=maintenant - timedelta(hours=1))
     dernier = recents.order_by("-cree_le").first()
     if dernier is not None and dernier.cree_le > maintenant - timedelta(seconds=entre):
@@ -77,14 +94,22 @@ def envoyer(*, objet: str, destination: str, utilisateur=None, canal: str = "sms
     code = f"{secrets.randbelow(10**longueur):0{longueur}d}"
     with transaction.atomic():
         # Un nouveau code annule les précédents du même objet (un seul code valable à la fois).
-        CodeOtp.objects.filter(objet=objet, destination_empreinte=empreinte_dest, utilise_le__isnull=True).update(expire_le=maintenant)
+        # `exiger_utilisateur` limite cette annulation au compte concerné : sans
+        # ça, sur une adresse partagée par deux comptes, demander un code
+        # annulerait celui de l'autre (voir la note de `verifier`).
+        precedents = CodeOtp.objects.filter(
+            objet=objet, destination_empreinte=empreinte_dest, utilise_le__isnull=True,
+        )
+        if exiger_utilisateur:
+            precedents = precedents.filter(utilisateur=utilisateur)
+        precedents.update(expire_le=maintenant)
         CodeOtp.objects.create(
             utilisateur=utilisateur if utilisateur is not None and utilisateur.is_authenticated else None,
             objet=objet,
             canal=canal,
             destination_empreinte=empreinte_dest,
             destination_masquee=_masquer(dest),
-            code_empreinte=_empreinte(f"{objet}:{dest}:{code}"),
+            code_empreinte=_empreinte(f"{objet}:{rangement}:{code}"),
             expire_le=maintenant + timedelta(minutes=duree),
         )
     texte = f"BelivaY : ton code est {code}. Il est valable {duree} minutes. Ne le donne à personne."
@@ -95,16 +120,38 @@ def envoyer(*, objet: str, destination: str, utilisateur=None, canal: str = "sms
     return {"destination": _masquer(dest), "valideMinutes": duree, "renvoiSecondes": entre}
 
 
-def verifier(*, objet: str, code: str, destination: str, utilisateur=None, consommer: bool = True) -> dict:
+def verifier(
+    *, objet: str, code: str, destination: str = "", utilisateur=None,
+    consommer: bool = True, exiger_utilisateur: bool = False, cle: str | None = None,
+) -> dict:
     """Vérifie et consomme le code (consommer=False : le code juste reste valable, pour un contrôle refait plus tard,
-    ex. l'inscription diaspora). Ne lève pas pour un code faux : le résultat le dit (ResultatCode du site)."""
-    dest = _normaliser(destination)
+    ex. l'inscription diaspora). Ne lève pas pour un code faux : le résultat le dit (ResultatCode du site).
+
+    `exiger_utilisateur=True` restreint la recherche au compte passé en
+    `utilisateur`. Par défaut le code n'est retrouvé que par (objet,
+    destination), ce qui suffit aux parcours du kit : ils portent sur un
+    numéro ou une adresse, uniques par nature.
+
+    Ce n'est PAS vrai pour la double authentification de connexion : le modèle
+    utilisateur de Django n'impose pas l'unicité de `email` (seuls les
+    sérialiseurs la vérifient). Deux comptes partageant une adresse
+    partageraient alors l'espace des codes, et le code de l'un validerait la
+    connexion de l'autre. Le drapeau reste à False par défaut pour ne rien
+    changer aux parcours anonymes du kit, où le code est créé sans compte."""
+    dest = _cle(destination, cle)
     _, essais_max, attente_min, _, _, _ = _regles()
     maintenant = timezone.now()
     with transaction.atomic():
+        filtres = {
+            "objet": objet,
+            "destination_empreinte": _empreinte(dest),
+            "utilise_le__isnull": True,
+        }
+        if exiger_utilisateur:
+            filtres["utilisateur"] = utilisateur
         c = (
             CodeOtp.objects.select_for_update()
-            .filter(objet=objet, destination_empreinte=_empreinte(dest), utilise_le__isnull=True)
+            .filter(**filtres)
             .order_by("-cree_le")
             .first()
         )
@@ -124,6 +171,23 @@ def verifier(*, objet: str, code: str, destination: str, utilisateur=None, conso
             return {"ok": False, "bloqueJusqua": ms(c.bloque_jusqua)}
         c.save(update_fields=["essais"])
         return {"ok": False, "essaisRestants": essais_max - c.essais}
+
+
+def en_cours(*, objet: str, cle: str):
+    """Le code encore valable rangé sous `cle` (connexion par appareil : l'écran demande s'il en attend un)."""
+    return (
+        CodeOtp.objects.filter(objet=objet, destination_empreinte=_empreinte(_cle("", cle)), utilise_le__isnull=True,
+                               expire_le__gt=timezone.now())
+        .order_by("-cree_le").first()
+    )
+
+
+def dernier_utilise(*, objet: str, cle: str):
+    """Le dernier code vérifié rangé sous `cle` (pour retrouver le compte après une connexion par appareil)."""
+    return (
+        CodeOtp.objects.filter(objet=objet, destination_empreinte=_empreinte(_cle("", cle)), utilise_le__isnull=False)
+        .order_by("-utilise_le").first()
+    )
 
 
 def etape_validee(*, objet: str, utilisateur, apres=None, fenetres: int = 1) -> bool:

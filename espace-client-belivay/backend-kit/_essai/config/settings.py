@@ -58,6 +58,16 @@ INSTALLED_APPS = [
     "apps.extras",
     "apps.recus",
     "apps.contenus",
+    # ── AJOUTS DU KIT : espace vendeur (routes /api/vendors/…) ──
+    "apps.vendeur_core",
+    "apps.vendeur_session",
+    "apps.vendeur_commandes",
+    "apps.vendeur_litiges",
+    "apps.vendeur_catalogue",
+    "apps.vendeur_argent",
+    "apps.vendeur_croissance",
+    "apps.vendeur_boutique",
+    "apps.publicite",
 ]
 
 MIDDLEWARE = [

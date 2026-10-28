@@ -1,0 +1,67 @@
+/* Styles propres au groupe S1 (File d'action, litige, commandes, vue d'ensemble) : jetons seulement (jetons.css). */
+.px button.admA-q{width:100%;border:0;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.px button.admA-q:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.px .s1-photo{display:flex;align-items:center;justify-content:center;color:var(--ink-3);background:linear-gradient(160deg,var(--sand-2),var(--sand-3))}
+.px .tile2.s1-manque{border-color:var(--red-line);background:var(--red-soft);color:var(--red)}
+.px .admA-ev .cm{font-size:0.7188rem;color:var(--ink-3);line-height:1.35;margin-top:3px}
+.px .s1-hl{color:var(--amber);font-weight:700}
+.px .s1-chips{display:flex;gap:6px;flex-wrap:wrap}
+.px .s1-oblig{display:flex;flex-direction:column;gap:8px}
+.px .admA-opt{width:100%;text-align:left;font:inherit;color:inherit;background:none;cursor:pointer}
+.px .admA-opt:disabled{cursor:not-allowed}
+.px .s1-motif{width:100%;min-height:84px;border-radius:12px;border:1.5px solid var(--input-line);background:var(--input-bg);color:var(--ink);padding:9px 10px;font:inherit;font-size:0.8125rem;line-height:1.45;resize:vertical}
+.px .s1-motif:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 4px var(--acc-soft)}
+.px .s1-ok{color:var(--green)}
+.px .s1-court{color:var(--ink-3)}
+.px .s1-res{display:grid;gap:8px}
+.px .s1-code{display:flex;gap:8px;margin-top:14px}
+.px .s1-code input{width:100%;height:52px;border-radius:12px;border:1.5px solid var(--input-line);background:var(--input-bg);color:var(--ink);text-align:center;font-size:1.375rem;font-weight:800;letter-spacing:.4em;font-variant-numeric:tabular-nums}
+.px .s1-code input:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 4px var(--acc-soft)}
+.px .s1-ind .kpi{text-decoration:none;color:inherit}
+.px .s1-ind .kpi.alerte{box-shadow:0 0 0 2px var(--red-line),var(--shadow-card)}
+.px .s1-zones{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+.px .s1-zone{border-radius:14px;padding:10px 12px;background:var(--card);box-shadow:var(--shadow-card);text-decoration:none;color:inherit;display:block}
+.px .s1-zone.off{box-shadow:inset 0 0 0 1px var(--line-2);background:var(--card-2)}
+.px .s1-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--green);margin-right:6px}
+.px .s1-dot.lent{background:var(--amber)}
+.px .s1-dot.panne{background:var(--red)}
+@media (max-width:767px){.px .s1-code input{height:48px;font-size:1.25rem}}
+.px .links button.lnk{background:none;border:0;font:inherit;font-size:0.8125rem;color:var(--acc-txt);font-weight:700;cursor:pointer;padding:0}
+.px .admA-prop:not(.wait) :is(.k,.j,.ai){color:var(--sur-e);opacity:.88}
+.px .admA-lhead>.btn{width:auto;flex:0 0 auto}
+.px h1.admA-h{font-size:1.375rem;margin:10px 0 4px;font-weight:800;letter-spacing:-.02em}
+/* Contraste AA (tests/lisibilite) : surtitres dorés et textes secondaires des blocs du prototype, sur la palette graphite. */
+.px .admA-day .d.n .k,.px .admA-eff .k,.px .admA-login .side .pg-k{color:var(--ink)}
+.px .admA-login .side :is(.lead,.foot2){color:var(--ink)}
+.px .admA-q.locked .cx{opacity:1}
+.px .s1-oeil{min-width:44px;min-height:44px;padding:0;justify-content:center}
+.px .admA-login .side>:not(.art){position:relative;z-index:1}
+
+/* Activité en direct (Vue d'ensemble) : une ligne par événement des cinq applications. */
+.px .s1-act{list-style:none;margin:0;padding:0}
+.px .s1-act li>a,.px .s1-act li>div{display:flex;align-items:center;gap:10px;min-height:44px;padding:6px 0;border-top:1px solid var(--line);color:inherit;text-decoration:none;min-width:0}
+.px .s1-act li:first-child>a,.px .s1-act li:first-child>div{border-top:0}
+.px .s1-act .grow{min-width:0;font-size:.875rem;overflow-wrap:anywhere}
+.px .s1-act li>a:hover .grow{text-decoration:underline}
+/* Chaîne de preuves en étapes courtes (pastilles reliées) ; le détail des preuves reste replié. */
+.px .admA-etapes{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.px .admA-etapes li{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:4px 10px 4px 4px;border-radius:999px;background:var(--card);box-shadow:inset 0 0 0 1px var(--line);font-size:.8125rem;line-height:1.25}
+.px .admA-etapes .pt{flex-shrink:0;padding:2px 7px;border-radius:999px;background:var(--sand-2);font-size:.6875rem;font-weight:800;color:var(--ink-2)}
+.px .admA-etapes .q{font-weight:700;color:var(--ink)}
+.px .admA-etapes .e{display:inline-flex;color:var(--ink-3)}
+.px .admA-etapes li.ok .e{color:var(--green)}
+.px .admA-etapes li.manque{background:var(--red-soft);box-shadow:inset 0 0 0 1px var(--red-line)}
+.px .admA-etapes li.manque .e,.px .admA-etapes li.manque .q{color:var(--red)}
+.px .admA-etapes .h{color:var(--ink-3);font-size:.75rem;font-variant-numeric:tabular-nums;white-space:nowrap}
+.px .admA-etapes-d{margin-top:8px}
+.px .admA-etapes-d>summary{display:inline-flex;align-items:center;gap:6px;min-height:44px;cursor:pointer;list-style:none;font-size:.8125rem;font-weight:700;color:var(--ink-2)}
+.px .admA-etapes-d>summary::-webkit-details-marker{display:none}
+.px .admA-etapes-d>summary:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:6px}
+.px .admA-etapes-d[open]>summary svg{transform:rotate(180deg)}
+.px .admA-etapes-d>.admA-phs{margin-top:4px}
+/* Comptes réels (source hybride) : enrôlement du second facteur et codes de secours. */
+.s1-enrol{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+.s1-enrol img{flex:none;width:176px;height:176px;border-radius:12px;background:#fff;padding:6px}
+.s1-enrol>div{flex:1;min-width:180px}
+.s1-secours{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.s1-secours code{display:block;padding:8px 10px;border-radius:10px;border:1px solid var(--line);font-size:15px;font-weight:700;letter-spacing:.06em;text-align:center}

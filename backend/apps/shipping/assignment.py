@@ -49,7 +49,12 @@ def organization_covers(city):
     ).filter(query)
 
 
-def choose_courier_for_order(order: Order, required_vehicle_type=""):
+def choose_courier_for_order(order: Order, required_vehicle_type="", valeur=None):
+    """Livreur qui POURRAIT prendre le colis : sert de diagnostic et de suggestion à l'entreprise (R52.2), jamais à
+    affecter. `valeur` : valeur_colis (R56.3) ; à défaut, le total de la commande."""
+    from apps.shipping.entreprises import plafond_effectif
+
+    valeur = order.total_xaf if valeur is None else valeur
     city = (order.city or "").strip()
     covered_orgs = organization_covers(city)
     if not covered_orgs.exists():
@@ -103,10 +108,8 @@ def choose_courier_for_order(order: Order, required_vehicle_type=""):
     throttled_ids = set()
     for courier in available:
         trust = get_trust_score_profile(courier.user, TrustScoreProfile.Role.COURIER)
-        cap = trust.parcel_value_cap_xaf
-        if cap is None and not courier.delivery_organization.transport_insurance_verified:
-            cap = 250000
-        if cap is None or order.total_xaf <= cap:
+        cap = plafond_effectif(trust.tier, courier.delivery_organization.transport_insurance_verified)  # R56.2, R56.3
+        if cap is None or valeur <= cap:
             value_eligible.append(courier)
         if trust.is_throttled:
             throttled_ids.add(courier.id)
@@ -124,8 +127,20 @@ def choose_courier_for_order(order: Order, required_vehicle_type=""):
 
 
 def assign_shipment_or_mark_blocked(shipment: Shipment, required_vehicle_type=""):
+    """Spec v2.1, R52 : BelivaY publie le colis aux entreprises de livraison de la zone et NE DOIT JAMAIS affecter un
+    livreur ; l'entreprise prend le colis et affecte le sien (file des missions). Un livreur éligible n'est qu'une
+    suggestion faite à l'entreprise (R52.2) ; les blocages (zone non couverte, capacité, véhicule, plafond) restent
+    signalés."""
+    from apps.shipping.entreprises import valeur_colis
+
     order = shipment.order
-    courier, issue_code, issue_message = choose_courier_for_order(order, required_vehicle_type=required_vehicle_type)
+    courier, issue_code, issue_message = choose_courier_for_order(
+        order, required_vehicle_type=required_vehicle_type, valeur=valeur_colis(shipment))
+    if courier:
+        issue_code = "WAITING_MANUAL_ASSIGNMENT"
+        nom = courier.user.get_full_name().strip() or courier.user.username
+        issue_message = f"Publié aux entreprises de livraison de la zone (R52) ; livreur suggéré : {nom}."
+        courier = None
     if courier:
         shipment.courier = courier
         shipment.courier_name = courier.user.get_full_name().strip() or courier.user.username

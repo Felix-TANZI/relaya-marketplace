@@ -23,7 +23,6 @@ from .models import (
     VendorEmployee,
     VendorEmployeeActionLog,
     VendorEmployeeInvitation,
-    VendorOwnerSecurityCode,
 )
 
 TAG = ["Vendors"]
@@ -116,30 +115,12 @@ def _revoke_user_sessions(user) -> None:
     sessions.update(is_active=False)
 
 
-def _envoyer_code_proprietaire(vendor: VendorProfile, motif: str, target_employee=None) -> VendorOwnerSecurityCode:
-    code = services.generer_code(VendorOwnerSecurityCode.LONGUEUR)
-    enregistrement = VendorOwnerSecurityCode(
-        vendor=vendor,
-        motif=motif,
-        target_employee=target_employee,
-        expires_at=timezone.now() + timedelta(minutes=VendorOwnerSecurityCode.VALIDE_MINUTES),
-    )
-    enregistrement.set_code(code)
-    enregistrement.save()
-    phone = (vendor.phone or "").strip()
-    if phone:
-        services.envoyer_code_sms(phone, code, VendorOwnerSecurityCode.VALIDE_MINUTES)
-    return enregistrement
+def _envoyer_code_proprietaire(vendor: VendorProfile, motif: str, target_employee=None) -> bool:
+    return services.envoyer_code_proprietaire(vendor, motif, target_employee)
 
 
 def _dernier_code_valide(vendor, motif, target_employee, code: str) -> bool:
-    qs = VendorOwnerSecurityCode.objects.filter(
-        vendor=vendor, motif=motif, target_employee=target_employee, used_at__isnull=True,
-    ).order_by("-created_at")
-    enregistrement = qs.first()
-    if enregistrement is None:
-        return False
-    return enregistrement.check_code(code)
+    return services.code_proprietaire_valide(vendor, motif, target_employee, code)
 
 
 # ── GET/POST /shop/members ──────────────────────────────────────────────────────────────────────────────
@@ -187,7 +168,7 @@ def _shop_members_invite(request, vendor):
             vendor=vendor, employee=membre, token=VendorEmployeeInvitation.nouveau_jeton(),
             expires_at=timezone.now() + timedelta(days=VendorEmployeeInvitation.JOURS_VALIDITE),
         )
-        _envoyer_code_proprietaire(vendor, VendorOwnerSecurityCode.Motif.INVITATION, membre)
+        _envoyer_code_proprietaire(vendor, services.MOTIF_INVITATION, membre)
         VendorEmployeeActionLog.consigner(
             vendor=vendor, employee=membre, domaine="equipe", texte=f"Invitation envoyée à {prenom_nom}",
             categorie="ajout",
@@ -215,7 +196,7 @@ def shop_members_invitation_confirm(request, invitation_id):
         return Response({"ok": False, "raison": "expire"})
 
     code = str(request.data.get("code") or "").strip()
-    if not _dernier_code_valide(vendor, VendorOwnerSecurityCode.Motif.INVITATION, invitation.employee, code):
+    if not _dernier_code_valide(vendor, services.MOTIF_INVITATION, invitation.employee, code):
         return Response({"ok": False, "raison": "code"})
 
     membre = invitation.employee
@@ -274,7 +255,7 @@ def shop_member_resend(request, member_id):
         invitation.last_resent_at = timezone.now()
         invitation.status = VendorEmployeeInvitation.Status.PENDING
         invitation.save(update_fields=["expires_at", "last_resent_at", "status"])
-        _envoyer_code_proprietaire(vendor, VendorOwnerSecurityCode.Motif.INVITATION, membre)
+        _envoyer_code_proprietaire(vendor, services.MOTIF_INVITATION, membre)
 
     return Response({"ok": True, "jusqua": _ms(invitation.expires_at)})
 
@@ -315,7 +296,7 @@ def shop_member_removal_code(request, member_id):
     membre = VendorEmployee.objects.filter(id=member_id, vendor=vendor).first()
     if membre is None:
         return Response({"detail": "Membre introuvable."}, status=404)
-    _envoyer_code_proprietaire(vendor, VendorOwnerSecurityCode.Motif.RETRAIT, membre)
+    _envoyer_code_proprietaire(vendor, services.MOTIF_RETRAIT, membre)
     return Response({"masque": services.masquer_numero(vendor.phone)})
 
 
@@ -332,9 +313,9 @@ def shop_member_code(request, member_id):
 
     motif = str(request.data.get("motif") or "").strip()
     mapping = {
-        "retrait": VendorOwnerSecurityCode.Motif.RETRAIT,
-        "droits": VendorOwnerSecurityCode.Motif.DROITS,
-        "reactivation": VendorOwnerSecurityCode.Motif.REACTIVATION,
+        "retrait": services.MOTIF_RETRAIT,
+        "droits": services.MOTIF_DROITS,
+        "reactivation": services.MOTIF_REACTIVATION,
     }
     if motif not in mapping:
         return Response({"detail": "Motif inconnu."}, status=400)
@@ -357,7 +338,7 @@ def shop_member_rights(request, member_id):
         return Response({"ok": False, "raison": "proprietaire"})
 
     code = str(request.data.get("code") or "").strip()
-    if not _dernier_code_valide(vendor, VendorOwnerSecurityCode.Motif.DROITS, membre, code):
+    if not _dernier_code_valide(vendor, services.MOTIF_DROITS, membre, code):
         return Response({"ok": False, "raison": "code"})
 
     droits = request.data.get("droits")
@@ -414,7 +395,7 @@ def shop_member_reactivate(request, member_id):
         return Response({"ok": False, "raison": "etat"})
 
     code = str(request.data.get("code") or "").strip()
-    if not _dernier_code_valide(vendor, VendorOwnerSecurityCode.Motif.REACTIVATION, membre, code):
+    if not _dernier_code_valide(vendor, services.MOTIF_REACTIVATION, membre, code):
         return Response({"ok": False, "raison": "code"})
 
     membre.is_suspended = False
@@ -458,7 +439,7 @@ def shop_member_remove(request, member_id):
         return Response({"ok": False, "raison": "proprietaire"})
 
     code = str(request.data.get("code") or "").strip()
-    if not _dernier_code_valide(vendor, VendorOwnerSecurityCode.Motif.RETRAIT, membre, code):
+    if not _dernier_code_valide(vendor, services.MOTIF_RETRAIT, membre, code):
         return Response({"ok": False, "raison": "code"})
 
     with transaction.atomic():

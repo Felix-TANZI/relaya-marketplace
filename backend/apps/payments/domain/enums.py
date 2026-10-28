@@ -78,6 +78,9 @@ class EconomicComponent(StrEnum):
     GOODS = "GOODS"                    # niveau commande — vendeur
     TRANSPORT = "TRANSPORT"            # niveau paiement — entreprise de livraison
     RELAY_HANDLING = "RELAY_HANDLING"  # niveau commande — point relais
+    # Spec v2.1, R02.2 et R02.3 : frais Mobile Money payes par le client, en plus de base_paiement. Niveau
+    # paiement, entierement a la plateforme (couvre les frais du prestataire), reconnu en produit a la capture.
+    PAYMENT_FEE = "PAYMENT_FEE"
 
 
 #: Composants rattaches a une commande. TRANSPORT est de niveau paiement
@@ -89,6 +92,7 @@ ORDER_LEVEL_COMPONENTS = frozenset({
 
 PAYMENT_LEVEL_COMPONENTS = frozenset({
     EconomicComponent.TRANSPORT,
+    EconomicComponent.PAYMENT_FEE,
 })
 
 
@@ -105,6 +109,9 @@ DEFAULT_TRIGGER = {
     EconomicComponent.GOODS: ReleaseTrigger.BUYER_RECEIPT_CONFIRMED,
     EconomicComponent.TRANSPORT: ReleaseTrigger.DELIVERY_PROOF_VALIDATED,
     EconomicComponent.RELAY_HANDLING: ReleaseTrigger.RELAY_HANDOVER_SCANNED,
+    # Jamais lu tant que PAYMENT_FEE va a la plateforme (pas de sequestre) ; garde-fou si une regle
+    # non-plateforme etait un jour configuree.
+    EconomicComponent.PAYMENT_FEE: ReleaseTrigger.AUTO_CONFIRMED,
 }
 
 

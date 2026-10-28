@@ -344,6 +344,12 @@ class PromotionCampaignSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({
                 "promo_price_xaf": "Le prix promo doit être inférieur au prix de référence."
             })
+        if promo_price:
+            from apps.catalog.regles_catalogue import PrixNonPubliable, verifier_prix_publiable
+            try:
+                verifier_prix_publiable(promo_price)  # R19.1 : le prix promotionnel est le prix payé (prix_i)
+            except PrixNonPubliable as exc:
+                raise serializers.ValidationError({"promo_price_xaf": exc.messages[0]})
         if campaign_type == PromotionCampaign.CampaignType.FLASH:
             stock_reserved = data.get("stock_reserved") or getattr(self.instance, "stock_reserved", 0)
             if stock_reserved < 5:
@@ -633,6 +639,14 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
             cleaned.append({"question": question[:300], "answer": answer[:2000]})
         return cleaned
 
+    def validate_price_xaf(self, value):
+        from apps.catalog.regles_catalogue import PrixNonPubliable, verifier_prix_publiable
+        try:
+            verifier_prix_publiable(value)  # R19.1
+        except PrixNonPubliable as exc:
+            raise serializers.ValidationError(exc.messages[0], code=exc.code_refus)
+        return value
+
     def validate(self, attrs):
         attrs = super().validate(attrs)
         category = attrs.get("category")
@@ -814,9 +828,25 @@ class MasterProductListSerializer(serializers.ModelSerializer):
 class MasterProductDetailSerializer(MasterProductListSerializer):
     images = serializers.SerializerMethodField()
     offers = serializers.SerializerMethodField()
+    meilleure_offre = serializers.SerializerMethodField()
 
     class Meta(MasterProductListSerializer.Meta):
-        fields = MasterProductListSerializer.Meta.fields + ['description', 'images', 'offers']
+        fields = MasterProductListSerializer.Meta.fields + ['description', 'images', 'offers', 'meilleure_offre']
+
+    def get_meilleure_offre(self, obj):
+        """Spec v2.1, R93.1 : l'offre retenue pour ce produit seul (A6) et son ctl, vers la destination du client
+        (R27.3) ; R32.4 : sans offre éligible, « Indisponible pour le moment »."""
+        from apps.catalog.meilleure_offre import destination_par_defaut, meilleure_offre
+
+        request = self.context.get('request')
+        offres = list(obj.offers.filter(is_active=True, moderation_status='APPROVED')
+                      .select_related('vendor', 'master', 'inventory'))
+        r = meilleure_offre(offres, destination_par_defaut(getattr(request, 'user', None)))
+        if r is None:
+            return {'disponible': False, 'message': 'Indisponible pour le moment'}
+        retenue = next(o for o in r['en_course'] if o['id'] == r['retenue'])
+        return {'disponible': True, 'offre': retenue['id'], 'prix': retenue['prix'], 'ctl': int(retenue['ctl']),
+                'livraison_des': int(retenue['ctl']) - retenue['prix'], 'offres_en_course': len(r['en_course'])}
 
     def to_representation(self, instance):
         # super() (MasterProductListSerializer.to_representation) traduit deja 'title'.

@@ -16,10 +16,12 @@ from .views import (
     DisputeEvidenceRequestRespondView,
     MyPendingEvidenceRequestsView,
     OrderReturnListCreateView,
+    DevisPanierView,
 )
 
 urlpatterns = [
     path("", OrderCreateView.as_view(), name="order-create"),  # Create a new order
+    path("frais/", DevisPanierView.as_view(), name="order-devis-panier"),  # Frais et total avant le paiement (A1, A2)
     path("my-orders/", MyOrdersView.as_view(), name="my-orders"), # List orders for the authenticated user
     path("<int:id>/", OrderDetailView.as_view(), name="order-detail"), # Retrieve order details by ID
     path("<int:id>/tracking/", OrderTrackingView.as_view(), name="order-tracking"),

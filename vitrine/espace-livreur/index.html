@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="fr" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#F2F7F4" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#07110D" media="(prefers-color-scheme: dark)" />
+    <title>BelivaY — Espace livreur</title>
+    <meta name="description" content="BelivaY, espace livreur : votre journée, votre tournée, vos remises et vos preuves, même sans réseau." />
+    <meta name="application-name" content="BelivaY livreur" />
+    <meta name="apple-mobile-web-app-title" content="BelivaY livreur" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="icon" href="/livreur/favicon.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/livreur/apple-touch-icon.png" />
+    <link rel="manifest" href="/livreur/manifest.webmanifest" />
+    <!-- Partage et référencement : __SITE_URL__ devient l'adresse du site à la publication (outils/publication.mjs). -->
+    <link rel="canonical" href="__SITE_URL__/livreur/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="BelivaY" />
+    <meta property="og:url" content="__SITE_URL__/livreur/" />
+    <meta property="og:title" content="BelivaY — Espace livreur" />
+    <meta property="og:description" content="BelivaY, espace livreur : votre journée, votre tournée, vos remises et vos preuves, même sans réseau." />
+    <meta property="og:image" content="__SITE_URL__/partage.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="L’équipe BelivaY autour d’une tablette et d’un colis, au coucher du soleil sur la ville, avec le logo BelivaY" />
+    <meta property="og:locale" content="fr_CM" />
+    <meta property="og:locale:alternate" content="en_GB" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <!-- Thème posé avant le premier rendu (choix gardé, sinon celui du téléphone ; fichier à part : la politique de
+         sécurité refuse les scripts en ligne) et fond de la page déjà peint : aucun éclair clair ou noir à l'ouverture
+         ni entre deux écrans (les feuilles de style arrivent ensuite). -->
+    <script src="/theme.js"></script>
+    <style>
+      html, body { background: #F2F7F4; color-scheme: light; }
+      html[data-theme='dark'], html[data-theme='dark'] body { background: #0F1110; color-scheme: dark; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

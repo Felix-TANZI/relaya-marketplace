@@ -1,0 +1,789 @@
+{
+ "ENT-P01": {
+  "nom": "Connexion et accès",
+  "ref": "ENT-RG §23 p.33-34 ; ENT-03 p.4-14 ; route #connexion",
+  "etats": [
+   "formulaire (Connexion)",
+   "code SMS (nouvel appareil) : 6 cases, renvoi après 60 s",
+   "bloqué 30 minutes : durée restante",
+   "erreur de chargement : bandeau, saisies conservées",
+   "choix de l'espace (deux rôles)",
+   "première connexion sur invitation",
+   "compte entreprise non actif (ce qui manque)"
+  ],
+  "elements": [
+   "numéro +237 ou e-mail, mot de passe avec œil",
+   "« Session de 12 heures sur cet appareil »",
+   "lien « Mot de passe oublié ? »",
+   "rappel « BelivaY ne vous demandera jamais votre code secret Mobile Money »",
+   "visuel ordinateur : promesse, 4 tuiles, carte des 12 zones (Z1, Z3, Z6, Z7 exploitées), mention légale",
+   "thème et langue FR/EN",
+   "comment obtenir un accès (compte créé par BelivaY, 5 invitations nominatives au plus)"
+  ],
+  "actions": [
+   "Se connecter → vérification ; code SMS si propriétaire/comptable ou appareil nouveau ; 5e échec = blocage 30 min",
+   "Valider (code à 6 chiffres) → session de 12 h, puis ENT-P02 ou choix de l'espace",
+   "Renvoyer le code (après 60 s ; après 3 renvois, support) → nouveau SMS",
+   "Réinitialiser le mot de passe (par code SMS) → nouveau mot de passe",
+   "Choisir un espace (entreprise ou relais) → ouvre l'espace (relais : application point relais)",
+   "Créer mon accès (invitation) → création du mot de passe, rôle affiché",
+   "Continuer la configuration → ENT-P02 guide ; comprendre l'état → ENT-P27",
+   "Réessayer / Support → nouvel essai, contact support",
+   "Changer de numéro → parcours de changement"
+  ]
+ },
+ "ENT-P02": {
+  "nom": "Tableau de bord",
+  "ref": "ENT-RG §24 p.34-35 ; ENT-03 p.15-30 ; route #tableau",
+  "etats": [
+   "actif (à faire + indicateurs)",
+   "en configuration (guide de démarrage)",
+   "actif sans activité (7 h 55)",
+   "suspendu",
+   "erreur de chargement (données de 13 h 02)",
+   "vue du répartiteur (sans à verser vendredi)",
+   "vue de la comptable (rien à faire, indicateurs en tête)",
+   "jour de pluie forte (bandeau)"
+  ],
+  "elements": [
+   "« Bonjour {prénom} », date et heure, bouton orange « Paquets disponibles »",
+   "bandeau (un seul, le plus grave)",
+   "À faire maintenant trié par échéance : paquets à accepter (15 min), paquets non affectés, incidents, litiges (heures restantes), pièces qui expirent",
+   "Palier et Trust Score (anneau, tendance, plafond, prochain palier, « fixés par BelivaY »)",
+   "Phase pilote (jour sur 30, calendrier, bilan)",
+   "indicateurs : missions en cours, colis sous garde, délai tenu 7 j, litiges ouverts, à verser vendredi (propriétaire, comptable)",
+   "Vos zones aujourd'hui (colis acceptés / capacité)",
+   "Flotte maintenant (actifs, en ligne, en activation)",
+   "guide de démarrage : 6 étapes, progression, prochaine action"
+  ],
+  "actions": [
+   "Voir / Accepter (ligne paquet) → ENT-P11",
+   "Répondre (ligne litige) → ENT-P17",
+   "Mettre à jour (pièce ou véhicule) → ENT-P03 / ENT-P08",
+   "Paquets disponibles → ENT-P10",
+   "Rapport de pilote → ENT-P25 ; État du compte → ENT-P27",
+   "Lire et signer le contrat (guide) → ENT-P03 onglet Contrat",
+   "Ajouter un livreur (guide) → ENT-P07",
+   "Vérifier zones et capacité → ENT-P04 ; Voir la flotte → ENT-P05",
+   "Consignes (pluie) → consignes de protection",
+   "Envoyer la nouvelle autorisation (suspendu) → ENT-P03 ; Contacter BelivaY → ENT-P22",
+   "Voir les règlements / Relevés et factures (comptable) → ENT-P18 / ENT-P19",
+   "Réessayer → rechargement"
+  ]
+ },
+ "ENT-P03": {
+  "nom": "Contrat et documents",
+  "ref": "ENT-RG §25 p.36-37 ; ENT-03 p.31-46 ; route #contrat",
+  "etats": [
+   "vérifié (onglet Pièces, Approuvée)",
+   "fiche de l'entreprise",
+   "contrat et versions",
+   "grille fixée par BelivaY",
+   "à compléter",
+   "en vérification (48 h ouvrées)",
+   "pièce rejetée (motif)",
+   "renvoyer une pièce (fenêtre)",
+   "erreur de chargement"
+  ],
+  "elements": [
+   "héros du dossier (Approuvée / À compléter / En vérification / Pièce rejetée) et chiffres clés",
+   "onglets Pièces (8), Fiche, Contrat, Grille",
+   "une ligne par pièce : ce qu'elle prouve, dates, statut, action",
+   "chaîne d'activation (6 étapes, qui a activé)",
+   "Fixé par BelivaY : palier, plafond, grille, caution 0 F",
+   "fiche : nom légal, RCCM, NIU, responsable, adresse opérationnelle, agence, point de stockage de nuit, téléphone +237, référence du contrat",
+   "contrat : versions signées, signataires, « Lire », historique immuable, clauses",
+   "grille : prestation, condition, tarif, plafond BelivaY, contrôle, version"
+  ],
+  "actions": [
+   "Envoyer une pièce (propriétaire) → aperçu lisible obligatoire, En vérification",
+   "Renvoyer (pièce rejetée, à envoyer, à renouveler) → nouvelle vérification",
+   "Envoyer la pièce / Annuler (fenêtre) → envoi ou fermeture",
+   "Modifier la fiche → nom, RCCM ou NIU repassent en vérification",
+   "Lire (contrat) → document ; accepter une nouvelle version → nouvelle version en vigueur",
+   "Demander une révision (grille) → message à BelivaY",
+   "Voir (assurance véhicule) → ENT-P08",
+   "Réessayer → rechargement"
+  ]
+ },
+ "ENT-P04": {
+  "nom": "Zones et capacité",
+  "ref": "ENT-04 p4-16 ; 04_Pages_HTML/Ecrans/ENT-04",
+  "etats": [
+   "Zones actives",
+   "Fiche de zone (fenêtre)",
+   "Déclarer une zone (fenêtre)",
+   "Zone bloquée",
+   "Aucune zone",
+   "Erreur de chargement"
+  ],
+  "elements": [
+   "En-tête : titre, heure, bouton orange « Déclarer une zone »",
+   "Bandeau (le plus grave seulement) : zone bloquée, erreur",
+   "Indicateurs (une fois) : zones actives (x sur 4), capacité déclarée ou ouverte, acceptés aujourd'hui, délai tenu",
+   "Carte des 12 zones BelivaY (zones déclarées en accent, alerte en ambre, bloquée en rouge, hachurées = vente seulement, relais, agence)",
+   "Santé et alertes : délai tenu par zone, litiges, alertes de véhicule, saison des pluies (lecture seule)",
+   "Tableau des zones : zone et relais, capacité et horaires, acceptés du jour (barre), livreurs (avatars) et véhicules, santé depuis le 25 sept., état, ouvrir ; tri par zone, filtre d'état",
+   "Table de correspondance des quartiers (tenue par la console) ; Capacité honnête",
+   "Fiche de zone : capacité, acceptés, libres, horaires, relais, délai tenu, litiges, livreurs rattachés, interrupteur pause",
+   "Déclarer : carte, note vente seulement, capacité/jour (aide « ce que votre flotte peut vraiment tenir »), horaires, livreurs rattachés (au moins un actif)",
+   "Route du prototype / URL : #zones (s=fiche|declarer|bloquee|aucune|erreur) · delivery-org.belivay.com/zones (04_Pages_HTML/Ecrans : un fichier par état, captures clair/sombre/anglais, ordinateur/tablette/mobile)"
+  ],
+  "actions": [
+   "Déclarer une zone → POST /api/company/zones (422 si aucun livreur actif)",
+   "Modifier la capacité → PATCH /api/company/zones/{code}",
+   "Mettre en pause → retrait dès le paquet suivant, acceptés dus",
+   "Corriger (zone bloquée) → ENT-P08 (Mettre à jour l'assurance) ou ENT-P05",
+   "Ajouter un livreur → ENT-P07",
+   "Réessayer → recharge, données affichées gardées"
+  ]
+ },
+ "ENT-P05": {
+  "nom": "Flotte : les livreurs",
+  "ref": "ENT-04 p17-26 ; 04_Pages_HTML/Ecrans/ENT-04",
+  "etats": [
+   "Flotte (liste et compteurs)",
+   "Livreurs en mission (filtre en tournée)",
+   "Livreur suspendu par BelivaY",
+   "Aucun livreur",
+   "Erreur de chargement"
+  ],
+  "elements": [
+   "En-tête : « Livreurs », boutons « Véhicules » et « Ajouter un livreur » (orange)",
+   "Compteurs : actifs, en activation, en ligne maintenant, suspendus — égaux à la liste filtrée",
+   "Barre d'outils : recherche (nom, plaque), filtres zone/statut/véhicule (dans l'URL), « Statuts en temps réel »",
+   "Tableau : livreur (photo, nom, « Livreur partenaire »), véhicule (type, plaque), capacité, zones (pastilles), statut + détail, alertes ambre, certification (date), Trust Score et palier, « Fiche » ; lignes ambre/rouge/accent",
+   "Cartes de mission (filtre en tournée) : paquet, avancement, position du moment, heure limite, marge",
+   "Rappels : approuver/suspendre/retirer ; un livreur, une entreprise ; alertes de la flotte",
+   "Route du prototype / URL : #flotte (s=mission|suspendu|aucun|erreur) · /flotte (04_Pages_HTML/Ecrans : un fichier par état, captures clair/sombre/anglais, ordinateur/tablette/mobile)"
+  ],
+  "actions": [
+   "Fiche → ENT-P06",
+   "Ajouter un livreur → ENT-P07",
+   "Véhicules → ENT-P08",
+   "Voir la mission → ENT-P13",
+   "Suspendre / Retirer → POST /riders/{id}/suspend|remove, effet après missions en cours",
+   "Prévenir le livreur (suspendu) → fil de messages"
+  ]
+ },
+ "ENT-P06": {
+  "nom": "Fiche d'un livreur",
+  "ref": "ENT-04 p27-41 ; 04_Pages_HTML/Ecrans/ENT-04",
+  "etats": [
+   "Profil (actif)",
+   "Activité",
+   "Score",
+   "Preuves",
+   "Messages",
+   "Pièce à renouveler",
+   "En activation (ce qui manque)",
+   "Suspendu par BelivaY",
+   "Erreur de chargement"
+  ],
+  "elements": [
+   "Héros : photo, nom, « Livreur partenaire · <entreprise> », statut, Trust et palier, certification (note, date), boutons « Envoyer un message » et « Modifier » ; 4 chiffres (Trust, paquets du pilote, délai tenu, colis livrés) ; rouge si suspendu",
+   "Onglets Profil/Activité/Score/Preuves/Messages (onglet dans l'URL t=)",
+   "Profil : véhicule, zones et capacité, pièces (statut + date, jamais l'image), journal de la fiche, contact (numéro masqué ; Appeler/Message via le portail), tarif par mission affiché (facultatif), note interne",
+   "Activité : chiffres, missions en barres, frise du jour, tableau des paquets",
+   "Score : anneau, palier, seuil, formule, 5 critères (poids, note, points), événements, contestations, barème, paliers",
+   "Preuves : photos par paquet, registre (heure, paquet, maillon, preuve, « Synchronisée »), conservées 180 jours",
+   "Messages : fil interne (identique à celui de l'application du livreur, LIV-P27), règles du fil (numéros masqués, rattaché aux missions, jamais d'argent), notifications envoyées",
+   "Activation : six étapes, pièces (sans contenu), certification 7 modules + quiz 16/20, bouton « Approuver » grisé",
+   "Route du prototype / URL : #livreur (t=activite|score|preuves|messages ; s=piece|activation|suspendu|erreur ; id=) · /livreur (04_Pages_HTML/Ecrans : un fichier par état, captures clair/sombre/anglais, ordinateur/tablette/mobile)"
+  ],
+  "actions": [
+   "Modifier → PATCH /riders/{id} (véhicule, capacité, zones), notification au livreur + journal",
+   "Prévenir <livreur> → ouvre le fil de messages",
+   "Approuver (actif seulement si tout validé) → POST /riders/{id}/approve",
+   "Joindre ses éléments à une contestation → POST /riders/{id}/trust/events/{event_id}/evidence",
+   "Écrire au livreur → fil interne",
+   "Note interne → POST /riders/{id}/note"
+  ]
+ },
+ "ENT-P07": {
+  "nom": "Ajouter un livreur",
+  "ref": "ENT-04 p42-51 ; 04_Pages_HTML/Ecrans/ENT-04",
+  "etats": [
+   "Formulaire et suivi",
+   "Invitation envoyée",
+   "Activation en cours",
+   "Prêt à approuver",
+   "Refusé par BelivaY",
+   "Numéro refusé"
+  ],
+  "elements": [
+   "Nouveau livreur : nom et prénom, téléphone (+237 fixe, 9 chiffres = numéro de connexion), véhicule (moto, tricycle, voiture, camionnette), plaque, capacité, zones de l'entreprise",
+   "Ce qui se passe ensuite : six étapes + interdit en rouge",
+   "Suivi des invitations : frise Invitation · Charte · Pièces · Certification · Approbation · Activé",
+   "Rappels : numéro refusé, invitation de 7 jours, certification obligatoire",
+   "Route du prototype / URL : #ajout-livreur (s=envoyee|activation|pret|refuse|numero) · /ajout-livreur (04_Pages_HTML/Ecrans : un fichier par état, captures clair/sombre/anglais, ordinateur/tablette/mobile)"
+  ],
+  "actions": [
+   "Envoyer l'invitation par SMS → POST /riders/invitations",
+   "Renvoyer → POST /invitations/{id}/resend (idempotent 60 s)",
+   "Inviter un autre livreur → formulaire vide",
+   "Suivre → ENT-P06 (fiche en activation)",
+   "Approuver <livreur> (étape 5) → POST /riders/{id}/approve",
+   "Demander de renvoyer / Abandonner (refusé)",
+   "Contacter le support (numéro refusé)"
+  ]
+ },
+ "ENT-P08": {
+  "nom": "Véhicules",
+  "ref": "ENT-04 p52-61 ; 04_Pages_HTML/Ecrans/ENT-04",
+  "etats": [
+   "Documents à jour",
+   "Fiche d'un véhicule (fenêtre)",
+   "Déclarer un véhicule (fenêtre)",
+   "Document expiré",
+   "Aucun véhicule",
+   "Erreur de chargement"
+  ],
+  "elements": [
+   "En-tête : titre, heure, bouton orange « Déclarer un véhicule »",
+   "Bandeau : assurance qui expire / expirée, erreur",
+   "Indicateurs : véhicules, proposés à l'affectation, en vérification, documents à renouveler ou expirés",
+   "Tableau : véhicule (type, plaque), classes, capacité, livreur habituel, assurance (date), documents (carte grise, photo plaque), état, fiche ; ligne ambre/rouge",
+   "Classes transportables par type ; règles d'affectation (lecture seule)",
+   "Fiche : photos du véhicule et de la plaque horodatées, classes, capacité, assurance, carte grise, état",
+   "Déclarer : type, plaque, capacité, classes (suivent le type), livreur habituel, fin d'assurance, photo avec plaque obligatoire",
+   "Route du prototype / URL : #vehicules (s=fiche|ajout|expire|aucun|erreur) · /vehicules (04_Pages_HTML/Ecrans : un fichier par état, captures clair/sombre/anglais, ordinateur/tablette/mobile)"
+  ],
+  "actions": [
+   "Déclarer un véhicule → POST /api/company/vehicles (multipart)",
+   "Rattacher à un livreur → PATCH usual_rider_id",
+   "Mettre à jour → POST /vehicles/{id}/documents/{kind}",
+   "Déclarer indisponible (panne) → PATCH unavailable=true"
+  ]
+ },
+ "ENT-P09": {
+  "nom": "Prix et délais (SLA)",
+  "ref": "ENT-05 p3-15 ; 04_Pages_HTML/Ecrans/ENT-05",
+  "etats": [
+   "Grille en vigueur",
+   "Nouvelle grille annoncée",
+   "Grille en attente de contrat",
+   "Ligne au-dessus du plafond",
+   "Erreur de chargement"
+  ],
+  "elements": [
+   "En-tête : date et heure, titre, « lecture seule : une demande de révision passe par un message à BelivaY », bouton « Demander une révision »",
+   "Bandeau : nouvelle version annoncée ou erreur (un seul)",
+   "Héros nuit : gain sur le paquet type + 4 repères (serveur)",
+   "Grille d'achat : prestation, classe, zone, tarif, plafond BelivaY, version et date, état ; cadenas « Fixé par BelivaY » ; ligne du paquet type surlignée ; ligne bloquée en rouge ; mobile : cartes (version masquée)",
+   "Frise d'un paquet réel (mobile : chronologie verticale)",
+   "Délais contractuels (7) ; fenêtre de priorité « Paramètre proposé »",
+   "Suppléments et minoration (6 lignes)",
+   "Palier et plafond de valeur (3 paliers)",
+   "Versions de la grille",
+   "Note : grille d'achat seulement ; accord relais distinct",
+   "Route du prototype / URL : #sla (s=annoncee|attente|erreur) · /sla (04_Pages_HTML/Ecrans : un fichier par état, captures clair/sombre/anglais, ordinateur/tablette/mobile)"
+  ],
+  "actions": [
+   "Demander une révision → POST /api/company/threads {topic: grid_revision}",
+   "Lire et accepter → ENT-P03 (propriétaire)",
+   "Contacter BelivaY / Contrat et documents (grille en attente)",
+   "Réessayer"
+  ]
+ },
+ "ENT-P10": {
+  "nom": "Paquets disponibles",
+  "ref": "ENT-05 p16-25 ; 04_Pages_HTML/Ecrans/ENT-05",
+  "etats": [
+   "Aucun paquet",
+   "Paquets en attente",
+   "Nouveau paquet (premier rang)",
+   "Capacité pleine",
+   "Erreur de chargement"
+  ],
+  "elements": [
+   "En-tête : date et heure, titre, phrase d'engagement, « Régler les alertes » (→ Notifications)",
+   "Bandeaux (un seul ; erreur > capacité > nouveauté)",
+   "Capacité libre Z6, Z3, Z7, Z1 (rouge si 0)",
+   "Outils : recherche, filtres Zone · Type · Heure limite, tri fixe par échéance d'acceptation, compteur « n paquets à accepter »",
+   "Cartes : identifiant, type, zone, trajet en quartiers, arrêts, colis, classes, valeur max, limite, distance/durée, anneau, rémunération, Détail, Accepter ; premier rang : liseré orange + encadré priorité",
+   "« Accepter vous engage » (4 engagements)",
+   "« Son et notification par zone » (deux interrupteurs par zone)",
+   "Pied : rappel d'anonymat",
+   "Route du prototype / URL : #paquets (s=priorite|aucun|pleine|erreur) · /paquets (04_Pages_HTML/Ecrans : un fichier par état, captures clair/sombre/anglais, ordinateur/tablette/mobile)"
+  ],
+  "actions": [
+   "Détail → ENT-P11",
+   "Accepter → POST /packages/{id}/accept",
+   "Vérifier la capacité / Augmenter la capacité → ENT-P04",
+   "Voir les missions → ENT-P13",
+   "Régler les alertes → ENT-P23 / PATCH /api/company/me/alerts"
+  ]
+ },
+ "ENT-P11": {
+  "nom": "Détail et acceptation d'un paquet",
+  "ref": "ENT-05 p26-35 ; 04_Pages_HTML/Ecrans/ENT-05",
+  "etats": [
+   "Disponible",
+   "Déjà pris",
+   "Accepté (à affecter)",
+   "Erreur de chargement"
+  ],
+  "elements": [
+   "En-tête : identifiant, type, zone, heure de publication ; fil d'Ariane",
+   "Héros : disponible orange (anneau, rémunération « si les preuves sont complètes », priorité, Accepter, Ignorer) ; accepté ardoise (Affecter, Rendre)",
+   "Itinéraire imposé : carte MapLibre (OSRM), arrêts dans l'ordre (quartiers avant, boutiques après)",
+   "Colis par arrêt : colis, arrêt, classe, valeur déclarée, mention ; valeur max et totale ; plafond du palier ; kit",
+   "Rémunération ligne par ligne (cadenas)",
+   "Délais et engagement (marge colorée)",
+   "Avant / après l'acceptation : capacité, livreurs éligibles, plus grande classe, kit",
+   "Pied : anonymat ou journal",
+   "Route du prototype / URL : #paquet (s=pris|accepte|erreur) · /paquet (04_Pages_HTML/Ecrans : un fichier par état, captures clair/sombre/anglais, ordinateur/tablette/mobile)"
+  ],
+  "actions": [
+   "Accepter → POST /accept (un geste)",
+   "Ignorer → POST /ignore (sans effet sur le score)",
+   "Rendre le paquet → POST /return (avant ramassage, événement « paquet rendu »)",
+   "Affecter un livreur → ENT-P12",
+   "Retour à la liste → ENT-P10"
+  ]
+ },
+ "ENT-P12": {
+  "nom": "Affectation d'un livreur",
+  "ref": "ENT-05 p36-44 ; 04_Pages_HTML/Ecrans/ENT-05",
+  "etats": [
+   "À affecter (livreurs éligibles)",
+   "Aucun livreur éligible",
+   "Affecté",
+   "Erreur de chargement"
+  ],
+  "elements": [
+   "Bandeau ambre « À affecter avant HH h MM » ; erreur",
+   "En-tête : paquet, plus grande classe, acceptation",
+   "Suggestion de l'assistant (« Le plus proche disponible »)",
+   "Livreurs éligibles : véhicule, certification, kit (manque en ambre), distance, Affecter",
+   "Non proposés / Livreurs écartés : raison et correction",
+   "Ce que le portail vérifie : 5 contrôles + interdit de sous-traiter",
+   "Le paquet ; Créneau annoncé (trajet, préparation, arrondi)",
+   "Affecté : héros, ce que voient les vendeurs, journal du paquet, « Si <livreur> ne peut plus faire la tournée »",
+   "Route du prototype / URL : #affectation (s=aucun|affecte|erreur) · /affectation (04_Pages_HTML/Ecrans : un fichier par état, captures clair/sombre/anglais, ordinateur/tablette/mobile)"
+  ],
+  "actions": [
+   "Affecter → POST /packages/{id}/assign {courier_id}",
+   "Réaffecter → POST …/reassign (avant ramassage)",
+   "Rendre le paquet → POST /return",
+   "Rattacher un livreur à <zone> → ENT-P06/ENT-P04",
+   "Fiche de <livreur> → ENT-P06",
+   "Voir les missions → ENT-P13"
+  ]
+ },
+ "ENT-P13": {
+  "nom": "Missions en cours et carte de la flotte",
+  "ref": "ENT-06 p3-15 ; 04_Pages_HTML/Ecrans/ENT-06",
+  "etats": [
+   "En cours",
+   "Affectées",
+   "Retard prévisible",
+   "Livreur hors connexion",
+   "Closes",
+   "Aucune mission",
+   "Erreur de chargement"
+  ],
+  "elements": [
+   "Bandeau (un seul, le plus grave) : retard prévisible, hors connexion, paquets à accepter, erreur",
+   "En-tête : date et heure, titre, bouton « Paquets disponibles »",
+   "Onglets À affecter, Affectées, En cours, Déposées, Closes, Incidents (compteur masqué à 0)",
+   "Tableau : paquet, livreur, avancement (arrêt x/y, colis sous garde), en ce moment, heure limite, marge ; rouge si marge négative prévue, ambre si hors connexion ; « mis à jour à HH h MM »",
+   "Carte MapLibre : zones, itinéraires, boutiques, relais, livreurs en mission active seulement ; client : zone seulement",
+   "Alertes ; Livreurs (statut, position seulement en mission)",
+   "Closes : montants et date de versement, lien Règlements",
+   "Route du prototype / URL : #missions (s=affectees|retard|hors|closes|aucune|erreur) · /missions (04_Pages_HTML/Ecrans : un fichier par état, captures clair/sombre/anglais, ordinateur/tablette/mobile)"
+  ],
+  "actions": [
+   "Ouvrir une ligne → ENT-P16 (preuves) ou ENT-P12",
+   "Appeler <livreur>",
+   "Transférer → ENT-P14 (fenêtre de transfert)",
+   "Voir les paquets (disponibles) → ENT-P10",
+   "Incidents → ENT-P14"
+  ]
+ },
+ "ENT-P14": {
+  "nom": "Incidents à valider",
+  "ref": "ENT-06 p16-30 ; 04_Pages_HTML/Ecrans/ENT-06",
+  "etats": [
+   "À valider (bloquant)",
+   "Colis abîmé au ramassage (non bloquant)",
+   "Refuser : motif obligatoire (fenêtre)",
+   "Validé, tournée ajustée",
+   "Refusé, motif envoyé",
+   "Panne, transfert du paquet",
+   "Incident de sécurité",
+   "Erreur de chargement"
+  ],
+  "elements": [
+   "Bandeau : échéance du plus urgent (ambre), SOS (rouge, passe devant tout), erreur",
+   "À valider : cartes (type, livreur, paquet, heure, compte à rebours ou « Non bloquant »)",
+   "Traités aujourd'hui",
+   "Règles de décision (texte fixe)",
+   "Détail : type, famille, bloquant, lieu, anneau, livreur, heures d'origine et serveur, distance à l'arrêt",
+   "Preuves : photos horodatées, mini-carte (aucune retouche)",
+   "Note du livreur et conséquence proposée (serveur)",
+   "Décision : motif, Valider, Refuser, Transférer, Appeler",
+   "Fenêtres : motif du refus ; transfert (livreur, étapes Rencontre → Scan → Garde transférée, étiquettes)",
+   "Route du prototype / URL : #incidents (s=abime|refus|valide|refuse|transfert|securite|erreur) · /incidents (04_Pages_HTML/Ecrans : un fichier par état, captures clair/sombre/anglais, ordinateur/tablette/mobile)"
+  ],
+  "actions": [
+   "Valider l'incident → POST /incidents/{id}/decision {validate}",
+   "Refuser et rappeler <livreur> → decision refuse (≥ 20 caractères)",
+   "Transférer à <livreur> → POST /packages/{id}/transfer",
+   "Appeler <livreur>",
+   "Voir sur la carte (sécurité)"
+  ]
+ },
+ "ENT-P15": {
+  "nom": "Colis",
+  "ref": "ENT-06 p31-39 ; 04_Pages_HTML/Ecrans/ENT-06",
+  "etats": [
+   "À ramasser",
+   "Sous garde",
+   "Remis",
+   "Erreur de chargement"
+  ],
+  "elements": [
+   "Onglets avec compteurs (un colis dans une seule file)",
+   "Encadré de responsabilité selon la file",
+   "Tableau : étiquette (prévue en pointillés / posée), classe, valeur déclarée, mention, boutique et quartier, destination, livreur, heure de remise du vendeur, durée de garde, paquet ; Remis regroupé par paquet ; « Aucune identité client »",
+   "Pied : nombre, valeur totale, plafond",
+   "Qui répond du colis ; Alertes et incompatibilités ; La nuit (point de stockage)",
+   "Route du prototype / URL : #colis (s=garde|remis|erreur) · /colis (04_Pages_HTML/Ecrans : un fichier par état, captures clair/sombre/anglais, ordinateur/tablette/mobile)"
+  ],
+  "actions": [
+   "Suivre",
+   "Relancer le livreur",
+   "Voir la preuve → ENT-P16",
+   "Missions et carte → ENT-P13"
+  ]
+ },
+ "ENT-P16": {
+  "nom": "Preuves",
+  "ref": "ENT-06 p40-48 ; 04_Pages_HTML/Ecrans/ENT-06",
+  "etats": [
+   "Complet",
+   "En attente de synchronisation",
+   "Illisible",
+   "Erreur de chargement"
+  ],
+  "elements": [
+   "Missions du jour (Complet / En cours / En attente / Illisible)",
+   "File de revue (illisibles, manquantes, en attente > 12 h, échéance 72 h)",
+   "Preuves complètes par livreur (taux, barre)",
+   "En-tête de galerie : type, zone, paquet, livreur, statut",
+   "Chaîne : C1 par vendeur, transport, C2 ou remise, clôture ; maillon vert / ambre / rouge / gris",
+   "Paires de photos produit / scellé avec étiquette, horodatage et lieu",
+   "Pied : interdits et conservation",
+   "Route du prototype / URL : #preuves (s=attente|illisible|erreur) · /preuves (04_Pages_HTML/Ecrans : un fichier par état, captures clair/sombre/anglais, ordinateur/tablette/mobile)"
+  ],
+  "actions": [
+   "Exporter le dossier (PDF) → GET /proofs/export",
+   "Signaler une preuve défectueuse → POST /proofs/{id}/flag",
+   "Joindre un complément → POST /proofs/{id}/complement",
+   "Relancer <livreur> → push « Vos preuves de 14 h 21 ne sont pas encore envoyées »"
+  ]
+ },
+ "ENT-P17": {
+  "nom": "Litiges",
+  "ref": "ENT-07 p4-19",
+  "etats": [
+   "Ouvert : Compte à rebours de 48 h (héros orange : 47 h 26 restantes, échéance lundi 28 septembre 12 h 31), dossier, preuves, formulaire de réponse — possible : Répondre : accepter, contester avec preuves, proposer un arrangement",
+   "En médiation : Médiatrice nommée et échéance (25 h 50 restantes), réponse envoyée, photos côte à côte — possible : Compléter le dossier avec un élément nouveau",
+   "Décidé : Décision et motif écrit, montant retenu (héros nuit), effet sur les versements et le Trust Score — possible : Recours une fois ; voir la retenue",
+   "Aucun dossier (prototype) : État vide explicite et conseils — possible : Voir les preuves, régler les alertes",
+   "Erreur de chargement : Message clair et bouton « Réessayer » ; les données déjà affichées restent visibles — possible : Réessayer, contacter le support"
+  ],
+  "elements": [
+   "En-tête : Kicker date et heure, titre « Litiges », phrase d’explication, bouton « Preuves des missions » — Le kicker porte la date réelle de l’état",
+   "Onglets : Ouverts, En médiation, Décidés, avec compteurs — Filtrent la liste ; le compteur « Ouverts » alimente le badge du menu",
+   "Dossiers (gauche) : Carte par dossier : motif, numéro, commande, paquet, livreur, pastille d’état, temps restant ou « recours possible » — Carte sélectionnée soulignée d’orange ; un dossier n’est jamais supprimé (180 jours)",
+   "Étapes (gauche) : Ouverture, réponse, médiation 48 h, médiateur senior 3 jours, décision, recours, juridictions — Étape courante en orange, étapes faites en ardoise",
+   "Ce que ce dossier change (gauche) : Versement, Trust Score, décision défavorable, responsabilité — Textes selon l’étape ; montants seulement après décision",
+   "Héros (droite) : Compte à rebours (orange) ou décision chiffrée (nuit) — Un seul héros ; heures et minutes ; barre du temps restant",
+   "Dossier (droite) : Propriétés, photos du client, photos du gérant ou « sans objet », preuves automatiques, codes validés — Lecture seule ; photos en URL signées",
+   "Réponse / médiation / décision (droite) : Selon l’étape : formulaire ; réponse envoyée + photos côte à côte + compléter ; décision motivée + recours — Bouton orange = action principale ; comptable : lecture seule",
+   "Mobile : Une colonne : carte, héros, dossier, réponse, effets, étapes — Tableaux en listes, boutons en pleine largeur"
+  ],
+  "actions": [
+   "Accepter → réponse « accept » signée, le dossier passe à la décision",
+   "Contester → réponse « contest » avec preuves ; désaccord ⇒ médiation 48 h",
+   "Proposer un arrangement (≥ 40 caractères, jamais en espèces) → réponse « settlement » ; 422 TEXT_TOO_SHORT sous 40",
+   "Joindre la déclaration du livreur → pièce jointe horodatée par le serveur",
+   "Envoyer la réponse → POST …/response (Idempotency-Key) ; 409 DISPUTE_DEADLINE_PASSED après l'échéance",
+   "Compléter le dossier (étape médiation) → kind « complement » avec élément nouveau",
+   "Voir la retenue → ENT-P18 onglet Retenues",
+   "Faire un recours (libellé à aligner : « Contester ») → POST …/appeal une fois, élément nouveau obligatoire ; 409 APPEAL_ALREADY_USED ensuite",
+   "Preuves des missions → ENT-P16",
+   "Voir les preuves / Régler les alertes (état vide) → ENT-P16 / ENT-P24",
+   "Réessayer → recharge ; envoi impossible hors connexion"
+  ]
+ },
+ "ENT-P18": {
+  "nom": "Règlements",
+  "ref": "ENT-07 p20-35",
+  "etats": [
+   "À verser : Montant et date du vendredi (héros), prévision, lignes de la période — possible : Consulter le détail",
+   "Versé : Statut de l’opérateur (confirmé, heure, référence) dans l’historique ; héros du vendredi suivant — possible : Télécharger le relevé",
+   "Retenues (prototype) : Retenue avec dossier, décision, montant, imputation ; héros ramené à 0 F et solde à reprendre — possible : Ouvrir la décision, faire un recours depuis le dossier",
+   "Bloqué 7 jours : Changement de moyen de règlement, date de déblocage, revue humaine — possible : Attendre la revue",
+   "Échec : Tentatives restantes, prochaine tentative, motif de l’opérateur — possible : Vérifier le moyen de règlement",
+   "Erreur de chargement (prototype) : Message clair et bouton « Réessayer » ; les données déjà affichées restent visibles — possible : Réessayer, contacter le support"
+  ],
+  "elements": [
+   "En-tête : Kicker, titre, phrase avec les accès, bouton « Relevés et factures » — Bandeau éventuel au-dessus (bloqué, échec, versé)",
+   "Héros nuit (gauche) : Prochaine date et montant à verser, pastille, quatre cases (prévision, clôture, frais, demande) — Montant = somme des lignes validées − retenues ; jamais saisi",
+   "Indicateurs (gauche) : Gagné cette semaine, gagné ce mois, volume validé, retenues — Une seule occurrence de chaque indicateur (ENT-UIX-02)",
+   "Moyen de règlement (droite) : Numéro masqué, titulaire, date de vérification, état ; « Changer » — Changer : propriétaire seul, second facteur, blocage 7 jours",
+   "Chaque vendredi (droite) : Clôture jeudi 23 h 59, versement avant 12 h, relevé — Lien vers ENT-P19",
+   "Onglets : À venir, Historique, Retenues, avec compteurs — Tableaux en cartes sur mobile",
+   "Rappel : Versement sans demande, sans frais, sans minimum ; jamais anticipé ni en espèces — Texte fixe"
+  ],
+  "actions": [
+   "Relevés et factures → ENT-P19",
+   "Changer (propriétaire, second facteur) → POST /api/company/payment-method : moyen in_review, blocked_until = now + 7 j, Finance notifiée ; 422 si pas +237 à 9 chiffres ou pas au nom de l'entreprise",
+   "Consulter le détail (onglet À venir) → lignes de la période",
+   "Télécharger le relevé → ENT-P19 (PDF/CSV)",
+   "Ouvrir la décision / faire un recours → ENT-P17",
+   "Attendre la revue (état bloqué) → aucun versement jusqu'au déblocage",
+   "Vérifier le moyen de règlement (état échec) → ENT-P24 / section moyen",
+   "Réessayer, contacter le support"
+  ]
+ },
+ "ENT-P19": {
+  "nom": "Relevés, factures et obligations",
+  "ref": "ENT-07 p36-48",
+  "etats": [
+   "Période en cours : Relevé provisoire — possible : Consulter",
+   "Période close : Relevé définitif, PDF et CSV — possible : Télécharger, envoyer la facture",
+   "Facture attendue : Rappel — possible : Téléverser",
+   "Erreur de chargement : Message clair et bouton « Réessayer » ; les données déjà affichées restent visibles — possible : Réessayer, contacter le support"
+  ],
+  "elements": [
+   "En-tête : Kicker, titre, phrase avec les accès ; boutons PDF, CSV, « Envoyer la facture » — PDF et CSV désactivés tant que la période est provisoire",
+   "Périodes (gauche) : Semaines (un versement chaque vendredi) et mois (récapitulatif), pastille d’état — Sélection de la période",
+   "Facturation et obligations (gauche) : Mode de facturation, paramètre à confirmer, obligations, écart, interdit — Lecture seule « fixé au contrat »",
+   "Relevé (droite) : En-tête, parties, lignes par jour, totaux, mentions — Même contenu que le PDF",
+   "Aperçu CSV (droite, période close) : Premières lignes du fichier — Aucune donnée de client",
+   "Facture (état facture attendue) : Zone de dépôt, destinataire, montant, règle en cas d’écart — Téléversement PDF"
+  ],
+  "actions": [
+   "Télécharger le PDF → GET …/{id}.pdf (409 STATEMENT_NOT_FINAL si provisoire)",
+   "Exporter en CSV → GET …/{id}.csv (même règle)",
+   "Envoyer / Téléverser la facture → POST …/{id}/invoice (PDF ≤ 10 Mo, Idempotency-Key ; 409 si autofacturation)",
+   "Écrire à la Finance → ENT-P22 fil BelivaY (écart facture / relevé)",
+   "Sélectionner une période → relevé de la semaine ou récapitulatif du mois"
+  ]
+ },
+ "ENT-P20": {
+  "nom": "Score qualité",
+  "ref": "ENT-07 p49-63",
+  "etats": [
+   "Nouveau : État vide explicite (« votre score apparaîtra après vos premières missions ») — possible : Suivre les premières missions",
+   "Score : Jauge, critères, tendance ; onglets Livreurs, Zones, Événements — possible : Voir par livreur, par zone",
+   "Alerte de descente : Seuil et échéance ; livreur qui tire le score vers le bas — possible : Corriger",
+   "Erreur de chargement : Message clair et bouton « Réessayer » ; les données déjà affichées restent visibles — possible : Réessayer, contacter le support"
+  ],
+  "elements": [
+   "En-tête : Kicker, titre, phrase avec les accès, bouton « Livreurs » — Bandeau d’alerte ou d’erreur au-dessus",
+   "Héros nuit : Anneau du score, palier et plafond, « Fixé par BelivaY », progression ou seuil de descente — Lecture seule (ENT-UIX-06)",
+   "Paliers / décomposition (droite du héros) : Onglet Entreprise : paliers ; autres onglets : décomposition — Une seule occurrence de chaque indicateur",
+   "Onglets : Entreprise, Livreurs (6), Zones (4), Événements — Contenu sous les onglets",
+   "Entreprise : Décomposition V5.4, indicateurs du pilote, délais propres à l’entreprise — Total = somme des critères",
+   "Livreurs : Tableau comparatif, liens vers les fiches — Ligne ambre sous 70",
+   "Zones : Tableau par zone et carte — Mêmes définitions que la console",
+   "Événements : Liste datée reliée aux missions, légende de gravité — Chaque ligne ouvre sa mission"
+  ],
+  "actions": [
+   "Livreurs → onglet comparatif ; chaque ligne ouvre la fiche ENT-P06",
+   "Voir la fiche (alerte) → fiche du livreur qui tire le score vers le bas",
+   "Corriger (alerte) → actions de formation / retrait / suivi des zones",
+   "Suivre les premières missions (état Nouveau) → ENT-P13",
+   "Ligne d'événement → ouvre sa mission (mission_id, package_id)",
+   "Réessayer"
+  ]
+ },
+ "ENT-P21": {
+  "nom": "Emballages",
+  "ref": "ENT-08 p3-15",
+  "etats": [
+   "Stock suffisant : Formats en vert — possible : Remettre aux livreurs",
+   "Remises (prototype) : Remises du jour avec plages et confirmations — possible : Enregistrer une remise",
+   "Seuil de 30 % : Formats en ambre, bandeau, commande proposée — possible : Commander",
+   "Commande (prototype) : Fenêtre de commande : quantité, réception — possible : Envoyer la commande",
+   "Écart : Écart de la semaine, déclaration, taux non justifié du mois — possible : Justifier",
+   "Erreur de chargement : Message clair et bouton « Réessayer » ; les données déjà affichées restent visibles — possible : Réessayer, contacter le support"
+  ],
+  "elements": [
+   "En-tête : Kicker, titre, phrase avec les accès ; « Enregistrer une remise », « Commander » — « Commander » actif seulement au seuil",
+   "Bandeau : Seuil de 30 % (ambre, « Commander ») ; écart (ambre, « Justifier ») ; erreur (rouge) — Au-dessus de l’en-tête",
+   "Onglets : Stock, Remises aux livreurs, Commandes — Compteurs sur ordinateur",
+   "Cartes de format : Anneau du restant, restant / avancé, répartition stockage, kits, consommé — Vert au-dessus de 30 %, ambre au seuil",
+   "Consommation : Étiquettes liées du jour et contrôle ; ou graphiques de la semaine — Le stock baisse à chaque étiquette liée",
+   "Étiquettes et ruban : Rouleau, remises, liées, au stockage ; plage perdue — Plages en police à chasse fixe",
+   "Point de stockage et kit : Adresse déclarée, consigne surélevé et au sec, kit conseillé — Lien vers Paramètres",
+   "Bon de remise : Dernier bon signé, commande proposée — Traçabilité de la propriété BelivaY"
+  ],
+  "actions": [
+   "Enregistrer une remise → POST …/handovers {courier_id, items[{format, qty}], label_range} ; pending jusqu'à confirmation du livreur ; 409 si plage chevauchante",
+   "Commander (actif seulement au seuil) → POST …/orders {format, qty, delivery: pickup | return_run} ; 409 ABOVE_THRESHOLD sinon",
+   "Envoyer la commande / Annuler (fenêtre)",
+   "Justifier (écart) → POST …/discrepancies {format, qty, reason, photo}",
+   "Déclarer une plage perdue → POST /api/company/label-ranges/{id}/invalidate ; toute liaison ultérieure → 409",
+   "Réessayer"
+  ]
+ },
+ "ENT-P22": {
+  "nom": "Messages",
+  "ref": "ENT-08 p16-24",
+  "etats": [
+   "Fils : BelivaY, livreurs, incidents — possible : Ouvrir",
+   "Fil ouvert : Messages — possible : Écrire, joindre",
+   "Aucun message : État vide — possible : —",
+   "Erreur de chargement : Message clair et bouton « Réessayer » ; les données déjà affichées restent visibles — possible : Réessayer, contacter le support"
+  ],
+  "elements": [
+   "En-tête : Kicker, titre, phrase (jamais d’échange avec client, vendeur, gérant), « Nouveau message » — —",
+   "Fils (gauche) : Groupes BelivaY, Vos livreurs, Notes d’incident ; avatar, dernier message, heure, pastille du dossier, non lus — Fil sélectionné surligné",
+   "Fil (droite) : Pastilles (dossier, délai, heures), bulles signées, lignes système, saisie et pièce jointe — Masquage à l’enregistrement",
+   "Aperçu (droite, sans fil ouvert) : Non lus, délais, règles, contenu de chaque fil — Textes fixes et compteurs"
+  ],
+  "actions": [
+   "Nouveau message → fil support BelivaY (rattaché à un dossier, sans objet libre)",
+   "Envoyer → POST /api/company/threads/{id}/messages {text, attachments[]} (Idempotency-Key) ; texte masqué renvoyé, masked: true",
+   "Joindre → images et PDF ≤ 10 Mo, jamais une preuve de mission",
+   "Ouvrir le dossier → ENT-P17",
+   "Écrire au support BelivaY (état vide)",
+   "Réessayer (envoi suspendu hors connexion)"
+  ]
+ },
+ "ENT-P23": {
+  "nom": "Notifications",
+  "ref": "ENT-08 p25-30",
+  "etats": [
+   "Liste : Notifications par priorité — possible : Ouvrir",
+   "Vide : « Rien de nouveau » — possible : —",
+   "Erreur de chargement : Message clair et bouton « Réessayer » ; les données déjà affichées restent visibles — possible : Réessayer, contacter le support"
+  ],
+  "elements": [
+   "En-tête : Kicker, titre, phrase ; « Tout marquer comme lu » — Désactivé s’il n’y a rien de non lu",
+   "À traiter : Non lues par priorité : critique, maintenant, à valider — Pastille de priorité, canaux",
+   "Plus tôt aujourd’hui, Hier : Notifications lues — Chaque ligne ouvre l’écran concerné",
+   "Canaux et réglages (droite) : Canaux, alertes non désactivables, règle des zones, lien vers les réglages — Lecture seule"
+  ],
+  "actions": [
+   "Ligne de notification → ouvre l'écran concerné (lien profond) et POST …/{id}/read",
+   "Tout marquer comme lu → POST …/read-all (désactivé si rien de non lu)",
+   "Régler mes notifications → ENT-P24",
+   "Réessayer"
+  ]
+ },
+ "ENT-P24": {
+  "nom": "Paramètres du compte",
+  "ref": "ENT-08 p31-45",
+  "etats": [
+   "Paramètres : Sections — possible : Modifier selon son rôle",
+   "Changement en revue : Moyen de règlement bloqué 7 jours — possible : Attendre",
+   "Vue du répartiteur (prototype) : Ses préférences seulement, menus d’argent absents — possible : Modifier ses préférences",
+   "Invitation (prototype) : Fenêtre d’invitation, accès restants — possible : Envoyer l’invitation",
+   "Erreur de chargement : Message clair et bouton « Réessayer » ; les données déjà affichées restent visibles — possible : Réessayer, contacter le support"
+  ],
+  "elements": [
+   "Sections (gauche) : Utilisateurs et rôles, sécurité, notifications, langue et thème, stockage, règlement, compte — Selon le rôle : sections du propriétaire masquées",
+   "Utilisateurs internes et rôles : Compteur 3 / 5, inviter, tableau (rôle, droits, double facteur, retirer) — Propriétaire seul",
+   "Mot de passe et sécurité : Mot de passe, double facteur, session, appareils — Chacun pour soi",
+   "Mes notifications : Zones suivies, matrice type × canal — Types critiques verrouillés",
+   "Langue, thème et fuseau : Segments de langue et de thème, fuseau fixé — Préférences personnelles",
+   "Point de stockage de nuit : Adresse, consignes, carte, modifier — Propriétaire seul, journalisé",
+   "Moyen de règlement : Moyen vérifié ou en revue ; lien vers Règlements — Propriétaire seul",
+   "Compte entreprise : Pilote, contrat, suppression par résiliation, règles et interdit — Lecture seule"
+  ],
+  "actions": [
+   "Inviter un utilisateur (propriétaire) → POST /api/company/users {name, phone, email, role: dispatcher | accountant} ; 409 ACCESS_LIMIT au-delà de 5 ; 403 pour role owner",
+   "Retirer (propriétaire) → DELETE /api/company/users/{id} : jetons de session révoqués aussitôt",
+   "Modifier le point de stockage (propriétaire) → PUT /api/company/settings, journalisé",
+   "Régler mes notifications → PUT /api/company/notification-preferences (types verrouillés ignorés)",
+   "Langue / thème → préférence par utilisateur (Accept-Language fr | en | pcm)",
+   "Gérer dans Règlements → ENT-P18 (moyen de règlement, propriétaire seul)",
+   "Envoyer l'invitation (fenêtre)"
+  ]
+ },
+ "ENT-P25": {
+  "nom": "Rapports",
+  "ref": "ENT-08 p46-55",
+  "etats": [
+   "Rapport : Tableaux et courbes — possible : Filtrer, exporter",
+   "Peu de données : « Les chiffres deviennent parlants après 30 missions » — possible : —",
+   "Erreur de chargement : Message clair et bouton « Réessayer » ; les données déjà affichées restent visibles — possible : Réessayer, contacter le support"
+  ],
+  "elements": [
+   "Filtres : Période, zone, livreur, type ; comparaison — Sur mobile, seul le filtre actif reste visible",
+   "Indicateurs : Paquets, colis, prestations validées (nuit), remplissage — Une seule occurrence de chaque indicateur",
+   "Graphiques : Colis par jour, prestations par jour, par zone, par type, colis par zone — Graphiques du kit (CH)",
+   "Indicateurs définis : Neuf tuiles avec définition — Définition au survol et en clair",
+   "Par livreur : Tableau : colis, sous 5 h, preuves, prestations — Total = relevé",
+   "Fin de pilote : Génération le 30e jour, interdits — Désactivé avant le 24 octobre"
+  ],
+  "actions": [
+   "Filtrer (période, zone, livreur, type, comparaison) → GET /api/company/reports?from=&to=&zone=&courier=&type=",
+   "Exporter CSV / PDF → …/reports.csv, …/reports.pdf (sans donnée client, journalisé ; désactivés sous 30 missions)",
+   "Rapport de fin de pilote → GET /api/company/reports/pilot (409 PILOT_NOT_FINISHED avant le 30e jour ; désactivé avant le 24 oct. pour Yafé)",
+   "Survol d'un indicateur → sa définition partagée"
+  ]
+ },
+ "ENT-P26": {
+  "nom": "Intégrations",
+  "ref": "ENT-08 p56-63",
+  "etats": [
+   "Bientôt disponible (au lancement) : Annonce de la fonction, aucun chiffre — possible : Aller aux paquets et aux missions",
+   "Aucune clé : Invitation à créer une clé de test — possible : Créer",
+   "Clé active : Dernier appel, erreurs — possible : Révoquer, tourner",
+   "Rappel en échec : Tentatives et journal — possible : Corriger l’adresse",
+   "Erreur de chargement : Message clair et bouton « Réessayer » ; les données déjà affichées restent visibles — possible : Réessayer, contacter le support"
+  ],
+  "elements": [
+   "En-tête : Kicker (date ou « après le lancement · environnement de test »), titre, phrase ; Documentation, Créer une clé — Désactivés au lancement",
+   "Bientôt disponible : Explication, raccourcis, ce qui viendra — Aucun chiffre",
+   "Clés d’API : Clé masquée, environnement, dernier appel, erreurs, tourner, révoquer — Propriétaire seul",
+   "Adresses de rappel : Événement, adresse, état — Ligne rouge en échec",
+   "Journal : Appels et rappels, tentatives, clés d’idempotence — Police à chasse fixe",
+   "Documentation et test : Liens, règles de preuve et d’anonymat — —"
+  ],
+  "actions": [
+   "Paquets disponibles / Missions et carte (bientôt disponible) → ENT-P10 / ENT-P13",
+   "Créer une clé de test → POST …/integrations/keys (après le lancement)",
+   "Tourner → POST …/keys/{id}/rotate (nouvelle clé sans interruption)",
+   "Révoquer → DELETE …/keys/{id} (refusée à l'appel suivant)",
+   "Corriger l'adresse (rappel en échec) → …/webhooks",
+   "Documentation (désactivé au lancement)"
+  ]
+ },
+ "ENT-P27": {
+  "nom": "États du compte entreprise",
+  "ref": "ENT-RG §49 p.67-68 ; ENT-03 p.47-59 ; route #etat-compte",
+  "etats": [
+   "pilote (jour 2 sur 30)",
+   "en configuration",
+   "restreint",
+   "suspendu",
+   "en préavis de résiliation",
+   "résilié"
+  ],
+  "elements": [
+   "pastille et bandeau d'état",
+   "héros : motif, dates, chiffres, actions",
+   "conséquences, recours",
+   "frise des 7 états, tableau de ce que chaque état permet",
+   "journal du compte"
+  ],
+  "actions": [
+   "Compléter (configuration) → ENT-P02 / ENT-P03",
+   "Rapport de pilote / Lettre d'engagement",
+   "Envoyer la nouvelle autorisation → ENT-P03",
+   "Faire un recours (une fois) → ENT-P22",
+   "Voir la mission → ENT-P13",
+   "Télécharger les relevés (résilié) → ENT-P19"
+  ]
+ }
+}

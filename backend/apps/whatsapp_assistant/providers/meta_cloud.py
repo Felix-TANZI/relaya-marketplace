@@ -200,6 +200,21 @@ class MetaCloudProvider(WhatsAppProvider):
             "template": {"name": name, "language": {"code": language}, "components": components},
         })
 
+    def send_code(self, to, code, language="fr") -> str | None:
+        # Modèle « Authentification » (message_templates.CODE) : le code va dans le corps et dans le bouton copier.
+        from apps.whatsapp_assistant.message_templates import CODE
+
+        return self._post({
+            "messaging_product": "whatsapp",
+            "recipient_type": "individual",
+            "to": to,
+            "type": "template",
+            "template": {"name": CODE, "language": {"code": language}, "components": [
+                {"type": "body", "parameters": [{"type": "text", "text": code}]},
+                {"type": "button", "sub_type": "url", "index": "0", "parameters": [{"type": "text", "text": code}]},
+            ]},
+        })
+
     def send_location(self, to, latitude, longitude, name="", address="") -> str | None:
         location = {"latitude": float(latitude), "longitude": float(longitude)}
         if name:

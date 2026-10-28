@@ -234,12 +234,7 @@ export default function SellerOrderDetailPage() {
       desc: t('sl3_order_detail.money_paid_desc'),
       amount: t('sl3_order_detail.money_paid_amount', { amount: fmtXAF(order.vendor_subtotal) }), tone: T.green,
     },
-    {
-      key: 'commission', title: t('sl3_order_detail.money_commission_title'),
-      time: order.is_paid ? fmtDate(order.created_at) : '—',
-      desc: t('sl3_order_detail.money_commission_desc'),
-      amount: t('sl3_order_detail.money_commission_amount', { amount: fmtXAF(order.commission_amount), rate: order.commission_rate.toFixed(1) }), tone: T.red,
-    },
+    // R26.1 : le vendeur ne voit que le net — pas d'étape « commission ».
     {
       key: 'delivered', title: t('sl3_order_detail.money_delivered_title'),
       time: isDelivered ? fmtDate(order.updated_at ?? order.created_at) : t('sl3_order_detail.time_upcoming'),
@@ -538,16 +533,7 @@ export default function SellerOrderDetailPage() {
                   {(order.delivery_fee_xaf ?? 0) === 0 ? t('sl3_order_detail.free') : fmtXAF(order.delivery_fee_xaf ?? 0)}
                 </span>
               </div>
-              <div className="flex items-center justify-between gap-3"
-                style={{ padding: '14px 16px', background: 'rgba(220,38,38,.06)', borderTop: '1px solid rgba(220,38,38,.14)' }}>
-                <span style={{ fontSize: 12, color: T.red }}>
-                  {t('sl3_order_detail.commission_rate', { rate: order.commission_rate.toFixed(1) })}{' '}
-                  <span style={{ fontSize: 10, opacity: .8 }}>{t('sl3_order_detail.commission_locked')}</span>
-                </span>
-                <span className="font-bold flex-shrink-0" style={{ fontSize: 13.5, color: T.red }}>
-                  − {fmtXAF(order.commission_amount)}
-                </span>
-              </div>
+              {/* R26.1 : le vendeur ne voit que le net — aucune ligne de commission. */}
               <div className="flex items-center justify-between gap-3"
                 style={{ padding: '17px 16px', background: T.greenL, borderTop: `1px solid ${T.greenB}` }}>
                 <span className="font-bold" style={{ fontSize: 12, color: T.green }}>{t('sl3_order_detail.net_to_you')}</span>
@@ -672,7 +658,8 @@ export default function SellerOrderDetailPage() {
                 {fmtXAF(item.line_total_xaf)}
               </p>
               <p style={{ fontSize: 10.5, color: T.mutedL, marginTop: 2 }}>
-                {t('sl3_order_detail.net_amount', { amount: fmtXAF(Math.round(item.line_total_xaf * (1 - order.commission_rate / 100))) })}
+                {/* Part de l'article dans le net de la sous-commande (net_b, R22.1). */}
+                {t('sl3_order_detail.net_amount', { amount: fmtXAF(order.vendor_subtotal ? Math.round(item.line_total_xaf * order.vendor_net_amount / order.vendor_subtotal) : 0) })}
               </p>
             </div>
           </div>

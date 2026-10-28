@@ -143,6 +143,11 @@ class ComplianceDocument(models.Model):
     class OwnerRole(models.TextChoices):
         DELIVERY_ORGANIZATION = "DELIVERY_ORGANIZATION", "Organisation livraison"
         RELAY_POINT = "RELAY_POINT", "Point relais"
+        # Tache D19 : « Recevoir la CNI recto et verso et le selfie video, les
+        # stocker en acces restreint, donner un motif de refus par piece. »
+        # Les vendeurs passent par le meme mecanisme que les autres
+        # partenaires — un second systeme de pieces divergerait tot ou tard.
+        VENDOR = "VENDOR", "Vendeur"
 
     class Status(models.TextChoices):
         PENDING = "PENDING", "En cours de vérification"
@@ -866,11 +871,10 @@ class TrustScoreProfile(models.Model):
 
     @property
     def parcel_value_cap_xaf(self):
-        if self.tier in (self.Tier.GOLD, self.Tier.PLATINUM):
-            return None
-        if self.tier == self.Tier.CONFIRMED:
-            return 250000
-        return 75000
+        """Spec v2.1, R56.1 : valeur maximale d'un colis du palier, lue dans t_paliers_entreprise (None : sans plafond)."""
+        from apps.shipping.entreprises import plafond_palier
+
+        return plafond_palier(self.tier)
 
     def get_role_tier_display(self, tier=None):
         tier = tier or self.tier
@@ -976,8 +980,6 @@ class PayoutAccount(models.Model):
     operator = models.CharField(max_length=20)
     status = models.CharField(max_length=30, choices=Status.choices, default=Status.PENDING_VERIFICATION)
     is_primary = models.BooleanField(default=False)
-    verification_code_hash = models.CharField(max_length=160, blank=True, default="")
-    verification_expires_at = models.DateTimeField(null=True, blank=True)
     verified_at = models.DateTimeField(null=True, blank=True)
     last_sent_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -1003,24 +1005,10 @@ class PayoutAccount(models.Model):
     def __str__(self):
         return f"{self.user.username} · {self.owner_role} · {self.phone_e164}"
 
-    def set_verification_code(self, code: str, minutes: int = 10):
-        self.verification_code_hash = make_password(code)
-        self.verification_expires_at = timezone.now() + timezone.timedelta(minutes=minutes)
-        self.last_sent_at = timezone.now()
-
-    def check_verification_code(self, code: str) -> bool:
-        if not self.verification_code_hash or not self.verification_expires_at:
-            return False
-        if self.verification_expires_at < timezone.now():
-            return False
-        return check_password(code, self.verification_code_hash)
-
     def mark_verified(self):
         self.status = self.Status.VERIFIED
         self.verified_at = timezone.now()
-        self.verification_code_hash = ""
-        self.verification_expires_at = None
-        self.save(update_fields=["status", "verified_at", "verification_code_hash", "verification_expires_at", "updated_at"])
+        self.save(update_fields=["status", "verified_at", "updated_at"])
 
 
 class UserSession(models.Model):
@@ -1047,38 +1035,6 @@ class UserSession(models.Model):
         return f"{self.user.username} — {self.device_name} ({self.ip_address})"
  
  
-class OTPCode(models.Model):
-    """
-    Code OTP à 6 chiffres, usage unique, valide 10 minutes.
-    Utilisé pour la 2FA (connexion, activation, désactivation).
-    """
-    PURPOSE_CHOICES = [
-        ('2FA_LOGIN',   'Connexion 2FA'),
-        ('2FA_ENABLE',  'Activation 2FA'),
-        ('2FA_DISABLE', 'Désactivation 2FA'),
-    ]
- 
-    user       = models.ForeignKey(User, on_delete=models.CASCADE, related_name='otp_codes')
-    code       = models.CharField(max_length=6)
-    purpose    = models.CharField(max_length=15, choices=PURPOSE_CHOICES)
-    created_at = models.DateTimeField(auto_now_add=True)
-    expires_at = models.DateTimeField()
-    is_used    = models.BooleanField(default=False)
- 
-    class Meta:
-        ordering = ['-created_at']
-        verbose_name = "Code OTP"
-        verbose_name_plural = "Codes OTP"
- 
-    def __str__(self):
-        return f"{self.user.username} — {self.purpose} — {self.code}"
- 
-    @property
-    def is_valid(self) -> bool:
-        from django.utils import timezone
-        return not self.is_used and self.expires_at > timezone.now()
-
-
 class RelayTrainingCompletion(models.Model):
     """
     Module de formation valide par un point relais.

@@ -21,7 +21,7 @@ import { palette, primaryGradient } from '../theme';
 import ScreenHeader from '../compte/shared/ScreenHeader';
 import Collapsible from '../compte/shared/Collapsible';
 import ShopLocationPicker from '../ouverture/ShopLocationPicker';
-import { getVendorLocations, updateVendorLocation, type VendorLocation } from './api';
+import { getQuartiers, getVendorLocations, updateVendorLocation, type VendorLocation } from './api';
 
 export default function EmplacementPage() {
   const { t } = useTranslation();
@@ -37,6 +37,12 @@ export default function EmplacementPage() {
   const [lng, setLng] = useState<number | null>(null);
   const [zoneLabel, setZoneLabel] = useState<string | null>(null);
   const [landmark, setLandmark] = useState('');
+  const [quartier, setQuartier] = useState('');
+  const [quartiers, setQuartiers] = useState<{ quartier: string; zone: string }[]>([]);
+
+  useEffect(() => {
+    getQuartiers().then(setQuartiers).catch(() => setQuartiers([]));
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -50,6 +56,7 @@ export default function EmplacementPage() {
       setLat(main?.latitude != null ? Number(main.latitude) : null);
       setLng(main?.longitude != null ? Number(main.longitude) : null);
       setLandmark(main?.description ?? '');
+      setQuartier(main?.quartier ?? '');
       setError(null);
     } catch (e) {
       setError((e as Error).message);
@@ -66,6 +73,7 @@ export default function EmplacementPage() {
     try {
       await updateVendorLocation(location.id, {
         description: landmark,
+        quartier,
         latitude: lat != null ? String(lat) : undefined,
         longitude: lng != null ? String(lng) : undefined,
       });
@@ -125,6 +133,22 @@ export default function EmplacementPage() {
             <p className="mt-1" style={{ fontSize: 12, color: p.textMuted }}>
               {lat !== null && lng !== null ? `${lat.toFixed(6)}° N · ${lng.toFixed(6)}° E` : t('sl13_boutique.location_no_coords')}
             </p>
+
+            <div className="mt-3">
+              <label className="block font-bold mb-1" style={{ fontSize: 12, color: p.text }}>{t('sl13_boutique.quartier_label')}</label>
+              <input
+                value={quartier}
+                onChange={(e) => setQuartier(e.target.value)}
+                list="quartiers-yaounde"
+                placeholder={t('sl13_boutique.quartier_placeholder')}
+                className="w-full rounded-xl"
+                style={{ padding: '10px 12px', fontSize: 13, background: p.cardAlt, border: `1px solid ${p.border}`, color: p.text }}
+              />
+              <datalist id="quartiers-yaounde">
+                {quartiers.map((q) => <option key={q.quartier} value={q.quartier}>{q.zone}</option>)}
+              </datalist>
+              <p className="mt-1" style={{ fontSize: 11, color: p.textMuted }}>{t('sl13_boutique.quartier_hint')}</p>
+            </div>
 
             <div className="mt-3">
               <label className="block font-bold mb-1" style={{ fontSize: 12, color: p.text }}>{t('sl13_boutique.landmark_label')}</label>

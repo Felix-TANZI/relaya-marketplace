@@ -11,9 +11,14 @@ from apps.accounts.models import (
     RelayPointProfile,
     RelayTrainingCompletion,
 )
-from apps.orders.models import Order
-from apps.orders.models import Dispute
-from apps.shipping.models import RelayParcel, RelayPointReview, Shipment, ShipmentEvidence
+from apps.common.demonstration import exiger_demonstration_autorisee
+from apps.orders.models import Dispute, Order
+from apps.shipping.models import (
+    RelayParcel,
+    RelayPointReview,
+    Shipment,
+    ShipmentEvidence,
+)
 
 DEMO_PASSWORD = "Demo12345!"
 DEMO_BUYER = "acheteur_demo"
@@ -25,12 +30,22 @@ DEMO_COURIER = "livreur_demo_relais"
 DEMO_SIZES = ["STANDARD", "LARGE", "SMALL", "BULKY"]
 
 # Scenario d'activite : (statut, taille, heures depuis la reception).
-# Deux arrivees a receptionner, deux colis en stock, deux retraits effectues.
+#
+# Deux arrivees a receptionner, cinq colis en stock, deux retraits faits.
+#
+# Les durees de garde sont choisies pour couvrir les deux cotes du seuil
+# de sept jours (168 h) : un colis arrive ce matin, un d'hier, un de
+# quatre jours, un a la veille du seuil, un qui l'a depasse. C'est le
+# dernier qui remplit l'ecran de non-retrait ; sans lui, cet ecran reste
+# vide et la regle J+7 ne se montre pas.
 DEMO_ACTIVITY = [
     ("EXPECTED", "STANDARD", None),
     ("EXPECTED", "LARGE", None),
-    ("STORED", "SMALL", 30),
-    ("STORED", "STANDARD", 8),
+    ("STORED", "STANDARD", 8),      # ce matin
+    ("STORED", "SMALL", 30),        # hier
+    ("STORED", "LARGE", 96),        # quatre jours
+    ("STORED", "STANDARD", 160),    # 6 j 16 h : veille du seuil
+    ("STORED", "SMALL", 200),       # 8 j : garde depassee
     ("PICKED_UP", "STANDARD", 52),
     ("PICKED_UP", "BULKY", 26),
 ]
@@ -80,6 +95,8 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        # Tache D31 : jeux de demonstration fermes par defaut.
+        exiger_demonstration_autorisee()
         wanted = max(1, min(options["arrivals"], len(DEMO_SIZES)))
 
         relay = self._relay_point()

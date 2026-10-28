@@ -1,0 +1,1883 @@
+[
+ {
+  "route": "connexion",
+  "titre": "Connexion",
+  "groupe": "VD-03",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#connexion",
+    "libelle": "Connexion",
+    "source": "route"
+   },
+   {
+    "adresse": "#connexion?s=2fa",
+    "libelle": "Connexion · nouvel appareil",
+    "source": "plan"
+   },
+   {
+    "adresse": "#connexion?s=oubli",
+    "libelle": "Connexion · mot de passe oublié",
+    "source": "plan"
+   },
+   {
+    "adresse": "#connexion?s=email",
+    "libelle": "Connexion par e-mail · se souvenir de moi",
+    "source": "plan"
+   },
+   {
+    "adresse": "#connexion?s=numero",
+    "libelle": "Connexion par numéro · code par WhatsApp",
+    "source": "plan"
+   },
+   {
+    "adresse": "#connexion?s=numero&canal=sms",
+    "libelle": "Connexion par numéro · code par SMS",
+    "source": "plan"
+   },
+   {
+    "adresse": "#connexion?s=code",
+    "libelle": "Connexion par numéro · code reçu",
+    "source": "plan"
+   },
+   {
+    "adresse": "#connexion?s=plusnum",
+    "libelle": "Connexion · ce n’est plus mon numéro",
+    "source": "plan"
+   },
+   {
+    "adresse": "#connexion?s=code&canal=sms",
+    "libelle": "lien depuis #connexion?s=numero&canal=sms",
+    "source": "lien"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "ouvrir",
+  "titre": "Ouvrir — deux minutes",
+  "groupe": "VD-03",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#ouvrir",
+    "libelle": "Ouvrir — deux minutes",
+    "source": "route"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "otp",
+  "titre": "Code de vérification",
+  "groupe": "VD-03",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#otp",
+    "libelle": "Code de vérification",
+    "source": "route"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "kyc",
+  "titre": "Publier et être payé",
+  "groupe": "VD-03",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#kyc",
+    "libelle": "Publier et être payé",
+    "source": "route"
+   },
+   {
+    "adresse": "#kyc?s=attente",
+    "libelle": "Publier · vérification en cours",
+    "source": "plan"
+   },
+   {
+    "adresse": "#kyc?s=contrat",
+    "libelle": "Être payé · contrat",
+    "source": "plan"
+   },
+   {
+    "adresse": "#kyc?s=refusee",
+    "libelle": "Publier · pièce refusée",
+    "source": "plan"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "saisie_assistee",
+  "titre": "Saisie assistée",
+  "groupe": "VD-03",
+  "onglet": "produits",
+  "etats": [
+   {
+    "adresse": "#saisie_assistee",
+    "libelle": "Saisie assistée",
+    "source": "route"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "installer",
+  "titre": "Installer l’application",
+  "groupe": "VD-03",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#installer",
+    "libelle": "Installer l’application",
+    "source": "route"
+   },
+   {
+    "adresse": "#installer?os=and",
+    "libelle": "Installer · Android",
+    "source": "plan"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "accueil",
+  "titre": "Accueil",
+  "groupe": "VD-04",
+  "onglet": "accueil",
+  "etats": [
+   {
+    "adresse": "#accueil",
+    "libelle": "Accueil",
+    "source": "route"
+   },
+   {
+    "adresse": "#accueil?closed=1",
+    "libelle": "Accueil · fermé aujourd’hui",
+    "source": "plan"
+   },
+   {
+    "adresse": "#accueil?alerte=1",
+    "libelle": "Accueil · score proche d’un seuil",
+    "source": "plan"
+   },
+   {
+    "adresse": "#accueil?role=prep",
+    "libelle": "Accueil · accès Préparation",
+    "source": "plan"
+   },
+   {
+    "adresse": "#accueil?pop=profil",
+    "libelle": "Menu sous l’avatar",
+    "source": "plan"
+   },
+   {
+    "adresse": "#accueil?closed=1&pop=profil",
+    "libelle": "lien depuis #accueil?closed=1",
+    "source": "lien"
+   },
+   {
+    "adresse": "#accueil?alerte=1&pop=profil",
+    "libelle": "lien depuis #accueil?alerte=1",
+    "source": "lien"
+   },
+   {
+    "adresse": "#accueil?role=prep&pop=profil",
+    "libelle": "lien depuis #accueil?role=prep",
+    "source": "lien"
+   },
+   {
+    "adresse": "#accueil?closed=1&role=prep",
+    "libelle": "lien depuis #accueil?role=prep",
+    "source": "lien"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "accueil_calme",
+  "titre": "Rien à faire",
+  "groupe": "VD-04",
+  "onglet": "accueil",
+  "etats": [
+   {
+    "adresse": "#accueil_calme",
+    "libelle": "Rien à faire",
+    "source": "route"
+   },
+   {
+    "adresse": "#accueil_calme?pop=profil",
+    "libelle": "lien depuis #accueil_calme",
+    "source": "lien"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "premier_jour",
+  "titre": "Premier jour",
+  "groupe": "VD-04",
+  "onglet": "accueil",
+  "etats": [
+   {
+    "adresse": "#premier_jour",
+    "libelle": "Premier jour",
+    "source": "route"
+   },
+   {
+    "adresse": "#premier_jour?pop=profil",
+    "libelle": "lien depuis #premier_jour",
+    "source": "lien"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "horsligne",
+  "titre": "Hors connexion",
+  "groupe": "VD-04",
+  "onglet": "accueil",
+  "etats": [
+   {
+    "adresse": "#horsligne",
+    "libelle": "Hors connexion",
+    "source": "route"
+   },
+   {
+    "adresse": "#horsligne?pop=profil",
+    "libelle": "lien depuis #horsligne",
+    "source": "lien"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "suspendu",
+  "titre": "Compte suspendu",
+  "groupe": "VD-04",
+  "onglet": "accueil",
+  "etats": [
+   {
+    "adresse": "#suspendu",
+    "libelle": "Compte suspendu",
+    "source": "route"
+   },
+   {
+    "adresse": "#suspendu?pop=profil",
+    "libelle": "lien depuis #suspendu",
+    "source": "lien"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "commandes",
+  "titre": "Commandes reçues",
+  "groupe": "VD-05",
+  "onglet": "commandes",
+  "etats": [
+   {
+    "adresse": "#commandes",
+    "libelle": "Commandes reçues",
+    "source": "route"
+   },
+   {
+    "adresse": "#commandes?f=cours",
+    "libelle": "Commandes · en cours (vide)",
+    "source": "plan"
+   },
+   {
+    "adresse": "#commandes?f=fin",
+    "libelle": "Commandes · terminées",
+    "source": "plan"
+   },
+   {
+    "adresse": "#commandes?f=pb",
+    "libelle": "Commandes · problèmes",
+    "source": "plan"
+   },
+   {
+    "adresse": "#commandes?role=prep",
+    "libelle": "lien depuis #accueil?role=prep",
+    "source": "lien"
+   },
+   {
+    "adresse": "#commandes?pop=profil",
+    "libelle": "lien depuis #commandes",
+    "source": "lien"
+   },
+   {
+    "adresse": "#commandes?f=prep",
+    "libelle": "lien depuis #commandes",
+    "source": "lien"
+   },
+   {
+    "adresse": "#commandes?f=cours&pop=profil",
+    "libelle": "lien depuis #commandes?f=cours",
+    "source": "lien"
+   },
+   {
+    "adresse": "#commandes?f=fin&pop=profil",
+    "libelle": "lien depuis #commandes?f=fin",
+    "source": "lien"
+   },
+   {
+    "adresse": "#commandes?f=pb&pop=profil",
+    "libelle": "lien depuis #commandes?f=pb",
+    "source": "lien"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "commande",
+  "titre": "Commande à préparer",
+  "groupe": "VD-05",
+  "onglet": "commandes",
+  "etats": [
+   {
+    "adresse": "#commande",
+    "libelle": "Commande à préparer",
+    "source": "route"
+   },
+   {
+    "adresse": "#commande?ref=BLV-00009",
+    "libelle": "Commande · payable au retrait",
+    "source": "plan"
+   },
+   {
+    "adresse": "#commande?ref=BLV-00008",
+    "libelle": "lien depuis #accueil",
+    "source": "lien"
+   },
+   {
+    "adresse": "#commande?ref=BLV-00008&role=prep",
+    "libelle": "lien depuis #accueil?role=prep",
+    "source": "lien"
+   },
+   {
+    "adresse": "#commande?ref=BLV-00009&role=prep",
+    "libelle": "lien depuis #accueil?role=prep",
+    "source": "lien"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "rupture",
+  "titre": "Rupture",
+  "groupe": "VD-05",
+  "onglet": "commandes",
+  "etats": [
+   {
+    "adresse": "#rupture",
+    "libelle": "Rupture",
+    "source": "route"
+   },
+   {
+    "adresse": "#rupture?ref=BLV-00008",
+    "libelle": "lien depuis #accueil",
+    "source": "lien"
+   },
+   {
+    "adresse": "#rupture?ref=BLV-00009",
+    "libelle": "lien depuis #accueil",
+    "source": "lien"
+   },
+   {
+    "adresse": "#rupture?ref=BLV-00008&role=prep",
+    "libelle": "lien depuis #accueil?role=prep",
+    "source": "lien"
+   },
+   {
+    "adresse": "#rupture?ref=BLV-00009&role=prep",
+    "libelle": "lien depuis #accueil?role=prep",
+    "source": "lien"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "delai",
+  "titre": "Besoin de plus de temps",
+  "groupe": "VD-05",
+  "onglet": "commandes",
+  "etats": [
+   {
+    "adresse": "#delai",
+    "libelle": "Besoin de plus de temps",
+    "source": "route"
+   },
+   {
+    "adresse": "#delai?ref=BLV-00008",
+    "libelle": "lien depuis #accueil",
+    "source": "lien"
+   },
+   {
+    "adresse": "#delai?ref=BLV-00009",
+    "libelle": "lien depuis #accueil",
+    "source": "lien"
+   },
+   {
+    "adresse": "#delai?ref=BLV-00008&role=prep",
+    "libelle": "lien depuis #accueil?role=prep",
+    "source": "lien"
+   },
+   {
+    "adresse": "#delai?ref=BLV-00009&role=prep",
+    "libelle": "lien depuis #accueil?role=prep",
+    "source": "lien"
+   },
+   {
+    "adresse": "#delai?ref=BLV-00008&c=1",
+    "libelle": "lien depuis #delai",
+    "source": "lien"
+   },
+   {
+    "adresse": "#delai?ref=BLV-00008&c=2",
+    "libelle": "lien depuis #delai",
+    "source": "lien"
+   },
+   {
+    "adresse": "#delai?ref=BLV-00008&c=d",
+    "libelle": "lien depuis #delai",
+    "source": "lien"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "bon",
+  "titre": "Bon de préparation",
+  "groupe": "VD-05",
+  "onglet": "commandes",
+  "etats": [
+   {
+    "adresse": "#bon",
+    "libelle": "Bon de préparation",
+    "source": "route"
+   },
+   {
+    "adresse": "#bon?ref=BLV-00008",
+    "libelle": "lien depuis #commandes",
+    "source": "lien"
+   },
+   {
+    "adresse": "#bon?ref=BLV-00009",
+    "libelle": "lien depuis #commandes",
+    "source": "lien"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "journal",
+  "titre": "Journal de la commande",
+  "groupe": "VD-05",
+  "onglet": "commandes",
+  "etats": [
+   {
+    "adresse": "#journal",
+    "libelle": "Journal de la commande",
+    "source": "route"
+   },
+   {
+    "adresse": "#journal?ref=BLV-00008",
+    "libelle": "lien depuis #commande",
+    "source": "lien"
+   },
+   {
+    "adresse": "#journal?ref=BLV-00009",
+    "libelle": "lien depuis #commande?ref=BLV-00009",
+    "source": "lien"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "commande_prete",
+  "titre": "Remise au livreur",
+  "groupe": "VD-06",
+  "onglet": "commandes",
+  "etats": [
+   {
+    "adresse": "#commande_prete",
+    "libelle": "Remise au livreur",
+    "source": "route"
+   },
+   {
+    "adresse": "#commande_prete?code=1",
+    "libelle": "Remise · code affiché",
+    "source": "plan"
+   },
+   {
+    "adresse": "#commande_prete?ref=BLV-00008",
+    "libelle": "lien depuis #accueil",
+    "source": "lien"
+   },
+   {
+    "adresse": "#commande_prete?ref=BLV-00009",
+    "libelle": "lien depuis #accueil",
+    "source": "lien"
+   },
+   {
+    "adresse": "#commande_prete?ref=BLV-00008&role=prep",
+    "libelle": "lien depuis #accueil?role=prep",
+    "source": "lien"
+   },
+   {
+    "adresse": "#commande_prete?ref=BLV-00009&role=prep",
+    "libelle": "lien depuis #accueil?role=prep",
+    "source": "lien"
+   },
+   {
+    "adresse": "#commande_prete?ref=BLV-00008&code=1",
+    "libelle": "lien depuis #horsligne",
+    "source": "lien"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "commande_remise",
+  "titre": "Remis au livreur",
+  "groupe": "VD-06",
+  "onglet": "commandes",
+  "etats": [
+   {
+    "adresse": "#commande_remise",
+    "libelle": "Remis au livreur",
+    "source": "route"
+   },
+   {
+    "adresse": "#commande_remise?ref=BLV-00008",
+    "libelle": "lien depuis #commande_prete?code=1",
+    "source": "lien"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "recu",
+  "titre": "Reçu vendeur",
+  "groupe": "VD-06",
+  "onglet": "commandes",
+  "etats": [
+   {
+    "adresse": "#recu",
+    "libelle": "Reçu vendeur",
+    "source": "route"
+   },
+   {
+    "adresse": "#recu?pay=carte",
+    "libelle": "Reçu · carte bancaire",
+    "source": "plan"
+   },
+   {
+    "adresse": "#recu?pay=apple",
+    "libelle": "Reçu · Apple Pay",
+    "source": "plan"
+   },
+   {
+    "adresse": "#recu?pay=google",
+    "libelle": "Reçu · Google Pay",
+    "source": "plan"
+   },
+   {
+    "adresse": "#recu?pay=wallet",
+    "libelle": "Reçu · Wallet du client",
+    "source": "plan"
+   },
+   {
+    "adresse": "#recu?pay=usd",
+    "libelle": "Reçu · payé depuis l’étranger en dollars",
+    "source": "plan"
+   },
+   {
+    "adresse": "#recu?pay=eur",
+    "libelle": "Reçu · payé depuis l’étranger en euros",
+    "source": "plan"
+   },
+   {
+    "adresse": "#recu?ref=BLV-00008",
+    "libelle": "lien depuis #commande_remise",
+    "source": "lien"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "erreurs",
+  "titre": "États d’erreur",
+  "groupe": "VD-06",
+  "onglet": "commandes",
+  "etats": [
+   {
+    "adresse": "#erreurs",
+    "libelle": "États d’erreur",
+    "source": "route"
+   },
+   {
+    "adresse": "#erreurs?e=absent",
+    "libelle": "Erreur · livreur absent",
+    "source": "plan"
+   },
+   {
+    "adresse": "#erreurs?e=bloque",
+    "libelle": "Erreur · remise bloquée",
+    "source": "plan"
+   },
+   {
+    "adresse": "#erreurs?e=annulee",
+    "libelle": "Erreur · commande annulée",
+    "source": "plan"
+   },
+   {
+    "adresse": "#erreurs?e=depasse",
+    "libelle": "Erreur · délai dépassé",
+    "source": "plan"
+   },
+   {
+    "adresse": "#erreurs?e=reseau",
+    "libelle": "Erreur · pas de réseau",
+    "source": "plan"
+   },
+   {
+    "adresse": "#erreurs?e=plafond",
+    "libelle": "Erreur · plafond de valeur",
+    "source": "plan"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "litiges",
+  "titre": "Litiges reçus",
+  "groupe": "VD-07",
+  "onglet": "accueil",
+  "etats": [
+   {
+    "adresse": "#litiges",
+    "libelle": "Litiges reçus",
+    "source": "route"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "litige",
+  "titre": "Répondre",
+  "groupe": "VD-07",
+  "onglet": "accueil",
+  "etats": [
+   {
+    "adresse": "#litige",
+    "libelle": "Répondre",
+    "source": "route"
+   },
+   {
+    "adresse": "#litige?pos=arrangement",
+    "libelle": "Répondre · arrangement",
+    "source": "plan"
+   },
+   {
+    "adresse": "#litige?pos=accepte",
+    "libelle": "Répondre · j’accepte",
+    "source": "plan"
+   },
+   {
+    "adresse": "#litige?ref=BLV-00005",
+    "libelle": "lien depuis #accueil",
+    "source": "lien"
+   },
+   {
+    "adresse": "#litige?ref=BLV-00006",
+    "libelle": "lien depuis #accueil",
+    "source": "lien"
+   },
+   {
+    "adresse": "#litige?ref=BLV-00005&role=prep",
+    "libelle": "lien depuis #accueil?role=prep",
+    "source": "lien"
+   },
+   {
+    "adresse": "#litige?ref=BLV-00006&role=prep",
+    "libelle": "lien depuis #accueil?role=prep",
+    "source": "lien"
+   },
+   {
+    "adresse": "#litige?ref=BLV-00005&pos=accepte",
+    "libelle": "lien depuis #litige",
+    "source": "lien"
+   },
+   {
+    "adresse": "#litige?ref=BLV-00005&pos=conteste",
+    "libelle": "lien depuis #litige",
+    "source": "lien"
+   },
+   {
+    "adresse": "#litige?ref=BLV-00005&pos=arrangement",
+    "libelle": "lien depuis #litige",
+    "source": "lien"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "litige_envoye",
+  "titre": "Décision et suites",
+  "groupe": "VD-07",
+  "onglet": "accueil",
+  "etats": [
+   {
+    "adresse": "#litige_envoye",
+    "libelle": "Décision et suites",
+    "source": "route"
+   },
+   {
+    "adresse": "#litige_envoye?issue=gagne",
+    "libelle": "Décision · litige gagné",
+    "source": "plan"
+   },
+   {
+    "adresse": "#litige_envoye?issue=perdu",
+    "libelle": "Décision · litige perdu",
+    "source": "plan"
+   },
+   {
+    "adresse": "#litige_envoye?ref=BLV-00005",
+    "libelle": "lien depuis #litige",
+    "source": "lien"
+   },
+   {
+    "adresse": "#litige_envoye?ref=BLV-00005&issue=accepte",
+    "libelle": "lien depuis #litige?pos=accepte",
+    "source": "lien"
+   },
+   {
+    "adresse": "#litige_envoye?ref=BLV-00005&issue=gagne",
+    "libelle": "lien depuis #litige_envoye",
+    "source": "lien"
+   },
+   {
+    "adresse": "#litige_envoye?ref=BLV-00005&issue=perdu",
+    "libelle": "lien depuis #litige_envoye",
+    "source": "lien"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "retours",
+  "titre": "Retours en cours",
+  "groupe": "VD-07",
+  "onglet": "accueil",
+  "etats": [
+   {
+    "adresse": "#retours",
+    "libelle": "Retours en cours",
+    "source": "route"
+   },
+   {
+    "adresse": "#retours?role=prep",
+    "libelle": "lien depuis #accueil?role=prep",
+    "source": "lien"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "inspection",
+  "titre": "Inspection à la réception",
+  "groupe": "VD-07",
+  "onglet": "accueil",
+  "etats": [
+   {
+    "adresse": "#inspection",
+    "libelle": "Inspection à la réception",
+    "source": "route"
+   },
+   {
+    "adresse": "#inspection?d=conforme",
+    "libelle": "lien depuis #inspection",
+    "source": "lien"
+   },
+   {
+    "adresse": "#inspection?d=non",
+    "libelle": "lien depuis #inspection",
+    "source": "lien"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "remplacement",
+  "titre": "Proposer un remplacement",
+  "groupe": "VD-07",
+  "onglet": "accueil",
+  "etats": [
+   {
+    "adresse": "#remplacement",
+    "libelle": "Proposer un remplacement",
+    "source": "route"
+   },
+   {
+    "adresse": "#remplacement?c=rembourser",
+    "libelle": "lien depuis #remplacement",
+    "source": "lien"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "produits",
+  "titre": "Mes produits",
+  "groupe": "VD-08",
+  "onglet": "produits",
+  "etats": [
+   {
+    "adresse": "#produits",
+    "libelle": "Mes produits",
+    "source": "route"
+   },
+   {
+    "adresse": "#produits?role=prep",
+    "libelle": "lien depuis #accueil?role=prep",
+    "source": "lien"
+   },
+   {
+    "adresse": "#produits?pop=profil",
+    "libelle": "lien depuis #produits",
+    "source": "lien"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "offre_detail",
+  "titre": "Une offre",
+  "groupe": "VD-08",
+  "onglet": "produits",
+  "etats": [
+   {
+    "adresse": "#offre_detail",
+    "libelle": "Une offre",
+    "source": "route"
+   },
+   {
+    "adresse": "#offre_detail?v=verif",
+    "libelle": "Une offre · en vérification",
+    "source": "plan"
+   },
+   {
+    "adresse": "#offre_detail?role=prep",
+    "libelle": "lien depuis #accueil?role=prep",
+    "source": "lien"
+   },
+   {
+    "adresse": "#offre_detail?p=iphone",
+    "libelle": "lien depuis #produits",
+    "source": "lien"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "offre1",
+  "titre": "Nouvelle offre — le produit",
+  "groupe": "VD-08",
+  "onglet": "produits",
+  "etats": [
+   {
+    "adresse": "#offre1",
+    "libelle": "Nouvelle offre — le produit",
+    "source": "route"
+   },
+   {
+    "adresse": "#offre1?q=chargeur",
+    "libelle": "Nouvelle offre · 1 · aucun résultat exact",
+    "source": "plan"
+   },
+   {
+    "adresse": "#offre1?q=chargeur%20itel",
+    "libelle": "lien depuis #accueil_calme",
+    "source": "lien"
+   },
+   {
+    "adresse": "#offre1?q=coque%20iphone%2015",
+    "libelle": "lien depuis #demande",
+    "source": "lien"
+   },
+   {
+    "adresse": "#offre1?q=%C3%A9couteurs%20sans%20fil",
+    "libelle": "lien depuis #demande",
+    "source": "lien"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "fiche",
+  "titre": "Demander une fiche",
+  "groupe": "VD-08",
+  "onglet": "produits",
+  "etats": [
+   {
+    "adresse": "#fiche",
+    "libelle": "Demander une fiche",
+    "source": "route"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "offre2",
+  "titre": "Nouvelle offre — photos",
+  "groupe": "VD-08",
+  "onglet": "produits",
+  "etats": [
+   {
+    "adresse": "#offre2",
+    "libelle": "Nouvelle offre — photos",
+    "source": "route"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "camera",
+  "titre": "Caméra",
+  "groupe": "VD-08",
+  "onglet": "produits",
+  "etats": [
+   {
+    "adresse": "#camera",
+    "libelle": "Caméra",
+    "source": "route"
+   },
+   {
+    "adresse": "#camera?mode=scan",
+    "libelle": "Caméra · code-barres",
+    "source": "plan"
+   },
+   {
+    "adresse": "#camera?mode=photo",
+    "libelle": "Caméra · photo réelle",
+    "source": "plan"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "offre3",
+  "titre": "Nouvelle offre — le prix",
+  "groupe": "VD-08",
+  "onglet": "produits",
+  "etats": [
+   {
+    "adresse": "#offre3",
+    "libelle": "Nouvelle offre — le prix",
+    "source": "route"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "offre4",
+  "titre": "Nouvelle offre — récapitulatif",
+  "groupe": "VD-08",
+  "onglet": "produits",
+  "etats": [
+   {
+    "adresse": "#offre4",
+    "libelle": "Nouvelle offre — récapitulatif",
+    "source": "route"
+   },
+   {
+    "adresse": "#offre4?keep=1",
+    "libelle": "lien depuis #offre3",
+    "source": "lien"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "offre_publiee",
+  "titre": "Offre publiée",
+  "groupe": "VD-08",
+  "onglet": "produits",
+  "etats": [
+   {
+    "adresse": "#offre_publiee",
+    "libelle": "Offre publiée",
+    "source": "route"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "dupliquer",
+  "titre": "Dupliquer un produit",
+  "groupe": "VD-08",
+  "onglet": "produits",
+  "etats": [
+   {
+    "adresse": "#dupliquer",
+    "libelle": "Dupliquer un produit",
+    "source": "route"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "argent",
+  "titre": "Mon argent",
+  "groupe": "VD-09",
+  "onglet": "argent",
+  "etats": [
+   {
+    "adresse": "#argent",
+    "libelle": "Mon argent",
+    "source": "route"
+   },
+   {
+    "adresse": "#argent?role=prep",
+    "libelle": "Mon argent · accès Préparation",
+    "source": "plan"
+   },
+   {
+    "adresse": "#argent?pop=profil",
+    "libelle": "lien depuis #argent",
+    "source": "lien"
+   },
+   {
+    "adresse": "#argent?role=prep&pop=profil",
+    "libelle": "lien depuis #argent?role=prep",
+    "source": "lien"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "se_libere",
+  "titre": "Se libère — quand",
+  "groupe": "VD-09",
+  "onglet": "argent",
+  "etats": [
+   {
+    "adresse": "#se_libere",
+    "libelle": "Se libère — quand",
+    "source": "route"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "gele",
+  "titre": "Gelé — pourquoi",
+  "groupe": "VD-09",
+  "onglet": "argent",
+  "etats": [
+   {
+    "adresse": "#gele",
+    "libelle": "Gelé — pourquoi",
+    "source": "route"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "gains",
+  "titre": "Mes gains",
+  "groupe": "VD-09",
+  "onglet": "argent",
+  "etats": [
+   {
+    "adresse": "#gains",
+    "libelle": "Mes gains",
+    "source": "route"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "documents",
+  "titre": "Relevé, reçu et facture",
+  "groupe": "VD-09",
+  "onglet": "argent",
+  "etats": [
+   {
+    "adresse": "#documents",
+    "libelle": "Relevé, reçu et facture",
+    "source": "route"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "versements",
+  "titre": "Versements",
+  "groupe": "VD-09",
+  "onglet": "argent",
+  "etats": [
+   {
+    "adresse": "#versements",
+    "libelle": "Versements",
+    "source": "route"
+   },
+   {
+    "adresse": "#versements?refus=1",
+    "libelle": "Versements · refus de l’opérateur",
+    "source": "plan"
+   },
+   {
+    "adresse": "#versements?periode=3",
+    "libelle": "lien depuis #versements",
+    "source": "lien"
+   },
+   {
+    "adresse": "#versements?periode=12",
+    "libelle": "lien depuis #versements",
+    "source": "lien"
+   },
+   {
+    "adresse": "#versements?periode=tout",
+    "libelle": "lien depuis #versements",
+    "source": "lien"
+   },
+   {
+    "adresse": "#versements?refus=1&periode=3",
+    "libelle": "lien depuis #versements?refus=1",
+    "source": "lien"
+   },
+   {
+    "adresse": "#versements?refus=1&periode=12",
+    "libelle": "lien depuis #versements?refus=1",
+    "source": "lien"
+   },
+   {
+    "adresse": "#versements?refus=1&periode=tout",
+    "libelle": "lien depuis #versements?refus=1",
+    "source": "lien"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "numero_versement",
+  "titre": "Numéro de versement",
+  "groupe": "VD-09",
+  "onglet": "argent",
+  "etats": [
+   {
+    "adresse": "#numero_versement",
+    "libelle": "Numéro de versement",
+    "source": "route"
+   },
+   {
+    "adresse": "#numero_versement?s=code",
+    "libelle": "Numéro de versement · codes",
+    "source": "plan"
+   },
+   {
+    "adresse": "#numero_versement?s=ok",
+    "libelle": "Numéro de versement · en revue",
+    "source": "plan"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "palier",
+  "titre": "Mon palier",
+  "groupe": "VD-10",
+  "onglet": "accueil",
+  "etats": [
+   {
+    "adresse": "#palier",
+    "libelle": "Mon palier",
+    "source": "route"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "score",
+  "titre": "Mon score",
+  "groupe": "VD-10",
+  "onglet": "accueil",
+  "etats": [
+   {
+    "adresse": "#score",
+    "libelle": "Mon score",
+    "source": "route"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "paliers",
+  "titre": "Les paliers",
+  "groupe": "VD-10",
+  "onglet": "accueil",
+  "etats": [
+   {
+    "adresse": "#paliers",
+    "libelle": "Les paliers",
+    "source": "route"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "sanctions",
+  "titre": "Sanctions et contrôle",
+  "groupe": "VD-10",
+  "onglet": "accueil",
+  "etats": [
+   {
+    "adresse": "#sanctions",
+    "libelle": "Sanctions et contrôle",
+    "source": "route"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "contester",
+  "titre": "Contester une décision",
+  "groupe": "VD-10",
+  "onglet": "accueil",
+  "etats": [
+   {
+    "adresse": "#contester",
+    "libelle": "Contester une décision",
+    "source": "route"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "plans_liste",
+  "titre": "Les plans",
+  "groupe": "VD-10",
+  "onglet": "accueil",
+  "etats": [
+   {
+    "adresse": "#plans_liste",
+    "libelle": "Les plans",
+    "source": "route"
+   },
+   {
+    "adresse": "#plans_liste?essai=boost",
+    "libelle": "Les plans · essai offert",
+    "source": "plan"
+   },
+   {
+    "adresse": "#plans_liste?essai=pro",
+    "libelle": "Plans · essai Pro (feuille)",
+    "source": "inventaire"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "plans",
+  "titre": "Le simulateur",
+  "groupe": "VD-10",
+  "onglet": "accueil",
+  "etats": [
+   {
+    "adresse": "#plans",
+    "libelle": "Le simulateur",
+    "source": "route"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "visibilite",
+  "titre": "Catalogue de visibilité",
+  "groupe": "VD-10",
+  "onglet": "accueil",
+  "etats": [
+   {
+    "adresse": "#visibilite",
+    "libelle": "Catalogue de visibilité",
+    "source": "route"
+   },
+   {
+    "adresse": "#visibilite?achat=1",
+    "libelle": "Visibilité · achat (feuille)",
+    "source": "inventaire"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "services",
+  "titre": "Les services qui lèvent les freins",
+  "groupe": "VD-10",
+  "onglet": "accueil",
+  "etats": [
+   {
+    "adresse": "#services",
+    "libelle": "Les services qui lèvent les freins",
+    "source": "route"
+   },
+   {
+    "adresse": "#services?demande=1",
+    "libelle": "Services · demande (feuille)",
+    "source": "inventaire"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "chiffres",
+  "titre": "Mes chiffres",
+  "groupe": "VD-10",
+  "onglet": "accueil",
+  "etats": [
+   {
+    "adresse": "#chiffres",
+    "libelle": "Mes chiffres",
+    "source": "route"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "demande",
+  "titre": "La demande",
+  "groupe": "VD-10",
+  "onglet": "accueil",
+  "etats": [
+   {
+    "adresse": "#demande",
+    "libelle": "La demande",
+    "source": "route"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "menu",
+  "titre": "Menu",
+  "groupe": "VD-11",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#menu",
+    "libelle": "Menu",
+    "source": "route"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "boutique",
+  "titre": "Ma boutique",
+  "groupe": "VD-11",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#boutique",
+    "libelle": "Ma boutique",
+    "source": "route"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "horaires",
+  "titre": "Horaires et fermetures",
+  "groupe": "VD-11",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#horaires",
+    "libelle": "Horaires et fermetures",
+    "source": "route"
+   },
+   {
+    "adresse": "#horaires?prog=1",
+    "libelle": "Horaires · programmer (feuille)",
+    "source": "inventaire"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "emplacement",
+  "titre": "Emplacement",
+  "groupe": "VD-11",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#emplacement",
+    "libelle": "Emplacement",
+    "source": "route"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "equipe",
+  "titre": "Équipe",
+  "groupe": "VD-11",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#equipe",
+    "libelle": "Équipe",
+    "source": "route"
+   },
+   {
+    "adresse": "#equipe?add=1",
+    "libelle": "Mon équipe · ajouter un accès",
+    "source": "plan"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "parametres",
+  "titre": "Paramètres",
+  "groupe": "VD-11",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#parametres",
+    "libelle": "Paramètres",
+    "source": "route"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "securite",
+  "titre": "Sécurité, appareils et données",
+  "groupe": "VD-11",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#securite",
+    "libelle": "Sécurité, appareils et données",
+    "source": "route"
+   },
+   {
+    "adresse": "#securite?cloture=1",
+    "libelle": "Sécurité · clôture (feuille)",
+    "source": "inventaire"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "notifications",
+  "titre": "Notifications",
+  "groupe": "VD-11",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#notifications",
+    "libelle": "Notifications",
+    "source": "route"
+   },
+   {
+    "adresse": "#notifications?f=urgent",
+    "libelle": "Notifications · urgent",
+    "source": "plan"
+   },
+   {
+    "adresse": "#notifications?f=argent",
+    "libelle": "lien depuis #notifications",
+    "source": "lien"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "avis",
+  "titre": "Avis et droit de réponse",
+  "groupe": "VD-11",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#avis",
+    "libelle": "Avis et droit de réponse",
+    "source": "route"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "messages",
+  "titre": "Messagerie",
+  "groupe": "VD-11",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#messages",
+    "libelle": "Messagerie",
+    "source": "route"
+   },
+   {
+    "adresse": "#messages?fil=1",
+    "libelle": "Messagerie · un fil",
+    "source": "plan"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "aide",
+  "titre": "Aide",
+  "groupe": "VD-11",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#aide",
+    "libelle": "Aide",
+    "source": "route"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "lancement",
+  "titre": "Lancement de l’app",
+  "groupe": "VD-03",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#lancement",
+    "libelle": "Lancement de l’app",
+    "source": "route"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "faceid",
+  "titre": "Face ID ou empreinte",
+  "groupe": "VD-03",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#faceid",
+    "libelle": "Face ID ou empreinte",
+    "source": "route"
+   },
+   {
+    "adresse": "#faceid?nouveau=1",
+    "libelle": "Face ID proposé une fois (iPhone)",
+    "source": "plan"
+   },
+   {
+    "adresse": "#faceid?nouveau=1&os=android",
+    "libelle": "Empreinte proposée une fois (Android)",
+    "source": "plan"
+   },
+   {
+    "adresse": "#faceid?nouveau=1&next=%23kyc",
+    "libelle": "lien depuis #otp",
+    "source": "lien"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "bienvenue_client",
+  "titre": "Arrivée depuis l’espace client",
+  "groupe": "VD-03",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#bienvenue_client",
+    "libelle": "Arrivée depuis l’espace client",
+    "source": "route"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "telephone",
+  "titre": "Écran d’accueil du téléphone",
+  "groupe": "VD-04",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#telephone",
+    "libelle": "Écran d’accueil du téléphone",
+    "source": "route"
+   },
+   {
+    "adresse": "#telephone?from=%23ile",
+    "libelle": "lien depuis #ile",
+    "source": "lien"
+   }
+  ],
+  "statut": "retiré",
+  "raison": "simulation de l’écran d’accueil du téléphone (démonstration)"
+ },
+ {
+  "route": "verrouille",
+  "titre": "Écran verrouillé",
+  "groupe": "VD-04",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#verrouille",
+    "libelle": "Écran verrouillé",
+    "source": "route"
+   }
+  ],
+  "statut": "retiré",
+  "raison": "simulation de l’écran verrouillé (démonstration)"
+ },
+ {
+  "route": "android",
+  "titre": "Aperçu Android",
+  "groupe": "VD-04",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#android",
+    "libelle": "Aperçu Android",
+    "source": "route"
+   }
+  ],
+  "statut": "retiré",
+  "raison": "simulation d’une notification Android (démonstration)"
+ },
+ {
+  "route": "ile",
+  "titre": "L’île BelivaY",
+  "groupe": "VD-04",
+  "onglet": null,
+  "etats": [
+   {
+    "adresse": "#ile",
+    "libelle": "L’île BelivaY",
+    "source": "route"
+   }
+  ],
+  "statut": "retiré",
+  "raison": "démonstration de l’île BelivaY (réservée à une application native ; exclue comme côté client)"
+ },
+ {
+  "route": "stock",
+  "titre": "Stock et inventaire",
+  "groupe": "AJ-A",
+  "onglet": "produits",
+  "ajoutee": true,
+  "etats": [
+   {
+    "adresse": "#stock",
+    "libelle": "Stock et inventaire",
+    "source": "ajoutée"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "promotions",
+  "titre": "Promotions",
+  "groupe": "AJ-A",
+  "onglet": "produits",
+  "ajoutee": true,
+  "etats": [
+   {
+    "adresse": "#promotions",
+    "libelle": "Promotions",
+    "source": "ajoutée"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "questions",
+  "titre": "Questions des clients",
+  "groupe": "AJ-A",
+  "onglet": null,
+  "ajoutee": true,
+  "etats": [
+   {
+    "adresse": "#questions",
+    "libelle": "Questions des clients",
+    "source": "ajoutée"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "livraison",
+  "titre": "Livraison et colis",
+  "groupe": "AJ-A",
+  "onglet": null,
+  "ajoutee": true,
+  "etats": [
+   {
+    "adresse": "#livraison",
+    "libelle": "Livraison et colis",
+    "source": "ajoutée"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "profil",
+  "titre": "Mon profil",
+  "groupe": "AJ-B",
+  "onglet": null,
+  "ajoutee": true,
+  "etats": [
+   {
+    "adresse": "#profil",
+    "libelle": "Mon profil",
+    "source": "ajoutée"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "recherche",
+  "titre": "Rechercher",
+  "groupe": "AJ-B",
+  "onglet": null,
+  "ajoutee": true,
+  "etats": [
+   {
+    "adresse": "#recherche",
+    "libelle": "Rechercher",
+    "source": "ajoutée"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "ramassages",
+  "titre": "Ramassages",
+  "groupe": "AJ-B",
+  "onglet": null,
+  "ajoutee": true,
+  "etats": [
+   {
+    "adresse": "#ramassages",
+    "libelle": "Ramassages",
+    "source": "ajoutée"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "apprendre",
+  "titre": "Apprendre",
+  "groupe": "AJ-B",
+  "onglet": null,
+  "ajoutee": true,
+  "etats": [
+   {
+    "adresse": "#apprendre",
+    "libelle": "Apprendre",
+    "source": "ajoutée"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "activite",
+  "titre": "Activité de la boutique",
+  "groupe": "AJ-B",
+  "onglet": null,
+  "ajoutee": true,
+  "etats": [
+   {
+    "adresse": "#activite",
+    "libelle": "Activité de la boutique",
+    "source": "ajoutée"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "ajustements",
+  "titre": "Mes ajustements",
+  "groupe": "AJ-B",
+  "onglet": null,
+  "ajoutee": true,
+  "etats": [
+   {
+    "adresse": "#ajustements",
+    "libelle": "Mes ajustements",
+    "source": "ajoutée"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "publicite",
+  "titre": "Publicité",
+  "groupe": "AJ-P",
+  "onglet": "produits",
+  "ajoutee": true,
+  "etats": [
+   {
+    "adresse": "#publicite",
+    "libelle": "Publicité",
+    "source": "ajoutée"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "publicite_nouvelle",
+  "titre": "Nouvelle campagne",
+  "groupe": "AJ-P",
+  "onglet": "produits",
+  "ajoutee": true,
+  "etats": [
+   {
+    "adresse": "#publicite_nouvelle",
+    "libelle": "Nouvelle campagne",
+    "source": "ajoutée"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "publicite_solde",
+  "titre": "Solde publicitaire",
+  "groupe": "AJ-P",
+  "onglet": "produits",
+  "ajoutee": true,
+  "etats": [
+   {
+    "adresse": "#publicite_solde",
+    "libelle": "Solde publicitaire",
+    "source": "ajoutée"
+   }
+  ],
+  "statut": "repris"
+ },
+ {
+  "route": "mise_en_ligne",
+  "titre": "Mettre en ligne",
+  "groupe": "VD-08",
+  "onglet": "produits",
+  "ajoutee": true,
+  "etats": [
+   {
+    "adresse": "#mise_en_ligne",
+    "libelle": "Mettre en ligne",
+    "source": "ajoutée"
+   }
+  ],
+  "statut": "repris"
+ }
+]

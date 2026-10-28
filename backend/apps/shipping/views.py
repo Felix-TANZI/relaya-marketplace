@@ -254,12 +254,10 @@ class RelayPointNearbyView(APIView):
         if city:
             qs = qs.filter(city__in=_city_variants(city) or [city])
 
-        occupancy_by_relay = dict(
-            RelayParcel.objects.filter(
-                relay_point__in=qs,
-                status__in=[RelayParcel.Status.EXPECTED, RelayParcel.Status.RECEIVED, RelayParcel.Status.STORED],
-            ).values("relay_point").annotate(count=Count("id")).values_list("relay_point", "count")
-        )
+        from apps.orders.frais import FraisImpossibles, destination_relais
+        from apps.shipping.entreprises import zones_couvertes
+        from apps.shipping.garde import places_occupees, relais_sature
+        couvertes = zones_couvertes()
 
         try:
             buyer_lat = float(lat) if lat is not None else None
@@ -269,9 +267,16 @@ class RelayPointNearbyView(APIView):
 
         results = []
         for relay in qs:
-            occupancy = occupancy_by_relay.get(relay.id, 0)
+            # Spec v2.1, R74.3 : un relais n'est proposé que si une entreprise active couvre sa zone.
+            try:
+                if destination_relais(relay).zone_dest not in couvertes:
+                    continue
+            except FraisImpossibles:
+                continue
+            # R41.3 : places occupées (places(format), R40.2) sous r_relais_saturation des places.
+            occupancy = places_occupees(relay)
             capacity = relay.storage_capacity or 0
-            has_space = capacity == 0 or occupancy < capacity
+            has_space = not relais_sature(relay, occupancy)
             distance_km = None
             if buyer_lat is not None and buyer_lng is not None and relay.latitude is not None and relay.longitude is not None:
                 distance_km = round(_haversine_km(buyer_lat, buyer_lng, relay.latitude, relay.longitude), 2)
@@ -537,6 +542,72 @@ class RelayPointParcelPickupView(APIView):
         return Response(RelayParcelSerializer(parcel).data, status=status.HTTP_200_OK)
 
 
+def _colis_a_payer(request):
+    """Le colis de ce relais dont la commande attend le paiement du reste au comptoir (D14, R42.4)."""
+    relay_point = _get_active_relay_point(request.user)
+    _exiger_permission(request.user, "can_hand_over")
+    parcel = get_object_or_404(
+        RelayParcel.objects.select_related("shipment__order", "relay_point"),
+        id=request.data.get("parcel_id"), relay_point=relay_point,
+        status__in=[RelayParcel.Status.RECEIVED, RelayParcel.Status.STORED],
+    )
+    order = parcel.shipment.order
+    if order.payment_status != order.PaymentStatus.VALIDATED:
+        return parcel, Response({"code": "rien_a_payer", "detail": "Cette commande n'a rien à payer au comptoir."},
+                                status=status.HTTP_409_CONFLICT)
+    return parcel, None
+
+
+@extend_schema(
+    tags=["Relay Point"],
+    summary="Point relais : encaisser par Mobile Money le reste à payer au comptoir (D14, R42.4)",
+    description="Envoie la demande de paiement au téléphone du client ; jamais d'espèces. Le code de retrait part au "
+                "client dès que le paiement est confirmé.",
+)
+class RelayPointComptoirCollectView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        from apps.payments.application.collect import CollectError, initiate_collect
+        from apps.payments.bridge.checkout_v2 import CheckoutError, prepare_payment_comptoir
+
+        parcel, refus = _colis_a_payer(request)
+        if refus:
+            return refus
+        order = parcel.shipment.order
+        telephone = (request.data.get("payer_msisdn") or order.customer_phone or "").replace(" ", "")
+        try:
+            intent = prepare_payment_comptoir(order, payer_msisdn=telephone,
+                                              payer_operator=request.data.get("payer_operator") or "")
+            issue = initiate_collect(intent)
+        except (CheckoutError, CollectError) as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"reference": issue.intent.reference, "status": issue.status, "message": issue.message,
+                         "montant_xaf": issue.intent.amount_xaf})
+
+
+@extend_schema(
+    tags=["Relay Point"],
+    summary="Point relais : le client refuse de payer le reste au comptoir (D14, R42.5)",
+    description="L'avance est gardée, le refus compte pour le client et le colis repart au vendeur.",
+)
+class RelayPointComptoirRefusalView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        from apps.orders import comptoir
+
+        parcel, refus = _colis_a_payer(request)
+        if refus:
+            return refus
+        colis = list(RelayParcel.objects.select_related("shipment", "relay_point").filter(
+            shipment__order=parcel.shipment.order, relay_point=parcel.relay_point,
+            status__in=[RelayParcel.Status.RECEIVED, RelayParcel.Status.STORED]))
+        comptoir.refuser(parcel.shipment.order, colis, comptoir.REFUS_AU_COMPTOIR, actor=request.user)
+        parcel.refresh_from_db()
+        return Response(RelayParcelSerializer(parcel).data)
+
+
 @extend_schema(
     tags=["Relay Point"],
     summary="Point relais : deposer une preuve (reception colis / remise client)",
@@ -554,6 +625,7 @@ class RelayPointParcelEvidenceUploadView(APIView):
         ShipmentEvidence.Stage.RELAY_RECEIVED,
         ShipmentEvidence.Stage.RELAY_RELEASED,
         ShipmentEvidence.Stage.RELAY_RELEASED_SIGNATURE,
+        ShipmentEvidence.Stage.RELAY_UNPACKING,  # D15 : déballage contesté, photographié devant le client
     }
 
     def post(self, request):
@@ -1534,30 +1606,19 @@ class CourierShipmentScanView(generics.GenericAPIView):
 
         shipment = _resolve_scan_target(serializer.validated_data["code"], courier)
         action = serializer.validated_data["action"]
-        order = shipment.order
+        event_message = {"PICKED_UP": "Colis scanne et pris en charge",
+                         "OUT_FOR_DELIVERY": "Colis scanne et mis en livraison"}.get(action, "Colis scanne et livre")
 
-        if action == "PICKED_UP":
-            shipment.status = Shipment.Status.PICKED_UP
-            order.mark_picked_up()
-            event_message = "Colis scanne et pris en charge"
-        elif action == "OUT_FOR_DELIVERY":
-            shipment.status = Shipment.Status.OUT_FOR_DELIVERY
-            order.mark_out_for_delivery()
-            event_message = "Colis scanne et mis en livraison"
-        else:
-            shipment.status = Shipment.Status.DELIVERED
-            order.mark_delivered()
-            event_message = "Colis scanne et livre"
-
-        shipment.save(update_fields=["status", "updated_at"])
-        ShipmentEvent.record(
-            shipment=shipment,
-            status=shipment.status,
-            message=event_message,
-            location=order.city,
-            actor=request.user,
-            actor_role="COURIER",
+        # Spec v2.1, R66.1 (feuille de route D11) : le scan suit les memes regles que les boutons de l'application,
+        # code de remise au ramassage et code du client a domicile compris ; il ne contourne aucun code.
+        action_serializer = CourierShipmentActionSerializer(
+            data={"action": action, "message": event_message, "location": shipment.order.city,
+                  "pickup_code": request.data.get("pickup_code", ""),
+                  "delivery_code": request.data.get("delivery_code", "")},
+            context={"shipment": shipment, "request": request},
         )
+        action_serializer.is_valid(raise_exception=True)
+        shipment = action_serializer.save()
         ShipmentMessage.objects.create(
             shipment=shipment,
             sender=request.user,
@@ -1626,23 +1687,10 @@ class CourierAvailableShipmentsView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        courier = _get_active_courier(self.request.user)
-        city = (courier.city or "").strip()
-        qs = Shipment.objects.filter(
-            status=Shipment.Status.CREATED,
-            courier=None,
-            order__delivery_method=Order.DeliveryMethod.DELIVERY,
-        ).exclude(order__user=self.request.user).select_related("order", "order__user")
-
-        if city:
-            from django.db.models import Q
-
-            city_filter = Q()
-            for variant in _city_variants(city):
-                city_filter |= Q(order__city__iexact=variant)
-            qs = qs.filter(city_filter)
-
-        return qs.order_by("created_at")
+        # Spec v2.1, R52.2 (feuille de route D11) : BelivaY publie aux entreprises de livraison, qui affectent leur
+        # livreur ; un livreur ne se sert jamais lui-même. La liste reste en place pour les écrans, toujours vide.
+        _get_active_courier(self.request.user)
+        return Shipment.objects.none()
 
 
 @extend_schema(tags=["Shipping"], summary="Réclamer une livraison disponible (auto-assignement)")
@@ -1651,50 +1699,13 @@ class CourierClaimShipmentView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, id):
-        _release_overdue_accepted_shipments()
-        courier = _get_active_courier(request.user)
-
-        full_name = request.user.get_full_name().strip() or request.user.username
-        updated_count = Shipment.objects.filter(
-            id=id,
-            status=Shipment.Status.CREATED,
-            courier=None,
-        ).exclude(order__user=request.user).update(
-            courier=courier,
-            courier_name=full_name,
-            courier_phone=courier.phone or "",
-            status=Shipment.Status.ASSIGNED,
+        # Spec v2.1, R52.2 (feuille de route D11) : c'est l'entreprise de livraison qui prend la course et affecte son
+        # livreur (file des missions, bourse des tournées) ; le livreur ne peut pas se l'attribuer.
+        _get_active_courier(request.user)
+        return Response(
+            {"detail": "Les courses sont affectées par votre entreprise de livraison (R52.2)."},
+            status=status.HTTP_403_FORBIDDEN,
         )
-
-        if updated_count == 0:
-            return Response(
-                {"detail": "Livraison déjà prise en charge, introuvable ou liée à votre propre commande."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        shipment = Shipment.objects.select_related("order", "courier", "courier__user").get(id=id)
-
-        ShipmentEvent.record(
-            shipment=shipment,
-            status=Shipment.Status.ASSIGNED,
-            message="Mission acceptée par le livreur",
-            location=courier.city or "",
-            actor=request.user,
-            actor_role="COURIER",
-        )
-
-        order = shipment.order
-        order.assign_driver()
-
-        UserNotification.objects.create(
-            user=courier.user,
-            title=f"Livraison #{order.id} prise en charge",
-            message=f"Vous avez accepté la livraison vers {order.city} - {order.address}.",
-            notification_type=UserNotification.NotificationType.ORDER,
-            action_url="/courier",
-        )
-
-        return Response(ShipmentSerializer(shipment, context={"request": request}).data, status=status.HTTP_200_OK)
 
 
 @extend_schema(
@@ -2098,4 +2109,61 @@ class AdminSupervisionDashboardView(APIView):
             "unclaimed_tournees": unclaimed_payload,
             "unclaimed_tournees_count": len(unclaimed_payload),
             "subsidy_by_zone": subsidy_by_zone,
+        })
+
+
+# ── Zones et quartiers, spécification v2.1 (BV-DEV-04, apps/shipping/zones.py) ───────────────────────────
+
+def _quartier_public(q):
+    from apps.shipping import zones
+
+    return {"quartier": q["quartier"], "commune": q["commune"], "zone": q["zone"],
+            "niveau": q["niveau"], "zoneExploitee": zones.zone_exploitee(q["zone"])}
+
+
+@extend_schema(
+    tags=["Shipping"], summary="Quartiers de Yaoundé (recherche R76.2)",
+    parameters=[OpenApiParameter(name="q", required=False, type=str)],
+)
+class QuartiersView(APIView):
+    """Sans `q` : les quartiers de t_quartiers. Avec `q` : ceux que désigne le texte (accents, tirets, espaces et
+    majuscules ignorés, appellations de t_alias acceptées ; un nom ambigu donne tous ses quartiers)."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        from apps.shipping import zones
+
+        texte = (request.query_params.get("q") or "").strip()
+        lignes = zones.chercher_quartiers(texte) if texte else zones.quartiers()
+        return Response({"quartiers": [_quartier_public(q) for q in lignes]})
+
+
+@extend_schema(tags=["Shipping"], summary="Vérifier une adresse avant de l'enregistrer (A9, étapes 1 à 4)")
+class VerifierAdresseView(APIView):
+    """{quartier, lat, lon, precision} → zone, niveau, zone exploitée ; ou le refus de A9 et ses propositions."""
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        from apps.shipping import zones
+
+        d = request.data
+
+        def nombre(cle):
+            try:
+                return float(d.get(cle)) if d.get(cle) not in (None, "") else None
+            except (TypeError, ValueError):
+                return None
+
+        r = zones.resoudre_adresse(str(d.get("quartier") or ""), nombre("lat"), nombre("lon"), nombre("precision"))
+        return Response({
+            "ok": not r.refus,
+            "refus": r.refus or None,
+            "message": r.message or None,
+            "propositions": r.propositions,
+            "quartier": r.quartier["quartier"] if r.quartier else None,
+            "zone": r.zone,
+            "niveau": r.niveau,
+            "zoneExploitee": r.exploitee,
         })

@@ -37,7 +37,7 @@ import { vendorsApi, type VendorOrder } from '@/services/api/vendors';
 import { palette } from '../theme';
 import ScreenHeader from '../compte/shared/ScreenHeader';
 import Collapsible from '../compte/shared/Collapsible';
-import { formatXAF, formatPct } from '../compte/shared/format';
+import { formatXAF } from '../compte/shared/format';
 
 function orderRef(id: number): string {
   return `BLV-${String(id).padStart(5, '0')}`;
@@ -76,7 +76,8 @@ function monthGroups(orders: VendorOrder[], locale: 'fr' | 'en'): MonthGroup[] {
         isCurrent: key === currentKey,
         orders: list,
         grossTotal: list.reduce((s, o) => s + (o.vendor_subtotal ?? 0), 0),
-        commissionTotal: list.reduce((s, o) => s + (o.commission_amount ?? 0), 0),
+        // Facture mensuelle de commission (R13.5) : document comptable, déduit du prix de vente et du net.
+        commissionTotal: list.reduce((s, o) => s + (o.vendor_subtotal ?? 0) - (o.vendor_net_amount ?? 0), 0),
         netTotal: list.reduce((s, o) => s + (o.vendor_net_amount ?? 0), 0),
       };
     });
@@ -136,12 +137,13 @@ export default function DocumentsPage() {
       `belivay_releve_${shopName}_${g.key}.csv`,
       [
         t('sl12_argent.documents_csv_col_ref'), t('sl12_argent.documents_csv_col_date'),
-        t('sl12_argent.documents_csv_col_gross'), t('sl12_argent.documents_csv_col_commission'),
+        // R26.1 : le relevé de ventes montre le net, jamais ce qui est retenu.
+        t('sl12_argent.documents_csv_col_gross'),
         t('sl12_argent.documents_csv_col_net'), t('sl12_argent.documents_csv_col_status'),
       ],
       g.orders.map((o) => [
         orderRef(o.id), new Date(o.created_at).toLocaleDateString('fr-FR'),
-        Math.round(o.vendor_subtotal ?? 0), Math.round(o.commission_amount ?? 0),
+        Math.round(o.vendor_subtotal ?? 0),
         Math.round(o.vendor_net_amount ?? 0), o.escrow_status_display,
       ]),
     );
@@ -171,13 +173,13 @@ export default function DocumentsPage() {
       `belivay_facture_commission_${shopName}_${g.key}.csv`,
       [
         t('sl12_argent.documents_csv_col_ref'), t('sl12_argent.documents_csv_col_date'),
-        t('sl12_argent.documents_csv_col_gross'), t('sl12_argent.documents_csv_col_commission_rate'),
+        t('sl12_argent.documents_csv_col_gross'),
         t('sl12_argent.documents_csv_col_commission'),
       ],
       g.orders.map((o) => [
         orderRef(o.id), new Date(o.created_at).toLocaleDateString('fr-FR'),
-        Math.round(o.vendor_subtotal ?? 0), formatPct(o.commission_rate, 1),
-        Math.round(o.commission_amount ?? 0),
+        Math.round(o.vendor_subtotal ?? 0),
+        Math.round((o.vendor_subtotal ?? 0) - (o.vendor_net_amount ?? 0)),
       ]),
     );
   }

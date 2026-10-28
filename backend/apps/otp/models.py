@@ -3,7 +3,8 @@
 # OTP-ESSAIS essais puis attente, OTP-RENVOI entre deux envois. Le code n'est jamais gardé en clair (empreinte
 # HMAC) ; la destination non plus (empreinte + forme masquée, CAP-21).
 #
-# À distinguer de accounts.OTPCode de relaya (2FA par e-mail) : objet et règles différents ; les deux coexistent.
+# Feuille de route D6 : c'est le seul système de codes (l'ancien accounts.OTPCode et les codes propres au vendeur ont
+# été retirés).
 
 from django.conf import settings
 from django.db import models
@@ -15,6 +16,8 @@ class CodeOtp(models.Model):
         VERIFY = "verify", "Premier numéro"
         NUMERO_ANCIEN = "numero-ancien", "Changement de numéro : ancien"
         NUMERO_NOUVEAU = "numero-nouveau", "Changement de numéro : nouveau"
+        # D7 : « Ce n'est plus mon numéro » — l'ancien numéro ne reçoit plus rien, le code part à l'e-mail du compte
+        NUMERO_PERDU = "numero-perdu", "Changement de numéro : ancien numéro perdu"
         # Profil et e-mail (DP-52)
         PROFIL = "profil", "Profil"
         EMAIL_SMS = "email-sms", "Changement d'e-mail : code par SMS"
@@ -26,6 +29,14 @@ class CodeOtp(models.Model):
         DIASPORA = "diaspora", "Inscription diaspora"
         CADEAU = "cadeau", "Cadeau payé par carte (vérification renforcée)"
         DIASPORA_RENFORCE = "diaspora-renforce", "Commande diaspora (vérification renforcée)"
+        # Feuille de route D6 : un seul système de codes pour tout le projet
+        DEUX_FA_CONNEXION = "2fa-connexion", "Double authentification : connexion"
+        DEUX_FA_ACTIVATION = "2fa-activation", "Double authentification : activation"
+        DEUX_FA_DESACTIVATION = "2fa-desactivation", "Double authentification : désactivation"
+        RELAIS_PIN = "relais-pin", "PIN du point relais"
+        VENDEUR_CONNEXION = "vendeur-connexion", "Vendeur : connexion par numéro"
+        VENDEUR_OUVERTURE = "vendeur-ouverture", "Vendeur : numéro à l'ouverture"
+        VENDEUR_SECURITE = "vendeur-securite", "Vendeur : geste sensible du propriétaire"
 
     class Canal(models.TextChoices):
         SMS = "sms", "SMS"

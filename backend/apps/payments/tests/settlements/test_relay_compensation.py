@@ -238,14 +238,11 @@ class TestCycleDeReglement:
                 relais, order_id=numero, parcel_reference=f"RELAY-B-{numero}")
 
         lot = build_batch(relais)
-        # Aucun sequestre libere : il n'y a rien a agreger cote escrow.
-        assert lot is None
-
-        du = Adjustment.objects.filter(
-            payee=relais, direction=Adjustment.Direction.DEBIT,
-            status=Adjustment.Status.APPROVED,
-        ).count()
-        assert du == 4
+        # Spec v2.1, R40.4 et R43.1 : un relais est paye de ses parts sans sequestre ; le lot se construit sur les
+        # seuls ajustements dus.
+        assert lot is not None and lot.gross_amount_xaf == 0
+        assert lot.net_amount_xaf == sum(a.amount_xaf for a in lot.applied_adjustments.all())
+        assert lot.applied_adjustments.count() == 4
 
     def test_le_montant_du_est_visible(self, relais, tarif_par_defaut):
         from apps.payments.settlements.services import amount_due

@@ -36,7 +36,10 @@ def etat() -> dict[str, bool]:
         e = _defauts()
         e.update(dict(Interrupteur.objects.values_list("code", "ouvert")))
         cache.set(CLE_CACHE, e, timeout=None)
-    return e
+    from apps.regles import services as regles
+
+    # R03.1 : le Wallet suit le réglage r_wallet_ouvert (faux au lancement), quoi que disent le fichier ou la table.
+    return {**e, "FF-WALLET": bool(regles.reglage("r_wallet_ouvert"))}
 
 
 def ouvert(code: str) -> bool:

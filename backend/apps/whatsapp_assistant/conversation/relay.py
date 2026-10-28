@@ -3,14 +3,15 @@
 # laisser le réceptionner, puis le remettre au client.
 #
 # Identifiants des boutons (ils reviennent dans reply_id) :
-#   rcv:<colis>     « Colis reçu » — réception au comptoir
+#   rcv:<colis>     « Colis reçu » — réception au comptoir, avec le code de dépôt du livreur (R66.1)
 #   give            « Remettre » — demande le code de retrait au gérant
 #   pcl:<colis>     le détail d'un colis
 #   pcls            ce qu'il reste à traiter
 #
 # La remise se fait en deux temps : le gérant touche « Remettre », l'assistant
 # attend son prochain message, qui doit être le code annoncé par le client.
-# Cette attente est mémorisée dans contact.state.
+# La réception aussi : « Colis reçu », puis le code de dépôt que montre le
+# livreur (spec v2.1, R66.1). Cette attente est mémorisée dans contact.state.
 
 import logging
 
@@ -28,6 +29,7 @@ logger = logging.getLogger("apps.whatsapp_assistant")
 COMMANDS = ("rcv", "give", "pcl", "pcls")
 MAX_ROWS = 10
 WAITING_CODE = "relay:code"         # état du gérant à qui l'on a demandé un code
+WAITING_DEPOT = "relay:depot:"      # + identifiant du colis : on attend le code de dépôt du livreur
 
 # Ce qu'un gérant écrit pour retrouver ses colis.
 WORDS = {"mes colis", "colis a traiter", "relais", "mon relais", "point relais",
@@ -68,6 +70,9 @@ def handle_text(provider, contact: WhatsAppContact, words: str, raw: str = "") -
     """
     if contact.state == WAITING_CODE:
         _submit_code(provider, contact, words, raw)
+        return True
+    if (contact.state or "").startswith(WAITING_DEPOT):
+        _submit_depot(provider, contact, words, raw)
         return True
     if words not in WORDS:
         return False
@@ -131,8 +136,33 @@ def _receive(provider, contact, language: str, parcel_id: int, relay_id: int) ->
     if parcel is None:
         send_text(provider, contact, t(language, "relay_not_yours"))
         return
+    if not parcel.to_receive:
+        send_text(provider, contact, t(language, "relay_already_received", ref=parcel.reference))
+        _detail(provider, contact, language, parcel_id, relay_id)
+        return
+    _remember(contact, f"{WAITING_DEPOT}{parcel_id}")
+    send_text(provider, contact, t(language, "ask_depot", ref=parcel.reference))
 
-    result = relay_bridge.receive_parcel(parcel_id, relay_id)
+
+def _submit_depot(provider, contact, words: str, raw: str) -> None:
+    language = _language(contact)
+    parcel_id = int(contact.state[len(WAITING_DEPOT):] or 0)
+    relay_ids = relay_bridge.relays_with_phone(contact.wa_id)
+    _remember(contact, "")
+    if not relay_ids:
+        send_text(provider, contact, t(language, "not_relay"))
+        return
+    relay_id = relay_ids[0]
+    if words in CANCEL_WORDS:
+        send_text(provider, contact, t(language, "code_cancelled"))
+        _list(provider, contact, language, relay_id)
+        return
+    parcel = relay_bridge.get_parcel(parcel_id, relay_id)
+    if parcel is None:
+        send_text(provider, contact, t(language, "relay_not_yours"))
+        return
+
+    result = relay_bridge.receive_parcel(parcel_id, relay_id, (raw or words).strip())
     if result == relay_bridge.ActionResult.DONE:
         recu = relay_bridge.get_parcel(parcel_id, relay_id)
         send_text(provider, contact, t(language, "relay_received",
@@ -147,6 +177,10 @@ def _receive(provider, contact, language: str, parcel_id: int, relay_id: int) ->
         return
     elif result == relay_bridge.ActionResult.NOT_YOURS:
         send_text(provider, contact, t(language, "relay_not_yours"))
+        return
+    elif result == relay_bridge.ActionResult.BAD_CODE:
+        send_text(provider, contact, t(language, "relay_bad_depot"))
+        _detail(provider, contact, language, parcel_id, relay_id)
         return
     else:
         send_text(provider, contact, t(language, "relay_refused"))

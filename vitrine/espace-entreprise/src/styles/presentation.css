@@ -1,0 +1,143 @@
+/* PRÉSENTATION de l'espace entreprise (REFONTE-PRESENTATION.md) : un seul système de mise en page sur tous les
+   écrans, chargé en DERNIER (après contenu.css et enrichi.css). Rien sur la logique : placement, alignements, tailles,
+   densité. Couleurs : jetons seulement (jetons.css, vert sapin DP-64). */
+
+/* ---------- 1. En-tête de page unique : surtitre, titre, sous-titre à gauche ; actions groupées à droite ---------- */
+.px .dk-head.e-tete{display:flex;align-items:flex-start;justify-content:space-between;gap:12px 24px;margin:0 0 20px}
+.px .dk-head.e-tete .pg{display:flex;flex-direction:column}
+.px .dk-head.e-tete .pg-k{order:0;margin:0 0 6px}
+.px .dk-head.e-tete .pg-t{order:1}
+.px .dk-head.e-tete .pg-s{order:2;margin:8px 0 0;max-width:78ch}
+.px .dk-head.e-tete .pg-k:empty,.px .dk-head.e-tete .pg-s:empty,.px .dk-head.e-tete .acts:empty{display:none}
+.px .dk-head.e-tete .acts{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:8px;flex-shrink:0;max-width:52%;padding-top:2px}
+.px .dk-head.e-tete .acts .btn{height:44px;min-height:44px;font-size:.875rem;padding:0 16px}
+/* Une page = un bouton principal : le principal se met en dernier, à droite (lecture, puis geste). */
+.px .dk-head.e-tete .acts>.btn.primary,.px .dk-head.e-tete .acts>a.btn.primary{order:9}
+/* Téléphone : l'en-tête reste une colonne ; ses actions sont dans la zone du pouce. */
+html[data-device=mobile] .px .dk-head.e-tete{flex-direction:column;align-items:stretch;margin:10px 0 16px}
+html[data-device=mobile] .px .dk-head.e-tete .acts{max-width:none;justify-content:stretch}
+
+/* ---------- 2. Fil d'Ariane de la barre du haut : jamais de textes qui se chevauchent ---------- */
+.tb .crumbs{min-width:0;flex:1 1 auto}
+.tb .crumbs>svg{flex-shrink:0}
+.tb .crumbs>a{flex:0 1 auto;min-width:44px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;line-height:44px}
+.tb .crumbs>a:first-child{flex:0 0 auto;display:inline-flex;min-width:44px}
+/* La page courante d'abord : les parents se replient avant elle (le groupe en premier). */
+.tb .crumbs>a:nth-of-type(2){flex-shrink:50}
+.tb .crumbs .cur{flex:0 0 auto;max-width:min(320px,40%);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tb .tb-pills{min-width:0}
+
+/* ---------- 3. Bandeaux : texte à gauche, action SECONDAIRE à droite (le principal reste celui de la page) ---------- */
+.px .dk-banner{align-items:center;gap:12px;padding:12px 16px;margin:0 0 16px}
+.px .dk-banner>svg{flex-shrink:0}
+.px .dk-banner>.grow{min-width:0}
+.px .dk-banner :is(a,button).btn.primary{background:var(--card);color:var(--e-txt);box-shadow:inset 0 0 0 1px var(--e-line)}
+.px .dk-banner :is(a,button).btn.primary:not(:disabled):hover{background:var(--e-soft)}
+.px .dk-banner .btn{flex-shrink:0;margin-left:auto}
+.px .dk-banner+.dk-banner{margin-top:-8px}
+html[data-device=mobile] .px .dk-banner{flex-wrap:wrap;align-items:flex-start}
+html[data-device=mobile] .px .dk-banner>.grow{flex:1 1 calc(100% - 40px)}
+html[data-device=mobile] .px .dk-banner>.btn,html[data-device=mobile] .px .dk-banner>span>.btn{width:100%;margin-left:0}
+html[data-device=mobile] .px .dk-banner>span:has(>.btn){flex:1 1 100%}
+
+/* ---------- 4. Barre d'outils des listes : recherche à gauche, filtres, puis tri et exports poussés à droite ---------- */
+.px .dt-tools{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px 16px}
+.px .dt-tools>.srch,.px .dt-tools>label.srch{flex:1 1 240px;max-width:420px;min-width:0}
+.px .dt-tools>.e-tri,.px .dt-tools>.e-exports{margin-left:auto}
+.px .dt-tools>.e-tri~.e-exports{margin-left:0}
+.px .dt-tools>.e-puces,.px .dt-tools>.chips{flex:1 1 100%;order:5}
+.px .e-exports{display:inline-flex;gap:8px;flex-wrap:wrap}
+/* Téléphone : les filtres restent visibles (avant : masqués s'ils n'étaient pas actifs), sur une rangée qui défile. */
+html[data-device=mobile] .px .dt-tools>.srch,html[data-device=mobile] .px .dt-tools>label.srch{flex:1 1 100%;max-width:none}
+html[data-device=mobile] .px .dt-tools .flt{display:inline-flex}
+html[data-device=mobile] .px .dt-tools>.e-tri,html[data-device=mobile] .px .dt-tools>.e-exports{margin-left:0}
+
+/* ---------- 5. Tableaux : colonnes alignées, pastilles sur une ligne, action de ligne à droite ---------- */
+.px .dt th{white-space:nowrap}
+.px .dt td{vertical-align:middle}
+.px .dt td:last-child:has(>.btn,>a.btn,>.row>.btn){text-align:right;white-space:nowrap}
+.px .dt td .pill{white-space:nowrap}
+.px .dt td .entA-c:has(>.entA-zc){display:flex;flex-wrap:wrap;gap:4px;min-width:84px}
+.px .dt td .entA-c>.entA-zc{margin:0}
+
+/* ---------- 6. Listes d'actions (à faire, alertes) : échéance et bouton en colonnes fixes ---------- */
+html:not([data-device=mobile]) .px .entA-row.rb{flex-wrap:nowrap;align-items:center}
+html:not([data-device=mobile]) .px .entA-row.rb .grow{min-width:0}
+html:not([data-device=mobile]) .px .entA-row.rb .r:has(>.pill+.btn){width:auto;max-width:none;padding-left:0;display:grid;grid-template-columns:minmax(0,auto) minmax(132px,auto);justify-items:end;align-items:center;gap:10px}
+html:not([data-device=mobile]) .px .entA-row.rb .r:has(>.pill+.btn)>.btn{width:auto;min-width:132px;justify-content:center}
+.px .entA-row.rb .r .pill{white-space:nowrap}
+/* Tableau de bord : la liste « À faire » garde sa hauteur à l'ordinateur ; elle défile, les indicateurs restent en vue. */
+html[data-device=desktop] .px .e-afaire-l{max-height:min(540px,58vh);overflow-y:auto;overscroll-behavior:contain;margin:0 -20px;padding:0 20px;scrollbar-gutter:stable}
+.px .e-afaire-l>.entA-row:first-child{border-top:0}
+
+/* ---------- 7. Panneaux et sections : liens d'en-tête au vert de l'entreprise (l'orange est réservé aux alertes) ---------- */
+.px .panel .ph .a,.px .sec .a{color:var(--e-txt)}
+.px .panel .ph{min-height:34px}
+.px .sec{margin:28px 2px 12px}
+.px .g>.col{min-width:0}
+
+/* ---------- 8. Indicateurs : grille régulière, même hauteur ---------- */
+.px .g:is(.g4,.g5)>.kpi{height:100%;display:flex;flex-direction:column}
+.px .g:is(.g4,.g5)>.kpi>.s{margin-top:auto;padding-top:6px}
+
+/* ---------- 9. Zone du pouce (téléphone) : le principal prend la place, le secondaire garde son libellé entier ---------- */
+.e-pouce:empty{display:none}
+.e-pouce>:is(.btn,a.btn).secondary{flex:0 1 auto;width:auto;min-width:0;padding:0 14px}
+.e-pouce>:is(.btn,a.btn).primary{flex:1 1 0;width:auto;min-width:0;order:9;padding:0 12px}
+.e-pouce>:is(.btn,a.btn) span{white-space:nowrap}
+.e-pouce .e-exports{flex:0 1 auto;min-width:0;flex-wrap:nowrap}
+.e-pouce .e-exports>.btn{min-width:0}
+.px .dk-banner a.btn{text-decoration:none}
+
+/* ---------- 10. Tableau de bord : le quotidien en un geste (accepter, affecter, suivre, décider) ---------- */
+.px .e-quotidien{margin:0 0 16px}
+.px .e-quotidien>.kpi{text-decoration:none;color:inherit;transition:box-shadow .15s,transform .15s}
+.px .e-quotidien>.kpi .v{font-size:2rem}
+.px .e-quotidien>.kpi.e-chaud{box-shadow:var(--shadow-card),inset 3px 0 0 var(--or)}
+.px .e-quotidien-a{display:inline-flex;align-items:center;gap:2px;font-weight:800;color:var(--e-txt);min-height:24px}
+@media (hover:hover) and (pointer:fine){.px .e-quotidien>.kpi:hover{box-shadow:var(--shadow-card),0 0 0 2px var(--e-line)}
+.px .e-quotidien>.kpi.e-chaud:hover{box-shadow:var(--shadow-card),inset 3px 0 0 var(--or),0 0 0 2px var(--e-line)}}
+html[data-device=mobile] .px .e-quotidien{grid-template-columns:1fr 1fr;gap:10px}
+html[data-device=mobile] .px .e-quotidien>.kpi{padding:14px}
+html[data-device=mobile] .px .e-quotidien>.kpi .v{font-size:1.625rem}
+
+/* ---------- 11. Page secondaire : panier BelivaY en haut à droite de la barre du haut (même image qu'au téléphone) ---------- */
+.tb .tb-marque{border:0;background:transparent;box-shadow:none;margin-left:-4px}
+.tb .tb-marque img{width:30px;height:30px;display:block}
+/* Ordinateur étroit : la recherche de la barre du haut cède la place au panier des pages secondaires. */
+@media (max-width:1180px){html[data-device=desktop] .tb .srch{width:180px}html[data-device=desktop] .tb-pills{display:none}}
+@media (max-width:1560px){html[data-device=desktop] .tb-pills .pill:nth-child(n+2){display:none}}
+
+/* ---------- 12. Tuiles prioritaires (Menu, Mon entreprise) : grandes, un geste, compteur si quelque chose attend ---------- */
+.px .e-tuiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin:16px 0 8px}
+.px .e-tuile{position:relative;display:flex;flex-direction:column;gap:4px;min-height:112px;padding:16px;border-radius:18px;background:var(--card);box-shadow:var(--shadow-card);color:var(--ink);text-decoration:none;transition:box-shadow .15s}
+html[data-theme=dark] .px .e-tuile{box-shadow:inset 0 0 0 1px var(--line)}
+.px .e-tuile .ic{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--e-soft);color:var(--e-txt);margin-bottom:6px}
+.px .e-tuile .tt{font-size:.9375rem;font-weight:800;letter-spacing:-.01em;line-height:1.25}
+.px .e-tuile .ts{font-size:.8125rem;color:var(--ink-3);line-height:1.35}
+.px .e-tuile .bdg{position:absolute;top:14px;right:14px;min-width:26px;height:26px;padding:0 8px;border-radius:13px;background:var(--or);color:var(--sur-alerte);font-size:.8125rem;font-weight:800;display:flex;align-items:center;justify-content:center}
+.px .e-tuile .bdg.info{background:var(--e);color:var(--sur-e)}
+.px .e-tuile.chaud{box-shadow:var(--shadow-card),inset 3px 0 0 var(--or)}
+.px .e-tuile.chaud .ic{background:var(--or-soft);color:var(--or-txt)}
+@media (hover:hover) and (pointer:fine){.px .e-tuile:hover{box-shadow:var(--shadow-card),0 0 0 2px var(--e-line)}}
+.px .e-tuile:focus-visible{outline:2px solid var(--e-txt);outline-offset:2px}
+.px .e-tuiles.t6,.px .e-tuiles.t3{grid-template-columns:repeat(3,minmax(0,1fr))}
+html[data-device=mobile] .px .e-tuiles{grid-template-columns:1fr 1fr;gap:10px}
+html[data-device=mobile] .px .e-tuile{min-height:104px;padding:14px}
+html[data-device=mobile] .px .e-tuiles.t3{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+html[data-device=mobile] .px .e-tuiles.t3 .e-tuile{min-height:96px;padding:12px 10px;align-items:center;text-align:center}
+html[data-device=mobile] .px .e-tuiles.t3 .ts{display:none}
+html[data-device=mobile] .px .e-tuiles.t3 .tt{font-size:.8125rem}
+/* Identité (Mon entreprise, Menu) : la carte de l'entreprise de la barre latérale, puis la personne connectée. */
+.px .sd-space{margin:0 0 12px;padding:16px 18px;border-radius:18px;background:radial-gradient(80% 70% at 100% 0%,var(--halo),var(--halo-0) 60%),linear-gradient(160deg,var(--nuit-1),var(--nuit-2) 60%,var(--nuit-3))}
+.px .sd-space .n{font-size:1.125rem}
+.px .e-ident{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:stretch}
+.px .e-ident>.sd-space{margin:0}
+.px .e-moi{display:flex;align-items:center;gap:14px;margin:0}
+.px .e-moi .avatar{width:52px;height:52px;font-size:1.0625rem;margin-left:0}
+html[data-device=mobile] .px .e-ident{grid-template-columns:1fr}
+.px .e-kv-bloc{padding:4px 0 6px}
+/* Entrées prioritaires sur une page secondaire (Profil) : lignes dans un bloc, compteur à droite (composants/tuiles.tsx). */
+.px .e-tuiles-l{padding:4px 16px;margin:16px 0}
+.px .e-tuiles-l .bdg{min-width:24px;height:24px;padding:0 7px;border-radius:12px;background:var(--or);color:var(--sur-alerte);font-size:.8125rem;font-weight:800;display:inline-flex;align-items:center;justify-content:center}
+.px .e-tuiles-l .bdg.info{background:var(--e);color:var(--sur-e)}

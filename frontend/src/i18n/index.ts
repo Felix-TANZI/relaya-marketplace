@@ -73,6 +73,8 @@ import ad5bFr from "./domains/ad5b.fr";
 import ad5bEn from "./domains/ad5b.en";
 import ad6Fr from "./domains/ad6.fr";
 import ad6En from "./domains/ad6.en";
+import ad7Fr from "./domains/ad7.fr";
+import ad7En from "./domains/ad7.en";
 
 import pm1Fr from "./domains/pm1.fr";
 import pm1En from "./domains/pm1.en";
@@ -104,7 +106,7 @@ const mergedFr = {
   ...sl1Fr, ...sl2Fr, ...sl3Fr, ...sl4Fr, ...sl5Fr, ...sl6Fr, ...sl7Fr, ...sl8Fr, ...sl9Fr, ...sl10Fr, ...sl11Fr, ...sl12Fr, ...sl13Fr, ...sl14Fr,
   ...cr1Fr, ...do1Fr,
   ...rl1Fr, ...rl2Fr,
-  ...ad1Fr, ...ad2Fr, ...ad3Fr, ...ad4Fr, ...ad5aFr, ...ad5bFr, ...ad6Fr,
+  ...ad1Fr, ...ad2Fr, ...ad3Fr, ...ad4Fr, ...ad5aFr, ...ad5bFr, ...ad6Fr, ...ad7Fr,
   ...pm1Fr, ...pm2Fr,
   ...misc1Fr,
   ...hm1Fr,
@@ -117,7 +119,7 @@ const mergedEn = {
   ...sl1En, ...sl2En, ...sl3En, ...sl4En, ...sl5En, ...sl6En, ...sl7En, ...sl8En, ...sl9En, ...sl10En, ...sl11En, ...sl12En, ...sl13En, ...sl14En,
   ...cr1En, ...do1En,
   ...rl1En, ...rl2En,
-  ...ad1En, ...ad2En, ...ad3En, ...ad4En, ...ad5aEn, ...ad5bEn, ...ad6En,
+  ...ad1En, ...ad2En, ...ad3En, ...ad4En, ...ad5aEn, ...ad5bEn, ...ad6En, ...ad7En,
   ...pm1En, ...pm2En,
   ...misc1En,
   ...hm1En,

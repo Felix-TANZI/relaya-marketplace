@@ -169,16 +169,15 @@ const SECTIONS: NavSection[] = [
   },
   {
     key: 'section_security',
-    soon: true,
     items: [
-      { key: 'security', path: '/admin/security', icon: Shield, soon: true },
+      { key: 'security', path: '/admin/security', icon: Shield },
     ],
   },
   {
     key: 'section_system',
     items: [
       { key: 'notifications', path: '/admin/notifications', icon: Bell },
-      { key: 'support',       path: '/admin/support',       icon: HeadphonesIcon, soon: true },
+      { key: 'support',       path: '/admin/support',       icon: HeadphonesIcon },
       { key: 'audit',         path: '/admin/audit',         icon: ScrollText },
       { key: 'logs',          path: '/admin/logs',          icon: Terminal },
       { key: 'settings',      path: '/admin/settings',      icon: Settings },

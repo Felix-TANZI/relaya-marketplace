@@ -35,6 +35,11 @@ interface ReceiveInput {
   shipmentId: number;
   slotCode: string;
   proofNote: string;
+  /** R66.1 : code de depot montre par le livreur (QR du colis ou saisie). */
+  depotCode: string;
+  /** D15 : photos de reception et double signature, envoyees en preuves RELAY_RECEIVED. */
+  photos: File[];
+  signatures: string[];
 }
 
 export interface RefuseInput {
@@ -71,22 +76,23 @@ type PhotoMap = Partial<Record<PhotoKey, { file: File; url: string }>>;
 
 /**
  * Le QR de mission peut transporter un JSON, une URL de suivi ou l'identifiant
- * brut : on extrait l'identifiant d'expedition dans les trois cas.
+ * brut : on extrait l'identifiant d'expedition dans les trois cas. Le QR du
+ * colis montre par le livreur porte aussi son code de depot (R66.1, R66.2).
  */
-function parseMissionId(raw: string): number | null {
+function parseScan(raw: string): { id: number; code: string } | null {
   const trimmed = raw.trim();
   try {
     const payload = JSON.parse(trimmed) as Record<string, unknown>;
     for (const key of ["shipment_id", "shipmentId", "mission", "id"]) {
       const value = Number(payload[key]);
-      if (Number.isInteger(value) && value > 0) return value;
+      if (Number.isInteger(value) && value > 0) return { id: value, code: String(payload.depot_code ?? "") };
     }
   } catch {
     // Charge utile non JSON : on retombe sur la lecture numerique.
   }
   const match = trimmed.match(/(\d{1,10})/);
   const parsed = match ? Number(match[1]) : NaN;
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+  return Number.isInteger(parsed) && parsed > 0 ? { id: parsed, code: "" } : null;
 }
 
 /** Etape 2 : viseur camera, avec saisie manuelle de secours si le QR est illisible. */
@@ -100,10 +106,11 @@ function ScanDialog({
   /** Le gerant a declare que le livreur n'a pas de QR : on lui donne le clavier. */
   manualFirst: boolean;
   onCancel: () => void;
-  onConfirm: (missionId: number) => void;
+  onConfirm: (missionId: number, depotCode: string) => void;
 }) {
   const { t } = useTranslation();
   const [detected, setDetected] = useState<number | null>(null);
+  const [detectedCode, setDetectedCode] = useState("");
   const [manualId, setManualId] = useState("");
   const manualRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -111,8 +118,11 @@ function ScanDialog({
   }, [manualFirst]);
   const { videoRef, canvasRef, error, streaming } = useQrCamera({
     onDecode: (value) => {
-      const missionId = parseMissionId(value);
-      if (missionId) setDetected(missionId);
+      const scan = parseScan(value);
+      if (scan) {
+        setDetected(scan.id);
+        setDetectedCode(scan.code);
+      }
     },
   });
 
@@ -193,7 +203,7 @@ function ScanDialog({
         <button
           type="button"
           disabled={!resolved}
-          onClick={() => resolved && onConfirm(resolved)}
+          onClick={() => resolved && onConfirm(resolved, detected ? detectedCode : "")}
           className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {t("rl1_reception.continue")} <ArrowRight size={16} />
@@ -531,10 +541,12 @@ function CodeDialog({
 }: {
   arrivals: RelayArrival[];
   onCancel: () => void;
-  onConfirm: (missionId: number) => void;
+  onConfirm: (missionId: number, depotCode: string) => void;
   onNoCode: () => void;
 }) {
   const [code, setCode] = useState("");
+  /** R66.1 : le code de depot du colis, lu par le livreur dans sa mission. */
+  const [depotCode, setDepotCode] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     inputRef.current?.focus();
@@ -587,6 +599,17 @@ function CodeDialog({
             {matched.courierRef || "Livreur à assigner"}
             {matched.vehicleLabel ? ` · ${matched.vehicleLabel}` : ""}
           </div>
+          <label className="mt-3 block text-[11px] font-black uppercase tracking-[0.12em] text-emerald-800 dark:text-emerald-200">
+            Code de dépôt du colis (6 chiffres)
+            <input
+              value={depotCode}
+              onChange={(event) => setDepotCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+              inputMode="numeric"
+              autoComplete="off"
+              placeholder="000000"
+              className="mt-1.5 w-full rounded-xl border-2 border-emerald-200 bg-white px-3 py-2 text-center font-mono text-[20px] font-black tracking-[0.3em] text-slate-950 outline-none focus:border-emerald-500 dark:border-emerald-800 dark:bg-slate-950 dark:text-white"
+            />
+          </label>
         </div>
       ) : notFound ? (
         <p className="mt-3 flex items-start gap-2 text-sm font-semibold text-red-600 dark:text-red-400">
@@ -611,8 +634,8 @@ function CodeDialog({
         </button>
         <button
           type="button"
-          disabled={!matched}
-          onClick={() => matched && onConfirm(matched.shipmentId)}
+          disabled={!matched || depotCode.length !== 6}
+          onClick={() => matched && onConfirm(matched.shipmentId, depotCode)}
           className="pr-btn inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-black text-white transition disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 dark:disabled:from-slate-700 dark:disabled:to-slate-700"
         >
           Continuer <ArrowRight size={16} />
@@ -671,6 +694,10 @@ export default function RelayReception({
   const [refusalOpen, setRefusalOpen] = useState(false);
   /** Colis du lot dont le scelle a ete verifie, par identifiant d'expedition. */
   const [checked, setChecked] = useState<number[]>([]);
+  /** R66.1 : code de depot de chaque colis du lot, par identifiant d'expedition. */
+  const [depotCodes, setDepotCodes] = useState<Record<number, string>>({});
+  const setDepotCode = (shipmentId: number, code: string) =>
+    setDepotCodes((current) => ({ ...current, [shipmentId]: code }));
   /** Les preuves ne s'ouvrent qu'une fois le lot entierement controle. */
   const [proofOpen, setProofOpen] = useState(false);
   /**
@@ -696,9 +723,10 @@ export default function RelayReception({
     setScanOpen(true);
   };
 
-  const confirmScan = (scannedId: number) => {
+  const confirmScan = (scannedId: number, depotCode = "") => {
     // Le code fait foi : s'il pointe une autre arrivee que celle
     // pre-selectionnee, on bascule sur celle reellement designee.
+    if (depotCode) setDepotCode(scannedId, depotCode);
     const matched = arrivals.find((arrival) => arrival.shipmentId === scannedId) ?? null;
     setSelected(matched ?? (selected?.shipmentId === scannedId ? selected : null));
     setMissionId(scannedId);
@@ -713,6 +741,7 @@ export default function RelayReception({
     setRefusalOpen(false);
     setProofOpen(false);
     setChecked([]);
+    setDepotCodes({});
     setDone(null);
   };
 
@@ -779,6 +808,10 @@ export default function RelayReception({
         shipmentId: arrival.shipmentId,
         slotCode: slots[arrival.shipmentId] || "",
         proofNote,
+        depotCode: depotCodes[arrival.shipmentId] || "",
+        // D15 : les photos et la double signature partent en preuves de reception, colis par colis.
+        photos: PHOTO_SLOTS.map((slotDef) => photos[slotDef.key]?.file).filter((file): file is File => Boolean(file)),
+        signatures: [signatures.manager, signatures.courier].filter((value): value is string => Boolean(value)),
       });
       if (!ok) tout = false;
     }
@@ -840,6 +873,8 @@ export default function RelayReception({
           outbound={outbound}
           busy={busy}
           onToggle={toggle}
+          depotCodes={depotCodes}
+          onDepotCode={setDepotCode}
           onValidate={() => setProofOpen(true)}
           onRefuse={() => setRefusalOpen(true)}
           onCancel={closeReception}
@@ -937,9 +972,9 @@ export default function RelayReception({
         <CodeDialog
           arrivals={arrivals}
           onCancel={() => setCodeOpen(false)}
-          onConfirm={(missionId) => {
+          onConfirm={(missionId, depotCode) => {
             setCodeOpen(false);
-            confirmScan(missionId);
+            confirmScan(missionId, depotCode);
           }}
           onNoCode={() => {
             setCodeOpen(false);

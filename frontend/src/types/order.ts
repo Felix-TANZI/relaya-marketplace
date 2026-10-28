@@ -49,6 +49,12 @@ export interface Order {
   subtotal_xaf: number;
   delivery_fee_xaf: number;
   total_xaf: number;
+  /** Spec v2.1 : frais Mobile Money (R02.3) et total réellement payé (R02.2). */
+  frais_momo_xaf?: number;
+  total_a_payer_xaf?: number;
+  /** Heure promise, figée au paiement, qui fait foi pour le client (R45.6, R45.7). */
+  promesse_at?: string | null;
+  promesse_texte?: string;
   items: OrderItemDetail[];
   is_paid: boolean;
   can_be_fulfilled: boolean;

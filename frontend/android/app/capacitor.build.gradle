@@ -9,8 +9,9 @@ android {
 
 apply from: "../capacitor-cordova-android-plugins/cordova.variables.gradle"
 dependencies {
+    implementation project(':capacitor-community-apple-sign-in')
     implementation project(':capacitor-community-background-geolocation')
-    implementation project(':codetrix-studio-capacitor-google-auth')
+    implementation project(':capgo-capacitor-social-login')
 
 }
 

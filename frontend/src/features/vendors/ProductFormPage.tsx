@@ -7,6 +7,7 @@
 // Sous-catégorie : apparaît après sélection d'une catégorie parente
 
 import { useEffect, useState, useRef } from "react";
+import { http } from "@/services/api/http";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ensureImagesUnderLimit } from "@/lib/imageCompression";
@@ -350,7 +351,8 @@ export default function ProductFormPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const commission = 12;
+  // « Vous recevez » : calculé par le serveur (spec v2.1, A7), jamais un taux en dur ; R26.1 : seul le net est montré.
+  const [garde, setGarde] = useState<number | null>(null);
   const photoRef = useRef<HTMLInputElement>(null);
 
   // Afficher les champs FICHE ? (nouveau produit, ou édition d'une offre existante)
@@ -495,7 +497,16 @@ export default function ProductFormPage() {
   const price = parseInt(priceXaf, 10) || 0;
   const compare = parseInt(compareAt, 10) || 0;
   const discPct = compare > price ? Math.round((1 - price / compare) * 100) : 0;
-  const net = price * (1 - commission / 100);
+  useEffect(() => {
+    if (price <= 0) { setGarde(null); return; }
+    const minuteur = window.setTimeout(() => {
+      const offre = id ? `&offre=${encodeURIComponent(id)}` : '';
+      http<{ garde: number | null }>(`/api/vendors/offers/quote?prix=${price}${offre}`)
+        .then((r) => setGarde(r.garde))
+        .catch(() => setGarde(null));
+    }, 350);
+    return () => window.clearTimeout(minuteur);
+  }, [price, id]);
   const campaignReference = parseInt(campaignForm.referencePrice, 10) || 0;
   const campaignPromo = parseInt(campaignForm.promoPrice, 10) || 0;
   const campaignDiscountPct =
@@ -1866,14 +1877,8 @@ export default function ProductFormPage() {
                   color: T.text,
                 },
                 {
-                  label: t("sl3_product_form.summary_commission", { rate: commission }),
-                  value:
-                    price > 0 ? `-${fmtXAF((price * commission) / 100)}` : "—",
-                  color: T.red,
-                },
-                {
                   label: t("sl3_product_form.summary_you_receive"),
-                  value: price > 0 ? fmtXAF(net) : "—",
+                  value: price > 0 && garde !== null ? fmtXAF(garde) : "—",
                   color: T.green,
                 },
               ].map((row, i) => (

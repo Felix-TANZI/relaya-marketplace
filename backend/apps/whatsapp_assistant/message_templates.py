@@ -11,6 +11,11 @@ TOUR_RECAP = "belivay_recap_tournee"
 NEW_ORDER = "belivay_nouvelle_commande"
 RELAY_PARCEL = "belivay_colis_relais"
 ORDER_UPDATE = "belivay_suivi_commande"
+# Feuille de route D7 : les codes (connexion, numéro, double authentification) peuvent partir par WhatsApp. Meta
+# impose pour cela un modèle de catégorie « Authentification » : texte fixé par Meta, code en paramètre, bouton
+# « Copier le code ». Soumis avec les autres par python manage.py whatsapp_templates.
+CODE = "belivay_code"
+CODE_BUTTON = {"fr": "Copier le code", "en": "Copy code"}
 LANGUAGES = ("fr", "en")
 
 TEMPLATES = {
@@ -173,10 +178,27 @@ TEMPLATES = {
 }
 
 
+def code_definitions(validite_minutes: int = 10) -> list[dict]:
+    """Modèle « Authentification » du code (D7), au format de l'API Meta."""
+    return [
+        {
+            "name": CODE,
+            "language": language,
+            "category": "AUTHENTICATION",
+            "components": [
+                {"type": "BODY", "add_security_recommendation": True},
+                {"type": "FOOTER", "code_expiration_minutes": validite_minutes},
+                {"type": "BUTTONS", "buttons": [{"type": "OTP", "otp_type": "COPY_CODE", "text": CODE_BUTTON[language]}]},
+            ],
+        }
+        for language in LANGUAGES
+    ]
+
+
 def definitions(app_url: str, vendor_url: str = "", relay_url: str = "",
                 site_url: str = "") -> list[dict]:
     """Modèles au format de l'API Meta (POST /<WABA_ID>/message_templates)."""
-    payloads = []
+    payloads = code_definitions()
     for name, languages in TEMPLATES.items():
         # Le livreur va vers son application, le vendeur vers son espace.
         if name == NEW_ORDER:

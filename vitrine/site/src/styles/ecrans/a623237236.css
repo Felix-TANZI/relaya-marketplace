@@ -1,0 +1,44 @@
+/* Généré par outils/styles.mjs (styles insérés dans l’écran par le prototype). */
+.fd-top{position:relative;overflow:hidden;margin-top:14px;padding:16px;border-radius:20px;background:linear-gradient(135deg,#2A1A12,#4A2616 60%,#6B3418);color:#fff;box-shadow:0 14px 28px -18px rgba(0,0,0,.7)}
+.fd-top .k{font-size:12px;font-weight:800;letter-spacing:.12em;opacity:.8}
+.fd-top h1{font-size:21px;font-weight:800;margin:4px 0 12px;color:#fff}
+.fd-cd{display:flex;align-items:center;gap:6px}
+.fd-cd .b{min-width:46px;padding:6px 4px 4px;border-radius:10px;background:rgba(255,255,255,.12);text-align:center}
+.fd-cd .b b{display:block;font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+.fd-cd .b small{display:block;font-size:12px;font-weight:700;letter-spacing:.08em;opacity:.75}
+.fd-cd .sep{font-weight:800;opacity:.6}
+.fd-cd .lb{margin-left:6px;font-size:12px;line-height:1.3;opacity:.85}
+.fd-top .wm{position:absolute;right:-10px;top:6px;opacity:.12}
+.fd-info{display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 12px;border-radius:14px;background:#E9F6EE;color:#14532D;font-size:12.5px;line-height:1.35}
+.fd-info b{display:block;font-size:13px}
+html[data-theme=dark] .fd-info{background:#15301F;color:#A7E3BE}
+.fd-panel{margin-top:14px;padding:14px 0 14px 14px;border-radius:22px;background:linear-gradient(135deg,#F58A3A,#EA6C1F 55%,#D95D12);box-shadow:0 14px 26px -18px rgba(217,93,18,.9)}
+.fd-ph{display:flex;align-items:center;justify-content:space-between;padding-right:14px;color:#fff}
+.fd-ph h2{display:flex;align-items:center;gap:6px;font-size:20px;font-weight:800;margin:0;color:#fff}
+.fd-ph .pl{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.22);font-size:12px;font-weight:800;font-variant-numeric:tabular-nums}
+.fd-rail{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:12px 14px 2px 0;scrollbar-width:none}
+.fd-rail::-webkit-scrollbar{display:none}
+.fd-c{flex:0 0 150px;scroll-snap-align:start;border-radius:16px;background:var(--card);overflow:hidden;color:var(--ink);box-shadow:0 6px 14px -10px rgba(0,0,0,.5)}
+.fd-c .im,.fd-g .im{position:relative;display:block;aspect-ratio:1/1;background:var(--prod-bg)}
+.fd-c .im>svg,.fd-g .im>svg{width:100%;height:100%;display:block}
+.fd-end{display:flex;gap:12px;align-items:center}
+.fd-end .th{width:64px;height:64px;border-radius:14px;overflow:hidden;flex-shrink:0;filter:grayscale(1);opacity:.55;background:var(--prod-bg)}
+.fd-end .th svg{width:100%;height:100%;display:block}
+.fd-b{position:absolute;left:8px;top:8px;padding:2px 7px;border-radius:7px;background:#E5372A;color:#fff;font-size:12px;font-weight:800}
+.fd-h{position:absolute;right:8px;top:8px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;color:#C2410C}
+.fd-c .tx{display:block;padding:8px 10px 10px}
+.fd-c .n,.fd-g .n{display:block;font-size:12.5px;font-weight:700;line-height:1.25;height:31px;overflow:hidden}
+.fd-pr{display:flex;align-items:baseline;gap:6px;margin-top:4px}
+.fd-pr b{font-size:15px;font-weight:800;color:var(--or-txt)}
+.fd-pr s{font-size:12px;color:var(--ink-4)}
+.fd-bar{height:5px;border-radius:3px;background:var(--sand-3);margin-top:7px;overflow:hidden}
+.fd-bar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#F58A3A,#E5372A)}
+.fd-tm{display:flex;align-items:center;gap:4px;margin-top:5px;font-size:12px;font-weight:700;color:var(--ink-3)}
+.fd-sec{display:flex;align-items:center;gap:8px;margin:20px 2px 10px}
+.fd-sec h2{font-size:17px;font-weight:800;margin:0}
+.fd-sec span{font-size:12px;color:var(--ink-3)}
+.fd-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fd-g{border-radius:16px;background:var(--card);overflow:hidden;box-shadow:var(--shadow-card);display:flex;flex-direction:column}
+.fd-g .ov{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:5px;padding:14px 8px 6px;font-size:12px;font-weight:700;color:#fff;background:linear-gradient(0deg,rgba(0,0,0,.62),rgba(0,0,0,0))}
+.fd-g .tx{display:block;padding:8px 10px 0;flex:1}
+.fd-g .ad{margin:8px 10px 10px;height:34px;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:5px;font-size:12.5px;font-weight:800;color:var(--or-txt);box-shadow:inset 0 0 0 1.5px var(--or-line)}

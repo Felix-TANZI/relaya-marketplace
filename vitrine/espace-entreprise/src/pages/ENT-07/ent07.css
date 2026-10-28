@@ -1,0 +1,272 @@
+/* Écrans d'ENT-07 et d'ENT-08 : pièces partagées (onglets, maître-détail, héros, cartes, preuves, formulaires,
+   annonces). Couleurs : jetons de styles/jetons.css seulement ; orange BelivaY pour les échéances et alertes. */
+.e7-intro{color:var(--ink-3);font-size:.875rem;max-width:80ch;margin-bottom:14px}
+.e7-charge{display:grid;gap:12px}
+.e7-note{font-size:.8125rem;color:var(--ink-3)}
+.e7-aide{margin-top:6px;font-size:.75rem;color:var(--ink-3)}
+.e7-aide.rouge{color:var(--red)}
+.e7-fixe{gap:4px}
+.e7-ligne-t{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+
+/* Onglets (défilent sur téléphone) */
+.e7-onglets{display:flex;gap:4px;padding:4px;margin-bottom:14px;border-radius:var(--r-m);background:var(--sand-2);box-shadow:inset 0 0 0 1px var(--line);overflow-x:auto;scrollbar-width:none}
+.e7-onglets::-webkit-scrollbar{display:none}
+.e7-onglets button{flex:1 0 auto;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 14px;border:0;border-radius:10px;background:transparent;color:var(--ink-2);font-weight:700;font-size:.875rem;white-space:nowrap}
+.e7-onglets button.on{background:var(--card);color:var(--e-txt);box-shadow:var(--ombre-seg)}
+
+/* Maître-détail : liste et dossier ; téléphone et tablette : l'un ou l'autre */
+.e7-maitre{display:grid;gap:16px}
+.e7-maitre-g,.e7-maitre-d{min-width:0}
+.e7-retour-liste{margin-bottom:12px}
+@media (max-width:1023px){
+  .e7-maitre.detail-ouvert .e7-maitre-g{display:none}
+  .e7-maitre:not(.detail-ouvert) .e7-maitre-d{display:none}
+}
+@media (min-width:1024px){
+  .e7-maitre{grid-template-columns:minmax(300px,380px) minmax(0,1fr);align-items:start}
+  .e7-maitre-g{position:sticky;top:76px}
+  .e7-retour-liste{display:none}
+}
+.e7-cartes{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.e7-carte{display:flex;flex-direction:column;gap:6px;width:100%;text-align:left;padding:14px 16px;border:0;border-radius:var(--r-l);background:var(--card);color:var(--ink);box-shadow:var(--ombre-carte)}
+.e7-carte.on{box-shadow:0 0 0 2px var(--e),var(--ombre-carte)}
+.e7-carte-h{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.e7-carte-h b{font-size:.9375rem;line-height:1.3}
+.e7-carte-s{font-size:.75rem;color:var(--ink-3)}
+.e7-carte-t{display:inline-flex;align-items:center;gap:6px;font-size:.8125rem;font-weight:700;color:var(--ink-2)}
+.e7-carte-t.alerte{color:var(--or-txt)}
+@media (hover:hover) and (pointer:fine){.e7-carte:not(.on):hover{box-shadow:0 0 0 1px var(--e-line),var(--ombre-carte)}}
+
+/* Étapes et effets */
+.e7-etapes{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:10px}
+.e7-etapes li{display:flex;gap:10px;align-items:flex-start;color:var(--ink-3)}
+.e7-etapes li>i{flex-shrink:0;display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;font-style:normal;font-size:.75rem;font-weight:800;background:var(--sand-2);color:var(--ink-3);box-shadow:inset 0 0 0 1px var(--line-2)}
+.e7-etapes li b{display:block;font-size:.875rem;color:var(--ink-2)}
+.e7-etapes li small{display:block;font-size:.75rem}
+.e7-etapes li.fait>i{background:var(--e-soft);color:var(--e-txt);box-shadow:inset 0 0 0 1px var(--e-line)}
+.e7-etapes li.cours>i{background:var(--or);color:var(--sur-alerte);box-shadow:none}
+.e7-etapes li.cours b{color:var(--ink)}
+.e7-effets{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:10px;font-size:.875rem;color:var(--ink-2)}
+.e7-effets li{display:flex;gap:10px;align-items:flex-start}
+.e7-effets svg{margin-top:2px;color:var(--e-txt)}
+
+/* Héros : compte à rebours (orange) ou nuit */
+.e7-heros{border-radius:var(--r-l);padding:20px}
+.e7-heros .k{display:block;font-size:.75rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.e7-heros-v{margin-top:6px;font-size:2rem;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.e7-heros-s{margin-top:4px;font-size:.875rem}
+.e7-heros-cr{background:var(--e-soft);color:var(--ink);box-shadow:inset 0 0 0 1px var(--e-line)}
+.e7-heros-cr .k{color:var(--e-txt)}
+.e7-heros-cr.alerte{background:var(--or-soft);box-shadow:inset 0 0 0 1px var(--or-line)}
+.e7-heros-cr.alerte .k,.e7-heros-cr.alerte .e7-heros-v{color:var(--or-txt)}
+.carte-nuit.e7-heros .e7-heros-s{color:var(--nuit-txt-2)}
+.carte-nuit.e7-heros .e7-heros-v{color:var(--nuit-fort)}
+.e7-barre{margin-top:14px;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.e7-barre i{display:block;height:100%;border-radius:3px;background:var(--e)}
+.e7-heros-cr.alerte .e7-barre i{background:var(--or)}
+
+/* Preuves et journal */
+.e7-preuves{list-style:none;margin:12px 0 10px;padding:0;display:grid;gap:8px}
+@media (min-width:640px){.e7-preuves{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.e7-preuves li{display:flex;gap:10px;align-items:center;padding:10px;border-radius:var(--r-m);background:var(--card-2);box-shadow:inset 0 0 0 1px var(--line)}
+.e7-preuves b{display:block;font-size:.8125rem;line-height:1.3}
+.e7-preuves small{display:block;font-size:.75rem;color:var(--ink-3)}
+.e7-preuve-ic{flex-shrink:0;display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:10px;background:var(--e-soft);color:var(--e-txt)}
+.e7-journal{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:6px;font-size:.8125rem}
+.e7-journal li{display:grid;grid-template-columns:minmax(120px,170px) 1fr;gap:10px;color:var(--ink-2)}
+.e7-journal li>span:first-child{color:var(--ink-3)}
+@media (max-width:520px){.e7-journal li{grid-template-columns:1fr;gap:0}}
+
+/* Formulaires */
+.e7-choix{display:grid;gap:8px}
+@media (min-width:640px){.e7-choix{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.e7-choix button{display:flex;align-items:center;gap:8px;min-height:48px;padding:10px 12px;border:0;border-radius:var(--r-m);background:var(--card);color:var(--ink-2);font-weight:700;font-size:.875rem;text-align:left;box-shadow:inset 0 0 0 1px var(--line-2)}
+.e7-choix button.on{background:var(--e-soft);color:var(--e-txt);box-shadow:inset 0 0 0 2px var(--e)}
+.e7-coche{display:flex;gap:10px;align-items:center;min-height:44px;margin-top:8px;cursor:pointer;font-size:.875rem;color:var(--ink-2)}
+.e7-coche input{width:22px;height:22px;margin:0;accent-color:var(--e);flex-shrink:0}
+.e7-bulle{padding:12px 14px;border-radius:var(--r-m);background:var(--sand-2);font-size:.875rem}
+.e7-bulle b{display:block;font-size:.75rem;color:var(--ink-3);margin-bottom:4px}
+.e7-total{font-size:.9375rem}
+.e7-total .k{color:var(--ink);font-weight:800}
+.e7-annonce{display:flex;align-items:flex-start;gap:8px;margin-top:12px;padding:10px 12px;border-radius:var(--r-m);font-size:.875rem;font-weight:600}
+.e7-annonce.ok{background:var(--green-soft);color:var(--green);box-shadow:inset 0 0 0 1px var(--green-line)}
+.e7-annonce.non{background:var(--red-soft);color:var(--red);box-shadow:inset 0 0 0 1px var(--red-line)}
+.e7-annonce svg{margin-top:1px}
+
+/* Grilles et tuiles */
+.e7-grille{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:1024px){.e7-grille{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);align-items:start}}
+.e7-tuiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (min-width:768px){.e7-tuiles{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.e7-tuile{padding:14px;border-radius:var(--r-l);background:var(--card);box-shadow:var(--ombre-carte);min-width:0}
+.e7-tuile .k{display:block;font-size:.75rem;color:var(--ink-3);font-weight:700}
+.e7-tuile .v{display:block;margin-top:4px;font-size:1.25rem;font-weight:800;letter-spacing:-.01em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.e7-tuile .s{display:block;margin-top:2px;font-size:.75rem;color:var(--ink-3)}
+.e7-heros-cases{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:16px}
+@media (min-width:640px){.e7-heros-cases{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.e7-heros-cases>div{padding:10px 12px;border-radius:var(--r-m);background:var(--nuit-surface);box-shadow:inset 0 0 0 1px var(--nuit-bord)}
+.e7-heros-cases .k{font-size:.6875rem}
+.e7-heros-cases b{display:block;margin-top:2px;color:var(--nuit-fort);font-size:.9375rem}
+
+/* Tableaux : en cartes sur téléphone */
+.e7-table{width:100%;border-collapse:collapse;font-size:.875rem}
+.e7-table th{text-align:left;font-size:.75rem;font-weight:800;color:var(--ink-3);padding:8px 10px;border-bottom:1px solid var(--line-2);white-space:nowrap}
+.e7-table td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top}
+.e7-table td.n,.e7-table th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.e7-table tr.ambre td{background:var(--amber-soft)}
+.e7-table tr.rouge td{background:var(--red-soft)}
+.e7-table small{display:block;color:var(--ink-3);font-size:.75rem}
+@media (max-width:767px){
+  .e7-table thead{display:none}
+  .e7-table,.e7-table tbody,.e7-table tr,.e7-table td{display:block;width:100%}
+  .e7-table tr{padding:10px 0;border-bottom:1px solid var(--line)}
+  .e7-table td{border:0;padding:3px 0;text-align:right;overflow:hidden}
+  .e7-table td::before{content:attr(data-l);float:left;margin-right:12px;color:var(--ink-3);font-size:.75rem;font-weight:700;text-align:left;line-height:1.9}
+  .e7-table td[data-l=""]::before{content:none}
+  .e7-table td[data-l=""]{text-align:left;font-weight:700}
+  .e7-table td[data-l=""] .btns{justify-content:flex-start}
+}
+
+/* Anneau de score */
+.e7-anneau{position:relative;width:120px;height:120px;flex-shrink:0}
+.e7-anneau svg{width:120px;height:120px;transform:rotate(-90deg)}
+.e7-anneau circle{fill:none;stroke-width:10}
+.e7-anneau .fond{stroke:var(--nuit-bord)}
+.e7-anneau .val{stroke:var(--e-ciel);stroke-linecap:round}
+.e7-anneau b{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:1.75rem;font-weight:800;color:var(--nuit-fort)}
+.e7-anneau b small{font-size:.6875rem;font-weight:700;color:var(--nuit-txt-2)}
+.e7-score-h{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+
+/* Barres simples (graphiques du kit) */
+.e7-barres{display:flex;align-items:flex-end;gap:6px;height:140px;margin-top:14px;padding-bottom:22px;position:relative}
+.e7-barres>div{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;position:relative}
+.e7-barres>div>i{display:block;width:100%;max-width:36px;border-radius:6px 6px 0 0;background:var(--e)}
+.e7-barres>div>b{font-size:.6875rem;color:var(--ink-2);margin-bottom:2px}
+.e7-barres>div>small{position:absolute;bottom:-20px;font-size:.6875rem;color:var(--ink-3);white-space:nowrap}
+.e7-jauge{height:8px;border-radius:4px;background:var(--line);overflow:hidden;margin-top:6px}
+.e7-jauge i{display:block;height:100%;background:var(--e);border-radius:4px}
+.e7-jauge.ambre i{background:var(--amber)}
+
+@media print{
+  aside.sl,.e-hd,nav.dock,.e-titre-act,.e7-onglets,.btns,.btn,.bandeau{display:none!important}
+  #app main{padding:0;max-width:none}
+}
+
+/* Score : paliers */
+.e7-paliers{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:8px}
+.e7-paliers li{display:grid;gap:2px;padding:10px 12px;border-radius:var(--r-m);background:var(--card-2);box-shadow:inset 0 0 0 1px var(--line);font-size:.8125rem;color:var(--ink-3)}
+.e7-paliers li b{font-size:.9375rem;color:var(--ink)}
+.e7-paliers li.on{background:var(--e-soft);box-shadow:inset 0 0 0 2px var(--e)}
+.e7-paliers li.on b{color:var(--e-txt)}
+
+/* Relevé */
+.e7-parties{display:grid;gap:12px}
+@media (min-width:640px){.e7-parties{grid-template-columns:1fr 1fr}}
+.e7-parties>div{display:grid;gap:2px;padding:12px;border-radius:var(--r-m);background:var(--card-2);box-shadow:inset 0 0 0 1px var(--line)}
+.e7-parties .k{font-size:.6875rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.e7-parties small{font-size:.75rem;color:var(--ink-3)}
+.e7-jour{font-size:.75rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin-bottom:2px}
+.kv .v.e7-neg{color:var(--red)}
+.e7-totaux{border-top:2px solid var(--line-2);padding-top:6px}
+.e7-csv{margin:10px 0 0;padding:12px;border-radius:var(--r-m);background:var(--sand-2);font:500 .75rem/1.5 ui-monospace,Menlo,Consolas,monospace;overflow-x:auto;white-space:pre}
+.e7-tuile.nuit{background:linear-gradient(160deg,var(--nuit-1),var(--nuit-3));box-shadow:none}
+.e7-tuile.nuit .k{color:var(--nuit-txt-2)}
+.e7-tuile.nuit .v{color:var(--nuit-fort)}
+.e7-tuile .s.ambre{color:var(--amber)}
+.e7-table small.e7-bas{color:var(--or-txt);font-weight:700}
+
+/* Consigne du porteur : fonds clairs et neutres, couleur en accent ; les sections importantes (carte de tête,
+   chiffres clés, alerte principale) en LÉGER DÉGRADÉ de la couleur de l'interface. */
+.carte-nuit.e7-heros,.e7-heros-cr{background:linear-gradient(135deg,var(--e-soft) 0%,var(--card) 70%);color:var(--ink);box-shadow:inset 0 0 0 1px var(--e-line)}
+.carte-nuit.e7-heros .k,.e7-heros-cr .k{color:var(--e-txt)}
+.carte-nuit.e7-heros .e7-heros-v{color:var(--ink)}
+.carte-nuit.e7-heros .e7-heros-s{color:var(--ink-3)}
+.e7-heros-cr.alerte{background:linear-gradient(135deg,var(--or-soft) 0%,var(--card) 70%);box-shadow:inset 0 0 0 1px var(--or-line)}
+.e7-heros-cases>div{background:var(--card);box-shadow:inset 0 0 0 1px var(--e-line)}
+.e7-heros-cases .k{color:var(--ink-3)}
+.e7-heros-cases b{color:var(--ink)}
+.e7-anneau .fond{stroke:var(--e-line)}
+.e7-anneau .val{stroke:var(--e)}
+.e7-anneau b{color:var(--ink)}
+.e7-anneau b small{color:var(--ink-3)}
+.e7-tuile.nuit{background:linear-gradient(135deg,var(--e-soft) 0%,var(--card) 75%);box-shadow:inset 0 0 0 1px var(--e-line)}
+.e7-tuile.nuit .k{color:var(--e-txt)}
+.e7-tuile.nuit .v{color:var(--ink)}
+.e7-heros .pill.e7-fixe{background:var(--card)}
+
+/* Écrans d'ENT-07 repris sur le prototype (sous .px, jetons seulement) : colonnes entC7_col, cartes et choix en
+   boutons (ec7-card, radio), zone de texte du C.fld, preuves en une colonne, tableau à lignes de jour. */
+.px .e7-col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.px .e7-col>.panel,.px .e7-col>.hero,.px .e7-col>.dk-banner,.px .e7-col>.ec7-paper,.px .e7-col>.note{margin-top:0}
+.px button.ec7-card{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;min-height:44px}
+.px .g>button.ec7-card{margin-top:0}
+.px button.radio{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.px textarea.e7-ta{width:100%;display:block;font:inherit;font-size:.9375rem;resize:vertical;outline:none}
+.px textarea.e7-ta:focus{border-color:var(--acc);box-shadow:0 0 0 4px color-mix(in srgb,var(--e) 14%,transparent)}
+.px .e7-preuves.e7-preuves-1{grid-template-columns:minmax(0,1fr);margin:8px 0 0}
+.px .hero.orange .row.t12{color:var(--ink-2)}
+.px .hero .ring b{color:var(--ink)}
+.px .ec7-paper .e7-legal-ok{color:var(--green)}
+.px .ec7-paper .dt-wrap{box-shadow:none;border:1px solid var(--line)}
+.px .ec7-crit .bar{min-width:0}
+.px .e7-pq{font-weight:800}
+@media (max-width:520px){
+  .px .ec7-paper{padding:16px 14px}
+  .px .ec7-paper .hdr{flex-wrap:wrap}
+  .px .ec7-paper .parties{grid-template-columns:1fr}
+  .px .ec7-crit{grid-template-columns:110px minmax(0,1fr) minmax(56px,auto)}
+}
+@media print{
+  .px .tabs,.px .dk-head .acts,.px .e7-col>.panel:not(.e7-imprime){display:none!important}
+}
+/* Onglets C.tabs en boutons (le kit stylise surtout les liens) : même retrait et même compteur que .tabs a */
+.px div.tabs>button{padding:0 14px;display:inline-flex;align-items:center;gap:6px;font-size:.8438rem;color:var(--ink-3);margin-bottom:-1px;white-space:nowrap}
+.px div.tabs>button.on{font-weight:800}
+.px div.tabs>button .n{font-size:.6875rem;font-weight:800;min-width:20px;min-height:18px;border-radius:9px;padding:0 5px;display:inline-flex;align-items:center;justify-content:center;background:var(--sand-3);color:var(--ink-2)}
+.px div.tabs>button.on .n{background:var(--acc-soft);color:var(--acc-txt)}
+
+/* Enrichissements (ENRICHISSEMENTS.md P17-P20) : outils de liste, compte à rebours, montants masqués, totaux,
+   fiches « Comment monter », échelle des paliers. Jetons seulement (clair et sombre). */
+.e7-outils{display:grid;gap:8px;margin:0 0 12px;min-width:0}
+.e7-outils .e-puces{margin:0}
+.e7-outils .srch{width:100%}
+.e7-portee{display:flex;align-items:center;gap:6px;margin:0;font-size:.8125rem;color:var(--ink-3)}
+.e7-outils-l .e-compte{margin:0}
+.e7-rebours-h{margin-top:8px}
+.e7-rebours-h .rebours{font-size:.875rem}
+.px .e7-tap{display:block;width:100%;min-height:44px;margin:0;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer;border-radius:var(--r-m)}
+.px .e7-tap:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.px .e7-tap:disabled{cursor:default}
+.e7-oeil{width:auto;flex:none}
+.e7-totaux{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+.e7-totaux .ec7-grp{margin-top:0}
+.px .ec7-crit .e7-monter{display:inline-flex;align-items:center;gap:4px;min-height:44px;margin:0;padding:0 2px;border:0;background:none;color:var(--e-txt);font:inherit;font-size:.75rem;font-weight:800;cursor:pointer;text-align:left}
+.px .ec7-crit .e7-monter:hover{text-decoration:underline}
+.px .ec7-crit .e7-monter:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:6px}
+.e7-fiche .kv{align-items:flex-start}
+.e7-etapes{margin:12px 0;padding-left:1.25em;display:grid;gap:6px;font-size:.875rem;color:var(--ink)}
+.e7-echelle{margin-top:14px}
+.e7-echelle-piste{position:relative;display:flex;height:10px;border-radius:999px;overflow:visible;background:var(--sand-3)}
+.e7-echelle-piste .z{display:block;height:100%}
+.e7-echelle-piste .z.nouveau{background:var(--sand-3);border-radius:999px 0 0 999px}
+.e7-echelle-piste .z.confirme{background:color-mix(in srgb,var(--acc) 55%,var(--sand-3))}
+.e7-echelle-piste .z.or{background:var(--gold);border-radius:0 999px 999px 0}
+.e7-echelle-piste .veto{position:absolute;top:-3px;bottom:-3px;width:0;border-left:2px dashed var(--red)}
+.e7-echelle-piste .pointe{position:absolute;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:var(--card);box-shadow:0 0 0 3px var(--ink),var(--shadow-pop,none)}
+.e7-echelle-n{position:relative;height:18px;margin-top:4px;font-size:.75rem;font-weight:700;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.e7-echelle-n span{position:absolute;white-space:nowrap;transform:translateX(-50%)}
+.e7-echelle-n span:first-child{transform:none}
+.e7-echelle-n span:last-child{transform:translateX(-100%)}
+.e7-echelle-l{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.75rem;color:var(--ink-2)}
+.e7-echelle-l li{display:inline-flex;align-items:center;gap:6px}
+.e7-echelle-l i{display:inline-block;width:12px;height:8px;border-radius:3px}
+.e7-echelle-l i.nouveau{background:var(--sand-3);box-shadow:inset 0 0 0 1px var(--line-2)}
+.e7-echelle-l i.confirme{background:color-mix(in srgb,var(--acc) 55%,var(--sand-3))}
+.e7-echelle-l i.or{background:var(--gold)}
+.e7-echelle-l i.veto{width:0;height:12px;border-left:2px dashed var(--red);border-radius:0}
+@media (prefers-reduced-motion:no-preference){html:not([data-anim=reduites]) .e7-echelle-piste .pointe{transition:left .2s linear}}
+.px .e7-outils .srch{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 6px 0 12px;border-radius:11px;border:1px solid var(--line-2);background:var(--input-bg);color:var(--ink-3);font-size:.875rem}
+.px .e7-outils .srch input{flex:1;min-width:0;min-height:42px;border:0;background:transparent;outline:none;font:inherit;color:var(--ink)}
+.px .e7-outils .srch input::placeholder{color:var(--ink-4)}
+.px .e7-outils .srch:focus-within{border-color:var(--e);box-shadow:var(--focus)}
+.px .e7-outils .e-srch-x{min-width:44px;min-height:44px}

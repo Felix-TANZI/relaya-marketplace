@@ -222,9 +222,8 @@ export interface VendorOrder {
   escrow_status: EscrowStatus;
   escrow_status_display: string;
 
-  // Timing et commission
+  // Timing (R26.1 : plus aucun champ de commission côté vendeur)
   vendor_reply_deadline: string | null;
-  commission_rate_snapshot: string; // Decimal sérialisé en string par DRF
 
   // Montants bruts
   subtotal_xaf: number;
@@ -232,10 +231,8 @@ export interface VendorOrder {
   total_xaf: number;
 
   // Finances vendeur (calculées sur ses articles uniquement)
-  vendor_subtotal: number; // Sous-total avant commission
-  commission_rate: number; // = parseFloat(commission_rate_snapshot)
-  commission_amount: number; // BelivaY prélève ce montant
-  vendor_net_amount: number; // vendor_subtotal - commission_amount
+  vendor_subtotal: number; // Prix de vente de ses articles
+  vendor_net_amount: number; // Ce que le vendeur garde (R26.1 : seul montant montré)
 
   // Articles filtrés sur ce vendeur uniquement
   items: VendorOrderItem[];

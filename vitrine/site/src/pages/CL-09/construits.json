@@ -1,0 +1,21 @@
+{
+ "routes": [
+  "commandes",
+  "commande",
+  "code",
+  "code-partage",
+  "suivi",
+  "comptoir-payer",
+  "comptoir"
+ ],
+ "exclus": {},
+ "repris": {
+  "commandes": "DP-54 : repris pour l'usage réel (commandes lues dans les données, code avec biométrie, retrait confié, paiement au comptoir, suivi daté).",
+  "commande": "DP-54 : repris pour l'usage réel (commandes lues dans les données, code avec biométrie, retrait confié, paiement au comptoir, suivi daté).",
+  "code": "DP-54 : repris pour l'usage réel (commandes lues dans les données, code avec biométrie, retrait confié, paiement au comptoir, suivi daté).",
+  "code-partage": "DP-54 : repris pour l'usage réel (commandes lues dans les données, code avec biométrie, retrait confié, paiement au comptoir, suivi daté).",
+  "suivi": "DP-54 : repris pour l'usage réel (commandes lues dans les données, code avec biométrie, retrait confié, paiement au comptoir, suivi daté).",
+  "comptoir-payer": "DP-54 : repris pour l'usage réel (commandes lues dans les données, code avec biométrie, retrait confié, paiement au comptoir, suivi daté).",
+  "comptoir": "DP-54 : repris pour l'usage réel (commandes lues dans les données, code avec biométrie, retrait confié, paiement au comptoir, suivi daté)."
+ }
+}

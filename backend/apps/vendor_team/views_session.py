@@ -23,7 +23,10 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from apps.client_core.erreurs import ErreurClient
 from apps.client_core.masquage import masquer_numero, numero_local
+from apps.otp import services as otp_services
+from apps.otp.models import CodeOtp
 from apps.vendors.models import VendorLocation, VendorProfile
 
 from . import services
@@ -31,9 +34,7 @@ from .common import client_ip, vendeur_ou_404
 from .models import (
     VendorAssistedEntry,
     VendorContractSignature,
-    VendorKycPiece,
     VendorShopMeta,
-    VendorVerificationCode,
 )
 
 TAG = ["Vendors"]
@@ -65,64 +66,45 @@ def _auth_otp_request(request):
     # VendorProfile.phone n'est pas toujours stocké au même format (vu sur les données de démonstration :
     # « +237690000001 » au lieu de « 690000001 ») : comparaison sur les 9 derniers chiffres plutôt qu'une
     # égalité stricte, pour ne pas dépendre d'une normalisation que ce mandat ne corrige pas partout.
-    if not VendorProfile.objects.filter(phone__endswith=phone).exists():
+    profil = VendorProfile.objects.filter(phone__endswith=phone).select_related("user").first()
+    if profil is None:
         return Response({"ok": False, "raison": "inconnu"})
+    if not device:
+        return Response({"ok": False, "raison": "numero"})
 
-    fenetre = services.fenetre_recente(
-        VendorVerificationCode.objects.filter(phone=phone, purpose=VendorVerificationCode.Purpose.LOGIN),
-        minutes=60,
-    )
-    if fenetre.count() >= VendorVerificationCode.RENVOIS_PAR_HEURE:
-        plus_ancien = fenetre.order_by("created_at").first()
-        return Response({
-            "ok": False, "raison": "limite",
-            "jusqua": _ms(plus_ancien.created_at + timedelta(hours=1)),
-        })
+    # Feuille de route D6 : un seul système de codes (apps.otp). Le code part au numéro et se range sous l'appareil,
+    # que l'écran présente ensuite pour le vérifier.
+    try:
+        envoi = otp_services.envoyer(objet=CodeOtp.Objet.VENDEUR_CONNEXION, destination=phone, canal=canal,
+                                     utilisateur=profil.user, cle=f"appareil:{device[:120]}")
+    except ErreurClient as erreur:
+        return Response({"ok": False, "raison": "limite",
+                         "jusqua": _ms(timezone.now() + timedelta(hours=1)), "detail": erreur.message})
+    enregistrement = otp_services.en_cours(objet=CodeOtp.Objet.VENDEUR_CONNEXION, cle=f"appareil:{device[:120]}")
+    return Response({"ok": True, "envoi": _envoi_payload(enregistrement, envoi)})
 
-    code = services.generer_code(VendorVerificationCode.LONGUEUR)
-    enregistrement = VendorVerificationCode(
-        phone=phone, purpose=VendorVerificationCode.Purpose.LOGIN, device=device[:120], canal=canal,
-        expires_at=timezone.now() + timedelta(minutes=VendorVerificationCode.VALIDE_MINUTES),
-    )
-    enregistrement.set_code(code)
-    enregistrement.save()
-    services.envoyer_code_sms(phone, code, VendorVerificationCode.VALIDE_MINUTES, canal=canal)
 
-    return Response({
-        "ok": True,
-        "envoi": {
-            "id": str(enregistrement.id),
-            "canal": canal,
-            "destination": masquer_numero(phone),
-            "envoyeA": _ms(enregistrement.created_at),
-            "valideMinutes": VendorVerificationCode.VALIDE_MINUTES,
-            "renvoiSecondes": VendorVerificationCode.RENVOI_SECONDES,
-            "renvoisRestants": max(0, VendorVerificationCode.RENVOIS_PAR_HEURE - fenetre.count() - 1),
-        },
-    })
+def _envoi_payload(enregistrement, envoi=None) -> dict:
+    duree = int((enregistrement.expire_le - enregistrement.cree_le).total_seconds() // 60)
+    return {
+        "id": str(enregistrement.id),
+        "canal": enregistrement.canal,
+        "destination": enregistrement.destination_masquee,
+        "envoyeA": _ms(enregistrement.cree_le),
+        "valideMinutes": (envoi or {}).get("valideMinutes", duree),
+        "renvoiSecondes": (envoi or {}).get("renvoiSecondes", 0),
+        "renvoisRestants": 0,
+    }
 
 
 def auth_otp_poll(request):
     device = str(request.query_params.get("appareil") or "").strip()
     if not device:
         raise NotFound()
-    enregistrement = (
-        VendorVerificationCode.objects.filter(
-            device=device, purpose=VendorVerificationCode.Purpose.LOGIN, used_at__isnull=True,
-            expires_at__gt=timezone.now(),
-        ).order_by("-created_at").first()
-    )
+    enregistrement = otp_services.en_cours(objet=CodeOtp.Objet.VENDEUR_CONNEXION, cle=f"appareil:{device[:120]}")
     if enregistrement is None:
         raise NotFound()
-    return Response({
-        "id": str(enregistrement.id),
-        "canal": enregistrement.canal,
-        "destination": masquer_numero(enregistrement.phone),
-        "envoyeA": _ms(enregistrement.created_at),
-        "valideMinutes": VendorVerificationCode.VALIDE_MINUTES,
-        "renvoiSecondes": VendorVerificationCode.RENVOI_SECONDES,
-        "renvoisRestants": 0,
-    })
+    return Response(_envoi_payload(enregistrement))
 
 
 @extend_schema(tags=TAG, summary="Session — verify the login code by phone")
@@ -131,24 +113,20 @@ def auth_otp_poll(request):
 def auth_verify(request):
     code = str(request.data.get("code") or "").strip()
     device = str(request.data.get("appareil") or "").strip()
-
-    enregistrement = (
-        VendorVerificationCode.objects.filter(
-            device=device, purpose=VendorVerificationCode.Purpose.LOGIN, used_at__isnull=True,
-        ).order_by("-created_at").first()
-    )
-    if enregistrement is None or enregistrement.expires_at <= timezone.now():
+    if not device:
         return Response({"ok": False, "raison": "expire"})
-    if enregistrement.essais >= VendorVerificationCode.ESSAIS_MAX:
-        return Response({"ok": False, "raison": "bloque", "jusqua": _ms(enregistrement.expires_at)})
 
-    if not enregistrement.check_code(code):
-        return Response({
-            "ok": False, "raison": "code",
-            "essaisRestants": max(0, VendorVerificationCode.ESSAIS_MAX - enregistrement.essais),
-        })
+    cle = f"appareil:{device[:120]}"
+    resultat = otp_services.verifier(objet=CodeOtp.Objet.VENDEUR_CONNEXION, code=code, cle=cle)
+    if not resultat.get("ok"):
+        if resultat.get("bloqueJusqua"):
+            return Response({"ok": False, "raison": "bloque", "jusqua": resultat["bloqueJusqua"]})
+        if resultat.get("expire"):
+            return Response({"ok": False, "raison": "expire"})
+        return Response({"ok": False, "raison": "code", "essaisRestants": resultat.get("essaisRestants", 0)})
 
-    profile = VendorProfile.objects.filter(phone__endswith=enregistrement.phone).select_related("user").first()
+    utilise = otp_services.dernier_utilise(objet=CodeOtp.Objet.VENDEUR_CONNEXION, cle=cle)
+    profile = VendorProfile.objects.filter(user=utilise.utilisateur).select_related("user").first() if utilise else None
     if profile is None:
         return Response({"ok": False, "raison": "expire"})
 
@@ -205,9 +183,6 @@ def auth_password_reset_request(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def shops_open(request):
-    if VendorProfile.objects.filter(user=request.user).exists():
-        return Response({"ok": False, "raison": "deux_comptes"})
-
     nom = str(request.data.get("nom") or "").strip()
     categorie = str(request.data.get("categorie") or "").strip()
     statut = str(request.data.get("statut") or "particulier").strip()
@@ -221,13 +196,14 @@ def shops_open(request):
         return Response({"ok": False, "raison": "categorie"})
     if not telephone or not telephone.isdigit() or len(telephone) != 9 or telephone[0] != "6":
         return Response({"ok": False, "raison": "numero"})
-    if VendorProfile.objects.filter(phone__endswith=telephone).exists():
-        return Response({"ok": False, "raison": "numero"})
 
-    profile = VendorProfile.objects.create(
-        user=request.user, business_name=nom[:255], business_description="", phone=telephone[:20],
-        address="", city="",
-    )
+    # Feuille de route D19 : une seule règle d'ouverture pour tous les écrans (apps.vendors.ouverture).
+    from apps.vendors.ouverture import Refus, ouvrir_boutique
+
+    try:
+        profile = ouvrir_boutique(request.user, nom=nom, telephone=telephone)
+    except Refus as refus:
+        return Response({"ok": False, "raison": "nom" if refus.raison == "nom_pris" else refus.raison})
     VendorShopMeta.objects.create(
         vendor=profile, categorie=categorie[:80],
         statut=statut if statut in VendorShopMeta.Statut.values else VendorShopMeta.Statut.PARTICULIER,
@@ -239,47 +215,50 @@ def shops_open(request):
             representative_phone=telephone, latitude=point["lat"], longitude=point["lon"], is_main=True,
         )
 
-    envoi = services.generer_code(VendorVerificationCode.LONGUEUR)
-    enregistrement = VendorVerificationCode(
-        phone=telephone, purpose=VendorVerificationCode.Purpose.SHOP_PHONE, device=device[:120],
-        expires_at=timezone.now() + timedelta(minutes=VendorVerificationCode.VALIDE_MINUTES),
-    )
-    enregistrement.set_code(envoi)
-    enregistrement.save()
-    services.envoyer_code_sms(telephone, envoi, VendorVerificationCode.VALIDE_MINUTES)
+    # Feuille de route D6 : code de vérification du numéro par le moteur unique (apps.otp).
+    try:
+        envoi = otp_services.envoyer(objet=CodeOtp.Objet.VENDEUR_OUVERTURE, destination=telephone,
+                                     utilisateur=request.user, exiger_utilisateur=True)
+    except ErreurClient:
+        envoi = None
+    enregistrement = (CodeOtp.objects.filter(objet=CodeOtp.Objet.VENDEUR_OUVERTURE, utilisateur=request.user)
+                      .order_by("-cree_le").first())
+    return Response({"ok": True, "envoi": _envoi_payload(enregistrement, envoi) if enregistrement else None},
+                    status=status.HTTP_201_CREATED)
 
-    return Response({
-        "ok": True,
-        "envoi": {
-            "id": str(enregistrement.id), "canal": "sms", "destination": masquer_numero(telephone),
-            "envoyeA": _ms(enregistrement.created_at), "valideMinutes": VendorVerificationCode.VALIDE_MINUTES,
-            "renvoiSecondes": VendorVerificationCode.RENVOI_SECONDES, "renvoisRestants": 2,
-        },
-    }, status=status.HTTP_201_CREATED)
+
+# Pièces de l'écran vendeur -> types du verrou D19 (apps.vendors.kyc).
+PIECES_KYC = {"recto": "CNI_RECTO", "verso": "CNI_VERSO", "selfie": "SELFIE_VIDEO"}
 
 
 @extend_schema(tags=TAG, summary="Session — submit a KYC piece")
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def shops_kyc(request, shop_id):
-    vendor = vendeur_ou_404(request)
+    from apps.accounts.compliance import FichierRefuse, deposer_piece
+    from apps.accounts.models import ComplianceDocument
+    from apps.vendors import kyc
+
+    vendeur_ou_404(request)
     piece = str(request.data.get("piece") or "").strip()
     image = request.data.get("image") or request.FILES.get("image")
-    if piece not in VendorKycPiece.Piece.values or not image:
+    document_type = PIECES_KYC.get(piece)
+    if document_type is None or not image:
         return Response({"detail": "Pièce ou image manquante."}, status=400)
-
-    defaults = {"etat": VendorKycPiece.Etat.RECU, "motif_refus": "", "decided_at": None}
-    if hasattr(image, "read"):
-        defaults["image"] = image
-        enregistrement, _created = VendorKycPiece.objects.update_or_create(
-            vendor=vendor, piece=piece, defaults=defaults,
-        )
-    else:
-        # data: URL ou chemin déjà stocké côté client : accepté tel quel (stockage effectif d'un data: URL
-        # hors du périmètre fichier binaire de ce module ; signalé dans le rapport final).
+    if not hasattr(image, "read"):
+        # data: URL ou chemin côté client : pas un fichier, rien à stocker.
         return Response({"ok": False, "raison": "illisible"})
 
-    return Response({"ok": True, "dossier": {"piece": piece, "etat": enregistrement.etat}})
+    # Feuille de route D19 : un seul stockage des pièces, celui que lit le verrou de publication et de versement
+    # (apps.vendors.kyc) ; accès restreint (ComplianceDocumentFileView), vidéo acceptée pour le selfie.
+    try:
+        document, _cree = deposer_piece(request.user, ComplianceDocument.OwnerRole.VENDOR, document_type, image)
+    except FichierRefuse as erreur:
+        return Response({"ok": False, "raison": "illisible", "detail": erreur.message})
+    etat = {ComplianceDocument.Status.APPROVED: "verifie", ComplianceDocument.Status.REJECTED: "refuse"}.get(
+        document.status, "recu")
+    return Response({"ok": True, "dossier": {"piece": piece, "etat": etat, "motif": document.review_note,
+                                             "verification": kyc.etat_verification(request.user)}})
 
 
 @extend_schema(tags=TAG, summary="Session — sign the vendor contract")

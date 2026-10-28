@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Check, Lock, Package, ShieldCheck, Store, Truck } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
-import { ordersApi } from '@/services/api/orders';
+import { ordersApi, type DevisPanier } from '@/services/api/orders';
 import { useToast } from '@/context/ToastContext';
 import { PhoneInput } from "@/components/ui/PhoneInput";
 import { PfShellStyles } from "@/styles/pfShell";
@@ -84,9 +84,18 @@ export default function CheckoutPage() {
   const selectedIds = useMemo(() => readCheckoutSelection(), [items.length]);
   const checkoutItems = selectedIds.length > 0 ? items.filter((i) => selectedIds.includes(i.id)) : items;
   const subtotal = checkoutItems.reduce((s, i) => s + i.price * i.quantity, 0);
-  const shipping = isPickup ? 0 : 2000;
-  const finalTotal = subtotal + shipping;
-  const fmt = (n: number) => `${n.toLocaleString(locale)} FCFA`;
+  // Frais, livraison offerte, frais Mobile Money et total : calculés par le serveur (spec v2.1, A1 et A2),
+  // recalculés à chaque changement du panier ou du lieu (R84.3) ; jamais un forfait ici.
+  const [devis, setDevis] = useState<DevisPanier | null>(null);
+  // D14, R42 : au relais, le client peut payer une avance maintenant et le reste par Mobile Money au comptoir.
+  const [auComptoir, setAuComptoir] = useState(false);
+  const moyen = isPickup && auComptoir ? 'comptoir' as const : undefined;
+  const [devisLoading, setDevisLoading] = useState(false);
+  const frais = devis?.frais ?? null;
+  const shipping = frais?.frais_client ?? null;
+  const finalTotal = frais?.total_a_payer ?? null;
+  // R12.4 : francs entiers, une espace entre les milliers, suivis de « F ».
+  const fmt = (n: number) => `${Math.round(n).toLocaleString('fr-FR').replace(/[\u202f\u00a0]/g, ' ')} F`;
 
   // Point le plus proche AVEC de la place — regle verrouillee : on ne trie
   // jamais par disponibilite, seulement par distance, pour que l'acheteur
@@ -104,6 +113,36 @@ export default function CheckoutPage() {
   useEffect(() => {
     setAddressPrecision(null);
   }, [formData.address, formData.city]);
+
+  const cleDevis = JSON.stringify([
+    checkoutItems.filter((i) => !i.isDemo).map((i) => [i.id, i.quantity]), isPickup, selectedRelay?.id ?? null,
+    formData.district.trim(), formData.deliveryLatitude, formData.deliveryLongitude, moyen ?? null,
+  ]);
+  useEffect(() => {
+    const lignes = checkoutItems.filter((i) => !i.isDemo);
+    if (lignes.length === 0 || (isPickup && !selectedRelay) || (!isPickup && formData.deliveryLatitude === null)) {
+      setDevis(null);
+      return;
+    }
+    let annule = false;
+    setDevisLoading(true);
+    const minuteur = window.setTimeout(() => {
+      ordersApi.devis({
+        delivery_mode: isPickup ? 'PICKUP' : 'DELIVERY',
+        district: isPickup ? undefined : formData.district,
+        delivery_latitude: isPickup ? undefined : formData.deliveryLatitude,
+        delivery_longitude: isPickup ? undefined : formData.deliveryLongitude,
+        relay_point_id: isPickup ? selectedRelay!.id : undefined,
+        cart_items: lignes.map((item) => ({ product_id: item.id, qty: item.quantity })),
+        moyen,
+      })
+        .then((d) => { if (!annule) setDevis(d); })
+        .catch(() => { if (!annule) setDevis(null); })
+        .finally(() => { if (!annule) setDevisLoading(false); });
+    }, 350);
+    return () => { annule = true; window.clearTimeout(minuteur); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cleDevis]);
 
   useEffect(() => {
     if (!isPickup || !navigator.geolocation) return;
@@ -197,6 +236,8 @@ export default function CheckoutPage() {
         delivery_longitude: isPickup ? undefined : formData.deliveryLongitude,
         authorized_pickup_name: allowThirdPartyPickup ? thirdPartyPickup.name.trim() : '',
         authorized_pickup_phone: allowThirdPartyPickup ? thirdPartyPickup.phone.trim() : '',
+        total_attendu: finalTotal,
+        moyen,
         cart_items: checkoutItems.map((item) => ({
           product_id: item.id, qty: item.quantity, title: item.name,
           price_xaf: item.price, image_url: item.image, is_demo: item.isDemo,
@@ -204,6 +245,23 @@ export default function CheckoutPage() {
       });
       setPayingOrderId(order.id);
     } catch (error) {
+      // R93.6 : le total a changé entre l'affichage et le paiement — « Un prix a changé », puis le nouveau devis.
+      if (error instanceof Error && error.message === "Un prix a changé") {
+        setDevis(null);
+        try {
+          setDevis(await ordersApi.devis({
+            delivery_mode: isPickup ? 'PICKUP' : 'DELIVERY',
+            district: isPickup ? undefined : formData.district,
+            delivery_latitude: isPickup ? undefined : formData.deliveryLatitude,
+            delivery_longitude: isPickup ? undefined : formData.deliveryLongitude,
+            relay_point_id: isPickup ? selectedRelay!.id : undefined,
+            cart_items: checkoutItems.filter((i) => !i.isDemo).map((item) => ({ product_id: item.id, qty: item.quantity })),
+            moyen,
+          }));
+        } catch { /* le devis se recalculera au prochain changement */ }
+        showToast("Un prix a changé", { description: t('cl1_checkout.price_changed_hint'), type: "warning" });
+        return;
+      }
       showToast(error instanceof Error ? t('cl1_checkout.order_rejected_with_reason', { reason: error.message }) : t('cl1_checkout.order_rejected_by_server'), "error");
     } finally {
       setLoading(false);
@@ -517,10 +575,30 @@ export default function CheckoutPage() {
                     {t('cl1_checkout.operator_choice_hint')}
                   </div>
                 </div>
+
+                {isPickup && (
+                  <label className="pf-info-note" style={{ cursor: "pointer", alignItems: "flex-start" }}>
+                    <input type="checkbox" checked={auComptoir} onChange={(e) => setAuComptoir(e.target.checked)} style={{ marginTop: 3 }} />
+                    <div className="pf-muted-sm" style={{ lineHeight: 1.6, color: "var(--pf-text)" }}>
+                      <b>Payer le reste au comptoir du relais</b>
+                      <div>Une avance maintenant, le reste par Mobile Money au retrait. Le code de retrait arrive après ce paiement.</div>
+                    </div>
+                  </label>
+                )}
               </section>
 
-              <button type="submit" className="pf-btn-accent pf-btn-block" disabled={loading}>
-                <Lock size={16} />{loading ? t('cl1_checkout.creating_order') : t('cl1_checkout.pay_amount', { amount: fmt(finalTotal) })}
+              {devis && !devis.ok && devis.messages.length > 0 && (
+                <div className="pf-info-note" role="alert" style={{ borderColor: "#f59e0b55", background: "#f59e0b12" }}>
+                  <div className="pf-muted-sm" style={{ lineHeight: 1.6, color: "var(--pf-text)" }}>
+                    {devis.messages.map((m) => <div key={m}>{m}</div>)}
+                  </div>
+                </div>
+              )}
+
+              <button type="submit" className="pf-btn-accent pf-btn-block" disabled={loading || !devis?.ok || finalTotal === null}>
+                <Lock size={16} />{loading
+                  ? t('cl1_checkout.creating_order')
+                  : finalTotal !== null ? t('cl1_checkout.pay_amount', { amount: fmt(finalTotal) }) : t('cl1_checkout.fees_pending')}
               </button>
             </form>
 
@@ -531,11 +609,11 @@ export default function CheckoutPage() {
               <div className="pf-hero pf-anim">
                 <i />
                 <div className="pf-hero-k">{t('cl1_checkout.total_to_pay')}</div>
-                <div className="pf-hero-v">{finalTotal.toLocaleString(locale)}<span>FCFA</span></div>
+                <div className="pf-hero-v">{finalTotal !== null ? fmt(finalTotal) : "—"}</div>
                 <div style={{ position: "relative", marginTop: 14, display: "flex", gap: 18, fontSize: 12, opacity: .88 }}>
-                  <span>{t('cl1_checkout.items_label')} <b>{subtotal.toLocaleString(locale)}</b></span>
+                  <span>{t('cl1_checkout.items_label')} <b>{fmt(frais?.st ?? subtotal)}</b></span>
                   <span style={{ opacity: .4 }}>|</span>
-                  <span>{isPickup ? `${t('cl1_checkout.pickup_label')} ` : `${t('cl1_checkout.delivery_label')} `}<b>{shipping === 0 ? t('cl1_checkout.free') : shipping.toLocaleString(locale)}</b></span>
+                  <span>{isPickup ? `${t('cl1_checkout.pickup_label')} ` : `${t('cl1_checkout.delivery_label')} `}<b>{shipping !== null ? fmt(shipping) : "—"}</b></span>
                 </div>
               </div>
 
@@ -556,13 +634,34 @@ export default function CheckoutPage() {
                 ))}
 
                 <div style={{ marginTop: 14, borderTop: "1px solid var(--pf-border)", paddingTop: 12 }}>
-                  <div className="pf-summary-row"><span className="pf-muted-sm">{t('cart.subtotal')}</span><span className="pf-summary-v">{fmt(subtotal)}</span></div>
+                  <div className="pf-summary-row"><span className="pf-muted-sm">{t('cart.subtotal')}</span><span className="pf-summary-v">{fmt(frais?.st ?? subtotal)}</span></div>
                   <div className="pf-summary-row">
-                    <span className="pf-muted-sm">{isPickup ? t('cl1_checkout.store_pickup') : t('cart.shipping')}</span>
-                    <span className="pf-summary-v" style={isPickup ? { color: "#128a45" } : undefined}>{isPickup ? t('cl1_checkout.free') : fmt(shipping)}</span>
+                    <span className="pf-muted-sm">{isPickup ? t('cl1_checkout.relay_delivery') : t('cart.shipping')}</span>
+                    <span className="pf-summary-v">{shipping !== null ? fmt(shipping) : devisLoading ? "…" : "—"}</span>
                   </div>
+                  {frais?.libelle_livraison ? (
+                    <div className="pf-muted-sm" style={{ color: "#128a45", fontWeight: 700 }}>{frais.libelle_livraison}</div>
+                  ) : null}
+                  {devis?.ok && devis.promesse?.texte ? (
+                    <div className="pf-muted-sm" style={{ fontWeight: 700 }}>{devis.promesse.texte}</div>
+                  ) : null}
+                  {frais && frais.frais_momo > 0 && (
+                    <div className="pf-summary-row">
+                      <span className="pf-muted-sm">{t('cl1_checkout.momo_fees')}</span>
+                      <span className="pf-summary-v">{fmt(frais.frais_momo)}</span>
+                    </div>
+                  )}
+                  {frais?.comptoir ? (
+                    <div className="pf-summary-row">
+                      <span className="pf-muted-sm">Au comptoir, au retrait</span>
+                      <span className="pf-summary-v">{fmt(frais.comptoir.au_comptoir + frais.comptoir.frais_momo_comptoir)}</span>
+                    </div>
+                  ) : null}
+                  {frais?.manque_livraison_offerte ? (
+                    <div className="pf-muted-sm">{t('cl1_checkout.missing_for_free_delivery', { amount: fmt(frais.manque_livraison_offerte) })}</div>
+                  ) : null}
                   <div className="pf-total-row" style={{ marginTop: 10, paddingTop: 12, borderTop: "1px dashed var(--pf-border)" }}>
-                    <span className="pf-muted-sm">{t('cart.total')}</span><b>{fmt(finalTotal)}</b>
+                    <span className="pf-muted-sm">{t('cart.total')}</span><b>{finalTotal !== null ? fmt(finalTotal) : "—"}</b>
                   </div>
                 </div>
 
@@ -579,7 +678,7 @@ export default function CheckoutPage() {
       {payingOrderId !== null && (
         <PaymentSheet
           orderId={payingOrderId}
-          amountXaf={finalTotal}
+          amountXaf={finalTotal ?? 0}
           defaultPhone={formData.phone}
           onClose={() => { const id = payingOrderId; setPayingOrderId(null); navigate(`/orders/${id}`); }}
           onSuccess={handlePaid}

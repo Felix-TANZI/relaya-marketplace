@@ -1,0 +1,24 @@
+{
+  "id": "/livreur/",
+  "name": "BelivaY Livreur",
+  "short_name": "BelivaY Livreur",
+  "description": "Votre journée, votre tournée, vos remises et vos preuves, même sans réseau.",
+  "lang": "fr",
+  "dir": "ltr",
+  "start_url": "/livreur/",
+  "scope": "/livreur/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F2F7F4",
+  "theme_color": "#F2F7F4",
+  "categories": ["business", "navigation"],
+  "icons": [
+    { "src": "/livreur/icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/livreur/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/livreur/icone-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Ma tournée", "short_name": "Tournée", "url": "/livreur/tournee", "icons": [{ "src": "/livreur/icone-192.png", "sizes": "192x192" }] },
+    { "name": "Signaler un incident", "short_name": "Incident", "url": "/livreur/incident", "icons": [{ "src": "/livreur/icone-192.png", "sizes": "192x192" }] }
+  ]
+}

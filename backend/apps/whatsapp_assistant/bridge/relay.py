@@ -169,10 +169,11 @@ class ActionResult:
     REFUSED = "refused"
 
 
-def receive_parcel(parcel_id: int, relay_id: int) -> str:
+def receive_parcel(parcel_id: int, relay_id: int, depot_code: str = "") -> str:
     """
-    « Colis recu » : passe par le serializer du portail relais, qui verifie la
-    capacite, genere le code de retrait et previent l'acheteur.
+    « Colis recu » : passe par le serializer du portail relais, qui verifie le
+    code de depot du livreur (spec v2.1, R66.1) et la capacite, genere le code
+    de retrait et previent l'acheteur.
     """
     from rest_framework.exceptions import ValidationError
 
@@ -197,13 +198,15 @@ def receive_parcel(parcel_id: int, relay_id: int) -> str:
             return ActionResult.REFUSED
 
         serializer = RelayParcelReceiveSerializer(
-            data={"shipment_id": parcel.shipment_id},
+            data={"shipment_id": parcel.shipment_id, "depot_code": depot_code},
             context={"relay_point": profile},
         )
         try:
             serializer.is_valid(raise_exception=True)
             serializer.save()
         except ValidationError as error:
+            if isinstance(error.detail, dict) and "depot_code" in error.detail:
+                return ActionResult.BAD_CODE
             detail = str(error.detail).lower()
             if "capacit" in detail or "complet" in detail or "full" in detail:
                 return ActionResult.FULL

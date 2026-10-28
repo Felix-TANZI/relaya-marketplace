@@ -1,0 +1,3585 @@
+{
+  "meta": {
+    "version": "1.4",
+    "date": "16 octobre 2026",
+    "remplace": "versions 1.0 à 1.3",
+    "objet": "Données à saisir : frais de livraison (D10), meilleure offre (D8), commission par catégorie (D17), zones servies (D10), entreprises de livraison (D11)",
+    "statuts": {
+      "fixe": "règle de la V2 Élite (16 octobre 2026), décision du porteur, ou règle du registre non remplacée",
+      "propose": "valeur proposée, réglable dans l'admin",
+      "a_trancher": "choix ouvert, valeur par défaut indiquée"
+    },
+    "sources": {
+      "elite": "« Reste à faire de l'équipe tech & produit », V2 Élite, 16 octobre 2026 (34 tâches, D1 à D34), qui remplace la version 6 du 10 octobre",
+      "decisions": "Décisions du porteur du 10 octobre 2026 (dont la règle de meilleure offre régulée par le Trust Score et la répartition)",
+      "academie": "Corrections de la BelivaY Academy du 10 octobre 2026",
+      "registre": "Registre des règles vendeur v1.2 du 21 septembre 2026 (règles non remplacées depuis)",
+      "logistique": "Décisions logistiques v2.0 (5 emballages, 12 zones, plafonds par palier des entreprises) et plan logistique du 22 août 2026",
+      "point_dev": "Point de l'équipe de développement du 16 octobre 2026 (éléments à fournir)"
+    },
+    "monnaie": "XAF (franc CFA)"
+  },
+  "livraison": {
+    "reglages_calcul": {
+      "t_base_f": 1500,
+      "d0_km": 5,
+      "t_km_f": 200,
+      "supplement_f": {
+        "S": 0,
+        "M": 500,
+        "L": 1500
+      },
+      "xl": {
+        "base_f": 5000,
+        "d0_km": 10,
+        "km_f": 300
+      },
+      "arrondi": "centaine_superieure",
+      "distance": "routiere_osrm",
+      "coef_repli_vol_oiseau": 1.35,
+      "d_max_domicile_km": 25,
+      "domicile_min_f": 1500,
+      "domicile_plafond_f": null,
+      "domicile_seuil_couverture_f": 50000,
+      "domicile_couverture_f": 1500,
+      "relais_prix_f": 900,
+      "relais_seuil_offert_f": 30000,
+      "campay_commande_taux": 0.02,
+      "campay_taxes_taux": 0.0,
+      "campay_arrondi": "franc_superieur",
+      "campay_base": "commande_entiere",
+      "marge_securite_taux": 0.1,
+      "remplacement_ecart_max_taux": 0.05,
+      "seuils_portee": "expedition",
+      "retour_trajet_f": 500,
+      "frais_momo_rembourses": "seulement_si_faute_vendeur"
+    },
+    "delais": {
+      "plage_domicile": [
+        "08:00",
+        "18:00"
+      ],
+      "jours_domicile": [
+        "lundi",
+        "mardi",
+        "mercredi",
+        "jeudi",
+        "vendredi",
+        "samedi"
+      ],
+      "heure_limite_jour_meme": "13:00",
+      "promesse_domicile_h": 5,
+      "etape_acceptation_vendeur": false,
+      "preparation_domicile_h": 3,
+      "preparation_relais_h_ouvrees": 4,
+      "echeance_preparation_h": 24,
+      "prise_paquet_entreprise_min": 15,
+      "ramassage_min": 90,
+      "depart_relais_colis": 5
+    },
+    "reglages": [
+      {
+        "cle": "dom_min",
+        "libelle": "Frais domicile minimum",
+        "valeur": 1500,
+        "unite": "F",
+        "statut": "fixe",
+        "note": "selon commande et distance, sans plafond"
+      },
+      {
+        "cle": "dom_plafond",
+        "libelle": "Plafond des frais domicile",
+        "valeur": "aucun",
+        "unite": "",
+        "statut": "fixe",
+        "note": ""
+      },
+      {
+        "cle": "dom_seuil",
+        "libelle": "Seuil de couverture domicile (sous-total)",
+        "valeur": 50000,
+        "unite": "F",
+        "statut": "fixe",
+        "note": ""
+      },
+      {
+        "cle": "dom_couverture",
+        "libelle": "Montant couvert par BelivaY au-delà du seuil",
+        "valeur": 1500,
+        "unite": "F",
+        "statut": "fixe",
+        "note": "le client paie le surplus"
+      },
+      {
+        "cle": "relais_prix",
+        "libelle": "Livraison au relais",
+        "valeur": 900,
+        "unite": "F",
+        "statut": "fixe",
+        "note": ""
+      },
+      {
+        "cle": "relais_seuil",
+        "libelle": "Relais offert dès (sous-total)",
+        "valeur": 30000,
+        "unite": "F",
+        "statut": "fixe",
+        "note": ""
+      },
+      {
+        "cle": "delai_domicile",
+        "libelle": "Promesse domicile en zone servie",
+        "valeur": "moins de 5 h",
+        "unite": "",
+        "statut": "fixe",
+        "note": ""
+      },
+      {
+        "cle": "campay_commande",
+        "libelle": "Frais Mobile Money (CamPay) sur la commande",
+        "valeur": "2 % + taxes éventuelles",
+        "unite": "",
+        "statut": "fixe",
+        "note": "payés par le client, inclus dans le total montré avant le paiement"
+      },
+      {
+        "cle": "campay_taxes",
+        "libelle": "Taxes ajoutées aux frais Mobile Money",
+        "valeur": "0 %",
+        "unite": "",
+        "statut": "a_trancher",
+        "note": "0 % tant que le contrat CamPay n'en prévoit pas"
+      },
+      {
+        "cle": "campay_base",
+        "libelle": "Base des frais Mobile Money",
+        "valeur": "commande entière",
+        "unite": "",
+        "statut": "propose",
+        "note": "un seul paiement : un seul arrondi"
+      },
+      {
+        "cle": "wallet_paiement",
+        "libelle": "Frais de paiement avec le Wallet",
+        "valeur": 0,
+        "unite": "F",
+        "statut": "fixe",
+        "note": "Wallet fermé jusqu'à l'avis juridique"
+      },
+      {
+        "cle": "marge_securite",
+        "libelle": "Marge de sécurité sur le coût payé aux entreprises",
+        "valeur": "10 %",
+        "unite": "",
+        "statut": "fixe",
+        "note": "décision du 19 septembre 2026"
+      },
+      {
+        "cle": "t_base",
+        "libelle": "Tarif de course jusqu'à 5 km",
+        "valeur": 1500,
+        "unite": "F",
+        "statut": "propose",
+        "note": ""
+      },
+      {
+        "cle": "d0",
+        "libelle": "Distance incluse dans le tarif de base",
+        "valeur": 5,
+        "unite": "km",
+        "statut": "propose",
+        "note": ""
+      },
+      {
+        "cle": "t_km",
+        "libelle": "Prix par km entamé au-delà de 5 km",
+        "valeur": 200,
+        "unite": "F/km",
+        "statut": "propose",
+        "note": ""
+      },
+      {
+        "cle": "arrondi",
+        "libelle": "Arrondi des frais de livraison",
+        "valeur": "centaine supérieure",
+        "unite": "",
+        "statut": "propose",
+        "note": ""
+      },
+      {
+        "cle": "distance",
+        "libelle": "Distance utilisée",
+        "valeur": "distance routière",
+        "unite": "",
+        "statut": "propose",
+        "note": "moteur d'itinéraire OSRM"
+      },
+      {
+        "cle": "detour",
+        "libelle": "Coefficient de repli (vol d'oiseau vers route)",
+        "valeur": 1.35,
+        "unite": "",
+        "statut": "propose",
+        "note": "si le moteur d'itinéraire ne répond pas"
+      },
+      {
+        "cle": "d_max",
+        "libelle": "Distance maximale pour la promesse domicile < 5 h",
+        "valeur": 25,
+        "unite": "km",
+        "statut": "propose",
+        "note": ""
+      },
+      {
+        "cle": "sup_m",
+        "libelle": "Supplément colis M",
+        "valeur": 500,
+        "unite": "F",
+        "statut": "propose",
+        "note": ""
+      },
+      {
+        "cle": "sup_l",
+        "libelle": "Supplément colis L",
+        "valeur": 1500,
+        "unite": "F",
+        "statut": "propose",
+        "note": ""
+      },
+      {
+        "cle": "xl_base",
+        "libelle": "Colis XL : tarif véhicule jusqu'à 10 km",
+        "valeur": 5000,
+        "unite": "F",
+        "statut": "propose",
+        "note": "XL : domicile seulement"
+      },
+      {
+        "cle": "xl_km",
+        "libelle": "Colis XL : prix par km entamé au-delà de 10 km",
+        "valeur": 300,
+        "unite": "F/km",
+        "statut": "propose",
+        "note": ""
+      },
+      {
+        "cle": "plage_domicile",
+        "libelle": "Plage horaire des livraisons à domicile",
+        "valeur": "8 h à 18 h",
+        "unite": "",
+        "statut": "propose",
+        "note": "heures de service de l'offre de référence"
+      },
+      {
+        "cle": "jours_domicile",
+        "libelle": "Jours de livraison à domicile",
+        "valeur": "lundi au samedi",
+        "unite": "",
+        "statut": "propose",
+        "note": "pas de livraison à domicile le dimanche"
+      },
+      {
+        "cle": "heure_limite",
+        "libelle": "Heure limite pour une livraison domicile le jour même",
+        "valeur": "13 h",
+        "unite": "",
+        "statut": "propose",
+        "note": "après : jour de livraison suivant avant 13 h"
+      },
+      {
+        "cle": "delai_prep_domicile",
+        "libelle": "Délai pour « C'est prêt », commande à domicile",
+        "valeur": 3,
+        "unite": "h",
+        "statut": "propose",
+        "note": "depuis le paiement, dans les heures d'ouverture"
+      },
+      {
+        "cle": "delai_prep_relais",
+        "libelle": "Délai pour « C'est prêt », commande au relais",
+        "valeur": 4,
+        "unite": "h ouvrées",
+        "statut": "fixe",
+        "note": "registre vendeur E4"
+      },
+      {
+        "cle": "echeance_prep",
+        "libelle": "Échéance absolue de préparation d'un article en stock",
+        "valeur": 24,
+        "unite": "h",
+        "statut": "fixe",
+        "note": "registre vendeur E4"
+      },
+      {
+        "cle": "acceptation_paquet",
+        "libelle": "Délai pour qu'une entreprise prenne un paquet publié",
+        "valeur": 15,
+        "unite": "min",
+        "statut": "propose",
+        "note": "sinon alerte à l'équipe logistique"
+      },
+      {
+        "cle": "ramassage",
+        "libelle": "Délai de ramassage après « C'est prêt »",
+        "valeur": 90,
+        "unite": "min",
+        "statut": "propose",
+        "note": ""
+      },
+      {
+        "cle": "depart_relais",
+        "libelle": "Départ groupé vers un relais",
+        "valeur": "dès 5 colis",
+        "unite": "",
+        "statut": "propose",
+        "note": "jamais seul avant le 2e créneau d'attente"
+      },
+      {
+        "cle": "tolerance_demarrage",
+        "libelle": "Tolérance de prix livré, mois 1 et 2",
+        "valeur": "8 % et 1 000 F au plus",
+        "unite": "",
+        "statut": "propose",
+        "note": "phase Démarrage"
+      },
+      {
+        "cle": "tolerance_croissance",
+        "libelle": "Tolérance de prix livré, mois 3 et 4",
+        "valeur": "5 % et 500 F au plus",
+        "unite": "",
+        "statut": "propose",
+        "note": "phase Croissance"
+      },
+      {
+        "cle": "tolerance_regime",
+        "libelle": "Tolérance de prix livré, dès le mois 5",
+        "valeur": "3 % et 300 F au plus",
+        "unite": "",
+        "statut": "propose",
+        "note": "phase Régime"
+      },
+      {
+        "cle": "poids_score",
+        "libelle": "Poids du score : prix livré, Trust Score, délai, stock, avis",
+        "valeur": "35 / 30 / 15 / 10 / 10",
+        "unite": "",
+        "statut": "propose",
+        "note": "dossier de référence § 6.9"
+      },
+      {
+        "cle": "boost_made_in_cm",
+        "libelle": "Bonus Made in Cameroon",
+        "valeur": 5,
+        "unite": "points",
+        "statut": "propose",
+        "note": ""
+      },
+      {
+        "cle": "exposant_score",
+        "libelle": "La part suit le score à la puissance",
+        "valeur": 2,
+        "unite": "",
+        "statut": "propose",
+        "note": ""
+      },
+      {
+        "cle": "note_sans_avis",
+        "libelle": "Note d'une offre sans avis",
+        "valeur": "3 sur 5",
+        "unite": "",
+        "statut": "propose",
+        "note": "neutre, jamais zéro"
+      },
+      {
+        "cle": "seuil_bradage",
+        "libelle": "Offre mise en contrôle si son prix est sous",
+        "valeur": "70 % de la médiane",
+        "unite": "",
+        "statut": "propose",
+        "note": "anti-bradage du dossier § 6.9"
+      },
+      {
+        "cle": "suivre_meilleur_prix",
+        "libelle": "« Suivre le meilleur prix » (choix du vendeur)",
+        "valeur": "recalcul chaque heure",
+        "unite": "",
+        "statut": "propose",
+        "note": "jamais sous son prix minimum"
+      },
+      {
+        "cle": "suggestion_prix",
+        "libelle": "Suggestion de prix au vendeur",
+        "valeur": "chaque lundi",
+        "unite": "",
+        "statut": "propose",
+        "note": "commandes manquées et prix à atteindre"
+      },
+      {
+        "cle": "trust_min",
+        "libelle": "Trust Score minimal pour recevoir une commande",
+        "valeur": 40,
+        "unite": "",
+        "statut": "propose",
+        "note": "un vendeur à 39 ou moins est écarté"
+      },
+      {
+        "cle": "trust_remplacement",
+        "libelle": "Trust Score minimal d'un vendeur de remplacement",
+        "valeur": 75,
+        "unite": "",
+        "statut": "fixe",
+        "note": "registre vendeur I1"
+      },
+      {
+        "cle": "part_max",
+        "libelle": "Part cible maximale d'un vendeur",
+        "valeur": "50 %",
+        "unite": "",
+        "statut": "propose",
+        "note": "par produit et par zone"
+      },
+      {
+        "cle": "part_min_nouveau",
+        "libelle": "Part cible minimale d'un nouveau vendeur",
+        "valeur": "15 %",
+        "unite": "",
+        "statut": "propose",
+        "note": ""
+      },
+      {
+        "cle": "periode_parts",
+        "libelle": "Période de mesure des parts",
+        "valeur": 7,
+        "unite": "jours",
+        "statut": "propose",
+        "note": "glissants, par produit et par zone"
+      },
+      {
+        "cle": "nouveau_vendeur",
+        "libelle": "Nouveau vendeur : moins de",
+        "valeur": 10,
+        "unite": "commandes livrées",
+        "statut": "propose",
+        "note": ""
+      },
+      {
+        "cle": "plafond_nouveau",
+        "libelle": "Plafond d'une commande pour un nouveau vendeur",
+        "valeur": 500000,
+        "unite": "F",
+        "statut": "propose",
+        "note": "registre vendeur C10"
+      },
+      {
+        "cle": "remplacement",
+        "libelle": "Écart de prix maximal du vendeur de remplacement",
+        "valeur": "5 %",
+        "unite": "",
+        "statut": "fixe",
+        "note": "pris en charge au plus : commission ÷ 1,10 − coûts déjà payés"
+      },
+      {
+        "cle": "seuils_portee",
+        "libelle": "Portée des seuils 30 000 F et 50 000 F",
+        "valeur": "par expédition (boutique)",
+        "unite": "",
+        "statut": "a_trancher",
+        "note": "autre choix : sur le panier entier"
+      },
+      {
+        "cle": "garde_jour",
+        "libelle": "Jour de garde",
+        "valeur": "jour calendaire, J1 = jour d'arrivée au relais",
+        "unite": "",
+        "statut": "propose",
+        "note": ""
+      },
+      {
+        "cle": "retour_trajet",
+        "libelle": "Trajet de retour d'un colis",
+        "valeur": 500,
+        "unite": "F",
+        "statut": "propose",
+        "note": "registre vendeur H5 ; payé selon l'arbitrage (H4)"
+      },
+      {
+        "cle": "rembourse_momo",
+        "libelle": "Frais Mobile Money au remboursement",
+        "valeur": "non remboursés",
+        "unite": "",
+        "statut": "a_trancher",
+        "note": "remboursés si la faute est au vendeur, repris sur lui"
+      }
+    ],
+    "classes_colis": [
+      {
+        "classe": "S",
+        "nom": "Petit",
+        "emballage": "emballage BelivaY S ou M (sachets de 20 × 30 ou 25 × 35 cm)",
+        "supplement_f": 0,
+        "relais": true
+      },
+      {
+        "classe": "M",
+        "nom": "Moyen",
+        "emballage": "emballage BelivaY L (sachet de 35 × 45 cm) ou C1 (carton de 30 × 20 × 15 cm)",
+        "supplement_f": 500,
+        "relais": true
+      },
+      {
+        "classe": "L",
+        "nom": "Grand",
+        "emballage": "emballage BelivaY C2 (carton de 40 × 30 × 25 cm) ou carton d'origine transportable à moto (30 kg et 120 cm au plus)",
+        "supplement_f": 1500,
+        "relais": true
+      },
+      {
+        "classe": "XL",
+        "nom": "Très grand",
+        "emballage": "carton d'origine de plus de 30 kg ou de plus de 120 cm (véhicule)",
+        "supplement_f": null,
+        "relais": false
+      }
+    ],
+    "classe_expedition": "plus grande classe des articles ; 4 articles ou plus : une classe de plus, sans dépasser L",
+    "classe_par_defaut": "M",
+    "bareme": [
+      {
+        "distance_max_km": 5,
+        "S": 1500,
+        "M": 2000,
+        "L": 3000,
+        "XL": 5000,
+        "course_payee_max_S": 1363
+      },
+      {
+        "distance_max_km": 6,
+        "S": 1700,
+        "M": 2200,
+        "L": 3200,
+        "XL": 5000,
+        "course_payee_max_S": 1545
+      },
+      {
+        "distance_max_km": 7,
+        "S": 1900,
+        "M": 2400,
+        "L": 3400,
+        "XL": 5000,
+        "course_payee_max_S": 1727
+      },
+      {
+        "distance_max_km": 8,
+        "S": 2100,
+        "M": 2600,
+        "L": 3600,
+        "XL": 5000,
+        "course_payee_max_S": 1909
+      },
+      {
+        "distance_max_km": 9,
+        "S": 2300,
+        "M": 2800,
+        "L": 3800,
+        "XL": 5000,
+        "course_payee_max_S": 2090
+      },
+      {
+        "distance_max_km": 10,
+        "S": 2500,
+        "M": 3000,
+        "L": 4000,
+        "XL": 5000,
+        "course_payee_max_S": 2272
+      },
+      {
+        "distance_max_km": 11,
+        "S": 2700,
+        "M": 3200,
+        "L": 4200,
+        "XL": 5300,
+        "course_payee_max_S": 2454
+      },
+      {
+        "distance_max_km": 12,
+        "S": 2900,
+        "M": 3400,
+        "L": 4400,
+        "XL": 5600,
+        "course_payee_max_S": 2636
+      },
+      {
+        "distance_max_km": 13,
+        "S": 3100,
+        "M": 3600,
+        "L": 4600,
+        "XL": 5900,
+        "course_payee_max_S": 2818
+      },
+      {
+        "distance_max_km": 14,
+        "S": 3300,
+        "M": 3800,
+        "L": 4800,
+        "XL": 6200,
+        "course_payee_max_S": 3000
+      },
+      {
+        "distance_max_km": 15,
+        "S": 3500,
+        "M": 4000,
+        "L": 5000,
+        "XL": 6500,
+        "course_payee_max_S": 3181
+      },
+      {
+        "distance_max_km": 16,
+        "S": 3700,
+        "M": 4200,
+        "L": 5200,
+        "XL": 6800,
+        "course_payee_max_S": 3363
+      },
+      {
+        "distance_max_km": 17,
+        "S": 3900,
+        "M": 4400,
+        "L": 5400,
+        "XL": 7100,
+        "course_payee_max_S": 3545
+      },
+      {
+        "distance_max_km": 18,
+        "S": 4100,
+        "M": 4600,
+        "L": 5600,
+        "XL": 7400,
+        "course_payee_max_S": 3727
+      },
+      {
+        "distance_max_km": 19,
+        "S": 4300,
+        "M": 4800,
+        "L": 5800,
+        "XL": 7700,
+        "course_payee_max_S": 3909
+      },
+      {
+        "distance_max_km": 20,
+        "S": 4500,
+        "M": 5000,
+        "L": 6000,
+        "XL": 8000,
+        "course_payee_max_S": 4090
+      },
+      {
+        "distance_max_km": 21,
+        "S": 4700,
+        "M": 5200,
+        "L": 6200,
+        "XL": 8300,
+        "course_payee_max_S": 4272
+      },
+      {
+        "distance_max_km": 22,
+        "S": 4900,
+        "M": 5400,
+        "L": 6400,
+        "XL": 8600,
+        "course_payee_max_S": 4454
+      },
+      {
+        "distance_max_km": 23,
+        "S": 5100,
+        "M": 5600,
+        "L": 6600,
+        "XL": 8900,
+        "course_payee_max_S": 4636
+      },
+      {
+        "distance_max_km": 24,
+        "S": 5300,
+        "M": 5800,
+        "L": 6800,
+        "XL": 9200,
+        "course_payee_max_S": 4818
+      },
+      {
+        "distance_max_km": 25,
+        "S": 5500,
+        "M": 6000,
+        "L": 7000,
+        "XL": 9500,
+        "course_payee_max_S": 5000
+      }
+    ],
+    "tests": [
+      {
+        "mode": "domicile",
+        "d": 3.2,
+        "classe": "S",
+        "sous_total": 12500,
+        "refuse": null,
+        "livraison_client": 1500,
+        "couverture": 0,
+        "campay": 280,
+        "total_momo": 14280,
+        "total_wallet": 14000
+      },
+      {
+        "mode": "domicile",
+        "d": 5.0,
+        "classe": "S",
+        "sous_total": 20000,
+        "refuse": null,
+        "livraison_client": 1500,
+        "couverture": 0,
+        "campay": 430,
+        "total_momo": 21930,
+        "total_wallet": 21500
+      },
+      {
+        "mode": "domicile",
+        "d": 5.1,
+        "classe": "S",
+        "sous_total": 20000,
+        "refuse": null,
+        "livraison_client": 1700,
+        "couverture": 0,
+        "campay": 434,
+        "total_momo": 22134,
+        "total_wallet": 21700
+      },
+      {
+        "mode": "domicile",
+        "d": 9.4,
+        "classe": "M",
+        "sous_total": 18500,
+        "refuse": null,
+        "livraison_client": 3000,
+        "couverture": 0,
+        "campay": 430,
+        "total_momo": 21930,
+        "total_wallet": 21500
+      },
+      {
+        "mode": "domicile",
+        "d": 12.0,
+        "classe": "L",
+        "sous_total": 40000,
+        "refuse": null,
+        "livraison_client": 4400,
+        "couverture": 0,
+        "campay": 888,
+        "total_momo": 45288,
+        "total_wallet": 44400
+      },
+      {
+        "mode": "domicile",
+        "d": 7.0,
+        "classe": "S",
+        "sous_total": 60000,
+        "refuse": null,
+        "livraison_client": 400,
+        "couverture": 1500,
+        "campay": 1208,
+        "total_momo": 61608,
+        "total_wallet": 60400
+      },
+      {
+        "mode": "domicile",
+        "d": 4.0,
+        "classe": "S",
+        "sous_total": 52000,
+        "refuse": null,
+        "livraison_client": 0,
+        "couverture": 1500,
+        "campay": 1040,
+        "total_momo": 53040,
+        "total_wallet": 52000
+      },
+      {
+        "mode": "domicile",
+        "d": 4.0,
+        "classe": "S",
+        "sous_total": 49999,
+        "refuse": null,
+        "livraison_client": 1500,
+        "couverture": 0,
+        "campay": 1030,
+        "total_momo": 52529,
+        "total_wallet": 51499
+      },
+      {
+        "mode": "domicile",
+        "d": 15.0,
+        "classe": "XL",
+        "sous_total": 120000,
+        "refuse": null,
+        "livraison_client": 5000,
+        "couverture": 1500,
+        "campay": 2500,
+        "total_momo": 127500,
+        "total_wallet": 125000
+      },
+      {
+        "mode": "domicile",
+        "d": 26.0,
+        "classe": "S",
+        "sous_total": 20000,
+        "refuse": "plus de 25~km",
+        "livraison_client": null,
+        "couverture": null,
+        "campay": null,
+        "total_momo": null,
+        "total_wallet": null
+      },
+      {
+        "mode": "relais",
+        "d": null,
+        "classe": "S",
+        "sous_total": 18500,
+        "refuse": null,
+        "livraison_client": 900,
+        "couverture": 0,
+        "campay": 388,
+        "total_momo": 19788,
+        "total_wallet": 19400
+      },
+      {
+        "mode": "relais",
+        "d": null,
+        "classe": "M",
+        "sous_total": 29999,
+        "refuse": null,
+        "livraison_client": 900,
+        "couverture": 0,
+        "campay": 618,
+        "total_momo": 31517,
+        "total_wallet": 30899
+      },
+      {
+        "mode": "relais",
+        "d": null,
+        "classe": "L",
+        "sous_total": 30000,
+        "refuse": null,
+        "livraison_client": 0,
+        "couverture": 900,
+        "campay": 600,
+        "total_momo": 30600,
+        "total_wallet": 30000
+      },
+      {
+        "mode": "relais",
+        "d": null,
+        "classe": "XL",
+        "sous_total": 80000,
+        "refuse": "colis XL",
+        "livraison_client": null,
+        "couverture": null,
+        "campay": null,
+        "total_momo": null,
+        "total_wallet": null
+      },
+      {
+        "mode": "domicile",
+        "d": 6.3,
+        "classe": "M",
+        "sous_total": 9000,
+        "refuse": null,
+        "livraison_client": 2400,
+        "couverture": 0,
+        "campay": 228,
+        "total_momo": 11628,
+        "total_wallet": 11400
+      }
+    ],
+    "garde_relais": {
+      "par_jour_client_f": [
+        0,
+        100,
+        100,
+        100,
+        200,
+        500,
+        1000
+      ],
+      "total_7_jours_f": 2000,
+      "part_relais_par_jour_f": 100,
+      "j1_paye_par_belivay": true,
+      "paiement": "espèces au gérant, au retrait, en une fois, confirmé dans l'appli",
+      "jour": "jour calendaire, J1 = jour d'arrivée au relais",
+      "non_retire": {
+        "deduit_remboursement_f": 2000,
+        "verse_au_relais_f": 700
+      },
+      "comptoir_non_retire_verse_au_relais_f": 700
+    }
+  },
+  "meilleure_offre": {
+    "principe": "répartition progressive : toutes les offres dans la tolérance reçoivent des commandes selon leur score ; la tolérance se resserre par phase",
+    "trust_min": 40,
+    "trust_remplacement": 75,
+    "phases": [
+      {
+        "nom": "Démarrage",
+        "a_partir_du_mois": 1,
+        "tolerance_taux": 0.08,
+        "tolerance_max_f": 1000
+      },
+      {
+        "nom": "Croissance",
+        "a_partir_du_mois": 3,
+        "tolerance_taux": 0.05,
+        "tolerance_max_f": 500
+      },
+      {
+        "nom": "Régime",
+        "a_partir_du_mois": 5,
+        "tolerance_taux": 0.03,
+        "tolerance_max_f": 300
+      }
+    ],
+    "tolerance": "min(arrondi_inferieur(meilleur CTL x taux de la phase), maximum de la phase)",
+    "ctl": "prix affiché + C(distance boutique-client, classe)",
+    "en_course": "CTL - meilleur CTL <= tolérance",
+    "anti_bradage": {
+      "seuil_mediane": 0.7,
+      "effet": "offre mise en contrôle, hors course jusqu'à vérification"
+    },
+    "score": {
+      "poids": {
+        "prix": 35,
+        "trust": 30,
+        "delai": 15,
+        "stock": 10,
+        "avis": 10
+      },
+      "boost_made_in_cm": 5,
+      "s_prix": "100 x (1 - écart / tolérance) ; 100 si tolérance nulle",
+      "s_trust": "Trust Score",
+      "s_delai": {
+        "<=4h": 100,
+        "<=24h": 50,
+        ">24h": 0
+      },
+      "s_stock": "min(100, 20 x unités)",
+      "s_avis": "100 x note / 5",
+      "note_sans_avis": 3.0
+    },
+    "repartition": {
+      "poids": "score ^ 2",
+      "part_max": 0.5,
+      "part_min_nouveau": "min(15 %, 1 / nombre d'offres en course)",
+      "periode_jours": 7,
+      "mesure": "par produit et par zone BelivaY",
+      "attribution": "offre la plus en retard sur sa part cible (part cible - part réelle)",
+      "egalite": [
+        "score_le_plus_eleve",
+        "servi_le_moins_recemment"
+      ]
+    },
+    "prix_client": "prix affiché de l'offre attribuée ; au plus la tolérance au-dessus du meilleur prix livré",
+    "commission_sur": "prix payé",
+    "suggestion_prix": "chaque lundi : part obtenue, commandes manquées sur 7 jours et prix livré à atteindre pour entrer dans la tolérance de la phase suivante",
+    "suivre_meilleur_prix": {
+      "optionnel": true,
+      "prix_minimum_obligatoire": true,
+      "frequence": "toutes les heures"
+    },
+    "nouveau_vendeur": {
+      "moins_de_commandes_livrees": 10,
+      "plafond_commande_f": 500000,
+      "trust": "moteur, départ neutre 50"
+    },
+    "panier": "attribution faite sur la fiche, gardée au panier et au clic sur Payer si l'offre est toujours en course",
+    "prix": "écran « Un prix a changé » si l'offre sort de la course ; stock réservé, prix et taux de commission figés au paiement",
+    "bascule": "rupture, impossibilité ou délai dépassé ; remplaçant Trust >= 75 ; servi au prix payé ; sinon écart <= 5 % pris en charge au plus à hauteur de commission / 1,10 - coûts déjà payés ; sinon remboursement intégral le jour même",
+    "achetable": false,
+    "tests": [
+      {
+        "cas": "Exemple, phase Régime",
+        "phase": 3,
+        "offres": [
+          {
+            "id": "A",
+            "prix": 12500,
+            "d": 11.0,
+            "classe": "S",
+            "trust": 86,
+            "nouveau": false,
+            "part_reelle": 0.3,
+            "dernier_service": 1,
+            "delai_h": 4,
+            "stock": 6,
+            "note": 4.5,
+            "made_in_cm": false
+          },
+          {
+            "id": "B",
+            "prix": 12900,
+            "d": 3.0,
+            "classe": "S",
+            "trust": 82,
+            "nouveau": false,
+            "part_reelle": 0.45,
+            "dernier_service": 2,
+            "delai_h": 4,
+            "stock": 10,
+            "note": 4.2,
+            "made_in_cm": false
+          },
+          {
+            "id": "C",
+            "prix": 13000,
+            "d": 4.2,
+            "classe": "S",
+            "trust": 50,
+            "nouveau": true,
+            "part_reelle": 0.0,
+            "dernier_service": 3,
+            "delai_h": 4,
+            "stock": 3,
+            "note": null,
+            "made_in_cm": false
+          },
+          {
+            "id": "D",
+            "prix": 13150,
+            "d": 2.5,
+            "classe": "S",
+            "trust": 90,
+            "nouveau": false,
+            "part_reelle": 0.25,
+            "dernier_service": 4,
+            "delai_h": 2,
+            "stock": 8,
+            "note": 4.8,
+            "made_in_cm": false
+          },
+          {
+            "id": "E",
+            "prix": 12400,
+            "d": 1.5,
+            "classe": "S",
+            "trust": 37,
+            "nouveau": false,
+            "part_reelle": 0.0,
+            "dernier_service": 5,
+            "delai_h": 4,
+            "stock": 4,
+            "note": 3.9,
+            "made_in_cm": false
+          },
+          {
+            "id": "F",
+            "prix": 13400,
+            "d": 2.0,
+            "classe": "S",
+            "trust": 88,
+            "nouveau": false,
+            "part_reelle": 0.0,
+            "dernier_service": 6,
+            "delai_h": 4,
+            "stock": 5,
+            "note": 4.6,
+            "made_in_cm": false
+          }
+        ],
+        "meilleur_ctl": 14400,
+        "tolerance_f": 300,
+        "en_course": [
+          "B",
+          "C",
+          "D"
+        ],
+        "parts_cibles": {
+          "B": 0.4952,
+          "C": 0.2444,
+          "D": 0.2604
+        },
+        "en_controle": [],
+        "retenue": "C",
+        "prix_paye_produit": 13000
+      },
+      {
+        "cas": "Même produit, phase Démarrage",
+        "phase": 1,
+        "offres": [
+          {
+            "id": "A",
+            "prix": 12500,
+            "d": 11.0,
+            "classe": "S",
+            "trust": 86,
+            "nouveau": false,
+            "part_reelle": 0.3,
+            "dernier_service": 1,
+            "delai_h": 4,
+            "stock": 6,
+            "note": 4.5,
+            "made_in_cm": false
+          },
+          {
+            "id": "B",
+            "prix": 12900,
+            "d": 3.0,
+            "classe": "S",
+            "trust": 82,
+            "nouveau": false,
+            "part_reelle": 0.45,
+            "dernier_service": 2,
+            "delai_h": 4,
+            "stock": 10,
+            "note": 4.2,
+            "made_in_cm": false
+          },
+          {
+            "id": "C",
+            "prix": 13000,
+            "d": 4.2,
+            "classe": "S",
+            "trust": 50,
+            "nouveau": true,
+            "part_reelle": 0.0,
+            "dernier_service": 3,
+            "delai_h": 4,
+            "stock": 3,
+            "note": null,
+            "made_in_cm": false
+          },
+          {
+            "id": "D",
+            "prix": 13150,
+            "d": 2.5,
+            "classe": "S",
+            "trust": 90,
+            "nouveau": false,
+            "part_reelle": 0.25,
+            "dernier_service": 4,
+            "delai_h": 2,
+            "stock": 8,
+            "note": 4.8,
+            "made_in_cm": false
+          },
+          {
+            "id": "E",
+            "prix": 12400,
+            "d": 1.5,
+            "classe": "S",
+            "trust": 37,
+            "nouveau": false,
+            "part_reelle": 0.0,
+            "dernier_service": 5,
+            "delai_h": 4,
+            "stock": 4,
+            "note": 3.9,
+            "made_in_cm": false
+          },
+          {
+            "id": "F",
+            "prix": 13400,
+            "d": 2.0,
+            "classe": "S",
+            "trust": 88,
+            "nouveau": false,
+            "part_reelle": 0.0,
+            "dernier_service": 6,
+            "delai_h": 4,
+            "stock": 5,
+            "note": 4.6,
+            "made_in_cm": false
+          }
+        ],
+        "meilleur_ctl": 14400,
+        "tolerance_f": 1000,
+        "en_course": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "F"
+        ],
+        "parts_cibles": {
+          "A": 0.138,
+          "B": 0.2675,
+          "C": 0.1671,
+          "D": 0.2387,
+          "F": 0.1887
+        },
+        "en_controle": [],
+        "retenue": "F",
+        "prix_paye_produit": 13400
+      },
+      {
+        "cas": "Hors tolérance",
+        "phase": 3,
+        "offres": [
+          {
+            "id": "A",
+            "prix": 10000,
+            "d": 2.0,
+            "classe": "S",
+            "trust": 70,
+            "nouveau": false,
+            "part_reelle": 0.9,
+            "dernier_service": 1,
+            "delai_h": 4,
+            "stock": 5,
+            "note": 4.0,
+            "made_in_cm": false
+          },
+          {
+            "id": "B",
+            "prix": 10400,
+            "d": 2.0,
+            "classe": "S",
+            "trust": 95,
+            "nouveau": false,
+            "part_reelle": 0.0,
+            "dernier_service": 2,
+            "delai_h": 4,
+            "stock": 5,
+            "note": 5.0,
+            "made_in_cm": false
+          }
+        ],
+        "meilleur_ctl": 11500,
+        "tolerance_f": 300,
+        "en_course": [
+          "A"
+        ],
+        "parts_cibles": {
+          "A": 1.0
+        },
+        "en_controle": [],
+        "retenue": "A",
+        "prix_paye_produit": 10000
+      },
+      {
+        "cas": "Plafond de 50 %",
+        "phase": 3,
+        "offres": [
+          {
+            "id": "A",
+            "prix": 20000,
+            "d": 3.0,
+            "classe": "S",
+            "trust": 95,
+            "nouveau": false,
+            "part_reelle": 0.5,
+            "dernier_service": 1,
+            "delai_h": 4,
+            "stock": 5,
+            "note": 4.8,
+            "made_in_cm": false
+          },
+          {
+            "id": "B",
+            "prix": 20100,
+            "d": 3.0,
+            "classe": "S",
+            "trust": 60,
+            "nouveau": false,
+            "part_reelle": 0.3,
+            "dernier_service": 2,
+            "delai_h": 4,
+            "stock": 5,
+            "note": 4.0,
+            "made_in_cm": false
+          },
+          {
+            "id": "C",
+            "prix": 20200,
+            "d": 3.0,
+            "classe": "S",
+            "trust": 60,
+            "nouveau": false,
+            "part_reelle": 0.2,
+            "dernier_service": 3,
+            "delai_h": 4,
+            "stock": 5,
+            "note": 4.0,
+            "made_in_cm": false
+          }
+        ],
+        "meilleur_ctl": 21500,
+        "tolerance_f": 300,
+        "en_course": [
+          "A",
+          "B",
+          "C"
+        ],
+        "parts_cibles": {
+          "A": 0.5,
+          "B": 0.2923,
+          "C": 0.2077
+        },
+        "en_controle": [],
+        "retenue": "C",
+        "prix_paye_produit": 20200
+      },
+      {
+        "cas": "Nouveau vendeur : 15 % au moins",
+        "phase": 3,
+        "offres": [
+          {
+            "id": "A",
+            "prix": 15000,
+            "d": 3.0,
+            "classe": "S",
+            "trust": 95,
+            "nouveau": false,
+            "part_reelle": 0.3,
+            "dernier_service": 1,
+            "delai_h": 4,
+            "stock": 5,
+            "note": 4.5,
+            "made_in_cm": false
+          },
+          {
+            "id": "B",
+            "prix": 15000,
+            "d": 3.0,
+            "classe": "S",
+            "trust": 95,
+            "nouveau": false,
+            "part_reelle": 0.3,
+            "dernier_service": 2,
+            "delai_h": 4,
+            "stock": 5,
+            "note": 4.5,
+            "made_in_cm": false
+          },
+          {
+            "id": "C",
+            "prix": 15000,
+            "d": 3.0,
+            "classe": "S",
+            "trust": 95,
+            "nouveau": false,
+            "part_reelle": 0.3,
+            "dernier_service": 3,
+            "delai_h": 4,
+            "stock": 5,
+            "note": 4.5,
+            "made_in_cm": false
+          },
+          {
+            "id": "D",
+            "prix": 15000,
+            "d": 3.0,
+            "classe": "S",
+            "trust": 50,
+            "nouveau": true,
+            "part_reelle": 0.1,
+            "dernier_service": 4,
+            "delai_h": 24,
+            "stock": 1,
+            "note": null,
+            "made_in_cm": false
+          }
+        ],
+        "meilleur_ctl": 16500,
+        "tolerance_f": 300,
+        "en_course": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "parts_cibles": {
+          "A": 0.2833,
+          "B": 0.2833,
+          "C": 0.2833,
+          "D": 0.15
+        },
+        "en_controle": [],
+        "retenue": "D",
+        "prix_paye_produit": 15000
+      },
+      {
+        "cas": "Prix bradé mis en contrôle",
+        "phase": 3,
+        "offres": [
+          {
+            "id": "A",
+            "prix": 6000,
+            "d": 2.0,
+            "classe": "S",
+            "trust": 80,
+            "nouveau": false,
+            "part_reelle": 0.0,
+            "dernier_service": 1,
+            "delai_h": 4,
+            "stock": 5,
+            "note": null,
+            "made_in_cm": false
+          },
+          {
+            "id": "B",
+            "prix": 10000,
+            "d": 2.0,
+            "classe": "S",
+            "trust": 80,
+            "nouveau": false,
+            "part_reelle": 0.6,
+            "dernier_service": 2,
+            "delai_h": 4,
+            "stock": 5,
+            "note": 4.0,
+            "made_in_cm": false
+          },
+          {
+            "id": "C",
+            "prix": 10100,
+            "d": 2.0,
+            "classe": "S",
+            "trust": 80,
+            "nouveau": false,
+            "part_reelle": 0.4,
+            "dernier_service": 3,
+            "delai_h": 4,
+            "stock": 5,
+            "note": 4.0,
+            "made_in_cm": false
+          }
+        ],
+        "meilleur_ctl": 11500,
+        "tolerance_f": 300,
+        "en_course": [
+          "B",
+          "C"
+        ],
+        "parts_cibles": {
+          "B": 0.5,
+          "C": 0.5
+        },
+        "en_controle": [
+          "A"
+        ],
+        "retenue": "C",
+        "prix_paye_produit": 10100
+      },
+      {
+        "cas": "Domicile : boutique plus proche",
+        "phase": 3,
+        "offres": [
+          {
+            "id": "A",
+            "prix": 20000,
+            "d": 6.0,
+            "classe": "S",
+            "trust": 70,
+            "nouveau": false,
+            "part_reelle": 0.6,
+            "dernier_service": 1,
+            "delai_h": 4,
+            "stock": 5,
+            "note": 4.0,
+            "made_in_cm": false
+          },
+          {
+            "id": "B",
+            "prix": 20100,
+            "d": 3.0,
+            "classe": "S",
+            "trust": 70,
+            "nouveau": false,
+            "part_reelle": 0.4,
+            "dernier_service": 2,
+            "delai_h": 4,
+            "stock": 5,
+            "note": 4.0,
+            "made_in_cm": false
+          }
+        ],
+        "meilleur_ctl": 21600,
+        "tolerance_f": 300,
+        "en_course": [
+          "A",
+          "B"
+        ],
+        "parts_cibles": {
+          "A": 0.5,
+          "B": 0.5
+        },
+        "en_controle": [],
+        "retenue": "B",
+        "prix_paye_produit": 20100
+      },
+      {
+        "cas": "Égalité : servi le moins récemment",
+        "phase": 3,
+        "offres": [
+          {
+            "id": "A",
+            "prix": 8000,
+            "d": 3.0,
+            "classe": "S",
+            "trust": 70,
+            "nouveau": false,
+            "part_reelle": 0.5,
+            "dernier_service": 2,
+            "delai_h": 4,
+            "stock": 5,
+            "note": 4.0,
+            "made_in_cm": false
+          },
+          {
+            "id": "B",
+            "prix": 8000,
+            "d": 3.0,
+            "classe": "S",
+            "trust": 70,
+            "nouveau": false,
+            "part_reelle": 0.5,
+            "dernier_service": 1,
+            "delai_h": 4,
+            "stock": 5,
+            "note": 4.0,
+            "made_in_cm": false
+          }
+        ],
+        "meilleur_ctl": 9500,
+        "tolerance_f": 285,
+        "en_course": [
+          "A",
+          "B"
+        ],
+        "parts_cibles": {
+          "A": 0.5,
+          "B": 0.5
+        },
+        "en_controle": [],
+        "retenue": "B",
+        "prix_paye_produit": 8000
+      }
+    ]
+  },
+  "commission": {
+    "plancher_pct": 5.0,
+    "minimum_expedition_f": 400,
+    "ajustement_palier_points": {
+      "Bronze": 0.0,
+      "Argent": 0.5,
+      "Or": 1.0,
+      "Platine": 2.0
+    },
+    "arrondi": "franc_superieur",
+    "hors_taxe": true,
+    "tva_taux_si_assujetti": 0.1925,
+    "frais_versement_taux": 0.01,
+    "frais_versement_paye_par": "vendeur",
+    "remises_en_points_au_lancement": false,
+    "categories": [
+      {
+        "code": "TEL",
+        "fr": "Téléphones et tablettes",
+        "en": "Phones and tablets",
+        "taux_base_pct": 6.0,
+        "taux_par_palier_pct": {
+          "Bronze": 6.0,
+          "Argent": 5.5,
+          "Or": 5.0,
+          "Platine": 5.0
+        }
+      },
+      {
+        "code": "ACC",
+        "fr": "Accessoires téléphone et informatique",
+        "en": "Phone and computer accessories",
+        "taux_base_pct": 12.0,
+        "taux_par_palier_pct": {
+          "Bronze": 12.0,
+          "Argent": 11.5,
+          "Or": 11.0,
+          "Platine": 10.0
+        }
+      },
+      {
+        "code": "INF",
+        "fr": "Informatique (ordinateurs, imprimantes)",
+        "en": "Computers and printers",
+        "taux_base_pct": 6.0,
+        "taux_par_palier_pct": {
+          "Bronze": 6.0,
+          "Argent": 5.5,
+          "Or": 5.0,
+          "Platine": 5.0
+        }
+      },
+      {
+        "code": "AUD",
+        "fr": "TV, audio, photo et jeux vidéo",
+        "en": "TV, audio, photo and gaming",
+        "taux_base_pct": 7.0,
+        "taux_par_palier_pct": {
+          "Bronze": 7.0,
+          "Argent": 6.5,
+          "Or": 6.0,
+          "Platine": 5.0
+        }
+      },
+      {
+        "code": "GEM",
+        "fr": "Gros électroménager",
+        "en": "Large appliances",
+        "taux_base_pct": 6.0,
+        "taux_par_palier_pct": {
+          "Bronze": 6.0,
+          "Argent": 5.5,
+          "Or": 5.0,
+          "Platine": 5.0
+        }
+      },
+      {
+        "code": "PEM",
+        "fr": "Petit électroménager",
+        "en": "Small appliances",
+        "taux_base_pct": 8.0,
+        "taux_par_palier_pct": {
+          "Bronze": 8.0,
+          "Argent": 7.5,
+          "Or": 7.0,
+          "Platine": 6.0
+        }
+      },
+      {
+        "code": "MOD",
+        "fr": "Mode femme, homme et enfant",
+        "en": "Fashion",
+        "taux_base_pct": 12.0,
+        "taux_par_palier_pct": {
+          "Bronze": 12.0,
+          "Argent": 11.5,
+          "Or": 11.0,
+          "Platine": 10.0
+        }
+      },
+      {
+        "code": "CHA",
+        "fr": "Chaussures",
+        "en": "Shoes",
+        "taux_base_pct": 12.0,
+        "taux_par_palier_pct": {
+          "Bronze": 12.0,
+          "Argent": 11.5,
+          "Or": 11.0,
+          "Platine": 10.0
+        }
+      },
+      {
+        "code": "SAC",
+        "fr": "Sacs, montres et bijoux fantaisie",
+        "en": "Bags, watches and fashion jewellery",
+        "taux_base_pct": 12.0,
+        "taux_par_palier_pct": {
+          "Bronze": 12.0,
+          "Argent": 11.5,
+          "Or": 11.0,
+          "Platine": 10.0
+        }
+      },
+      {
+        "code": "PAG",
+        "fr": "Pagnes, tissus et artisanat",
+        "en": "Wax prints, fabrics and crafts",
+        "taux_base_pct": 10.0,
+        "taux_par_palier_pct": {
+          "Bronze": 10.0,
+          "Argent": 9.5,
+          "Or": 9.0,
+          "Platine": 8.0
+        }
+      },
+      {
+        "code": "BEA",
+        "fr": "Beauté, soins et parfums",
+        "en": "Beauty, care and fragrance",
+        "taux_base_pct": 12.0,
+        "taux_par_palier_pct": {
+          "Bronze": 12.0,
+          "Argent": 11.5,
+          "Or": 11.0,
+          "Platine": 10.0
+        }
+      },
+      {
+        "code": "SAN",
+        "fr": "Santé et bien-être (hors médicaments)",
+        "en": "Health and wellness (no medicines)",
+        "taux_base_pct": 10.0,
+        "taux_par_palier_pct": {
+          "Bronze": 10.0,
+          "Argent": 9.5,
+          "Or": 9.0,
+          "Platine": 8.0
+        }
+      },
+      {
+        "code": "MAI",
+        "fr": "Maison, cuisine et déco",
+        "en": "Home, kitchen and decor",
+        "taux_base_pct": 10.0,
+        "taux_par_palier_pct": {
+          "Bronze": 10.0,
+          "Argent": 9.5,
+          "Or": 9.0,
+          "Platine": 8.0
+        }
+      },
+      {
+        "code": "BEB",
+        "fr": "Bébé et puériculture",
+        "en": "Baby",
+        "taux_base_pct": 10.0,
+        "taux_par_palier_pct": {
+          "Bronze": 10.0,
+          "Argent": 9.5,
+          "Or": 9.0,
+          "Platine": 8.0
+        }
+      },
+      {
+        "code": "JOU",
+        "fr": "Jouets et jeux",
+        "en": "Toys and games",
+        "taux_base_pct": 10.0,
+        "taux_par_palier_pct": {
+          "Bronze": 10.0,
+          "Argent": 9.5,
+          "Or": 9.0,
+          "Platine": 8.0
+        }
+      },
+      {
+        "code": "SCO",
+        "fr": "Fournitures scolaires et bureau",
+        "en": "School and office supplies",
+        "taux_base_pct": 8.0,
+        "taux_par_palier_pct": {
+          "Bronze": 8.0,
+          "Argent": 7.5,
+          "Or": 7.0,
+          "Platine": 6.0
+        }
+      },
+      {
+        "code": "LIV",
+        "fr": "Livres",
+        "en": "Books",
+        "taux_base_pct": 8.0,
+        "taux_par_palier_pct": {
+          "Bronze": 8.0,
+          "Argent": 7.5,
+          "Or": 7.0,
+          "Platine": 6.0
+        }
+      },
+      {
+        "code": "SPO",
+        "fr": "Sports et loisirs",
+        "en": "Sports and leisure",
+        "taux_base_pct": 10.0,
+        "taux_par_palier_pct": {
+          "Bronze": 10.0,
+          "Argent": 9.5,
+          "Or": 9.0,
+          "Platine": 8.0
+        }
+      },
+      {
+        "code": "AMO",
+        "fr": "Auto et moto (pièces, accessoires)",
+        "en": "Car and motorbike parts",
+        "taux_base_pct": 8.0,
+        "taux_par_palier_pct": {
+          "Bronze": 8.0,
+          "Argent": 7.5,
+          "Or": 7.0,
+          "Platine": 6.0
+        }
+      },
+      {
+        "code": "BRI",
+        "fr": "Bricolage, outillage et jardin",
+        "en": "DIY, tools and garden",
+        "taux_base_pct": 8.0,
+        "taux_par_palier_pct": {
+          "Bronze": 8.0,
+          "Argent": 7.5,
+          "Or": 7.0,
+          "Platine": 6.0
+        }
+      },
+      {
+        "code": "SUP",
+        "fr": "Supermarché (épicerie, boissons, entretien)",
+        "en": "Grocery and household",
+        "taux_base_pct": 6.0,
+        "taux_par_palier_pct": {
+          "Bronze": 6.0,
+          "Argent": 5.5,
+          "Or": 5.0,
+          "Platine": 5.0
+        }
+      },
+      {
+        "code": "ANI",
+        "fr": "Animalerie",
+        "en": "Pet supplies",
+        "taux_base_pct": 10.0,
+        "taux_par_palier_pct": {
+          "Bronze": 10.0,
+          "Argent": 9.5,
+          "Or": 9.0,
+          "Platine": 8.0
+        }
+      },
+      {
+        "code": "DIV",
+        "fr": "Divers (catégorie par défaut)",
+        "en": "Other (default)",
+        "taux_base_pct": 10.0,
+        "taux_par_palier_pct": {
+          "Bronze": 10.0,
+          "Argent": 9.5,
+          "Or": 9.0,
+          "Platine": 8.0
+        }
+      }
+    ],
+    "categorie_par_defaut": "DIV",
+    "rentabilite": {
+      "sms_par_expedition": 5,
+      "cout_sms_f": 50,
+      "garde_j1_f": 100,
+      "regle": "commission >= coûts BelivaY de l'expédition x (1 + marge_securite)"
+    },
+    "tests": [
+      {
+        "base": 18500,
+        "categorie": "DIV",
+        "palier": "Bronze",
+        "prix": 18500,
+        "taux": 10.0,
+        "commission": 1850,
+        "reste": 16650,
+        "frais_versement": 167,
+        "net": 16483
+      },
+      {
+        "base": 18500,
+        "categorie": "DIV",
+        "palier": "Platine",
+        "prix": 18500,
+        "taux": 8.0,
+        "commission": 1480,
+        "reste": 17020,
+        "frais_versement": 171,
+        "net": 16849
+      },
+      {
+        "base": 85000,
+        "categorie": "TEL",
+        "palier": "Or",
+        "prix": 85000,
+        "taux": 5.0,
+        "commission": 4250,
+        "reste": 80750,
+        "frais_versement": 808,
+        "net": 79942
+      },
+      {
+        "base": 250000,
+        "categorie": "TEL",
+        "palier": "Platine",
+        "prix": 250000,
+        "taux": 5.0,
+        "commission": 12500,
+        "reste": 237500,
+        "frais_versement": 2375,
+        "net": 235125
+      },
+      {
+        "base": 7999,
+        "categorie": "MOD",
+        "palier": "Argent",
+        "prix": 7999,
+        "taux": 11.5,
+        "commission": 920,
+        "reste": 7079,
+        "frais_versement": 71,
+        "net": 7008
+      },
+      {
+        "base": 1250,
+        "categorie": "SUP",
+        "palier": "Bronze",
+        "prix": 1250,
+        "taux": 6.0,
+        "commission": 400,
+        "reste": 850,
+        "frais_versement": 9,
+        "net": 841
+      },
+      {
+        "base": 36500,
+        "categorie": "PAG",
+        "palier": "Or",
+        "prix": 36500,
+        "taux": 9.0,
+        "commission": 3285,
+        "reste": 33215,
+        "frais_versement": 333,
+        "net": 32882
+      },
+      {
+        "base": 5000,
+        "categorie": "SUP",
+        "palier": "Bronze",
+        "prix": 5000,
+        "taux": 6.0,
+        "commission": 400,
+        "reste": 4600,
+        "frais_versement": 46,
+        "net": 4554
+      }
+    ]
+  },
+  "zones_belivay": [
+    {
+      "code": "Z1",
+      "nom": "Bastos / Nlongkak",
+      "vague": 1,
+      "grand_centre": "GC-A (nord)",
+      "relais": null,
+      "quartiers": 10
+    },
+    {
+      "code": "Z2",
+      "nom": "Centre / Tsinga",
+      "vague": 2,
+      "grand_centre": "GC-A (nord)",
+      "relais": null,
+      "quartiers": 8
+    },
+    {
+      "code": "Z3",
+      "nom": "Mokolo / Briqueterie",
+      "vague": 1,
+      "grand_centre": "GC-C (centre-sud)",
+      "relais": null,
+      "quartiers": 8
+    },
+    {
+      "code": "Z4",
+      "nom": "Mvog-Mbi / Mvog-Ada",
+      "vague": 2,
+      "grand_centre": "GC-C (centre-sud)",
+      "relais": null,
+      "quartiers": 4
+    },
+    {
+      "code": "Z5",
+      "nom": "Nsam / Efoulan",
+      "vague": 2,
+      "grand_centre": "GC-C (centre-sud)",
+      "relais": null,
+      "quartiers": 9
+    },
+    {
+      "code": "Z6",
+      "nom": "Melen / Ngoa-Ekellé",
+      "vague": 1,
+      "grand_centre": "GC-B (ouest)",
+      "relais": null,
+      "quartiers": 8
+    },
+    {
+      "code": "Z7",
+      "nom": "Biyem-Assi / Mendong",
+      "vague": 1,
+      "grand_centre": "GC-B (ouest)",
+      "relais": null,
+      "quartiers": 6
+    },
+    {
+      "code": "Z8",
+      "nom": "Simbock / Nkolbisson",
+      "vague": 3,
+      "grand_centre": "GC-B (ouest)",
+      "relais": null,
+      "quartiers": 7
+    },
+    {
+      "code": "Z9",
+      "nom": "Essos / Nkoldongo",
+      "vague": 2,
+      "grand_centre": "GC-D (est-sud)",
+      "relais": null,
+      "quartiers": 15
+    },
+    {
+      "code": "Z10",
+      "nom": "Mimboman / Ekounou",
+      "vague": 3,
+      "grand_centre": "GC-D (est-sud)",
+      "relais": null,
+      "quartiers": 14
+    },
+    {
+      "code": "Z11",
+      "nom": "Odza / Ahala",
+      "vague": 3,
+      "grand_centre": "GC-D (est-sud)",
+      "relais": null,
+      "quartiers": 17
+    },
+    {
+      "code": "Z12",
+      "nom": "Emana / Etoudi",
+      "vague": 3,
+      "grand_centre": "GC-A (nord)",
+      "relais": null,
+      "quartiers": 9
+    }
+  ],
+  "zones": [
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé I",
+      "quartier": "Centre commercial",
+      "alias": [
+        "Centre-ville"
+      ],
+      "type_cuy": "Haut standing",
+      "zone": "Z2",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé I",
+      "quartier": "Elig-Essono",
+      "alias": [],
+      "type_cuy": "Moyen standing",
+      "zone": "Z2",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé I",
+      "quartier": "Etoa-Meki 1",
+      "alias": [],
+      "type_cuy": "Spontané",
+      "zone": "Z1",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé I",
+      "quartier": "Etoa-Meki 2",
+      "alias": [],
+      "type_cuy": "Moyen standing",
+      "zone": "Z1",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé I",
+      "quartier": "Nlongkak",
+      "alias": [],
+      "type_cuy": "Spontané",
+      "zone": "Z1",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé I",
+      "quartier": "Elig-Edzoa",
+      "alias": [],
+      "type_cuy": "Spontané",
+      "zone": "Z1",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé I",
+      "quartier": "Bastos",
+      "alias": [],
+      "type_cuy": "Haut standing",
+      "zone": "Z1",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé I",
+      "quartier": "Manguier",
+      "alias": [],
+      "type_cuy": "Spontané",
+      "zone": "Z1",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé I",
+      "quartier": "Tongolo",
+      "alias": [],
+      "type_cuy": "Haut standing",
+      "zone": "Z1",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé I",
+      "quartier": "Mballa 1",
+      "alias": [],
+      "type_cuy": "Haut standing",
+      "zone": "Z1",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé I",
+      "quartier": "Mballa 2",
+      "alias": [],
+      "type_cuy": "Haut standing",
+      "zone": "Z1",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé I",
+      "quartier": "Mballa 3",
+      "alias": [],
+      "type_cuy": "Moyen standing",
+      "zone": "Z12",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé I",
+      "quartier": "Nkolondom",
+      "alias": [],
+      "type_cuy": "Périurbain",
+      "zone": "Z12",
+      "domicile": "a_verifier",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé I",
+      "quartier": "Etoudi",
+      "alias": [],
+      "type_cuy": "Périurbain",
+      "zone": "Z12",
+      "domicile": "a_verifier",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé I",
+      "quartier": "Messassi",
+      "alias": [],
+      "type_cuy": "Périurbain",
+      "zone": "Z12",
+      "domicile": "a_verifier",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé I",
+      "quartier": "Okolo",
+      "alias": [],
+      "type_cuy": "Périurbain",
+      "zone": "Z12",
+      "domicile": "a_verifier",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé I",
+      "quartier": "Olembe",
+      "alias": [],
+      "type_cuy": "Périurbain",
+      "zone": "Z12",
+      "domicile": "a_verifier",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé I",
+      "quartier": "Nyom",
+      "alias": [],
+      "type_cuy": "Périurbain",
+      "zone": "Z12",
+      "domicile": "a_verifier",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé I",
+      "quartier": "Emana",
+      "alias": [],
+      "type_cuy": "Périurbain",
+      "zone": "Z12",
+      "domicile": "a_verifier",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé I",
+      "quartier": "Nkoleton",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z12",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé II",
+      "quartier": "Cité Verte",
+      "alias": [],
+      "type_cuy": "Moyen standing",
+      "zone": "Z3",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé II",
+      "quartier": "Madagascar",
+      "alias": [],
+      "type_cuy": "Spontané",
+      "zone": "Z3",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé II",
+      "quartier": "Mokolo",
+      "alias": [],
+      "type_cuy": "Spontané",
+      "zone": "Z3",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé II",
+      "quartier": "Grand Messa",
+      "alias": [],
+      "type_cuy": "Moyen standing",
+      "zone": "Z3",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé II",
+      "quartier": "Ekoudou",
+      "alias": [],
+      "type_cuy": "Spontané",
+      "zone": "Z3",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé II",
+      "quartier": "Tsinga",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z2",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé II",
+      "quartier": "Nkom-Kana",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z3",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé II",
+      "quartier": "Oliga",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z2",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé II",
+      "quartier": "Messa Carrière",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z3",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé II",
+      "quartier": "École de Police",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z2",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé II",
+      "quartier": "Febe",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z2",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé II",
+      "quartier": "Ntoungou",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z2",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé III",
+      "quartier": "Obili",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z6",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé III",
+      "quartier": "Ngoa-Ekelé 1",
+      "alias": [
+        "Ngoa Ekellé",
+        "Ngoa-Ekellé"
+      ],
+      "type_cuy": null,
+      "zone": "Z6",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé III",
+      "quartier": "Ngoa-Ekelé 2",
+      "alias": [
+        "Ngoa Ekellé",
+        "Ngoa-Ekellé"
+      ],
+      "type_cuy": null,
+      "zone": "Z6",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé III",
+      "quartier": "Nlong Mvolyé",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z5",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé III",
+      "quartier": "Ahala 1",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z11",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé III",
+      "quartier": "Ahala 2",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z11",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé III",
+      "quartier": "Efoulan",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z5",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé III",
+      "quartier": "Obobogo",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z5",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé III",
+      "quartier": "Nsam",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z5",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé III",
+      "quartier": "Melen 2 – Centre administratif",
+      "alias": [
+        "Centre administratif",
+        "Quartier administratif"
+      ],
+      "type_cuy": null,
+      "zone": "Z2",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé III",
+      "quartier": "Etoa",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z11",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé III",
+      "quartier": "Nkolmesseng 1",
+      "alias": [
+        "Nkolmesseng"
+      ],
+      "type_cuy": "Périurbain",
+      "zone": "Z11",
+      "domicile": "a_verifier",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé III",
+      "quartier": "Afanoya 1",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z11",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé III",
+      "quartier": "Afanoya 2",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z11",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé III",
+      "quartier": "Afanoya 3",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z11",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé III",
+      "quartier": "Afanoya 4",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z11",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé III",
+      "quartier": "Nkolfon",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z11",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé III",
+      "quartier": "Mekoumbou 1",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z11",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé III",
+      "quartier": "Mekoumbou 2",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z11",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé III",
+      "quartier": "Ntouessong",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z11",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé III",
+      "quartier": "Nsimeyong 1",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z5",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé III",
+      "quartier": "Nsimeyong 2",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z5",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé III",
+      "quartier": "Nsimeyong 3",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z5",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé III",
+      "quartier": "Olezoa",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z5",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé III",
+      "quartier": "Dakar",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z5",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé IV",
+      "quartier": "Mvan-Nord",
+      "alias": [
+        "Mvan"
+      ],
+      "type_cuy": null,
+      "zone": "Z11",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé IV",
+      "quartier": "Mvan-Sud",
+      "alias": [
+        "Mvan"
+      ],
+      "type_cuy": null,
+      "zone": "Z11",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé IV",
+      "quartier": "Ndamvout",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z4",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé IV",
+      "quartier": "Messame-Ndongo",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z11",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé IV",
+      "quartier": "Odza",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z11",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé IV",
+      "quartier": "Ekoumdoum",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z11",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé IV",
+      "quartier": "Awae",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z10",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé IV",
+      "quartier": "Nkomo",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z10",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé IV",
+      "quartier": "Ekounou",
+      "alias": [],
+      "type_cuy": "Spontané",
+      "zone": "Z10",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé IV",
+      "quartier": "Biteng",
+      "alias": [],
+      "type_cuy": "Périurbain",
+      "zone": "Z10",
+      "domicile": "a_verifier",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé IV",
+      "quartier": "Kondengui 1",
+      "alias": [],
+      "type_cuy": "Spontané",
+      "zone": "Z10",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé IV",
+      "quartier": "Kondengui 2",
+      "alias": [],
+      "type_cuy": "Moyen standing",
+      "zone": "Z10",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé IV",
+      "quartier": "Kondengui 3",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z10",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé IV",
+      "quartier": "Mimboman 1",
+      "alias": [],
+      "type_cuy": "Moyen standing",
+      "zone": "Z10",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé IV",
+      "quartier": "Mimboman 3",
+      "alias": [],
+      "type_cuy": "Moyen standing",
+      "zone": "Z10",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé IV",
+      "quartier": "Etam-Bafia",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z4",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé IV",
+      "quartier": "Mvog-Mbi",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z4",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé IV",
+      "quartier": "Nkol-Ndongo 1",
+      "alias": [
+        "Nkoldongo"
+      ],
+      "type_cuy": "Moyen standing",
+      "zone": "Z9",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé IV",
+      "quartier": "Nkol-Ndongo 2",
+      "alias": [
+        "Nkoldongo"
+      ],
+      "type_cuy": null,
+      "zone": "Z9",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé IV",
+      "quartier": "Mebandan",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z10",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé IV",
+      "quartier": "Ekie",
+      "alias": [],
+      "type_cuy": "Spontané",
+      "zone": "Z10",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé IV",
+      "quartier": "Emombo",
+      "alias": [],
+      "type_cuy": "Spontané",
+      "zone": "Z9",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé IV",
+      "quartier": "Ntui-Essong",
+      "alias": [],
+      "type_cuy": "Périurbain",
+      "zone": "Z10",
+      "domicile": "a_verifier",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé IV",
+      "quartier": "Nkolo",
+      "alias": [],
+      "type_cuy": "Périurbain",
+      "zone": "Z10",
+      "domicile": "a_verifier",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé IV",
+      "quartier": "Abom",
+      "alias": [],
+      "type_cuy": "Périurbain",
+      "zone": "Z10",
+      "domicile": "a_verifier",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé V",
+      "quartier": "Mvog-Ada",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z4",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé V",
+      "quartier": "Essos",
+      "alias": [],
+      "type_cuy": "Moyen standing",
+      "zone": "Z9",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé V",
+      "quartier": "Nkol-Messeng",
+      "alias": [
+        "Nkolmesseng",
+        "Nkol Messing"
+      ],
+      "type_cuy": "Périurbain",
+      "zone": "Z9",
+      "domicile": "a_verifier",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé V",
+      "quartier": "Nkol-Ebogo",
+      "alias": [],
+      "type_cuy": "Moyen standing",
+      "zone": "Z9",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé V",
+      "quartier": "Quartier Fouda",
+      "alias": [],
+      "type_cuy": "Moyen standing",
+      "zone": "Z9",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé V",
+      "quartier": "Ngousso 1",
+      "alias": [],
+      "type_cuy": "Haut standing",
+      "zone": "Z9",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé V",
+      "quartier": "Ngousso 2",
+      "alias": [],
+      "type_cuy": "Moyen standing",
+      "zone": "Z9",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé V",
+      "quartier": "Ngousso-Ntem",
+      "alias": [],
+      "type_cuy": "Périurbain",
+      "zone": "Z9",
+      "domicile": "a_verifier",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé V",
+      "quartier": "Éleveur",
+      "alias": [],
+      "type_cuy": "Périurbain",
+      "zone": "Z9",
+      "domicile": "a_verifier",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé V",
+      "quartier": "Mfandena 1",
+      "alias": [],
+      "type_cuy": "Haut standing",
+      "zone": "Z9",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé V",
+      "quartier": "Mfandena 2",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z9",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé V",
+      "quartier": "Ngoulmekong",
+      "alias": [],
+      "type_cuy": "Périurbain",
+      "zone": "Z9",
+      "domicile": "a_verifier",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé VI",
+      "quartier": "Biyem-Assi",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z7",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé VI",
+      "quartier": "Melen",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z6",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé VI",
+      "quartier": "Melen 8",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z6",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé VI",
+      "quartier": "Melen 8B et 8C",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z6",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé VI",
+      "quartier": "Etoug-Ebe 1",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z7",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé VI",
+      "quartier": "Etoug-Ebe 2",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z7",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé VI",
+      "quartier": "Mvog-Betsi",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z6",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé VI",
+      "quartier": "Mendong 2",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z7",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé VI",
+      "quartier": "Simbock",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z8",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé VI",
+      "quartier": "Simbock École de guerre",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z8",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé VI",
+      "quartier": "Elig-Effa",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z6",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé VI",
+      "quartier": "Nkolbikok",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z7",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé VII",
+      "quartier": "Nkolbisson",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z8",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé VII",
+      "quartier": "Etetak",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z8",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé VII",
+      "quartier": "Oyom-Abang",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z8",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé VII",
+      "quartier": "Minkoameyos",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z8",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé VII",
+      "quartier": "Nkolso",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z8",
+      "domicile": "oui",
+      "actif": true,
+      "source": "liste CUY (Wikipédia, Quartiers de Yaoundé)"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé V",
+      "quartier": "Omnisport",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z9",
+      "domicile": "oui",
+      "actif": true,
+      "source": "cité parmi les quartiers par la mairie de Yaoundé V"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé VI",
+      "quartier": "Mendong (Mendong Camp SIC)",
+      "alias": [
+        "Mendong",
+        "Mendong Camp SIC",
+        "Camp SIC Mendong"
+      ],
+      "type_cuy": null,
+      "zone": "Z7",
+      "domicile": "oui",
+      "actif": true,
+      "source": "cité par la commune de Yaoundé VI"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé II",
+      "quartier": "Briqueterie",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z3",
+      "domicile": "oui",
+      "actif": true,
+      "source": "nom courant, cité dans le découpage BelivaY en 12 zones"
+    },
+    {
+      "ville": "Yaoundé",
+      "commune": "Yaoundé I",
+      "quartier": "Golf",
+      "alias": [],
+      "type_cuy": null,
+      "zone": "Z1",
+      "domicile": "oui",
+      "actif": true,
+      "source": "nom courant, cité dans le découpage BelivaY en 12 zones"
+    }
+  ],
+  "entreprises_livraison": {
+    "paliers": [
+      {
+        "nom": "Nouveau",
+        "plafond_f": 75000,
+        "trust_min": null
+      },
+      {
+        "nom": "Confirmé",
+        "plafond_f": 250000,
+        "trust_min": 70
+      },
+      {
+        "nom": "Or",
+        "plafond_f": null,
+        "trust_min": 85,
+        "assurance": true
+      }
+    ],
+    "palier_initial": "Nouveau",
+    "hysteresis": {
+      "montee_jours": 14,
+      "descente_points": 5,
+      "descente_jours": 14,
+      "validation_humaine": true
+    },
+    "course_payee_max": "C / (1 + marge_securite), arrondi au franc inférieur",
+    "delais_service": {
+      "prise_paquet_min": 15,
+      "ramassage_min": 90,
+      "livraison_h": 5,
+      "jours": "lundi au samedi",
+      "heures": [
+        "08:00",
+        "18:00"
+      ],
+      "depart_relais_colis": 5,
+      "retenue_retard_taux": 0.2
+    },
+    "criteres": [
+      {
+        "etape": "Entrée (palier Nouveau)",
+        "conditions": [
+          "contrat de partenariat signé avec BelivaY",
+          "RCCM et NIU de l'entreprise",
+          "responsable identifié (CNI recto verso)",
+          "numéro Mobile Money de versement au nom de l'entreprise ou de son responsable",
+          "liste des livreurs : nom, CNI, téléphone, immatriculation de la moto",
+          "au moins 1 livreur actif ; la capacité déclarée (colis par jour) limite ce qui lui est publié",
+          "livreurs formés aux leçons livreur de la BelivaY Academy",
+          "zones BelivaY couvertes déclarées (Z1 à Z12)"
+        ]
+      },
+      {
+        "etape": "Nouveau vers Confirmé",
+        "conditions": [
+          "Trust Score de l'entreprise de 70 ou plus, tenu 14 jours",
+          "au moins 60 jours d'activité avec BelivaY",
+          "au moins 300 colis remis",
+          "taux de réussite d'au moins 97 % (colis remis dans les délais / colis confiés)",
+          "aucun colis perdu non indemnisé",
+          "litiges imputables à l'entreprise : 1 % au plus"
+        ]
+      },
+      {
+        "etape": "Confirmé vers Or",
+        "conditions": [
+          "Trust Score de l'entreprise de 85 ou plus, tenu 14 jours",
+          "au moins 180 jours d'activité avec BelivaY",
+          "au moins 2 000 colis remis",
+          "taux de réussite d'au moins 98 %",
+          "aucun colis perdu non indemnisé sur les 90 derniers jours",
+          "photos de preuve complètes sur au moins 99 % des changements de main",
+          "attestation d'assurance des marchandises transportées (palier sans plafond)"
+        ]
+      },
+      {
+        "etape": "Rétrogradation et suspension",
+        "conditions": [
+          "Trust Score à 5 points ou plus sous le seuil du palier pendant 14 jours, colis perdu non indemnisé, ou taux de réussite sous le seuil du palier sur 30 jours : palier inférieur, après validation humaine avec motif écrit",
+          "assurance expirée au palier Or : retour au palier Confirmé jusqu'au renouvellement",
+          "fraude, code contourné ou remise sans scan : suspension immédiate et revue par l'équipe logistique",
+          "revue automatique le 1er de chaque mois, validée par l'équipe logistique"
+        ]
+      }
+    ],
+    "champs_fiche": [
+      {
+        "cle": "raison_sociale",
+        "libelle": "Raison sociale",
+        "format": "texte",
+        "obligatoire": "oui"
+      },
+      {
+        "cle": "sigle",
+        "libelle": "Nom commercial / sigle",
+        "format": "texte",
+        "obligatoire": "non"
+      },
+      {
+        "cle": "rccm",
+        "libelle": "Numéro RCCM",
+        "format": "texte",
+        "obligatoire": "oui"
+      },
+      {
+        "cle": "niu",
+        "libelle": "NIU (numéro d'identifiant unique)",
+        "format": "texte",
+        "obligatoire": "oui"
+      },
+      {
+        "cle": "adresse",
+        "libelle": "Adresse du siège (quartier, repère)",
+        "format": "texte",
+        "obligatoire": "oui"
+      },
+      {
+        "cle": "gps_siege",
+        "libelle": "Position GPS du siège ou de l'agence",
+        "format": "lat, lon",
+        "obligatoire": "oui"
+      },
+      {
+        "cle": "responsable",
+        "libelle": "Nom du responsable",
+        "format": "texte",
+        "obligatoire": "oui"
+      },
+      {
+        "cle": "tel",
+        "libelle": "Téléphone",
+        "format": "+237…",
+        "obligatoire": "oui"
+      },
+      {
+        "cle": "whatsapp",
+        "libelle": "WhatsApp",
+        "format": "+237…",
+        "obligatoire": "non"
+      },
+      {
+        "cle": "email",
+        "libelle": "E-mail",
+        "format": "texte",
+        "obligatoire": "non"
+      },
+      {
+        "cle": "momo",
+        "libelle": "Numéro Mobile Money de versement",
+        "format": "+237…",
+        "obligatoire": "oui"
+      },
+      {
+        "cle": "momo_titulaire",
+        "libelle": "Titulaire du numéro de versement",
+        "format": "texte",
+        "obligatoire": "oui"
+      },
+      {
+        "cle": "zones",
+        "libelle": "Zones BelivaY couvertes (Z1 à Z12)",
+        "format": "liste",
+        "obligatoire": "oui"
+      },
+      {
+        "cle": "nb_livreurs",
+        "libelle": "Nombre de livreurs actifs",
+        "format": "nombre",
+        "obligatoire": "oui"
+      },
+      {
+        "cle": "capacite",
+        "libelle": "Capacité déclarée (colis par jour)",
+        "format": "nombre",
+        "obligatoire": "oui"
+      },
+      {
+        "cle": "vehicules",
+        "libelle": "Véhicules (moto, tricycle, voiture)",
+        "format": "liste",
+        "obligatoire": "oui"
+      },
+      {
+        "cle": "horaires",
+        "libelle": "Jours et heures de service",
+        "format": "texte",
+        "obligatoire": "oui"
+      },
+      {
+        "cle": "grille",
+        "libelle": "Grille de prix des courses (fixée avec BelivaY)",
+        "format": "tableau",
+        "obligatoire": "oui"
+      },
+      {
+        "cle": "trust_score",
+        "libelle": "Trust Score de l'entreprise",
+        "format": "0 à 100 (calculé)",
+        "obligatoire": "auto"
+      },
+      {
+        "cle": "palier",
+        "libelle": "Palier (Nouveau, Confirmé, Or)",
+        "format": "choix",
+        "obligatoire": "oui"
+      },
+      {
+        "cle": "plafond",
+        "libelle": "Plafond de valeur de colis",
+        "format": "F (calculé depuis le palier)",
+        "obligatoire": "auto"
+      },
+      {
+        "cle": "date_debut",
+        "libelle": "Date de début du partenariat",
+        "format": "date",
+        "obligatoire": "oui"
+      },
+      {
+        "cle": "contrat",
+        "libelle": "Contrat signé",
+        "format": "oui / non",
+        "obligatoire": "oui"
+      },
+      {
+        "cle": "assurance",
+        "libelle": "Assurance des marchandises (attestation)",
+        "format": "oui / non + date",
+        "obligatoire": "Or : oui"
+      },
+      {
+        "cle": "statut",
+        "libelle": "Statut",
+        "format": "actif / suspendu",
+        "obligatoire": "oui"
+      }
+    ],
+    "entreprises": []
+  }
+}

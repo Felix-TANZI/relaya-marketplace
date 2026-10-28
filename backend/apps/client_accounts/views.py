@@ -167,8 +167,9 @@ class Numero(VueClient):
         user = request.user
         if not services.numero_verifie(user):
             return Response({"ok": False, "essaisRestants": 0})  # premier numéro : POST /api/auth/otp/verify
-        dernier = services.dernier_changement(user)
-        if not otp.etape_validee(objet=Objet.NUMERO_ANCIEN, utilisateur=user, apres=dernier.le if dernier else None, fenetres=2):
+        from apps.otp.views import ancien_numero_prouve
+
+        if not ancien_numero_prouve(user, fenetres=2):  # ancien numéro, ou « Ce n'est plus mon numéro » (D7)
             return Response({"ok": False, "essaisRestants": 0})
         _controle_numero(user, d["numero"])
         r = otp.verifier(objet=Objet.NUMERO_NOUVEAU, code=d["code"], destination=d["numero"], utilisateur=user)

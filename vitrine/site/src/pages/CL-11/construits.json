@@ -1,0 +1,25 @@
+{
+ "routes": [
+  "litige",
+  "litige-confirme",
+  "litige-auto",
+  "litige-comptoir",
+  "litige-suivi",
+  "litige-arrangement",
+  "litiges",
+  "retour",
+  "remplacement"
+ ],
+ "exclus": {},
+ "repris": {
+  "litiges": "DP-54 : repris pour l'usage réel (dossiers lus dans les données, parcours avec vraies photos, actions du suivi).",
+  "litige": "DP-54 : repris pour l'usage réel (dossiers lus dans les données, parcours avec vraies photos, actions du suivi).",
+  "litige-confirme": "DP-54 : repris pour l'usage réel (dossiers lus dans les données, parcours avec vraies photos, actions du suivi).",
+  "litige-suivi": "DP-54 : repris pour l'usage réel (dossiers lus dans les données, parcours avec vraies photos, actions du suivi).",
+  "litige-auto": "DP-54 : repris pour l'usage réel (retour par le relais, remplacement et autre vendeur, arrangement, constat au comptoir, remboursement immédiat, en données).",
+  "litige-comptoir": "DP-54 : repris pour l'usage réel (retour par le relais, remplacement et autre vendeur, arrangement, constat au comptoir, remboursement immédiat, en données).",
+  "litige-arrangement": "DP-54 : repris pour l'usage réel (retour par le relais, remplacement et autre vendeur, arrangement, constat au comptoir, remboursement immédiat, en données).",
+  "retour": "DP-54 : repris pour l'usage réel (retour par le relais, remplacement et autre vendeur, arrangement, constat au comptoir, remboursement immédiat, en données).",
+  "remplacement": "DP-54 : repris pour l'usage réel (retour par le relais, remplacement et autre vendeur, arrangement, constat au comptoir, remboursement immédiat, en données)."
+ }
+}

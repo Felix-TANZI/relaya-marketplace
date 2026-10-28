@@ -155,9 +155,10 @@ def _anonymize_orders(user):
 
 
 def _clear_personal_records(user):
+    from apps.otp.models import CodeOtp, JetonMdp
+
     from .models import (
         AppleIdentity,
-        OTPCode,
         PayoutAccount,
         UserCart,
         UserFavorite,
@@ -165,7 +166,11 @@ def _clear_personal_records(user):
     )
 
     AppleIdentity.objects.filter(user=user).delete()
-    OTPCode.objects.filter(user=user).delete()
+    # Les codes de double authentification vivent desormais dans le moteur
+    # unique (tache D6). Sans ces deux lignes, supprimer un compte laisserait
+    # derriere lui ses codes et ses jetons de reinitialisation.
+    CodeOtp.objects.filter(utilisateur=user).delete()
+    JetonMdp.objects.filter(utilisateur=user).delete()
     PayoutAccount.objects.filter(user=user).delete()
     UserCart.objects.filter(user=user).delete()
     UserFavorite.objects.filter(user=user).delete()

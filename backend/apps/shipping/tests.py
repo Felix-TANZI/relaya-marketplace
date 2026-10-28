@@ -184,7 +184,8 @@ class ShipmentTrackingTests(APITestCase):
             status=RelayParcel.Status.EXPECTED,
         )
         serializer = RelayParcelReceiveSerializer(
-            data={"shipment_id": self.shipment.id, "slot_code": "A-07", "proof_note": "3 photos + double signature"},
+            data={"shipment_id": self.shipment.id, "slot_code": "A-07", "proof_note": "3 photos + double signature",
+                  "depot_code": self.shipment.ensure_depot_code()},  # R66.1
             context={"relay_point": self.relay_point},
         )
         serializer.is_valid(raise_exception=True)
@@ -567,6 +568,15 @@ class ShipmentTrackingTests(APITestCase):
         self.assertIsNone(evidence.purged_at)
 
 
+def _relais_de_tournee(city="Yaounde"):
+    """Relais de destination des colis groupés en tournée (R52.1 : les paquets vont vers les relais)."""
+    user, _ = User.objects.get_or_create(username=f"relais_tournee_{city}")
+    relais, _ = RelayPointProfile.objects.get_or_create(
+        user=user, defaults={"name": f"Relais tournée {city}", "phone": "+237690100009", "city": city,
+                             "status": RelayPointProfile.Status.APPROVED, "is_active": True})
+    return relais
+
+
 class TourneeCompositionTests(APITestCase):
     """
     Composeur de tournées (Regles_Systeme_DEV v2.0 §5, règle fondatrice +
@@ -609,6 +619,7 @@ class TourneeCompositionTests(APITestCase):
             city="Yaounde",
             address="Mvan",
             zone=self.zone,
+            relay_point=_relais_de_tournee(),  # R52.1 : seuls les colis vers un relais partent en paquet
             total_xaf=10000,
         )
         shipment = Shipment.objects.create(
@@ -629,21 +640,27 @@ class TourneeCompositionTests(APITestCase):
         self.assertEqual(Shipment.objects.filter(status=Shipment.Status.CREATED, courier__isnull=True).count(), 2)
 
     def test_zone_reaching_threshold_composes_a_grouped_tournee(self):
-        shipments = [self._make_shipment(vendor_suffix=i) for i in range(4)]
+        # Spec v2.1 : paquet dès r_depart_colis (5) colis ; R52.2 : publié aux entreprises, jamais affecté par BelivaY.
+        shipments = [self._make_shipment(vendor_suffix=i) for i in range(5)]
 
         tournee = compose_tournees_for_zone(self.zone)
 
         self.assertIsNotNone(tournee)
-        self.assertEqual(tournee.status, Tournee.Status.DEPARTED)
+        self.assertEqual(tournee.status, Tournee.Status.PUBLISHED)
         self.assertFalse(tournee.is_forced_exit)
-        self.assertEqual(tournee.colis_count, 4)
+        self.assertIsNone(tournee.courier)
+        self.assertEqual(tournee.colis_count, 5)
         for shipment in shipments:
             shipment.refresh_from_db()
             self.assertEqual(shipment.tournee_id, tournee.id)
-            self.assertEqual(shipment.courier_id, self.courier.id)
-            self.assertEqual(shipment.status, Shipment.Status.ASSIGNED)
-        stop_orders = sorted(s.stop_order for s in Shipment.objects.filter(tournee=tournee))
-        self.assertEqual(stop_orders, [0, 1, 2, 3])
+            self.assertIsNone(shipment.courier_id)
+
+    def test_home_delivery_is_never_grouped_into_a_tournee(self):
+        # D10 et R52.1 : à domicile, une course par client, jamais un paquet.
+        shipments = [self._make_shipment(vendor_suffix=i) for i in range(5)]
+        Order.objects.filter(shipments__in=shipments).update(relay_point=None)
+
+        self.assertIsNone(compose_tournees_for_zone(self.zone))
 
     def test_oversized_parcel_never_grouped_into_a_tournee(self):
         normal = [self._make_shipment(vendor_suffix=i) for i in range(3)]
@@ -666,8 +683,8 @@ class TourneeCompositionTests(APITestCase):
         self.assertIsNotNone(tournee)
         self.assertTrue(tournee.is_forced_exit)
         old_shipment.refresh_from_db()
-        self.assertEqual(old_shipment.tournee_id, tournee.id)
-        self.assertEqual(old_shipment.courier_id, self.courier.id)
+        self.assertIsNone(old_shipment.courier_id)  # R52.2 : publié à la file des missions de l'entreprise
+        self.assertEqual(old_shipment.status, Shipment.Status.WAITING_MANUAL_ASSIGNMENT)
 
 
 class BourseAuxCoursesTests(APITestCase):
@@ -687,7 +704,7 @@ class BourseAuxCoursesTests(APITestCase):
         vendor_user = User.objects.create_user(f"bourse_vendor_{vendor_suffix}", password=TEST_PASSWORD)
         order = Order.objects.create(
             user=self.client_user, customer_phone="+237690500001", city="Douala",
-            address="Akwa", zone=self.zone, total_xaf=10000,
+            address="Akwa", zone=self.zone, relay_point=_relais_de_tournee("Douala"), total_xaf=10000,
         )
         return Shipment.objects.create(order=order, vendor=vendor_user, status=Shipment.Status.CREATED)
 
@@ -708,14 +725,14 @@ class BourseAuxCoursesTests(APITestCase):
         )
 
     def test_threshold_reached_with_no_courier_publishes_to_bourse(self):
-        shipments = [self._make_shipment(vendor_suffix=i) for i in range(4)]
+        shipments = [self._make_shipment(vendor_suffix=i) for i in range(5)]
 
         tournee = compose_tournees_for_zone(self.zone)
 
         self.assertIsNotNone(tournee)
         self.assertEqual(tournee.status, Tournee.Status.PUBLISHED)
         self.assertIsNone(tournee.courier)
-        self.assertEqual(tournee.colis_count, 4)
+        self.assertEqual(tournee.colis_count, 5)
         for shipment in shipments:
             shipment.refresh_from_db()
             self.assertEqual(shipment.tournee_id, tournee.id)
@@ -723,7 +740,7 @@ class BourseAuxCoursesTests(APITestCase):
             self.assertIsNone(shipment.courier)
 
     def test_claim_assigns_a_courier_and_departs_the_tournee(self):
-        shipments = [self._make_shipment(vendor_suffix=i) for i in range(4)]
+        shipments = [self._make_shipment(vendor_suffix=i) for i in range(5)]
         tournee = compose_tournees_for_zone(self.zone)
 
         organization = self._make_organization("bourse_org_1")
@@ -742,7 +759,7 @@ class BourseAuxCoursesTests(APITestCase):
 
     def test_second_organization_cannot_claim_an_already_claimed_tournee(self):
         self._make_shipment(vendor_suffix=1)
-        for i in range(2, 5):
+        for i in range(2, 6):
             self._make_shipment(vendor_suffix=i)
         tournee = compose_tournees_for_zone(self.zone)
 
@@ -759,7 +776,7 @@ class BourseAuxCoursesTests(APITestCase):
         self.assertIsNotNone(second_error)
 
     def test_organization_without_courier_cannot_claim(self):
-        for i in range(4):
+        for i in range(5):
             self._make_shipment(vendor_suffix=i)
         tournee = compose_tournees_for_zone(self.zone)
 
@@ -773,7 +790,7 @@ class BourseAuxCoursesTests(APITestCase):
         self.assertEqual(tournee.status, Tournee.Status.PUBLISHED)  # reste disponible
 
     def test_bourse_listing_only_shows_published_tournees_covering_the_organization(self):
-        for i in range(4):
+        for i in range(5):
             self._make_shipment(vendor_suffix=i)
         tournee = compose_tournees_for_zone(self.zone)
 

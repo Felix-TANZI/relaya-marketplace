@@ -1,0 +1,314 @@
+/* Espace livreur — identité VERTE LÉGÈRE de la famille BelivaY (DP-60 : client orange, vendeur nuit + braise/or,
+   point relais bleu, livreur vert léger). Téléphone d'abord : le livreur roule, souvent d'une main, en plein soleil
+   ou de nuit. Règles de la feuille :
+   - jetons sur :root (clair) ; la nuit dans styles/sombre.css ; contrastes AA au moins (texte courant ≥ 4,5:1, grands
+     textes et icônes ≥ 3:1) : le vert principal #047857 donne 5,5:1 sur blanc, le texte secondaire #4D5F57 7:1 ;
+   - l'orange BelivaY reste la couleur des ALERTES et de l'action d'urgence (incident), jamais du décor ;
+   - cibles tactiles de 48 px au moins (56 px pour la barre du bas et les boutons principaux) ;
+   - tailles en rem : la taille du texte choisie (préférences, --zoom) agrandit tout, en-têtes compris ;
+   - tablette et ordinateur : la même application, centrée sur une colonne de lecture, barre du bas en capsule. */
+
+@font-face{font-family:'Plus Jakarta Sans';font-style:normal;font-weight:400;font-display:swap;src:url(../assets/polices/plus-jakarta-sans-400.woff2) format('woff2')}
+@font-face{font-family:'Plus Jakarta Sans';font-style:normal;font-weight:500;font-display:swap;src:url(../assets/polices/plus-jakarta-sans-500.woff2) format('woff2')}
+@font-face{font-family:'Plus Jakarta Sans';font-style:normal;font-weight:600;font-display:swap;src:url(../assets/polices/plus-jakarta-sans-600.woff2) format('woff2')}
+@font-face{font-family:'Plus Jakarta Sans';font-style:normal;font-weight:700;font-display:swap;src:url(../assets/polices/plus-jakarta-sans-700.woff2) format('woff2')}
+@font-face{font-family:'Plus Jakarta Sans';font-style:normal;font-weight:800;font-display:swap;src:url(../assets/polices/plus-jakarta-sans-800.woff2) format('woff2')}
+
+/* ================================ Jetons ================================ */
+:root{
+  color-scheme:light;
+  /* Fonds : vert très doux, jamais blanc éblouissant au soleil, jamais gris terne. */
+  --sand:#F2F7F4; --sand-2:#E6F0EA; --sand-3:#D8E7DF;
+  --card:#FFFFFF; --card-2:#F7FBF9;
+  --ink:#0F1F19; --ink-2:#2C3E37; --ink-3:#4D5F57; --ink-4:#56675F;
+  --line:#DCE8E1; --line-2:#C3D6CB;
+  /* Vert du livreur : principal (actions, onglet actif), vif (décor, progression), profond (titres de carte). */
+  --acc:#15803D; --acc-2:#34D399; --acc-deep:#14684A; --acc-txt:#14684A;
+  --acc-soft:#E9FBF3; --acc-soft-2:#CFF4E2; --acc-line:#9EDFC0;
+  --acc-btn:#15803D; --acc-btn-ink:#FFFFFF;
+  --acc-grad:linear-gradient(135deg,#34D399 0%,#16A34A 45%,#15803D 100%);
+  /* Avatar (initiales) : vert profond, texte blanc à 5:1 au moins. */
+  --avatar-bg:linear-gradient(135deg,#15803D 0%,#14684A 100%); --avatar-ink:#FFFFFF;
+  /* Orange BelivaY : alertes et urgence (incident, SOS, blocage). */
+  --or:#EF6A00; --or-txt:#B4450A; --or-soft:#FFF0E2; --or-line:#F3C9A2;
+  --alerte-btn:#C2410C; --alerte-btn-ink:#FFFFFF;
+  --braise-1:#C2410C;
+  /* États. */
+  --green:#1F7A4D; --green-soft:#E6F4EC;
+  --amber:#8A5A00; --amber-soft:#FFF4D6; --amber-line:#F0DA9C;
+  --red:#B42318; --red-soft:#FDECEA; --red-line:#F4C3BE;
+  --blue:#1D4ED8; --blue-soft:#EAF0FF;
+  /* Verre (en-tête, barre du bas) et ombres. */
+  --verre:rgba(255,255,255,.86); --verre-bord:rgba(21,128,61,.10);
+  --ombre:0 1px 2px rgba(15,31,25,.06),0 6px 18px -8px rgba(15,31,25,.16);
+  --ombre-haute:0 18px 40px -12px rgba(15,31,25,.30);
+  --cap-bg:var(--acc-soft); --cap-halo:inset 0 0 0 1px var(--acc-line);
+  --bulle-voile:rgba(255,255,255,.55);
+  --r:18px; --r-l:24px;
+  --hd-h:0px;
+}
+/* Nuit : jetons dans styles/sombre.css (un seul fichier, chargé en dernier). */
+
+/* ================================ Base ================================ */
+html{font-size:calc(16px * var(--zoom,1));-webkit-text-size-adjust:100%}
+html,body{margin:0;background:var(--sand);color:var(--ink);font-family:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;font-variant-numeric:tabular-nums}
+body{min-height:100vh;min-height:100dvh;overflow-x:hidden}
+*,*::before,*::after{box-sizing:border-box}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit}
+h1,h2,h3,p{margin:0}
+:focus-visible{outline:3px solid var(--acc-txt);outline-offset:2px;border-radius:10px}
+.l-grow{flex:1;min-width:0}
+.l-sp{flex:1}
+
+/* ================================ Application ================================ */
+.l-app{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
+.l-main{flex:1;padding:12px 16px 32px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.l-app.a-barre .l-main{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 104px)}
+.l-main.l-seul{padding-top:calc(env(safe-area-inset-top,0px) + 32px);justify-content:center}
+/* Marges latérales du contenu au téléphone (consigne du porteur, 23 oct. 2026, même règle que le client) : 16 → 12 px ;
+   l'en-tête ne change pas. 600 px et plus : inchangé. */
+@media (max-width:599px){.l-main{padding-left:12px;padding-right:12px}}
+
+/* ---------- Verre (en-tête, barre du bas, menu) ---------- */
+.l-verre{background:var(--verre);-webkit-backdrop-filter:saturate(1.6) blur(18px);backdrop-filter:saturate(1.6) blur(18px);box-shadow:0 0 0 1px var(--verre-bord),var(--ombre)}
+
+/* ---------- En-tête ---------- */
+.l-hd{position:sticky;top:0;z-index:30;padding:calc(env(safe-area-inset-top,0px) + 6px) 10px 10px;border-radius:0 0 22px 22px}
+.l-hd-rang{display:flex;align-items:center;gap:4px;min-height:52px}
+.l-logo{display:flex;align-items:center;height:48px;padding:0 6px;border-radius:12px}
+.l-logo img{height:30px;width:auto;display:block}
+.l-ibtn{position:relative;flex-shrink:0;width:48px;height:48px;border:0;border-radius:14px;background:transparent;color:var(--ink-2);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.l-ibtn:active{background:var(--sand-2)}
+.l-incident{color:var(--alerte-btn)}
+.l-ibtn-av{width:52px}
+.l-avatar{width:40px;height:40px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--avatar-bg);color:var(--avatar-ink);font-size:.875rem;font-weight:800;letter-spacing:.02em;box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--acc-line)}
+/* Les initiales gardent leur couleur dans une carte qui colore ses <span> (texte secondaire). */
+.l-app .l-avatar{color:var(--avatar-ink)}
+.l-avatar.a-photo{overflow:hidden;padding:0}
+.l-avatar.a-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.l-avatar-g{width:52px;height:52px;font-size:1.0625rem}
+.l-bdg{position:absolute;top:5px;right:4px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--alerte-btn);color:var(--alerte-btn-ink);font-size:.75rem;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--card)}
+.l-hd-label{display:flex;align-items:center;gap:8px;padding:2px 8px 0;font-size:.78rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--acc-txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.l-hd-label i{width:7px;height:7px;border-radius:50%;background:var(--acc-2);flex-shrink:0}
+.l-pastilles{display:flex;gap:8px;padding:10px 4px 0;overflow-x:auto;scrollbar-width:none}
+.l-pastilles::-webkit-scrollbar{display:none}
+.l-pill{display:inline-flex;align-items:center;gap:6px;flex-shrink:0;min-height:44px;padding:0 12px;border-radius:999px;font-size:.8125rem;font-weight:700;white-space:nowrap;background:var(--card);color:var(--ink-2);box-shadow:inset 0 0 0 1px var(--line-2)}
+.l-pill .l-point{width:8px;height:8px;border-radius:50%;background:currentColor}
+.l-pill.l-vert{background:var(--green-soft);color:var(--green);box-shadow:inset 0 0 0 1px var(--acc-line)}
+.l-pill.l-accent{background:var(--acc-soft);color:var(--acc-txt);box-shadow:inset 0 0 0 1px var(--acc-line)}
+.l-pill.l-ambre{background:var(--amber-soft);color:var(--amber);box-shadow:inset 0 0 0 1px var(--amber-line)}
+.l-pill.l-rouge{background:var(--red-soft);color:var(--red);box-shadow:inset 0 0 0 1px var(--red-line)}
+.l-hd-enfant{padding-bottom:6px}
+.l-hd-sub{display:flex;align-items:center;gap:4px;min-height:52px}
+.l-langue{font-size:.8125rem;font-weight:800;letter-spacing:.04em;color:var(--ink-2)}
+.l-hd-sub .l-marque{background:none;box-shadow:none;border:0}
+.l-hd-sub .l-marque img{width:33px;height:32px;display:block;filter:drop-shadow(0 2px 6px rgba(245,138,58,.3))}
+.l-hd-sub h1{flex:1;min-width:0;font-size:1.125rem;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Barre du haut (thème et langue comme la console ; « Barre du haut » plus bas ; nuit : sombre.css). */
+:root{
+  --vie-ombre-bouton:0 1px 1px rgba(15,31,25,.06),0 3px 8px -3px rgba(15,31,25,.18),inset 0 1px 0 rgba(255,255,255,.9),inset 0 0 0 1px rgba(15,31,25,.08);
+  --vie-curseur:linear-gradient(180deg,#FFFFFF,#F4F9F6);
+  --vie-soleil:#E89A0C;--vie-lune:#4B5B8C;
+}
+
+/* ---------- Barre du bas : le verre liquide du client (animations.css : nav.dock, bulle, reflets), teinté vert ---------- */
+:root{
+  --dock-bg:rgba(255,255,255,.76);
+  --dock-lisere:linear-gradient(100deg,rgba(255,255,255,.95),rgba(167,220,194,.7) 22%,rgba(255,255,255,.25) 46%,rgba(196,222,255,.5) 74%,rgba(255,255,255,.95));
+  --dock-cap:linear-gradient(180deg,rgba(227,245,236,.98),rgba(205,238,221,.92));
+  --dock-cap-ombre:inset 0 0 0 .5px rgba(4,120,87,.24),inset 0 1px 0 rgba(255,255,255,.95),0 3px 10px -4px rgba(4,120,87,.36);
+  --dock-cap-uni:rgba(220,242,231,.94);
+}
+nav.l-dock{position:fixed;z-index:40;display:flex;align-items:center;gap:2px;left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom,0px) + 10px);height:68px;padding:0 6px}
+nav.l-dock .tab{flex:1;min-width:0;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:.75rem;font-weight:700;color:var(--ink-3);position:relative}
+nav.l-dock .tab span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+nav.l-dock .tab.on{color:var(--acc-txt);font-weight:800}
+nav.l-dock .tab:focus-visible{outline-color:var(--acc-txt)}
+nav.l-dock .bdg,.dock-bulle .tab-copie .bdg{position:absolute;top:3px;left:calc(50% + 6px);min-width:20px;height:20px;border-radius:10px;padding:0 5px;background:var(--alerte-btn);color:var(--alerte-btn-ink);font-size:.75rem;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--card)}
+.dock-bulle .tab-copie{color:var(--acc-txt);height:56px;font-size:.75rem}
+.dock-bulle .tab-copie svg{width:24px;height:24px}
+
+/* ---------- Bandeau hors connexion ---------- */
+.l-horsligne{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:var(--r);background:var(--amber-soft);color:var(--amber);box-shadow:inset 0 0 0 1px var(--amber-line);font-size:.875rem;line-height:1.4}
+.l-horsligne svg{flex-shrink:0;margin-top:1px}
+
+/* ---------- Cartes, boutons, états vides ---------- */
+.l-carte{background:var(--card);border-radius:var(--r);padding:16px;box-shadow:var(--ombre)}
+.l-kicker{font-size:.75rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--acc-txt)}
+.l-provisoire h2{margin-top:6px;font-size:1.375rem;font-weight:800;letter-spacing:-.02em}
+.l-provisoire p{margin-top:8px;color:var(--ink-3);font-size:.9375rem;line-height:1.5}
+.l-fiche{padding:0}
+.l-fiche summary{display:flex;align-items:center;gap:12px;min-height:56px;padding:0 16px;font-weight:700;cursor:pointer;list-style:none;color:var(--ink)}
+.l-fiche summary::-webkit-details-marker{display:none}
+.l-fiche summary svg{color:var(--acc-txt)}
+.l-fiche ul{margin:0;padding:4px 16px 16px 36px;color:var(--ink-2);font-size:.875rem;line-height:1.5}
+.l-fiche li+li{margin-top:6px}
+.l-bdg-n{min-width:26px;height:24px;padding:0 8px;border-radius:12px;background:var(--acc-soft);color:var(--acc-txt);font-size:.8125rem;font-weight:800;display:inline-flex;align-items:center;justify-content:center}
+.l-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:56px;padding:0 20px;border:0;border-radius:16px;font-size:1rem;font-weight:800;cursor:pointer;text-align:center}
+.l-btn.l-principal{background:var(--acc-btn);color:var(--acc-btn-ink);box-shadow:0 10px 22px -12px rgba(4,120,87,.7)}
+.l-btn.l-second{background:var(--card);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line-2)}
+.l-btn.l-alerte{background:var(--alerte-btn);color:var(--alerte-btn-ink)}
+.l-btn:disabled{opacity:.5;cursor:default}
+html[data-mouv] .l-btn:active:not(:disabled),html[data-mouv] .l-ibtn:active{transform:scale(.97);transition:transform var(--blv-court,.13s) ease}
+.l-vide{text-align:center;padding:12px 8px 8px}
+.l-vide-i{width:64px;height:64px;margin:0 auto 14px;border-radius:20px;background:var(--acc-soft);color:var(--acc-txt);display:flex;align-items:center;justify-content:center}
+.l-vide-i.l-rouge{background:var(--or-soft);color:var(--or-txt)}
+.l-vide h1{font-size:1.375rem;font-weight:800;letter-spacing:-.02em}
+.l-vide p{margin:8px auto 0;max-width:40ch;color:var(--ink-3);line-height:1.5}
+
+/* ---------- Menu du profil ---------- */
+.l-voile{position:fixed;inset:0;z-index:50;background:rgba(7,17,13,.42)}
+html[data-theme=dark] .l-voile{background:rgba(0,0,0,.62)}
+.l-pm{position:fixed;z-index:51;top:calc(env(safe-area-inset-top,0px) + 8px);right:8px;left:8px;max-height:calc(100dvh - env(safe-area-inset-top,0px) - 16px);overflow-y:auto;overscroll-behavior:contain;padding:10px;border-radius:var(--r-l);background:var(--card);box-shadow:var(--ombre-haute),0 0 0 1px var(--line)}
+html[data-mouv] .l-pm{animation:blv-toast var(--blv-moyen,.22s) var(--blv-ressort,ease) both}
+.l-pm-carte{display:flex;align-items:center;gap:12px;padding:12px;border-radius:18px;background:var(--acc-soft);color:var(--ink)}
+.l-pm-carte b{display:block;font-size:1rem}
+.l-pm-carte span span,.l-pm-carte .l-grow>span{display:block;font-size:.8125rem;color:var(--ink-3);margin-top:2px}
+.l-pm-carte>svg{color:var(--acc-txt)}
+.l-pm-groupe{margin-top:10px}
+.l-pm-gt{padding:6px 12px;font-size:.75rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-4)}
+.l-pm-r{display:flex;align-items:center;gap:14px;width:100%;min-height:52px;padding:0 12px;border:0;border-radius:14px;background:transparent;font-size:.9375rem;font-weight:600;color:var(--ink);text-align:left;cursor:pointer}
+.l-pm-r>svg{color:var(--acc-txt);flex-shrink:0}
+a.l-pm-r:active,button.l-pm-r:active{background:var(--sand-2)}
+.l-pm-reglage{cursor:default}
+.l-pm-sortie{margin-top:8px;color:var(--or-txt)}
+.l-pm-sortie>svg{color:var(--or-txt)}
+.l-choix{display:inline-flex;gap:2px;padding:3px;border-radius:999px;background:var(--sand-2);flex-shrink:0}
+.l-choix button{min-width:44px;height:44px;padding:0 10px;border:0;border-radius:999px;background:transparent;color:var(--ink-2);font-size:.8125rem;font-weight:800;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.l-choix button.on{background:var(--card);color:var(--acc-txt);box-shadow:inset 0 0 0 1px var(--acc-line)}
+.l-choix button:disabled{opacity:.4;cursor:default}
+
+/* ---------- Feuilles du bas (composant Feuille du client) ---------- */
+.veil{position:fixed;inset:0;z-index:60;background:rgba(7,17,13,.42)}
+html[data-theme=dark] .veil{background:rgba(0,0,0,.62)}
+.sheet{position:fixed;z-index:61;left:0;right:0;bottom:0;max-height:88dvh;overflow-y:auto;padding:10px 18px calc(env(safe-area-inset-bottom,0px) + 24px);border-radius:28px 28px 0 0;background:var(--card);box-shadow:var(--ombre-haute)}
+.sheet .grab{width:44px;height:5px;margin:2px auto 12px;border-radius:3px;background:var(--line-2)}
+.sheet-x{position:absolute;top:8px;right:8px;width:48px;height:48px;border:0;border-radius:14px;background:transparent;color:var(--ink-3);display:flex;align-items:center;justify-content:center;cursor:pointer}
+
+/* ================================ Tablette et ordinateur ================================ */
+@media (min-width:768px){
+  body{background:var(--sand) radial-gradient(1200px 500px at 50% -10%,var(--acc-soft),transparent 70%) no-repeat}
+  .l-app{max-width:760px;margin:0 auto;width:100%}
+  .l-hd{margin:0 12px;border-radius:0 0 26px 26px}
+  .l-main{padding:20px 28px 40px;gap:16px}
+  nav.l-dock{left:50%;right:auto;width:min(520px,calc(100% - 40px));transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 18px)}
+  .l-pm{left:auto;right:max(16px,calc(50% - 380px + 16px));width:400px}
+  .sheet{left:50%;right:auto;width:min(560px,100%);transform:translateX(-50%)}
+}
+@media (min-width:1024px){
+  .l-main{padding:24px 32px 48px}
+  .l-hd-rang,.l-hd-sub{min-height:56px}
+}
+@media (hover:hover) and (pointer:fine){
+  .l-ibtn:hover,a.l-pm-r:hover,button.l-pm-r:hover{background:var(--sand-2)}
+  nav.l-dock .tab:not(.on):hover{color:var(--ink)}
+  .l-fiche summary:hover{background:var(--card-2);border-radius:var(--r)}
+}
+
+/* ================================ Mouvement réduit ================================ */
+html:not([data-mouv]) .l-pm{animation:none}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+
+/* Taille du texte (composants/TailleDuTexte.tsx), comme le client : barre à 8 tailles, aperçu en direct. */
+.taille-t{display:flex;align-items:center;gap:10px}
+.taille-n{display:flex;flex-direction:column;min-width:0}
+.taille-n b{font-weight:800}
+.taille-n span{font-size:.8125rem;color:var(--ink-3)}
+.taille-l{display:flex;align-items:center;gap:10px;margin-top:12px}
+.taille-a{font-size:13px;font-weight:700;color:var(--ink-2)}
+.taille-a-g{font-size:22px}
+.taille-barre{flex:1;min-width:0;accent-color:var(--acc);height:44px;margin:0;cursor:pointer}
+.taille-graduation{display:flex;justify-content:space-between;padding:0 30px 0 22px;margin-top:2px}
+.taille-graduation i{width:4px;height:4px;border-radius:50%;background:var(--line-2)}
+.taille-graduation i.ref{background:var(--ink-4)}
+.taille-graduation i.on{background:var(--acc);transform:scale(1.6)}
+.taille-apercu{margin:10px 0 0;font-size:.8125rem;line-height:1.45;color:var(--ink-2)}
+.taille-normale{margin-top:8px;padding:8px 0;border:0;background:none;color:var(--acc);font-weight:800;cursor:pointer;min-height:44px}
+
+/* En-tête racine du téléphone (rootHeader du prototype : ☰, logo, incident, thème, langue, cloche, avatar) : tout
+   tient sur 360 px sans défilement, cibles de 44 × 48 px au moins (revue de conformité : jamais moins de 44). */
+@media (max-width:479px){
+  .l-hd{padding-left:4px;padding-right:4px}
+  .l-hd-rang{gap:0}
+  .l-hd-rang .l-ibtn,.l-hd-rang .l-ibtn-av{width:44px}
+  .l-logo{padding:0 3px}
+}
+
+/* Mode une main désactivé (CONF-LIV-UNE-MAIN, Réglages) : la barre d'action (.bottom-cta) revient à sa place dans la
+   page au lieu de rester collée en bas de l'écran : voir ecarts-prototype.css (8). */
+
+/* Écran repris sur le prototype (Ecran proto) : le contenu est posé comme le <main> du prototype (chaque bloc porte
+   ses marges : cartes, sections, héros), sans l'espacement en colonne ; bouton SOS de l'en-tête (LIVC_HD_SOS). */
+.l-main.l-proto{display:block;padding-top:2px}
+.l-main.l-proto>.l-horsligne{margin-top:12px}
+.l-sos{width:44px;height:44px;margin:0 2px;color:#fff;background:linear-gradient(180deg,#D92D20,#B42318);font-size:.8125rem;font-weight:800;letter-spacing:.02em;box-shadow:0 6px 14px -8px rgba(180,35,24,.8)}
+.l-hd-rang .l-sos{width:44px}
+
+/* Entrée des pages, version livreur (remplace celle du client, animations.css) : l'écran suivant paraît d'emblée,
+   en place, d'un léger glissé SANS fondu ni cascade. Un fondu depuis l'opacité 0 laissait voir le fond de la page
+   (noir la nuit) pendant quelques images à chaque changement d'écran. */
+@keyframes blv-avant{from{transform:translate3d(10px,0,0)}}
+@keyframes blv-arriere{from{transform:translate3d(-10px,0,0)}}
+@keyframes blv-fondu{from{transform:none}}
+html[data-mouv] main:is(.blv-avant,.blv-arriere,.blv-fondu)>:nth-child(n){animation-delay:0s}
+
+/* ---------- Barre du haut (porteur, 24 oct.) : la MÊME que la console et l'espace entreprise (espace-admin/src/styles/
+   vie.css). Sobre : seuls le thème et la langue gardent une pastille (44 px, filet qui les détache du verre en clair
+   comme en sombre) ; menu, retour et cloche sont des icônes seules dans une zone tactile invisible (survol : l'icône
+   fonce, appui : léger enfoncement, jamais de cercle) ; l'incident garde sa couleur d'alerte ; avatar à anneau ; logo
+   dans sa forme normale (proportions gardées, 30 px de haut au plus), seul à céder de la place. */
+html body .l-hd .l-ibtn:not(.l-sos){border-radius:999px;background:transparent}
+html body .l-hd .l-ibtn:not(.l-sos):active{background:transparent}
+@media (hover:hover) and (pointer:fine){html body .l-hd .l-ibtn:not(.l-sos):not(.l-incident):hover{background:transparent;color:var(--ink)}html body .l-hd .l-incident:hover{background:transparent}}
+html body .l-hd-rang>:not(.l-logo,.l-sp){flex-shrink:0}
+html body .l-hd-rang .l-logo{flex:0 1 auto;min-width:0;height:44px}
+html body .l-hd-rang .l-logo img{width:auto;height:auto;max-width:100%;max-height:30px;object-fit:contain;object-position:left center}
+/* Thème. */
+html body .l-hd .l-theme{position:relative;flex:none;width:44px;height:44px;padding:0;margin:0;border:2px solid transparent;border-radius:999px;background:var(--card);background-clip:padding-box;box-shadow:inset 0 0 0 1px var(--line-2);overflow:visible;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none}
+@media (hover:hover) and (pointer:fine){html body .l-hd .l-theme:hover{background:var(--sand-2);background-clip:padding-box}}
+html .l-theme .vt-ic{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+html .l-theme .vt-ic svg{display:block}
+html .l-theme .vt-soleil{color:var(--vie-soleil)}
+html .l-theme .vt-lune{color:var(--vie-lune)}
+html .l-theme.jour .vt-soleil,html .l-theme.nuit .vt-lune{opacity:0;visibility:hidden;transform:scale(.6)}
+html .l-theme.jour .vt-lune,html .l-theme.nuit .vt-soleil{opacity:1;visibility:visible;transform:none}
+/* Langue : pilule segmentée FR | EN de 44 px, curseur en relief sous la langue choisie, l'autre en retrait. */
+html body .l-hd .lang.vie-lang{position:relative;flex:none;display:inline-flex;align-items:center;gap:0;height:44px;min-width:0;padding:3px;margin:0 2px;border:2px solid transparent;border-radius:999px;background:var(--sand-2);background-clip:padding-box;box-shadow:inset 0 1px 2px color-mix(in srgb,var(--ink) 10%,transparent),inset 0 0 0 1px var(--line-2);color:var(--ink);font:inherit;font-size:.75rem;font-weight:800;letter-spacing:.04em;line-height:1;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none}
+html .vie-lang .vl-o{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;width:29px;height:34px;border-radius:999px;color:var(--ink-3)}
+html .vie-lang .vl-o.on{color:var(--ink)}
+html .vie-lang .vl-curseur{position:absolute;top:3px;left:3px;width:29px;height:34px;border-radius:999px;background:var(--vie-curseur);box-shadow:var(--vie-ombre-bouton)}
+html .vie-lang.en .vl-curseur{transform:translateX(29px)}
+@media (hover:hover) and (pointer:fine){html .vie-lang:hover .vl-o:not(.on){color:var(--ink)}}
+html body .l-hd :is(.l-theme,.vie-lang,.l-ibtn,.l-logo):focus-visible{outline:2px solid var(--acc-txt);outline-offset:1px}
+/* Mouvement (seulement sous html[data-mouv]). */
+html[data-mouv] body .l-hd :is(.l-theme,.vie-lang){transition:transform var(--blv-moyen,.22s) var(--blv-ressort,ease),background-color .2s}
+html[data-mouv] body .l-hd :is(.l-theme,.vie-lang):active{transform:scale(.93)}
+html[data-mouv] .l-theme .vt-ic{transition:transform .3s cubic-bezier(.3,1.4,.5,1),opacity .2s ease,visibility .2s}
+html[data-mouv] .vie-lang .vl-curseur{transition:transform .32s cubic-bezier(.3,1.4,.5,1)}
+html[data-mouv] .vie-lang .vl-o{transition:color .2s}
+/* Téléphone : la pilule de langue colle à ses voisins (le logo garde la place) ; sous 360 px, l'avatar (« Moi », aussi
+   onglet de la barre du bas) laisse sa place au logo, qui reste lisible à côté de l'incident, du thème, de la langue
+   et de la cloche. */
+@media (max-width:479.98px){html body .l-hd .lang.vie-lang{margin:0}}
+@media (max-width:359.98px){html .l-hd-rang>.l-ibtn-av{display:none}}
+
+/* Rien ne déborde en largeur (téléphone de 320 px, texte agrandi jusqu'à 140 %) : le texte agrandi élargit les
+   contenus (rem) ; un intitulé de tuile, une colonne du tableau des besoins ou le texte d'une ligne de liste qui gardait
+   sa largeur de contenu poussait la page de quelques pixels. Chaque enfant peut rétrécir, un mot trop long passe à la
+   ligne. Sans effet quand tout tient déjà (taille du texte normale). */
+.tile .tk{flex-wrap:wrap;min-width:0}
+.tile :is(.tk,.tv,.ts){overflow-wrap:break-word;hyphens:auto}
+.liva-need{grid-template-columns:minmax(0,78px) minmax(0,1fr) minmax(0,1fr) minmax(0,96px)}
+.liva-need>*{min-width:0;overflow-wrap:break-word;hyphens:auto}
+.li>:not(.ic,.chev,svg){min-width:0;overflow-wrap:break-word}
+/* Ligne de liste avec une pastille (aide : « Écrire au support ») : le titre garde au moins 45 % de la ligne, la
+   pastille rétrécit et passe à la ligne dans son cadre plutôt que de pousser le chevron hors de l'écran. */
+.li>.pill.pill{flex-shrink:1;min-width:0;white-space:normal;text-align:center}
+.li:has(>.pill)>.grow{min-width:45%}
+/* Bandeaux (aujourd'hui, activité, synchronisation, historique) : les chiffres en colonnes rétrécissent, la pastille
+   passe à la ligne, la date sous le grand chiffre reste dans le bandeau. */
+.hero .row{flex-wrap:wrap}
+.hero .row>.pill{max-width:100%;white-space:normal}
+.livc-hm>*{min-width:0;overflow-wrap:break-word;hyphens:auto}
+.livc-big small{display:inline-block;max-width:100%}

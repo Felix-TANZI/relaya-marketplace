@@ -1,0 +1,81 @@
+/* Vie et beauté (phase finale, demande du porteur) — commun à la console et à l'espace entreprise.
+   1. Barre du haut : pastilles rondes en relief doux, soleil ↔ lune qui tournent l'un vers l'autre, langue en pilule
+      segmentée FR | EN, avatar à anneau ; survol qui soulève, appui qui enfonce.
+   2. Vie : cartes qui montent en cascade à l'arrivée, appui qui s'enfonce, onglets qui se fondent, icônes dans des
+      pastilles teintées en dégradé, ombres en couches (jetons.css : --shadow-card).
+   3. Relief 3D léger, seulement sur un ou deux blocs héros des pages PRINCIPALES (#app.p-pri, composants/rang.ts :
+      tuile principale de l'accueil et des onglets, héros de page) ; jamais sur une page secondaire : ombres profondes, reflet qui suit le doigt ou la souris, inclinaison de 3,5° au plus (vie.ts).
+   Tout ce qui bouge vaut sous html[data-mouv] : ni « Animations réduites », ni prefers-reduced-motion, ni navigateur
+   piloté. Aucune couleur écrite ici (jetons.css). */
+
+/* ---------- 1. Barre du haut ---------- */
+/* Sobriété (porteur, phase finale) : seuls le thème (et la langue, pilule ci-dessous) gardent une pastille ; le menu,
+   le retour, la cloche et les autres icônes de la barre sont des icônes seules, zone de 44 px invisible. */
+html :is(header,.tb) .ibtn,html .tb-act .ibtn{border-radius:999px;background:transparent;box-shadow:none;border:0;color:var(--ink-2)}
+html .tb .ibtn{width:44px;height:44px}
+html :is(header,.tb) .ibtn.on{background:transparent;color:var(--e-txt)}
+@media (hover:hover) and (pointer:fine){html :is(header,.tb) .ibtn:not(.vie-theme):hover{background:transparent;color:var(--ink)}}
+/* Thème et langue (finitions, 23 oct.) : deux pastilles ENTIÈRES de même hauteur visible (40 px, cerclées d'un filet
+   qui les détache du verre de l'en-tête en clair comme en sombre) dans une zone tactile de 44 px (bord transparent) ;
+   l'icône visible est seule, centrée, pleine (pas de rotation à mi-course ni de rognage) ; un toucher suffit
+   (touch-action), l'état est annoncé par aria-pressed (composants/coque.tsx). */
+html body :is(header,.tb) .ibtn.vie-theme{width:44px;height:44px;padding:0;border:2px solid transparent;background:var(--card);background-clip:padding-box;box-shadow:inset 0 0 0 1px var(--line-2);overflow:visible;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;cursor:pointer}
+@media (hover:hover) and (pointer:fine){html body :is(header,.tb) .ibtn.vie-theme:hover{background:var(--sand-2);background-clip:padding-box}}
+html .vie-theme .vt-ic{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+html .vie-theme .vt-ic svg{display:block}
+html .vie-theme .vt-soleil{color:var(--vie-soleil)}
+html .vie-theme .vt-lune{color:var(--vie-lune)}
+html .vie-theme.jour .vt-soleil,html .vie-theme.nuit .vt-lune{opacity:0;visibility:hidden;transform:scale(.6)}
+html .vie-theme.jour .vt-lune,html .vie-theme.nuit .vt-soleil{opacity:1;visibility:visible;transform:none}
+html .lang.vie-lang{position:relative;display:inline-flex;align-items:center;gap:0;height:44px;min-width:0;padding:3px;margin:0 2px;border:2px solid transparent;border-radius:999px;background:var(--sand-2);box-shadow:inset 0 1px 2px color-mix(in srgb,var(--ink) 10%,transparent),inset 0 0 0 1px var(--line-2);background-clip:padding-box;font-size:.75rem;font-weight:800;letter-spacing:.04em;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none}
+html .vie-lang .vl-o{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;width:29px;height:34px;border-radius:999px;color:var(--ink-3)}
+html .vie-lang .vl-o.on{color:var(--ink)}
+html .vie-lang .vl-curseur{position:absolute;top:3px;left:3px;width:29px;height:34px;border-radius:999px;background:var(--vie-curseur);box-shadow:var(--vie-ombre-bouton)}
+html .vie-lang.en .vl-curseur{transform:translateX(29px)}
+html body :is(header,.tb) :is(.vie-theme,.vie-lang):focus-visible{outline:2px solid var(--e-txt,var(--ink));outline-offset:1px}
+/* En-tête racine du téléphone : rien ne s'écrase. Thème, langue, cloche et avatar gardent leur taille ; le logo prend
+   la place restante sans jamais être déformé (proportions gardées, 30 px de haut au plus) ; sous 360 px, l'avatar
+   (Profil, aussi dans le Menu) laisse sa place au logo. */
+html body .hd-row>:not(.hd-logo,.hd-sp){flex-shrink:0}
+html body .hd-row .hd-logo{flex:0 1 auto;min-width:0}
+html body .hd-row .hd-logo img{width:auto;height:auto;max-width:100%;max-height:30px;object-fit:contain;object-position:left center}
+@media (max-width:479.98px){html body .m-app>header.hd{padding-left:8px;padding-right:8px}}
+@media (max-width:359.98px){html body .hd-row>.fin-av{display:none}}
+html :is(header,.tb) .avatar{box-shadow:0 0 0 2px var(--card),0 0 0 3px var(--line-2)}
+html :is(header,.tb) .ibtn .bdg{box-shadow:0 0 0 2px var(--card)}
+
+/* ---------- 2. Pastilles d'icônes teintées en dégradé ---------- */
+html .px :is(.ph .ic,.li .ic,.e-tuile .ic,.a-act-i,.e-act-i,.kpi .i){background-image:linear-gradient(145deg,color-mix(in srgb,currentColor 16%,transparent),color-mix(in srgb,currentColor 4%,transparent));box-shadow:inset 0 1px 0 color-mix(in srgb,var(--card) 70%,transparent),inset 0 0 0 1px color-mix(in srgb,currentColor 12%,transparent)}
+
+/* ---------- 3. Relief 3D (un ou deux blocs par page) ---------- */
+html #app.p-pri :is(.vie-relief,.a-act-heros,.e-act-heros,[data-heros=score],[data-heros=vendredi]){position:relative;isolation:isolate;box-shadow:var(--vie-ombre-3d)}
+html #app.p-pri :is(.vie-relief,.a-act-heros,.e-act-heros,[data-heros=score],[data-heros=vendredi])::after{content:'';position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;background:radial-gradient(110% 90% at var(--vie-mx,25%) var(--vie-my,0%),var(--vie-reflet),transparent 60%)}
+
+/* ---------- Mouvement (seulement sous html[data-mouv]) ---------- */
+@keyframes vie-monte{from{opacity:0;transform:translateY(10px) scale(.99)}to{opacity:1;transform:none}}
+@keyframes vie-fondu{from{opacity:0}to{opacity:1}}
+html[data-mouv] :is(header,.tb) .ibtn,html[data-mouv] :is(header,.tb) .avatar{transition:transform var(--blv-moyen,.22s) var(--blv-ressort,ease),box-shadow var(--blv-moyen,.22s)}
+html[data-mouv] :is(header,.tb) :is(.ibtn,.avatar,.lang):active{transform:translateY(0) scale(.93)}
+html[data-mouv] .vie-theme .vt-ic{transition:transform .3s var(--blv-ressort,ease),opacity .2s,visibility .2s}
+html[data-mouv] .vie-lang .vl-curseur{transition:transform .32s var(--blv-ressort,ease)}
+html[data-mouv] .vie-lang .vl-o{transition:color .2s}
+/* Cartes en cascade à l'arrivée d'une page (huit premières, 45 ms d'écart). */
+html[data-mouv] .px>:is(.card,.panel,.g,.e-travail,.a-travail,.e-tuiles,section,nav){animation:vie-monte .42s var(--blv-doux,ease) both}
+html[data-mouv] .px>:nth-child(2){animation-delay:.04s}
+html[data-mouv] .px>:nth-child(3){animation-delay:.08s}
+html[data-mouv] .px>:nth-child(4){animation-delay:.12s}
+html[data-mouv] .px>:nth-child(5){animation-delay:.16s}
+html[data-mouv] .px>:nth-child(6){animation-delay:.2s}
+html[data-mouv] .px>:nth-child(7){animation-delay:.24s}
+html[data-mouv] .px>:nth-child(n+8){animation-delay:.28s}
+/* Onglets : le contenu se fond. */
+html[data-mouv] [role=tabpanel]{animation:vie-fondu .25s var(--blv-doux,ease) both}
+/* Appui qui s'enfonce légèrement. */
+html[data-mouv] .px :is(.btn,.e-tuile,.a-act,.e-act,a.li,button.li,.chip):not(:disabled){transition:transform .16s var(--blv-doux,ease),box-shadow .16s}
+html[data-mouv] .px :is(.btn,.e-tuile,.a-act,.e-act,a.li,button.li,.chip):not(:disabled):active{transform:scale(.975)}
+/* Relief : inclinaison qui suit le pointeur (vie.ts pose --vie-rx, --vie-ry), relief à l'appui ; jamais quand une
+   feuille est ouverte dedans (une transformation déplacerait une feuille fixe). */
+html[data-mouv] :is(.vie-relief,.a-act-heros,.e-act-heros,[data-heros=score],[data-heros=vendredi]){transition:transform .35s var(--blv-doux,ease),box-shadow .35s}
+html[data-mouv] .vie-actif:not(:has(.sheet,.veil)){transform:perspective(900px) rotateX(var(--vie-rx,0deg)) rotateY(var(--vie-ry,0deg)) translateY(-2px);transition:transform .12s linear,box-shadow .35s}
+html[data-mouv] .vie-actif:not(:has(.sheet,.veil)):active{transform:perspective(900px) rotateX(var(--vie-rx,0deg)) rotateY(var(--vie-ry,0deg)) translateY(1px) scale(.985);box-shadow:var(--vie-ombre-3d-appui)}
+@media (prefers-reduced-motion:reduce){html .vie-actif{transform:none!important}}

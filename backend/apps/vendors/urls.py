@@ -315,6 +315,7 @@ urlpatterns = [
     path('orders/<int:order_id>/journal',   views.ev_order_journal,       name='ev-order-journal'),
     path('orders/<int:order_id>/ready',     views.ev_order_ready,         name='ev-order-ready'),
     path('orders/<int:order_id>/stockout',  views.ev_order_stockout,      name='ev-order-stockout'),
+    path('orders/<int:order_id>/refuse',    views.ev_order_refuse,        name='ev-order-refuse'),
     path('orders/<int:order_id>/extend',    views.ev_order_extend,        name='ev-order-extend'),  # GET options / POST demande
     path('orders/<int:order_id>/slip',          views.ev_order_slip,        name='ev-order-slip'),
     path('orders/<int:order_id>/slip/open',     views.ev_order_slip_open,   name='ev-order-slip-open'),

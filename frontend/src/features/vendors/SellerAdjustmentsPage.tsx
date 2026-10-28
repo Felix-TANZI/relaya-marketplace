@@ -1,5 +1,6 @@
 // frontend/src/features/vendors/SellerAdjustmentsPage.tsx
-// Mes ajustements — commissions, frais de retrait, remboursements totaux et partiels.
+// Mes ajustements — frais de retrait, remboursements totaux et partiels. Jamais la commission : le vendeur ne voit
+// que le net (spec v2.1, R26.1).
 // Aucun endpoint dédié : tout est reconstitué depuis getOrders() et getWithdrawals().
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -63,17 +64,6 @@ function buildRows(
     const refunded = o.escrow_status === 'REFUNDED';
     const partial  = o.escrow_status === 'PARTIAL_REFUNDED';
 
-    // Commission retenue — sauf remboursement total, où BelivaY ne retient rien
-    if ((o.commission_amount ?? 0) > 0 && !refunded) {
-      rows.push({
-        id: `c-${o.id}`, kind: 'commission',
-        title: t('sl4_adjustments.row_commission_title', { ref: orderRef(o.id) }),
-        meta: t('sl4_adjustments.row_commission_meta', { amount: nf(o.vendor_subtotal), rate: o.commission_rate.toFixed(1) }),
-        amount: -(o.commission_amount ?? 0),
-        date: o.created_at, link: `/seller/orders/${o.id}`,
-      });
-    }
-
     if (refunded) {
       rows.push({
         id: `r-${o.id}`, kind: 'refund',
@@ -82,15 +72,6 @@ function buildRows(
         amount: -(o.vendor_net_amount ?? 0),
         date: o.updated_at ?? o.created_at, link: `/seller/orders/${o.id}`,
       });
-      if ((o.commission_amount ?? 0) > 0) {
-        rows.push({
-          id: `cr-${o.id}`, kind: 'credit',
-          title: t('sl4_adjustments.row_commission_returned_title', { ref: orderRef(o.id) }),
-          meta: t('sl4_adjustments.row_commission_returned_meta'),
-          amount: o.commission_amount ?? 0,
-          date: o.updated_at ?? o.created_at, link: `/seller/orders/${o.id}`,
-        });
-      }
     }
 
     if (partial) {
@@ -271,16 +252,12 @@ export default function SellerAdjustmentsPage() {
         </div>
 
         <SegmentBar segments={[
-          { pct: share(totals.commission), color: '#A78BFA', label: t('sl4_adjustments.segment_commissions', { amount: nf(Math.abs(totals.commission)) }) },
           { pct: share(totals.fee),        color: T.orange,  label: t('sl4_adjustments.segment_fees', { amount: nf(Math.abs(totals.fee)) }) },
           { pct: share(totals.refund),     color: T.blue,    label: totals.refund !== 0 ? t('sl4_adjustments.segment_refunds', { amount: nf(Math.abs(totals.refund)) }) : undefined },
         ]} />
       </Hero>
 
       <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(196px,1fr))' }}>
-        <StatCard icon={KIND.commission.icon} value={`− ${nf(Math.abs(totals.commission))}`}
-          label={t('sl4_adjustments.kpi_commission_label')} sub={t('sl4_adjustments.kpi_commission_sub')}
-          color={T.violet} bg={T.violetL} trend={`${share(totals.commission)} %`} />
         <StatCard icon={KIND.fee.icon} value={`− ${nf(Math.abs(totals.fee))}`}
           label={t('sl4_adjustments.kpi_fee_label')} sub={t('sl4_adjustments.kpi_fee_sub')}
           color={T.orange} bg={T.orangeB} trend={`${share(totals.fee)} %`} />
@@ -300,7 +277,6 @@ export default function SellerAdjustmentsPage() {
             value={filter} onChange={setFilter} accent={T.violet}
             items={[
               { key: 'all',        label: t('sl4_adjustments.tab_all'),          n: rows.length },
-              { key: 'commission', label: t('sl4_adjustments.tab_commissions'),   n: rows.filter(r => r.kind === 'commission').length },
               { key: 'fee',        label: t('sl4_adjustments.tab_fees'),         n: rows.filter(r => r.kind === 'fee').length },
               { key: 'refund',     label: t('sl4_adjustments.tab_refunds'), n: rows.filter(r => r.kind === 'refund' || r.kind === 'partial').length },
             ]}

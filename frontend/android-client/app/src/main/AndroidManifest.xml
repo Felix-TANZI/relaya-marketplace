@@ -74,4 +74,15 @@
         android:name="android.hardware.location.gps"
         android:required="false"
         tools:replace="android:required" />
+    <!--
+      Decouvert en inspectant le bundle reellement genere (bundletool +
+      aapt2 dump badging) : le meme plugin implique AUSSI la fonctionnalite
+      generique "localisation" (distincte de la GPS precise) a partir de
+      ACCESS_FINE_LOCATION/ACCESS_COARSE_LOCATION — elle restait obligatoire
+      malgre la surcharge ci-dessus, excluant encore tous les appareils.
+    -->
+    <uses-feature
+        android:name="android.hardware.location"
+        android:required="false"
+        tools:replace="android:required" />
 </manifest>

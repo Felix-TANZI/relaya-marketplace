@@ -37,7 +37,7 @@ logger = logging.getLogger("apps.payments.bridge.queries")
 # ─────────────────────────────────────────────────────────────────────────────
 
 def delivery_fee_xaf(*, delivery_mode: str, vendors, destination_zone=None,
-                     city: str = "") -> int:
+                     city: str = "", subtotal_xaf: int = 0) -> int:
     """
     Frais de livraison factures a l'acheteur.
 
@@ -45,6 +45,10 @@ def delivery_fee_xaf(*, delivery_mode: str, vendors, destination_zone=None,
 
     Le premier est couvert par la base ; chaque suivant ajoute un supplement
     selon qu'il partage ou non la zone des precedents.
+
+    `subtotal_xaf` : le sous-total de la commande, hors livraison. Il sert au
+    seuil de gratuite (tache D10) ; a 0, le seuil ne s'applique jamais, et le
+    calcul est celui d'avant.
 
     Retourne 0 si aucun vendeur — il n'y a alors rien a livrer.
     """
@@ -92,6 +96,20 @@ def delivery_fee_xaf(*, delivery_mode: str, vendors, destination_zone=None,
         seuil = getattr(getattr(destination_zone, "Tier", None), "VAGUE_3", None)
         if tier is not None and seuil is not None and tier == seuil:
             total += int(getattr(destination_zone, "surcharge_xaf", 0) or 0)
+
+    # ── Plancher, puis prise en charge (tache D10) ───────────────────────────
+    #
+    # L'ordre compte. Le plancher dit ce que la livraison COUTE ; la prise en
+    # charge dit ce que BelivaY PAIE dessus. L'appliquer avant le plancher
+    # ferait remonter au plancher une course deja offerte, et l'acheteur
+    # paierait une livraison annoncee gratuite.
+    total = max(int(total), int(bareme.minimum_xaf or 0))
+
+    seuil_gratuite = int(bareme.free_from_subtotal_xaf or 0)
+    if seuil_gratuite and int(subtotal_xaf or 0) >= seuil_gratuite:
+        # « elle couvre 1 500 F, le client paie le surplus » : un abattement,
+        # pas une remise a zero.
+        total = max(0, total - int(bareme.free_covers_xaf or 0))
 
     return int(total)
 

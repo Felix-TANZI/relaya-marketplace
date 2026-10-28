@@ -377,16 +377,21 @@ class AutomaticReassignmentCas62Tests(TestCase):
         return offer
 
     def test_all_four_conditions_met_reassigns_automatically(self):
+        # Spec v2.1 : la remplaçante est choisie par R35.2 (tests/test_meilleure_offre_v21.py) ; ce test garde la
+        # mécanique de la bascule (colis annulé, nouveau colis, notification).
+        from unittest import mock
         replacement = self._make_replacement_offer(price_xaf=9000)
 
-        result = self.attempt_automatic_reassignment(self.item, reason="Test")
+        with mock.patch("apps.orders.reassignment.find_reassignment_candidate", return_value=replacement):
+            result = self.attempt_automatic_reassignment(self.item, reason="Test")
 
         self.assertEqual(result, replacement)
         self.item.refresh_from_db()
         self.assertEqual(self.item.product_id, replacement.id)
-        self.assertEqual(self.item.price_xaf_snapshot, 9000)
+        # Spec v2.1, R35.3 : le client paie toujours le prix payé ; la différence lui est remboursée.
+        self.assertEqual(self.item.price_xaf_snapshot, 10000)
         self.order.refresh_from_db()
-        self.assertEqual(self.order.total_xaf, 9000)
+        self.assertEqual(self.order.total_xaf, 10000)
         self.shipment.refresh_from_db()
         self.assertEqual(self.shipment.status, Shipment.Status.CANCELLED)
         self.assertTrue(Shipment.objects.filter(order=self.order, vendor=self.replacement_vendor).exists())
@@ -432,12 +437,15 @@ class AutomaticReassignmentCas62Tests(TestCase):
         self.assertIsNone(result)
 
     def test_price_drop_flags_admin_for_manual_refund(self):
+        from unittest import mock
         admin = User.objects.create_user("cas62_admin", password="pass", is_staff=True)
-        self._make_replacement_offer(price_xaf=8000)
+        replacement = self._make_replacement_offer(price_xaf=8000)
 
-        result = self.attempt_automatic_reassignment(self.item)
+        # R35.3 : prix plus bas, la différence revient au client (validation humaine, module financier).
+        with mock.patch("apps.orders.reassignment.find_reassignment_candidate", return_value=replacement):
+            result = self.attempt_automatic_reassignment(self.item)
 
         self.assertIsNotNone(result)
         self.assertTrue(
-            UserNotification.objects.filter(user=admin, title__icontains="Écart de prix").exists()
+            UserNotification.objects.filter(user=admin, message__icontains="2000 F à rembourser au client").exists()
         )

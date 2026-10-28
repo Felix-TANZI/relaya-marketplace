@@ -87,6 +87,8 @@ export default function RelayReceptionControl({
   outbound,
   busy,
   onToggle,
+  depotCodes,
+  onDepotCode,
   onValidate,
   onRefuse,
   onCancel,
@@ -105,6 +107,9 @@ export default function RelayReceptionControl({
   outbound: number;
   busy: boolean;
   onToggle: (shipmentId: number) => void;
+  /** R66.1, R66.2 : code de depot de chaque colis (QR scanne ou saisi), verifie par le serveur. */
+  depotCodes: Record<number, string>;
+  onDepotCode: (shipmentId: number, code: string) => void;
   onValidate: () => void;
   onRefuse: () => void;
   onCancel: () => void;
@@ -116,7 +121,8 @@ export default function RelayReceptionControl({
   const [sheet, setSheet] = useState<"reserve" | "ecart" | null>(null);
   const places = lot.reduce((total, arrival) => total + placesOf(arrival.sizeLabel), 0);
   const avance = lot.length > 0 ? (checked.length / lot.length) * 100 : 0;
-  const complet = lot.length > 0 && checked.length === lot.length;
+  const codeOk = (shipmentId: number) => /^\d{6}$/.test(depotCodes[shipmentId] || "");
+  const complet = lot.length > 0 && checked.length === lot.length && lot.every((arrival) => codeOk(arrival.shipmentId));
 
   return (
     <div className="space-y-4">
@@ -233,6 +239,20 @@ export default function RelayReceptionControl({
                     </span>
                   </span>
                 </button>
+                {/* R66.1 : un colis n'entre qu'avec son code de depot (QR du colis ou saisie). */}
+                <label className="mb-3 ml-[50px] flex items-center gap-2 text-[12px] font-bold text-slate-500 dark:text-slate-400">
+                  Code de dépôt
+                  <input
+                    value={depotCodes[arrival.shipmentId] || ""}
+                    onChange={(event) => onDepotCode(arrival.shipmentId, event.target.value.replace(/\D/g, "").slice(0, 6))}
+                    inputMode="numeric"
+                    autoComplete="off"
+                    placeholder="000000"
+                    className={`w-[120px] rounded-lg border-2 bg-white px-2 py-1 text-center font-mono text-[14px] font-black tracking-[0.2em] text-slate-900 outline-none dark:bg-slate-950 dark:text-white ${
+                      codeOk(arrival.shipmentId) ? "border-emerald-300" : "border-slate-200 dark:border-slate-700"
+                    }`}
+                  />
+                </label>
               </li>
             );
           })}

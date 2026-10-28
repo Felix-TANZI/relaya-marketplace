@@ -1,0 +1,24 @@
+{
+  "id": "/",
+  "name": "BelivaY — Espace client",
+  "short_name": "BelivaY",
+  "description": "Achète auprès des boutiques de Yaoundé, paie protégé et retire au relais ou fais-toi livrer.",
+  "lang": "fr",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F5F4F6",
+  "theme_color": "#F5F4F6",
+  "categories": ["shopping", "lifestyle"],
+  "icons": [
+    { "src": "/icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icone-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Mes commandes", "url": "/commandes", "icons": [{ "src": "/icone-192.png", "sizes": "192x192" }] },
+    { "name": "Panier", "url": "/panier", "icons": [{ "src": "/icone-192.png", "sizes": "192x192" }] }
+  ]
+}

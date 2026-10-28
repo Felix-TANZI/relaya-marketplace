@@ -285,7 +285,8 @@ export function useMonthlyProductStats(): Map<number, MonthlyProductStats> {
           const isReleased = order.escrow_status === 'RELEASED';
           if (!isDisputed && !isReleased) return;
           order.items.forEach((item) => {
-            const lineKept = item.line_total_xaf * (1 - order.commission_rate / 100);
+            // Part de la ligne dans le net de la sous-commande (net_b, R22.1, R26.1).
+            const lineKept = order.vendor_subtotal ? item.line_total_xaf * order.vendor_net_amount / order.vendor_subtotal : 0;
             if (isDisputed) {
               bump(item.product, { disputedSalesCount: item.qty, frozenXaf: lineKept });
             } else {

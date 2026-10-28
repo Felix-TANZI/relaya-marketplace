@@ -1,0 +1,1442 @@
+{
+ "connexion": {
+  "ecrans": [
+   "Connexion"
+  ],
+  "etats": [
+   "defaut · Connexion",
+   "pin · Saisie du code PIN",
+   "oubli · PIN oublié"
+  ],
+  "elements": [
+   "« ESPACE POINT RELAIS »",
+   "champ numéro +237",
+   "rappel double vérification",
+   "« Bonjour Franck »",
+   "4 points de PIN et clavier",
+   "règle des 5 essais",
+   "liens Devenir point relais et Installer"
+  ],
+  "actions": [
+   "Continuer → POST /auth/relay/start (needs_otp)",
+   "Se connecter → POST /auth/relay/pin, ouvre Aujourd'hui",
+   "Changer de numéro → étape numéro",
+   "PIN oublié ? → code SMS puis nouveau PIN",
+   "Devenir point relais → Inscription",
+   "Installer l'application → Installer"
+  ],
+  "regles": [
+   "CNX-01",
+   "CNX-02",
+   "CNX-03",
+   "CNX-04",
+   "CNX-05",
+   "CNX-06",
+   "PR03-R01",
+   "PR03-R02",
+   "PR03-R03"
+  ],
+  "etatsExtraction": [
+   "numéro",
+   "code SMS (nouvel appareil)",
+   "PIN",
+   "PIN oublié",
+   "bloqué 30 min",
+   "numéro inconnu"
+  ]
+ },
+ "invitation": {
+  "ecrans": [
+   "Invitation"
+  ],
+  "etats": [
+   "defaut · Invitation du gérant",
+   "s2 · Création du code PIN",
+   "s3 · Formation obligatoire",
+   "ok · Prêt à travailler"
+  ],
+  "elements": [
+   "inviteur et relais",
+   "ce que vous pourrez faire (Recevoir, Remettre, Fermeture imprévue)",
+   "Pas d'accès à l'argent",
+   "clavier PIN",
+   "5 modules avec durées"
+  ],
+  "actions": [
+   "Accepter l'invitation → création du PIN",
+   "Confirmer le PIN → refus 1234, 0000, suites, répétitions",
+   "Commencer la formation → Formation",
+   "Aller au guichet → Accueil"
+  ],
+  "regles": [
+   "INV-01",
+   "INV-02",
+   "INV-03",
+   "INV-04",
+   "INV-05",
+   "INV-06",
+   "INV-07",
+   "PR03-R04",
+   "DRO-01"
+  ],
+  "etatsExtraction": [
+   "bienvenue",
+   "code PIN",
+   "formation 0/5",
+   "prêt",
+   "lien expiré"
+  ]
+ },
+ "inscription": {
+  "ecrans": [
+   "Inscription"
+  ],
+  "etats": [
+   "defaut · Inscription du relais",
+   "s2 · Étape 2 · le gérant",
+   "s3 · Étape 3 · le local",
+   "s4 · Étape 4 · le versement",
+   "s5 · Étape 5 · la convention",
+   "ok · Demande envoyée"
+  ],
+  "elements": [
+   "héros de l'offre",
+   "barre 5 segments",
+   "formulaire commerce + carte Plus Code",
+   "CNI recto verso + portrait (Smile ID)",
+   "3 photos du local, places, horaires",
+   "opérateur, numéro de versement, code",
+   "résumé de la convention, case, signature",
+   "case d'acceptation",
+   "signature au doigt horodatée et versionnée"
+  ],
+  "actions": [
+   "Continuer → validation de l'étape",
+   "Retour → étape précédente sans perte",
+   "Recevoir le code → préfixe vérifié puis SMS",
+   "Envoyer ma demande → relais « candidat » en console",
+   "Commencer la formation → Formation",
+   "Envoyer ma demande (actif avec case et signature) → relais « candidat »"
+  ],
+  "regles": [
+   "INS-01",
+   "INS-02",
+   "INS-03",
+   "INS-04",
+   "INS-05",
+   "INS-06",
+   "INS-07",
+   "PR03-R05",
+   "PR03-R06",
+   "GEN-05",
+   "PR-CT01-R05"
+  ],
+  "etatsExtraction": [
+   "1 commerce",
+   "2 gérant",
+   "3 local",
+   "4 versement",
+   "5 convention",
+   "envoyé",
+   "liste d'attente (hors zone)",
+   "5 étapes : commerce, gérant, local, numéro de versement, convention"
+  ]
+ },
+ "activation": {
+  "ecrans": [
+   "Activation"
+  ],
+  "etats": [
+   "defaut · Activation en 6 étapes"
+  ],
+  "elements": [
+   "certificat « Partenaire fondateur · 50 premiers relais »",
+   "4 engagements",
+   "6 étapes d'activation",
+   "convention téléchargeable",
+   "dossier",
+   "numéro de versement vérifié",
+   "convention signée",
+   "visite et pratique 1 h",
+   "formation 5 modules",
+   "capacité et horaires"
+  ],
+  "actions": [
+   "Télécharger la convention → PDF signé",
+   "Étape restante → écran correspondant",
+   "étape → écran correspondant"
+  ],
+  "regles": [
+   "ACT-01",
+   "ACT-02",
+   "ACT-03",
+   "PR03-R07",
+   "STA-02",
+   "PR-CT04-R01"
+  ],
+  "etatsExtraction": [
+   "6/6 étapes",
+   "étapes restantes",
+   "candidat",
+   "en configuration",
+   "ouvert"
+  ]
+ },
+ "documents": {
+  "ecrans": [
+   "Documents"
+  ],
+  "etats": [
+   "defaut · Documents"
+  ],
+  "elements": [
+   "tuiles : pièce d'identité, preuve d'activité, numéro de versement, photos du relais, visite BelivaY, NIU / patente (facultatif)",
+   "pied de page (30 jours, jamais montrées, 180 jours)"
+  ],
+  "actions": [
+   "Voir",
+   "Changer",
+   "Mettre à jour",
+   "Ajouter"
+  ],
+  "regles": [
+   "HIS-02",
+   "DOC-01",
+   "DOC-02",
+   "DOC-03",
+   "DOC-04",
+   "DOC-05",
+   "PR-12-R05",
+   "PR-12-R06"
+  ],
+  "etatsExtraction": [
+   "dossier complet (vert)",
+   "pièce manquante (ambre)"
+  ]
+ },
+ "formation": {
+  "ecrans": [
+   "Formation"
+  ],
+  "etats": [
+   "defaut · Formation"
+  ],
+  "elements": [
+   "anneau « n/6 »",
+   "6 modules en tuiles avec durée et état",
+   "explication de la formation initiale de 2 h"
+  ],
+  "actions": [
+   "Commencer / reprendre un module (quiz compris)"
+  ],
+  "regles": [
+   "EQU-02",
+   "FOR-01",
+   "FOR-02",
+   "FOR-03",
+   "FOR-04",
+   "FOR-05",
+   "PR-12-R05",
+   "PR-12-R06"
+  ],
+  "etatsExtraction": [
+   "en cours",
+   "Relais formé"
+  ]
+ },
+ "installer": {
+  "ecrans": [
+   "Installer"
+  ],
+  "etats": [
+   "defaut · Installer l’application",
+   "and · Android"
+  ],
+  "elements": [
+   "4 étapes Safari",
+   "2 étapes Android",
+   "avantages"
+  ],
+  "actions": [
+   "Installer → beforeinstallprompt"
+  ],
+  "regles": [
+   "PWA-01",
+   "PWA-02",
+   "PWA-03",
+   "PR03-R09"
+  ],
+  "etatsExtraction": [
+   "iPhone",
+   "Android"
+  ]
+ },
+ "accueil": {
+  "ecrans": [
+   "Accueil",
+   "AccueilVide",
+   "HorsLigne"
+  ],
+  "etats": [
+   "defaut · Aujourd’hui",
+   "vide · Aujourd’hui · journée calme",
+   "hors-ligne · Hors connexion"
+  ],
+  "elements": [
+   "en-tête NAV-03",
+   "salutation",
+   "héros Livreur en approche",
+   "4 tuiles",
+   "À faire maintenant",
+   "Gagné cette semaine",
+   "Trust Score et Avis",
+   "pied réseau",
+   "en-tête (état, places, Trust)",
+   "héros orange du prochain livreur",
+   "4 tuiles de compteurs",
+   "« À faire maintenant » trié par urgence",
+   "carte nuit « Gagné cette semaine » (11 600 FCFA · 41 colis remis · 30 jours de garde · versement prévu ven. 25 sept.)",
+   "Trust Score et note des avis",
+   "état du réseau",
+   "héros en attente du premier livreur",
+   "compteurs à zéro",
+   "Votre premier jour",
+   "cartes pointillées gains et Trust Score",
+   "bannière ambre avec durée",
+   "pastille « Hors ligne · n en attente »",
+   "tableau Oui/Non/Papier",
+   "file d'attente horodatée",
+   "avertissement de désinstallation"
+  ],
+  "actions": [
+   "Préparer la réception → Reception",
+   "Tuile → Stock/Departs/Capacite filtrés",
+   "Ligne d'action → écran concerné",
+   "Gagné cette semaine → Versements",
+   "Trust Score → TrustScore",
+   "Avis → Avis",
+   "Tâche → écran concerné",
+   "Ligne de préparation → Formation / Versements / Camera / Capacite",
+   "Réessayer l'envoi → renvoi de la file"
+  ],
+  "regles": [
+   "ACC-01",
+   "ACC-02",
+   "ACC-03",
+   "ACC-04",
+   "ACC-05",
+   "ACC-06",
+   "ACC-07",
+   "PR04-R01",
+   "PR04-R02",
+   "NAV-03",
+   "OFF-03",
+   "VID-01",
+   "VID-02",
+   "VID-03",
+   "VID-04",
+   "PR04-R03",
+   "HLN-01",
+   "HLN-02",
+   "HLN-03",
+   "HLN-04",
+   "HLN-05",
+   "HLN-06",
+   "OFF-01",
+   "OFF-02",
+   "OFF-05",
+   "OFF-06",
+   "PR04-R04"
+  ],
+  "etatsExtraction": [
+   "normal",
+   "sans livreur annoncé",
+   "places insuffisantes (ambre)",
+   "employé (sans gains)",
+   "ouvert jusqu'à 19 h",
+   "31 / 40 places",
+   "Trust 72",
+   "héros du prochain livreur (6 colis, M-4127, 7 places)",
+   "« dernier rappel envoyé à 8 h »",
+   "premier jour",
+   "hors ligne",
+   "mode papier",
+   "opération expirée"
+  ]
+ },
+ "reception": {
+  "ecrans": [
+   "Reception"
+  ],
+  "etats": [
+   "defaut · Réception d’un lot",
+   "check · Contrôle du lot",
+   "done · Lot validé"
+  ],
+  "elements": [
+   "étapes Code/Contrôler/Valider",
+   "bandeau nuit bleue du lot",
+   "liste des colis (référence, taille, remplacement, RANGER EN)",
+   "compteur n / 6",
+   "anomalies (réserve, refus, écart)",
+   "confirmation (clients prévenus, stock, colis à remettre)",
+   "bandeau nuit, étape « Code » : « Saisissez le code de dépôt », « Saisir le code », « Le livreur n'a pas de code ? »",
+   "liste des colis (cochée = étiquette scannée et scellé intact ; pointillée = à contrôler ; « remplacement »), emplacement où ranger",
+   "compteur « n / 6 » et barre",
+   "anomalies : réserve (photo), refus, écart",
+   "confirmation : heure du transfert de garde, clients prévenus (4 : avis puis code ; 1 attend encore 1 colis), stock et alerte de saturation, 3 colis à remettre au livreur"
+  ],
+  "actions": [
+   "Saisir le code → POST /relay/missions/verify-code",
+   "Le livreur n'a pas de code ? → « Ne prenez pas le lot », support / rappel",
+   "Scanner l'étiquette puis toucher → POST …/items/{parcel}",
+   "Réserve avec photo (1)",
+   "Refuser un colis (2 photos)",
+   "Signaler absent / en trop",
+   "Valider le lot → POST …/validate, attente confirmation livreur",
+   "Nouvelle réception",
+   "Saisir le code → lot (pas de code, pas de lot)",
+   "Valider le lot (actif quand chaque colis a un résultat) → attente de l'accord du livreur"
+  ],
+  "regles": [
+   "REC-01",
+   "REC-02",
+   "REC-03",
+   "REC-04",
+   "REC-05",
+   "REC-06",
+   "REC-07",
+   "REC-08",
+   "REC-09",
+   "REC-10",
+   "REC-11",
+   "REC-12",
+   "REC-13",
+   "PR04-R05",
+   "PR04-R06",
+   "PR04-R07",
+   "PR-R03"
+  ],
+  "etatsExtraction": [
+   "1 code de dépôt",
+   "2 contrôler",
+   "3 lot validé",
+   "code faux",
+   "code bloqué 24 h",
+   "lot déjà reçu",
+   "hors ligne lot téléchargé / non téléchargé",
+   "livreur sans code",
+   "à confirmer (> 10 min)",
+   "1 code"
+  ]
+ },
+ "retrait": {
+  "ecrans": [
+   "Retrait"
+  ],
+  "etats": [
+   "defaut · Retrait par le client",
+   "colis · Code correct · colis trouvé",
+   "ordre · Tout est en ordre ?",
+   "preuve · Preuve de remise",
+   "done · Colis remis"
+  ],
+  "elements": [
+   "six cases du code + « Scanner le QR »",
+   "rappel 3 essais et renvoi SMS",
+   "ticket : emplacement en grand, référence, « n colis sur n · arrivé il y a n jours », articles et livraison, porteur désigné, détail de la garde, « À payer par le client »",
+   "carte « Paiement au comptoir » (opérateur, en attente / payé)",
+   "pastille « n F payés »",
+   "« Colis annoncés · n » / « Colis posés sur le comptoir · n sur n »",
+   "zone photo obligatoire",
+   "interrupteur « Une autre personne retire » + champ « NOM DU PORTEUR »",
+   "bloc repliable « Autres situations au comptoir » (6)",
+   "lien vert dépôt d'un retour validé",
+   "six cases du code ou scan QR, « Vérifier », rappel 3 essais",
+   "ticket : emplacement (B-04), référence, « Articles et livraison · déjà payés », porteur désigné, détail de la garde ligne par ligne, montant à payer",
+   "carte « Paiement au comptoir » (demande MoMo, aucune espèce, aucun montant à saisir)",
+   "« Autres situations au comptoir » (six, repliables)",
+   "carte « Tout est en ordre ? » (pastille « 400 F payés », « Colis annoncés · 1 », « Colis posés sur le comptoir · 1 sur 1 »)",
+   "photo obligatoire, interrupteur « Une autre personne retire » + nom du porteur",
+   "confirmation : emplacement libéré, client invité à noter 7 jours, rémunération (250 F + 300 F)"
+  ],
+  "actions": [
+   "Vérifier → vérification serveur du code (/handover/verify)",
+   "Scanner le QR → même vérification",
+   "Demande de paiement → POST /relay/handover/{id}/payment (CamPay)",
+   "Annuler → abandonne la demande MoMo",
+   "Tout est en ordre → (DP-28 : attend l'appui du client dans son app) ferme la fenêtre de retour, ouvre la preuve",
+   "Un problème → constat au comptoir (POST /relay/claims), pas de remise, garde suspendue",
+   "Le client préfère ne pas ouvrir · continuer → preuve, fenêtre de retour ouverte 7 jours",
+   "Remettre le colis → (PIN si activé) remise, emplacement libéré, client notifié, Historique",
+   "Retrait suivant → retour à l'étape code",
+   "Signature PIN → PinRemise",
+   "États d'erreur → Erreurs",
+   "(v6) Confirmer l'encaissement des espèces de garde → débloque la remise",
+   "Vérifier → ticket ou erreur (encore n essais / bloqué 24 h)",
+   "Tout est en ordre → ferme la fenêtre de retour, libère l'argent du vendeur, passe à la preuve",
+   "Un problème → constat au comptoir, photos tout de suite, garde arrêtée",
+   "Le client préfère ne pas ouvrir · continuer → remise, fenêtre 7 jours",
+   "Remettre le colis (actif seulement avec photo) → PIN → colis remis",
+   "Retrait suivant"
+  ],
+  "regles": [
+   "RET-01",
+   "RET-02",
+   "RET-03",
+   "RET-04",
+   "RET-05",
+   "RET-06",
+   "RET-07",
+   "RET-08",
+   "RET-09",
+   "RET-10",
+   "RET-11",
+   "RET-12",
+   "RET-13",
+   "RET-14",
+   "RET-15",
+   "RET-16",
+   "PR-05-R01",
+   "PR-05-R02",
+   "PR-05-R03",
+   "PR-05-R04",
+   "PR-05-R05",
+   "FIC-03",
+   "LIT-13",
+   "CAL-05",
+   "CAL-33"
+  ],
+  "etatsExtraction": [
+   "code (6 cases ou QR)",
+   "colis (ticket et paiement : en attente → payé)",
+   "ordre (« Tout est en ordre ? »)",
+   "preuve",
+   "done (colis remis)",
+   "1 code",
+   "2 ticket et paiement",
+   "3 « Tout est en ordre ? »",
+   "4 preuve",
+   "5 colis remis",
+   "bloqué (3 codes faux)",
+   "en attente de paiement MoMo"
+  ]
+ },
+ "pin-remise": {
+  "ecrans": [
+   "PinRemise"
+  ],
+  "etats": [
+   "defaut · Code PIN de remise",
+   "err · PIN erroné"
+  ],
+  "elements": [
+   "rappel du colis (B-04, BLV-40231, « 400 F payés · photo prise », « Prêt à remettre »)",
+   "4 points",
+   "clavier numérique",
+   "« Valider »"
+  ],
+  "actions": [
+   "Valider → signe la remise (Historique), passe à « Colis remis »",
+   "3e échec → remise annulée, colis en stock, gérant prévenu"
+  ],
+  "regles": [
+   "RET-04",
+   "PIN-01",
+   "PIN-02",
+   "PIN-03",
+   "PAR-01",
+   "PR-12-R08"
+  ],
+  "etatsExtraction": [
+   "saisie",
+   "err (« PIN incorrect · encore n essais »)"
+  ]
+ },
+ "camera": {
+  "ecrans": [
+   "Camera"
+  ],
+  "etats": [
+   "defaut · Appareil photo de preuve",
+   "photo · Photo de remise"
+  ],
+  "elements": [
+   "cadre de visée or",
+   "bascule QR/Photo",
+   "lampe",
+   "consigne",
+   "compteur 1/1, 2/2"
+  ],
+  "actions": [
+   "Scan → ouvre le bon écran selon le type",
+   "Saisir le code à la main",
+   "Déclencheur → photo de preuve (jamais la galerie)"
+  ],
+  "regles": [
+   "CAM-01",
+   "CAM-02",
+   "CAM-03",
+   "CAM-04",
+   "CAM-05",
+   "CAM-06",
+   "PR04-R08",
+   "GEN-04"
+  ],
+  "etatsExtraction": [
+   "scan QR",
+   "photo",
+   "autorisation refusée"
+  ]
+ },
+ "stock": {
+  "ecrans": [
+   "Stock"
+  ],
+  "etats": [
+   "defaut · Stock et emplacements",
+   "pay · Onglet payants",
+   "grp · Onglet groupage",
+   "free · Onglet gratuits"
+  ],
+  "elements": [
+   "titre : n colis · places occupées / déclarées",
+   "plan des étagères A petits (1 place), B moyens (2 places), sol C encombrants (5 places), cases colorées, taux d'occupation, légende",
+   "onglets avec compteurs",
+   "lignes : emplacement, référence, taille, jour, montant total dû ou « gratuit jusqu'au … », mention « remplacement », étiquette d'état",
+   "encadré bleu groupage",
+   "carte « La grille de garde » et « Vous touchez »",
+   "plan des étagères A petits, B moyens, C encombrants, cases colorées par état",
+   "taux d'occupation, légende",
+   "onglet Urgents : à renvoyer (J8) puis derniers jours (J7 · 1 400 F)",
+   "carte de la grille de garde (J1 0 F · J2–J3 100 F · J4–J5 200 F · J6–J7 400 F · J8 renvoi + 500 F) et « 100 F par jour facturé, jours offerts aux abonnés compris »",
+   "onglet Groupage : liste d'envies, remise groupée prévue le 2 oct., gardés sans frais"
+  ],
+  "actions": [
+   "Toucher une case / une ligne → Fiche colis",
+   "Changer d'onglet → liste filtrée, onglet gardé pendant la session",
+   "ligne → fiche colis"
+  ],
+  "regles": [
+   "PR-05-R03",
+   "STK-01",
+   "STK-02",
+   "STK-03",
+   "STK-04",
+   "STK-05",
+   "STK-06",
+   "STK-07",
+   "STK-08",
+   "STK-09",
+   "STK-10",
+   "STK-11",
+   "STK-12",
+   "STK-13",
+   "STK-14",
+   "FIC-04",
+   "PR-06-R01",
+   "LIT-03",
+   "FER-05",
+   "CAP-06",
+   "CAP-08",
+   "PR-12-R03",
+   "PR-12-R04"
+  ],
+  "etatsExtraction": [
+   "Urgents",
+   "Payants",
+   "Groupage (caché au lancement, v6)",
+   "Gratuits",
+   "Urgents 3",
+   "Payants 8",
+   "Groupage 2",
+   "Gratuits 9"
+  ]
+ },
+ "colis": {
+  "ecrans": [
+   "ColisDetail"
+  ],
+  "etats": [
+   "defaut · Détail d’un colis"
+  ],
+  "elements": [
+   "carte nuit bleue : référence, taille et places, nombre de colis de la commande, emplacement, étiquettes (jour de garde, « Garde : n F dus », « Client prévenu n fois »)",
+   "frise du parcours (contrôlé, emballé, scellé par le livreur ; pris en charge ; reçu au relais ; client prévenu ; rappels ; garde payante)",
+   "carte Garde (arrivé le, gratuit jusqu'au, non facturé, aujourd'hui, dernier jour, renvoi si non retiré, grille appliquée, vous toucherez)",
+   "encadré anonymat"
+  ],
+  "actions": [
+   "Remettre → Retrait avec ce colis",
+   "Signaler → constat",
+   "Déplacer → cases libres compatibles, journalisé"
+  ],
+  "regles": [
+   "RET-15",
+   "STK-03",
+   "STK-05",
+   "STK-07",
+   "STK-10",
+   "STK-12",
+   "STK-13",
+   "FIC-01",
+   "FIC-02",
+   "FIC-03",
+   "FIC-04",
+   "FIC-05",
+   "FIC-06",
+   "PR-06-R01",
+   "LIT-03",
+   "NTF-09"
+  ],
+  "etatsExtraction": [
+   "remettable",
+   "non remettable (groupage, constat, à renvoyer : motif affiché)"
+  ]
+ },
+ "departs": {
+  "ecrans": [
+   "Departs"
+  ],
+  "etats": [
+   "defaut · Départs et collecte",
+   "plan · Collectes prévues",
+   "done · Colis partis"
+  ],
+  "elements": [
+   "carte prochaine collecte (heure, entreprise, nombre de colis)",
+   "lignes : case à cocher, emplacement, référence, destination, étiquette Renvoi / Retour / Transfert / Refus",
+   "compteur « n / 3 »",
+   "tableau des 5 motifs de sortie",
+   "passages prévus (dépose / reprise)",
+   "sorties signées de la semaine"
+  ],
+  "actions": [
+   "Toucher / scanner un colis → POST /relay/departures/{id}/scan (hors ligne possible)",
+   "Marquer absent + motif",
+   "Valider la sortie → /validate puis attente de la confirmation du livreur (garde transférée, places libérées)"
+  ],
+  "regles": [
+   "RET-09",
+   "RET-11",
+   "STK-04",
+   "DEP-01",
+   "DEP-02",
+   "DEP-03",
+   "DEP-04",
+   "DEP-05",
+   "LIT-12",
+   "LIT-13",
+   "FER-03"
+  ],
+  "etatsExtraction": [
+   "À remettre",
+   "Collectes (Departs_plan)",
+   "Partis (Departs_done)"
+  ]
+ },
+ "litiges": {
+  "ecrans": [
+   "Litiges"
+  ],
+  "etats": [
+   "defaut · Constats et litiges",
+   "r · Dépôt de retour",
+   "d · Dossiers en cours"
+  ],
+  "elements": [
+   "1 scanner le colis (fenêtre affichée)",
+   "2 tuiles motif : Non conforme, Abîmé, Contrefaçon, Défaut caché",
+   "3 deux photos",
+   "encadré bleu (sans frais, vendeur 48 h, médiation, hors connexion)",
+   "fiche du retour validé (motif, taille, emplacement R)",
+   "scellé + 2 photos",
+   "barre 5 étapes Constat · Vendeur 48 h · Médiation · Décision · Recours, échéance",
+   "dossiers clos du mois",
+   "règles et délais"
+  ],
+  "actions": [
+   "Envoyer le constat → POST /relay/claims, dossier ouvert, bascule sur Dossiers",
+   "Enregistrer le dépôt → retour en zone R, part à la prochaine collecte",
+   "Étiquette non validée → refus « Retour non validé : ne le prenez pas »"
+  ],
+  "regles": [
+   "RET-09",
+   "RET-10",
+   "FIC-03",
+   "LIT-01",
+   "LIT-02",
+   "LIT-03",
+   "LIT-04",
+   "LIT-05",
+   "LIT-06",
+   "LIT-07",
+   "LIT-08",
+   "LIT-09",
+   "LIT-10",
+   "LIT-11",
+   "LIT-12",
+   "LIT-13",
+   "PR-07-R01",
+   "PR-07-R02",
+   "MSG-03",
+   "CAP-08"
+  ],
+  "etatsExtraction": [
+   "Constat",
+   "Dépôt de retour (Litiges_r)",
+   "Dossiers (Litiges_d)"
+  ]
+ },
+ "erreurs": {
+  "ecrans": [
+   "Erreurs"
+  ],
+  "etats": [
+   "defaut · Erreurs et cas limites",
+   "bloque · Colis bloqué",
+   "pay · Paiement",
+   "qr · Mauvais QR",
+   "res · Sans réseau",
+   "rem · Non remettable"
+  ],
+  "elements": [
+   "pastilles des 6 cas",
+   "carte d'erreur : titre court, 1-2 phrases, une action ; rouge bloquant, ambre temporaire"
+  ],
+  "actions": [
+   "Ressaisir le code → cases vidées",
+   "Écrire au support → Messagerie (DP-26 : le client redemande un code)",
+   "Annuler / Renvoyer la demande → nouvelle demande MoMo",
+   "Signaler au support → fil Support",
+   "Réessayer → nouvelle tentative réseau",
+   "Voir le dossier → Constats et retours (Dossiers)"
+  ],
+  "regles": [
+   "RET-02",
+   "ERR-01",
+   "ERR-02",
+   "PR-05-R01",
+   "PR-05-R02",
+   "AID-04"
+  ],
+  "etatsExtraction": [
+   "code faux",
+   "colis bloqué",
+   "paiement non abouti",
+   "mauvais QR",
+   "sans réseau",
+   "non remettable"
+  ]
+ },
+ "statut-relais": {
+  "ecrans": [
+   "StatutRelais"
+  ],
+  "etats": [
+   "defaut · Statut du relais",
+   "sus · Relais suspendu",
+   "fer · Relais fermé"
+  ],
+  "elements": [
+   "étapes restantes cliquables",
+   "motif écrit de la décision",
+   "contestation une fois / 72 h ouvrées",
+   "versements maintenus",
+   "Trust Score gelé sous 40",
+   "dates de fermeture et réouverture"
+  ],
+  "actions": [
+   "Voir la décision et le motif → décision",
+   "Contester → POST /relay/decisions/{id}/contest (une fois)",
+   "Modifier ou rouvrir plus tôt → Fermeture"
+  ],
+  "regles": [
+   "STA-01",
+   "STA-02",
+   "STA-03",
+   "STA-04",
+   "STA-05",
+   "STA-06",
+   "PR03-R08"
+  ],
+  "etatsExtraction": [
+   "en configuration (4/6)",
+   "suspendu (niveau 3/4)",
+   "fermé temporairement"
+  ]
+ },
+ "fermeture": {
+  "ecrans": [
+   "Fermeture"
+  ],
+  "etats": [
+   "defaut · Fermeture déclarée",
+   "d1 · Durée de moins de 24 h",
+   "d9 · Durée de plus de 3 jours"
+  ],
+  "elements": [
+   "bandeau calendrier (jours fermés en bleu)",
+   "Du / Au, date de réouverture",
+   "motifs Congé, Maladie, Urgence familiale, Force majeure",
+   "bouton de justificatif",
+   "onglets de durée et conséquence",
+   "rappel : jours jamais facturés, transfert gratuit, fermeture imprévue du jour par un employé",
+   "fermetures passées"
+  ],
+  "actions": [
+   "Déclarer la fermeture → BelivaY prévenu ; selon la durée : rien / transfert (DP-42 : choix du client puis 24 h) / relais masqué",
+   "Joindre le justificatif (plus tard possible)"
+  ],
+  "regles": [
+   "FER-01",
+   "FER-02",
+   "FER-03",
+   "FER-04",
+   "FER-05",
+   "FER-06",
+   "FER-07",
+   "PR-07-R03",
+   "MEN-02",
+   "EQU-07"
+  ],
+  "etatsExtraction": [
+   "1 à 3 jours",
+   "moins de 24 h (Fermeture_d1)",
+   "plus de 3 jours (Fermeture_d9)"
+  ]
+ },
+ "capacite": {
+  "ecrans": [
+   "Capacite"
+  ],
+  "etats": [
+   "defaut · Capacité et horaires"
+  ],
+  "elements": [
+   "compteur − / + des places, places occupées, barre d'occupation",
+   "équivalences S 1, M 2, L 5, ✕ XL / hors gabarit",
+   "« Les retours déposés ne comptent pas dans vos places »",
+   "interrupteur « Accepter les encombrants » (retiré, DP-20)",
+   "horaires jour par jour sur une barre 6 h – 22 h",
+   "pause déjeuner"
+  ],
+  "actions": [
+   "− / + → jamais sous les places occupées ; hausse = demande vérifiée en visite",
+   "Enregistrer → horaires publiés aux clients et aux livreurs",
+   "Fermer exceptionnellement → Fermeture"
+  ],
+  "regles": [
+   "STK-06",
+   "STK-14",
+   "LIT-12",
+   "PAL-04",
+   "CAP-01",
+   "CAP-02",
+   "CAP-03",
+   "CAP-04",
+   "CAP-05",
+   "CAP-06",
+   "CAP-07",
+   "CAP-08",
+   "PR-10-R02"
+  ],
+  "etatsExtraction": [
+   "places",
+   "horaires"
+  ]
+ },
+ "equipe": {
+  "ecrans": [
+   "Equipe"
+  ],
+  "etats": [
+   "defaut · Équipe et codes PIN",
+   "open · Ajout d’un employé"
+  ],
+  "elements": [
+   "une carte par personne (rôle, dernière activité, droits, interrupteur d'accès)",
+   "« 3 employés au plus »",
+   "« Ajouter une personne · n / 3 »",
+   "formulaire nom, téléphone, droits",
+   "rappel de responsabilité",
+   "« Qui a fait quoi aujourd'hui »"
+  ],
+  "actions": [
+   "Envoyer l'invitation → code SMS au téléphone personnel du gérant, puis SMS d'invitation (PIN, 5 modules)",
+   "Couper l'accès → code SMS, retrait immédiat, session fermée",
+   "Réinitialiser le PIN d'un employé"
+  ],
+  "regles": [
+   "FER-07",
+   "EQU-01",
+   "EQU-02",
+   "EQU-03",
+   "EQU-04",
+   "EQU-05",
+   "EQU-06",
+   "EQU-07",
+   "PR-10-R03",
+   "FOR-01"
+  ],
+  "etatsExtraction": [
+   "liste",
+   "ajout (Equipe_open)"
+  ]
+ },
+ "parametres": {
+  "ecrans": [
+   "Parametres"
+  ],
+  "etats": [
+   "defaut · Paramètres"
+  ],
+  "elements": [
+   "couverture orange, badges « Relais vérifié », « Partenaire fondateur »",
+   "Mon relais (nom affiché, adresse, repère, ville, date de partenariat)",
+   "Sécurité (PIN de remise, double vérification, appareils connectés, Mon équipe)",
+   "Affichage et application (thème sombre, taille du texte, langue, hors connexion, installer, numéro de versement, mes données, clôturer le compte, version)"
+  ],
+  "actions": [
+   "Modifier → validation BelivaY",
+   "Déconnecter un appareil à distance",
+   "Changer la taille du texte / la langue (FR, EN)",
+   "Clôturer le compte → préavis 30 jours",
+   "Se déconnecter"
+  ],
+  "regles": [
+   "PIN-01",
+   "HIS-02",
+   "EQU-04",
+   "EQU-06",
+   "DOC-03",
+   "DOC-05",
+   "PAR-01",
+   "PAR-02",
+   "PAR-03",
+   "PAR-04",
+   "PAR-05",
+   "PAR-06",
+   "PAR-07",
+   "PAR-08"
+  ],
+  "etatsExtraction": [
+   "normal"
+  ]
+ },
+ "versements": {
+  "ecrans": [
+   "Versements"
+  ],
+  "etats": [
+   "defaut · Versements du vendredi"
+  ],
+  "elements": [
+   "carte de versement (dégradé du logo) : état et date, montant, « Sera versé sur » numéro masqué, opérateur",
+   "détail de la semaine Ligne / Qté / Tarif / Total",
+   "« C'est BelivaY qui vous paie, même quand la livraison est offerte au client. »",
+   "tuiles arrêté jeudi minuit, aucun frais, aucun minimum",
+   "reçus du mois (BLV-VP)",
+   "« Un souci de versement ? »",
+   "numéro de versement vérifié"
+  ],
+  "actions": [
+   "Versement non reçu → Messagerie (réponse avant lundi midi)",
+   "Versement refusé → motif, 3 essais, support",
+   "Changer de numéro → ChangerMoMo"
+  ],
+  "regles": [
+   "RET-13",
+   "RET-16",
+   "STK-11",
+   "LIT-07",
+   "NTF-06",
+   "VER-01",
+   "VER-02",
+   "VER-03",
+   "VER-04",
+   "VER-05",
+   "VER-06",
+   "VER-07",
+   "VER-08",
+   "VER-09",
+   "VER-10",
+   "VER-11",
+   "PR-09-R01",
+   "PR-09-R02",
+   "PAL-05"
+  ],
+  "etatsExtraction": [
+   "prévu",
+   "envoyé",
+   "crédité",
+   "refusé",
+   "suspendu"
+  ]
+ },
+ "changer-momo": {
+  "ecrans": [
+   "ChangerMoMo"
+  ],
+  "etats": [
+   "defaut · Changer le numéro de versement",
+   "code · Code de confirmation",
+   "ok · Numéro changé"
+  ],
+  "elements": [
+   "numéro actuel (actif)",
+   "choix MTN MoMo / Orange Money",
+   "nouveau numéro + rappel des préfixes",
+   "« au nom du gérant »",
+   "deux champs de code (nouveau numéro, téléphone personnel)",
+   "règles",
+   "alerte de sécurité"
+  ],
+  "actions": [
+   "Recevoir les deux codes → contrôle du préfixe, réseau obligatoire, 2 SMS",
+   "Valider le numéro → revue humaine, versements suspendus 7 jours, SMS d'alerte à l'ancien numéro",
+   "Renvoyer les codes",
+   "Retour aux versements"
+  ],
+  "regles": [
+   "VER-02",
+   "VER-03",
+   "MOM-01",
+   "MOM-02",
+   "MOM-03",
+   "MOM-04",
+   "MOM-05",
+   "MOM-06",
+   "MOM-07"
+  ],
+  "etatsExtraction": [
+   "saisie",
+   "code (ChangerMoMo_code)",
+   "enregistré (ChangerMoMo_ok)"
+  ]
+ },
+ "rapports": {
+  "ecrans": [
+   "Rapports"
+  ],
+  "etats": [
+   "defaut · Rapports",
+   "t · Trimestre"
+  ],
+  "elements": [
+   "total gagné de la période",
+   "graphique en colonnes (colonne en cours atténuée, « versement prévu »)",
+   "4 chiffres : reçus, remis + retours, à temps, renvoyés",
+   "barre « Délai de retrait » en 4 segments",
+   "téléchargements PDF / CSV"
+  ],
+  "actions": [
+   "Changer de période → graphique, total, chiffres",
+   "Relevé mensuel PDF",
+   "Relevé d'activité CSV"
+  ],
+  "regles": [
+   "VER-04",
+   "RAP-01",
+   "RAP-02",
+   "RAP-03",
+   "RAP-04",
+   "PR-09-R02"
+  ],
+  "etatsExtraction": [
+   "Ce mois",
+   "Trimestre (Rapports_t)",
+   "Depuis l'ouverture"
+  ]
+ },
+ "trust": {
+  "ecrans": [
+   "TrustScore"
+  ],
+  "etats": [
+   "defaut · Trust Score"
+  ],
+  "elements": [
+   "jauge demi-cercle, score /100, palier, variation",
+   "jours tenus au-dessus du seuil",
+   "5 critères avec poids et valeur",
+   "moteur en une phrase",
+   "3 conseils",
+   "alerte enquête",
+   "encadré « pas de plafond de valeur par colis »"
+  ],
+  "actions": [
+   "Avis clients → Avis",
+   "Paliers → Paliers",
+   "Contester (depuis la notification d'une sanction)"
+  ],
+  "regles": [
+   "RET-07",
+   "FER-06",
+   "NTF-08",
+   "TRU-01",
+   "TRU-02",
+   "TRU-03",
+   "TRU-04",
+   "TRU-05",
+   "TRU-06",
+   "TRU-07",
+   "PR-09-R03",
+   "AVI-03",
+   "CAP-04"
+  ],
+  "etatsExtraction": [
+   "normal",
+   "alerte événement grave"
+  ]
+ },
+ "paliers": {
+  "ecrans": [
+   "Paliers"
+  ],
+  "etats": [
+   "defaut · Paliers"
+  ],
+  "elements": [
+   "échelle Starter · Confirmé (70) · Premium (85) avec la position",
+   "cartes des avantages",
+   "règle anti va-et-vient"
+  ],
+  "actions": [
+   "aucune action de saisie"
+  ],
+  "regles": [
+   "NTF-08",
+   "TRU-05",
+   "TRU-07",
+   "PAL-01",
+   "PAL-02",
+   "PAL-03",
+   "PAL-04",
+   "PAL-05",
+   "PAL-06"
+  ],
+  "etatsExtraction": [
+   "Starter",
+   "Confirmé",
+   "Premium"
+  ]
+ },
+ "avis": {
+  "ecrans": [
+   "Avis"
+  ],
+  "etats": [
+   "defaut · Avis clients"
+  ],
+  "elements": [
+   "carte orange : note, étoiles, nombre d'avis sur 30 jours, répartition 5 à 1",
+   "étiquettes les plus fréquentes",
+   "derniers avis anonymes",
+   "pied de page (7 jours, retrait, réponse privée)"
+  ],
+  "actions": [
+   "Signaler un avis → Messagerie",
+   "Répondre en privé → messagerie du client (DP-39)"
+  ],
+  "regles": [
+   "AID-05",
+   "AVI-01",
+   "AVI-02",
+   "AVI-03",
+   "AVI-04",
+   "AVI-05",
+   "AVI-06",
+   "PR-12-R05"
+  ],
+  "etatsExtraction": [
+   "avec avis"
+  ]
+ },
+ "historique": {
+  "ecrans": [
+   "Historique"
+  ],
+  "etats": [
+   "defaut · Historique"
+  ],
+  "elements": [
+   "recherche (commande, colis, retour)",
+   "4 compteurs (reçus, remis, retours, constats)",
+   "filtres Tous, Réceptions, Remises, Départs, Retours, Constats",
+   "frise par jour avec étiquettes colorées",
+   "note : preuves 180 jours, jamais modifiées"
+  ],
+  "actions": [
+   "Rechercher → ouvre l'opération",
+   "Toucher une ligne → Fiche colis",
+   "Exporter la période → CSV (gérant)"
+  ],
+  "regles": [
+   "PIN-03",
+   "PR-05-R03",
+   "FIC-04",
+   "DEP-03",
+   "HIS-01",
+   "HIS-02",
+   "HIS-03",
+   "PR-07-R04"
+  ],
+  "etatsExtraction": [
+   "Aujourd'hui",
+   "7 jours",
+   "30 jours"
+  ]
+ },
+ "notifications": {
+  "ecrans": [
+   "Notifications"
+  ],
+  "etats": [
+   "defaut · Notifications"
+  ],
+  "elements": [
+   "résumé du matin (encadré d'or) : colis à recevoir, retraits attendus, départs, places libres",
+   "À traiter (point orange = non lu)",
+   "Pour information (versement sans montant, seuil proche, variation du score)",
+   "réglages : push général, livreur en approche, versements, heure du résumé (≥ 7 h), heures calmes 22 h – 7 h, score et sanctions (toujours)"
+  ],
+  "actions": [
+   "Toucher une notification → écran concerné, marquée lue",
+   "Couper un interrupteur → arrête ce type de push",
+   "Régler l'heure du résumé (jamais avant 7 h)"
+  ],
+  "regles": [
+   "STK-05",
+   "NTF-01",
+   "NTF-02",
+   "NTF-03",
+   "NTF-04",
+   "NTF-05",
+   "NTF-06",
+   "NTF-07",
+   "NTF-08",
+   "NTF-09",
+   "PR-08-R01",
+   "VER-07",
+   "VER-08",
+   "TRU-06",
+   "TRU-07",
+   "PAL-06"
+  ],
+  "etatsExtraction": [
+   "avec non lues",
+   "sans non lues"
+  ]
+ },
+ "messagerie": {
+  "ecrans": [
+   "Messagerie"
+  ],
+  "etats": [
+   "defaut · Messagerie",
+   "sup · Fil du support",
+   "log · Fil collectes et livraisons"
+  ],
+  "elements": [
+   "3 fils : Support BelivaY, un fil par dossier de constat, Collectes et livraisons (officiel)",
+   "bulles BelivaY blanches, bulles du relais au dégradé orange avec heure et « lu »",
+   "réponses rapides en pastilles bleues (dont « Rappelez-moi »)",
+   "champ de saisie, bouton photo, envoyer",
+   "temps de réponse moyen du support",
+   "rappel : échanges uniquement avec BelivaY"
+  ],
+  "actions": [
+   "Envoyer un message / une photo → fil (envoi différé hors ligne)",
+   "Rappelez-moi → rappel téléphonique du support",
+   "Réponses rapides seulement dans le fil logistique"
+  ],
+  "regles": [
+   "LIT-08",
+   "MSG-01",
+   "MSG-02",
+   "MSG-03",
+   "MSG-04",
+   "MSG-05",
+   "MSG-06",
+   "AID-03",
+   "AID-05",
+   "PR-08-R01",
+   "VER-05",
+   "AVI-05",
+   "PR-12-R10"
+  ],
+  "etatsExtraction": [
+   "dossier",
+   "support (Messagerie_sup)",
+   "logistique (Messagerie_log)"
+  ]
+ },
+ "aide": {
+  "ecrans": [
+   "Aide"
+  ],
+  "etats": [
+   "defaut · Aide"
+  ],
+  "elements": [
+   "recherche",
+   "carte « Parler à quelqu'un » (messagerie ou rappel)",
+   "7 questions fréquentes",
+   "formulaire « Écrire au support » (catégorie, référence, message, photo)",
+   "lien « Revoir la formation »"
+  ],
+  "actions": [
+   "Envoyer → crée un fil Support visible tout de suite",
+   "Parler à quelqu'un → Messagerie ou demande de rappel",
+   "Revoir la formation → Formation"
+  ],
+  "regles": [
+   "RET-12",
+   "AID-01",
+   "AID-02",
+   "AID-03",
+   "AID-04",
+   "AID-05",
+   "PR-08-R01",
+   "VER-09"
+  ],
+  "etatsExtraction": [
+   "questions repliées / dépliées"
+  ]
+ },
+ "menu": {
+  "ecrans": [
+   "Menu"
+  ],
+  "etats": [
+   "defaut · Menu"
+  ],
+  "elements": [
+   "bandeau orange du relais",
+   "Le guichet (4 tuiles)",
+   "Opérations",
+   "Argent et performance",
+   "Mon relais",
+   "Écrans d'état et d'accès",
+   "Compte"
+  ],
+  "actions": [
+   "Toucher une entrée → écran"
+  ],
+  "regles": [
+   "FER-07",
+   "MEN-01",
+   "MEN-02",
+   "PR-10-R01",
+   "PR-12-R01",
+   "PR-12-R02",
+   "PR-12-R07",
+   "PR-12-R11"
+  ],
+  "etatsExtraction": [
+   "gérant",
+   "employé (entrées du gérant masquées)"
+  ]
+ }
+}

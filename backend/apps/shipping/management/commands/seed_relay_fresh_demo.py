@@ -12,6 +12,7 @@ jeux precedents remet l'activite.
 from django.core.management.base import BaseCommand, CommandError
 
 from apps.accounts.models import RelayPointProfile
+from apps.common.demonstration import exiger_demonstration_autorisee
 from apps.orders.models import Order
 
 # Les marqueurs des commandes de demonstration existantes.
@@ -29,6 +30,8 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        # Tache D31 : jeux de demonstration fermes par defaut.
+        exiger_demonstration_autorisee()
         qs = RelayPointProfile.objects.filter(
             status=RelayPointProfile.Status.APPROVED, is_active=True,
         )

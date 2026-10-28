@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" width="320" height="180" role="img" aria-label="Devanture de boutique (dessin)">
+  <!-- Devanture dessinée dans le style des photos du prototype (aplats chauds, sans texte ni marque).
+       Montrée tant que la boutique n'a pas de vraie photo de devanture (Boutique.vitrine.photo). -->
+  <rect width="320" height="180" fill="#E9DFD4"/>
+  <rect y="150" width="320" height="30" fill="#CDBFB1"/>
+  <path d="M0 150h320" stroke="#B5A493" stroke-width="2"/>
+  <rect x="40" y="36" width="240" height="114" fill="#D8CBBE"/>
+  <rect x="40" y="24" width="240" height="26" rx="3" fill="#26211D"/>
+  <rect x="118" y="33" width="84" height="8" rx="4" fill="#EF6A00"/>
+  <path d="M36 50h248v18H36z" fill="#F6E7DA"/>
+  <path d="M36 50h31v18H36zM98 50h31v18H98zM160 50h31v18h-31zM222 50h31v18h-31z" fill="#EF6A00"/>
+  <path d="M36 68a7.75 7.75 0 0 0 15.5 0a7.75 7.75 0 0 0 15.5 0a7.75 7.75 0 0 0 15.5 0a7.75 7.75 0 0 0 15.5 0a7.75 7.75 0 0 0 15.5 0a7.75 7.75 0 0 0 15.5 0a7.75 7.75 0 0 0 15.5 0a7.75 7.75 0 0 0 15.5 0a7.75 7.75 0 0 0 15.5 0a7.75 7.75 0 0 0 15.5 0a7.75 7.75 0 0 0 15.5 0a7.75 7.75 0 0 0 15.5 0a7.75 7.75 0 0 0 15.5 0a7.75 7.75 0 0 0 15.5 0a7.75 7.75 0 0 0 15.5 0a7.75 7.75 0 0 0 15.5 0z" fill="#CC4A0B" opacity=".9"/>
+  <rect x="54" y="86" width="120" height="64" rx="2" fill="#F3EDE6"/>
+  <path d="M54 108h120M54 130h120" stroke="#C2B3A4" stroke-width="2"/>
+  <rect x="62" y="94" width="14" height="13" fill="#C8955F"/>
+  <rect x="80" y="97" width="20" height="10" fill="#B98A5E"/>
+  <rect x="108" y="92" width="9" height="15" rx="2" fill="#26211D"/>
+  <rect x="121" y="92" width="9" height="15" rx="2" fill="#26211D"/>
+  <rect x="140" y="95" width="24" height="12" fill="#C8955F"/>
+  <rect x="64" y="116" width="22" height="13" fill="#B98A5E"/>
+  <rect x="92" y="119" width="14" height="10" fill="#C8955F"/>
+  <rect x="114" y="114" width="18" height="15" rx="2" fill="#EF6A00" opacity=".85"/>
+  <rect x="140" y="117" width="20" height="12" fill="#B98A5E"/>
+  <path d="M54 86l40 0-30 64H54z" fill="#fff" opacity=".22"/>
+  <rect x="188" y="84" width="76" height="66" rx="2" fill="#9C6B43"/>
+  <rect x="196" y="92" width="26" height="50" rx="2" fill="#F3EDE6" opacity=".55"/>
+  <rect x="230" y="92" width="26" height="50" rx="2" fill="#F3EDE6" opacity=".55"/>
+  <rect x="223" y="114" width="3" height="12" rx="1.5" fill="#26211D"/>
+  <path d="M276 150c-2-10 0-16 8-18h12c8 2 10 8 8 18z" fill="#B98A5E"/>
+  <path d="M290 132c-10-8-14-20-8-28 6 6 8 16 8 28zm0 0c4-12 12-20 20-20-2 10-10 18-20 20zm0 0c-8-4-16-4-22 0 6 4 14 4 22 0z" fill="#2F7D4E"/>
+</svg>

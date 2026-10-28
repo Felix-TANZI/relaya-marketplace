@@ -391,13 +391,13 @@ class TestEspacePartenaire:
         assert donnees["due_xaf"] == 17000
         assert donnees["not_yet_due_xaf"] == 0
 
-    def test_le_partenaire_voit_sa_commission(
+    def test_le_vendeur_ne_voit_que_le_net(
         self, acheteur, vendeur_user, client_vendeur,
     ):
-        """C'est SA commission : il a le droit de la voir."""
+        """Spec v2.1, R26.1 : l'espace vendeur montre net_b et ne montre jamais ce qui est retenu."""
         payer(acheteur, vendeur_user)
         donnees = client_vendeur.get("/api/payments/v2/partner/escrow/").json()
-        assert donnees[0]["commission_xaf"] == 3000
+        assert "commission_xaf" not in donnees[0] and "gross_amount_xaf" not in donnees[0]
         assert donnees[0]["net_amount_xaf"] == 17000
 
     def test_releve_detaille_ligne_par_ligne(

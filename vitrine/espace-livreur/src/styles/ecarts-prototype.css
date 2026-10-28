@@ -1,0 +1,140 @@
+/* Écarts décidés au kit du prototype (prototype.css, généré) — chargés après lui et après livreur.css.
+   1. Jetons du kit absents de livreur.css, sur la palette du livreur (DP-64 : vert menthe, orange BelivaY gardé pour
+      les alertes et l'urgence) ; la « nuit » de l'espace (héros, bandeau hors connexion) reste celle du prototype.
+   2. DP-64 : l'action principale est VERTE (#15803D), l'orange ne marque que l'alerte, l'urgence et le compte à rebours.
+   3. Lisibilité et pouce (tests/accessibilite.spec.ts) : cibles de 44 px au moins, aucun bouton ni pastille qui
+      déborde à 140 % de taille de texte sur 360 px. */
+
+:root{
+  --acc-rgb:21,128,61;
+  --n1:#0E4A3A; --n2:#073126; --n3:#041D17; --n-k:#6EE7B7;
+  --gold:#E8A10E; --gold-l:#FFC845;
+  --braise-2:#9A3412; --or-deep:#9E3E08;
+  --green-line:#BFE3CF; --blue-line:#C9D7FB;
+  --violet:#5B2BB5; --violet-txt:#4A2296; --violet-soft:#F0EAFB; --violet-line:#D9CCF4;
+  --sand-4:#C9DDD2;
+  --input-bg:#FFFFFF; --input-line:#BFD3C8;
+  --bronze-bg:linear-gradient(135deg,#E2A574,#A8622F);
+  --argent-bg:linear-gradient(135deg,#EEF0F2,#9DA3AB);
+  --or-m-bg:linear-gradient(135deg,#FFE08A,#C9921A);
+  --platine-bg:linear-gradient(135deg,#F4F1EC,#A39C92);
+  --fs-14:.875rem; --fs-17:1.0625rem; --fs-23:1.4375rem;
+  --lh-t:1.14; --lh-m:1.36;
+  --r-m:14px; --r-xl:28px;
+  --shadow-card:0 1px 2px rgba(15,31,25,.05),0 6px 18px -8px rgba(15,31,25,.16);
+}
+
+/* ---------- 2. Couleurs DP-64 ---------- */
+.btn.primary{color:var(--acc-btn-ink);background:var(--acc-btn);box-shadow:0 1px 0 rgba(255,255,255,.22) inset,0 -2px 0 rgba(0,0,0,.12) inset,0 8px 18px -8px rgba(var(--acc-rgb),.7)}
+html[data-theme=dark] .btn.primary{box-shadow:none}
+.btn.acc{color:var(--acc-btn-ink);background:var(--acc-btn)}
+.btn.urgent{color:var(--alerte-btn-ink);background:var(--alerte-btn)}
+.btn.soft,.btn.ghost{color:var(--acc-txt)}
+.btn.soft{background:var(--acc-soft);border-color:var(--acc-line)}
+.btn.white{color:var(--acc-deep)}
+html[data-theme=dark] .btn.white{color:#14684A}
+.sec .a,.links{color:var(--acc-txt)}
+.chip.on{background:var(--acc-btn);color:var(--acc-btn-ink);border-color:var(--acc-btn)}
+.bar i{background:var(--acc-grad)}
+.steps i.cur,.stepper .st.cur b,.stop.cur .sn{background:var(--acc-btn);color:var(--acc-btn-ink);box-shadow:0 0 0 4px rgba(var(--acc-rgb),.18)}
+.tl .ti.cur::before{background:var(--acc-btn);box-shadow:0 0 0 3px var(--card),0 0 0 6px rgba(var(--acc-rgb),.18)}
+.hero .btn.primary{box-shadow:0 8px 18px -8px rgba(0,0,0,.5)}
+
+/* ---------- 3. Pouce et lisibilité ---------- */
+.btn{height:auto;min-height:48px;white-space:normal;text-align:center;line-height:1.2;padding-top:6px;padding-bottom:6px}
+.btn.xl{min-height:58px}
+.btn.secondary,.btn.soft,.btn.acc-soft,.btn.ghost,.btn.dark,.btn.danger,.btn.sm{min-height:44px;height:auto}
+.btn>svg{flex-shrink:0}
+.chip{height:auto;min-height:44px}
+.seg a{height:auto;min-height:44px;white-space:normal;text-align:center;line-height:1.2}
+.pill{height:auto;min-height:26px;max-width:100%;white-space:normal;line-height:1.15;padding-top:3px;padding-bottom:3px}
+.pill.sm{min-height:22px}
+a.pill{min-height:44px}
+.tg{position:relative}
+.tg::before{content:'';position:absolute;inset:-7px -2px}
+.li{color:inherit}
+a.li,a.radio,a.tile{-webkit-tap-highlight-color:transparent}
+
+/* ---------- 4. Carte schématique des zones (composants/CarteDesZones.tsx : polygones de calculs/zones.ts) ---------- */
+:root{--map-bg:#E8EFEA; --map-block:#DCE7E0; --map-road:#FFFFFF; --map-road-2:#F1F6F3; --map-txt:#2C3E37; --map-water:#CFE3EA; --map-green:#CFE6D6}
+
+/* ---------- 5. Grilles qui tiennent à 140 % sur 360 px ; barre SOS lisible (AA) ---------- */
+.tiles,.livc-menu,.split2,.money4,.photos.p2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.tiles.t3,.split3,.photos{grid-template-columns:repeat(3,minmax(0,1fr))}
+.tiles.t4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.tile,.livc-menu a,.mini{min-width:0;overflow-wrap:break-word}
+.livc-sosbar{background:linear-gradient(180deg,#B42318,#912018)}
+.livc-sosbar span{opacity:1}
+.livc-sosbar .ci{background:rgba(0,0,0,.2)}
+.chip.on .n{opacity:1}
+
+/* ---------- 6. Ligne de liste en bouton (Li avec onClick), héros vert au contraste AA ---------- */
+button.li{width:100%;background:none;border:0;border-top:1px solid var(--line);text-align:left;font:inherit;color:inherit;cursor:pointer}
+button.li:first-child{border-top:0}
+.hero.acc{background:radial-gradient(80% 60% at 100% 0%,rgba(255,255,255,.14) 0%,rgba(255,255,255,0) 60%),linear-gradient(135deg,#15803D 0%,#14684A 100%)}
+
+/* ---------- 7. Jetons du prototype encore absents (écrans de la tournée, du ramassage, des remises, des incidents) ---------- */
+:root{
+  --fs-11:.75rem; --fs-12:.75rem; --fs-13:.8125rem; --fs-15:.9375rem; --fs-19:1.1875rem; --fs-28:1.75rem; --fs-34:2.125rem; --fs-44:2.75rem;
+  --lh-b:1.5; --r-s:10px;
+  --or-soft-2:#FBE0C6; --thumb-bg:var(--sand-2); --thumb-bg-or:var(--or-soft);
+}
+
+/* ---------- 8. LA barre d'action du bas (.bottom-cta du prototype, composant BarreAction) ----------
+   Fixée au bas de l'écran ; au-dessus de la barre d'onglets quand l'écran en a une (le prototype prolonge la barre
+   sous le dock) ; sa place est réservée dans la page (.bottom-cta-place, mesurée) : rien n'est caché dessous.
+   Mode une main désactivé (Réglages) : dans le flux, à la fin de la page. */
+.bottom-cta{position:fixed;left:0;right:0;bottom:0;z-index:35;padding:12px 16px calc(env(safe-area-inset-bottom,0px) + 16px);border-radius:24px 24px 0 0;background:var(--verre);-webkit-backdrop-filter:saturate(1.6) blur(18px);backdrop-filter:saturate(1.6) blur(18px);box-shadow:0 -8px 24px -12px rgba(15,31,25,.22),inset 0 1px 0 var(--verre-bord)}
+html[data-theme=dark] .bottom-cta{box-shadow:inset 0 1px 0 var(--line)}
+.l-app.a-barre .bottom-cta{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 96px)}
+.bottom-cta>.btn,.bottom-cta>a.btn{width:100%}
+.bottom-cta>*+*{margin-top:8px}
+.bottom-cta .btn.primary{min-height:56px}
+.bottom-cta .aide{font-size:.8125rem;color:var(--ink-3);text-align:center;line-height:1.35;margin:0}
+.bottom-cta .note,.bottom-cta .hint-l{margin-top:0}
+.bottom-cta-place{flex-shrink:0}
+@media (min-width:768px){.bottom-cta{left:50%;right:auto;width:min(760px,100%);transform:translateX(-50%)}}
+html[data-une-main=non] .bottom-cta{position:static;transform:none;width:auto;margin:18px 0 0;padding:0;background:none;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+html[data-une-main=non] .bottom-cta-place{display:none}
+
+/* ---------- 9. LE pavé numérique et les cases de code (composants Pave, Cases, SaisieCode) ---------- */
+.keypad button{height:52px;padding:0;border:0;border-radius:14px;background:var(--card);box-shadow:var(--shadow-card);display:flex;align-items:center;justify-content:center;font:inherit;font-size:1.3125rem;font-weight:700;color:var(--ink);cursor:pointer}
+html[data-theme=dark] .keypad button{box-shadow:inset 0 0 0 1px var(--line)}
+.keypad button:disabled{opacity:.45;cursor:default}
+.keypad .kp-x{background:transparent;box-shadow:none;color:var(--ink-2)}
+.keypad button:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+html[data-mouv] .keypad button:active:not(:disabled){transform:scale(.95);background:var(--acc-soft)}
+
+/* ---------- 10. Balisage du prototype rendu par de vrais boutons (cases, segments, choix, formats, lignes) ---------- */
+.glass{background:var(--verre);-webkit-backdrop-filter:saturate(1.6) blur(18px);backdrop-filter:saturate(1.6) blur(18px);box-shadow:0 0 0 1px var(--verre-bord)}
+button.radio,button.check{width:100%;font:inherit;color:inherit;text-align:left;cursor:pointer}
+button.radio{background:var(--card)}
+button.chip{font-family:inherit;border-style:solid;cursor:pointer}
+a.li,button.li{-webkit-tap-highlight-color:transparent}
+.li[aria-checked=true]{background:var(--acc-soft);border-radius:12px;margin:0 -8px;padding-left:8px;padding-right:8px}
+button.li:disabled{cursor:default;opacity:.62}
+.seg button{flex:1 1 0%;min-height:44px;position:relative;border-radius:10px;display:flex;align-items:center;justify-content:center;gap:5px;font:inherit;font-size:.8125rem;font-weight:700;color:var(--ink-3);background:none;border:0;padding:4px 8px;line-height:1.25;text-align:center;cursor:pointer}
+.seg button[aria-checked=true],.seg button[aria-pressed=true],.seg button.on{background:var(--card);color:var(--ink);box-shadow:0 2px 6px -2px rgba(15,31,25,.3);font-weight:800}
+html[data-theme=dark] .seg button[aria-checked=true],html[data-theme=dark] .seg button[aria-pressed=true],html[data-theme=dark] .seg button.on{background:var(--sand-4);box-shadow:none}
+button.lr-chk{width:100%;background:none;border:0;border-top:1px solid var(--line);font:inherit;color:inherit;text-align:left;cursor:pointer}
+button.lr-chk:first-child{border-top:0}
+button.lr-chk:disabled{opacity:.5;cursor:default}
+button.lr-shot:disabled{opacity:1}
+.lr-fmt button.f{font:inherit;color:inherit;cursor:pointer;width:100%}
+.lr-fmt button.f:disabled{cursor:default}
+.lr-fmt{grid-template-columns:repeat(auto-fit,minmax(58px,1fr))}
+.lr-chk .s a{color:var(--red);font-weight:700}
+.btn:focus-visible,.li:focus-visible,.radio:focus-visible,.check:focus-visible,button.lr-chk:focus-visible,button.lr-shot:focus-visible,.seg button:focus-visible,.lr-fmt button.f:focus-visible,.livc-sosbar:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.hero h2.hk{margin:0}
+.hero .hs{color:rgba(255,255,255,.92)}
+/* Étape en cours en sombre : chiffre foncé sur le vert clair (contraste AA). */
+html[data-theme=dark] .stepper .st.cur b,html[data-theme=dark] .lr-ss.cur .n{color:#03241A}
+/* Compte à rebours de la tournée : ambre sous TOURNEE-AMBRE-MIN, rouge sous TOURNEE-ROUGE-MIN (LIV-P08R-06). */
+.liva-cd.a{background:var(--amber-soft);color:var(--amber);border-color:var(--amber-line)}
+/* Carte réelle (OpenStreetMap) à la place du dessin du prototype. */
+.mapbox .lv-carte{margin:0;border-radius:inherit;height:100%;box-shadow:none}
+/* Pastilles des colis (livRam_pk) touchables : le bouton remplit la pastille (ouvre l'étape du colis ou sa fiche). */
+.lr-pk span{height:46px}
+.lr-pk span>button{all:unset;box-sizing:border-box;width:100%;height:100%;display:flex;align-items:center;justify-content:center;gap:4px;border-radius:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.lr-pk span>button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+button.li>svg:last-child{color:var(--ink-4);flex-shrink:0}

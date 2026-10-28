@@ -1,0 +1,9 @@
+/* Contrôle des pièces (page ajoutée) : faces de la pièce en filigrane, jamais sélectionnables ni enregistrables d'un
+   glisser. Le filigrane redit qui consulte et quand. */
+.px .e-visionneuse .e-faces{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-top:8px}
+.px .e-face{position:relative;margin:0;border-radius:12px;overflow:hidden;background:var(--sand-2);border:1px solid var(--line);user-select:none;-webkit-user-select:none}
+.px .e-face img{display:block;width:100%;height:auto;pointer-events:none}
+.px .e-face figcaption{font-size:.75rem;color:var(--ink-3);padding:6px 10px}
+.px .e-filigrane{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;font-size:.8125rem;font-weight:700;letter-spacing:.02em;color:rgba(20,20,20,.15);transform:rotate(-24deg) scale(1.3);white-space:normal;text-align:center;line-height:2.4;overflow:hidden}
+html[data-theme=dark] .px .e-filigrane{color:rgba(20,20,20,.2)}
+.px .e-pieces > *{margin-top:0}

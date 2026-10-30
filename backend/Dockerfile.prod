@@ -30,4 +30,6 @@ RUN python manage.py collectstatic --noinput --settings=relaya.settings.base
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "python manage.py migrate --noinput && gunicorn --bind 0.0.0.0:${PORT:-8000} --workers ${WEB_CONCURRENCY:-9} --timeout 120 relaya.wsgi:application"]
+# DP-61 (revue du 29/10, A1) : `check --deploy` échoue sans opérateur d'appel réel (shipping.E061) ; main 2 ne
+# démarre pas tant qu'il manque.
+CMD ["sh", "-c", "python manage.py check --deploy --fail-level ERROR && python manage.py migrate --noinput && gunicorn --bind 0.0.0.0:${PORT:-8000} --workers ${WEB_CONCURRENCY:-9} --timeout 120 relaya.wsgi:application"]

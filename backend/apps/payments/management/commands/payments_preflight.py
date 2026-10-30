@@ -38,6 +38,10 @@ ALERTE = "ALERTE"
 ATTENTION = "ATTENTION"
 OK = "OK"
 
+# DP-02, revue du 29/10 (A4) : valeurs ecrites dans le code (donc publiques) et longueur minimale du sel.
+SELS_PUBLICS = {"belivay-momo"}
+SEL_LONGUEUR_MIN = 32
+
 ORDRE = {BLOQUANT: 0, ALERTE: 1, ATTENTION: 2, OK: 3}
 
 
@@ -114,18 +118,27 @@ class Command(BaseCommand):
         else:
             self._ok("Cle de chiffrement presente")
 
+        # DP-02, revue du 29/10 (A4) : le sel protege aussi l'empreinte des codes de retrait (10^6 valeurs). Absent,
+        # public ou court, il est BLOQUANT. Il se pose une seule fois, avant la migration shipping 0032.
         sel = getattr(settings, "PAYMENTS_FINGERPRINT_SALT", "") or ""
         if not sel:
             self._dire(
                 BLOQUANT, "PAYMENTS_FINGERPRINT_SALT absent",
-                "L'empreinte des numeros detecte les mules financieres. "
-                "Sans sel, elle est calculable par un tiers.",
+                "L'empreinte des numeros et des codes de retrait serait "
+                "calculable par un tiers.",
+                "Definir une chaine aleatoire d'au moins 32 caracteres, une "
+                "seule fois, avant la migration shipping 0032.",
+            )
+        elif sel in SELS_PUBLICS:
+            self._dire(
+                BLOQUANT, "PAYMENTS_FINGERPRINT_SALT vaut la valeur publique",
+                "Cette valeur est ecrite dans le code source : elle ne protege rien.",
                 "Definir une chaine aleatoire d'au moins 32 caracteres.",
             )
-        elif len(sel) < 16:
+        elif len(sel) < SEL_LONGUEUR_MIN:
             self._dire(
-                ALERTE, "PAYMENTS_FINGERPRINT_SALT trop court",
-                f"{len(sel)} caracteres.",
+                BLOQUANT, "PAYMENTS_FINGERPRINT_SALT trop court",
+                f"{len(sel)} caracteres, il en faut au moins {SEL_LONGUEUR_MIN}.",
                 "Utiliser au moins 32 caracteres aleatoires.",
             )
         else:

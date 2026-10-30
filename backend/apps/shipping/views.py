@@ -896,7 +896,10 @@ class ShipmentTrackView(generics.GenericAPIView):
             getattr(getattr(getattr(shipment, "courier", None), "delivery_organization", None), "user_id", None),
             getattr(getattr(relay_parcel, "relay_point", None), "user_id", None),
         }
-        if not request.user.is_staff and request.user.id not in allowed_user_ids:
+        from apps.common.droits import a_la_partie
+
+        # Revue du 29/10 (A2) : hors des acteurs du colis, seule l'équipe logistique consulte le suivi.
+        if not a_la_partie(request.user, "logistique") and request.user.id not in allowed_user_ids:
             raise PermissionDenied("Vous ne pouvez pas consulter le suivi de cette commande.")
 
         return Response(ShipmentSerializer(shipment, context={"request": request}).data, status=status.HTTP_200_OK)
@@ -2205,6 +2208,9 @@ class ShipmentMaskedCallView(APIView):
             journal = appels.appeler(shipment, request.user)
         except PermissionError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+        except appels.AppelIndisponible as exc:  # DP-61 : pas d'opérateur, pas d'appel, pas de numéro
+            return Response({"code": "appel_indisponible", "detail": str(exc)},
+                            status=status.HTTP_503_SERVICE_UNAVAILABLE)
         except ValueError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_409_CONFLICT)
         return Response({"ok": journal.ok, "message": journal.message or "BelivaY vous appelle : décrochez pour être "

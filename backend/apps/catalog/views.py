@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import (
     SAFE_METHODS, BasePermission, IsAuthenticated, IsAuthenticatedOrReadOnly,
 )
-from apps.common.droits import Partie  # sécurité main 2 : droits par partie
+from apps.common.droits import Partie, a_la_partie  # sécurité main 2 : droits par partie
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Avg, Count, ExpressionWrapper, FloatField, Q, Value, Case, When, IntegerField
@@ -82,7 +82,8 @@ class IsAdminOrReadOnly(BasePermission):
     """
 
     def has_permission(self, request, view):
-        return request.method in SAFE_METHODS or bool(request.user and request.user.is_staff)
+        # Revue du 29/10 (A2) : l'écriture des catégories revient à l'équipe catalogue, pas à tout le personnel.
+        return request.method in SAFE_METHODS or a_la_partie(request.user, "catalogue")
 
 
 class StandardResultsSetPagination(PageNumberPagination):
@@ -1148,7 +1149,7 @@ def master_product_variants(request, slug):
     include_pending = request.query_params.get(
         "include_pending", "false"
     ).lower() in ("1", "true", "yes")
-    if not include_pending or not request.user.is_staff:
+    if not include_pending or not a_la_partie(request.user, "catalogue"):  # revue du 29/10 (A2)
         qs = qs.filter(moderation_status="APPROVED")
  
     qs = qs.order_by("axis_key")

@@ -146,5 +146,5 @@ def fingerprint(msisdn: str) -> str:
     dans un index cherchable.
     """
     numero = (msisdn or "").strip().replace(" ", "")
-    sel = getattr(settings, "PAYMENTS_FINGERPRINT_SALT", "belivay-momo")
+    sel = getattr(settings, "PAYMENTS_FINGERPRINT_SALT", "")  # A4 : jamais de sel public par défaut
     return hashlib.sha256(f"{sel}:{numero}".encode("utf-8")).hexdigest()

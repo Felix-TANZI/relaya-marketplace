@@ -42,6 +42,40 @@ def test_plus_aucun_ecran_en_isadminuser():
     assert fautifs == []
 
 
+# Revue du 29/10 (A2) : « is_staff » dans un views.py n'est permis que pour ces usages, qui ne sont PAS des contrôles
+# d'accès. Chaque entrée : (fichier, motif de la ligne, justification). Tout autre is_staff fait échouer le test.
+IS_STAFF_AUTORISES = [
+    ("accounts/views.py", r"user\.is_staff = (True|staff)$",
+     "attribution du statut à la création d'un compte (démonstration, création par l'administration)"),
+    ("accounts/views.py", r'user\.save\(update_fields=\["is_staff", "is_superuser"\]\)',
+     "enregistrement de ce statut, même création de compte"),
+    ("vendors/views.py", r"filter\(.*is_staff=(True|False)",
+     "filtre de requête pour compter ou cibler des comptes (statistiques, envois), aucun droit"),
+    ("vendors/views.py", r"^is_active=True, is_staff=False",
+     "suite du même filtre de requête, sur la ligne suivante"),
+    ("vendors/views.py", r'role_display = "Admin" if user\.is_staff',
+     "libellé affiché dans l'export CSV des comptes, aucun droit"),
+]
+
+
+def test_a2_plus_aucun_is_staff_comme_controle_d_acces():
+    import re
+
+    racine = Path(settings.BASE_DIR) / "apps"
+    fautifs = []
+    for f in racine.rglob("views*.py"):
+        if "tests" in f.parts:
+            continue
+        rel = f.relative_to(racine).as_posix()
+        for n, ligne in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
+            if "is_staff" not in ligne:
+                continue
+            texte = ligne.strip()
+            if not any(rel == fichier and re.search(motif, texte) for fichier, motif, _ in IS_STAFF_AUTORISES):
+                fautifs.append(f"{rel}:{n}: {texte}")
+    assert fautifs == [], " | ".join(fautifs)
+
+
 @pytest.mark.parametrize("url,partie", list(ECRANS.items()))
 def test_chaque_ecran_s_ouvre_a_sa_partie_seulement(url, partie):
     assert _client().get(url).status_code == 403                         # être du personnel ne suffit plus

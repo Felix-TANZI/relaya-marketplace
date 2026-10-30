@@ -292,9 +292,10 @@ def _consommer_nonce_apple(nonce_du_jeton, nonce_brut=None):
     nonce_brut = str(nonce_brut or "")
     if nonce_brut and hashlib.sha256(nonce_brut.encode()).hexdigest() == nonce_du_jeton:
         candidats.append(nonce_brut)
+    # Revue du 29/10 (A5) : consommation atomique. Avec le cache Redis (et locmem), delete() ne renvoie vrai qu'au
+    # premier appelant qui supprime la clé : deux requêtes simultanées ne peuvent pas utiliser le même nonce.
     for nonce in candidats:
-        if cache.get(f"apple-nonce:{nonce[:128]}"):
-            cache.delete(f"apple-nonce:{nonce[:128]}")  # usage unique
+        if cache.delete(f"apple-nonce:{nonce[:128]}"):
             return True
     return False
 
@@ -487,8 +488,8 @@ def apple_ticket(request):
 
     cle = f"apple-ticket:{str(request.data.get('ticket', ''))[:64]}"
     data = cache.get(cle)
-    cache.delete(cle)  # usage unique
-    if not data:
+    # Revue du 29/10 (A5) : usage unique atomique ; seul le premier qui supprime le ticket s'en sert.
+    if not data or not cache.delete(cle):
         return Response({"detail": "Connexion Apple expirée. Recommencez."}, status=status.HTTP_400_BAD_REQUEST)
     return _connexion_apple(request, data)
 
@@ -2710,7 +2711,10 @@ class ComplianceDocumentFileView(APIView):
         if document is None:
             raise Http404
 
-        autorise = document.user_id == request.user.id or request.user.is_staff
+        # Revue du 29/10 (A2), moindre privilège : le propriétaire garde l'accès à sa pièce ; sinon l'équipe conformité.
+        from apps.common.droits import a_la_partie
+
+        autorise = document.user_id == request.user.id or a_la_partie(request.user, "conformite")
         if not autorise or not document.file:
             raise Http404
 

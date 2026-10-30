@@ -40,7 +40,21 @@ def bloque_jusqua(shipment, sorte: str):
 
 def essayer(shipment, sorte: str, correct: bool) -> dict:
     """Compte un essai du code `sorte` sur ce colis (R66.1), sans lever.
-    {"ok", "bloque_jusqu" (fin du blocage ou None), "restants", "compte" (faux si le code était déjà bloqué)}."""
+    {"ok", "bloque_jusqu" (fin du blocage ou None), "restants", "compte" (faux si le code était déjà bloqué)}.
+
+    R66.1, revue du 29/10 (A3) : le compteur se lit et s'écrit sous verrou de la ligne du colis, dans une transaction
+    courte. Sans cela, des essais simultanés liraient tous le même compteur et dépasseraient r_code_essais."""
+    from django.db import transaction
+
+    from .models import Shipment
+
+    with transaction.atomic():
+        frais = Shipment.objects.select_for_update().only("id", "codes_essais").get(pk=shipment.pk)
+        shipment.codes_essais = frais.codes_essais
+        return _essayer_sous_verrou(shipment, sorte, correct)
+
+
+def _essayer_sous_verrou(shipment, sorte: str, correct: bool) -> dict:
     bloque = bloque_jusqua(shipment, sorte)
     if bloque:
         return {"ok": False, "bloque_jusqu": bloque, "restants": 0, "compte": False}

@@ -2428,7 +2428,7 @@ def admin_vendor_detail(request, vendor_id):
 def admin_dashboard_stats(request):
     """
     Dashboard admin : statistiques globales de la plateforme
-    Réservé aux administrateurs (is_staff=True)
+    Réservé à l'équipe pilotage (apps.common.droits)
     """
     
     # Calcul des dates

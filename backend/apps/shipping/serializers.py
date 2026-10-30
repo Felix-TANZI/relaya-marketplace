@@ -163,12 +163,16 @@ class ShipmentSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        # Feuille de route D33 : dès qu'un opérateur d'appel masqué est branché, le client et le livreur ne voient
-        # plus le numéro de l'autre ; ils s'appellent par POST shipments/<id>/appel/. L'équipe BelivaY les voit.
+        # DP-61 : « appel dans l'application ou par numéro masqué, jamais le vrai numéro ». Le client et le livreur ne
+        # reçoivent jamais un numéro complet, opérateur d'appel branché ou non ; seule l'équipe logistique les voit.
+        # Ils s'appellent par POST shipments/<id>/appel/, qui répond « appel indisponible » tant qu'aucun opérateur
+        # réel n'est branché.
+        from apps.common.droits import a_la_partie
+
         from . import appels
 
         request = self.context.get("request")
-        if appels.masque_actif() and not (request and request.user.is_staff):
+        if not (request and a_la_partie(request.user, "logistique")):
             from apps.client_core.masquage import masquer_numero
 
             for champ in ("courier_phone", "customer_phone", "authorized_pickup_phone"):
@@ -176,7 +180,7 @@ class ShipmentSerializer(serializers.ModelSerializer):
                     data[champ] = masquer_numero(data[champ])
             if isinstance(data.get("courier"), dict) and data["courier"].get("phone"):
                 data["courier"]["phone"] = masquer_numero(data["courier"]["phone"])
-        data["appel_masque"] = True
+        data["appel_masque"] = appels.masque_actif()  # DP-61 : vrai seulement si un opérateur réel est branché
         return data
 
     def get_delivery_evidences(self, obj):

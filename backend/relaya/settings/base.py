@@ -473,7 +473,13 @@ SUPPORT_EMAIL = "support@belivay.com"
 PAYMENTS_ENCRYPTION_KEY = os.getenv("PAYMENTS_ENCRYPTION_KEY", "")
 # Deuxieme cle acceptee en lecture pendant une rotation.
 PAYMENTS_ENCRYPTION_KEY_OLD = os.getenv("PAYMENTS_ENCRYPTION_KEY_OLD", "")
-PAYMENTS_FINGERPRINT_SALT = os.getenv("PAYMENTS_FINGERPRINT_SALT", "belivay-momo")
+# DP-02, revue du 29/10 (A4) : aucun sel par défaut. Un code de retrait n'a que 10^6 valeurs : avec un sel public,
+# son empreinte se retrouve. payments_preflight bloque un sel absent, public ou de moins de 32 caractères.
+# ATTENTION : le sel se pose UNE SEULE FOIS, avant la migration shipping 0032 ; le changer ensuite rend toutes les
+# empreintes fausses (plus aucun code de retrait accepté, plus aucun numéro reconnu).
+PAYMENTS_FINGERPRINT_SALT = os.getenv("PAYMENTS_FINGERPRINT_SALT", "")
+# DP-61 (revue du 29/10, A1) : la console d'appel, sans opérateur, ne garde que ses derniers appels.
+BELIVAY_APPELS_CONSOLE_MAX = int(os.getenv("BELIVAY_APPELS_CONSOLE_MAX", "100"))
 # Securite avant main 2 : un envoi reste « en cours » si le processus tombe pendant l'appel au prestataire. Passe ce
 # delai, il devient une issue INCONNUE et part en reconciliation (jamais renvoye).
 PAYMENTS_ENVOI_INTERROMPU_MINUTES = int(os.getenv("PAYMENTS_ENVOI_INTERROMPU_MINUTES", "30"))

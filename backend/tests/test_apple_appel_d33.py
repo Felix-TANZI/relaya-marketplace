@@ -55,22 +55,21 @@ def _client_de(colis):
 
 def test_le_client_et_le_livreur_s_appellent_par_le_serveur():
     colis = _colis(False, Shipment.Status.OUT_FOR_DELIVERY)
-    AppelConsole.APPELS.clear()
+    # DP-61 (revue du 29/10, A1) : sans opérateur réel, l'appel est indisponible, rien n'est journalisé.
     r = _client_de(colis).post(f"/api/shipping/shipments/{colis.pk}/appel/")
-    assert r.status_code == 200 and r.json()["ok"] is True
-    from apps.client_core.masquage import masquer_numero
-
-    assert AppelConsole.APPELS[-1]["appele"] == masquer_numero(colis.courier.phone)       # DP-61 : masqué
-    assert colis.courier.phone not in str(AppelConsole.APPELS)
-    livreur = APIClient()
-    livreur.force_authenticate(colis.courier.user)
-    r = livreur.post(f"/api/shipping/shipments/{colis.pk}/appel/")
-    assert r.json()["appels_au_client"] == 0                                              # console : pas une preuve (DP-61)
-    assert list(AppelMasque.objects.values_list("sens", flat=True)) == ["LIVREUR_CLIENT", "CLIENT_LIVREUR"]
-
-    inconnu = APIClient()
-    inconnu.force_authenticate(User.objects.create_user(username="curieux", password="p"))
-    assert inconnu.post(f"/api/shipping/shipments/{colis.pk}/appel/").status_code == 403
+    assert r.status_code == 503 and r.json()["code"] == "appel_indisponible"
+    assert not AppelMasque.objects.exists()
+    with override_settings(BELIVAY_APPELS="tests.test_apple_appel_d33.OperateurDeTest"):
+        r = _client_de(colis).post(f"/api/shipping/shipments/{colis.pk}/appel/")
+        assert r.status_code == 200 and r.json()["ok"] is True
+        livreur = APIClient()
+        livreur.force_authenticate(colis.courier.user)
+        r = livreur.post(f"/api/shipping/shipments/{colis.pk}/appel/")
+        assert r.json()["appels_au_client"] == 1                                         # un vrai appel prouve (R51.1)
+        assert list(AppelMasque.objects.values_list("sens", flat=True)) == ["LIVREUR_CLIENT", "CLIENT_LIVREUR"]
+        inconnu = APIClient()
+        inconnu.force_authenticate(User.objects.create_user(username="curieux", password="p"))
+        assert inconnu.post(f"/api/shipping/shipments/{colis.pk}/appel/").status_code == 403
 
 
 def test_pas_d_appel_avant_qu_un_livreur_soit_en_route():
@@ -90,11 +89,17 @@ def test_avec_un_operateur_branche_les_numeros_sont_masques():
 
     colis = _colis(False, Shipment.Status.OUT_FOR_DELIVERY)
     requete = type("R", (), {"user": colis.order.user})()
-    assert ShipmentSerializer(colis, context={"request": requete}).data["courier"]["phone"] == colis.courier.phone
+    # DP-61 (A1) : masqué même sans opérateur, et appel_masque faux tant qu'aucun opérateur n'est branché.
+    sans = ShipmentSerializer(colis, context={"request": requete}).data
+    assert sans["courier"]["phone"] != colis.courier.phone and sans["appel_masque"] is False
     with override_settings(BELIVAY_APPELS="tests.test_apple_appel_d33.OperateurDeTest"):
         vu = ShipmentSerializer(colis, context={"request": requete}).data
         assert vu["courier"]["phone"] != colis.courier.phone and vu["appel_masque"] is True
-        staff = type("R", (), {"user": User.objects.create_user(username="ops", password="p", is_staff=True)})()
+        from django.contrib.auth.models import Group
+
+        logistique = User.objects.create_user(username="ops", password="p", is_staff=True)
+        logistique.groups.add(Group.objects.get_or_create(name="gestion-logistique")[0])
+        staff = type("R", (), {"user": logistique})()
         assert ShipmentSerializer(colis, context={"request": staff}).data["courier"]["phone"] == colis.courier.phone
         r = _client_de(colis).post(f"/api/shipping/shipments/{colis.pk}/appel/")
         assert r.status_code == 200 and AppelMasque.objects.get().prestataire == "test"

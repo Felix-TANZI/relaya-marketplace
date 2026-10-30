@@ -9,6 +9,7 @@
 # pourrait se joindre) ; dès qu'il l'est, masque_actif() les masque dans les écrans du client et du livreur.
 
 import logging
+from collections import deque
 from dataclasses import dataclass
 
 from django.conf import settings
@@ -42,7 +43,9 @@ class AppelConsole(PrestataireAppel):
     masqués, jamais en clair, même en mémoire."""
 
     nom = "console"
-    APPELS: list[dict] = []
+    # DP-61, revue du 29/10 (A1) : journal borné aux derniers appels (BELIVAY_APPELS_CONSOLE_MAX), jamais une liste
+    # qui grossit sans fin.
+    APPELS: deque = deque(maxlen=getattr(settings, "BELIVAY_APPELS_CONSOLE_MAX", 100))
 
     def relier(self, appelant, appele, reference):
         from apps.client_core.masquage import masquer_numero
@@ -61,9 +64,14 @@ def masque_actif() -> bool:
     return getattr(settings, "BELIVAY_APPELS", CONSOLE) != CONSOLE
 
 
+class AppelIndisponible(Exception):
+    """DP-61 : aucun opérateur d'appel réel n'est branché ; l'appel ne part pas et aucun numéro n'est montré."""
+
+
 def appeler(shipment, user):
     """Le client (acheteur) appelle le livreur assigné, ou le livreur assigné appelle le client. Lève PermissionError
-    si la personne n'est ni l'un ni l'autre, ValueError si l'appel n'est pas ouvert pour ce colis."""
+    si la personne n'est ni l'un ni l'autre, ValueError si l'appel n'est pas ouvert pour ce colis, AppelIndisponible
+    tant qu'aucun opérateur réel n'est branché (DP-61)."""
     from .models import AppelMasque
 
     courier = shipment.courier
@@ -78,6 +86,8 @@ def appeler(shipment, user):
         raise PermissionError("Seuls le client et le livreur de ce colis peuvent s'appeler.")
     if not appelant or not appele:
         raise ValueError("Un des deux numéros manque.")
+    if not masque_actif():  # DP-61 : sans opérateur, jamais d'appel (et jamais de numéro montré à la place)
+        raise AppelIndisponible("Appel indisponible pour le moment. Écrivez-lui depuis le suivi de la commande.")
     p = prestataire()
     journal = AppelMasque.objects.create(shipment=shipment, sens=sens, demande_par=user, prestataire=p.nom)
     try:

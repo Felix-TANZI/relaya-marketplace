@@ -1,0 +1,423 @@
+/* Espace point relais — JETONS DE COULEUR : les couleurs EXACTES du prototype (consigne du porteur), en clair et la
+   nuit, telles que le prototype les définit (BelivaY_Point_Relais_mobile.html : styles en ligne pour le clair, table
+   DARK_MAP de darkify() pour la nuit). SEUL fichier de l'application où une couleur est écrite.
+   - Entre les repères <prototype-clair> et <prototype-sombre> : GÉNÉRÉ par outils/transcription.mjs (ne pas modifier à
+     la main). Chaque jeton vaut la couleur source du prototype ; quand le prototype range plusieurs couleurs sous un
+     même jeton (bleu #2456D6 et orange #EF6A00, par exemple), la couleur exacte de chaque style porte un jeton précisé
+     « --<jeton>--<couleur> » (prototype.css), sans changer les noms de classes.
+   - Après les repères : les jetons de la coque (relais.css, feuilles des écrans repris), pris des mêmes couleurs.
+   Identité du prototype : orange BelivaY pour le bouton principal et la carte de tête (#F58A1F → #EF6A00 → #D95000,
+   #E8A10E → #DD5100), bleu #2456D6 / #173C9E pour les repères et l'onglet actif ; fond sable #F7F3EE, encre #171310.
+   Nuit : fond #0B1120, cartes #141C2F, encre #EEF1F7 (darkify). Seul écart : le filet #EFE7DE, absent de DARK_MAP,
+   prend la nuit de ses voisins (#27314C). */
+
+:root{
+  color-scheme:light;
+  /* <prototype-clair> */
+  --acc:#2456D6;
+  --acc--e8a10e:#E8A10E;
+  --acc--ef6a00:#EF6A00;
+  --acc-a18:rgba(36,86,214,.18);
+  --acc-a30:rgba(36,86,214,.3);
+  --acc-a45:rgba(36,86,214,.45);
+  --acc-a50:rgba(36,86,214,.5);
+  --acc-btn:#EF6A00;
+  --acc-btn--e05a00:#E05A00;
+  --acc-btn-ink:#FFFFFF;
+  --acc-btn-ink-2:#FFE9C2;
+  --acc-deep:#C24E00;
+  --acc-g1:#F58A1F;
+  --acc-g1--3a6bea:#3A6BEA;
+  --acc-g2:#D95000;
+  --acc-g2--1e4bc4:#1E4BC4;
+  --acc-line:#C9D7FB;
+  --acc-line--f6cfa8:#F6CFA8;
+  --acc-ombre:rgba(239,106,0,.34);
+  --acc-ombre--184-74-0-5:rgba(184,74,0,.5);
+  --acc-ombre--217-80-0-7:rgba(217,80,0,.7);
+  --acc-ombre--221-81-0-8:rgba(221,81,0,.8);
+  --acc-ombre--239-106-0-3:rgba(239,106,0,.3);
+  --acc-ombre--239-106-0-35:rgba(239,106,0,.35);
+  --acc-ombre--239-106-0-6:rgba(239,106,0,.6);
+  --acc-ombre--30-75-196-8:rgba(30,75,196,.8);
+  --acc-ombre--90-40-0-5:rgba(90,40,0,.5);
+  --acc-soft:#EAF0FF;
+  --acc-soft--fff1e2:#FFF1E2;
+  --acc-soft-2:#E8EDF8;
+  --acc-soft-2--e3e8f4:#E3E8F4;
+  --acc-soft-3:#F6F8FD;
+  --acc-txt:#173C9E;
+  --acc-txt--2456d6:#2456D6;
+  --acc-txt--b84a00:#B84A00;
+  --amber:#8A5A00;
+  --amber--6b4700:#6B4700;
+  --amber-line:#FFF4DA;
+  --amber-line--f0da9c:#F0DA9C;
+  --amber-soft:#FFF4D6;
+  --badge:#E05A00;
+  --badge-ink:#FFFFFF;
+  --blanc-08:rgba(255,255,255,.08);
+  --blanc-12:rgba(255,255,255,.12);
+  --blanc-14:rgba(255,255,255,.14);
+  --blanc-20:rgba(255,255,255,.2);
+  --blanc-22:rgba(255,255,255,.22);
+  --blanc-25:rgba(255,255,255,.25);
+  --blanc-28:rgba(255,255,255,.28);
+  --blanc-40:rgba(255,255,255,.4);
+  --camera:#050608;
+  --camera-ink:#FFFFFF;
+  --camera-ink-2:#B7BECB;
+  --camera-voile:rgba(80,90,110,.55);
+  --cap-bas:rgba(226,235,255,.78);
+  --card:#FFFFFF;
+  --card--blanc:#FFFFFF;
+  --card-2:#FBF8F4;
+  --green:#1F7A4D;
+  --green--155c39:#155C39;
+  --green-line:#BFE3CF;
+  --green-soft:#E6F4EC;
+  --halo-1:rgba(239,106,0,.16);
+  --halo-2:rgba(36,86,214,.14);
+  --halo-3:rgba(232,161,14,.14);
+  --heros-1:#E8A10E;
+  --heros-2:#EF7A0A;
+  --heros-3:#EF6A00;
+  --heros-3--ef6200:#EF6200;
+  --heros-4:#DD5100;
+  --heros-halo:rgba(255,200,69,.45);
+  --heros-halo--232-161-14-35:rgba(232,161,14,.35);
+  --heros-halo--255-197-69-45:rgba(255,197,69,.45);
+  --heros-halo--255-200-69-5:rgba(255,200,69,.5);
+  --heros-halo--255-200-69-8:rgba(255,200,69,.8);
+  --heros-halo--255-214-120-65:rgba(255,214,120,.65);
+  --heros-halo--255-220-140-6:rgba(255,220,140,.6);
+  --heros-ink:#FFFFFF;
+  --heros-ink-2:#FFE9C2;
+  --heros-kicker:#FFF3D6;
+  --heros-puce:rgba(255,255,255,.22);
+  --ink:#171310;
+  --ink--0e1b38:#0E1B38;
+  --ink-2:#5B524A;
+  --ink-3:#6F6358;
+  --ink-4:#B9ADA1;
+  --ink-4--e7ddd2:#E7DDD2;
+  --line:#E4D9CE;
+  --line--84-52-24-1:rgba(84,52,24,.1);
+  --line--e9dfd5:#E9DFD5;
+  --line--eae1d7:#EAE1D7;
+  --line--ece5dd:#ECE5DD;
+  --line--efe6dc:#EFE6DC;
+  --line-2:#D9CFC5;
+  --line-2--d6ccc1:#D6CCC1;
+  --mtn:#FFCC00;
+  --mtn-ink:#171310;
+  --noir:#000000;
+  --noir-25:rgba(0,0,0,.25);
+  --noir-55:rgba(0,0,0,.55);
+  --nuit-1:#0E1B38;
+  --nuit-2:#1B2E5C;
+  --nuit-3:#0A1429;
+  --nuit-4:#1A2A52;
+  --nuit-5:#2A3A66;
+  --nuit-acc:#8FB0FF;
+  --nuit-halo:rgba(255,200,69,.45);
+  --nuit-ink:#FFFFFF;
+  --nuit-ink-2:#9FAACB;
+  --nuit-ink-2--e3e8f4:#E3E8F4;
+  --nuit-ink-3:#C3CCE0;
+  --nuit-ink-4:#7F8BAE;
+  --nuit-ombre:rgba(14,27,56,.25);
+  --nuit-ombre--14-27-56-75:rgba(14,27,56,.75);
+  --nuit-or:#FFC845;
+  --nuit-or-2:#FFE9C2;
+  --nuit-or-2--ffd9b8:#FFD9B8;
+  --nuit-rouge:#FF8A80;
+  --nuit-vert:#5EF2B5;
+  --ombre-1:rgba(60,35,15,.05);
+  --ombre-1--60-35-15-06:rgba(60,35,15,.06);
+  --ombre-2:rgba(60,35,15,.16);
+  --ombre-3:rgba(60,35,15,.3);
+  --ombre-3--60-35-15-4:rgba(60,35,15,.4);
+  --or:#EF6A00;
+  --or-line:#F6CFA8;
+  --or-soft:#FFF1E2;
+  --or-txt:#B84A00;
+  --red:#B42318;
+  --red--8e1b12:#8E1B12;
+  --red-line:#F4C3BE;
+  --red-soft:#FDECEA;
+  --sand:#F7F3EE;
+  --sand-2:#F4EEE8;
+  --sand-2--efe7de:#EFE7DE;
+  --sand-2--f1e8df:#F1E8DF;
+  --sand-2--f1ece6:#F1ECE6;
+  --sand-2--f3ede6:#F3EDE6;
+  --sand-3:#EFE6DC;
+  --sand-3--e4d9ce:#E4D9CE;
+  --v12:rgba(255,255,255,.12);
+  --v55:rgba(255,255,255,.55);
+  --v56:rgba(255,255,255,.56);
+  --v62:rgba(255,255,255,.62);
+  --v72:rgba(255,255,255,.72);
+  --v95:rgba(255,255,255,.95);
+  --v95--255-255-255-96:rgba(255,255,255,.96);
+  --verre-bleu:rgba(210,224,255,.3);
+  --verre-chaud:rgba(255,226,196,.26);
+  --verre-ombre-1:rgba(20,40,90,.08);
+  --verre-ombre-1--14-27-56-08:rgba(14,27,56,.08);
+  --verre-ombre-1--20-40-90-1:rgba(20,40,90,.1);
+  --verre-ombre-2:rgba(20,40,90,.16);
+  --verre-ombre-3:rgba(14,27,56,.4);
+  --verre-ombre-3--14-27-56-45:rgba(14,27,56,.45);
+  --vert-fonce-1:#0F5132;
+  --vert-fonce-2:#1E8E57;
+  --vert-fonce-2--25d366:#25D366;
+  --vert-fonce-ink:#FFFFFF;
+  --vert-fonce-ink-2:#CFF5E1;
+  /* </prototype-clair> */
+  /* ----- Coque (hors styles en ligne du prototype), couleurs du prototype ----- */
+  --alerte-btn:#E05A00; --alerte-btn-ink:#FFFFFF;
+  --info:#173C9E; --info-soft:#EAF0FF; --info-line:#C9D7FB;
+  --verre-filtre:brightness(1.26) saturate(185%); --cap-filtre:brightness(1.08);
+  --verre-repli:rgba(255,255,255,.94);
+  --ombre:0 1px 2px rgba(60,35,15,.05),0 8px 24px -12px rgba(60,35,15,.16);
+  --ombre-haute:0 2px 6px -2px rgba(60,35,15,.3),0 18px 40px -12px rgba(60,35,15,.3);
+  --voile:rgba(23,19,16,.42);
+}
+
+/* ================================ Nuit ================================ */
+html[data-theme=dark]{
+  color-scheme:dark;
+  /* <prototype-sombre> */
+  --acc:#2456D6;
+  --acc--e8a10e:#E8A10E;
+  --acc--ef6a00:#EF6A00;
+  --acc-a18:rgba(36,86,214,.18);
+  --acc-a30:rgba(36,86,214,.3);
+  --acc-a45:rgba(36,86,214,.45);
+  --acc-a50:rgba(36,86,214,.5);
+  --acc-btn:#EF6A00;
+  --acc-btn--e05a00:#E05A00;
+  --acc-btn-ink:#FFFFFF;
+  --acc-btn-ink-2:#FFE9C2;
+  --acc-deep:#C24E00;
+  --acc-g1:#F58A1F;
+  --acc-g1--3a6bea:#3A6BEA;
+  --acc-g2:#D95000;
+  --acc-g2--1e4bc4:#1E4BC4;
+  --acc-line:#2A3F7A;
+  --acc-line--f6cfa8:#5A3413;
+  --acc-ombre:rgba(239,106,0,.34);
+  --acc-ombre--184-74-0-5:rgba(184,74,0,.5);
+  --acc-ombre--217-80-0-7:rgba(217,80,0,.7);
+  --acc-ombre--221-81-0-8:rgba(221,81,0,.8);
+  --acc-ombre--239-106-0-3:rgba(239,106,0,.3);
+  --acc-ombre--239-106-0-35:rgba(239,106,0,.35);
+  --acc-ombre--239-106-0-6:rgba(239,106,0,.6);
+  --acc-ombre--30-75-196-8:rgba(30,75,196,.8);
+  --acc-ombre--90-40-0-5:rgba(90,40,0,.5);
+  --acc-soft:#14234A;
+  --acc-soft--fff1e2:#2B1B0C;
+  --acc-soft-2:#18223D;
+  --acc-soft-2--e3e8f4:#27324F;
+  --acc-soft-3:#0F1729;
+  --acc-txt:#9DB8FF;
+  --acc-txt--2456d6:#2456D6;
+  --acc-txt--b84a00:#FF9A4D;
+  --amber:#F2C14E;
+  --amber--6b4700:#F2C14E;
+  --amber-line:#2B230F;
+  --amber-line--f0da9c:#584516;
+  --amber-soft:#2B230F;
+  --badge:#E05A00;
+  --badge-ink:#FFFFFF;
+  --blanc-08:rgba(255,255,255,.08);
+  --blanc-12:rgba(255,255,255,.02);
+  --blanc-14:rgba(255,255,255,.14);
+  --blanc-20:rgba(255,255,255,.2);
+  --blanc-22:rgba(255,255,255,.22);
+  --blanc-25:rgba(255,255,255,.25);
+  --blanc-28:rgba(255,255,255,.28);
+  --blanc-40:rgba(255,255,255,.4);
+  --camera:#050608;
+  --camera-ink:#FFFFFF;
+  --camera-ink-2:#B7BECB;
+  --camera-voile:rgba(80,90,110,.55);
+  --cap-bas:rgba(36,86,214,.35);
+  --card:#141C2F;
+  --card--blanc:#FFFFFF;
+  --card-2:#141C2F;
+  --green:#52D69A;
+  --green--155c39:#86E3B5;
+  --green-line:#1D4A33;
+  --green-soft:#0F2A1D;
+  --halo-1:rgba(239,106,0,.16);
+  --halo-2:rgba(36,86,214,.14);
+  --halo-3:rgba(232,161,14,.14);
+  --heros-1:#E8A10E;
+  --heros-2:#EF7A0A;
+  --heros-3:#EF6A00;
+  --heros-3--ef6200:#EF6200;
+  --heros-4:#DD5100;
+  --heros-halo:rgba(255,200,69,.45);
+  --heros-halo--232-161-14-35:rgba(232,161,14,.35);
+  --heros-halo--255-197-69-45:rgba(255,197,69,.45);
+  --heros-halo--255-200-69-5:rgba(255,200,69,.5);
+  --heros-halo--255-200-69-8:rgba(255,200,69,.8);
+  --heros-halo--255-214-120-65:rgba(255,214,120,.65);
+  --heros-halo--255-220-140-6:rgba(255,220,140,.6);
+  --heros-ink:#FFFFFF;
+  --heros-ink-2:#FFE9C2;
+  --heros-kicker:#FFF3D6;
+  --heros-puce:rgba(255,255,255,.22);
+  --ink:#EEF1F7;
+  --ink--0e1b38:#0E1B38;
+  --ink-2:#C0C8D8;
+  --ink-3:#9AA4BC;
+  --ink-4:#6C7894;
+  --ink-4--e7ddd2:#3A4666;
+  --line:#2E3957;
+  --line--84-52-24-1:rgba(255,255,255,.08);
+  --line--e9dfd5:#2E3957;
+  --line--eae1d7:#27314C;
+  --line--ece5dd:#27314C;
+  --line--efe6dc:#27314C;
+  --line-2:#3A4666;
+  --line-2--d6ccc1:#3A4666;
+  --mtn:#FFCC00;
+  --mtn-ink:#EEF1F7;
+  --noir:#000000;
+  --noir-25:rgba(0,0,0,.25);
+  --noir-55:rgba(0,0,0,.55);
+  --nuit-1:#0E1B38;
+  --nuit-2:#1B2E5C;
+  --nuit-3:#0A1429;
+  --nuit-4:#1A2A52;
+  --nuit-5:#2A3A66;
+  --nuit-acc:#8FB0FF;
+  --nuit-halo:rgba(255,200,69,.45);
+  --nuit-ink:#FFFFFF;
+  --nuit-ink-2:#9FAACB;
+  --nuit-ink-2--e3e8f4:#27324F;
+  --nuit-ink-3:#C3CCE0;
+  --nuit-ink-4:#7F8BAE;
+  --nuit-ombre:rgba(14,27,56,.25);
+  --nuit-ombre--14-27-56-75:rgba(14,27,56,.75);
+  --nuit-or:#FFC845;
+  --nuit-or-2:#FFE9C2;
+  --nuit-or-2--ffd9b8:#FFD9B8;
+  --nuit-rouge:#FF8A80;
+  --nuit-vert:#5EF2B5;
+  --ombre-1:rgba(60,35,15,.05);
+  --ombre-1--60-35-15-06:rgba(60,35,15,.06);
+  --ombre-2:rgba(60,35,15,.16);
+  --ombre-3:rgba(60,35,15,.3);
+  --ombre-3--60-35-15-4:rgba(60,35,15,.4);
+  --or:#EF6A00;
+  --or-line:#5A3413;
+  --or-soft:#2B1B0C;
+  --or-txt:#FF9A4D;
+  --red:#FF8A80;
+  --red--8e1b12:#FF8A80;
+  --red-line:#5A2623;
+  --red-soft:#2F1515;
+  --sand:#0B1120;
+  --sand-2:#1C2540;
+  --sand-2--efe7de:#27314C;
+  --sand-2--f1e8df:#243052;
+  --sand-2--f1ece6:#1C2540;
+  --sand-2--f3ede6:#1A2238;
+  --sand-3:#27314C;
+  --sand-3--e4d9ce:#2E3957;
+  --v12:rgba(255,255,255,.02);
+  --v55:rgba(255,255,255,.07);
+  --v56:rgba(16,24,42,.60);
+  --v62:rgba(255,255,255,.07);
+  --v72:rgba(40,52,84,.55);
+  --v95:rgba(255,255,255,.10);
+  --v95--255-255-255-96:rgba(255,255,255,.10);
+  --verre-bleu:rgba(36,86,214,.14);
+  --verre-chaud:rgba(239,106,0,.10);
+  --verre-ombre-1:rgba(20,40,90,.08);
+  --verre-ombre-1--14-27-56-08:rgba(14,27,56,.08);
+  --verre-ombre-1--20-40-90-1:rgba(20,40,90,.1);
+  --verre-ombre-2:rgba(20,40,90,.16);
+  --verre-ombre-3:rgba(14,27,56,.4);
+  --verre-ombre-3--14-27-56-45:rgba(14,27,56,.45);
+  --vert-fonce-1:#0F5132;
+  --vert-fonce-2:#1E8E57;
+  --vert-fonce-2--25d366:#25D366;
+  --vert-fonce-ink:#FFFFFF;
+  --vert-fonce-ink-2:#CFF5E1;
+  /* </prototype-sombre> */
+  --alerte-btn:#E05A00; --alerte-btn-ink:#FFFFFF;
+  --info:#9DB8FF; --info-soft:#14234A; --info-line:#2A3F7A;
+  --verre-filtre:brightness(.58) saturate(165%); --cap-filtre:brightness(1);
+  --verre-repli:rgba(20,28,47,.97);
+  --ombre:0 0 0 1px rgba(255,255,255,.08);
+  --ombre-haute:0 18px 40px -12px rgba(0,0,0,.7);
+  --voile:rgba(5,8,15,.62);
+}
+
+/* CONTRASTE AA (décision du porteur du 17 oct. 2026, ARL-172, logique-metier/relais/A-VALIDER.md) : les couleurs du
+   prototype sont gardées ; seules celles qui échouent au contraste (texte < 4,5 : 1, grand texte < 3 : 1) sont
+   FONCÉES LÉGÈREMENT, juste assez pour AA, même teinte : pastilles de la barre du bas et de la cloche, bandeau de tête
+   (Menu, Accueil, Versements…), bouton principal, étoiles, vert d'aide, encre secondaire ; la nuit, pastilles claires
+   (avatars, logo MTN) en encre foncée et barre des horaires plus profonde. Hors repères : non régénéré. */
+:root{
+  --badge:#C85000;
+  --heros-1:#9C6C09;
+  --heros-2:#B65D08;
+  --heros-3:#C15600;
+  --heros-3--ef6200:#C65100;
+  --heros-4:#CD4B00;
+  --heros-ink-2:#FFFFFF;
+  --heros-kicker:#FFFFFF;
+  --acc-g1:#B55F08;
+  --acc-btn:#C15600;
+  --acc-btn--e05a00:#C85000;
+  --acc-g2:#C24E00;
+  --heros-puce:rgba(0,0,0,.2);
+  --acc--ef6a00:#C15600;
+  --vert-fonce-2:#1A794A;
+  --ink-3:#6C6056;
+  --ink-4--e7ddd2:#7A7068;
+  --avatar-ink:#FFFFFF;
+  --jour-fin:var(--acc-txt);
+  --acc--e8a10e:#9C6C09;
+  --pastille-etape:#E8A10E;
+}
+html[data-theme=dark]{
+  --badge:#C85000;
+  --heros-1:#9C6C09;
+  --heros-2:#B65D08;
+  --heros-3:#C15600;
+  --heros-3--ef6200:#C65100;
+  --heros-4:#CD4B00;
+  --heros-ink-2:#FFFFFF;
+  --heros-kicker:#FFFFFF;
+  --acc-g1:#B55F08;
+  --acc-btn:#C15600;
+  --acc-btn--e05a00:#C85000;
+  --acc-g2:#C24E00;
+  --heros-puce:rgba(0,0,0,.2);
+  --vert-fonce-2:#1A794A;
+  --ink-4--e7ddd2:#7384AF;
+  --mtn-ink:#171310;
+  --avatar-ink:#171310;
+  --jour-fin:#3069FF;
+  --pastille-etape:#E8A10E;
+}
+
+/* Barre du haut (thème et langue comme la console, 24 oct. ; relais.css « Barre du haut ») : curseur en relief de la
+   pilule FR | EN, ombre douce des pastilles, soleil et lune. */
+:root{
+  --vie-ombre-bouton:0 1px 1px rgba(40,26,14,.06),0 3px 8px -3px rgba(40,26,14,.18),inset 0 1px 0 rgba(255,255,255,.9),inset 0 0 0 1px rgba(40,26,14,.08);
+  --vie-curseur:linear-gradient(180deg,#FFFFFF,#F8F4EF);
+  --vie-soleil:#E89A0C;--vie-lune:#4B5B8C;
+}
+html[data-theme=dark]{
+  --vie-ombre-bouton:0 1px 2px rgba(0,0,0,.6),0 4px 10px -4px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.07),inset 0 0 0 1px rgba(255,255,255,.08);
+  --vie-curseur:linear-gradient(180deg,#2A3554,#212B47);
+  --vie-soleil:#FFC845;--vie-lune:#C9D4F2;
+}

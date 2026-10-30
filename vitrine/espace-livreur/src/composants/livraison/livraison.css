@@ -1,0 +1,261 @@
+/* Écrans de la tournée (LIV-05, LIV-06, LIV-07, LIV-P33) — préfixe lv-. Jetons de src/styles/livreur.css seulement :
+   vert du livreur pour l'action et la progression, orange BelivaY pour l'alerte et l'urgence, ambre et rouge pour le
+   temps qui presse. Téléphone d'abord : cibles de 48 px au moins, 56 px pour l'action principale ; une seule action
+   principale par écran, en bas, à portée de pouce. Animations seulement si le mouvement est libre (html[data-mouv]). */
+
+.lv-mt{margin-top:14px}
+.lv-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.lv-lien{display:inline-flex;align-items:center;gap:6px;min-height:48px;padding:0 4px;border:0;background:none;color:var(--acc-txt);font:inherit;font-weight:800;font-size:.9375rem;cursor:pointer;text-align:left}
+.lv-lien:disabled{opacity:.45;cursor:default}
+.lv-lien.lv-alerte{color:var(--or-txt)}
+.lv-p{color:var(--ink-3);font-size:.9375rem;line-height:1.5}
+.lv-h{font-size:1.0625rem;font-weight:800;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+.lv-h svg{color:var(--acc-txt);flex-shrink:0}
+.lv-sous{margin-top:4px;color:var(--ink-3);font-size:.875rem;line-height:1.45}
+
+/* ---------- Chargement ---------- */
+.lv-charge{display:flex;flex-direction:column;gap:12px}
+.lv-os{height:120px;border-radius:var(--r);background:linear-gradient(90deg,var(--sand-2),var(--card-2),var(--sand-2));background-size:200% 100%}
+.lv-os-h{height:150px}.lv-os-c{height:64px}
+html[data-mouv] .lv-os{animation:lv-luit 1.2s linear infinite}
+@keyframes lv-luit{to{background-position:-200% 0}}
+
+/* ---------- Messages ---------- */
+.lv-msg{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:var(--r);font-size:.9rem;line-height:1.45}
+.lv-msg>svg{flex-shrink:0;margin-top:1px}
+.lv-msg.lv-ok{background:var(--green-soft);color:var(--green);box-shadow:inset 0 0 0 1px var(--acc-line)}
+.lv-msg.lv-info{background:var(--blue-soft);color:var(--blue);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--blue) 30%,transparent)}
+.lv-msg.lv-alerte{background:var(--amber-soft);color:var(--amber);box-shadow:inset 0 0 0 1px var(--amber-line)}
+.lv-msg.lv-erreur{background:var(--or-soft);color:var(--or-txt);box-shadow:inset 0 0 0 1px var(--or-line)}
+.lv-msg b{color:inherit}
+html[data-mouv] .lv-msg{animation:blv-toast var(--blv-moyen,.22s) var(--blv-ressort,ease) both}
+
+/* ---------- Démonstration (l'autre téléphone) ---------- */
+.lv-demo{border-radius:var(--r);padding:12px;border:1.5px dashed var(--line-2);background:var(--card-2)}
+.lv-demo-t{display:flex;align-items:center;gap:6px;font-size:.75rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-4)}
+.lv-demo-b{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;align-items:center;font-size:.875rem;color:var(--ink-3)}
+.lv-demo-b button{min-height:44px;padding:0 14px;border-radius:12px;border:0;background:var(--sand-2);color:var(--ink);font:inherit;font-weight:700;cursor:pointer}
+.lv-demo-b button:disabled{opacity:.45;cursor:default}
+.lv-demo-b code{font-size:1rem;font-weight:800;letter-spacing:.12em;color:var(--ink)}
+
+/* ---------- Carte d'avancement ---------- */
+.lv-av-haut{display:flex;gap:12px;align-items:flex-start}
+.lv-av-titre{margin-top:4px;font-size:1.125rem;font-weight:800;letter-spacing:-.01em}
+.lv-av-colis{display:flex;align-items:baseline;gap:4px;padding:8px 12px;border-radius:14px;background:var(--acc-soft);color:var(--acc-txt);flex-shrink:0}
+.lv-av-colis svg{align-self:center}
+.lv-av-colis b{font-size:1.25rem}
+.lv-av-colis span{font-size:.875rem;font-weight:700;color:var(--ink-3)}
+.lv-barre{margin-top:12px;height:8px;border-radius:4px;background:var(--sand-2);overflow:hidden}
+.lv-barre i{display:block;height:100%;border-radius:4px;background:var(--acc-grad)}
+html[data-mouv] .lv-barre i{transition:width .5s var(--blv-ressort,ease)}
+.lv-reste{display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:6px 10px;border-radius:999px;font-size:.8125rem;font-weight:800}
+.lv-reste.lv-vert{background:var(--green-soft);color:var(--green)}
+.lv-reste.lv-ambre{background:var(--amber-soft);color:var(--amber)}
+.lv-reste.lv-rouge{background:var(--red-soft);color:var(--red)}
+html[data-mouv] .lv-reste.lv-rouge{animation:lv-pouls 1.6s ease-in-out infinite}
+@keyframes lv-pouls{50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--red) 18%,transparent)}}
+.lv-etapes{list-style:none;margin:14px 0 0;padding:0;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:4px}
+.lv-etapes li{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;font-size:.75rem;font-weight:700;color:var(--ink-4);line-height:1.25}
+.lv-etape-p{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--sand-2);color:var(--ink-3);font-size:.8rem;font-weight:800}
+.lv-etapes li.fait{color:var(--acc-txt)}
+.lv-etapes li.fait .lv-etape-p{background:var(--acc-btn);color:var(--acc-btn-ink)}
+.lv-etapes li.cour{color:var(--ink)}
+.lv-etapes li.cour .lv-etape-p{background:var(--acc-soft);color:var(--acc-txt);box-shadow:0 0 0 2px var(--acc)}
+
+/* ---------- Barre d'action en bas (étapes de preuve) ---------- */
+.lv-duo{display:grid;grid-template-columns:1fr;gap:8px}
+@media (min-width:420px){.lv-duo{grid-template-columns:1fr 1fr}.lv-duo .l-btn{padding:0 12px;font-size:.9375rem}}
+
+/* ---------- Arrêt (carte de l'arrêt en cours, liste) ---------- */
+.lv-arret{position:relative;overflow:hidden}
+.lv-arret::before{content:"";position:absolute;inset:0 auto 0 0;width:5px;background:var(--acc-grad)}
+.lv-ordre{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--acc-soft);color:var(--acc-txt);font-size:.75rem;font-weight:800;letter-spacing:.02em}
+.lv-arret-nom{margin-top:10px;display:flex;align-items:center;gap:12px}
+.lv-arret-nom h2{font-size:1.25rem;font-weight:800;letter-spacing:-.02em}
+.lv-num{width:40px;height:40px;border-radius:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--acc-btn);color:var(--acc-btn-ink);font-weight:800;font-size:1.0625rem}
+.lv-num.lv-relais{background:var(--blue);color:#fff}
+html[data-theme=dark] .lv-num.lv-relais{color:#0A1430}
+.lv-faits{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:.875rem;color:var(--ink-3)}
+.lv-faits span{display:inline-flex;align-items:center;gap:5px}
+.lv-faits svg{color:var(--acc-txt)}
+.lv-repere{margin-top:10px;padding:10px 12px;border-radius:14px;background:var(--card-2);box-shadow:inset 0 0 0 1px var(--line);font-size:.9rem;line-height:1.45}
+.lv-repere q{font-style:normal;font-weight:700;color:var(--ink)}
+.lv-repere small{display:block;margin-top:4px;color:var(--ink-4);font-size:.78rem}
+.lv-liste{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.lv-liste>li{display:flex;align-items:center;gap:12px;min-height:60px;padding:10px 0;border-top:1px solid var(--line)}
+.lv-liste>li:first-child{border-top:0}
+.lv-liste .lv-num{width:32px;height:32px;border-radius:11px;font-size:.9rem;background:var(--sand-2);color:var(--ink-2)}
+.lv-liste li.fait .lv-num{background:var(--green-soft);color:var(--green)}
+.lv-liste li.cour .lv-num{background:var(--acc-btn);color:var(--acc-btn-ink)}
+.lv-liste li.echec .lv-num,.lv-liste li.dissocie .lv-num{background:var(--red-soft);color:var(--red)}
+.lv-liste li.relais .lv-num{background:var(--blue-soft);color:var(--blue)}
+.lv-liste b{display:block;font-size:.9375rem}
+.lv-liste small{display:block;margin-top:2px;color:var(--ink-3);font-size:.8125rem}
+.lv-etat{flex-shrink:0;font-size:.75rem;font-weight:800;padding:4px 9px;border-radius:999px;background:var(--sand-2);color:var(--ink-3)}
+.lv-etat.ok{background:var(--green-soft);color:var(--green)}
+.lv-etat.cour{background:var(--acc-soft);color:var(--acc-txt)}
+.lv-etat.ko{background:var(--red-soft);color:var(--red)}
+.lv-etat.ambre{background:var(--amber-soft);color:var(--amber)}
+.lv-etat.bleu{background:var(--blue-soft);color:var(--blue)}
+
+/* ---------- Rangée des colis de l'arrêt ---------- */
+.lv-rangee{list-style:none;margin:12px 0 0;padding:0;display:flex;gap:6px;flex-wrap:wrap}
+.lv-rangee li{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;background:var(--sand-2);color:var(--ink-3);font-size:.75rem;font-weight:800}
+.lv-rangee-p{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--card);font-size:.75rem}
+.lv-rangee li.cour{background:var(--acc-soft);color:var(--acc-txt);box-shadow:inset 0 0 0 1.5px var(--acc)}
+.lv-rangee li.fait .lv-rangee-p{background:var(--acc-btn);color:var(--acc-btn-ink)}
+.lv-rangee li.ko{background:var(--red-soft);color:var(--red)}
+.lv-rangee li.ko .lv-rangee-p{background:var(--red);color:#fff}
+
+/* ---------- Héros (succès, blocage, attente) : léger dégradé de la couleur de l'interface sur fond clair ---------- */
+.lv-heros{border-radius:var(--r-l);padding:20px;color:var(--ink);background:linear-gradient(150deg,var(--acc-soft) 0%,var(--card) 72%);box-shadow:var(--ombre),inset 0 0 0 1px var(--acc-line)}
+.lv-heros.lv-ko{background:linear-gradient(150deg,var(--or-soft) 0%,var(--card) 72%);box-shadow:var(--ombre),inset 0 0 0 1px var(--or-line)}
+.lv-heros.lv-attente{background:linear-gradient(150deg,var(--amber-soft) 0%,var(--card) 72%);box-shadow:var(--ombre),inset 0 0 0 1px var(--amber-line)}
+.lv-heros-i{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;background:var(--card);color:var(--acc-txt);box-shadow:inset 0 0 0 1px var(--acc-line)}
+.lv-heros.lv-ko .lv-heros-i{color:var(--or-txt);box-shadow:inset 0 0 0 1px var(--or-line)}
+.lv-heros.lv-attente .lv-heros-i{color:var(--amber);box-shadow:inset 0 0 0 1px var(--amber-line)}
+.lv-heros h2{margin-top:12px;font-size:1.375rem;font-weight:800;letter-spacing:-.02em}
+.lv-heros p{margin-top:6px;color:var(--ink-2);line-height:1.5;font-size:.9375rem}
+.lv-heros .l-kicker{color:var(--acc-txt)}
+html[data-mouv] .lv-heros{animation:blv-toast var(--blv-moyen,.22s) var(--blv-ressort,ease) both}
+.lv-gros,.lv-heros .lv-gros{font-size:2.25rem;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--ink)}
+.lv-heros.lv-attente .lv-gros{color:var(--amber)}
+
+/* Carte de tête (avancement) : léger dégradé de l'interface. */
+.lv-av{background:linear-gradient(160deg,var(--acc-soft) 0%,var(--card) 58%);box-shadow:var(--ombre),inset 0 0 0 1px var(--acc-line)}
+.lv-av .lv-av-colis{background:var(--card);box-shadow:inset 0 0 0 1px var(--acc-line)}
+
+/* ---------- Identité du livreur (montrée au vendeur et à la gérante) ---------- */
+.lv-moi-carte{display:flex;align-items:center;gap:14px;margin-top:14px;padding:12px;border-radius:18px;background:var(--card);box-shadow:inset 0 0 0 1px var(--line)}
+.lv-moi-carte .l-avatar{width:64px;height:64px;font-size:1.25rem}
+.lv-moi-carte b{display:block;font-size:1.125rem}
+.lv-moi-carte span{font-size:.875rem;color:var(--ink-3)}
+
+/* ---------- Cases à cocher, choix ---------- */
+.lv-coches{display:flex;flex-direction:column;gap:8px}
+.lv-coche{display:flex;align-items:center;gap:12px;min-height:54px;padding:8px 12px;border-radius:14px;border:0;background:var(--card-2);box-shadow:inset 0 0 0 1.5px var(--line-2);font:inherit;font-weight:700;font-size:.9375rem;color:var(--ink);text-align:left;cursor:pointer;width:100%}
+.lv-coche .lv-boite{width:28px;height:28px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 2px var(--line-2);background:var(--card);color:transparent}
+.lv-coche[aria-checked=true]{box-shadow:inset 0 0 0 2px var(--acc);background:var(--acc-soft)}
+.lv-coche[aria-checked=true] .lv-boite{background:var(--acc-btn);color:var(--acc-btn-ink);box-shadow:none}
+.lv-coche.lv-ko{box-shadow:inset 0 0 0 2px var(--red);background:var(--red-soft)}
+.lv-coche.lv-ko .lv-boite{background:var(--red);color:#fff;box-shadow:none}
+.lv-coche small{display:block;font-weight:600;color:var(--ink-3);font-size:.8125rem;margin-top:2px}
+.lv-coche:disabled{opacity:.5;cursor:default}
+html[data-mouv] .lv-coche .lv-boite{transition:background var(--blv-court,.13s) ease,transform var(--blv-court,.13s) ease}
+html[data-mouv] .lv-coche[aria-checked=true] .lv-boite{transform:scale(1.06)}
+.lv-segment{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.lv-segment button{min-height:52px;border-radius:14px;border:0;background:var(--card-2);box-shadow:inset 0 0 0 1.5px var(--line-2);font:inherit;font-weight:800;color:var(--ink-2);cursor:pointer;padding:6px 10px;line-height:1.25}
+.lv-segment button[aria-checked=true]{background:var(--acc-soft);color:var(--acc-txt);box-shadow:inset 0 0 0 2px var(--acc)}
+.lv-tuiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.lv-tuile{position:relative;min-height:78px;padding:8px 6px;border-radius:14px;border:0;background:var(--card-2);box-shadow:inset 0 0 0 1.5px var(--line-2);font:inherit;color:var(--ink);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center}
+.lv-tuile b{font-size:1.0625rem}
+.lv-tuile small{font-size:.75rem;color:var(--ink-3);font-weight:600}
+.lv-tuile[aria-checked=true]{background:var(--acc-soft);box-shadow:inset 0 0 0 2.5px var(--acc)}
+.lv-tuile:disabled{opacity:.45;cursor:default}
+.lv-tuile .lv-conseil{position:absolute;top:-8px;left:50%;transform:translateX(-50%);padding:2px 7px;border-radius:999px;background:var(--acc-btn);color:var(--acc-btn-ink);font-size:.75rem;font-weight:800;white-space:nowrap}
+
+/* ---------- Champs ---------- */
+.lv-champ{display:flex;flex-direction:column;gap:6px;font-weight:700;font-size:.9rem}
+.lv-champ textarea,.lv-champ input{width:100%;min-height:52px;padding:12px 14px;border-radius:14px;border:0;background:var(--card-2);box-shadow:inset 0 0 0 1.5px var(--line-2);color:var(--ink);font:inherit;font-size:1rem;font-weight:500;resize:vertical}
+.lv-champ textarea{min-height:96px}
+.lv-champ textarea:focus,.lv-champ input:focus{outline:none;box-shadow:inset 0 0 0 2px var(--acc)}
+.lv-compteur{font-size:.8rem;font-weight:700;color:var(--ink-4)}
+.lv-compteur.ok{color:var(--green)}
+
+/* ---------- Photo exigée ---------- */
+.lv-photo{display:flex;gap:12px;align-items:center;padding:10px;border-radius:16px;background:var(--or-soft);box-shadow:inset 0 0 0 1.5px var(--or-line)}
+.lv-photo.lv-photo-ok{background:var(--green-soft);box-shadow:inset 0 0 0 1.5px var(--acc-line)}
+.lv-photo-case{width:76px;height:76px;flex-shrink:0;border-radius:14px;border:2px dashed var(--or-line);background:var(--card);color:var(--or-txt);display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;padding:0}
+.lv-photo-ok .lv-photo-case{border:0;color:var(--green)}
+.lv-photo-case img{width:100%;height:100%;object-fit:cover;display:block}
+.lv-photo-txt{min-width:0;display:flex;flex-direction:column;align-items:flex-start}
+.lv-photo-txt b{font-size:.9375rem}
+.lv-photo-txt>span{font-size:.8125rem;color:var(--ink-3);line-height:1.35;margin-top:2px}
+
+/* ---------- Appareil photo plein écran ---------- */
+.lv-cam{position:fixed;inset:0;z-index:90;background:#050A08;color:#fff;display:flex;flex-direction:column}
+.lv-cam-haut,.lv-cam-bas{display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 8px) 10px 8px}
+.lv-cam-bas{padding:12px 16px calc(env(safe-area-inset-bottom,0px) + 18px);justify-content:space-between}
+.lv-cam-consigne{flex:1;min-width:0;text-align:center;font-weight:800;font-size:.95rem;line-height:1.3}
+.lv-cam-btn{width:48px;height:48px;border-radius:14px;border:0;background:rgba(255,255,255,.12);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.lv-cam-btn.on{background:#FDE68A;color:#3A2A00}
+.lv-cam-muet{opacity:.3;cursor:default}
+.lv-cam-vue{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.lv-cam-vue video{width:100%;height:100%;object-fit:cover}
+.lv-cache{display:none}
+.lv-cam-cadre{position:absolute;inset:12% 8%;border-radius:20px;box-shadow:0 0 0 2px rgba(255,255,255,.75),0 0 0 9999px rgba(0,0,0,.28);pointer-events:none}
+.lv-cam-info{position:absolute;inset:auto 18px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;line-height:1.5;max-width:420px;margin:0 auto}
+.lv-cam-info p{opacity:.92}
+.lv-cam-info .l-btn.l-second{background:rgba(255,255,255,.12);color:#fff;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.4)}
+.lv-cam-refus{position:absolute;top:12px;left:16px;right:16px;padding:10px 12px;border-radius:12px;background:#C2410C;font-weight:700;font-size:.875rem}
+.lv-cam-declencheur{width:78px;height:78px;border-radius:50%;border:4px solid #fff;background:transparent;padding:5px;cursor:pointer;flex-shrink:0}
+.lv-cam-declencheur span{display:block;width:100%;height:100%;border-radius:50%;background:#fff}
+.lv-cam-declencheur:disabled{opacity:.35;cursor:default}
+html[data-mouv] .lv-cam-declencheur:active:not(:disabled) span{transform:scale(.9);transition:transform .1s}
+.lv-cam-galerie{width:84px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:.75rem;opacity:.75;text-align:center}
+.lv-cam-demo{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;padding:0 12px calc(env(safe-area-inset-bottom,0px) + 14px);font-size:.75rem;opacity:.95}
+.lv-cam-demo span{text-transform:uppercase;letter-spacing:.08em;font-weight:800;opacity:.7}
+.lv-cam-demo button{min-height:44px;padding:0 14px;border-radius:12px;border:1px dashed rgba(255,255,255,.5);background:transparent;color:#fff;font:inherit;font-weight:700;cursor:pointer}
+
+/* ---------- Code à 6 chiffres ---------- */
+@keyframes lv-non{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+
+/* ---------- Carte (OpenStreetMap) ---------- */
+.lv-carte{position:relative;overflow:hidden;border-radius:var(--r);background-color:#E7EFE9;background-image:linear-gradient(rgba(15,31,25,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(15,31,25,.06) 1px,transparent 1px);background-size:32px 32px;box-shadow:var(--ombre),inset 0 0 0 1px var(--line);isolation:isolate}
+html[data-theme=dark] .lv-carte{background-color:#13211B;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px)}
+.lv-carte-fond img{position:absolute;max-width:none;user-select:none;pointer-events:none}
+html[data-theme=dark] .lv-carte-fond img{filter:brightness(.62) contrast(1.15) saturate(.7) hue-rotate(185deg) invert(.92)}
+.lv-carte-svg{position:absolute;inset:0;pointer-events:none}
+.lv-trajet{fill:none;stroke:#15803D;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;opacity:.9}
+.lv-trajet-fait{fill:none;stroke:#14684A;stroke-width:4;stroke-dasharray:2 9;stroke-linecap:round;opacity:.65}
+.lv-incertain{fill:rgba(239,106,0,.14);stroke:#EF6A00;stroke-width:2;stroke-dasharray:6 5}
+.lv-rep-fait{opacity:.55}
+.lv-carte-leg{padding:0 12px 10px}
+.lv-carte-leg .mq-legende{margin-top:8px}
+.lv-moi-halo{fill:rgba(29,78,216,.16);stroke:rgba(29,78,216,.35)}
+html[data-mouv] .lv-moi-halo{animation:lv-halo 2.4s ease-in-out infinite;transform-origin:center;transform-box:fill-box}
+@keyframes lv-halo{50%{opacity:.55}}
+.lv-carte-zoom{position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:6px}
+.lv-carte-zoom .l-ibtn{background:var(--verre);box-shadow:0 0 0 1px var(--verre-bord),var(--ombre);color:var(--ink)}
+.lv-carte-zoom .l-ibtn:disabled{opacity:.45;cursor:default}
+.lv-moins{display:block;width:16px;height:2.5px;border-radius:2px;background:currentColor}
+.lv-carte-osm{position:absolute;right:6px;bottom:4px;padding:1px 6px;border-radius:6px;background:rgba(255,255,255,.85);color:#2C3E37;font-size:.75rem;font-weight:600}
+.lv-cartouche{position:absolute;left:8px;top:8px;max-width:calc(100% - 76px);padding:8px 12px;border-radius:14px;background:var(--verre);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 0 0 1px var(--verre-bord),var(--ombre);font-size:.8125rem;font-weight:700;line-height:1.35;color:var(--ink)}
+.lv-cartouche b{display:block;font-size:1rem}
+
+/* ---------- QR de dépôt ---------- */
+.lv-qr{display:flex;flex-direction:column;align-items:center;gap:10px;padding:16px;border-radius:var(--r-l);background:#fff;color:#0F1F19;box-shadow:var(--ombre),0 0 0 1px var(--line)}
+.lv-qr svg{width:min(100%,260px);height:auto;display:block}
+.lv-qr-code{font-size:1.75rem;font-weight:800;letter-spacing:.22em;font-variant-numeric:tabular-nums}
+.lv-qr small{font-size:.8125rem;color:#4D5F57;text-align:center}
+.lv-qr-plein{position:fixed;inset:0;z-index:90;background:#fff;color:#0F1F19;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px}
+.lv-qr-plein svg{width:min(86vw,72vh);height:auto}
+.lv-qr-plein .lv-qr-code{font-size:2.25rem}
+.lv-qr-plein button{min-height:52px;padding:0 22px;border-radius:16px;border:0;background:#0F1F19;color:#fff;font:inherit;font-weight:800;cursor:pointer}
+
+/* ---------- Appel masqué ---------- */
+.lv-correspondants{display:grid;grid-template-columns:1fr;gap:8px}
+.lv-corr{display:flex;align-items:center;gap:12px;min-height:64px;padding:10px 12px;border-radius:16px;background:var(--card-2);box-shadow:inset 0 0 0 1.5px var(--line);border:0;font:inherit;color:var(--ink);text-align:left;cursor:pointer;width:100%}
+.lv-corr[aria-checked=true]{box-shadow:inset 0 0 0 2px var(--acc);background:var(--acc-soft)}
+.lv-corr:disabled{opacity:.55;cursor:default}
+.lv-corr-i{width:42px;height:42px;border-radius:13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--acc-soft);color:var(--acc-txt)}
+.lv-corr b{display:block;font-size:.9375rem}
+.lv-corr small{display:block;margin-top:2px;font-size:.8rem;color:var(--ink-3)}
+.lv-urgence{display:flex;align-items:center;gap:10px}
+
+@media (min-width:768px){
+  .lv-correspondants{grid-template-columns:1fr 1fr}
+  .lv-cam-vue video{object-fit:contain}
+}
+
+/* Tournée verrouillée : ce qui manque à l'activation, une ligne par étape (LIV-P02R-03). */
+.lv-manque{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:6px;text-align:left;width:100%}
+.lv-manque a{display:flex;align-items:center;gap:10px;min-height:48px;padding:8px 12px;border-radius:14px;background:var(--sand-2);color:var(--ink);text-decoration:none;font-weight:700}
+/* Repères : marqueurs communs (@client/composants/carte/marqueurs.css) ; zones en pointillés nommées. */
+.lv-zone polygon{fill:rgba(21,128,61,.06);stroke:#15803D;stroke-width:2;stroke-dasharray:7 6;stroke-linejoin:round}
+.lv-zone text{font:800 11px 'Plus Jakarta Sans',system-ui,sans-serif;fill:#14532D;paint-order:stroke;stroke:rgba(255,255,255,.9);stroke-width:3px;letter-spacing:.04em}
+html[data-theme=dark] .lv-zone polygon{fill:rgba(95,211,166,.07);stroke:#5FD3A6}
+html[data-theme=dark] .lv-zone text{fill:#A7F3D0;stroke:rgba(15,17,16,.85)}
+.lv-carte-schema{background:rgba(255,255,255,.9)}
+/* Vignette (sans commandes) : la mention à gauche, le bouton « Carte et itinéraire » garde la droite. */
+.lv-carte-osm.g{right:auto;left:6px}

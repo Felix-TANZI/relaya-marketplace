@@ -1,0 +1,104 @@
+/* Écrans d'accès du livreur (LIV-03) repris sur le prototype : connexion (liva-login), activation, certification,
+   état du compte. Le balisage et les classes sont ceux du prototype (src/styles/prototype.css) ; ici, seulement les
+   écarts et les compléments propres au groupe, préfixés « l3- ». Couleur toujours doublée d'un texte ou d'une icône ;
+   cibles de 44 px au moins ; animations sous html[data-mouv] seulement. */
+
+.l3-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* États de lecture */
+.l3-charge{display:flex;flex-direction:column;gap:10px;padding:8px 0}
+.l3-charge i{display:block;height:16px;border-radius:8px;background:var(--sand-2)}
+html[data-mouv] .l3-charge i{background-image:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.45) 50%,transparent 70%);background-size:220% 100%;background-repeat:no-repeat;animation:blv-scintille 1.4s linear infinite}
+html[data-mouv][data-theme=dark] .l3-charge i{background-image:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.07) 50%,transparent 70%)}
+
+/* Cases à cocher (charte, preuves du recours) */
+.l3-coche{display:flex;align-items:center;gap:12px;min-height:52px;padding:6px 12px;border-radius:14px;background:var(--card-2);cursor:pointer;font-size:.9063rem;font-weight:700;line-height:1.4}
+.l3-coche input{width:22px;height:22px;accent-color:var(--acc);flex-shrink:0}
+.l3-coche small{display:block;font-size:.78rem;font-weight:600;color:var(--ink-3)}
+.l3-preuves{border:0;padding:0;margin:14px 0 0;display:flex;flex-direction:column;gap:6px}
+.l3-preuves legend{display:block;font-size:.8125rem;font-weight:700;margin-bottom:6px;color:var(--ink-2);padding:0}
+
+/* Plein écran (appareil photo, module, quiz) : au-dessus de la barre, sans elle */
+.l3-plein{position:fixed;inset:0;z-index:70;background:var(--sand);overflow-y:auto}
+@media (min-width:768px){.l3-plein>*{max-width:640px;margin-left:auto;margin-right:auto}}
+.l3-cam-msg{position:relative;max-width:30ch;padding:16px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;line-height:1.5}
+.l3-cam-rec{position:absolute;top:12px;left:12px;display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:rgba(0,0,0,.6);font-weight:800;color:#fff}
+.l3-cam-rec i{width:10px;height:10px;border-radius:50%;background:#FF5A4F}
+.l3-cam-erreur{color:#FFA39B;font-weight:700;text-align:center}
+
+/* ================= Reprise sur le prototype (liva-*, otp, keypad, fld…) : écarts et compléments du groupe ================= */
+/* Pavé : touches en <button> (le prototype les dessine en <span>), même dessin, 52 px de haut. */
+/* Liens orange de l'écran de connexion (liva-link) quand ils sont des boutons */
+.l3-lien{border:0;background:transparent;font:inherit;font-size:0.9063rem;font-weight:800;color:var(--or-txt);cursor:pointer;padding:0 8px;justify-content:center;text-align:center}
+.l3-lien:disabled{opacity:.5;cursor:default}
+.l3-lien.l3-lien-gris{color:var(--ink-3);font-weight:700}
+.liva-login>.hint-l{width:100%;text-align:left}
+.liva-login>.note,.liva-full>.note{margin-top:12px;text-align:left}
+.l3-minuteur{font-size:2.5rem;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+/* Visage du livreur (photo vérifiée ou initiales) */
+.l3-visage{width:100%;height:100%;display:block;object-fit:cover;border-radius:50%}
+.l3-visage-i{display:flex;align-items:center;justify-content:center;background:#15803D;color:#fff;font-weight:800;font-size:1rem;letter-spacing:.02em}
+.liva-av .l3-visage-i{font-size:1.75rem}
+/* Champ numéro : saisie dans la boîte « inp » du prototype */
+.l3-inp:focus-within{border-color:var(--acc);box-shadow:0 0 0 4px rgba(var(--acc-rgb),.14)}
+.l3-inp input{flex:1;min-width:0;border:0;background:transparent;font:inherit;font-size:1.0625rem;font-weight:700;color:var(--ink);outline:none;letter-spacing:.03em}
+.l3-inp b{font-weight:800}
+/* Activation */
+.l3-av52{width:52px;height:52px;border-radius:50%;overflow:hidden;flex-shrink:0;display:block}
+.l3-av52 .l3-visage-i{font-size:1.125rem}
+.l3-av92{width:92px;height:92px;border-radius:50%;overflow:hidden;display:block;box-shadow:0 0 0 3px rgba(255,255,255,.85)}
+.l3-av92 .l3-visage-i{font-size:2rem;background:#0B4F27}
+.l3-lien-in{display:inline;min-height:0;padding:0;border:0;background:none;font:inherit;font-weight:800;color:var(--acc-txt);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.check .l3-lien-in{display:inline-block;padding:12px 0;margin:-12px 0}
+.l3-lien-b{color:inherit;text-decoration:none}
+.l3-lien-b b{text-decoration:underline;text-decoration-color:var(--acc-line);text-underline-offset:3px}
+.liva-doc .btn.sm{display:inline-flex;width:auto}
+/* Appareil photo des pièces (état « photo » du prototype) : plein écran sombre */
+.l3-cam.l3-plein{background:#0B0907;color:#fff;padding:calc(env(safe-area-inset-top,0px) + 8px) 16px calc(env(safe-area-inset-bottom,0px) + 18px);display:block}
+.l3-cam .l-ibtn{color:#fff}
+.l3-cam .cam-view{display:flex;align-items:center;justify-content:center;max-height:62dvh}
+.l3-flux{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.cam-view .frame.l3-ovale{inset:10% 20%;border-radius:50%}
+.l3-shutter{display:block;padding:0;cursor:pointer}
+.l3-shutter:disabled{opacity:.4;cursor:default}
+.l3-cam .pill.dk{background:rgba(255,255,255,.12);color:rgba(255,255,255,.85)}
+.l3-cam .btns .btn{flex:1}
+.l3-cam .cam-view .l3-cam-msg{position:relative;color:#fff}
+/* Certification */
+.l3-plein:not(.l3-cam){display:block;padding:calc(env(safe-area-inset-top,0px) + 8px) 16px 24px}
+.l3-ill{display:flex;align-items:center;justify-content:center;background:radial-gradient(120% 120% at 30% 20%,var(--acc-soft-2,var(--acc-soft)),var(--acc-soft) 60%,var(--sand-2));color:var(--acc-txt)}
+.liva-mod .ill.l3-ill-petite{aspect-ratio:16/7}
+.l3-reponse.radio{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.money4 .m4{border-radius:14px;padding:11px 12px;background:rgba(0,0,0,.16);border:1px solid rgba(255,255,255,.12)}
+.money4 .m4 .l{display:flex;align-items:center;gap:6px;font-size:.75rem;font-weight:800;letter-spacing:.04em;color:#fff}
+.money4 .m4 .v{font-size:1.1875rem;font-weight:800;margin-top:5px;letter-spacing:-.02em}
+.money4 .m4 .s{font-size:.75rem;color:rgba(255,255,255,.9);margin-top:2px}
+.l3-plein .bottom-cta{z-index:72}
+/* Lignes de liste en <button> (Li avec onClick) : la séparation du prototype revient */
+.l3-li:not(:first-child){border-top:1px solid var(--line)!important}
+.l3-li{min-height:56px}
+/* État du compte */
+.l3-av42{width:42px;height:42px;border-radius:50%;overflow:hidden;display:block;flex-shrink:0;box-shadow:0 0 0 2px var(--acc)}
+.l3-av42 .l3-visage-i{font-size:.9375rem}
+button.l3-recours{width:100%;border:0;text-align:left;font:inherit;color:inherit;cursor:pointer;align-items:center}
+.l3-zone{width:100%;font:inherit;font-size:.9063rem;resize:vertical;outline:none}
+.l3-zone:focus{border-color:var(--acc);box-shadow:0 0 0 4px rgba(var(--acc-rgb),.14)}
+.l3-zone.err{border-color:var(--red)}
+.stop .grow+svg{color:var(--ink-4);flex-shrink:0;align-self:center}
+/* Héros vert (compte activé, certifié) : dégradé foncé du vert livreur, texte blanc lisible (AA) en clair et en sombre */
+.hero.acc.l3-acc{background:radial-gradient(80% 60% at 100% 0%,rgba(255,255,255,.10) 0%,rgba(255,255,255,0) 60%),linear-gradient(160deg,#13703A 0%,#0B4F27 100%)}
+.l3-garde{display:block;width:100%;padding:0;border:0;background:none;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.l3-pq{padding:0 2px 8px 54px}
+
+/* Gabarit d’accès commun : les liens de la connexion prennent la couleur du livreur (vert), plus l’orange du client. */
+.liva-login .liva-link{color:var(--acc-txt)}
+/* Connexion au cadre d'accès commun (compte/acces.tsx) : le contenu « liva-login » posé dans la carte. */
+.axc-carte .liva-login{padding-top:0}
+.axc-carte .liva-login>.axc-chemins{align-self:stretch;margin-bottom:6px}
+.axc-carte .liva-login>h1:first-child,.axc-carte .liva-login>.axc-chemins+h1{margin-top:4px}
+/* Comptes réels (AccesReel.tsx) : code de 6 chiffres ou mot de passe, deux choix de 48 px. */
+.l3-genre{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.l3-genre-l{display:flex;align-items:center;gap:8px;min-height:48px;padding:8px 12px;border:1px solid var(--line-2,var(--line));border-radius:14px;font-size:.9063rem;font-weight:700;cursor:pointer;line-height:1.25}
+.l3-genre-l.on{border-color:var(--acc);background:var(--acc-soft);color:var(--acc-txt)}
+.l3-genre-l input{width:20px;height:20px;flex:none;accent-color:var(--acc);margin:0}
+.l3-genre-l:focus-within{outline:2px solid var(--acc);outline-offset:2px}

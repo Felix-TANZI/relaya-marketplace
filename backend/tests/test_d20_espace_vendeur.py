@@ -5,24 +5,28 @@
 #   « Afficher la ligne "Paye par le client" sur le recu. »
 #   « Donner au role Preparation un acces sans l'argent. »
 #
-# Les deux autres ne sont pas de notre ressort :
-#   - « Verser chaque vendredi, avec 1 % de frais de retrait ».
+# Les deux autres :
 #
-#     Le vendredi est caduc : la decision produit du 12 octobre (commit
-#     c6b73cc) a retenu le retrait a la demande, et le document n'a pas suivi.
+#   - « Verser chaque vendredi, avec 1 % de frais de retrait » : FAIT, ailleurs
+#     et par quelqu'un d'autre (apps/payments/bridge/vendredi.py).
 #
-#     Le 1 %, lui, est tranche depuis la feuille de route V2 Elite du
-#     16 octobre, qui le dit trois fois : tableau des frais (« Versement au
-#     vendeur · 1 % CamPay · Le vendeur »), D17 (« Retenir le 1 % CamPay sur
-#     le versement du vendeur ») et D20 (« a la charge du vendeur »). Le code
-#     applique encore l'inverse — `PayoutRequest.psp_fee_xaf` porte « Charge
-#     PLATEFORME [...] referentiel § 7.1 » — et toute la comptabilite est
-#     batie dessus : la tresorerie sort `montant + frais`, la depense va dans
-#     EXPENSE_PSP_PAYOUT. Basculer la charge sur le vendeur suppose donc de
-#     reprendre les ecritures, pas seulement le montant verse. C'est D17,
-#     priorite 3.
+#     Ce commentaire a longtemps affirme le contraire, et il avait tort. Une
+#     decision produit du 12 octobre avait retenu le retrait a la demande, et
+#     je l'avais consignee ici. La spec v2.1 tranche dans l'autre sens, sans
+#     ambiguite : R22.2 verse chaque vendredi, R43.1 precise « sans demande et
+#     sans minimum ». Confirme par le porteur le 25 octobre.
+#
+#     Les frais suivent le meme chemin : R22.3 et R43.2 mettent les frais de
+#     versement a la charge du BENEFICIAIRE, ce que la feuille de route disait
+#     deja trois fois. Le « referentiel § 7.1 » qui les mettait a la charge de
+#     la plateforme est caduc, et le code ne le porte plus.
+#
+#     `vendor_withdrawal_create` existe toujours mais ne verse plus rien : il
+#     renvoie « versement_du_vendredi » pour ne pas casser le front. Il n'y a
+#     donc pas deux chemins qui paient le meme vendeur.
+#
 #   - « Livrer les sous-ecrans encore "Bientot disponible" » est du frontend,
-#     sur la branche espace-vendeur-belivay.
+#     sur la branche espace-vendeur-belivay. Seule puce encore ouverte.
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile

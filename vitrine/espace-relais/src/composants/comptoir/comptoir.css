@@ -1,0 +1,113 @@
+/* Comptoir (scan d'abord, gros pavé, billets, feuilles de cas) : préfixe « cpt- », jetons seulement (jetons.css).
+   Cibles de 56 à 64 px : le téléphone est posé sur le comptoir, on tape d'un doigt, parfois de loin. */
+
+/* ── Scanner ── */
+.cpt-scan{display:flex;flex-direction:column;gap:10px}
+.cpt-visee{position:relative;aspect-ratio:16/11;border-radius:18px;overflow:hidden;background:var(--camera)}
+.cpt-visee video{width:100%;height:100%;object-fit:cover;display:block}
+.cpt-cadre{position:absolute;inset:16% 22%;border:3px solid var(--camera-ink);border-radius:18px;box-shadow:0 0 0 999px var(--camera-voile)}
+.cpt-ligne{position:absolute;left:24%;right:24%;top:50%;height:2px;background:var(--acc);animation:cpt-va 1.6s ease-in-out infinite alternate}
+@keyframes cpt-va{from{transform:translateY(-60px)}to{transform:translateY(60px)}}
+@media (prefers-reduced-motion:reduce){.cpt-ligne{animation:none}}
+.cpt-consigne{margin:0;text-align:center;font-size:.9375rem;font-weight:700;color:var(--ink-2)}
+.cpt-bascule{display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;width:100%;border-radius:14px;border:1.5px solid var(--line-2);background:var(--card);color:var(--ink);font:inherit;font-weight:800;font-size:.9375rem;cursor:pointer}
+
+/* ── Pavé ── */
+.cpt-pave{display:flex;flex-direction:column;gap:12px}
+.cpt-pave-l{font-size:.75rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);text-align:center}
+.cpt-cases{display:flex;justify-content:center;align-items:center;gap:6px;flex-wrap:nowrap}
+.cpt-occupe{opacity:.6}
+.cpt-case{width:44px;height:56px;border-radius:12px;border:2px solid var(--line-2);background:var(--card);display:inline-flex;align-items:center;justify-content:center;font-size:1.75rem;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}
+.cpt-case-ici{border-color:var(--acc)}
+.cpt-case-pleine{border-color:var(--acc-line)}
+.cpt-case-faux{border-color:var(--red);background:var(--red-soft)}
+.cpt-prefixe,.cpt-sep{font-weight:800;font-size:1.25rem;color:var(--ink-3)}
+.cpt-touches{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.cpt-touche{min-height:64px;border-radius:16px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:1.75rem;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--ombre-1)}
+.cpt-touche:active{background:var(--acc-soft)}
+.cpt-touche:disabled{opacity:.5}
+.cpt-touche-eff{color:var(--ink-2);box-shadow:none;background:transparent}
+@media (max-width:360px){.cpt-case{width:38px;height:50px;font-size:1.5rem}.cpt-touche{min-height:56px}}
+
+/* ── Pastilles (raccourcis, cas, retour déposé) ── */
+.cpt-pastilles{display:flex;flex-wrap:wrap;gap:8px}
+.cpt-pastille{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:.875rem;font-weight:700;text-decoration:none;cursor:pointer}
+.cpt-pastille.vert{background:var(--green-soft);border-color:var(--green-line);color:var(--green)}
+.cpt-pastille.ambre{background:var(--amber-soft);border-color:var(--amber-line);color:var(--amber)}
+.cpt-pastille.rouge{background:var(--red-soft);border-color:var(--red-line);color:var(--red)}
+.cpt-pastille.acc{background:var(--acc-soft);border-color:var(--acc-line);color:var(--acc-txt)}
+.cpt-titre-petit{font-size:.75rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin:0}
+
+/* ── Fiche colis (remise) ── */
+.cpt-fiche{display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:20px;background:var(--card);border:1px solid var(--line);box-shadow:var(--ombre-1)}
+.cpt-emp{display:flex;align-items:center;gap:14px}
+.cpt-emp-v{font-size:3rem;line-height:1;font-weight:900;letter-spacing:-.02em;color:var(--acc-txt);font-variant-numeric:tabular-nums}
+.cpt-emp-l{font-size:.75rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.cpt-emp-s{font-size:.875rem;color:var(--ink-2);font-weight:600}
+.cpt-ligne-info{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:.875rem;color:var(--ink-2)}
+.cpt-ref{font-family:ui-monospace,monospace;font-weight:700;color:var(--ink)}
+.cpt-action{text-decoration:none;display:flex;align-items:center;justify-content:center;gap:10px;min-height:60px;width:100%;border:0;border-radius:16px;background:var(--acc-btn);color:var(--acc-btn-ink);font:inherit;font-size:1.0625rem;font-weight:800;cursor:pointer;box-shadow:var(--acc-ombre)}
+.cpt-action:disabled{opacity:.45;cursor:default;box-shadow:none}
+.cpt-action.vert{background:var(--green);color:var(--card)}
+.cpt-second{display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;width:100%;border-radius:14px;border:1.5px solid var(--line-2);background:var(--card);color:var(--ink);font:inherit;font-weight:800;font-size:.9375rem;cursor:pointer;text-decoration:none}
+.cpt-raison{margin:0;font-size:.8125rem;color:var(--ink-3);text-align:center}
+.cpt-ok{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;background:var(--green-soft);color:var(--green);font-weight:700;font-size:.875rem}
+.cpt-attente{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;background:var(--sand-2);color:var(--ink-2);font-weight:600;font-size:.875rem}
+.cpt-photo{display:flex;align-items:center;justify-content:center;gap:10px;min-height:72px;width:100%;border-radius:16px;border:2px dashed var(--acc-line);background:var(--acc-soft);color:var(--acc-txt);font:inherit;font-weight:800;font-size:1rem;cursor:pointer}
+.cpt-repli{border-radius:14px;border:1px solid var(--line);background:var(--card)}
+.cpt-repli>summary{display:flex;align-items:center;gap:8px;min-height:52px;padding:0 14px;font-weight:800;font-size:.9375rem;cursor:pointer;list-style:none}
+.cpt-repli>summary::-webkit-details-marker{display:none}
+.cpt-repli>summary::after{content:'+';margin-left:auto;font-size:1.25rem;color:var(--ink-3)}
+.cpt-repli[open]>summary::after{content:'−'}
+.cpt-repli-c{display:flex;flex-direction:column;gap:10px;padding:0 14px 14px}
+.cpt-champ{width:100%;min-height:52px;padding:0 14px;border:1.5px solid var(--line-2);border-radius:12px;background:var(--card);color:var(--ink);font:inherit;font-size:1rem;box-sizing:border-box}
+.cpt-champ:focus{border-color:var(--acc);outline:2px solid var(--acc);outline-offset:1px}
+.cpt-etiquette{font-size:.75rem;font-weight:800;color:var(--ink-3);letter-spacing:.04em;text-transform:uppercase}
+
+/* ── Garde en espèces : billets ── */
+.cpt-garde{display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:20px;background:var(--card);border:2px solid var(--amber-line)}
+.cpt-garde-du{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.cpt-garde-m{font-size:2.25rem;font-weight:900;color:var(--ink);font-variant-numeric:tabular-nums}
+.cpt-billets{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.cpt-billet{min-height:56px;border-radius:14px;border:1.5px solid var(--green-line);background:var(--green-soft);color:var(--green);font:inherit;font-size:1.0625rem;font-weight:800;cursor:pointer;font-variant-numeric:tabular-nums}
+.cpt-billet.exact{background:var(--card);border-color:var(--line-2);color:var(--ink)}
+.cpt-recu{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.9375rem;font-weight:700;color:var(--ink-2)}
+.cpt-monnaie{display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px;border-radius:14px;background:var(--green-soft);color:var(--green)}
+.cpt-monnaie.manque{background:var(--red-soft);color:var(--red)}
+.cpt-monnaie-m{font-size:2.5rem;font-weight:900;line-height:1.05;font-variant-numeric:tabular-nums}
+.cpt-monnaie-l{font-size:.8125rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+.cpt-lien{background:none;border:0;padding:0;color:var(--acc-txt);font:inherit;font-weight:700;font-size:.875rem;cursor:pointer;text-decoration:underline;min-height:44px}
+
+/* ── Feuilles de cas ── */
+.cpt-feuille{display:flex;flex-direction:column;gap:12px;padding-bottom:8px}
+.cpt-feuille h2{margin:0;font-size:1.125rem;font-weight:800;color:var(--ink)}
+.cpt-etapes{margin:0;padding:0 0 0 20px;display:flex;flex-direction:column;gap:8px;font-size:.9375rem;color:var(--ink);line-height:1.45}
+.cpt-note{margin:0;font-size:.8125rem;color:var(--ink-3);line-height:1.45}
+.cpt-bandeau{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:var(--red-soft);border:1px solid var(--red-line);color:var(--red);font-weight:700;font-size:.875rem;text-align:left;width:100%;font-family:inherit;cursor:pointer}
+.cpt-bandeau .r-grow{flex:1}
+
+/* ── Réception continue ── */
+.cpt-recus{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.cpt-recu-l{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:6px 12px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.cpt-recu-l.nouveau{border-color:var(--green-line);background:var(--green-soft)}
+.cpt-recu-l.exception{border-color:var(--amber-line);background:var(--amber-soft)}
+.cpt-recu-l.refus{border-color:var(--red-line);background:var(--red-soft)}
+.cpt-recu-t{flex:1;min-width:0}
+.cpt-recu-t b{display:block;font-family:ui-monospace,monospace;font-size:.9375rem}
+.cpt-recu-t small{display:block;color:var(--ink-2);font-size:.8125rem}
+.cpt-place{flex:none;min-width:64px;text-align:center;padding:8px 6px;border-radius:10px;background:var(--acc-soft);color:var(--acc-txt);font-family:ui-monospace,monospace;font-weight:900;font-size:1.125rem}
+.cpt-annonce{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;font-weight:700;font-size:.875rem}
+.cpt-annonce.vert{background:var(--green-soft);color:var(--green)}
+.cpt-annonce.rouge{background:var(--red-soft);color:var(--red)}
+.cpt-annonce.ambre{background:var(--amber-soft);color:var(--amber)}
+.cpt-compteur{flex-wrap:wrap;display:flex;align-items:baseline;gap:6px;font-weight:800}
+.cpt-compteur b{font-size:1.75rem}
+.cpt-motifs{display:grid;grid-template-columns:1fr;gap:8px}
+.cpt-motif{display:flex;align-items:center;gap:10px;min-height:52px;padding:0 14px;border-radius:14px;border:1.5px solid var(--line-2);background:var(--card);color:var(--ink);font:inherit;font-weight:700;font-size:.9375rem;cursor:pointer;text-align:left}
+.cpt-motif[aria-pressed=true]{border-color:var(--acc);background:var(--acc-soft)}
+
+/* ── Tablette : le scanner et la fiche côte à côte ── */
+@media (min-width:768px){
+  .cpt-deux{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+  .cpt-emp-v{font-size:3.5rem}
+}

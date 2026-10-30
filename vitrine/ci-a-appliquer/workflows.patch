@@ -1,0 +1,70 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index e0e2f57..3e774c2 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -142,3 +142,47 @@ jobs:
+       # au typage seul.
+       - name: Build de production
+         run: npm run build
++
++  # Vitrine BelivaY (vitrine/, PR-VITRINE.md) : les six espaces web servis sur
++  # belivay.com. Construits comme sur Vercel, puis l'image Docker de prod est
++  # construite et lancée, et serveur/verifier.mjs contrôle pages, réécritures,
++  # en-têtes et comptes réels contre les conteneurs.
++  vitrine:
++    name: Vitrine (six espaces web)
++    runs-on: ubuntu-latest
++    defaults:
++      run:
++        working-directory: vitrine
++    steps:
++      - uses: actions/checkout@v4
++      - uses: actions/setup-node@v4
++        with:
++          node-version: "22"
++          cache: npm
++          cache-dependency-path: vitrine/*/package-lock.json
++      - name: Installer les dependances (six applications)
++        run: |
++          for d in site espace-vendeur espace-entreprise espace-livreur espace-relais espace-admin; do
++            (cd "$d" && npm ci --no-audit --no-fund) || exit 1
++          done
++      - name: Comptes reels (tests du serveur, Postgres en memoire)
++        working-directory: vitrine/site
++        run: npm run test:comptes
++      - name: Construire les six espaces (comme Vercel)
++        env:
++          VITE_DEMO: "1"
++          VITE_SOURCE: hybride
++          SITE_URL: https://belivay.com
++          SANS_INSTALLATION: "1"
++        run: sh site/outils/construire-tout.sh && node serveur/compresser.mjs site/dist
++      - name: Serveur de la vitrine (local, comptes en memoire)
++        run: node serveur/verifier.mjs
++      - name: Images Docker de prod (web, comptes) et verification des conteneurs
++        run: |
++          docker build --target web -t vitrine-web .
++          docker build --target comptes -t vitrine-comptes .
++          docker run -d --rm --read-only --name vitrine-web -p 18080:8080 vitrine-web
++          docker run -d --rm --read-only --name vitrine-comptes -p 18081:8080 vitrine-comptes
++          for i in $(seq 1 30); do curl -fs http://127.0.0.1:18080/ >/dev/null && curl -fs "http://127.0.0.1:18081/api/auth/etat?espace=client" >/dev/null && break; sleep 1; done
++          node serveur/verifier.mjs --fichiers http://127.0.0.1:18080 --comptes http://127.0.0.1:18081
++          docker stop vitrine-web vitrine-comptes
+diff --git a/.github/workflows/deploy.yml b/.github/workflows/deploy.yml
+index e15f8b8..2ab2386 100644
+--- a/.github/workflows/deploy.yml
++++ b/.github/workflows/deploy.yml
+@@ -157,6 +157,13 @@ jobs:
+           WHATSAPP_SUPPORT_PHONE=${{ vars.WHATSAPP_SUPPORT_PHONE }}
+           WHATSAPP_SUPPORT_EMAIL=${{ vars.WHATSAPP_SUPPORT_EMAIL }}
+           WHATSAPP_HUMAN_HANDOVER_HOURS=${{ vars.WHATSAPP_HUMAN_HANDOVER_HOURS }}
++          COMPTES_DATABASE_URL=${{ secrets.COMPTES_DATABASE_URL }}
++          COMPTES_TOTP_CLE=${{ secrets.COMPTES_TOTP_CLE }}
++          COMPTES_SECRET=${{ secrets.COMPTES_SECRET }}
++          COMPTES_ADMIN_BOOTSTRAP_EMAIL=${{ vars.COMPTES_ADMIN_BOOTSTRAP_EMAIL }}
++          COMPTES_ADMIN_BOOTSTRAP_CODE=${{ secrets.COMPTES_ADMIN_BOOTSTRAP_CODE }}
++          COMPTES_RESEND_API_KEY=${{ secrets.COMPTES_RESEND_API_KEY }}
++          COMPTES_EMAIL_EXPEDITEUR=${{ vars.COMPTES_EMAIL_EXPEDITEUR }}
+           ENVEOF
+ 
+       - name: Copier .env.prod sur le serveur

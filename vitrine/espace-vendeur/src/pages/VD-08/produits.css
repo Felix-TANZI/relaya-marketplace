@@ -1,0 +1,15 @@
+/* Mes produits (chantier F, point 3) : prix et stock dans la liste, prix conseillé. */
+.vd8-chiffres{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:8px 12px;padding:10px 12px;border-radius:12px;background:var(--sand-2);align-items:start}
+.vd8-chiffres.seul{grid-template-columns:1fr}
+.vd8-stock{grid-column:1/-1;display:flex;align-items:center;gap:6px;border-top:1px solid var(--line);padding-top:6px}
+.vd8-pas{width:44px;height:44px;border-radius:12px;border:1px solid var(--line-2);background:var(--card);color:var(--ink);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.vd8-pas:disabled{opacity:.4;cursor:default}
+.vd8-stock-v{min-width:48px;min-height:44px;border:0;background:transparent;font:inherit;font-weight:800;color:inherit;cursor:pointer;text-decoration:underline dotted;text-underline-offset:4px}
+.vd8-prix{display:flex;flex-direction:column;gap:4px;min-width:0}
+.vd8-prix-c{display:flex;align-items:center;gap:6px;min-height:44px;padding:0 6px 0 10px;border-radius:10px;background:var(--input-bg,var(--card));border:1.5px solid var(--input-line,var(--line-2))}
+.vd8-prix-c:focus-within{border-color:var(--or-txt)}
+.vd8-prix-c input{flex:1;min-width:0;width:100%;border:0;background:transparent;font:inherit;font-weight:800;font-size:15px;color:var(--ink);padding:0;outline:none;font-variant-numeric:tabular-nums}
+.vd8-prix-f{font-weight:700;color:var(--ink-3);font-size:14px}
+.vd8-ok{min-height:34px;min-width:44px;border:0;border-radius:8px;background:var(--or);color:#fff;font:inherit;font-weight:800;font-size:13px;cursor:pointer}
+.vd8-conseil{display:flex;align-items:center;gap:8px;margin-top:8px;min-height:44px;padding:4px 4px 4px 12px;border-radius:12px;background:var(--or-soft);border:1px solid var(--or-line)}
+.vd8-appliquer{min-height:40px;padding:0 12px;border:0;border-radius:10px;background:var(--card);color:var(--or-txt);font:inherit;font-weight:800;font-size:13px;cursor:pointer;flex-shrink:0}

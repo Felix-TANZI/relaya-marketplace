@@ -1,0 +1,59 @@
+/* Marqueurs des cartes (module commun des six applications : Marqueurs.tsx, acteurs.ts). Couleurs des acteurs fixes
+   (celles de leur interface), lisibles en clair comme en sombre : pastille cerclée de blanc, ombre légère. */
+.mq-couche{pointer-events:auto}
+.mq-zone{fill:transparent}
+.mq-ombre{fill:rgba(15,23,42,.24)}
+.mq-icone{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.mq-cap{stroke:#fff;stroke-width:1.5;stroke-linejoin:round}
+.mq-dispo{stroke-width:2}
+.mq-hors{stroke:#fff;stroke-width:1.4;stroke-dasharray:3 2.4}
+.mq-statut{stroke:#fff;stroke-width:1.6}
+.mq-l-statut{display:inline-block;flex:none;width:10px;height:10px;margin:0 8px 0 6px;border-radius:50%;box-shadow:0 0 0 1.6px #fff,0 0 0 2.6px rgba(15,23,42,.15)}
+.mq-choix{fill:none;stroke:#0F172A;stroke-width:2.5}
+html[data-theme=dark] .mq-choix{stroke:#F8FAFC}
+.mq-texte rect{fill:#fff;stroke:rgba(15,23,42,.25);stroke-width:1}
+.mq-texte text{fill:#0F172A;font-weight:800;letter-spacing:-.02em;font-family:inherit}
+.mq-etiquettes{pointer-events:none}
+.mq-etiq{fill:#0F172A;font-weight:700;paint-order:stroke;stroke:rgba(255,255,255,.92);stroke-width:3.5px;stroke-linejoin:round;font-family:inherit}
+html[data-theme=dark] .mq-etiq{fill:#F1F5F9;stroke:rgba(15,23,42,.9)}
+.mq-bouton,.mq-groupe,.mq-centre{cursor:pointer}
+.mq-bouton:focus,.mq-groupe:focus,.mq-centre:focus{outline:none}
+.mq-bouton:focus-visible,.mq-groupe:focus-visible,.mq-centre:focus-visible{outline:2.5px solid #2456D6;outline-offset:2px}
+.mq-groupe .mq-pile{stroke:#fff;stroke-width:2}
+.mq-groupe .mq-coeur{fill:#fff}
+.mq-groupe .mq-nombre{fill:#0F172A;font-weight:800;font-family:inherit}
+.mq-fil{stroke:rgba(15,23,42,.45);stroke-dasharray:2 2}
+html[data-theme=dark] .mq-fil{stroke:rgba(241,245,249,.5)}
+.mq-centre-p{fill:#334155;stroke:#fff;stroke-width:1.5}
+/* Livreur en mission : un léger pouls, seulement quand l'application permet le mouvement (html[data-mouv="1"]). */
+.mq-pouls{fill:none;stroke-width:2;opacity:0;transform-box:fill-box;transform-origin:center}
+html[data-mouv="1"] .mq-pouls{animation:mq-pouls 2.4s ease-out infinite}
+@keyframes mq-pouls{0%{opacity:.55;transform:scale(1)}100%{opacity:0;transform:scale(1.7)}}
+/* Légende repliable. */
+.mq-legende{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin-top:8px;font-size:.75rem;color:var(--ink-2,#475569)}
+.mq-leg-b{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:4px 10px 4px 8px;border:1px solid var(--line,#E2E8F0);border-radius:999px;background:var(--card,#fff);color:inherit;font:inherit;font-weight:700;cursor:pointer}
+.mq-leg-i{fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transform:rotate(-90deg);transition:transform .15s}
+.mq-legende.ouverte .mq-leg-i{transform:none}
+.mq-legende ul{display:flex;flex-wrap:wrap;gap:4px 14px;margin:0;padding:0;list-style:none}
+.mq-legende li{display:inline-flex;align-items:center;gap:4px;min-height:26px}
+.mq-legende.dessus{position:absolute;left:10px;bottom:10px;z-index:1;max-width:calc(100% - 20px);margin:0}
+.mq-legende.dessus.ouverte{padding:6px 10px 8px 6px;border-radius:14px;background:color-mix(in srgb,var(--card,#fff) 94%,transparent);box-shadow:0 2px 10px rgba(15,23,42,.14)}
+.mq-legende.dessus.ouverte .mq-leg-b{border-color:transparent;background:none;padding-left:4px}
+.mq-legende.dessus:not(.ouverte) .mq-leg-b{box-shadow:0 2px 8px rgba(15,23,42,.14)}
+.mq-pastille{flex:none;overflow:visible}
+.mq-l{display:inline-block;flex:none;width:18px;height:0;margin:0 4px;border-top:3px solid currentColor;border-radius:2px}
+/* Carte de quelques lieux (CarteLieux.tsx) : fond OpenStreetMap ou plan schématique, mention en coin. */
+.mq-lieux{display:flex;flex-direction:column;min-width:0}
+.mq-carte{position:relative;width:100%;min-width:0;overflow:hidden;border-radius:16px;background:var(--map-bg,#E9EEF2)}
+.mq-carte>svg{display:block}
+.mq-plan-f{fill:var(--map-bg,#E9EEF2)}
+.mq-plan-g{fill:none;stroke:var(--line,#D5DCE3);stroke-width:.8}
+.mq-tuile{opacity:.92}
+html[data-theme=dark] .mq-tuile{filter:invert(1) hue-rotate(180deg) brightness(.8) contrast(.92) saturate(.6);opacity:.85}
+.mq-mention{position:absolute;right:6px;bottom:6px;padding:2px 6px;border-radius:6px;background:color-mix(in srgb,var(--card,#fff) 92%,transparent);font-size:.75rem;line-height:1.4;color:var(--ink-3,#64748B)}
+.mq-mention a{color:var(--ink-2,#475569);text-decoration:underline}
+/* Sombre : cœur des groupes et pastilles de texte foncés, chiffres clairs (contraste sur fond nuit). */
+html[data-theme=dark] .mq-groupe .mq-coeur{fill:#111827}
+html[data-theme=dark] .mq-groupe .mq-nombre{fill:#F8FAFC}
+html[data-theme=dark] .mq-texte rect{fill:#111827;stroke:rgba(248,250,252,.35)}
+html[data-theme=dark] .mq-texte text{fill:#F8FAFC}

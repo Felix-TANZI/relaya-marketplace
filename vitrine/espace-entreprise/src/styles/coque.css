@@ -1,0 +1,126 @@
+/* Coque de l'espace entreprise : ce que l'application ajoute à la feuille du prototype (prototype.css) pour la poser
+   dans une vraie fenêtre, sans rien redessiner. Le prototype dessine un téléphone (.m-app de 844 px, contenu qui défile
+   dedans, barre d'état de 50 px) et une console de taille fixe ; ici la page défile, l'en-tête et la barre du bas
+   restent posés (fixed), la zone sûre remplace la barre d'état (--sb), et la console tient toute la fenêtre.
+   Couleurs : jetons seulement (jetons.css). */
+html,body{background:var(--sand)}
+body{background-image:var(--page-halos);background-attachment:fixed;min-height:100dvh}
+
+/* ================================ Téléphone (html[data-device=mobile]) ================================ */
+.m-app{height:auto;min-height:100dvh;max-width:none;overflow:visible;background:transparent;background-image:none}
+.m-app>header.hd{position:fixed}
+.m-app main{position:static;inset:auto;overflow:visible;padding:calc(var(--hd-h,164px) + 14px) 16px calc(150px + env(safe-area-inset-bottom,0px));outline:none}
+.m-app>header.hd-2+main{padding-top:calc(var(--hd-h,60px) + 4px)}
+.m-app.a-sans main{padding-bottom:40px}
+.m-app nav.dock{position:fixed;z-index:30;bottom:calc(18px + env(safe-area-inset-bottom,0px))}
+.hd-2{padding-bottom:8px}
+.hd-sub .cart img{width:30px;height:30px}
+.hd-pills{overflow-x:auto;scrollbar-width:none}
+.hd-pills::-webkit-scrollbar{display:none}
+/* Marges latérales du contenu au téléphone (consigne du porteur, 23 oct. 2026, même règle que le client) : 16 → 12 px.
+   Les en-têtes ne changent pas (hors de main) ; 600 px et plus : inchangé. */
+@media (max-width:599px){.m-app main{padding-left:12px;padding-right:12px}.m-app main .lv-defile{margin:0 -12px;padding:0 12px}}
+/* Colonne de lecture au-delà de la largeur d'un téléphone (grand téléphone, avant la tablette). */
+@media (min-width:600px){.m-app main{max-width:640px;margin:0 auto}}
+
+/* Barre du bas : le verre de la famille (animations.css), compteur et point du prototype. */
+nav.dock .tab .bdg{background:var(--or);color:var(--sur-alerte)}
+.dock-bulle .tab-copie{color:var(--acc-txt)}
+.dock-bulle .tab-copie .bdg{background:var(--or);color:var(--sur-alerte)}
+.ibtn .bdg{background:var(--or);color:var(--sur-alerte)}
+.e-menu .dot{position:absolute;top:9px;right:9px;width:9px;height:9px;border-radius:50%;background:var(--or);box-shadow:0 0 0 2px var(--card)}
+.avatar{background:var(--e-grad);color:var(--sur-e);font-size:.875rem;text-decoration:none}
+
+/* ================================ Console (tablette, ordinateur) ================================ */
+.cns{min-height:100dvh;background:transparent;background-image:none}
+.cns .sd{position:sticky;top:0;height:100dvh;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--scroll-thumb) transparent}
+.sd-space{display:block;text-decoration:none}
+.sd-space:focus-visible{outline:2px solid var(--e-txt);outline-offset:2px}
+.sd-user .av{text-decoration:none;background:var(--e-grad);color:var(--sur-e)}
+.sd-user b{display:block;font-size:.8125rem;color:var(--ink)}
+.sd-user .grow>span{display:block;font-size:.75rem;color:var(--ink-3)}
+.sd-user .ibtn{color:var(--ink-3)}
+.sd-mentions{margin-top:8px;padding:0 8px}
+.sd-i>span:not(.n){min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb{z-index:25}
+.tb .crumbs a{display:inline-flex;align-items:center;min-height:44px;color:inherit}
+.tb .srch{position:relative}
+.tb .srch input{flex:1;min-width:0;height:100%;border:0;background:transparent;outline:none;font-size:.8125rem;color:var(--ink)}
+.tb .srch input::placeholder{color:var(--ink-4)}
+.tb .srch:focus-within{border-color:var(--e);box-shadow:var(--focus)}
+.tb-tab a{display:flex;align-items:center;min-height:44px}
+.dk-body{outline:none;width:100%;max-width:1440px}
+#app.l-etroit .dk-body>*{max-width:880px}
+html[data-device=tablet] .tb-pills .pill:nth-child(n+2),html[data-device=tablet] .tb .srch{display:none}
+
+/* Tiroir de la tablette (« ?pop=menu ») : la barre latérale par-dessus la page. */
+.tr-veil{position:fixed;inset:0;z-index:58;background:var(--voile-leger)}
+.tr{position:fixed;z-index:59;left:0;top:0;bottom:0;width:min(300px,calc(100% - 64px));box-shadow:var(--ombre-pop)}
+#app .tr .sd{display:flex;height:100%;overflow-y:auto;border-right:0}
+.tr-x{position:absolute;z-index:2;top:12px;right:8px}
+html[data-mouv] .tr{animation:e-tiroir var(--blv-long) var(--blv-doux) both}
+html[data-mouv] .tr-veil{animation:e-voile var(--blv-moyen) ease both}
+@keyframes e-tiroir{from{transform:translate3d(-48px,0,0);opacity:.4}}
+@keyframes e-voile{from{opacity:0}}
+html:not([data-mouv]) :is(.tr,.tr-veil,.sheet){animation:none}
+
+/* Bandeau d'état du compte : lien lisible dans le bandeau. */
+.dk-banner a{font-weight:800;text-decoration:underline;text-underline-offset:2px;color:inherit}
+
+/* Taille du texte (composants/TailleDuTexte.tsx), comme le client : barre à 8 tailles, aperçu en direct. */
+.taille-t{display:flex;align-items:center;gap:10px}
+.taille-n{display:flex;flex-direction:column;min-width:0}
+.taille-n b{font-weight:800}
+.taille-n span{font-size:.8125rem;color:var(--ink-3)}
+.taille-l{display:flex;align-items:center;gap:10px;margin-top:12px}
+.taille-a{font-size:13px;font-weight:700;color:var(--ink-2)}
+.taille-a-g{font-size:22px}
+.taille-barre{flex:1;min-width:0;accent-color:var(--e);height:44px;cursor:pointer}
+.taille-graduation{display:flex;justify-content:space-between;padding:0 30px 0 22px;margin-top:2px}
+.taille-graduation i{width:4px;height:4px;border-radius:50%;background:var(--line-2)}
+.taille-graduation i.ref{background:var(--ink-4)}
+.taille-graduation i.on{background:var(--e);transform:scale(1.6)}
+.taille-apercu{margin:10px 0 0;font-size:.8125rem;line-height:1.45;color:var(--ink-2)}
+.taille-normale{margin-top:8px;padding:8px 0;border:0;background:none;color:var(--e-txt);font-weight:800;cursor:pointer;min-height:44px}
+/* Retour (page de détail, ordinateur) : flèche avant le fil d'Ariane ; la mémoire de la visite la suit. */
+.tb .tb-retour{border:0;background:transparent;margin-right:-6px}
+
+/* ================================ Zone du pouce, recherche, raccourcis (BRIEF-ENRICHISSEMENT) ================================ */
+/* Téléphone : les actions principales d'une page (Ecran.actions) vont dans la zone du pouce (.e-pouce du kit, enrichi.css). */
+.m-app:has(>.e-pouce:not(:empty)) main{padding-bottom:calc(220px + env(safe-area-inset-bottom,0px))}
+.e-menu.on{background:var(--e-soft);color:var(--e-txt)}
+/* Recherche de la barre du haut : suggestions sous le champ. */
+.tb .srch{position:relative}
+.srch-k{font:inherit;font-size:.75rem;font-weight:700;color:var(--ink-3);border:1px solid var(--line-2);border-radius:6px;padding:1px 6px;margin-left:auto;white-space:nowrap}
+.srch:focus-within .srch-k{display:none}
+.srch-l{position:absolute;z-index:60;top:calc(100% + 8px);left:0;width:min(440px,calc(100vw - 32px));max-height:min(70vh,520px);overflow:auto;list-style:none;margin:0;padding:6px;border-radius:16px;background:var(--card);box-shadow:var(--ombre-pop)}
+.srch-l li a{display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 10px;border-radius:10px;color:var(--ink);text-decoration:none}
+.srch-l li a svg{color:var(--e-txt);flex-shrink:0}
+.srch-l li b{display:block;font-size:.875rem;font-weight:800;overflow-wrap:anywhere}
+.srch-l li .grow>span{display:block;font-size:.75rem;color:var(--ink-3)}
+.srch-l li[aria-selected=true] a,.srch-l li a:hover{background:var(--e-soft)}
+.srch-l .srch-tout{border-top:1px solid var(--line);margin-top:4px;padding-top:4px}
+.srch-l .srch-tout .grow{font-size:.8125rem;font-weight:700;color:var(--e-txt)}
+.srch-l .srch-v{padding:12px 10px;font-size:.8125rem;color:var(--ink-3)}
+.e-touche{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;padding:0 7px;margin-left:4px;border-radius:7px;border:1px solid var(--line-2);border-bottom-width:2px;background:var(--card-2);color:var(--ink);font:inherit;font-size:.8125rem;font-weight:800}
+/* Panneau sous la cloche (ordinateur, tablette). */
+.e-cloche-a{position:relative;display:inline-flex}
+.tb .ibtn.on{background:var(--e-soft);color:var(--e-txt)}
+.e-cloche{position:absolute;z-index:60;top:calc(100% + 8px);right:-56px;width:min(380px,calc(100vw - 32px));padding:14px;border-radius:18px;background:var(--card);box-shadow:var(--ombre-pop);color:var(--ink);text-align:left}
+.e-cloche ul{list-style:none;margin:10px 0;padding:0}
+.e-cloche li button{display:flex;gap:10px;align-items:flex-start;width:100%;min-height:52px;padding:8px;border:0;border-radius:10px;background:transparent;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.e-cloche li button:hover{background:var(--sand-2)}
+.e-cloche li button.nl{background:var(--e-soft)}
+.e-cloche li b{display:block;font-size:.875rem}
+.e-cloche li .grow>span{display:block;font-size:.75rem;color:var(--ink-3)}
+.e-cloche .pt{width:9px;height:9px;border-radius:50%;background:var(--or);margin-top:6px;flex-shrink:0}
+.e-cloche .btn{width:100%}
+.e-cloche-h{display:flex;align-items:center;gap:10px;font-size:.9375rem}
+.e-cloche-h .lien-b{font-size:.8125rem}
+.e-cloche-v{font-size:.8125rem;color:var(--ink-3);margin:10px 0 0}
+/* Impression (contrat, relevé) : la page seule, sans coque. */
+@media print{
+  header.hd,header.tb,nav.dock,.e-pouce,.sd,.veil,.sheet-x,.btns{display:none!important}
+  .m-app main,.dk-body{padding:0!important}
+  .sheet{position:static!important;max-height:none!important;box-shadow:none!important}
+}

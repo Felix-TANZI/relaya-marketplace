@@ -1,0 +1,43 @@
+/* Mise en page propre au groupe S3 (KYC, vendeurs, paliers, sanctions, catalogue, modération, avis, clients, qualité) :
+   file à gauche, dossier à droite à l'ordinateur ; au téléphone et à la tablette, la file devient une rangée de puces
+   au-dessus du dossier (prototype : admK_split, admK_kycMobileTop). Couleurs : jetons seulement. */
+.px .s3-split{display:grid;grid-template-columns:330px minmax(0,1fr);gap:16px;align-items:start;margin-top:16px}
+.px .s3-split>.admk-list{position:sticky;top:12px}
+.px .s3-file-courte{display:none}
+@media (max-width:1099px){
+  .px .s3-split{grid-template-columns:minmax(0,1fr)}
+  .px .s3-split>.admk-list{display:none}
+  .px .s3-file-courte{display:flex}
+}
+.px .s3-g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:16px}
+.px .s3-g4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.px .s3-g2>*,.px .s3-g4>*{min-width:0}
+@media (max-width:899px){.px .s3-g2{grid-template-columns:minmax(0,1fr)}.px .s3-g4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.px .admk-ladder{grid-template-columns:repeat(2,1fr)}.px .admk-idgrid{grid-template-columns:repeat(2,1fr)!important}.px .admk-strip{grid-template-columns:repeat(2,1fr)!important}}
+.px .s3-tete{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.px .s3-tete h3{margin:0;font-size:1.25rem;font-weight:800;letter-spacing:-.02em}
+.px .s3-tete .droite{margin-left:auto;text-align:right}
+.px .s3-pieces{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-top:14px}
+.px .s3-piece-st{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:.75rem;font-weight:800;margin-top:8px;color:var(--ink-3)}
+.px .s3-piece-st>:is(.s3-vue,.s3-nonvue){display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.px .s3-vue{color:var(--green)}
+.px .s3-nonvue{color:var(--amber)}
+.px .s3-courbe{width:100%;height:150px;display:block}
+.px .s3-courbe .seuil{stroke:var(--red);stroke-dasharray:6 5;stroke-width:1.5}
+.px .s3-courbe .descente{stroke:var(--amber);stroke-dasharray:3 4;stroke-width:1.5}
+.px .s3-courbe .ligne{stroke:var(--acc);stroke-width:2.5;fill:none}
+.px .s3-courbe text{font-size:11px;font-weight:700;fill:var(--ink-3)}
+.px .s3-radios{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.px .s3-radio{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;border:1px solid var(--line-2);background:var(--card);cursor:pointer}
+.px .s3-radio input{margin-top:3px}
+.px .s3-radio small{display:block;color:var(--ink-3);font-size:.75rem;margin-top:2px}
+.px .s3-masque{background:var(--sand-3);color:var(--ink-3);border-radius:6px;padding:1px 8px;font-size:.78rem;font-weight:800}
+.px .s3-carte{position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--line-2);background:var(--sand-2)}
+.px .s3-carte svg{display:block;width:100%;height:auto}
+.px .s3-carte .pt{cursor:pointer}
+.px .s3-barre-mini{height:6px;border-radius:3px;background:var(--sand-3);overflow:hidden}
+.px .s3-barre-mini i{display:block;height:100%;background:var(--acc)}
+.px .s3-tend-baisse{color:var(--red);font-weight:800}
+.px .s3-tend-hausse{color:var(--green);font-weight:800}
+/* Marche « en cours » de l’échelle : chiffre lisible (AA) sur l’orange de la marche. */
+.px .admk-step.on .n{background:var(--card);color:var(--or-txt);box-shadow:inset 0 0 0 1.5px var(--or)}

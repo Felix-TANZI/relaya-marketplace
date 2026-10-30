@@ -23,6 +23,16 @@
 # ci-dessus, ceux-ci sont ignores par valeur exacte (ignored_matches) et
 # non par chemin : un vrai secret ajoute plus tard dans ces memes fichiers
 # resterait detecte, puisque seules ces valeurs precises sont couvertes.
+#
+# PR #78 (vitrine belivay.com, main 1) : meme bruit, "Generic Password"
+# sur POSTGRES_PASSWORD: belivay dans vitrine/ci-a-appliquer/ci.yml — ce
+# fichier est une copie en attente (staging, l'auteur n'avait pas le
+# scope OAuth "workflow" pour editer .github/workflows/ directement) du
+# vrai .github/workflows/ci.yml, qui contient deja le meme mot de passe
+# de test (conteneur Postgres ephemere de CI) sans jamais avoir declenche
+# d'alerte — confirme caractere pour caractere identique a l'exception du
+# job "vitrine" ajoute et de la liste de branches. Ignore par chemin,
+# meme principe que les deux fichiers de tests ci-dessus.
 
 version: 2
 
@@ -30,6 +40,7 @@ secret:
   ignored_paths:
     - 'backend/apps/shipping/tests.py'
     - 'backend/apps/shipping/management/commands/seed_relay_counter_demo.py'
+    - 'vitrine/ci-a-appliquer/ci.yml'
   ignored_matches:
     - name: "seed_relay_history_demo.py - mot de passe demo"
       match: "DemoHisto2026!"

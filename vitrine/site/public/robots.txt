@@ -1,0 +1,3 @@
+# Remplacé à la construction par outils/publication.mjs (avec l’adresse du plan du site).
+User-agent: *
+Allow: /

@@ -1,5 +1,10 @@
 from datetime import timedelta
 
+# `/dev/null` n'existe pas sous Windows, ou les postes de l'equipe
+# tournent : `StringIO` fait la meme chose partout, et ne laisse pas un
+# fichier ouvert derriere lui.
+from io import StringIO
+
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
@@ -15,7 +20,13 @@ from apps.client_core.tests.outils import (
     creer_relais,
 )
 from apps.messaging import services
-from apps.messaging.models import Conversation, DemandeRappel, EtatService, Message, ThemeFaq
+from apps.messaging.models import (
+    Conversation,
+    DemandeRappel,
+    EtatService,
+    Message,
+    ThemeFaq,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -137,7 +148,7 @@ def test_aide_avec_un_dossier(api, carine):
 
 
 def test_faq_publique_chargee_depuis_le_site(api_client):
-    call_command("charger_faq", stdout=open("/dev/null", "w"))
+    call_command("charger_faq", stdout=StringIO())
     assert ThemeFaq.objects.count() == 8
     r = api_client.get("/api/help/faq")
     assert r.status_code == 200

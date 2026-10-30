@@ -1,0 +1,251 @@
+/* Écrans ENT-05 et ENT-06 (prix, paquets, affectation, missions, carte, incidents, colis, preuves). Jetons seulement
+   (styles/jetons.css) : aucune couleur écrite ici. Ordinateur d'abord (grilles à deux colonnes, tableaux), tablette et
+   téléphone complets (cartes empilées). Animations de la famille sous html[data-mouv]. */
+.lv-charge{display:grid;gap:12px}
+.lv-err{align-items:center;flex-wrap:wrap}
+.lv-err .btn{margin-left:auto}
+.lv-retour{display:flex;align-items:flex-start;gap:8px;margin:12px 0;padding:10px 12px;border-radius:var(--r-m);font-size:.875rem;font-weight:600}
+.lv-retour.ok{background:var(--green-soft);color:var(--green);box-shadow:inset 0 0 0 1px var(--green-line)}
+.lv-retour.rouge{background:var(--red-soft);color:var(--red);box-shadow:inset 0 0 0 1px var(--red-line)}
+.lv-retour.ambre{background:var(--amber-soft);color:var(--amber);box-shadow:inset 0 0 0 1px var(--amber-line)}
+html[data-mouv] .lv-retour{animation:lv-entre var(--blv-moyen,.24s) var(--blv-doux,ease) both}
+@keyframes lv-entre{from{opacity:0;transform:translate3d(0,-4px,0)}}
+
+/* ---------- Grilles de page ---------- */
+.lv-g{display:grid;gap:16px;align-items:start}
+.lv-g>*{min-width:0}
+.lv-g .card+.card{margin-top:0}
+.lv-col{display:grid;gap:16px;align-content:start;min-width:0}
+@media (min-width:1024px){
+  .lv-g.d2{grid-template-columns:minmax(0,1.65fr) minmax(300px,1fr)}
+  .lv-g.d2e{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .lv-g.d3{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media (min-width:768px) and (max-width:1023px){.lv-g.d3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.lv-h2{display:flex;align-items:center;gap:8px;font-size:1rem;font-weight:800;letter-spacing:-.01em;margin-bottom:10px}
+.lv-h2 .grow{flex:1}
+.lv-h2 a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;margin:-12px 0}
+.lv-h2 svg{color:var(--e-txt)}
+.lv-s{font-size:.8125rem;color:var(--ink-3)}
+.lv-note{display:flex;gap:8px;align-items:flex-start;margin-top:12px;padding:10px 12px;border-radius:var(--r-m);background:var(--sand-2);font-size:.8125rem;color:var(--ink-2)}
+.lv-note svg{color:var(--ink-3);margin-top:1px}
+.lv-cad{display:inline-flex;align-items:center;gap:4px;font-size:.75rem;font-weight:700;color:var(--ink-3)}
+
+/* ---------- Héros : léger dégradé du vert de l'interface (sections importantes) ; orange léger quand il faut agir ---------- */
+.lv-heros{position:relative;overflow:hidden;border-radius:var(--r-l);padding:20px;background:linear-gradient(135deg,var(--e-soft) 0%,var(--card) 70%);box-shadow:inset 0 0 0 1px var(--e-line);color:var(--ink)}
+.lv-heros .k{font-size:.75rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--e-txt)}
+.lv-heros .gros{font-size:2rem;font-weight:800;letter-spacing:-.03em;line-height:1.1;color:var(--ink);margin-top:6px}
+.lv-heros .s{color:var(--ink-3);font-size:.875rem;margin-top:4px}
+.lv-heros.alerte{background:linear-gradient(135deg,var(--or-soft) 0%,var(--card) 72%);box-shadow:inset 0 0 0 1px var(--or-line),inset 4px 0 0 var(--or)}
+.lv-heros.alerte .k{color:var(--or-txt)}
+.lv-reperes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:16px}
+@media (min-width:768px){.lv-reperes{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.lv-reperes>div{padding:10px 12px;border-radius:var(--r-m);background:var(--card);box-shadow:inset 0 0 0 1px var(--line)}
+.lv-reperes b{display:block;font-size:1.0625rem;color:var(--ink);font-variant-numeric:tabular-nums}
+.lv-reperes span{font-size:.75rem;color:var(--ink-3)}
+/* Panier BelivaY à droite du titre d'une page secondaire (dès 768 px ; au téléphone, l'en-tête enfant le porte) */
+
+/* ---------- Tableaux (ordinateur) et cartes (téléphone) ---------- */
+.lv-tab{width:100%;border-collapse:collapse;font-size:.875rem}
+.lv-tab th{text-align:left;font-size:.6875rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-4);padding:8px 10px;border-bottom:1px solid var(--line)}
+.lv-tab td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle}
+.lv-tab tr:last-child td{border-bottom:0}
+.lv-tab td.d,.lv-tab th.d{text-align:right}
+.lv-tab tr.sur td{background:var(--e-soft)}
+.lv-tab tr.rouge td{background:var(--red-soft)}
+.lv-tab tr.ambre td{background:var(--amber-soft)}
+.lv-tab tr.cliquable{cursor:pointer}
+@media (hover:hover) and (pointer:fine){.lv-tab tr.cliquable:hover td{background:var(--sand-2)}}
+.lv-defile{position:relative;overflow-x:auto;margin:0 -16px;padding:0 16px}
+.lv-cartes{display:grid;gap:10px}
+.lv-mini{display:flex;flex-direction:column;gap:6px;padding:12px;border-radius:var(--r-m);background:var(--card-2);box-shadow:inset 0 0 0 1px var(--line)}
+.lv-mini.rouge{background:var(--red-soft);box-shadow:inset 0 0 0 1px var(--red-line)}
+.lv-mini.ambre{background:var(--amber-soft);box-shadow:inset 0 0 0 1px var(--amber-line)}
+.lv-mini .l1{display:flex;align-items:center;gap:8px;font-weight:800}
+.lv-mini .l2{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:.8125rem;color:var(--ink-3)}
+.lv-mini .l1 .grow{flex:1}
+
+/* ---------- Outils (recherche, filtres) ---------- */
+.lv-outils{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0}
+.lv-outils .champ{margin:0}
+.lv-rech{flex:1 1 220px;display:flex;align-items:center;gap:8px;min-height:44px;padding:0 12px;border:1px solid var(--line-2);border-radius:var(--r-m);background:var(--card)}
+.lv-rech input{flex:1;min-width:0;border:0;background:transparent;outline:none;font-size:.9375rem}
+.lv-rech:focus-within{border-color:var(--e);box-shadow:var(--focus)}
+.lv-sel{min-height:44px;padding:0 12px;border:1px solid var(--line-2);border-radius:var(--r-m);background:var(--card);font-size:.875rem;font-weight:600}
+.lv-compte{font-size:.8125rem;font-weight:700;color:var(--ink-3);margin-left:auto}
+
+/* ---------- Onglets ---------- */
+.lv-onglets{display:flex;gap:4px;overflow-x:auto;padding:4px;border-radius:var(--r-m);background:var(--sand-2);box-shadow:inset 0 0 0 1px var(--line);scrollbar-width:none}
+.lv-onglets::-webkit-scrollbar{display:none}
+.lv-onglets button{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border:0;border-radius:10px;background:transparent;color:var(--ink-2);font-size:.875rem;font-weight:700;white-space:nowrap}
+.lv-onglets button[aria-selected=true]{background:var(--card);color:var(--e-txt);box-shadow:var(--ombre-seg)}
+.lv-onglets .compteur{min-width:18px;height:18px;font-size:.625rem}
+
+/* ---------- Carte de paquet (ENT-P10) ---------- */
+.lv-paquet{position:relative;display:grid;gap:12px;padding:16px;border-radius:var(--r-l);background:var(--card);box-shadow:var(--ombre-carte)}
+.lv-paquet.prio{box-shadow:inset 4px 0 0 var(--or),var(--ombre-carte)}
+html[data-mouv] .lv-paquet{animation:lv-entre var(--blv-long,.32s) var(--blv-doux,ease) both}
+.lv-paquet .hd{display:flex;align-items:flex-start;gap:12px}
+.lv-paquet .id{font-weight:800;font-size:1rem;letter-spacing:-.01em}
+.lv-paquet .type{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.lv-trajet{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:.875rem;font-weight:600;color:var(--ink-2)}
+.lv-trajet svg{color:var(--ink-4)}
+.lv-faits{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media (min-width:600px){.lv-faits{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.lv-faits>div{padding:8px 10px;border-radius:var(--r-s);background:var(--sand);font-size:.75rem;color:var(--ink-3)}
+.lv-faits b{display:block;font-size:.9375rem;color:var(--ink);font-variant-numeric:tabular-nums}
+.lv-prio{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r-s);background:var(--or-soft);color:var(--or-txt);font-size:.8125rem;font-weight:700;box-shadow:inset 0 0 0 1px var(--or-line)}
+.lv-paquet .pied{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.lv-paquet .gain{font-size:1.25rem;font-weight:800;letter-spacing:-.02em}
+.lv-paquet .gain small{display:block;font-size:.6875rem;font-weight:700;color:var(--ink-4);letter-spacing:0}
+
+/* Anneau du compte à rebours */
+.lv-anneau{display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--or-txt);flex-shrink:0}
+.lv-anneau.rouge{color:var(--red)}
+.lv-anneau .fond{fill:none;stroke:var(--sand-3);stroke-width:4}
+.lv-anneau .arc{fill:none;stroke:currentColor;stroke-width:4;stroke-linecap:round;transition:stroke-dashoffset 1s linear}
+.lv-anneau text{fill:var(--ink);font-size:12.5px;font-weight:800;font-family:inherit;font-variant-numeric:tabular-nums}
+.lv-avant{font-size:.75rem;font-weight:800;white-space:nowrap}
+
+/* Capacité par zone */
+.lv-capa{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media (min-width:768px){.lv-capa{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.lv-capa>div{padding:10px 12px;border-radius:var(--r-m);background:var(--card);box-shadow:var(--ombre-carte)}
+.lv-capa b{font-size:1.125rem;font-variant-numeric:tabular-nums}
+.lv-capa .barre{height:6px;border-radius:3px;background:var(--sand-3);margin-top:6px;overflow:hidden}
+.lv-capa .barre i{display:block;height:100%;border-radius:3px;background:var(--e)}
+.lv-capa .plein{color:var(--red)}
+.lv-capa .plein .barre i{background:var(--red)}
+
+/* Interrupteur */
+.lv-int{position:relative;width:46px;height:28px;flex-shrink:0;border:0;border-radius:14px;background:var(--line-2);padding:0;transition:background .2s}
+.lv-int i{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--card);box-shadow:0 1px 3px var(--voile-leger);transition:transform .2s}
+.lv-int.on{background:var(--e)}
+.lv-int.on i{transform:translateX(18px)}
+.lv-int:disabled{opacity:.5}
+
+/* ---------- Arrêts (frise, itinéraire imposé) ---------- */
+.lv-arrets{list-style:none;margin:0;padding:0;display:grid;gap:0}
+.lv-arrets li{position:relative;display:flex;gap:12px;padding:0 0 14px 0}
+.lv-arrets li:last-child{padding-bottom:0}
+.lv-arrets .pt{position:relative;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--e-soft);color:var(--e-txt);font-size:.75rem;font-weight:800;box-shadow:inset 0 0 0 1px var(--e-line);z-index:1}
+.lv-arrets li:not(:last-child)::before{content:'';position:absolute;left:13px;top:28px;bottom:0;width:2px;background:var(--line-2)}
+.lv-arrets li.fait .pt{background:var(--e);color:var(--sur-e);box-shadow:none}
+.lv-arrets li.relais .pt{background:var(--blue-soft);color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue-line)}
+.lv-arrets li.relais.fait .pt{background:var(--blue);color:var(--card)}
+.lv-arrets .t{font-weight:700;font-size:.9375rem}
+.lv-arrets .s{font-size:.8125rem;color:var(--ink-3)}
+
+/* ---------- Livreurs (affectation) ---------- */
+.lv-av{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;background:var(--e-grad);color:var(--sur-e);font-size:.8125rem;font-weight:800;flex-shrink:0}
+.lv-av.p{width:30px;height:30px;font-size:.6875rem}
+.lv-livreur{display:flex;align-items:center;gap:12px;padding:12px;border-radius:var(--r-m);background:var(--card-2);box-shadow:inset 0 0 0 1px var(--line)}
+.lv-livreur+.lv-livreur{margin-top:8px}
+.lv-livreur.sugg{background:var(--e-soft);box-shadow:inset 0 0 0 1.5px var(--e)}
+.lv-livreur .n{font-weight:800}
+.lv-livreur .s{font-size:.8125rem;color:var(--ink-3);display:flex;flex-wrap:wrap;gap:4px 10px}
+.lv-livreur.non .lv-av{background:var(--sand-2);color:var(--ink-2);box-shadow:inset 0 0 0 1px var(--line-2)}
+.lv-verifs{list-style:none;margin:0;padding:0;display:grid;gap:8px;font-size:.875rem}
+.lv-verifs li{display:flex;gap:8px;align-items:flex-start}
+.lv-verifs svg{color:var(--green);margin-top:2px}
+.lv-verifs li.non svg{color:var(--red)}
+
+/* ---------- QR ---------- */
+.lv-qr{border-radius:8px}
+.lv-qr-f{fill:var(--qr-fond)}
+.lv-qr-m{fill:var(--qr-encre)}
+.lv-etq{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:700;letter-spacing:.02em;white-space:nowrap}
+.lv-etq.prevue{padding:1px 6px;border:1.5px dashed var(--line-2);border-radius:6px;color:var(--ink-3)}
+
+/* ---------- Journal ---------- */
+.lv-journal{list-style:none;margin:0;padding:0;display:grid;gap:8px;font-size:.8125rem}
+.lv-journal li{display:flex;gap:10px}
+.lv-journal time{flex-shrink:0;width:64px;color:var(--ink-4);font-variant-numeric:tabular-nums}
+.lv-chips{display:flex;flex-wrap:wrap;gap:6px}
+.lv-champ-err{margin-top:6px;font-size:.8125rem;color:var(--red);font-weight:600}
+.lv-compteur-c{margin-top:4px;font-size:.75rem;color:var(--ink-4);text-align:right}
+.lv-compteur-c.ok{color:var(--green)}
+textarea.lv-ta{min-height:110px;resize:vertical;font:inherit}
+/* Tableau à partir de la tablette, cartes au téléphone */
+.tel-seul{display:grid}
+.tab-l-seul{display:none}
+@media (min-width:768px){.tel-seul{display:none}.tab-l-seul{display:block}}
+.lv-etq.prevue{font-family:inherit;font-weight:600;font-size:.75rem}
+.lv-col>*{min-width:0}
+
+/* ---------- Écrans repris sur le prototype (paquets, détail, affectation) : retouches sous .px, jetons seulement ---------- */
+/* Recherche et filtres de la liste des paquets (dt-tools du prototype : .srch et .flt, ici de vrais champs) */
+.px .dk-banner.mt16{margin-top:16px}
+.px .dt-tools .srch{flex:0 1 240px;min-width:0;min-height:44px;display:flex;align-items:center;gap:8px;padding:0 12px;border-radius:11px;border:1px solid var(--line-2);background:var(--input-bg,var(--card));color:var(--ink-4)}
+.px .dt-tools .srch input{flex:1;min-width:0;border:0;background:transparent;outline:none;font:inherit;font-size:.875rem;color:var(--ink)}
+.px .dt-tools .srch:focus-within{border-color:var(--e);box-shadow:var(--focus)}
+.px .dt-tools label.flt{display:inline-flex;min-height:44px;padding:0 4px 0 12px;cursor:pointer}
+.px .dt-tools label.flt select{min-height:42px;border:0;background:transparent;font:inherit;font-weight:700;color:inherit;cursor:pointer;max-width:220px}
+.px .dt-tools label.flt:focus-within{box-shadow:var(--focus)}
+.px .lv-pq-t{margin:0;font-size:inherit}
+.px a.entb-id{text-decoration:none;min-height:44px;display:inline-flex;align-items:center;margin-top:0}
+.px .entb-cnt span{white-space:normal}
+.px .entb-pq-side .lv-anneau{color:var(--or-txt)}
+.px .entb-pq-side .lv-anneau.rouge{color:var(--red)}
+.px .hero .lv-anneau{color:var(--or-txt)}
+.px .hero .lv-anneau .fond{stroke:color-mix(in srgb,var(--card) 70%,transparent)}
+/* Avatars à initiales agrandis (héros d'affectation, suggestion) */
+.px .lv-av.g{width:76px;height:76px;font-size:1.5rem}
+.px .lv-av.m{width:58px;height:58px;font-size:1.125rem}
+.px .who .av{background:var(--e-grad);color:var(--sur-e)}
+/* Carte d'un paquet (entB_pqMap) : fond schématique, zones, ordre imposé, arrêts numérotés */
+.px .lv-pmap svg{display:block;width:100%;height:auto}
+.px .lv-pm-fond{fill:var(--sand)}
+.px .lv-pm-zone{fill:var(--sand-2);stroke:var(--line-2);stroke-width:1.5}
+.px .lv-pm-zone.on{fill:var(--e-soft);stroke:var(--e-line)}
+.px .lv-pm-zt{fill:var(--ink-3);font-size:12px;font-weight:800;font-family:inherit}
+.px .lv-pm-route{fill:none;stroke:var(--e);stroke-width:5;stroke-linecap:round;stroke-linejoin:round;opacity:.85}
+.px .lv-pm-pt.fait{opacity:.5}
+.px .lv-pmap .mq-legende{margin:0;padding:8px 12px 10px;border-top:1px solid var(--line);background:var(--card)}
+.px .mq-l.lv-pm-l.route{border-color:var(--e)}
+.px .lv-pm-client{fill:var(--or-soft);stroke:var(--braise-1);stroke-width:2;stroke-dasharray:5 4}
+/* Non proposés : ligne cliquable vers la correction */
+.px .li.lv-non .lv-av{background:var(--sand-2);color:var(--ink-2);box-shadow:inset 0 0 0 1px var(--line-2)}
+@media (max-width:767.98px){
+  .px .dt-tools .srch{flex:1 1 100%}
+  .px .entb-vend{grid-template-columns:1fr}
+}
+.px .entb-prio svg{display:inline}
+.px .entb-pl .v .num{display:inline}
+.px .entb-pl .v .num,.px .entb-pay .v .num{font-size:inherit;color:inherit}
+
+/* ---------- Enrichissements ENT-05 : simulateur, alertes avant échéance, limites, rebours ---------- */
+.lv-simu,.lv-reg{margin-top:14px;padding:12px;border-radius:var(--r-m);background:var(--card-2);box-shadow:inset 0 0 0 1px var(--line);display:grid;gap:8px;min-width:0}
+.lv-simu-t{display:flex;align-items:center;gap:8px;font-weight:800;font-size:.9375rem;color:var(--ink)}
+.lv-simu-l{font-size:.875rem;font-weight:700;color:var(--ink-2)}
+.lv-simu-c{display:flex;align-items:center;gap:8px;min-width:0}
+.lv-simu-c input[type=range]{flex:1;min-width:0;min-height:44px;accent-color:var(--acc)}
+.lv-simu-c .btn{min-width:44px;min-height:44px;padding:0;justify-content:center}
+.lv-simu-r{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+.lv-simu-r>div{padding:10px;border-radius:var(--r-s);background:var(--card);box-shadow:inset 0 0 0 1px var(--line)}
+.lv-simu-r .k{font-size:.75rem;font-weight:700;color:var(--ink-3)}
+.lv-simu-r .v{font-size:1.25rem;font-weight:800;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.lv-anime{font-variant-numeric:tabular-nums}
+.lv-reg-c{display:grid;gap:6px;min-width:0}
+.lv-reg-c>label{font-size:.875rem;font-weight:700;color:var(--ink)}
+.lv-reg-i{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:.875rem;color:var(--ink-3)}
+.lv-reg-i input{width:96px;min-height:44px;padding:0 10px;border-radius:var(--r-s);border:1px solid var(--input-line);background:var(--input-bg);color:var(--ink);font:inherit;font-weight:700}
+.lv-reg-i input[aria-invalid=true]{border-color:var(--red)}
+.lv-pq-lim{margin-top:10px;display:grid;gap:6px}
+.lv-pq-rb{margin-top:6px}
+.lv-pq-file{margin-top:10px}
+.lv-limites{display:grid;gap:8px;margin-top:16px}
+.lv-aff-outils{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px;min-width:0}
+.lv-aff-outils .e-srch{flex:1 1 220px;min-width:0}
+.px .lv-aff-outils label.flt{display:inline-flex;min-height:44px;padding:0 4px 0 12px;cursor:pointer}
+.px .lv-aff-outils label.flt select{min-height:42px;border:0;background:transparent;font:inherit;font-weight:700;color:inherit;cursor:pointer;max-width:240px}
+.lv-lien{display:inline-flex;align-items:center;min-height:44px;font-weight:700}
+/* Héros du paquet : contenu.css le pose sur fond clair (dégradé sauge), ecarts.css garde .hero.orange .ht en --sur-e
+   (blanc) : le titre devient invisible. Correctif local en attendant le kit (INTEGRATION.md). */
+.px .hero.entb-hero .ht,.px .hero.entb-hero .hs b{color:var(--ink)}
+/* VAGUE n° 6 : paquets à affecter, chacun avec sa suggestion validée d'un clic. */
+.entb-aaf+.entb-aaf{border-top:1px solid var(--line)}
+.entb-aaf-s{display:flex;align-items:center;gap:10px;padding:0 14px 12px 62px}
+.entb-aaf-s .btn{flex:none;width:auto}
+@media (max-width:599px){.entb-aaf-s{padding-left:14px;flex-wrap:wrap}.entb-aaf-s .btn{width:100%}}
+.lv-journal .lv-appel-note{display:block;margin-top:2px;color:var(--ink-2);overflow-wrap:anywhere}

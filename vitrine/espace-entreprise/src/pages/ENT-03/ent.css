@@ -1,0 +1,94 @@
+/* Écrans des groupes ENT-03 et ENT-04 (accès, tableau de bord, contrat, état du compte, zones, flotte, livreurs,
+   véhicules) : ce que le kit du prototype (src/composants/prototype.tsx, styles/contenu.css) n'a pas — carte des zones,
+   fichier choisi, cases et segments qui portent de vrais choix, connexion plein écran. Couleurs : jetons seulement.
+.aide{font-size:.75rem;color:var(--ink-3)}
+.err{font-size:.8125rem;font-weight:700;color:var(--red)}
+/* ---------- Carte des zones (OpenStreetMap + polygones) ---------- */
+.e-carte{position:relative;width:100%;border-radius:var(--r-l);overflow:hidden;background:var(--sand-2);box-shadow:var(--ombre-carte)}
+.e-carte svg{display:block;width:100%;height:auto}
+.e-carte .fond-plan{fill:var(--sand-2)}
+.e-carte .zone{stroke:var(--card);stroke-width:2;fill:var(--sand-3);fill-opacity:.55;cursor:pointer;transition:fill-opacity .15s}
+.e-carte .zone.vente{fill:var(--line-2);fill-opacity:.35}
+.e-carte .zone.declaree{fill:var(--e);fill-opacity:.42}
+.e-carte .zone.attente{fill:var(--e-ciel);fill-opacity:.4}
+.e-carte .zone.pause{fill:var(--ink-4);fill-opacity:.4}
+.e-carte .zone.alerte{fill:var(--amber);fill-opacity:.48}
+.e-carte .zone.bloquee{fill:var(--red);fill-opacity:.45}
+.e-carte .zone.choisie{stroke:var(--ink);stroke-width:4}
+.e-carte g[role=button]:focus{outline:none}
+.e-carte g[role=button]:focus-visible .zone{stroke:var(--e-ciel);stroke-width:5}
+@media (hover:hover) and (pointer:fine){
+.e-carte g[role=button]:hover .zone{fill-opacity:.7}
+}
+.e-carte .etiq{font-size:22px;font-weight:800;fill:var(--ink);paint-order:stroke;stroke:var(--card);stroke-width:5px;stroke-linejoin:round;pointer-events:none}
+.e-carte .etiq small,.e-carte .etiq-n{font-size:15px;font-weight:700}
+.e-legende{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:.75rem;color:var(--ink-3)}
+.e-legende span{display:inline-flex;align-items:center;gap:6px}
+.e-legende i{width:12px;height:12px;border-radius:3px;background:var(--sand-3)}
+.e-legende i.declaree{background:var(--e)}
+.e-legende i.attente{background:var(--e-ciel)}
+.e-legende i.alerte{background:var(--amber)}
+.e-legende i.bloquee{background:var(--red)}
+.e-legende i.pause{background:var(--ink-4)}
+.e-legende i.vente{background:var(--line-2)}
+/* ---------- Fichier choisi (aperçu obligatoire) ---------- */
+.e-fichier{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:var(--r-m);border:1.5px dashed var(--line-2);background:var(--card-2)}
+.e-fichier img{max-height:260px;width:auto;max-width:100%;border-radius:10px;object-fit:contain;margin:0 auto}
+.e-fichier iframe{width:100%;height:260px;border:0;border-radius:10px;background:var(--card)}
+.e-fichier .nom{display:flex;align-items:center;gap:8px;font-size:.8125rem;font-weight:700;overflow-wrap:anywhere}
+.e-fichier input[type=file]{font-size:.875rem;max-width:100%}
+.card>.sec:first-child{margin-top:0}
+.ligne>.grow{min-width:0}
+.s[data-ton=ambre]{color:var(--amber);font-weight:700}
+/* ---------- Reprise sur le prototype (BRIEF-PROTOTYPE) : ajouts aux classes du prototype ---------- */
+/* Avatar à initiales dans une ligne (entA_row : 40 px, coins de 12 px, comme l'avatar dessiné du prototype). */
+.e-av-l{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--e-soft);color:var(--e-txt);font-size:.8125rem;font-weight:800}
+/* Titre d'une ligne qui ouvre une fiche : il garde le dessin du titre,44 px au doigt. */
+.e-lien-t{color:inherit;display:inline-flex;align-items:center;min-height:44px;margin:-12px 0}
+.e-lien-t:hover{color:var(--e-txt)}
+/* Connexion (plein écran du prototype) : cases du code SMS dans .otp ; téléphone : marges de l'écran. */
+.otp input{width:46px;height:56px;border-radius:13px;border:1.5px solid var(--input-line);background:var(--input-bg);text-align:center;font-size:1.5rem;font-weight:800;color:var(--ink);min-width:0}
+.otp input:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 4px rgba(var(--acc-rgb),.14)}
+/* Accès (connexion, candidature) au cadre commun (compte/acces.tsx) : gouttière de 16 px, boutons pleine largeur. */
+.a-plein.r-connexion>main,.a-plein.r-candidature>main{padding:calc(var(--sb,0px) + 4px) 16px 0}
+.axc-carte form>.btn,.axc-carte .acc>.btn,.axc-carte .acc>a.btn{width:100%;margin-top:18px}
+.axc-carte .entA-big{font-size:3.375rem;font-weight:800;letter-spacing:-.04em;line-height:1;color:var(--red)}
+/* Compteur du prototype (.kpi) qui filtre la liste : bouton,allumé quand il est le filtre. */
+.kpi.e-kpi-b{display:block;width:100%;border:0;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.kpi.e-kpi-b>span{display:block}
+.kpi.e-kpi-b>.i{display:flex}
+.kpi.e-kpi-b.on{box-shadow:0 0 0 2px var(--e),var(--shadow-card)}
+/* Fiche d'un livreur : avatar à initiales du héros (le prototype y dessine un portrait). */
+.entA-hero .av{display:flex;align-items:center;justify-content:center;background:var(--e-grad);color:var(--sur-e);font-weight:800;font-size:1.5rem}
+.entA-hero h1.nm{margin:0}
+.hero.night .entA-hero .av{box-shadow:0 0 0 3px var(--card)}
+/* Puces et segments du prototype (.entA-chk, .entA-seg4) qui portent de vrais choix (case, bouton radio). */
+.entA-chk>label,.entA-seg4>label{position:relative;cursor:pointer}
+.entA-chk>label{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--line-2);background:var(--card);font-size:.8125rem;font-weight:700;color:var(--ink-2)}
+.entA-chk>label:has(input:checked){border-color:var(--acc);background:var(--acc-soft);color:var(--acc-txt)}
+.entA-seg4>label{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;border-radius:12px;border:1.5px solid var(--line-2);background:var(--card);font-size:.7813rem;font-weight:800;color:var(--ink-2)}
+.entA-seg4>label:has(input:checked){border-color:var(--acc);background:var(--acc-soft);color:var(--acc-txt)}
+.entA-chk>label input,.entA-seg4>label input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.entA-chk>label:focus-within,.entA-seg4>label:focus-within{box-shadow:var(--focus)}
+.entA-chk>label:has(input:disabled){opacity:.5;cursor:not-allowed}
+.e-suivi{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.e-suivi>li.card{margin-top:0}
+.e-suivi>li.card.acc{box-shadow:var(--shadow-card),inset 3px 0 0 var(--acc)}
+.e-suivi>li.card.bad{box-shadow:var(--shadow-card),inset 3px 0 0 var(--red)}
+.fld .lbl{display:block;font-size:.8125rem;font-weight:700;margin-bottom:6px;color:var(--ink-2)}
+.e-suivi>li{min-width:0}
+.e-suivi .stepper{overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.e-suivi .stepper .st{min-width:56px}
+.e-suivi .stepper .st span{overflow-wrap:anywhere}
+/* Position en direct d'un livreur (fiche) : une tuile OSM, le point du livreur. */
+.e-pos{position:relative;width:100%;max-width:440px;border-radius:var(--r-l);overflow:hidden;background:var(--sand-2);margin:0 auto}
+.e-pos svg{display:block;width:100%;height:auto}
+.e-pos-f{fill:var(--sand-2)}
+.e-pos-g{fill:none;stroke:var(--line);stroke-width:.8}
+.e-pos-z{fill:var(--ink-3);font-size:12px;font-weight:800;font-family:inherit}
+/* Lien de connexion par e-mail : lien discret sous « Mot de passe oublié ? » (le formulaire s'ouvre en dessous). */
+.ent-lien-mail{display:flex;flex-direction:column;align-items:center}
+.axc-carte .ent-lien-mail .btn.ghost.cx-lien{width:auto;max-width:100%;height:auto;min-height:44px;margin:0;padding:6px 8px;border:0;box-shadow:none;background:none;font-size:14px;font-weight:700;line-height:1.3;white-space:normal;text-align:center;color:var(--acc-txt)}
+.axc-carte .ent-lien-mail .btn.ghost.cx-lien:hover{text-decoration:underline;text-underline-offset:3px}
+.axc-carte .ent-lien-mail .btn.ghost.cx-lien svg{display:none}
+.ent-lien-mail>.cx-lien-b{align-self:stretch}

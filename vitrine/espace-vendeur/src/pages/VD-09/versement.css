@@ -1,0 +1,21 @@
+/* Prochain versement (chantier F, point 5). */
+.vf-carte .vf-k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--green)}
+.vf-carte .vf-big{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.15;margin-top:6px;font-variant-numeric:tabular-nums}
+.vf-carte .vf-s{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:13px;color:var(--ink-3);line-height:1.4}
+.vf-carte .vf-s svg{flex-shrink:0}
+.vf-carte .vf-btn{margin-top:12px;width:100%}
+.vf-detail{margin-top:10px;border-top:1px solid var(--line);padding-top:2px}
+.vf-detail>summary{display:flex;align-items:center;gap:8px;min-height:44px;cursor:pointer;list-style:none;font-size:14px;font-weight:700;color:var(--ink-2)}
+.vf-detail>summary::-webkit-details-marker{display:none}
+.vf-detail[open]>summary svg{transform:rotate(180deg)}
+.vf-b{display:flex;flex-direction:column;gap:6px;padding-bottom:4px}
+.vf-l{display:flex;justify-content:space-between;gap:12px;font-size:14px;color:var(--ink-2)}
+.vf-l b{font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--ink)}
+.vf-l.fort{border-top:1px solid var(--line);padding-top:8px;margin-top:2px;font-weight:800;color:var(--ink)}
+.vf-l.fort b{font-weight:800;color:var(--green)}
+.vf-detail.nuit{border-top-color:rgba(255,255,255,.16)}
+.vf-detail.nuit>summary{color:rgba(255,255,255,.85)}
+.vf-detail.nuit .vf-l{color:rgba(255,255,255,.78)}
+.vf-detail.nuit .vf-l b{color:#fff}
+.vf-detail.nuit .vf-l.fort{border-top-color:rgba(255,255,255,.16);color:#fff}
+.vf-detail.nuit .vf-l.fort b{color:var(--gold-l)}

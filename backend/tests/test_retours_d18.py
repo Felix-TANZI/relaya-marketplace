@@ -2,6 +2,11 @@
 
 from datetime import timedelta
 
+# `/dev/null` n'existe pas sous Windows, ou les postes de l'equipe
+# tournent : `StringIO` fait la meme chose partout, et ne laisse pas un
+# fichier ouvert derriere lui.
+from io import StringIO
+
 import pytest
 from django.contrib.auth.models import User
 from django.core.management import call_command
@@ -69,7 +74,7 @@ def test_remboursement_d_office_sans_inspection():
     o = _livree(timedelta(days=1))
     ret = _retour(o, status=Return.Status.RECEIVED,
                   received_at=timezone.now() - timedelta(hours=regles.reglage("r_inspection_h") + 1))
-    call_command("traiter_retours", stdout=open("/dev/null", "w"))
+    call_command("traiter_retours", stdout=StringIO())
     ret.refresh_from_db()
     assert ret.status == Return.Status.REFUNDED and ret.refund_amount_xaf == 14000              # R68.1
 
@@ -93,6 +98,6 @@ def test_silence_du_client_clot_le_litige():
                                                     requested_by=staff, instructions="Photo du colis")
     DisputeEvidenceRequest.objects.filter(pk=demande.pk).update(
         created_at=timezone.now() - timedelta(days=regles.reglage("r_litige_silence_j") + 1))
-    call_command("check_dispute_silence", stdout=open("/dev/null", "w"))
+    call_command("check_dispute_silence", stdout=StringIO())
     d.refresh_from_db()
     assert d.status == "CLOSED"                                                                 # R70.2

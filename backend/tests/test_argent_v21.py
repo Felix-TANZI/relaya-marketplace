@@ -2,6 +2,11 @@
 
 from datetime import datetime, timedelta
 
+# `/dev/null` n'existe pas sous Windows, ou les postes de l'equipe
+# tournent : `StringIO` fait la meme chose partout, et ne laisse pas un
+# fichier ouvert derriere lui.
+from io import StringIO
+
 import pytest
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -67,7 +72,7 @@ def test_versement_du_relais_selon_r40_4():
 def test_la_semaine_du_relais_entre_au_lot_et_un_solde_negatif_devient_une_creance():
     from django.core.management import call_command
 
-    call_command("seed_chart_of_accounts", stdout=open("/dev/null", "w"))
+    call_command("seed_chart_of_accounts", stdout=StringIO())
     parcel = _colis_retire()
     payee = payee_for_relay_point(parcel.relay_point, create=True)
     du = remunerer_semaine(payee, montant=800, semaine="2026-10-23", detail="test")

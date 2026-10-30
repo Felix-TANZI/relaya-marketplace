@@ -1,0 +1,180 @@
+/* JETONS DE COULEUR de l'espace ENTREPRISE DE LIVRAISON — le SEUL fichier où une couleur est écrite (base.css,
+   coque.css et les écrans n'emploient que ces variables) : la palette s'ajuste ici d'un coup.
+   Identité (DP-60, palette finale DP-64) : VERT SAPIN, distinct du vert léger du livreur, du bleu du point relais et
+   de la nuit + braise du vendeur ; neutres ARDOISE CHAUDS ; l'orange BelivaY seulement pour les ALERTES (à faire,
+   échéance, paquet qui expire, compteurs d'alerte).
+   Contrastes vérifiés (WCAG AA, texte normal ≥ 4,5:1) — clair : blanc sur --e 7,6 ; --e-txt sur carte 10,1 et sur
+   --e-soft 9,0 ; encre sur fond 15,3 ; --ink-3 sur carte 7,1 ; --ink-4 sur carte 5,1 et sur fond 4,7 ; texte nuit sur
+   la barre latérale 13,1 (secondaire 8,1) ; --or-txt sur carte 5,5. Sombre : --sur-e (encre) sur --e 5,8 ; --e-txt sur
+   carte 8,6 et sur --e-soft 6,4 ; encre sur fond 15,7 ; --ink-3 sur carte 7,7 ; --ink-4 sur carte 5,8.
+   Ce fichier est chargé APRÈS animations.css du client : ses jetons de la barre du bas (--dock-cap…) l'emportent.
+   Les noms de la famille (--ink, --card, --line, --or-txt, --braise-1…) sont gardés : les composants neutres du client
+   (Feuille, animations, bulle de la barre du bas) les lisent. */
+@font-face{font-family:'Plus Jakarta Sans';font-style:normal;font-weight:400;font-display:swap;src:url(../assets/polices/plus-jakarta-sans-400.woff2) format('woff2')}
+@font-face{font-family:'Plus Jakarta Sans';font-style:normal;font-weight:500;font-display:swap;src:url(../assets/polices/plus-jakarta-sans-500.woff2) format('woff2')}
+@font-face{font-family:'Plus Jakarta Sans';font-style:normal;font-weight:600;font-display:swap;src:url(../assets/polices/plus-jakarta-sans-600.woff2) format('woff2')}
+@font-face{font-family:'Plus Jakarta Sans';font-style:normal;font-weight:700;font-display:swap;src:url(../assets/polices/plus-jakarta-sans-700.woff2) format('woff2')}
+@font-face{font-family:'Plus Jakarta Sans';font-style:normal;font-weight:800;font-display:swap;src:url(../assets/polices/plus-jakarta-sans-800.woff2) format('woff2')}
+
+:root{
+  /* ---- Vert sapin de l'entreprise ---- */
+  --e:#0F5E55;            /* principal : boutons, onglet actif, sélection */
+  --e-fort:#0B4A43;       /* survol, pression */
+  --e-txt:#0B4A43;        /* texte vert sur fond clair */
+  --sur-e:#FFFFFF;        /* texte posé sur --e */
+  --qr-fond:#FFFFFF;      /* QR d’un colis : toujours noir sur blanc (lisible au scanner, clair comme sombre) */
+  --qr-encre:#000000;
+  --e-soft:#EAF3F1;       /* fond sauge : entrée active, pastille */
+  --e-soft-2:#DCEBE7;
+  --e-line:#CFE3DE;
+  --e-ciel:#6FCBBB;       /* accent clair : anneau de focus sur fond nuit, graphiques */
+  --e-grad:linear-gradient(135deg,#137A6E 0%,#0F5E55 55%,#0B4A43 100%);
+  /* ---- Nuit verte : barre latérale de l'ordinateur, carte de l'entreprise ---- */
+  --nuit-1:#0C2A26;--nuit-2:#09201D;--nuit-3:#061714;
+  --nuit-txt:#E3F1EE;--nuit-txt-2:#A9C2BD;--nuit-fort:#FFFFFF;
+  --nuit-ligne:rgba(255,255,255,.09);--nuit-surface:rgba(255,255,255,.06);--nuit-survol:rgba(255,255,255,.07);
+  --nuit-bord:rgba(255,255,255,.14);--nuit-defile:rgba(255,255,255,.18);--nuit-ombre:rgba(255,255,255,.04);
+  --halo:rgba(63,163,147,.26);--halo-0:rgba(63,163,147,0);
+  /* ---- Neutres ardoise chauds ---- */
+  --ink:#1C1F1E;--ink-2:#3B403E;--ink-3:#545A57;--ink-4:#66706B;
+  --sand:#F5F6F4;--sand-2:#EDEFEC;--sand-3:#E3E6E2;
+  --card:#FFFFFF;--card-2:#FAFBF9;
+  --line:#E3E7E3;--line-2:#D2D8D3;
+  /* ---- Orange BelivaY : alertes seulement ---- */
+  --or:#EF6A00;--or-txt:#B4460A;--or-soft:#FFF1E2;--or-line:#F3C9A2;--sur-alerte:#1A0A00;
+  --braise-1:#CC4A0B;--braise-2:#AE3B06;--gold-l:#FFC845;
+  /* ---- États ---- */
+  --green:#1F7A4D;--green-soft:#E6F4EC;--green-line:#BFE3CF;
+  --amber:#8A5A00;--amber-soft:#FFF4D6;--amber-line:#F0DA9C;
+  --red:#B42318;--red-soft:#FDECEA;--red-line:#F4C3BE;
+  --blue:#1D4ED8;--blue-soft:#EAF0FF;--blue-line:#C9D7FB; /* point relais (liens vers l'écosystème) */
+  /* ---- Voiles, ombres, formes ---- */
+  --voile:rgba(28,31,30,.45);--voile-leger:rgba(28,31,30,.34);
+  --ombre-carte:0 1px 2px rgba(28,31,30,.05),0 0 0 1px var(--line);
+  --ombre-pop:0 24px 50px -18px rgba(28,31,30,.45),0 0 0 1px var(--line);
+  --ombre-seg:0 1px 3px rgba(28,31,30,.12),inset 0 0 0 1px var(--e-line);
+  --ombre-btn:0 6px 16px -10px rgba(15,94,85,.8);
+  --ombre-actif:0 8px 18px -10px rgba(19,122,110,.9);
+  --focus:0 0 0 3px rgba(15,94,85,.32);
+  --rog-fond:#0A1513;--rog-voile:rgba(0,0,0,.55);--rog-bord:rgba(255,255,255,.85);
+  --r-s:10px;--r-m:14px;--r-l:20px;
+  /* ---- Barre du bas de verre (animations.css du client) : capsule active verte ---- */
+  --dock-cap:linear-gradient(180deg,rgba(234,243,241,.97),rgba(220,235,231,.92));
+  --dock-cap-ombre:inset 0 0 0 .5px rgba(15,94,85,.24),inset 0 1px 0 rgba(255,255,255,.95),0 3px 10px -4px rgba(15,94,85,.35);
+  --dock-cap-uni:rgba(220,235,231,.95);
+  color-scheme:light;
+}
+/* Sombre (BRIEF-ENRICHISSEMENT, 12 oct.) : ARDOISE quasi noire et neutre (h204, saturation 6 à 15 %), le vert sapin
+   seulement en accent (bouton principal, onglet actif, liens, focus, entrée active) ; l'orange seulement aux alertes.
+   Contrastes mesurés (WCAG) : encre sur fond 16,4 et sur carte 15,3 ; --ink-3 sur carte 7,9 ; --ink-4 sur carte 5,9 et
+   sur --e-soft 5,0 ; --e-txt sur carte 9,2 et sur --e-soft 7,8 ; --sur-e sur --e 6,3 ; orange, rouge, ambre, bleu sur
+   carte 8,4 / 6,4 / 10,6 / 9,8. tests/lisibilite.spec.ts le vérifie sur chaque page. */
+html[data-theme=dark]{
+  --e:#3FA393;--e-fort:#52B6A6;--e-txt:#6FCBBB;--sur-e:#0A0F0E;
+  --e-soft:#182A28;--e-soft-2:#1E3431;--e-line:#2C4A44;--e-ciel:#6FCBBB;
+  --e-grad:linear-gradient(135deg,#46A898 0%,#3FA393 55%,#348E80 100%);
+  --nuit-1:#15191C;--nuit-2:#111417;--nuit-3:#0C0F11;
+  --nuit-txt:#ECEFF1;--nuit-txt-2:#A7AFB5;--nuit-fort:#FFFFFF;
+  --halo:rgba(63,163,147,.14);
+  --ink:#ECEFF1;--ink-2:#CDD3D7;--ink-3:#A7AFB5;--ink-4:#8E979E;
+  --sand:#0E1113;--sand-2:#13171A;--sand-3:#1A1F22;
+  --card:#16191C;--card-2:#1C2024;
+  --line:#262B2F;--line-2:#343B40;
+  --or-txt:#FF9A55;--or-soft:#2A1B12;--or-line:#5A391F;--sur-alerte:#1A0A00;
+  --green:#4ADE80;--green-soft:#11241A;--green-line:#1F4331;
+  --amber:#FBBF24;--amber-soft:#262110;--amber-line:#51431B;
+  --red:#F87171;--red-soft:#2A1716;--red-line:#552725;
+  --blue:#93C5FD;--blue-soft:#14203A;--blue-line:#26407A;
+  --voile:rgba(0,0,0,.6);--voile-leger:rgba(0,0,0,.48);
+  --ombre-carte:0 0 0 1px var(--line);
+  --ombre-pop:0 24px 50px -18px rgba(0,0,0,.75),0 0 0 1px var(--line-2);
+  --ombre-seg:0 1px 3px rgba(0,0,0,.45),inset 0 0 0 1px var(--e-line);
+  --ombre-btn:0 6px 16px -10px rgba(0,0,0,.8);
+  --ombre-actif:0 8px 18px -10px rgba(0,0,0,.8);
+  --focus:0 0 0 3px rgba(111,203,187,.45);
+  --dock-cap:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.06));
+  --dock-cap-ombre:inset 0 0 0 .5px rgba(111,203,187,.30),inset 0 1px 0 rgba(255,255,255,.08);
+  --dock-cap-uni:rgba(255,255,255,.08);
+  color-scheme:dark;
+}
+
+/* ---- Variables du prototype (src/styles/prototype.css) rendues au vert sapin DP-64 ----
+   Le prototype nomme la couleur de l'espace --acc (ardoise) et sa nuit --n1..--n3 ; elles prennent ici le vert sapin
+   et la nuit verte. Ses neutres chauds (vignettes, carte, champs, halos orange de la page) deviennent les neutres
+   ardoise de l'entreprise : la couleur reste en accent, sobre ; l'orange ne vient que des alertes. */
+:root{
+  --acc:var(--e);--acc-2:#3FA393;--acc-deep:var(--e-fort);--acc-txt:var(--e-txt);
+  --acc-soft:var(--e-soft);--acc-soft-2:var(--e-soft-2);--acc-line:var(--e-line);--acc-grad:var(--e-grad);--acc-rgb:15,94,85;
+  --n1:var(--nuit-1);--n2:var(--nuit-2);--n3:var(--nuit-3);--n-k:var(--e-ciel);
+  --sand-4:#D7DCD8;--or-deep:#9E3E08;--or-soft-2:#FBE0C6;
+  --shadow-card:0 1px 2px rgba(28,31,30,.05),0 6px 18px -10px rgba(28,31,30,.18);
+  --shadow-pop:0 18px 40px -18px rgba(28,31,30,.45);
+  --glass-bg:rgba(255,255,255,.74);--glass-filter:blur(24px) saturate(180%);
+  --glass-edge:inset 0 0 0 1px rgba(255,255,255,.55),inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(28,31,30,.08);
+  --page-halos:radial-gradient(70% 28% at 0% 44%,rgba(15,94,85,.07) 0%,rgba(15,94,85,0) 70%),radial-gradient(60% 30% at 100% 6%,rgba(15,94,85,.06) 0%,rgba(15,94,85,0) 70%);
+  --home-ind:var(--ink);
+  --input-bg:var(--card);--input-line:var(--line-2);
+  --thumb-bg:var(--sand-2);--thumb-bg-or:var(--or-soft);
+  --map-bg:#E6EBE7;--map-block:#D9E0DB;--map-road:#FFFFFF;--map-road-2:#F0F3F1;--map-txt:#3B403E;--map-water:#CFE3EA;--map-green:#D5E6DA;
+  --scroll-thumb:rgba(28,31,30,.18);
+  --sb:env(safe-area-inset-top,0px);
+}
+html[data-theme=dark]{
+  --acc-2:#52B6A6;--acc-rgb:63,163,147;--sand-4:#343B40;--or-deep:#FFB27A;--or-soft-2:#33221A;
+  --shadow-card:0 1px 2px rgba(0,0,0,.5);--shadow-pop:0 18px 40px -18px rgba(0,0,0,.85);
+  --glass-bg:rgba(22,25,28,.82);--glass-filter:blur(24px) saturate(110%) brightness(.8);
+  --glass-edge:inset 0 0 0 1px rgba(255,255,255,.07),inset 0 1px 0 rgba(255,255,255,.06);
+  --cap-bg:rgba(255,255,255,.08);--cap-halo:0 0 0 1px rgba(111,203,187,.30);
+  --page-halos:none;
+  --input-bg:#13171A;--input-line:#343B40;--thumb-bg:#1C2024;--thumb-bg-or:#2A1B12;
+  --map-bg:#13171A;--map-block:#1A1F22;--map-road:#2E3438;--map-road-2:#22272B;--map-txt:#CDD3D7;--map-water:#132634;--map-green:#14241D;
+  --scroll-thumb:rgba(255,255,255,.16);
+}
+
+/* Vie (phase finale, styles/vie.css) : ombres en couches (contact, proche, portée), reflet lumineux, relief 3D,
+   soleil du bouton de thème. Les cartes et panneaux prennent ces ombres par --shadow-card et --ombre-carte. */
+:root{
+  --shadow-card:0 1px 1px rgba(10,38,32,.04),0 2px 6px -2px rgba(10,38,32,.08),0 14px 30px -18px rgba(10,38,32,.26),inset 0 0 0 1px rgba(10,38,32,.05);
+  --ombre-carte:var(--shadow-card);
+  --vie-ombre-bouton:0 1px 1px rgba(10,38,32,.06),0 3px 8px -3px rgba(10,38,32,.16),inset 0 1px 0 rgba(255,255,255,.9),inset 0 0 0 1px rgba(10,38,32,.08);
+  --vie-ombre-3d:0 2px 3px rgba(10,38,32,.08),0 14px 26px -12px rgba(10,38,32,.30),0 36px 64px -34px rgba(10,38,32,.55);
+  --vie-ombre-3d-appui:0 1px 2px rgba(10,38,32,.10),0 6px 14px -8px rgba(10,38,32,.30);
+  --vie-reflet:rgba(255,255,255,.34);
+  --vie-soleil:#E89A0C;--vie-lune:#4B5B8C;
+  --vie-curseur:linear-gradient(180deg,#FFFFFF,#F2F4F7);
+}
+html[data-theme=dark]{
+  --ombre-carte:var(--shadow-card);
+  --shadow-card:0 1px 2px rgba(0,0,0,.55),0 14px 30px -18px rgba(0,0,0,.85),inset 0 0 0 1px rgba(255,255,255,.045),inset 0 1px 0 rgba(255,255,255,.035);
+  --vie-ombre-bouton:0 1px 2px rgba(0,0,0,.6),0 4px 10px -4px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.07),inset 0 0 0 1px rgba(255,255,255,.08);
+  --vie-ombre-3d:0 2px 4px rgba(0,0,0,.6),0 16px 30px -12px rgba(0,0,0,.8),0 40px 70px -34px rgba(0,0,0,.95);
+  --vie-ombre-3d-appui:0 1px 2px rgba(0,0,0,.6),0 6px 14px -8px rgba(0,0,0,.8);
+  --vie-reflet:rgba(255,255,255,.10);
+  --vie-soleil:#FFC845;--vie-lune:#C9D4F2;
+  --vie-curseur:linear-gradient(180deg,#2B3038,#22262D);
+}
+
+/* Finitions (styles/finitions.css) : verre de la barre du haut, bandeau d'en-tête de page et son motif, halo de
+   recherche, reflet des boutons principaux, point « en ligne », squelette scintillant, contour lumineux en sombre. */
+:root{
+  --fin-verre:color-mix(in srgb,var(--card) 72%,transparent);
+  --fin-bandeau:linear-gradient(135deg,color-mix(in srgb,var(--e-soft) 88%,var(--card)) 0%,var(--card) 78%);
+  --fin-motif:color-mix(in srgb,var(--e) 11%,transparent);
+  --fin-halo:0 0 0 4px color-mix(in srgb,var(--e) 16%,transparent);
+  --fin-reflet-btn:rgba(255,255,255,.18);
+  --fin-en-ligne:var(--green);
+  --fin-scintille:rgba(255,255,255,.6);
+  --fin-squelette:var(--sand-2);
+  --fin-lueur:var(--shadow-card);
+  --fin-pouls:color-mix(in srgb,var(--e) 40%,transparent);
+}
+html[data-theme=dark]{
+  --fin-bandeau:linear-gradient(135deg,color-mix(in srgb,var(--e) 13%,var(--card)) 0%,var(--card) 78%);
+  --fin-motif:color-mix(in srgb,var(--e-txt) 10%,transparent);
+  --fin-halo:0 0 0 4px color-mix(in srgb,var(--e-txt) 22%,transparent);
+  --fin-reflet-btn:rgba(255,255,255,.10);
+  --fin-scintille:rgba(255,255,255,.07);
+  --fin-squelette:var(--sand-3);
+  --fin-lueur:var(--shadow-card),0 0 0 1px color-mix(in srgb,var(--e-txt) 14%,transparent);
+  --fin-pouls:color-mix(in srgb,var(--e-txt) 45%,transparent);
+}

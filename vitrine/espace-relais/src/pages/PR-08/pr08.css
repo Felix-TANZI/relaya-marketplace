@@ -1,0 +1,101 @@
+/* PR-08 Communication : compléments des classes du prototype (prototype.css), préfixés « pr08- ». Jetons de
+   styles/jetons.css seulement (aucune couleur écrite ici). Cibles de toucher ≥ 44 px : une zone agrandie (::after)
+   garde le dessin exact du prototype (pastilles de 26 px, interrupteur de 30 px). */
+
+/* Lignes du prototype devenues touchables (boutons, liens) : même dessin, sans le style du navigateur. */
+.pr08-ligne{width:100%;border:0;background:transparent;padding:0;margin:0;font:inherit;color:inherit;text-align:left;text-decoration:none;cursor:pointer;border-radius:12px;min-height:44px}
+.pr08-ligne:focus-visible,.pr08-btn:focus-visible,.pr08-pill:focus-visible,.pr08-inter:focus-visible{outline:3px solid var(--acc);outline-offset:3px}
+.pr08-lue .p-dfc4i3{font-weight:700}
+.pr08-meta{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+.pr08-push{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:.75rem;color:var(--ink-3)}
+.pr08-action{display:flex;gap:8px;margin:8px 0 0 52px;flex-wrap:wrap}
+
+/* Zone de toucher agrandie à 44 px sans changer le dessin. */
+.pr08-cible{position:relative}
+.pr08-cible::after{content:'';position:absolute;left:-2px;right:-2px;top:-10px;bottom:-10px}
+
+/* Pastilles du prototype devenues boutons (réponses rapides, catégories, heure du résumé). */
+.pr08-pill{font:inherit;font-size:.75rem;font-weight:700;cursor:pointer}
+.pr08-pill[aria-pressed='true']{background:var(--acc-soft);color:var(--acc-txt);border-color:var(--acc-line)}
+.pr08-pill:disabled{opacity:.55;cursor:default}
+
+/* Interrupteur : allumé = dessin du prototype (p-tm3tpi + p-u2ffel) ; éteint = gris, curseur à gauche. */
+.pr08-inter{transition:background .18s}
+.pr08-inter .p-u2ffel{transition:left .18s}
+.pr08-inter[aria-checked='false']{background:var(--line-2)}
+.pr08-inter[aria-checked='false'] .p-u2ffel{left:3px}
+.pr08-inter[aria-disabled='true']{opacity:.6;cursor:default}
+@media (prefers-reduced-motion:reduce){.pr08-inter,.pr08-inter .p-u2ffel{transition:none}}
+
+/* Heure du résumé : liste déroulante au dessin de la pastille. */
+.pr08-select{appearance:none;-webkit-appearance:none;font:inherit;font-size:.75rem;font-weight:700;cursor:pointer;text-align:center;min-height:26px}
+
+/* États : chargement, erreur, vide. */
+.pr08-squelette{display:flex;flex-direction:column;gap:12px;padding:12px 16px}
+.pr08-squelette i{display:block;height:64px;border-radius:14px;background:var(--sand-2)}
+.pr08-etat{margin:12px 16px}
+.pr08-note{font-size:.8125rem;color:var(--ink-3);line-height:1.5}
+.pr08-alerte{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--or-soft);color:var(--or-txt);border:1px solid var(--or-line);font-size:.875rem;line-height:1.45}
+.pr08-ok{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--green-soft);color:var(--green);border:1px solid var(--green-line);font-size:.875rem;line-height:1.45}
+.pr08-ambre{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--amber-soft);color:var(--amber);border:1px solid var(--amber-line);font-size:.875rem;line-height:1.45}
+.pr08-alerte svg,.pr08-ok svg,.pr08-ambre svg{flex-shrink:0;margin-top:1px}
+.pr08-lien{color:var(--acc-txt);font-weight:800;text-decoration:underline;text-underline-offset:2px;background:none;border:0;padding:0;font:inherit;cursor:pointer}
+.pr08-lien-bloc{display:inline-flex;align-items:center;gap:6px;min-height:44px;color:var(--acc-txt);font-weight:800;font-size:.875rem;text-decoration:none}
+
+/* Bouton secondaire compact (Contester, Ouvrir l'écran…). */
+.pr08-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border-radius:12px;border:1.5px solid var(--line-2);background:var(--card);color:var(--ink);font:inherit;font-size:.875rem;font-weight:800;cursor:pointer;text-decoration:none}
+.pr08-btn.pr08-accent{border-color:var(--acc-line);background:var(--acc-soft);color:var(--acc-txt)}
+
+/* Messagerie : bulles, pièces jointes, fil fermé. */
+.pr08-photo{align-self:flex-end;max-width:62%;border-radius:14px;overflow:hidden;background:var(--nuit-1);display:flex;flex-direction:column}
+.pr08-photo img{display:block;width:100%;max-height:200px;object-fit:cover}
+.pr08-photo span{display:flex;align-items:center;gap:6px;padding:8px 10px;color:var(--nuit-or);font-size:.75rem;font-weight:800}
+.pr08-sys{align-self:center;max-width:92%;text-align:center;font-size:.75rem;color:var(--ink-2);background:var(--card);border:1px dashed var(--line-2);border-radius:12px;padding:8px 12px;line-height:1.45}
+.pr08-attente{font-size:.75rem;color:var(--heros-ink-2);margin-top:4px;display:flex;gap:4px;align-items:center}
+.pr08-demande{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:10px 10px 0;padding:10px 12px;border-radius:12px;background:var(--amber-soft);border:1px solid var(--amber-line);color:var(--amber);font-size:.8125rem;font-weight:700;line-height:1.4}
+.pr08-joint{display:flex;align-items:center;gap:8px;margin:8px 10px 0;font-size:.75rem;color:var(--ink-2)}
+.pr08-joint img{width:44px;height:44px;border-radius:10px;object-fit:cover}
+.pr08-ferme{padding:12px 14px;font-size:.8125rem;color:var(--ink-3);border-top:1px solid var(--line);line-height:1.5}
+.pr08-envoyer:disabled{opacity:.5;cursor:default}
+.pr08-compteur{font-size:.75rem;color:var(--ink-3);text-align:right;padding:0 14px}
+
+/* Aide : questions dépliables, résultats de recherche, fiches. */
+.pr08-faq-r{margin:0}
+.pr08-liens{display:flex;flex-wrap:wrap;gap:8px;padding-bottom:12px}
+.pr08-fiches{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pr08-fiche{display:flex;flex-direction:column;gap:6px;min-height:96px;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);text-decoration:none}
+.pr08-fiche b{font-size:.875rem;line-height:1.3}
+.pr08-fiche span{font-size:.75rem;color:var(--ink-3);line-height:1.4}
+.pr08-fiche svg{color:var(--acc-txt)}
+.pr08-etapes{margin:0;padding:0 0 0 0;list-style:none;display:flex;flex-direction:column;gap:12px;counter-reset:etape}
+.pr08-etapes li{display:flex;gap:12px;align-items:flex-start;font-size:.9375rem;line-height:1.5;color:var(--ink)}
+.pr08-etapes li::before{counter-increment:etape;content:counter(etape);flex-shrink:0;width:28px;height:28px;border-radius:999px;background:var(--acc-soft);color:var(--acc-txt);font-weight:800;font-size:.8125rem;display:flex;align-items:center;justify-content:center}
+.pr08-regles{font-size:.75rem;color:var(--ink-3)}
+.pr08-champ-erreur{font-size:.8125rem;color:var(--or-txt);font-weight:700;letter-spacing:0}
+
+/* Appel masqué. */
+.pr08-appel{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:8px 0}
+.pr08-appel-i{width:72px;height:72px;border-radius:999px;background:var(--acc-soft);color:var(--acc-txt);display:flex;align-items:center;justify-content:center}
+.pr08-duree{font-size:1.75rem;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+
+/* Registre papier : tableau imprimable. */
+.pr08-table{width:100%;border-collapse:collapse;font-size:.75rem;table-layout:fixed}
+.pr08-table th{overflow-wrap:anywhere;hyphens:auto}
+.pr08-table th,.pr08-table td{border:1px solid var(--line-2);padding:8px 6px;text-align:left;vertical-align:top}
+.pr08-table th{background:var(--sand-2);font-weight:800;color:var(--ink-2)}
+.pr08-table td{height:34px}
+.pr08-coches{display:flex;flex-direction:column;gap:4px}
+.pr08-coche{display:flex;align-items:center;gap:10px;min-height:44px;font-size:.875rem;font-weight:700;color:var(--ink);letter-spacing:0;cursor:pointer}
+.pr08-coche{position:relative}
+/* Case à cocher : la vraie case couvre toute la ligne (cible ≥ 44 px), une case dessinée la montre. */
+.pr08-coche input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.pr08-case{order:-1;flex-shrink:0;width:24px;height:24px;border-radius:7px;border:2px solid var(--line-2);background:var(--card);display:inline-flex;align-items:center;justify-content:center}
+.pr08-coche input:checked+.pr08-case{background:var(--acc);border-color:var(--acc)}
+.pr08-coche input:checked+.pr08-case::after{content:'';width:6px;height:11px;border:solid var(--acc-btn-ink);border-width:0 2.5px 2.5px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.pr08-coche input:focus-visible+.pr08-case{outline:3px solid var(--acc);outline-offset:2px}
+.pr08-recherche{min-height:44px}
+.pr08-grille2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media print{
+  .r-hd,.r-dock,.pr08-sans-impression,.r-horsligne{display:none!important}
+  .pr08-imprime{break-inside:avoid}
+}

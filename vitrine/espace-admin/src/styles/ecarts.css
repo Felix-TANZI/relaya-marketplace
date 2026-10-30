@@ -1,0 +1,136 @@
+/* Corrections de la console sur la feuille du prototype (prototype.css, générée), chargées juste après elle.
+   Rien n'est redessiné : mêmes blocs, mêmes classes ; seules changent la couleur (DP-64), la lisibilité (contraste AA)
+   et la taille des cibles (44 × 44 px, tests/lisibilite.ts). Couleurs : jetons seulement (jetons.css). */
+
+/* (1) La couleur de la console est le graphite, en accent et sobre ; l'orange BelivaY ne sert qu'aux
+   alertes. Le bouton d'action du prototype (braise) prend le graphite ; liens de section et boutons discrets aussi. */
+.btn.primary{color:var(--sur-e);background:var(--e-grad);box-shadow:0 1px 0 var(--lueur-blanche) inset,var(--ombre-btn)}
+.btn.acc{color:var(--sur-e)}
+.btn.ghost,.sec .a,.panel .ph .a{color:var(--e-txt)}
+.btn.alerte{color:var(--sur-alerte);background:var(--or)}
+.sd-space{background:radial-gradient(80% 70% at 100% 0%,var(--halo),var(--halo-0) 60%),linear-gradient(160deg,var(--n1),var(--n2) 60%,var(--n3));color:var(--nuit-fort)}
+.sd-space .k{color:var(--e-ciel)}
+.sd-space .s{color:var(--nuit-txt-2)}
+.pill.dk{background:var(--nuit-surface);color:var(--nuit-txt);border-color:var(--nuit-bord)}
+
+/* (2) Sections importantes (consigne du porteur, DP-64) : fond clair, léger dégradé vert sapin, couleur en accent ;
+   la nuit graphite reste à la carte « Espace pays » (barre latérale). Le héros, la tuile et le bandeau « nuit » du
+   prototype gardent leur place et leur contenu. */
+.hero.night,.kpi.night,.dk-banner.night{background:linear-gradient(135deg,var(--e-soft) 0%,var(--card) 72%);color:var(--ink);box-shadow:inset 0 0 0 1px var(--e-line);border-color:transparent}
+.hero.night .hk,.kpi.night .k{color:var(--e-txt)}
+.hero.night .hs,.kpi.night .s{color:var(--ink-3)}
+.hero.night .hs b{color:var(--ink)}
+.hero.night .hline{background:var(--line)}
+.hero.night .ico-b,.kpi.night .i{background:var(--e-soft);color:var(--e-txt)}
+.hero.night .kv{border-top-color:var(--line)}
+.hero.night .kv .k{color:var(--ink-3)}
+.hero.night .bar{background:var(--sand-3)}
+.hero.night .btn.dark{background:var(--card);color:var(--ink);border:1px solid var(--line-2)}
+.hero.night .btn.white,.hero.night .btn.white-acc{background:var(--e-grad);color:var(--sur-e)}
+.hero.night .pill.dk{background:var(--e-soft);color:var(--e-txt);border-color:var(--e-line)}
+html[data-theme=dark] .hero.night,html[data-theme=dark] .kpi.night{background:linear-gradient(135deg,var(--e-soft) 0%,var(--card) 72%)}
+
+/* (3) Cibles de 44 px au moins (WCAG 2.5.5) : le dessin du prototype garde sa taille visible ; la zone touchée
+   grandit par une bordure transparente (fond limité au remplissage) ou par la hauteur. */
+.lang{height:44px;min-width:50px;border:6px solid transparent;background-clip:padding-box;box-shadow:inset 0 0 0 1px var(--line-2);margin:0 -3px}
+.btn,.btn.sm,.btn.secondary,.btn.ghost,.btn.soft,.btn.danger,.btn.acc-soft,.btn.dark{min-height:44px}
+.btn.sm{height:44px}
+.dk-head .btn{height:44px}
+.tb .ibtn,.tb .avatar{width:44px;height:44px}
+.sd-i{height:auto;min-height:44px}
+.dk-banner .btn{height:44px}
+
+/* (4) Une pastille qui est un lien garde son dessin et offre 44 px au doigt : bordure transparente de 9 px hors du
+   fond, le trait de la pastille passe en ombre intérieure. */
+#app a.pill{text-decoration:none;--pl:var(--line-2);border:9px solid transparent;border-left-width:0;border-right-width:0;margin:-9px 0;background-clip:padding-box;box-shadow:inset 0 0 0 1px var(--pl);height:44px;min-height:44px}
+#app a.pill.acc{--pl:var(--acc-line)}#app a.pill.green{--pl:var(--green-line)}a.pill.amber{--pl:var(--amber-line)}a.pill.red{--pl:var(--red-line)}a.pill.or{--pl:var(--or-line)}a.pill.blue{--pl:var(--blue-line)}
+.hd-pills{padding-top:9px;padding-bottom:9px;margin:-1px 0 -7px}
+
+/* (5) Texte d'une liste ou d'une carte : il passe à la ligne plutôt que de sortir de l'écran (texte agrandi). */
+.btn{max-width:100%}
+html[data-echelle="130"] .btn,html[data-echelle="140"] .btn{white-space:normal;height:auto;padding-block:8px}
+
+/* (6) Titres de section de l'ancien socle (« <h2 class="sec"> » sans titre enfant) : lisibles le temps que chaque
+   écran reprenne le balisage du prototype (« <div class="sec"><h2>… »). */
+.sec:not(:has(>h2,>h3)){display:flex;align-items:center;gap:8px;margin:24px 2px 10px;font-size:.75rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+
+/* (8) Bouton qui se lit comme un lien dans une phrase (« Réessayer » dans un encadré). */
+.lien-b{display:inline-flex;align-items:center;min-height:44px;margin:-12px 0;padding:0;border:0;background:none;font:inherit;font-weight:800;color:inherit;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+
+/* (9) Calendrier du pilote dans le héros clair, étape en cours : vert sapin (l'orange reste aux alertes). */
+.hero.night .entA-cal i{background:var(--sand-3)}
+.hero.night .entA-cal i.on{background:var(--e)}
+.hero.night .entA-cal i.cur{background:var(--card);box-shadow:0 0 0 2px var(--e)}
+.entA-step.cur .n{background:var(--e-grad);color:var(--sur-e);box-shadow:0 0 0 4px var(--e-soft)}
+
+/* (10) Les héros du prototype (orange, vert, nuit) sont des cartes claires au léger dégradé vert dans le kit
+   (contenu.css, DP-64) : leur texte est l'encre. Le bouton blanc garde le vert foncé ; progression en cours : vert sapin. */
+.btn.white{background:var(--card);color:var(--e-txt)}
+.steps i.cur{background:var(--e-ciel)}
+
+/* (11) Connexion : le visuel garde sa nuit (nuit verte DP-64) sans lueur orange ; liens en vert sapin ; boutons du
+   haut à 44 px. Champs du prototype (.fld .inp) qui portent un vrai champ de saisie. */
+.entA-art{background:radial-gradient(80% 55% at 100% 0%,var(--halo),var(--halo-0) 60%),linear-gradient(160deg,var(--nuit-1) 0%,var(--nuit-2) 55%,var(--nuit-3) 100%)}
+.entA-art .k,.entA-feat svg{color:var(--e-ciel)}
+.links,.links a,.entA-link{color:var(--e-txt)}
+.links a,.entA-link{min-height:44px;display:inline-flex;align-items:center}
+.entA-top .ibtn{width:44px;height:44px}
+.inp input,.inp select,.inp textarea{flex:1;min-width:0;align-self:stretch;min-height:44px;border:0;background:transparent;outline:none;font:inherit;color:inherit;padding:0}
+.inp textarea{padding:10px 0;resize:vertical}
+.inp:focus-within{border-color:var(--acc);box-shadow:0 0 0 4px rgba(var(--acc-rgb),.14)}
+.inp[aria-invalid=true],.inp.err{border-color:var(--red)}
+.inp .ibtn{margin-right:-8px}
+.a-plein main{outline:none}
+.hero.night .m4{background:var(--card);border-color:var(--line)}
+.hero.night .m4 .l,.hero.night .m4 .s{color:var(--ink-3)}
+.tl .ti.cur::before{background:var(--e);box-shadow:0 0 0 3px var(--card),0 0 0 6px var(--e-soft-2)}
+
+/* (12) Tableau du prototype plus large que la colonne (ordinateur étroit, barre latérale) : il défile en largeur dans
+   sa carte, la page ne déborde jamais. */
+html:not([data-device=mobile]) .dt-wrap{overflow-x:auto}
+html:not([data-device=mobile]) table.dt td .entA-zc{margin:2px 2px 2px 0}
+.stepper .st.cur b{background:var(--e-grad);color:var(--sur-e);box-shadow:0 0 0 4px var(--e-soft)}
+.stepper .st.bad b{background:var(--red);color:var(--card)}
+.stepper .st.bad{color:var(--red)}
+
+/* (13) Cibles de la coque : avatar de la barre latérale, maison du fil d'Ariane, recherche de la barre du haut. */
+.sd-user .av{width:44px;height:44px}
+.tb .crumbs a{min-width:44px;justify-content:center}
+.tb .srch{height:46px}
+/* (14) Cibles des tableaux et panneaux du prototype : lien d'un livreur, lien « … › » d'un panneau, recherche. */
+table.dt td.main a.who,table.dt td a.who{min-height:44px}
+.panel .ph a.a,.sec a.a{min-height:44px;margin:-12px 0;display:inline-flex;align-items:center}
+.dt-tools .srch{height:44px}
+.entA-legal{color:var(--ink-3)}
+
+/* (15) Texte posé sur la couleur de l'espace : --sur-e (blanc en clair, encre en sombre, où le vert s'éclaircit). Le
+   prototype écrit du blanc sur l'ardoise ; sur le vert sapin du thème sombre, il disparaîtrait. */
+.pill.solid-acc,.li .ic.accs,.btn.acc,.chip.on,.stepper .st.done b,.cbx.on,.stop.done .sn,.entA-step.done .n,.entb-cls.cL,.entb-cls.cXL,.medal.acc{color:var(--sur-e)}
+html[data-theme=dark] .entA-step.done .n{background:var(--acc)}
+
+/* (16) Thème sombre ardoise (BRIEF-ENRICHISSEMENT) : aucun bouton ne se fond dans son fond. Le bouton secondaire et le
+   bouton blanc du prototype gardent un contour lisible (≥ 3:1 au focus, filet visible au repos) ; le blanc ne passe pas
+   à l'orange (réservé aux alertes). */
+html[data-theme=dark] .btn.secondary{background:var(--e-soft);color:var(--e-txt);box-shadow:inset 0 0 0 1px var(--e-line)}
+html[data-theme=dark] .btn.white,html[data-theme=dark] .btn.white-acc{background:var(--card-2);color:var(--e-txt);box-shadow:inset 0 0 0 1px var(--e-line)}
+html[data-theme=dark] .btn.ghost,html[data-theme=dark] .btn.dark{box-shadow:inset 0 0 0 1px var(--line-2)}
+html[data-theme=dark] .btn:focus-visible,html[data-theme=dark] .ibtn:focus-visible{outline:2px solid var(--e-txt);outline-offset:2px}
+/* Le bouton « nuit » du prototype (blanc translucide) n'a plus de fond nuit sous lui (héros clairs, DP-64) : il prend
+   le dessin d'un bouton discret, lisible en clair comme en sombre. */
+.btn.dark{background:var(--card);color:var(--ink);border:1px solid var(--line-2)}
+/* 17. Proportions des contrôles (retour du porteur, 12 oct.) : mêmes hauteurs et mêmes arrondis d'un écran à l'autre.
+   Bouton plein (toutes variantes) 48 px, bouton « sm » 44 px (cible minimale), boutons d'en-tête de page 44 px ;
+   champs, recherche, filtres et sélecteurs 44 px avec le même arrondi (12 px). Un interrupteur garde la même taille
+   éteint et allumé (contenu.css). La barre du pouce garde ses 48 px. */
+.btn:not(.sm):is(.secondary,.soft,.acc-soft,.ghost,.dark,.danger){height:48px}
+html .px .dk-head .btn,html .px .entA-hero .acts .btn,html .dk-head .btn{height:44px}
+html .px .btn.sm,html .btn.sm{border-radius:12px}
+html .px .srch,html .px label.flt,html .px .seg,html .tb .srch{border-radius:12px}
+html .px .seg>button,html .px .seg>a{border-radius:9px}
+html body .px .srch{border-radius:12px}
+html .px .ec-btns>.btn{min-height:48px}
+
+/* Fil d'Ariane à 1280 px (S6) : les chevrons ne se compriment jamais ; les libellés s'abrègent (…) au lieu de se chevaucher. */
+.tb .crumbs>svg{flex-shrink:0}
+.tb .crumbs>a:not(:first-child),.tb .crumbs .cur{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;line-height:44px}
+.tb .crumbs>a:not(:first-child){flex:0 1 auto;min-width:44px}

@@ -208,44 +208,65 @@ def test_a4_aucun_sel_par_defaut_en_production():
 
 
 # ── A5 · nonce Apple et ticket Android à usage unique, consommés atomiquement ─────────────────────────────
+# Le cache de Django est propre à chaque fil : on remplace donc delete() sur la CLASSE du cache réellement utilisé
+# (Redis ou mémoire selon l'environnement). Il attend que les deux requêtes soient arrivées jusqu'à la suppression :
+# elles ont donc toutes deux « lu » la clé avant.
 
-def test_a5_le_meme_nonce_ne_sert_qu_une_fois_meme_en_parallele(monkeypatch):
+def _deux_en_parallele(monkeypatch, cle, fonction):
     import threading
 
+    from django.core.cache import caches
+
+    classe = type(caches["default"])
+    rendez_vous = threading.Barrier(2)
+    vrai_delete = classe.delete
+
+    def delete(self, k, *a, **kw):
+        if k.endswith(cle):
+            rendez_vous.wait(timeout=10)
+        return vrai_delete(self, k, *a, **kw)
+
+    monkeypatch.setattr(classe, "delete", delete)
+    resultats = []
+
+    def appel():
+        from django.db import connection
+
+        try:
+            resultats.append(fonction())
+        finally:
+            connection.close()
+
+    fils = [threading.Thread(target=appel) for _ in range(2)]
+    for f in fils:
+        f.start()
+    for f in fils:
+        f.join()
+    return resultats
+
+
+@pytest.mark.django_db(transaction=True)
+def test_a5_le_meme_nonce_ne_sert_qu_une_fois_meme_en_parallele(monkeypatch):
     from django.core.cache import cache
 
     from apps.accounts import views
 
     cache.set("apple-nonce:n-a5", True)
-    lecture_faite = threading.Barrier(2)
-    vrai_delete = cache.delete
-
-    def delete_apres_les_deux_lectures(cle, *a, **k):  # les deux requêtes ont « vu » le nonce avant la suppression
-        if cle == "apple-nonce:n-a5":
-            lecture_faite.wait(timeout=5)
-        return vrai_delete(cle, *a, **k)
-
-    monkeypatch.setattr(cache, "delete", delete_apres_les_deux_lectures)
-    resultats = []
-    fils = [threading.Thread(target=lambda: resultats.append(views._consommer_nonce_apple("n-a5"))) for _ in range(2)]
-    for f in fils:
-        f.start()
-    for f in fils:
-        f.join()
+    resultats = _deux_en_parallele(monkeypatch, "apple-nonce:n-a5", lambda: views._consommer_nonce_apple("n-a5"))
     assert sorted(resultats) == [False, True]                                          # le second est refusé
 
 
-def test_a5_le_ticket_android_ne_sert_qu_une_fois(monkeypatch):
+@pytest.mark.django_db(transaction=True)
+def test_a5_le_ticket_android_ne_sert_qu_une_fois_meme_en_parallele(monkeypatch):
     from django.core.cache import cache
+    from rest_framework.response import Response
     from rest_framework.test import APIClient
 
     from apps.accounts import views
 
-    appels = []
-    monkeypatch.setattr(views, "_connexion_apple", lambda request, data: appels.append(data) or
-                        __import__("rest_framework.response", fromlist=["Response"]).Response({"ok": True}))
+    monkeypatch.setattr(views, "_connexion_apple", lambda request, data: Response({"ok": True}))
     cache.set("apple-ticket:t-a5", {"identity_token": "jwt"})
-    c = APIClient()
-    assert c.post("/api/auth/apple/ticket/", {"ticket": "t-a5"}, format="json").status_code == 200
-    assert c.post("/api/auth/apple/ticket/", {"ticket": "t-a5"}, format="json").status_code == 400
-    assert len(appels) == 1
+    codes = _deux_en_parallele(
+        monkeypatch, "apple-ticket:t-a5",
+        lambda: APIClient().post("/api/auth/apple/ticket/", {"ticket": "t-a5"}, format="json").status_code)
+    assert sorted(codes) == [200, 400]                                                  # un seul s'en sert

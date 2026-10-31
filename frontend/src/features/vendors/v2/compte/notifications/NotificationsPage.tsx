@@ -46,15 +46,15 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<VendorNotification[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(() => {
-    setLoading(true);
+  const fetchNotifications = useCallback(() => {
     http<VendorNotification[]>('/api/auth/notifications/')
       .then(setNotifications)
       .catch(() => setNotifications([]))
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  // Premier chargement : `loading` vaut déjà true, inutile de le reposer dans l'effet.
+  useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
 
   const markRead = async (id: number) => {
     setNotifications((cur) => cur.map((n) => (n.id === id ? { ...n, is_read: true } : n)));

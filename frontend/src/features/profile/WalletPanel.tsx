@@ -13,6 +13,7 @@ const F = (n: number) => `${n.toLocaleString("fr-FR")} F`;
 const nouvelleCle = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
 
 /** Le Wallet du client connecté, ou null (non connecté, ou réponse en attente). */
+// eslint-disable-next-line react-refresh/only-export-components -- hook partagé, pas un composant
 export function useWallet() {
   const [wallet, setWallet] = useState<MonWallet | null>(null);
   useEffect(() => {
@@ -23,6 +24,7 @@ export function useWallet() {
 }
 
 /** Le Wallet est-il ouvert ? Faux tant que le serveur ne l'a pas dit (DP-17 : rien n'apparaît par défaut). */
+// eslint-disable-next-line react-refresh/only-export-components -- hook partagé, pas un composant
 export function useWalletOuvert() {
   return Boolean(useWallet()?.ouvert);
 }

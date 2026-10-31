@@ -23,15 +23,16 @@ export default function AppleRetourPage() {
     const attendu = sessionStorage.getItem(APPLE_STATE_KEY);
     sessionStorage.removeItem(APPLE_STATE_KEY);
     const ticket = params.get('ticket');
-    if (params.get('erreur') || !ticket) {
-      setErreur('La connexion Apple a été annulée ou a échoué.');
-      return;
-    }
-    if (!attendu || attendu !== params.get('state')) {
-      setErreur('Cette réponse Apple ne correspond pas à votre demande. Recommencez.');
-      return;
-    }
-    appleTicketLogin(ticket)
+    const connexion = () => {
+      if (params.get('erreur') || !ticket) {
+        return Promise.reject(new Error('La connexion Apple a été annulée ou a échoué.'));
+      }
+      if (!attendu || attendu !== params.get('state')) {
+        return Promise.reject(new Error('Cette réponse Apple ne correspond pas à votre demande. Recommencez.'));
+      }
+      return appleTicketLogin(ticket);
+    };
+    connexion()
       .then((resultat) => {
         if (resultat.twoFactorRequired && resultat.userId) setDeuxFacteurs(resultat.userId);
         else navigate('/', { replace: true });

@@ -94,12 +94,12 @@ jobs:
       - name: Tests
         run: pytest
 
-      # Non bloquant : le schema produit aujourd'hui ~243 avertissements
-      # (serializers non typables, vues sans annotation). A resorber, mais on
-      # veut la visibilite sans bloquer les livraisons.
-      - name: Schema OpenAPI (non bloquant — 243 avertissements a resorber)
-        run: python manage.py spectacular --fail-on-warn --file /dev/null
-        continue-on-error: true
+      # Revue du 29/10 (E1) : bloquant, par cliquet. Le schema produit encore
+      # 266 avertissements et 433 erreurs distincts (heritage) : la CI echoue
+      # si la generation plante ou si ces comptes augmentent. Chaque correction
+      # abaisse le plafond (scripts/cliquet_spectacular.py).
+      - name: Schema OpenAPI (cliquet bloquant)
+        run: python scripts/cliquet_spectacular.py
 
   # ═══════════════════════════════════════════════════════════════════════
   # FRONTEND — types, lint, tests, build de production
@@ -129,9 +129,9 @@ jobs:
       - name: Installer les dependances
         run: npm ci --legacy-peer-deps
 
-      - name: Lint (non bloquant — dette ESLint historique a nettoyer)
+      # Revue du 29/10 (E1) : bloquant (0 erreur ; les avertissements restent visibles).
+      - name: Lint
         run: npm run lint
-        continue-on-error: true
 
       - name: Tests
         run: npm run test

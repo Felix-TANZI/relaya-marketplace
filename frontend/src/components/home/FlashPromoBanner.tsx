@@ -38,8 +38,8 @@ export default function FlashPromoBanner({ count, maxDiscount, endDates }: Flash
     const now = maintenantServeur();
     const target = endDates.find((date) => date > now);
     if (!target) {
-      setRemaining(PLACEHOLDER);
-      return undefined;
+      const vide = window.setTimeout(() => setRemaining(PLACEHOLDER), 0);
+      return () => window.clearTimeout(vide);
     }
 
     const tick = () => setRemaining(formatRemaining(target));

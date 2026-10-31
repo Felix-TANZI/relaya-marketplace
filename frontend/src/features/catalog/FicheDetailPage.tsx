@@ -735,7 +735,7 @@ export default function FicheDetailPage() {
                   <p className="text-[13px] font-black text-red-600">{master.meilleure_offre?.message}</p>
                 ) : master.meilleure_offre?.livraison_des !== undefined ? (
                   <p className="text-[12.5px] font-bold text-gray-600 dark:text-gray-300">
-                    Livraison dès {master.meilleure_offre.livraison_des.toLocaleString('fr-FR').replace(/[  ]/g, ' ')} F
+                    Livraison dès {master.meilleure_offre.livraison_des.toLocaleString('fr-FR').replace(/[\u202f\u00a0]/g, ' ')} F
                   </p>
                 ) : null}
 

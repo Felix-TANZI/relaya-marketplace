@@ -12,8 +12,10 @@ import useStorefrontCategories from "@/hooks/useStorefrontCategories";
 import { http } from "@/services/api/http";
 
 /** Marque « déjà proposée » : la page ne revient pas d'elle-même, le client la retrouve dans son profil. */
+// eslint-disable-next-line react-refresh/only-export-components -- clé partagée avec l'accueil, pas un composant
 export const CLE_INTERETS_PROPOSES = "belivay_interets_proposes";
 
+// eslint-disable-next-line react-refresh/only-export-components -- aide partagée avec l'accueil, pas un composant
 export function marquerInteretsProposes() {
   try {
     window.localStorage.setItem(CLE_INTERETS_PROPOSES, "1");
@@ -22,6 +24,7 @@ export function marquerInteretsProposes() {
   }
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- aide partagée avec l'accueil, pas un composant
 export function interetsDejaProposes() {
   try {
     return window.localStorage.getItem(CLE_INTERETS_PROPOSES) === "1";

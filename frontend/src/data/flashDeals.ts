@@ -118,13 +118,16 @@ export function useFlashCountdown(deals: FlashDeal[]) {
       .sort((a, b) => a - b);
     const target = dates[0];
     if (!target) {
-      setRemaining(0);
-      return undefined;
+      const vide = window.setTimeout(() => setRemaining(0), 0);
+      return () => window.clearTimeout(vide);
     }
     const tick = () => setRemaining(Math.max(0, target - maintenantServeur()));
-    tick();
+    const firstTick = window.setTimeout(tick, 0);
     const timer = window.setInterval(tick, 1000);
-    return () => window.clearInterval(timer);
+    return () => {
+      window.clearTimeout(firstTick);
+      window.clearInterval(timer);
+    };
   }, [deals]);
 
   const pad = (value: number) => String(value).padStart(2, "0");
@@ -146,9 +149,12 @@ export function useDeadlineCountdown(endsAt?: string) {
 
   useEffect(() => {
     const calcul = () => (endsAt ? Math.max(0, Math.floor((new Date(endsAt).getTime() - maintenantServeur()) / 1000)) : 0);
-    setLeft(calcul());
+    const premier = window.setTimeout(() => setLeft(calcul()), 0);
     const id = window.setInterval(() => setLeft(calcul()), 1000);
-    return () => window.clearInterval(id);
+    return () => {
+      window.clearTimeout(premier);
+      window.clearInterval(id);
+    };
   }, [endsAt]);
 
   return {

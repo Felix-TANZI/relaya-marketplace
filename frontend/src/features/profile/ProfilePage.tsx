@@ -35,11 +35,6 @@ import {
   ShoppingCart,
   Sparkles,
   HelpCircle,
-  ArrowDownToLine,
-  Clock,
-  Gem,
-  RefreshCw,
-  RotateCcw,
   Settings,
 } from "lucide-react";
 import { authApi, type User as UserType } from "@/services/api/auth";

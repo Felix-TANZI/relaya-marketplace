@@ -233,8 +233,8 @@ const AdminCategPage = lazy(() => import('@/features/admin/catalog/AdminCategPag
 // STUBS — icônes pour les pages à venir
 // ─────────────────────────────────────────────────────────────────────────────
 import {
-  Megaphone, Truck, TrendingUp,
-  Zap, Bot, Shield, HeadphonesIcon,
+  Megaphone, TrendingUp,
+  Bot,
 } from 'lucide-react';
 
 // Le portail dedie se decide au chargement du module — `isDedicatedPortal` et

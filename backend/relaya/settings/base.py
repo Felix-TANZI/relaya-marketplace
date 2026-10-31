@@ -480,6 +480,11 @@ PAYMENTS_ENCRYPTION_KEY_OLD = os.getenv("PAYMENTS_ENCRYPTION_KEY_OLD", "")
 PAYMENTS_FINGERPRINT_SALT = os.getenv("PAYMENTS_FINGERPRINT_SALT", "")
 # DP-61 (revue du 29/10, A1) : la console d'appel, sans opérateur, ne garde que ses derniers appels.
 BELIVAY_APPELS_CONSOLE_MAX = int(os.getenv("BELIVAY_APPELS_CONSOLE_MAX", "100"))
+# DP-61, décision du porteur du 2026-10-31 : tant que l'opérateur d'appel masqué n'est pas sous contrat, une dérogation
+# écrite (date et motif, ex. « 2026-10-31 contrat operateur en cours ») laisse démarrer la production. Les numéros restent
+# masqués et l'appel répond « indisponible » (A1) ; check --deploy et payments_preflight le signalent à chaque fois.
+# À retirer le jour où BELIVAY_APPELS désigne l'opérateur.
+BELIVAY_APPELS_DEROGATION = os.getenv("BELIVAY_APPELS_DEROGATION", "").strip()
 # (Revue du 29/10, C3 : le délai d'un envoi interrompu est désormais le réglage r_envoi_interrompu_min.)
 
 # ── CAMPAY — secrets en environnement UNIQUEMENT ─────────────────────────────

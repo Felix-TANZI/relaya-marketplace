@@ -115,6 +115,12 @@ from django.core import checks  # noqa: E402
 def operateur_d_appel_branche(app_configs=None, **kwargs):
     if masque_actif():
         return []
+    derogation = getattr(settings, "BELIVAY_APPELS_DEROGATION", "")
+    if derogation:  # décision du porteur (2026-10-31) : démarrer sans opérateur, numéros masqués, appel indisponible
+        return [checks.Warning(
+            f"Dérogation DP-61 en cours ({derogation}) : aucun opérateur d'appel masqué ; les numéros restent masqués "
+            "et le livreur ne peut pas appeler le client depuis l'application.",
+            hint="Brancher l'opérateur (BELIVAY_APPELS) puis retirer BELIVAY_APPELS_DEROGATION.", id="shipping.W061")]
     return [checks.Error(
         "Aucun opérateur d'appel masqué n'est branché (BELIVAY_APPELS) : les numéros restent visibles entre client "
         "et livreur.", hint="DP-61 : brancher l'opérateur sous contrat avant la mise en service de main 2.",

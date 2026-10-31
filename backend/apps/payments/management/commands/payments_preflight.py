@@ -144,6 +144,17 @@ class Command(BaseCommand):
         else:
             self._ok("Sel d'empreinte present")
 
+        # DP-61 (décision du porteur, 2026-10-31) : la dérogation se voit à chaque contrôle tant qu'elle existe.
+        from apps.shipping.appels import masque_actif
+
+        if not masque_actif():
+            derogation = getattr(settings, "BELIVAY_APPELS_DEROGATION", "")
+            self._dire(
+                ALERTE if derogation else BLOQUANT, "Aucun operateur d'appel masque (DP-61)",
+                f"Derogation : {derogation}." if derogation else "Le serveur ne demarrera pas (check --deploy).",
+                "Brancher l'operateur dans BELIVAY_APPELS, puis retirer BELIVAY_APPELS_DEROGATION.",
+            )
+
         webhook = getattr(settings, "CAMPAY_WEBHOOK_KEY", "") or ""
         if not webhook:
             self._dire(

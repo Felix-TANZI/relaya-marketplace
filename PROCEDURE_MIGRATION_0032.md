@@ -34,6 +34,14 @@ Sans sel, l'empreinte est calculée avec `SECRET_KEY`. Si l'on pose le sel aprè
 
 Si la production a déjà une clé `PAYMENTS_ENCRYPTION_KEY`, on la **garde** : elle chiffre déjà les numéros de paiement. On ne change pas de clé à cette occasion.
 
+**Dans le même fichier, l'opérateur d'appel (DP-61).** Le serveur de production lance `check --deploy` au démarrage. Sans opérateur d'appel masqué, il refuse de démarrer. Tant que le contrat n'est pas signé, poser la dérogation décidée par le porteur le 31/10, avec sa date et son motif :
+
+```
+BELIVAY_APPELS_DEROGATION=2026-10-31 contrat operateur en cours
+```
+
+Avec la dérogation, les numéros restent masqués et l'appel répond « indisponible ». `check --deploy` et `payments_preflight` la signalent à chaque fois. Le jour du contrat, renseigner `BELIVAY_APPELS` avec l'opérateur, puis **retirer** la dérogation.
+
 ### 2. Sauvegarder la base de production
 
 `deploy.sh` fait une sauvegarde, mais on en fait une à part, qu'on garde :

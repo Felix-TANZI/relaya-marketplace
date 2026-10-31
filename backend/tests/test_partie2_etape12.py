@@ -48,9 +48,12 @@ def _preuves(colis, appels=2, il_y_a_min=15):
 
 
 def test_absence_refusee_sans_les_preuves_de_r51_1():
+    from apps.shipping.appels import AppelIndisponible
+
     colis = _colis(False, Shipment.Status.OUT_FOR_DELIVERY)
-    appeler(colis, colis.courier.user)                                                     # mode console
-    appeler(colis, colis.courier.user)
+    for _ in range(2):  # DP-61 (revue du 29/10, A1) : sans opérateur, l'appel ne part pas
+        with pytest.raises(AppelIndisponible):
+            appeler(colis, colis.courier.user)
     with pytest.raises(ValidationError) as e:
         _agir(colis, "ABSENT", latitude="3.88", longitude="11.51")
     assert "appels" in e.value.detail                                                      # console : pas une preuve

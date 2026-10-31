@@ -11,6 +11,9 @@
 #          de retrait se débloque après ce paiement ; BelivaY ne paie rien
 #   R51.6  XL : frais_absence = r_absence_sup une fois ; le colis attend à l'agence de l'entreprise ; 2e passage sur un
 #          nouveau créneau (pas encore de créneaux dans l'application : l'équipe logistique est alertée)
+#          Revue du 29/10 (D5), décision du porteur : on garde cette alerte et l'attente à l'agence. Planifié : R10.4
+#          (créneau XL choisi par le client), puis R51.6 (2e passage sur ce créneau) et R51.7 (sans créneau sous
+#          r_xl_garde_agence_j jours : retour au vendeur, remboursement rembourse_xl_sans_creneau).
 #   R85.1  le colis n'est jamais ouvert à la porte
 #   R85.2  refus d'un colis conforme : retour au vendeur, la livraison n'est plus offerte ; rembourse = max(0 ;
 #          arrondi(produits − couv_concernee − r_refus_sup)) ; livraison payée et frais Mobile Money gardés (R72.2)

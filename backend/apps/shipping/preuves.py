@@ -39,7 +39,8 @@ def exiger_photo(shipment, etape, champ: str = "photo") -> None:
 
     if not ShipmentEvidence.objects.filter(shipment=shipment, stage=etape).exclude(file="").exists():
         raise serializers.ValidationError(
-            {champ: f"Photo obligatoire avant ce changement de main (R66.3) : {S(etape).label.lower()}."})
+            {champ: f"Photo obligatoire avant ce changement de main (R66.3) : {S(etape).label.lower()}."},
+            code="photo_obligatoire")  # revue du 29/10 (D2) : lu par son code, jamais par son texte
 
 
 def chaine_de_garde(shipment) -> dict:

@@ -85,6 +85,12 @@ def hausse_recente(produit, maintenant=None) -> bool:
     return Fraction(produit.price_xaf) > Fraction(plus_bas) * (1 + Fraction(str(regles.reglage("r_hausse_badge"))))
 
 
+def badge_meilleur_prix(produit, le_moins_cher: bool) -> bool:
+    """Revue du 29/10 (D4), R34.5 : le badge « Meilleur prix » suit la même règle que les ventes flash — une hausse
+    récente le retire, même si l'offre est redevenue la moins chère. Tout écran qui affiche ce badge passe par ici."""
+    return bool(le_moins_cher) and not hausse_recente(produit)
+
+
 def noter_prix(produit) -> None:
     """Relève le prix d'une offre ; une hausse R34.5 suspend ses Flash Deals en cours ou en attente."""
     from .models import PrixHistorique

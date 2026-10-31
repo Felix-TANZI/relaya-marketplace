@@ -160,7 +160,7 @@ def test_le_code_reste_invisible_jusqu_au_paiement_au_comptoir():
     assert "482913" not in note.message and "à payer au comptoir" in note.title       # R42.4
     assert not SmsCommande.objects.filter(order=o, sorte="code_retrait").exists()
 
-    r = _gerant(parcel).post("/api/shipping/relay-point/pickup/", {"parcel_id": parcel.pk, "pickup_code": "482913"},
+    r = _gerant(parcel).post("/api/shipping/relay-point/pickup/", {"colis": f"BVY-{parcel.shipment.order_id}-{parcel.shipment_id}", "pickup_code": "482913"},
                              format="json")
     assert r.status_code == 400 and "comptoir" in r.json()                            # pas de remise avant paiement
     r = _gerant(parcel).get("/api/shipping/relay-point/parcels/")

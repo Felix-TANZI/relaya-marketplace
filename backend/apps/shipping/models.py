@@ -706,6 +706,8 @@ class RelayPickupAttempt(models.Model):
     shipment = models.ForeignKey(Shipment, on_delete=models.CASCADE, null=True, blank=True, related_name="+")
     code = models.CharField(max_length=64, help_text="empreinte HMAC du code saisi (DP-02), jamais le code")
     success = models.BooleanField(default=False)
+    # R66.2, revue du 29/10 (D1) : le colis désigné par sa référence tapée (QR illisible) plutôt que par son QR.
+    saisie_manuelle = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -733,9 +735,9 @@ class RelayPickupAttempt(models.Model):
         return regles.reglage("r_code_blocage_h")
 
     @classmethod
-    def register(cls, relay_point, code, success, shipment=None):
+    def register(cls, relay_point, code, success, shipment=None, saisie_manuelle=False):
         return cls.objects.create(relay_point=relay_point, shipment=shipment, success=success,
-                                  code=RelayParcel.empreinte_code(code))
+                                  code=RelayParcel.empreinte_code(code), saisie_manuelle=saisie_manuelle)
 
     @classmethod
     def relais_bloque_jusqua(cls, relay_point):

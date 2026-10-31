@@ -273,7 +273,8 @@ def test_le_colis_se_scanne_avant_le_code():
     c = _gerant(parcel)
     r = _verifier(c, "482913")
     assert r.status_code == 400 and "colis" in r.json()                     # R66.2 : pas de code sans colis
-    r = _verifier(c, "482913", colis=f'{{"shipment_id": {parcel.shipment_id}, "depot_code": "x"}}')
+    depot = parcel.shipment.ensure_depot_code()  # revue du 29/10 (D1) : le QR porte le code de dépôt du colis
+    r = _verifier(c, "482913", colis=f'{{"shipment_id": {parcel.shipment_id}, "depot_code": "{depot}"}}')
     assert r.status_code == 200 and [p["id"] for p in r.json()["parcels"]] == [parcel.pk]
 
 
@@ -301,10 +302,10 @@ def test_la_limite_par_relais_bloque_les_remises(monkeypatch):
     a = _colis_au_relais("111111")
     c = _gerant(a)
     for i in range(3):
-        _verifier(c, f"99999{i}", colis=str(a.shipment_id))                  # 3 codes faux en 1 h à ce relais
+        _verifier(c, f"99999{i}", colis=f"BVY-{a.shipment.order_id}-{a.shipment_id}")                  # 3 codes faux en 1 h à ce relais
     autre = RelayParcel.objects.filter(relay_point=a.relay_point).exclude(pk=a.pk).first()
     cible = autre or a
-    r = _verifier(c, cible.pickup_code or "111111", colis=str(cible.shipment_id)).json()
+    r = _verifier(c, cible.pickup_code or "111111", colis=f"BVY-{cible.shipment.order_id}-{cible.shipment_id}").json()
     assert r["locked"] is True                                                # même un bon code attend
 
 

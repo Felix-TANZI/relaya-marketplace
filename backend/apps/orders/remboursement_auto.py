@@ -68,19 +68,21 @@ def palier_client(user, maintenant=None) -> str:
 
     from .models import Dispute
 
+    from dateutil.relativedelta import relativedelta
+
     maintenant = maintenant or timezone.now()
-    mois = timedelta(days=30)
     if user is None or not getattr(user, "pk", None):
         return "Standard"
     if RetraitDroitRemboursementAuto.objects.filter(client=user, valide_le__isnull=False).exists():
         return "Standard"
     if livrees_sans_litige_perdu(user) < regles.reglage("r_palier_eleve_livrees"):
         return "Standard"
-    depuis = maintenant - mois * regles.reglage("r_palier_eleve_litige_mois")
+    # Revue du 29/10 (D3) : R71.1 compte en mois de calendrier (12 mois = un an, pas 360 jours).
+    depuis = maintenant - relativedelta(months=regles.reglage("r_palier_eleve_litige_mois"))
     if Dispute.objects.filter(order__user=user, resolution="REJECTED").filter(
             Q(resolved_at__gte=depuis) | Q(resolved_at__isnull=True, created_at__gte=depuis)).exists():
         return "Standard"
-    if user.date_joined > maintenant - mois * regles.reglage("r_palier_eleve_anciennete_mois"):
+    if user.date_joined > maintenant - relativedelta(months=regles.reglage("r_palier_eleve_anciennete_mois")):
         return "Standard"
     if not numero_verifie(user):
         return "Standard"

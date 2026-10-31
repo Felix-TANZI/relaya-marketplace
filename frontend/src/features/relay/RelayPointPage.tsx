@@ -974,7 +974,6 @@ export default function RelayPointPage() {
       await http<RelayParcel>("/api/shipping/relay-point/pickup/", {
         method: "POST",
         body: JSON.stringify({
-          parcel_id: input.parcelIds[0],
           colis: input.colis,
           pickup_code: input.code,
           buyer_inspection: input.inspection,

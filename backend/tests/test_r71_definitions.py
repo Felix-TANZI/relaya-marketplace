@@ -3,6 +3,7 @@
 from datetime import timedelta
 
 import pytest
+from dateutil.relativedelta import relativedelta
 from django.contrib.auth.models import User
 from django.utils import timezone
 
@@ -22,7 +23,7 @@ def _fidele(nom, numero="677000111"):
     """Un client qui remplit toutes les conditions du palier Élevé."""
     user = _client(nom, livrees=regles.reglage("r_palier_eleve_livrees"))
     User.objects.filter(pk=user.pk).update(
-        date_joined=timezone.now() - timedelta(days=30 * regles.reglage("r_palier_eleve_anciennete_mois") + 1))
+        date_joined=timezone.now() - relativedelta(months=regles.reglage("r_palier_eleve_anciennete_mois"), days=1))
     user.refresh_from_db()
     ProfilClient.objects.create(user=user, numero_chiffre=chiffrer(numero), numero_empreinte=empreinte(numero),
                                 numero_verifie_le=timezone.now())

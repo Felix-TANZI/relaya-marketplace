@@ -9849,12 +9849,15 @@ def vd_offer_publish(request, offer_id):
 
 def _vd_publication_dict(product):
     from django.utils import timezone
+
+    from apps.catalog.flash import badge_meilleur_prix
     return {
         'offreId': str(product.id), 'titre': product.title,
         'variante': str(product.variant_id) if product.variant_id else '',
         'prix': product.price_xaf,
         'reponseAvant': (timezone.now() + timezone.timedelta(hours=48)).isoformat(),
-        'meilleurPrix': False, 'zonesPremier': 0, 'zones': 0, 'avantages': [],
+        # D4, R34.5 : le comparatif « le moins cher » n'existe pas encore ; quand il arrivera, la hausse retire le badge.
+        'meilleurPrix': badge_meilleur_prix(product, le_moins_cher=False), 'zonesPremier': 0, 'zones': 0, 'avantages': [],
         'enFile': False, 'nouveau': product.master_id is None, 'rattache': bool(product.master_id),
     }
 

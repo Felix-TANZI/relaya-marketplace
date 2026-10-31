@@ -626,7 +626,8 @@ class RelayParcelReceiveSerializer(serializers.Serializer):
         ).count()
         capacity = relay_point.storage_capacity or 0
         if capacity and active_count >= capacity:
-            raise serializers.ValidationError({"capacity": "Capacite point relais atteinte."})
+            raise serializers.ValidationError({"capacity": "Capacite point relais atteinte."},
+                                              code="capacite_atteinte")  # D2 : lu par son code (WhatsApp)
 
         import secrets
 
@@ -686,15 +687,18 @@ class RelayParcelReceiveSerializer(serializers.Serializer):
 
 
 def _colis_scanne(relay_point, data):
-    """R66.2 : le colis dont le relais a scanné le QR (ou choisi par son identifiant), en stock chez lui."""
+    """R66.2 : le colis dont le relais a scanné le QR, ou tapé la référence (saisie manuelle, tracée), en stock chez
+    lui. Revue du 29/10 (D1) : l'identifiant interne parcel_id n'est plus accepté. Renvoie (colis, saisie_manuelle)."""
     from apps.shipping import retrait
 
-    if not data.get("parcel_id") and not data.get("colis"):
-        raise serializers.ValidationError({"colis": "Scannez d'abord le QR du colis, puis saisissez le code du client."})
-    parcel = retrait.colis_en_stock(relay_point, parcel_id=data.get("parcel_id"), colis=data.get("colis"))
+    if not data.get("colis"):
+        raise serializers.ValidationError({"colis": "Scannez d'abord le QR du colis (ou tapez sa référence BVY-…), "
+                                                    "puis saisissez le code du client."}, code="colis_absent")
+    parcel, manuel = retrait.lire_le_colis(relay_point, data.get("colis"))
     if parcel is None:
-        raise serializers.ValidationError({"colis": "Ce colis n'est pas en stock dans votre relais."})
-    return parcel
+        raise serializers.ValidationError({"colis": "Ce colis n'est pas en stock dans votre relais."},
+                                          code="colis_inconnu")
+    return parcel, manuel
 
 
 class RelayPickupCodeCheckSerializer(serializers.Serializer):
@@ -706,7 +710,6 @@ class RelayPickupCodeCheckSerializer(serializers.Serializer):
     (apps.shipping.retrait).
     """
 
-    parcel_id = serializers.IntegerField(required=False)
     colis = serializers.CharField(required=False, allow_blank=True, default="", help_text="QR ou référence du colis")
     pickup_code = serializers.CharField()
 
@@ -714,8 +717,8 @@ class RelayPickupCodeCheckSerializer(serializers.Serializer):
         from apps.shipping import retrait
 
         relay_point = self.context["relay_point"]
-        parcel = _colis_scanne(relay_point, self.validated_data)
-        return retrait.controler(relay_point, parcel, self.validated_data["pickup_code"])
+        parcel, manuel = _colis_scanne(relay_point, self.validated_data)
+        return retrait.controler(relay_point, parcel, self.validated_data["pickup_code"], saisie_manuelle=manuel)
 
 
 class RelayParcelPickupSerializer(serializers.Serializer):
@@ -725,7 +728,6 @@ class RelayParcelPickupSerializer(serializers.Serializer):
     compte encore en stock a ce relais en une seule action, jamais un par un.
     """
 
-    parcel_id = serializers.IntegerField(required=False)
     colis = serializers.CharField(required=False, allow_blank=True, default="", help_text="QR ou référence du colis")
     pickup_code = serializers.CharField()
     proof_note = serializers.CharField(required=False, allow_blank=True, default="")
@@ -763,9 +765,11 @@ class RelayParcelPickupSerializer(serializers.Serializer):
 
         # Securite avant main 2 : le colis scanne d'abord (R66.2), puis le code verifie sur lui, essais comptes sur
         # ce colis et par relais — meme si l'ecran de retrait a deja appele RelayPickupCodeCheckSerializer.
-        resultat = retrait.controler(relay_point, _colis_scanne(relay_point, self.validated_data), code)
-        if not resultat["ok"]:
-            raise serializers.ValidationError({"pickup_code": retrait.message_de_refus(resultat)})
+        parcel, manuel = _colis_scanne(relay_point, self.validated_data)
+        resultat = retrait.controler(relay_point, parcel, code, saisie_manuelle=manuel)
+        if not resultat["ok"]:  # D2 : un code par cause (code_faux, code_bloque, relais_bloque)
+            raise serializers.ValidationError({"pickup_code": retrait.message_de_refus(resultat)},
+                                              code=retrait.code_de_refus(resultat))
         parcels = resultat["parcels"]
 
         # D14, R42.4 et R51.5 : jamais de remise avant le paiement de ce qui reste dû au relais, par Mobile Money.
@@ -776,7 +780,7 @@ class RelayParcelPickupSerializer(serializers.Serializer):
         if any(_dus(p.shipment.order) for p in parcels):
             raise serializers.ValidationError({
                 "comptoir": "Un montant reste à payer pour cette commande : encaissez-le par Mobile Money avant la remise.",
-            })
+            }, code="a_payer")
 
         # Retrait par un tiers : si l'acheteur a designe une personne
         # autorisee, le relais doit loguer sa piece d'identite avant de
@@ -785,7 +789,7 @@ class RelayParcelPickupSerializer(serializers.Serializer):
         if any(p.shipment.order.authorized_pickup_name for p in parcels) and not id_reference:
             raise serializers.ValidationError({
                 "picked_up_by_id_reference": "Cette commande est retiree par un tiers autorise : renseignez sa piece d'identite avant de valider.",
-            })
+            }, code="identite_requise")
 
         # R36.3 : la garde (R36.2, une ligne par colis) se paie en espèces au gérant, en une fois, au retrait ; la
         # remise reste bloquée tant qu'il n'a pas confirmé l'encaissement ; chaque encaissement est journalisé.

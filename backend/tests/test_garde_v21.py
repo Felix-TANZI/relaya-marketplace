@@ -56,7 +56,7 @@ def test_pas_de_garde_tant_qu_un_colis_est_attendu():
 
 
 def _remettre(parcel, **donnees):
-    s = RelayParcelPickupSerializer(data={"parcel_id": parcel.pk, "pickup_code": "ABC123", **donnees},
+    s = RelayParcelPickupSerializer(data={"colis": f"BVY-{parcel.shipment.order_id}-{parcel.shipment_id}", "pickup_code": "ABC123", **donnees},
                                     context={"relay_point": parcel.relay_point, "user": parcel.relay_point.user})
     assert s.is_valid(), s.errors
     return s.save()

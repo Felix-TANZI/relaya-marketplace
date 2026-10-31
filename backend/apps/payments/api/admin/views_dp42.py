@@ -45,10 +45,31 @@ class ValiderListeView(APIView):
     def post(self, request, liste):
         try:
             etat = dp42.valider_liste(liste, par=request.user, comment=str(request.data.get("comment") or ""),
-                                      attendu_total_xaf=request.data.get("total_xaf"))
+                                      empreinte=str(request.data.get("empreinte") or ""))  # B2
         except dp42.Dp42Error as exc:
             return _refus(exc)
         return Response(etat)
+
+
+class FinanceOuDirection(IsFinanceStaff):
+    """B4 : la liste quotidienne s'ouvre à la finance et à la direction."""
+
+    def has_permission(self, request, view):
+        return super().has_permission(request, view) or dp42.est_direction(request.user)
+
+
+@extend_schema(tags=TAG, summary="Remboursements du jour créés par le système (lecture seule, B4)")
+class RemboursementsSystemeView(APIView):
+    permission_classes = [FinanceOuDirection]
+
+    def get(self, request):
+        from django.utils import timezone
+        from django.utils.dateparse import parse_date
+
+        from apps.payments.settlements.services import remboursements_systeme_du_jour
+
+        jour = parse_date(str(request.query_params.get("jour") or "")) or timezone.localdate()
+        return Response(remboursements_systeme_du_jour(jour))
 
 
 @extend_schema(tags=TAG, summary="Valideurs de secours (accès limité dans le temps, tracé)")
@@ -78,7 +99,7 @@ class RevoquerSecoursView(APIView):
 
     def post(self, request, pk):
         s = get_object_or_404(ValideurSecours, pk=pk)
-        if not (request.user.groups.filter(name=dp42.GROUPES[dp42.DIRECTION]).exists() or request.user.is_superuser
-                or request.user.pk == s.user_id):
-            return _refus("DP-42 : seul le porteur (ou la personne elle-même) retire un accès de secours.")
-        return Response(_secours(dp42.revoquer_secours(s, par=request.user)))
+        try:
+            return Response(_secours(dp42.revoquer_secours(s, par=request.user)))  # B3 : Direction seulement
+        except dp42.Dp42Error as exc:
+            return _refus(exc)

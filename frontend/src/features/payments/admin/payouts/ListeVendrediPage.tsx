@@ -19,8 +19,15 @@ interface Ligne {
 }
 interface Liste {
   liste: string; total_xaf: number; total_en_attente_xaf: number; nombre: number; en_attente: number;
+  /** DP-42 (B2) : empreinte du détail affiché, renvoyée telle quelle pour valider. */
+  empreinte: string;
   etape: string | null; detail: Ligne[]; mes_roles: string[];
 }
+interface RemboursementSysteme {
+  reference: string; montant_xaf: number; motif: string; detail: string; statut: string; automatique: boolean;
+  le: string;
+}
+interface JourneeSysteme { jour: string; nombre: number; total_xaf: number; detail: RemboursementSysteme[] }
 interface Secours {
   id: number; user: string; role: string; debut: string; fin: string; motif: string;
   accorde_par: string; accorde_le: string; revoque_le: string | null; revoque_par: string | null; actif: boolean;
@@ -35,6 +42,7 @@ const date = (iso: string) => new Date(iso).toLocaleString('fr-FR');
 export default function ListeVendrediPage() {
   const [liste, setListe] = useState<Liste | null>(null);
   const [secours, setSecours] = useState<Secours[]>([]);
+  const [systeme, setSysteme] = useState<JourneeSysteme | null>(null);
   const [message, setMessage] = useState<{ ton: 'ok' | 'erreur'; texte: string } | null>(null);
   const [occupe, setOccupe] = useState(false);
   const [nouveau, setNouveau] = useState({ username: '', role: 'direction', fin: '', motif: '' });
@@ -42,6 +50,7 @@ export default function ListeVendrediPage() {
   const charger = useCallback(() => {
     api.get<Liste>(`${BASE}/vendredi/`).then(setListe).catch(() => setListe(null));
     api.get<{ secours: Secours[] }>(`${BASE}/secours/`).then((r) => setSecours(r.secours)).catch(() => setSecours([]));
+    api.get<JourneeSysteme>(`${BASE}/remboursements-systeme/`).then(setSysteme).catch(() => setSysteme(null));
   }, []);
   useEffect(charger, [charger]);
 
@@ -99,7 +108,7 @@ export default function ListeVendrediPage() {
               disabled={occupe || !peutValider}
               title={peutValider ? '' : 'Cette étape revient à une autre personne.'}
               onClick={() => void agir(
-                () => api.post(`${BASE}/vendredi/${liste.liste}/valider/`, { total_xaf: liste.total_en_attente_xaf }),
+                () => api.post(`${BASE}/vendredi/${liste.liste}/valider/`, { empreinte: liste.empreinte }),
                 'Liste validée.')}
             >
               Valider la liste ({formatXaf(liste.total_en_attente_xaf)})
@@ -122,6 +131,31 @@ export default function ListeVendrediPage() {
                       <div key={v.role}>{ROLES[v.role] ?? v.role} : {v.par}{v.secours ? ' (secours)' : ''}</div>
                     ))}
                   </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
+
+      {systeme && (
+        <section className="rounded-xl border bg-white p-4 dark:bg-slate-900">
+          <h2 className="text-lg font-black">Remboursements du jour créés par le système</h2>
+          <p className="text-sm text-slate-500">
+            Lecture seule. Sans double validation (décision du porteur) : le départ d'office après inspection manquée
+            (R68.1) et le remboursement du jour même sans remplaçant (R35.4) partent seuls ; les autres attendent
+            l'approbation d'une personne. Toujours vers le moyen de paiement d'origine (R68.2).
+          </p>
+          <div className="mt-2 font-bold">{systeme.nombre} remboursement(s) · {formatXaf(systeme.total_xaf)}</div>
+          <table className="mt-2 w-full text-left text-sm">
+            <thead className="text-slate-500"><tr><th>Référence</th><th>Montant</th><th>Statut</th><th>Détail</th></tr></thead>
+            <tbody>
+              {systeme.detail.map((r) => (
+                <tr key={r.reference} className="border-t">
+                  <td className="py-2">{r.reference}{r.automatique ? ' · automatique' : ''}</td>
+                  <td>{formatXaf(r.montant_xaf)}</td>
+                  <td>{r.statut}</td>
+                  <td className="text-xs">{r.detail}</td>
                 </tr>
               ))}
             </tbody>

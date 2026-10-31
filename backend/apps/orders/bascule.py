@@ -261,8 +261,9 @@ def _demander_le_remboursement(order, vendeur_user, montant: int, motif: str, fr
         holds = []
         for hold in EscrowHold.objects.filter(order_id=order.pk, payee=payee, component=EscrowHold.Component.GOODS):
             holds.append(cancel_hold(hold, reason=f"Sans remplaçant (R35.4). {motif}"))
+        # R35.4, revue du 29/10 (B4) : remboursement intégral le jour même, approuvé dès sa création.
         demande = create_refund(intent, amount_xaf=montant, reason=Refund.Reason.CANCELLATION, frais_momo_xaf=frais,
-                                requested_by=_demandeur_systeme(), holds=holds or None,
+                                requested_by=_demandeur_systeme(), holds=holds or None, automatique="R35.4",
                                 detail=f"R35.4 : aucun remplaçant sur la commande #{order.pk}. {motif}")
         return demande.reference
     except Exception:

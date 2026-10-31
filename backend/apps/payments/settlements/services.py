@@ -308,7 +308,11 @@ def request_payout(batch: SettlementBatch, *, requested_by,
         raise SettlementError(
             f"Montant {montant} inferieur au minimum de versement {minimum}."
         )
-    if maximum and montant > maximum:
+    # R22.2, R43.1 (revue du 29/10, B1) : le lot du vendredi n'est JAMAIS refuse. Au-dela du maximum, il est cree,
+    # marque « montant eleve », la finance est alertee, et la double validation DP-42 s'applique comme a tout lot.
+    # Le maximum ne peut refuser qu'un versement exceptionnel.
+    montant_eleve = bool(maximum and montant > maximum)
+    if montant_eleve and batch.is_exceptional:
         raise SettlementError(
             f"Montant {montant} superieur au maximum de versement {maximum}."
         )
@@ -332,12 +336,32 @@ def request_payout(batch: SettlementBatch, *, requested_by,
         justification=justification.strip(),
         status=PayoutRequest.Status.DRAFT,
         liste=liste,
+        montant_eleve=montant_eleve,
     )
     demande.save()
     demande.transition_to(PayoutRequest.Status.PENDING_APPROVAL)
 
     batch.transition_to(SettlementBatch.Status.PENDING_APPROVAL)
+    if montant_eleve:
+        _alerter_montant_eleve(demande, maximum)
     return demande
+
+
+def _alerter_montant_eleve(demande: PayoutRequest, maximum: int) -> None:
+    """B1 : un versement du vendredi au-dela du maximum de la politique part quand meme ; la finance est prevenue."""
+    from django.contrib.auth.models import User
+
+    from apps.payments.api.admin.permissions import FINANCE_GROUP
+    from apps.payments.bridge import notifications
+
+    titre = f"Versement d'un montant eleve : {demande.reference}"
+    message = (f"{demande.amount_xaf} F pour {demande.payee.display_label}, au-dela du maximum de la politique "
+               f"({maximum} F). Le versement du vendredi n'est jamais refuse (R22.2, R43.1) : verifiez-le avant "
+               "les deux validations (DP-42).")
+    for user in User.objects.filter(is_active=True, groups__name=FINANCE_GROUP).distinct():
+        notifications.prevenir(user, titre, message)
+    logger.warning("Versement %s au-dela du maximum (%s F > %s F) : signale a la finance.",
+                   demande.reference, demande.amount_xaf, maximum)
 
 
 def _verifier_exception(batch: SettlementBatch, politique) -> None:
@@ -863,12 +887,17 @@ def request_withdrawal(payee: PayeeAccount, *, requested_by,
 
 @db_transaction.atomic
 def create_refund(intent, *, amount_xaf: int, reason: str, requested_by,
-                  detail: str = "", holds=None, frais_momo_xaf: int = 0):
+                  detail: str = "", holds=None, frais_momo_xaf: int = 0, automatique: str = ""):
     """
     Cree une demande de remboursement.
 
     Ne rembourse RIEN : la sortie de fonds passe par `execute_refund`, apres
     approbation par un tiers.
+
+    `automatique` (revue du 29/10, B4, decision du porteur) : la regle qui impose son delai — "R68.1" (d'office
+    r_inspection_h apres la reception) ou "R35.4" (le jour meme, sans remplacant). Le remboursement est alors
+    approuve des sa creation, sans personne : une approbation pourrait faire manquer le delai. Il part toujours
+    vers le moyen de paiement d'origine (R68.2) et figure dans la liste quotidienne de la finance et de la direction.
     """
     from apps.payments.escrow.models import EscrowHold
     from apps.payments.intents.models import PaymentIntent
@@ -907,11 +936,15 @@ def create_refund(intent, *, amount_xaf: int, reason: str, requested_by,
         )
     )
 
+    if automatique and automatique not in REMBOURSEMENTS_AUTOMATIQUES:
+        raise SettlementError(f"Remboursement automatique inconnu : {automatique}.")
     remboursement = Refund(
         intent=intent, amount_xaf=amount_xaf, reason=reason,
         frais_momo_xaf=max(0, min(int(frais_momo_xaf or 0), amount_xaf)),
-        detail=detail.strip(), requested_by=requested_by,
-        status=Refund.Status.PENDING_APPROVAL,
+        detail=(f"{detail.strip()} [automatique, {automatique}]" if automatique else detail.strip()),
+        requested_by=requested_by,
+        status=Refund.Status.APPROVED if automatique else Refund.Status.PENDING_APPROVAL,
+        approved_at=timezone.now() if automatique else None,
     )
     remboursement.save()
     if sequestres:
@@ -920,6 +953,21 @@ def create_refund(intent, *, amount_xaf: int, reason: str, requested_by,
     logger.info("Remboursement %s cree : %s XAF sur %s",
                 remboursement.reference, amount_xaf, intent.reference)
     return remboursement
+
+
+# B4 : les seules regles dont le delai impose un remboursement sans approbation humaine.
+REMBOURSEMENTS_AUTOMATIQUES = {"R68.1", "R35.4"}
+
+
+def remboursements_systeme_du_jour(jour) -> dict:
+    """B4 : la liste quotidienne, en lecture seule, des remboursements crees par le systeme (total et detail)."""
+    lignes = (Refund.objects.filter(requested_by__username="belivay-system", created_at__date=jour)
+              .select_related("intent").order_by("created_at"))
+    detail = [{"reference": r.reference, "montant_xaf": r.amount_xaf, "motif": r.reason, "detail": r.detail,
+               "statut": r.status, "automatique": "[automatique," in (r.detail or ""), "le": r.created_at}
+              for r in lignes]
+    return {"jour": jour.isoformat(), "nombre": len(detail), "total_xaf": sum(d["montant_xaf"] for d in detail),
+            "detail": detail}
 
 
 @db_transaction.atomic

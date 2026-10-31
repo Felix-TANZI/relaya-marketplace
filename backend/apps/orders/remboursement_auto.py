@@ -208,11 +208,25 @@ def examiner(dispute, maintenant=None) -> str:
     return ""
 
 
-def _verrouiller_les_plafonds() -> None:
-    """Un seul examen à la fois : verrou sur la ligne du réglage du plafond mensuel (créée par migration)."""
+def _verrouiller_les_plafonds() -> bool:
+    """Un seul examen à la fois : verrou sur la ligne du réglage du plafond mensuel (créée par migration).
+    Revue du 29/10 (B5) : si cette ligne manque, rien n'est verrouillé ; on le dit (False) pour refuser fermé."""
     from apps.regles.models import Reglage
 
-    list(Reglage.objects.select_for_update().filter(nom="r_auto_rmb_plafond_mois"))
+    return bool(list(Reglage.objects.select_for_update().filter(nom="r_auto_rmb_plafond_mois")))
+
+
+def _alerter_reglage_absent() -> None:
+    from django.contrib.auth.models import User
+
+    from apps.accounts.models import UserNotification
+
+    for admin in User.objects.filter(is_staff=True, is_active=True):
+        UserNotification.objects.get_or_create(
+            user=admin, title="Remboursement automatique fermé : réglage r_auto_rmb_plafond_mois absent",
+            defaults={"message": "Sans ce réglage, le plafond mensuel ne peut pas être verrouillé : toutes les "
+                                 "demandes suivent le traitement normal (D32, revue du 29/10 B5). Recréez-le.",
+                      "notification_type": UserNotification.NotificationType.SYSTEM})
 
 
 def tenter(dispute, statut_avant: str) -> RemboursementAuto:
@@ -226,8 +240,11 @@ def tenter(dispute, statut_avant: str) -> RemboursementAuto:
     # demande accordée est enregistrée « en cours » dans la même transaction : deux demandes simultanées ne passent
     # jamais toutes les deux sous le même plafond. L'envoi au prestataire vient ensuite, hors transaction.
     with transaction.atomic():
-        _verrouiller_les_plafonds()
-        raison = examiner(dispute)
+        if _verrouiller_les_plafonds():
+            raison = examiner(dispute)
+        else:  # B5 : refus fermé, jamais un passage sans verrou
+            raison = "ferme"
+            _alerter_reglage_absent()
         article, frais = montants(order, item)
         journal = RemboursementAuto(
             dispute=dispute, order=order, order_item=item, client=dispute.opened_by, vendor=dispute.vendor,

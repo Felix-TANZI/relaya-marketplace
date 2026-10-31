@@ -2,7 +2,8 @@
 # Feuille de route D18 ; spec v2.1 :
 #   R68.1  colis retourné reçu et non inspecté r_inspection_h après sa réception : le remboursement part d'office
 #   R70.2  remplacement non prêt r_remplacement_h après le choix du vendeur : remboursement
-# Le remboursement passe par le circuit existant (events_in.return_completed) : une demande, approuvée par un tiers.
+# Le remboursement passe par le circuit existant (events_in.return_completed). R68.1 : décision du porteur (revue du
+# 29/10, B4), il part d'office, approuvé dès sa création, sans attendre personne ; R70.2 garde l'approbation.
 # À planifier toutes les heures.
 
 import logging
@@ -17,7 +18,7 @@ from apps.regles import services as regles
 logger = logging.getLogger("apps.orders")
 
 
-def rembourser(ret, motif: str) -> None:
+def rembourser(ret, motif: str, automatique: str = "") -> None:
     from apps.orders.frais import part_frais_momo
 
     montant = int(ret.order_item.line_total_xaf or 0)
@@ -29,7 +30,7 @@ def rembourser(ret, motif: str) -> None:
         from apps.payments.bridge import events_in
 
         events_in.return_completed(order_id=ret.order_id, outcome="REFUND", refund_amount_xaf=montant,
-                                   frais_momo_xaf=frais,
+                                   frais_momo_xaf=frais, automatique=automatique,
                                    event_id=f"return-{ret.id}-office", emitter=f"traiter_retours ({motif})")
     except Exception:
         logger.exception("Remboursement d'office non transmis — retour #%s.", ret.id)
@@ -57,7 +58,7 @@ class Command(BaseCommand):
         )
         n = 0
         for ret in non_inspectes.select_related("order_item", "requested_by"):
-            rembourser(ret, "inspection non faite à temps, R68.1")
+            rembourser(ret, "inspection non faite à temps, R68.1", automatique="R68.1")
             n += 1
         for ret in sans_remplacement.select_related("order_item", "requested_by"):
             rembourser(ret, "remplacement non prêt à temps, R70.2")

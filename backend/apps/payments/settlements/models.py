@@ -363,6 +363,9 @@ class PayoutRequest(models.Model):
     # DP-42 : les demandes du versement du vendredi forment une liste, validée en bloc (total et détail).
     liste = models.CharField(max_length=40, blank=True, default="", db_index=True,
                              help_text="DP-42 : liste du vendredi (vendredi-AAAA-MM-JJ), vide hors liste")
+    # R22.2, R43.1 (revue du 29/10, B1) : au-dela du maximum de la politique, le lot du vendredi part quand meme,
+    # signale a la finance.
+    montant_eleve = models.BooleanField(default=False)
 
     class Meta:
         app_label = "payments"

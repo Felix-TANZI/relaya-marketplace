@@ -76,6 +76,7 @@ urlpatterns = [
     path("payouts/vendredi/", dp42v.ListeDuVendrediView.as_view(), name="payouts-friday"),
     path("payouts/vendredi/<str:liste>/valider/", dp42v.ValiderListeView.as_view(), name="payouts-friday-approve"),
     path("payouts/secours/", dp42v.SecoursView.as_view(), name="payouts-backup"),
+    path("payouts/remboursements-systeme/", dp42v.RemboursementsSystemeView.as_view(), name="refunds-system-daily"),
     path("payouts/secours/<int:pk>/revoquer/", dp42v.RevoquerSecoursView.as_view(), name="payouts-backup-revoke"),
     path("payouts/<str:reference>/", v.AdminPayoutDetailView.as_view(),
          name="payout-detail"),

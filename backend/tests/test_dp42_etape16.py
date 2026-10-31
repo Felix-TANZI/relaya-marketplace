@@ -84,12 +84,13 @@ def test_la_liste_du_vendredi_se_valide_en_bloc(acheteur, vendeur, operateur, co
     etat = dp42.liste_du_vendredi("vendredi-2026-10-30")
     assert etat["nombre"] == 1 and etat["total_xaf"] == d.amount_xaf and etat["etape"] == "comptable"
     with pytest.raises(dp42.Dp42Error, match="a changé"):
-        dp42.valider_liste("vendredi-2026-10-30", par=comptable, attendu_total_xaf=d.amount_xaf + 1)
-    etat = dp42.valider_liste("vendredi-2026-10-30", par=comptable, attendu_total_xaf=d.amount_xaf)
+        dp42.valider_liste("vendredi-2026-10-30", par=comptable, empreinte="autre")
+    etat = dp42.valider_liste("vendredi-2026-10-30", par=comptable, empreinte=etat["empreinte"])
     assert etat["etape"] == "direction"
     with pytest.raises(dp42.Dp42Error):
-        dp42.valider_liste("vendredi-2026-10-30", par=comptable)            # pas deux fois la même personne
-    dp42.valider_liste("vendredi-2026-10-30", par=porteur)
+        dp42.valider_liste("vendredi-2026-10-30", par=comptable,
+                           empreinte=etat["empreinte"])                     # pas deux fois la même personne
+    dp42.valider_liste("vendredi-2026-10-30", par=porteur, empreinte=etat["empreinte"])
     d.refresh_from_db()
     assert d.status == PayoutRequest.Status.APPROVED
 
@@ -100,7 +101,8 @@ def test_la_liste_par_l_api(acheteur, vendeur, operateur, comptable):
     c.force_authenticate(comptable)
     r = c.get("/api/payments/v2/admin/payouts/vendredi/")
     assert r.status_code == 200 and r.json()["liste"] == "vendredi-2026-10-30" and r.json()["mes_roles"] == ["comptable"]
-    r = c.post("/api/payments/v2/admin/payouts/vendredi/vendredi-2026-10-30/valider/", {"total_xaf": d.amount_xaf},
+    r = c.post("/api/payments/v2/admin/payouts/vendredi/vendredi-2026-10-30/valider/",
+               {"empreinte": r.json()["empreinte"]},
                format="json")
     assert r.status_code == 200 and r.json()["etape"] == "direction"
 
@@ -153,7 +155,8 @@ def test_rappels_du_vendredi(acheteur, vendeur, operateur, comptable, porteur):
     assert dp42.rappels_du_vendredi(tot)["rappels"] == 0                            # une seule fois
     assert UserNotification.objects.filter(user=comptable).count() == 1
     assert not UserNotification.objects.filter(user=porteur).exists()               # étape du comptable
-    dp42.valider_liste(dp42.cle_du_vendredi(tot), par=comptable)
+    dp42.valider_liste(dp42.cle_du_vendredi(tot), par=comptable,
+                       empreinte=dp42.liste_du_vendredi(dp42.cle_du_vendredi(tot))["empreinte"])
     second = _vendredi(regles.reglage("r_rappel_valideurs_h2"))
     assert dp42.rappels_du_vendredi(second)["rappels"] == 1
     assert UserNotification.objects.filter(user=porteur).count() == 1               # puis le porteur

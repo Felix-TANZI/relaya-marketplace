@@ -87,7 +87,9 @@ def accorder_secours(*, user, role, fin, motif: str, par, debut=None) -> Valideu
     """Le porteur (Direction, titulaire) accorde un accès de secours, limité dans le temps et motivé."""
     if role not in ORDRE:
         raise Dp42Error("Rôle inconnu.")
-    if not (par.groups.filter(name=GROUPES[DIRECTION]).exists() or par.is_superuser):
+    # DP-42 (revue du 29/10, B3) : seul un membre du groupe « direction » accorde un secours ; un superutilisateur n'a
+    # aucun rôle implicite, comme pour la validation elle-même.
+    if not est_direction(par):
         raise Dp42Error("DP-42 : seul le porteur (Direction) accorde un accès de secours.")
     if user.pk == par.pk:
         raise Dp42Error("DP-42 : on ne s'accorde pas un accès de secours à soi-même.")
@@ -101,7 +103,14 @@ def accorder_secours(*, user, role, fin, motif: str, par, debut=None) -> Valideu
                                           accorde_par=par)
 
 
+def est_direction(user) -> bool:
+    """Membre du groupe « direction » (titulaire, pas par délégation de secours)."""
+    return bool(user and user.is_active and user.groups.filter(name=GROUPES[DIRECTION]).exists())
+
+
 def revoquer_secours(secours: ValideurSecours, *, par) -> ValideurSecours:
+    if not est_direction(par):  # DP-42 (B3) : seule la Direction retire un secours
+        raise Dp42Error("DP-42 : seul le porteur (Direction) retire un accès de secours.")
     if secours.revoque_le is None:
         secours.revoque_le, secours.revoque_par = timezone.now(), par
         secours.save(update_fields=["revoque_le", "revoque_par"])
@@ -119,6 +128,15 @@ def derniere_liste() -> str:
             .first() or "")
 
 
+def empreinte_de_la_liste(demandes) -> str:
+    """DP-42 (revue du 29/10, B2) : empreinte des demandes en attente — référence, bénéficiaire et montant, triés.
+    Un échange de bénéficiaires à total égal change l'empreinte ; le total seul ne le verrait pas."""
+    import hashlib
+
+    lignes = sorted(f"{d.reference}|{d.payee.payee_code}|{d.amount_xaf}" for d in demandes)
+    return hashlib.sha256("\n".join(lignes).encode("utf-8")).hexdigest()
+
+
 def liste_du_vendredi(cle: str = "") -> dict:
     """Total et détail de la liste, et où en sont les deux validations."""
     cle = cle or derniere_liste()
@@ -132,20 +150,23 @@ def liste_du_vendredi(cle: str = "") -> dict:
         "total_en_attente_xaf": sum(d.amount_xaf for d in en_attente),
         "nombre": len(demandes),
         "en_attente": len(en_attente),
+        "empreinte": empreinte_de_la_liste(en_attente),  # B2 : à renvoyer telle quelle pour valider
         "etape": (etapes.pop() if len(etapes) == 1 else ("mixte" if etapes else None)),
         "detail": [{
             "reference": d.reference, "beneficiaire": d.payee.display_label, "code": d.payee.payee_code,
             "type": d.payee.payee_type, "montant_xaf": d.amount_xaf, "frais_xaf": d.psp_fee_xaf, "statut": d.status,
+            "montant_eleve": d.montant_eleve,
             "validations": [{"role": a.role, "par": a.approved_by.get_username(), "le": a.approved_at,
                              "secours": bool(a.secours_id)} for a in d.approvals.all()],
         } for d in demandes],
     }
 
 
-def valider_liste(cle: str, *, par, comment: str = "", attendu_total_xaf: int | None = None) -> dict:
+def valider_liste(cle: str, *, par, empreinte: str, comment: str = "") -> dict:
     """Valide en bloc toutes les demandes encore en attente de la liste, au titre de l'étape en cours.
     Tout ou rien : une seule demande refusée annule la validation de la liste entière.
-    `attendu_total_xaf` : le total que le valideur a vu ; si la liste a changé depuis, rien n'est validé."""
+    DP-42 (revue du 29/10, B2) : `empreinte` est celle de la liste affichée au valideur (liste_du_vendredi) ; si elle
+    manque ou si la liste a changé depuis (bénéficiaire, montant ou demande), rien n'est validé."""
     from .services import SettlementError, approve_payout
 
     with db_transaction.atomic():
@@ -153,9 +174,10 @@ def valider_liste(cle: str, *, par, comment: str = "", attendu_total_xaf: int | 
             liste=cle, status=PayoutRequest.Status.PENDING_APPROVAL).order_by("requested_at"))
         if not demandes:
             raise Dp42Error("Aucune demande en attente dans cette liste.")
-        total = sum(d.amount_xaf for d in demandes)
-        if attendu_total_xaf is not None and int(attendu_total_xaf) != total:
-            raise Dp42Error(f"La liste a changé depuis votre lecture (total {total} F) : relisez-la avant de valider.")
+        for d in demandes:
+            d.payee  # noqa: B018  (chargé sous le verrou pour l'empreinte)
+        if not empreinte or empreinte != empreinte_de_la_liste(demandes):
+            raise Dp42Error("La liste a changé depuis votre lecture : relisez-la avant de valider (DP-42).")
         for d in demandes:
             try:
                 approve_payout(d, approved_by=par, comment=comment or f"Validation de la liste {cle} (DP-42).")

@@ -110,12 +110,10 @@ class ShipmentAdmin(admin.ModelAdmin):
         )
     status_badge.short_description = 'Statut'
 
-    actions = ['mark_delivered', 'mark_failed']
-
-    def mark_delivered(self, request, queryset):
-        count = queryset.exclude(status='DELIVERED').update(status='DELIVERED')
-        self.message_user(request, f"{count} livraison(s) marquée(s) comme livrée(s).")
-    mark_delivered.short_description = "Marquer comme livré"
+    # R66.3 (revue du 29/10, C1) : « Marquer comme livré » est supprimé. Une action groupée de l'admin Django ne peut
+    # exiger ni photo ni motif, et elle passait par un update direct, hors de la chaîne de garde et du journal. Une
+    # livraison se constate par le parcours normal (code du client et photo de remise).
+    actions = ['mark_failed']
 
     def mark_failed(self, request, queryset):
         count = queryset.exclude(status__in=['DELIVERED', 'CANCELLED']).update(status='FAILED')

@@ -118,6 +118,44 @@ def places_occupees(relais) -> int:
     return sum(places_du_colis(c) for c in colis)
 
 
+def plafonds_des_paliers() -> dict:
+    """R41.1 : {palier: valeur_max_colis}, lus dans t_paliers_relais (jamais en dur)."""
+    return {ligne["palier"]: int(ligne["valeur_max_colis"]) for ligne in regles.table("t_paliers_relais")}
+
+
+def plafond_valeur(relais) -> int:
+    """R41.1 : la valeur maximale d'un colis que ce relais peut garder ; 0 si son palier est inconnu (refus fermé)."""
+    return plafonds_des_paliers().get(getattr(relais, "palier", "") or "", 0)
+
+
+def valeur_de_l_expedition(shipment) -> int:
+    """R41.1 : valeur_colis d'une expédition — celle enregistrée à la commande, à défaut ses articles (colis plus
+    anciens). Ne pas confondre avec valeur_colis(parcel) ci-dessus, qui sert à plafonner la garde (R36.2)."""
+    if shipment.valeur_colis_xaf:
+        return shipment.valeur_colis_xaf
+    from .entreprises import valeur_colis as calcul  # le même calcul que l'affectation aux entreprises (R64.6)
+
+    return int(calcul(shipment))
+
+
+def peut_garder(relais, valeurs) -> bool:
+    """R41.1 : un relais ne garde la commande que si son plafond couvre valeur_colis de CHAQUE colis."""
+    plafond = plafond_valeur(relais)
+    return all(int(v or 0) <= plafond for v in valeurs)
+
+
+def valeurs_du_panier(lignes) -> list[int]:
+    """R41.1 avant la commande : une valeur_colis par boutique, au prix payé aujourd'hui (R27.2).
+    `lignes` : [(produit, quantité)]."""
+    from apps.catalog.flash import campagne_active, prix_final
+
+    par_boutique: dict = {}
+    for produit, qty in lignes:
+        prix = prix_final(produit, campagne_active(produit))
+        par_boutique[produit.vendor_id] = par_boutique.get(produit.vendor_id, 0) + int(prix) * int(qty)
+    return list(par_boutique.values())
+
+
 def relais_sature(relais, places_occupees_=None) -> bool:
     """R41.3 : les places occupées atteignent r_relais_saturation de ses places → plus de nouveau paquet. Un relais
     sans capacité déclarée n'est pas limité."""

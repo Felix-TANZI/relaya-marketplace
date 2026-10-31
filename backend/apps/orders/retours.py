@@ -105,6 +105,24 @@ def _demander_la_course_au_client(ret) -> None:
                   "action_url": f"/orders/{ret.order_id}"})
 
 
+def courses_de_retour_dues(user=None, telephone: str = ""):
+    """R69.1, décision du porteur (revue du 29/10, C4) : les retours dont le client en tort doit encore la course.
+    Par compte, ou par numéro (encaissement au comptoir, D14)."""
+    from django.db.models import Q
+
+    from .models import Return
+
+    qs = Return.objects.filter(frais_retour_partie="client", frais_retour_paye_le__isnull=True,
+                               frais_retour_xaf__gt=0).select_related("order")
+    cible = Q()
+    if user is not None:
+        cible |= Q(order__user=user)
+    if telephone:
+        chiffres = "".join(ch for ch in telephone if ch.isdigit())[-9:]
+        cible |= Q(order__customer_phone__endswith=chiffres) if chiffres else Q(pk__in=[])
+    return qs.filter(cible) if (user is not None or telephone) else qs.none()
+
+
 def course_de_retour_due(ret) -> int:
     """Ce que le client doit encore pour la course de retour (0 s'il n'est pas en tort ou s'il a payé)."""
     if ret.frais_retour_partie != "client" or ret.frais_retour_paye_le:

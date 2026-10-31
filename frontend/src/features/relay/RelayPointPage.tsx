@@ -35,6 +35,7 @@ import { formatCourt } from "@/services/api/relaySettlements";
 import { PayoutAccountVerificationCard } from "@/components/payments/PayoutAccountVerificationCard";
 import AvatarCropDialog from "@/components/profile/AvatarCropDialog";
 import RelayReception, { type RelayArrival, type RefuseInput } from "./RelayReception";
+import RelayCourseRetour from "./RelayCourseRetour";
 import RelayPickup, {
   type CounterIssueInput,
   type HandOverInput,
@@ -1607,6 +1608,7 @@ export default function RelayPointPage() {
       }}
       onContactSupport={() => setTab("messagerie")}
     />
+    <RelayCourseRetour onError={showOperationError} />
     </>
   );
 

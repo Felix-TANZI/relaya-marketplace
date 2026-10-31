@@ -480,9 +480,7 @@ PAYMENTS_ENCRYPTION_KEY_OLD = os.getenv("PAYMENTS_ENCRYPTION_KEY_OLD", "")
 PAYMENTS_FINGERPRINT_SALT = os.getenv("PAYMENTS_FINGERPRINT_SALT", "")
 # DP-61 (revue du 29/10, A1) : la console d'appel, sans opérateur, ne garde que ses derniers appels.
 BELIVAY_APPELS_CONSOLE_MAX = int(os.getenv("BELIVAY_APPELS_CONSOLE_MAX", "100"))
-# Securite avant main 2 : un envoi reste « en cours » si le processus tombe pendant l'appel au prestataire. Passe ce
-# delai, il devient une issue INCONNUE et part en reconciliation (jamais renvoye).
-PAYMENTS_ENVOI_INTERROMPU_MINUTES = int(os.getenv("PAYMENTS_ENVOI_INTERROMPU_MINUTES", "30"))
+# (Revue du 29/10, C3 : le délai d'un envoi interrompu est désormais le réglage r_envoi_interrompu_min.)
 
 # ── CAMPAY — secrets en environnement UNIQUEMENT ─────────────────────────────
 # Jamais en base, jamais lisibles depuis l'administration.

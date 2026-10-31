@@ -159,7 +159,9 @@ export default function CheckoutPage() {
     let cancelled = false;
     setRelayLoading(true);
     const cityCode = formData.city === 'Douala' ? 'DOUALA' : 'YAOUNDE';
-    customerApi.getNearbyRelayPoints({ city: cityCode, lat: buyerCoords?.lat, lng: buyerCoords?.lng })
+    // R41.1 : le serveur ne propose que les relais dont le plafond couvre chaque colis du panier.
+    const panier = items.map((item) => ({ id: item.id, quantity: item.quantity }));
+    customerApi.getNearbyRelayPoints({ city: cityCode, lat: buyerCoords?.lat, lng: buyerCoords?.lng, panier })
       .then((points) => {
         if (cancelled) return;
         setRelayPoints(points);
@@ -171,7 +173,7 @@ export default function CheckoutPage() {
       .catch(() => { if (!cancelled) setRelayPoints([]); })
       .finally(() => { if (!cancelled) setRelayLoading(false); });
     return () => { cancelled = true; };
-  }, [isPickup, formData.city, buyerCoords]);
+  }, [isPickup, formData.city, buyerCoords, items]);
 
   const analyzeDeliveryAddress = useCallback(async () => {
     if (isPickup) return true;

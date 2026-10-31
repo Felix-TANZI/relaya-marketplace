@@ -277,7 +277,11 @@ def _link_apple_identity(user, claims, authorization_code):
 # recopie dans le jeton signé ; à la connexion, le serveur le retire de sa liste. Un jeton volé ou rejoué n'ouvre donc
 # rien. Apple accepte le nonce tel quel ou son empreinte SHA-256 (cas d'iOS) : les deux sont reconnus.
 
-APPLE_NONCE_SECONDES = 600
+def _duree_nonce_apple() -> int:
+    """Revue du 29/10 (C3) : durée de vie du nonce Apple, réglage r_apple_nonce_s (jamais en dur)."""
+    from apps.regles import services as regles
+
+    return int(regles.reglage("r_apple_nonce_s"))
 
 
 def _consommer_nonce_apple(nonce_du_jeton, nonce_brut=None):
@@ -309,8 +313,9 @@ def apple_nonce(request):
     from django.core.cache import cache
 
     nonce = secrets.token_urlsafe(32)
-    cache.set(f"apple-nonce:{nonce}", True, timeout=APPLE_NONCE_SECONDES)
-    return Response({"nonce": nonce, "expireDans": APPLE_NONCE_SECONDES})
+    duree = _duree_nonce_apple()
+    cache.set(f"apple-nonce:{nonce}", True, timeout=duree)
+    return Response({"nonce": nonce, "expireDans": duree})
 
 
 @extend_schema(tags=["Auth"], summary="Connexion ou inscription avec Apple")
@@ -443,10 +448,14 @@ def _connexion_apple(request, data):
 #
 # Le plugin natif ne couvre pas Android. L'application ouvre donc la page d'Apple dans sa vue web ; Apple renvoie
 # le résultat ici (response_mode=form_post). Le serveur garde les jetons sous un ticket à usage unique, valable
-# APPLE_TICKET_SECONDES, et renvoie l'application sur APPLE_RETOUR_URL avec ce ticket : aucun jeton ne passe dans
+# r_apple_ticket_s secondes, et renvoie l'application sur APPLE_RETOUR_URL avec ce ticket : aucun jeton ne passe dans
 # une adresse. L'application échange ensuite le ticket (apple_ticket) et la connexion suit le chemin habituel.
 
-APPLE_TICKET_SECONDES = 120
+def _duree_ticket_apple() -> int:
+    """Revue du 29/10 (C3) : durée de vie du ticket Android, réglage r_apple_ticket_s (jamais en dur)."""
+    from apps.regles import services as regles
+
+    return int(regles.reglage("r_apple_ticket_s"))
 
 
 @csrf_exempt
@@ -476,7 +485,7 @@ def apple_callback(request):
         "identity_token": request.data.get("id_token"), "authorization_code": request.data.get("code") or "",
         "email": utilisateur.get("email") or "", "given_name": nom.get("firstName") or "",
         "family_name": nom.get("lastName") or "",
-    }, timeout=APPLE_TICKET_SECONDES)
+    }, timeout=_duree_ticket_apple())
     return HttpResponseRedirect(f"{retour}?{urlencode({'ticket': ticket, 'state': etat})}")
 
 

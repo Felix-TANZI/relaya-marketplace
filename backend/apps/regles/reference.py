@@ -29,6 +29,9 @@ REGLAGES_FEUILLE_DE_ROUTE = {
     "r_palier_eleve_litige_mois",       # R71.1 : palier Élevé, aucun litige perdu depuis (mois)
     "r_palier_eleve_anciennete_mois",   # R71.1 : palier Élevé, ancienneté du compte (mois)
     "r_relais_habituel_jours",  # R71.2 : relais habituel par défaut, fenêtre des retraits
+    "r_envoi_interrompu_min",   # revue 29/10 (C3) : envoi « en cours » → issue inconnue
+    "r_apple_nonce_s",          # revue 29/10 (C3) : durée de vie du nonce Apple
+    "r_apple_ticket_s",         # revue 29/10 (C3) : durée de vie du ticket Apple Android
 }
 
 

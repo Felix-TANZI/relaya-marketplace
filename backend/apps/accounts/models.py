@@ -202,6 +202,9 @@ class RelayPointProfile(models.Model):
         verbose_name="Longitude",
     )
     storage_capacity = models.PositiveIntegerField(default=0)
+    # Spec v2.1, R41.1 (revue du 29/10, C2) : palier du relais, dont le plafond de valeur d'un colis gardé est lu dans
+    # t_paliers_relais. Starter par défaut tant que le calcul R41.2 (Trust Score) n'est pas branché.
+    palier = models.CharField(max_length=20, default="Starter", help_text="palier de t_paliers_relais (R41.1)")
 
     # Accepter les encombrants est une question de PLACE, pas de tarif.
     #

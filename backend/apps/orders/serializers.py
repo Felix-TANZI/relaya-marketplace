@@ -314,6 +314,23 @@ class OrderCreateSerializer(serializers.Serializer):
 
         cart_items = validated_data.pop('cart_items')
         user = self.context['request'].user if self.context['request'].user.is_authenticated else None
+
+        # R69.1, décision du porteur (revue du 29/10, C4) : la course de retour due par le client en tort se paie avant
+        # sa prochaine commande (application ou comptoir, Mobile Money, jamais en espèces R01).
+        if user is not None:
+            from .retours import course_de_retour_due, courses_de_retour_dues
+
+            dues = list(courses_de_retour_dues(user=user))
+            montant = sum(course_de_retour_due(r) for r in dues)
+            if montant > 0:
+                # Le message en premier : l'écran de commande l'affiche tel quel, somme due comprise.
+                raise serializers.ValidationError({
+                    'course_retour': f"Une course de retour de {montant} F reste à payer avant une nouvelle commande "
+                                     "(R69.1). Payez-la depuis votre commande précédente, ou au comptoir d'un relais "
+                                     "par Mobile Money.",
+                    'course_retour_montant_xaf': montant,
+                    'course_retour_commandes': sorted({r.order_id for r in dues}),
+                })
         
         from . import frais as frais_v21
 
@@ -410,6 +427,19 @@ class OrderCreateSerializer(serializers.Serializer):
             })
         if destination.zone_dest:
             destination_zone = _Zone.objects.filter(code=destination.zone_dest).first() or destination_zone
+
+        # Spec v2.1, R41.1 (revue du 29/10, C2) : une valeur_colis par boutique ; le relais choisi doit la couvrir.
+        valeurs_par_boutique: dict = {}
+        for item_data in order_items_data:
+            vendeur = getattr(item_data['product'], 'vendor_id', None)
+            valeurs_par_boutique[vendeur] = valeurs_par_boutique.get(vendeur, 0) + int(item_data['line_total_xaf'])
+        if relay_point_obj is not None:
+            from apps.shipping.garde import peut_garder
+            if not peut_garder(relay_point_obj, valeurs_par_boutique.values()):
+                raise serializers.ValidationError({
+                    'relay_point_id': "Ce point relais ne peut pas garder un colis de cette valeur — choisissez-en un "
+                                      "autre ou la livraison à domicile (R41.1).",
+                })
 
         address_precision = validated_data.get('address_precision') or {}
         if not isinstance(address_precision, dict):
@@ -532,6 +562,7 @@ class OrderCreateSerializer(serializers.Serializer):
         for vendor_user in vendor_users:
             shipment = Shipment.objects.create(
                 order=order, vendor=vendor_user, status=Shipment.Status.CREATED,
+                valeur_colis_xaf=valeurs_par_boutique.get(vendor_user.pk, 0),  # R41.1
             )
             created_shipments.append(shipment)
             ShipmentEvent.record(

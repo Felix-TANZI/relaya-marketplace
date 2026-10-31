@@ -2576,11 +2576,17 @@ export const adminApi = {
     return http<OrderReturn[]>(`/api/vendors/admin/returns/${qs}`, { headers: authHeader() });
   },
 
-  markReturnReceived: async (returnId: number): Promise<OrderReturn> =>
-    http<OrderReturn>(`/api/vendors/admin/returns/${returnId}/received/`, {
+  /** R66.3 : la réception d'un retour se constate avec sa photo. */
+  markReturnReceived: async (returnId: number, photo: File): Promise<OrderReturn> => {
+    const form = new FormData();
+    form.append("photo", photo, photo.name || "reception-retour.jpg");
+    return http<OrderReturn>(`/api/vendors/admin/returns/${returnId}/received/`, {
       method: "POST",
-      headers: authHeader(),
-    }),
+      // Pas de Content-Type : le navigateur pose celui du formulaire (multipart) avec sa limite.
+      headers: { Authorization: authHeader().Authorization },
+      body: form,
+    });
+  },
 
   finalizeReturn: async (
     returnId: number,

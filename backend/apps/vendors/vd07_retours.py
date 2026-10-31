@@ -359,6 +359,18 @@ def return_receive(request, ref):
     if ret.received_at is not None:
         return Response({'ok': False, 'raison': 'deja_recu'})
 
+    # R66.3 (revue du 29/10, C1) : une photo à chaque changement de main, exigée par le serveur ; le retour ne passe
+    # « reçu » qu'avec la photo de sa réception.
+    upload = decode_data_uri(request.data.get('photo'), filename=f"retour-{ret.id}-reception.jpg")
+    if not upload:
+        return Response({'ok': False, 'raison': 'photo_obligatoire',
+                         'detail': "Photo obligatoire à la réception du retour (R66.3)."},
+                        status=status.HTTP_400_BAD_REQUEST)
+    try:
+        create_return_photo(return_obj=ret, user=request.user, upload=upload)
+    except ValidationError as exc:
+        return Response({'detail': exc.detail}, status=status.HTTP_400_BAD_REQUEST)
+
     ret.received_at = timezone.now()
     ret.received_by = request.user
     if ret.status not in (Return.Status.MEDIATION, Return.Status.REPLACEMENT_PENDING, Return.Status.REPLACEMENT_READY):

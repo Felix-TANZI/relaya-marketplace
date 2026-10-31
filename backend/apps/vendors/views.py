@@ -5798,6 +5798,20 @@ def admin_return_mark_received(request, return_id):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+    # R66.3 (revue du 29/10, C1) : la réception constatée par l'équipe exige aussi sa photo.
+    from rest_framework.exceptions import ValidationError as ErreurDeFichier
+
+    from apps.orders.evidence import create_return_photo
+
+    upload = request.FILES.get('photo')
+    if not upload:
+        return Response({'photo': "Photo obligatoire à la réception du retour (R66.3)."},
+                        status=status.HTTP_400_BAD_REQUEST)
+    try:
+        create_return_photo(return_obj=return_obj, user=request.user, upload=upload)
+    except ErreurDeFichier as exc:
+        return Response({'photo': exc.detail}, status=status.HTTP_400_BAD_REQUEST)
+
     return_obj.status = Return.Status.RECEIVED
     return_obj.received_at = timezone.now()
     return_obj.received_by = request.user

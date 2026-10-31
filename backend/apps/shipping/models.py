@@ -308,6 +308,9 @@ class Shipment(models.Model):
     delivery_code = models.CharField(max_length=6, blank=True, default="")
     # R66.1 : essais faux par code {"remise"|"depot"|"livraison": {"n": int, "bloque_jusqu": iso}}
     codes_essais = models.JSONField(default=dict, blank=True)
+    # Spec v2.1, R41.1 (revue du 29/10, C2) : valeur_colis, le prix des produits de ce colis (articles de la boutique
+    # dans la commande, prix payé). Un relais ne garde le colis que si son plafond la couvre.
+    valeur_colis_xaf = models.PositiveIntegerField(default=0)
 
     # Distinct du statut DELIVERED (mis par le livreur) : date a laquelle
     # L'ACHETEUR a confirme la reception de CE colis precis (code saisi).

@@ -59,11 +59,11 @@ def formats_du_colis(shipment) -> list[str]:
     return ["P"]
 
 
-def relais_de_la_zone(order):
+def relais_de_la_zone(order, valeurs=()):
     """R51.2 : le relais actif et approuvé de la zone du client qui peut garder le colis, le plus proche de son
     adresse ; None si aucun (plein ou absent)."""
     from apps.accounts.models import RelayPointProfile
-    from apps.shipping.garde import relais_sature
+    from apps.shipping.garde import peut_garder, relais_sature
     from apps.shipping.views import _haversine_km
 
     from .frais import destination_relais
@@ -77,6 +77,8 @@ def relais_de_la_zone(order):
         except Exception:
             continue
         if relais_sature(relais):
+            continue
+        if valeurs and not peut_garder(relais, valeurs):  # R41.1, R51.2 : sa valeur au-dessus de son plafond
             continue
         d = (_haversine_km(order.delivery_latitude, order.delivery_longitude, relais.latitude, relais.longitude)
              if order.delivery_latitude and relais.latitude else 0)
@@ -119,7 +121,9 @@ def declarer_absence(shipment, livreur_user, latitude, longitude) -> dict:
     preuve_absence(shipment, latitude, longitude)
     m = regles.moteur()
     formats = formats_du_colis(shipment)
-    relais = None if "XL" in formats else relais_de_la_zone(order)
+    from apps.shipping.garde import valeur_de_l_expedition
+
+    relais = None if "XL" in formats else relais_de_la_zone(order, [valeur_de_l_expedition(shipment)])  # R51.2, R41.1
     lieu = f"{latitude},{longitude}"
     if relais is None:  # R51.6 : traité comme un XL, attend à l'agence de l'entreprise
         frais = int(regles.reglage("r_absence_sup"))

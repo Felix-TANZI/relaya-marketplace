@@ -26,6 +26,7 @@ from .views import (
     RelayPointNearbyView,
     VerifierAdresseView,
     RelayPointComptoirCollectView,
+    RelayPointCourseRetourCollectView,
     ShipmentMaskedCallView,
     AdminPrestationsEntreprisesView,
     RelayPointComptoirRefusalView,
@@ -64,6 +65,8 @@ urlpatterns = [
     path("relay-point/pickup/", RelayPointParcelPickupView.as_view(), name="shipping-relay-pickup"),
     path("relay-point/pickup/check/", RelayPointPickupCodeCheckView.as_view(), name="shipping-relay-pickup-check"),
     path("relay-point/comptoir/encaisser/", RelayPointComptoirCollectView.as_view(), name="shipping-relay-comptoir-collect"),
+    path("relay-point/comptoir/course-retour/", RelayPointCourseRetourCollectView.as_view(),
+         name="shipping-relay-course-retour"),  # R69.1, C4
     path("relay-point/comptoir/refus/", RelayPointComptoirRefusalView.as_view(), name="shipping-relay-comptoir-refusal"),
     path("relay-point/return/", RelayPointParcelReturnView.as_view(), name="shipping-relay-return"),
     path("relay-point/evidence/", RelayPointParcelEvidenceUploadView.as_view(), name="shipping-relay-evidence"),

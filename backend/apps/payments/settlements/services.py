@@ -1852,12 +1852,13 @@ def amount_due(payee: PayeeAccount) -> dict:
 def requalifier_envois_interrompus(minutes: int | None = None) -> dict:
     """
     Securite avant main 2 : un versement ou un remboursement reste « en cours » (PROCESSING) quand le processus tombe
-    entre l'enregistrement et la conclusion. Passe PAYMENTS_ENVOI_INTERROMPU_MINUTES, on ne sait pas si l'argent est
+    entre l'enregistrement et la conclusion. Passe r_envoi_interrompu_min minutes, on ne sait pas si l'argent est
     parti : il devient une issue INCONNUE, portee en transit, que la reconciliation tranche. Jamais de renvoi.
     """
-    from django.conf import settings
+    from apps.regles import services as regles
 
-    minutes = minutes if minutes is not None else settings.PAYMENTS_ENVOI_INTERROMPU_MINUTES
+    # Revue du 29/10 (C3) : délai en réglage r_…, modifiable dans l'administration, plus en variable d'environnement.
+    minutes = minutes if minutes is not None else int(regles.reglage("r_envoi_interrompu_min"))
     limite = timezone.now() - timedelta(minutes=minutes)
     message = f"Envoi interrompu : toujours en cours apres {minutes} min. Issue inconnue, reconciliation obligatoire."
     n = 0

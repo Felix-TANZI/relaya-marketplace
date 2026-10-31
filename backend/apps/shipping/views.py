@@ -232,8 +232,25 @@ class ShipmentEventCreateView(generics.CreateAPIView):
         OpenApiParameter(name="city", required=False, type=str),
         OpenApiParameter(name="lat", required=False, type=float),
         OpenApiParameter(name="lng", required=False, type=float),
+        OpenApiParameter(name="panier", required=False, type=str,
+                         description="R41.1 : « id:quantité,id:quantité » ; seuls les relais qui peuvent garder chaque "
+                                     "colis du panier sont proposés"),
     ],
 )
+def _lignes_du_panier(texte):
+    """« id:quantité,… » → [(produit, quantité)] pour R41.1 ; les entrées illisibles ou inconnues sont ignorées."""
+    from apps.catalog.models import Product
+
+    lignes = []
+    for morceau in (texte or "").split(","):
+        pid, _, qty = morceau.partition(":")
+        if pid.strip().isdigit():
+            produit = Product.objects.filter(pk=int(pid)).select_related("vendor").first()
+            if produit is not None:
+                lignes.append((produit, int(qty) if qty.strip().isdigit() else 1))
+    return lignes
+
+
 class RelayPointNearbyView(APIView):
     # Tache D3 — acces visiteur sans compte. Reperer les points relais fait
     # partie de la decouverte : on ne peut pas demander de creer un compte
@@ -257,8 +274,9 @@ class RelayPointNearbyView(APIView):
 
         from apps.orders.frais import FraisImpossibles, destination_relais
         from apps.shipping.entreprises import zones_couvertes
-        from apps.shipping.garde import places_occupees, relais_sature
+        from apps.shipping.garde import peut_garder, places_occupees, relais_sature, valeurs_du_panier
         couvertes = zones_couvertes()
+        valeurs = valeurs_du_panier(_lignes_du_panier(request.query_params.get("panier")))  # R41.1
 
         try:
             buyer_lat = float(lat) if lat is not None else None
@@ -273,6 +291,8 @@ class RelayPointNearbyView(APIView):
                 if destination_relais(relay).zone_dest not in couvertes:
                     continue
             except FraisImpossibles:
+                continue
+            if valeurs and not peut_garder(relay, valeurs):  # R41.1 : son plafond couvre chaque colis du panier
                 continue
             # R41.3 : places occupées (places(format), R40.2) sous r_relais_saturation des places.
             occupancy = places_occupees(relay)
@@ -585,6 +605,37 @@ class RelayPointComptoirCollectView(APIView):
                 intent = prepare_payment_comptoir(order, payer_msisdn=telephone, payer_operator=operateur)
             else:
                 intent = prepare_payment_absence(order, payer_msisdn=telephone, payer_operator=operateur)
+            issue = initiate_collect(intent)
+        except (CheckoutError, CollectError) as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"reference": issue.intent.reference, "status": issue.status, "message": issue.message,
+                         "montant_xaf": issue.intent.amount_xaf})
+
+
+@extend_schema(
+    tags=["Relay Point"],
+    summary="Point relais : encaisser par Mobile Money la course de retour due par un client (R69.1, C4)",
+    description="Le gérant saisit le numéro du client ; la demande de paiement part sur ce téléphone. Jamais d'espèces "
+                "(R01). Ne dit rien d'autre que le montant dû.",
+)
+class RelayPointCourseRetourCollectView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        from apps.orders.retours import course_de_retour_due, courses_de_retour_dues
+        from apps.payments.application.collect import CollectError, initiate_collect
+        from apps.payments.bridge.checkout_v2 import CheckoutError, prepare_payment_course_retour
+
+        _get_active_relay_point(request.user)
+        _exiger_permission(request.user, "can_hand_over")
+        telephone = str(request.data.get("payer_msisdn") or "").replace(" ", "")
+        ret = next((r for r in courses_de_retour_dues(telephone=telephone) if course_de_retour_due(r)), None)
+        if not telephone or ret is None:
+            return Response({"code": "rien_a_payer", "detail": "Aucune course de retour due pour ce numéro."},
+                            status=status.HTTP_404_NOT_FOUND)
+        try:
+            intent = prepare_payment_course_retour(ret, payer_msisdn=telephone,
+                                                   payer_operator=request.data.get("payer_operator") or "")
             issue = initiate_collect(intent)
         except (CheckoutError, CollectError) as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)

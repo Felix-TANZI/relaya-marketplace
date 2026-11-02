@@ -62,7 +62,11 @@ Sur une machine qui n'est pas la production, avec **les mêmes** `PAYMENTS_ENCRY
    ```
    psql copie_0032 -c "\copy (SELECT id, pickup_code FROM shipping_relayparcel WHERE pickup_code <> '') TO 'avant_0032.csv' CSV"
    ```
-3. Jouer les migrations avec le code de dev1 : `python manage.py migrate`.
+3. Jouer les migrations avec le code de dev1, **sur la copie seulement** avec la valeur d'essai :
+   ```
+   BELIVAY_MIGRATION_0032_VALIDEE=essai-copie python manage.py migrate
+   ```
+   Sans cette variable, la migration 0032 refuse de partir (garde-fou, voir l'étape 5). La valeur `essai-copie` ne s'utilise **jamais** en production ; la migration affiche « ESSAI » pour qu'on la reconnaisse dans les journaux.
 4. Vérifier : `python manage.py verifier_codes_retrait --codes avant_0032.csv`.
    - La commande attendue se termine par **« OK : chaque code existant est toujours accepté au comptoir. »**
    - Toute autre fin, avec la sortie 1, signifie **qu'il ne faut pas migrer la production**. Il faut chercher la cause d'abord (souvent une clé ou un sel différents de ceux de la production).
@@ -87,9 +91,32 @@ Fichier des codes supprimé : oui
 
 Seulement après un compte rendu « OK » :
 
-1. Lancer `./deploy.sh`. Le conteneur exécute `check --deploy`, puis `migrate`, puis `gunicorn` (A1).
-2. Juste après : `python manage.py verifier_codes_retrait`, sans `--codes`, puisqu'on ne relève jamais les codes en production. La commande doit répondre OK.
-3. Si la réponse n'est pas OK, arrêter les remises au comptoir et restaurer la sauvegarde de l'étape 2.
+1. **Garde-fou (revue du 1/11).** Dans `.env.prod`, poser la date du compte rendu « OK », au format AAAA-MM-JJ :
+   ```
+   BELIVAY_MIGRATION_0032_VALIDEE=2026-11-05
+   ```
+   Sans elle (ou avec toute autre valeur qu'une date), la migration 0032 refuse de s'appliquer : `migrate` s'arrête avant d'avoir rien modifié, le serveur ne démarre pas et `deploy.sh` revient à la version précédente. Le message renvoie à ce document. La variable peut rester en place ensuite : une fois appliquée, la migration ne repart plus.
+2. Lancer `./deploy.sh`. Le conteneur exécute `check --deploy`, puis `migrate`, puis `gunicorn` (A1).
+3. Juste après : `python manage.py verifier_codes_retrait`, sans `--codes`, puisqu'on ne relève jamais les codes en production. La commande doit répondre OK.
+4. Si la réponse n'est pas OK, arrêter les remises au comptoir et restaurer la sauvegarde de l'étape 2.
+
+### 6. Fermer l'ancienne part du transport (C5)
+
+Une fois le déploiement en place, la règle `dist-transport-carrier` (ancienne part de 70 % du transport, remplacée par la grille des entreprises, A10 et R53) se ferme avec les deux validations de la configuration :
+
+1. **Demande**, par un premier compte habilité, sur le serveur :
+   ```
+   docker compose -f docker-compose.prod.yml --env-file .env.prod exec backend \
+     python manage.py request_locked_financial_config --username <compte-demandeur>
+   ```
+   La sortie liste les demandes créées (statut PENDING), dont « DistributionRule/dist-transport-carrier ». La commande crée aussi les demandes de verrouillage de la configuration financière (séquestre, répartitions) : elles suivent la même approbation.
+2. **Approbation**, par un **second** compte, jamais le demandeur : administration Django → Payments → « Demandes de changement (config financiere) » → cocher la demande « dist-transport-carrier » (action « Desactivation ») → action « Approuver et appliquer ». Le serveur refuse que le demandeur approuve sa propre demande ; une règle de niveau N3 exige un superutilisateur.
+3. **Vérification** : la règle n'a plus de version active.
+   ```
+   docker compose -f docker-compose.prod.yml --env-file .env.prod exec backend python manage.py shell -c \
+     "from apps.payments.config.models import DistributionRule as R; print(R.objects.filter(config_key='dist-transport-carrier', is_active=True).exists())"
+   ```
+   Le résultat attendu est `False`. Dans l'administration, la demande est au statut « Appliquee ».
 
 ## Ce qui ne dépend pas de l'équipe de développement
 

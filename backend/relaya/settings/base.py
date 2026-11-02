@@ -485,6 +485,12 @@ BELIVAY_APPELS_CONSOLE_MAX = int(os.getenv("BELIVAY_APPELS_CONSOLE_MAX", "100"))
 # masqués et l'appel répond « indisponible » (A1) ; check --deploy et payments_preflight le signalent à chaque fois.
 # À retirer le jour où BELIVAY_APPELS désigne l'opérateur.
 BELIVAY_APPELS_DEROGATION = os.getenv("BELIVAY_APPELS_DEROGATION", "").strip()
+# Revue du 1/11 : vrai seulement dans relaya.settings.prod (garde-fous propres à la production).
+BELIVAY_PRODUCTION = False
+# Revue du 1/11 : date (AAAA-MM-JJ) du compte rendu « OK » de l'essai de la migration shipping 0032 sur une copie ;
+# « essai-copie » sur la copie pendant l'essai. Sans elle, 0032 refuse de partir en production
+# (apps.shipping.garde_0032, PROCEDURE_MIGRATION_0032.md).
+BELIVAY_MIGRATION_0032_VALIDEE = os.getenv("BELIVAY_MIGRATION_0032_VALIDEE", "").strip()
 # (Revue du 29/10, C3 : le délai d'un envoi interrompu est désormais le réglage r_envoi_interrompu_min.)
 
 # ── CAMPAY — secrets en environnement UNIQUEMENT ─────────────────────────────

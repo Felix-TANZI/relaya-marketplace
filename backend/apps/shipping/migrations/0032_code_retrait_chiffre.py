@@ -6,6 +6,12 @@ import django.db.models.deletion
 from django.db import migrations, models
 
 
+def verifier_la_validation(apps, schema_editor):
+    from apps.shipping.garde_0032 import verifier
+
+    verifier(apps, schema_editor)
+
+
 def chiffrer_les_codes(apps, schema_editor):
     from apps.client_core.chiffrement import chiffrer, empreinte
 
@@ -28,6 +34,8 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        # Revue du 1/11 : en production, rien ne part sans BELIVAY_MIGRATION_0032_VALIDEE (apps.shipping.garde_0032).
+        migrations.RunPython(verifier_la_validation, migrations.RunPython.noop),
         migrations.AddField(
             model_name='relayparcel',
             name='pickup_code_chiffre',

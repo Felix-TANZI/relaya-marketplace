@@ -18,10 +18,13 @@ interface AuthContextType {
   appleLogin: (payload: {
     identityToken: string;
     authorizationCode?: string | null;
+    nonce?: string | null;
     email?: string | null;
     givenName?: string | null;
     familyName?: string | null;
   }) => Promise<LoginOutcome>;
+  /** D33 : connexion Apple sur Android, à partir du ticket du retour web. */
+  appleTicketLogin: (ticket: string) => Promise<LoginOutcome>;
   verify2FA: (userId: number, code: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
@@ -91,6 +94,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { twoFactorRequired: false };
   };
 
+  const appleTicketLogin: AuthContextType['appleTicketLogin'] = async (ticket) => {
+    const response = await authApi.appleTicket(ticket);
+    if ('2fa_required' in response) {
+      return { twoFactorRequired: true, userId: response.user_id, email: response.email };
+    }
+    await applyTokens(response.access, response.refresh);
+    return { twoFactorRequired: false };
+  };
+
   const verify2FA = async (userId: number, code: string): Promise<void> => {
     const tokens = await authApi.verify2FALogin(userId, code);
     await applyTokens(tokens.access, tokens.refresh);
@@ -114,7 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, googleLogin, appleLogin, verify2FA, register, logout, isAuthenticated: !!user }}
+      value={{ user, loading, login, googleLogin, appleLogin, appleTicketLogin, verify2FA, register, logout, isAuthenticated: !!user }}
     >
       {children}
     </AuthContext.Provider>

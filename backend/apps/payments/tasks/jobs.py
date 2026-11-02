@@ -53,7 +53,10 @@ def poll_pending_payments(limit: int = 100) -> dict:
 )
 def expire_stale_intents() -> dict:
     from apps.payments.application.collect import expire_stale_intents as expirer
-    return {"expired": expirer()}
+    from apps.payments.bridge.flash import rendre_les_impayees
+
+    # Feuille de route D9 : le stock flash des commandes restees impayees revient a la vente.
+    return {"expired": expirer(), "flash_rendus": rendre_les_impayees()}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -88,6 +91,16 @@ def escrow_release(limit: int = 200) -> dict:
 # ─────────────────────────────────────────────────────────────────────────────
 # REGLEMENTS
 # ─────────────────────────────────────────────────────────────────────────────
+
+@payments_task(
+    "rappels_valideurs", lock_timeout=300,
+    description="DP-42 : rappelle au comptable puis au porteur de valider la liste du vendredi avant midi.",
+)
+def rappels_valideurs() -> dict:
+    from apps.payments.settlements.dp42 import rappels_du_vendredi
+
+    return rappels_du_vendredi()
+
 
 @payments_task(
     "build_settlements", lock_timeout=900, critical=True,
@@ -278,7 +291,9 @@ def reconcile_transactions_task(days: int = 1) -> dict:
 )
 def resolve_unknown_payouts_task(days: int = 7) -> dict:
     from apps.payments.reconciliation.services import resolve_unknown_payouts
+    from apps.payments.settlements.services import requalifier_envois_interrompus
 
+    requalifier_envois_interrompus()  # sécurité main 2 : un envoi interrompu devient une issue inconnue
     run = resolve_unknown_payouts(days=days)
     resume = run.summary or {}
     if resume.get("candidates_needing_human"):
@@ -406,6 +421,8 @@ SCHEDULE = [
     # Reglements : spec v2.1, R22.2 et R43.1 — la tache tourne chaque jour et ne
     # verse que le vendredi avant r_versement_heure (bridge.vendredi).
     {"task": "build_settlements", "every_minutes": 1440, "group": "settlement"},
+    # DP-42, R22.2 : rappels aux valideurs de la liste du vendredi (ne fait rien hors du vendredi matin).
+    {"task": "rappels_valideurs", "every_minutes": 30, "group": "settlement"},
     {"task": "execute_payouts", "every_minutes": 10, "group": "payout"},
     {"task": "execute_refunds", "every_minutes": 10, "group": "payout"},
 ]

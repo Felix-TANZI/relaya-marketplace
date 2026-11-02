@@ -61,12 +61,17 @@ def annoncer_retrait(order, code: str, relais: str) -> bool:
 
     from . import sms
 
-    a_payer = order.payment_status == order.PaymentStatus.VALIDATED
+    from .absence import dus_au_relais
+
+    dus = dus_au_relais(order)
+    a_payer = dus["total"] > 0
     if a_payer:
-        reste = int(order.reste_comptoir_xaf or 0) + int(order.frais_momo_comptoir_xaf or 0)
-        titre = f"Colis au relais · {reste} F à payer au comptoir · commande #{order.pk}"
-        message = (f"Votre commande est arrivée au point relais {relais}. Payez {reste} F par Mobile Money au comptoir : "
-                   "le code de retrait vous sera envoyé aussitôt.")
+        reste = dus["total"]
+        quoi = "les frais d'absence (R51.5)" if dus["absence"] and not dus["comptoir"] else f"{reste} F"
+        titre = (f"Colis au relais · {reste} F à payer au comptoir · commande #{order.pk}" if dus["comptoir"] else
+                 f"Colis au relais · frais d'absence de {reste} F à payer avant le retrait · commande #{order.pk}")
+        message = (f"Votre commande est arrivée au point relais {relais}. Payez {quoi} par Mobile Money, dans "
+                   "l'application ou au comptoir : le code de retrait vous sera envoyé aussitôt.")
     else:
         sms.code_retrait(order, code, relais)
         titre = f"Colis prêt au retrait · commande #{order.pk}"
@@ -100,6 +105,9 @@ def refuser(order, colis, motif: str, actor=None) -> None:
                              location=parcel.relay_point.name, actor=actor,
                              actor_role="RELAY_POINT" if actor else ShipmentEvent.ACTOR_ROLE_SYSTEM)
     Order.objects.filter(pk=order.pk).update(fulfillment_status=Order.FulfillmentStatus.CANCELLED)
+    from . import flash
+
+    flash.rendre(order)  # D9 : l'article repart au vendeur, son stock flash revient à la vente
     try:
         for hold in EscrowHold.objects.filter(order_id=order.pk, component=EscrowHold.Component.GOODS,
                                               status__in=[EscrowHold.Status.PENDING, EscrowHold.Status.HELD]):

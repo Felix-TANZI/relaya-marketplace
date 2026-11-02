@@ -15,6 +15,7 @@ from apps.orders.models import Dispute, Order
 from .assignment import choose_courier_for_order
 from .models import RelayParcel, Shipment, ShipmentEvent, ShipmentEvidence, ShipmentLocation, Tournee, Zone
 from .serializers import RelayParcelPickupSerializer, RelayParcelReceiveSerializer, ShipmentSerializer
+from tests.aide_preuves import photo  # R66.3 : la photo de l'étape avant d'agir
 from .tournees import bourse_tournees_for_organization, claim_tournee_for_organization, compose_tournees_for_zone
 
 # Mot de passe de fixture : jamais relu, juste exige par create_user()/create_superuser().
@@ -183,6 +184,7 @@ class ShipmentTrackingTests(APITestCase):
             relay_point=self.relay_point,
             status=RelayParcel.Status.EXPECTED,
         )
+        photo(self.shipment, ShipmentEvidence.Stage.RELAY_RECEIVED)
         serializer = RelayParcelReceiveSerializer(
             data={"shipment_id": self.shipment.id, "slot_code": "A-07", "proof_note": "3 photos + double signature",
                   "depot_code": self.shipment.ensure_depot_code()},  # R66.1
@@ -211,8 +213,10 @@ class ShipmentTrackingTests(APITestCase):
             pickup_code="TIERS1",
         )
 
+        photo(self.shipment, ShipmentEvidence.Stage.RELAY_RELEASED)
+
         missing = RelayParcelPickupSerializer(
-            data={"pickup_code": "TIERS1"},
+            data={"colis": f"BVY-{self.shipment.order_id}-{self.shipment.id}", "pickup_code": "TIERS1"},
             context={"relay_point": self.relay_point},
         )
         missing.is_valid(raise_exception=True)
@@ -221,7 +225,7 @@ class ShipmentTrackingTests(APITestCase):
 
         logged = RelayParcelPickupSerializer(
             data={
-                "pickup_code": "TIERS1",
+                "colis": f"BVY-{self.shipment.order_id}-{self.shipment.id}", "pickup_code": "TIERS1",
                 "picked_up_by_name": "Jean Kamga",
                 "picked_up_by_id_reference": "CNI 1234567890",
             },
@@ -243,8 +247,10 @@ class ShipmentTrackingTests(APITestCase):
             pickup_code="NOINSP",
         )
 
+        photo(self.shipment, ShipmentEvidence.Stage.RELAY_RELEASED)
+
         serializer = RelayParcelPickupSerializer(
-            data={"pickup_code": "NOINSP"},
+            data={"colis": f"BVY-{self.shipment.order_id}-{self.shipment.id}", "pickup_code": "NOINSP"},
             context={"relay_point": self.relay_point, "user": self.relay_user},
         )
         serializer.is_valid(raise_exception=True)
@@ -268,8 +274,10 @@ class ShipmentTrackingTests(APITestCase):
             pickup_code="INSP01",
         )
 
+        photo(self.shipment, ShipmentEvidence.Stage.RELAY_RELEASED)
+
         serializer = RelayParcelPickupSerializer(
-            data={"pickup_code": "INSP01", "buyer_inspection": "ACCEPTED"},
+            data={"colis": f"BVY-{self.shipment.order_id}-{self.shipment.id}", "pickup_code": "INSP01", "buyer_inspection": "ACCEPTED"},
             context={"relay_point": self.relay_point, "user": self.relay_user},
         )
         serializer.is_valid(raise_exception=True)
@@ -302,8 +310,10 @@ class ShipmentTrackingTests(APITestCase):
             pickup_code="MULTI1",
         )
 
+        photo(self.shipment, ShipmentEvidence.Stage.RELAY_RELEASED)
+
         serializer = RelayParcelPickupSerializer(
-            data={"pickup_code": "MULTI1", "buyer_inspection": "ACCEPTED"},
+            data={"colis": f"BVY-{self.shipment.order_id}-{self.shipment.id}", "pickup_code": "MULTI1", "buyer_inspection": "ACCEPTED"},
             context={"relay_point": self.relay_point, "user": self.relay_user},
         )
         serializer.is_valid(raise_exception=True)

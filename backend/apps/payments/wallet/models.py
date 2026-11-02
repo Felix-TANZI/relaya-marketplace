@@ -21,6 +21,8 @@ class Portefeuille(models.Model):
     solde_retirable_xaf = models.PositiveIntegerField(default=0)
     solde_geste_xaf = models.PositiveIntegerField(default=0, help_text="gestes commerciaux, jamais retirables (R03.6)")
     code_hash = models.CharField(max_length=128, blank=True, default="", help_text="code a 4 chiffres (R03.5)")
+    code_echecs = models.PositiveSmallIntegerField(default=0, help_text="codes faux depuis le dernier bon code")
+    code_bloque_jusqua = models.DateTimeField(null=True, blank=True, help_text="r_wallet_code_essais atteint")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -83,6 +85,8 @@ class GestePortefeuille(models.Model):
         REFUSE = "REFUSE", "Refuse"
 
     client = models.ForeignKey(User, on_delete=models.PROTECT, related_name="gestes_wallet")
+    # Spec v2.1, R25.1 : un geste se rattache a une commande et ne depasse jamais sa commission_b.
+    order_id = models.PositiveBigIntegerField(null=True, blank=True)
     montant_xaf = models.PositiveIntegerField()
     motif = models.CharField(max_length=200)
     statut = models.CharField(max_length=12, choices=Statut.choices, default=Statut.EN_ATTENTE)

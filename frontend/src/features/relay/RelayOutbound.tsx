@@ -24,7 +24,7 @@
  * qu'il existe — mais aucun colis ne peut porter ce motif aujourd'hui.
  */
 import { useMemo, useState } from "react";
-import { Check, Layers, Truck } from "lucide-react";
+import { Camera, Check, Layers, Truck } from "lucide-react";
 
 /** Pourquoi un colis quitte le relais. */
 export type OutboundReason = "renvoi" | "retour" | "refus" | "transfert";
@@ -148,10 +148,12 @@ export default function RelayOutbound({
   /** Passages annonces, du plus proche au plus lointain. */
   passages: CollectionPassage[];
   busy: boolean;
-  onValidate: (ids: number[]) => Promise<boolean>;
+  /** R66.3 (revue du 1/11) : la photo de la sortie accompagne chaque colis remis au livreur. */
+  onValidate: (ids: number[], photo: File) => Promise<boolean>;
 }) {
   const [active, setActive] = useState<string>(TABS[0].key);
   const [checked, setChecked] = useState<number[]>([]);
+  const [photo, setPhoto] = useState<File | null>(null);
   /**
    * Repère temporel figé au montage.
    *
@@ -223,9 +225,12 @@ export default function RelayOutbound({
   }, [courierRef, pending.length]);
 
   const validate = async () => {
-    if (checked.length === 0) return;
-    const ok = await onValidate(checked);
-    if (ok) setChecked([]);
+    if (checked.length === 0 || !photo) return;
+    const ok = await onValidate(checked, photo);
+    if (ok) {
+      setChecked([]);
+      setPhoto(null);
+    }
   };
 
   return (
@@ -361,9 +366,24 @@ export default function RelayOutbound({
                 lui passe.
               </p>
 
+              {/* R66.3 : pas de changement de main sans photo — le serveur refuse la sortie sans elle. */}
+              <label className="mt-3 flex cursor-pointer items-center gap-3 rounded-[12px] border border-dashed border-slate-300 px-4 py-3 text-[14px] font-semibold text-slate-700 dark:border-slate-700 dark:text-slate-200">
+                <Camera size={19} strokeWidth={2.2} className="flex-shrink-0 text-[#EF6A00]" />
+                <span className="min-w-0 flex-1 truncate">
+                  {photo ? `Photo prise : ${photo.name}` : "Photo de la sortie (obligatoire)"}
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(event) => setPhoto(event.target.files?.[0] ?? null)}
+                />
+              </label>
+
               <button
                 type="button"
-                disabled={checked.length === 0 || busy}
+                disabled={checked.length === 0 || !photo || busy}
                 onClick={() => void validate()}
                 className="pr-btn mt-3 flex w-full items-center justify-center gap-2.5 rounded-[12px] px-4 py-4 text-[17px] font-black text-white transition active:scale-[.97] disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none dark:disabled:from-slate-700 dark:disabled:to-slate-700"
               >

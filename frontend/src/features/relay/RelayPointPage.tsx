@@ -35,6 +35,7 @@ import { formatCourt } from "@/services/api/relaySettlements";
 import { PayoutAccountVerificationCard } from "@/components/payments/PayoutAccountVerificationCard";
 import AvatarCropDialog from "@/components/profile/AvatarCropDialog";
 import RelayReception, { type RelayArrival, type RefuseInput } from "./RelayReception";
+import RelayCourseRetour from "./RelayCourseRetour";
 import RelayPickup, {
   type CounterIssueInput,
   type HandOverInput,
@@ -879,27 +880,28 @@ export default function RelayPointPage() {
     setOperationBusy(true);
     setOperationMessage(null);
     try {
-      // R66.1 : le serveur verifie le code de depot du colis avant de le mettre en stock.
-      const parcel = await http<RelayParcel>("/api/shipping/relay-point/receive/", {
-        method: "POST",
-        body: JSON.stringify({ shipment_id: shipmentId, slot_code: slotCode, proof_note: proofNote, depot_code: depotCode }),
-      });
-      // D15 : photos et signatures de la reception, rattachees au colis (lieu fixe, presume connecte).
+      // D15, R66.3 : photos et signatures de la reception partent AVANT la reception (le serveur exige la photo),
+      // rattachees a l'expedition attendue ici (lieu fixe, presume connecte).
       for (const [index, photo] of photos.entries()) {
         const form = new FormData();
-        form.append("parcel_id", String(parcel.id));
+        form.append("shipment_id", String(shipmentId));
         form.append("stage", "RELAY_RECEIVED");
         form.append("file", photo, photo.name || `reception-${index + 1}.jpg`);
         await http("/api/shipping/relay-point/evidence/", { method: "POST", body: form });
       }
       for (const [index, signature] of signatures.entries()) {
         const form = new FormData();
-        form.append("parcel_id", String(parcel.id));
+        form.append("shipment_id", String(shipmentId));
         form.append("stage", "RELAY_RECEIVED");
         form.append("description", index === 0 ? "Signature du gérant" : "Signature du livreur");
         form.append("file", dataUrlToBlob(signature), `signature-${index + 1}.png`);
         await http("/api/shipping/relay-point/evidence/", { method: "POST", body: form });
       }
+      // R66.1 : le serveur verifie le code de depot du colis avant de le mettre en stock.
+      await http<RelayParcel>("/api/shipping/relay-point/receive/", {
+        method: "POST",
+        body: JSON.stringify({ shipment_id: shipmentId, slot_code: slotCode, proof_note: proofNote, depot_code: depotCode }),
+      });
       setOperationMessage({
         tone: "success",
         text: slotCode
@@ -972,7 +974,7 @@ export default function RelayPointPage() {
       await http<RelayParcel>("/api/shipping/relay-point/pickup/", {
         method: "POST",
         body: JSON.stringify({
-          parcel_id: input.parcelIds[0],
+          colis: input.colis,
           pickup_code: input.code,
           buyer_inspection: input.inspection,
           proof_note:
@@ -1416,7 +1418,7 @@ export default function RelayPointPage() {
    * les colis acceptes, et marquer les autres comme restes est plus juste
    * que d'annuler tout le lot.
    */
-  const validateOutbound = async (ids: number[]): Promise<boolean> => {
+  const validateOutbound = async (ids: number[], photo: File): Promise<boolean> => {
     if (ids.length === 0) return false;
     setOperationBusy(true);
     setOperationMessage(null);
@@ -1424,6 +1426,14 @@ export default function RelayPointPage() {
     try {
       for (const parcelId of ids) {
         try {
+          // R66.3 (revue du 1/11) : la photo de la sortie d'abord, rattachée à ce colis ; le serveur refuse la sortie
+          // sans elle.
+          const photoForm = new FormData();
+          photoForm.append("parcel_id", String(parcelId));
+          photoForm.append("stage", "RELAY_RETURNED");
+          photoForm.append("file", photo, photo.name || "sortie.jpg");
+          await http("/api/shipping/relay-point/evidence/", { method: "POST", body: photoForm });
+
           await http("/api/shipping/relay-point/return/", {
             method: "POST",
             body: JSON.stringify({
@@ -1503,7 +1513,7 @@ export default function RelayPointPage() {
    * compteur qu'une simple recharge de page remettrait a zero ne protegerait
    * personne.
    */
-  const checkPickupCode = async (code: string): Promise<PickupCodeCheck> => {
+  const checkPickupCode = async (colis: string, code: string): Promise<PickupCodeCheck> => {
     try {
       const data = await http<{
         locked: boolean;
@@ -1512,7 +1522,7 @@ export default function RelayPointPage() {
         parcels: RelayParcel[];
       }>("/api/shipping/relay-point/pickup/check/", {
         method: "POST",
-        body: JSON.stringify({ pickup_code: code }),
+        body: JSON.stringify({ colis, pickup_code: code }),
       });
       return {
         locked: data.locked,
@@ -1605,6 +1615,7 @@ export default function RelayPointPage() {
       }}
       onContactSupport={() => setTab("messagerie")}
     />
+    <RelayCourseRetour onError={showOperationError} />
     </>
   );
 

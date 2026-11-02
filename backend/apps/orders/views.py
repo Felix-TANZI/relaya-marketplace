@@ -660,7 +660,70 @@ class OrderDisputeListCreateView(generics.ListCreateAPIView):
                 dispute.order_id,
             )
 
-        return Response(DisputeSerializer(dispute, context={"request": request}).data, status=status.HTTP_201_CREATED)
+        # Feuille de route D32, R71 : une demande éligible est remboursée tout de suite par BelivaY, sans retour ;
+        # sinon elle suit le traitement normal. Un incident ici ne bloque jamais l'ouverture du litige.
+        remboursement_auto = None
+        from .retours import DEFAUT_CACHE, MOTIFS_RETOUR
+
+        if reason in MOTIFS_RETOUR or reason == DEFAUT_CACHE:
+            try:
+                from . import remboursement_auto as rmb
+
+                journal = rmb.tenter(dispute, old_status)
+                remboursement_auto = {"accorde": journal.statut in rmb.COMPTES, "montant_xaf": journal.total_xaf,
+                                      "raison": rmb.RAISONS.get(journal.raison, "")}
+                dispute.refresh_from_db()
+            except Exception:
+                import logging
+                logging.getLogger("apps.orders").exception(
+                    "Remboursement automatique non examiné pour le litige #%s.", dispute.id)
+
+        donnees = dict(DisputeSerializer(dispute, context={"request": request}).data)
+        donnees["remboursement_auto"] = remboursement_auto
+        return Response(donnees, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(tags=["Orders"], summary="Payer les frais d'absence (R51.5) par Mobile Money avant le retrait")
+class PayerFraisAbsenceView(APIView):
+    """Spec v2.1, R51.5 : le client absent paie les frais d'absence dans l'application (Mobile Money avec R02.6) ; le
+    code de retrait se débloque dès le paiement confirmé. Il peut aussi les payer au comptoir du relais."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        from apps.payments.application.collect import CollectError, initiate_collect
+        from apps.payments.bridge.checkout_v2 import CheckoutError, prepare_payment_absence
+
+        order = get_user_order_or_404(request, id)
+        try:
+            intent = prepare_payment_absence(order, payer_msisdn=(request.data.get("payer_msisdn") or
+                                                                  order.customer_phone or "").replace(" ", ""),
+                                             payer_operator=request.data.get("payer_operator") or "")
+            issue = initiate_collect(intent)
+        except (CheckoutError, CollectError) as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"reference": issue.intent.reference, "status": issue.status, "message": issue.message,
+                         "montant_xaf": issue.intent.amount_xaf})
+
+
+class PayerCourseRetourView(APIView):
+    """Spec v2.1, R69.1 : le client en tort paie la course de retour dans l'application (Mobile Money, R02.6)."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id, return_id):
+        from apps.payments.application.collect import CollectError, initiate_collect
+        from apps.payments.bridge.checkout_v2 import CheckoutError, prepare_payment_course_retour
+
+        order = get_user_order_or_404(request, id)
+        ret = get_object_or_404(Return, pk=return_id, order=order)
+        try:
+            intent = prepare_payment_course_retour(
+                ret, payer_msisdn=(request.data.get("payer_msisdn") or order.customer_phone or "").replace(" ", ""),
+                payer_operator=request.data.get("payer_operator") or "")
+            issue = initiate_collect(intent)
+        except (CheckoutError, CollectError) as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"reference": issue.intent.reference, "status": issue.status, "message": issue.message,
+                         "montant_xaf": issue.intent.amount_xaf})
 
 
 @extend_schema(tags=["Orders"], summary="Lister/creer un retour pour une commande")

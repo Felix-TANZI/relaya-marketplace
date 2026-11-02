@@ -44,6 +44,7 @@ EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 # backend Celery lui-même l'activent explicitement (test_mail_asynchrone.py).
 EMAIL_BACKEND_REEL = "django.core.mail.backends.locmem.EmailBackend"
 PAYMENTS_ENCRYPTION_KEY = "belivay-test-encryption-key"
+PAYMENTS_FINGERPRINT_SALT = "belivay-sel-de-test-d-au-moins-32-caracteres"
 
 # Logging minimal : on évite le handler base de données (apps.vendors.log_handler)
 LOGGING = {

@@ -31,7 +31,8 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 function normalizeCartItems(items: CartItem[]) {
-  return items.map((item) => ({
+  // Main 2 : un article de démonstration resté dans un ancien panier n'est plus proposé à la commande.
+  return items.filter((item) => !item.isDemo).map((item) => ({
     ...item,
     image: item.image ?? undefined,
     color: item.color ?? undefined,

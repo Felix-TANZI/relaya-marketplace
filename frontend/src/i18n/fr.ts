@@ -1383,6 +1383,8 @@
     fin_risk:             'Risque',
     fin_payees:           'Bénéficiaires',
     fin_scheduler:        'Ordonnanceur',
+    fin_delivery_services: 'Prestations des entreprises',
+    fin_friday: 'Liste du vendredi (DP-42)',
     fin_configuration:    'Configuration',
 
     finances:             'Finances & Commissions',
@@ -1408,6 +1410,7 @@
     // Security
     section_security:     'Sécurité',
     security:             'Sécurité & Fraude',
+    auto_refunds:         'Remboursements automatiques',
  
     // System
     section_system:       'Système',

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import type { TFunction } from "i18next";
 import {
   ArrowRight,
   ChevronLeft,
@@ -12,113 +11,9 @@ import {
   Sparkles,
   Zap,
 } from "lucide-react";
-import { productsApi, type Product } from "@/services/api/products";
-import { FLASH_DEALS, V29_PRODUCTS } from "@/data/v29Products";
-
-type FlashDealView = {
-  id: number;
-  name: string;
-  img: string;
-  price: number;
-  old: number;
-  stock: number;
-  endsAt?: string;
-  isApiProduct: boolean;
-};
-
-function useDeadlineCountdown(endTime?: string, fallbackSeconds = 6 * 3600 + 16 * 60 + 2) {
-  const [left, setLeft] = useState(fallbackSeconds);
-
-  useEffect(() => {
-    const calculateLeft = () => {
-      if (!endTime) {
-        return fallbackSeconds;
-      }
-      return Math.max(0, Math.floor((new Date(endTime).getTime() - Date.now()) / 1000));
-    };
-
-    setLeft(calculateLeft());
-    const id = window.setInterval(() => setLeft(calculateLeft()), 1000);
-    return () => window.clearInterval(id);
-  }, [endTime, fallbackSeconds]);
-
-  return {
-    h: String(Math.floor(left / 3600)).padStart(2, "0"),
-    m: String(Math.floor((left % 3600) / 60)).padStart(2, "0"),
-    s: String(left % 60).padStart(2, "0"),
-  };
-}
-
-function parseXaf(value: string) {
-  return Number(value.replace(/\s/g, "")) || 0;
-}
-
-function getProductImage(product: Product) {
-  return product.media?.[0]?.url || product.images?.[0]?.image_url || "";
-}
-
-function productToFlashDeal(product: Product): FlashDealView {
-  const campaign = product.active_campaign;
-  return {
-    id: product.id,
-    name: campaign?.title || product.title,
-    img: getProductImage(product),
-    price: campaign?.promo_price_xaf ?? product.price_final ?? product.price_xaf,
-    old: product.compare_at_price ?? product.price_xaf,
-    stock: campaign?.remaining_stock ?? product.stock_quantity,
-    endsAt: campaign?.ends_at,
-    isApiProduct: true,
-  };
-}
-
-/**
- * Le nom affiché vient d'i18next (`home.flash_deal_names`, même ordre que
- * `FLASH_DEALS`) ; `deal.name` original (FR) reste la clé de rapprochement avec
- * le catalogue de démonstration, lui aussi non traduit — seul l'affichage change.
- */
-function fallbackToFlashDeal(deal: (typeof FLASH_DEALS)[number], index: number, t: TFunction): FlashDealView {
-  const linkedProduct = resolveFallbackProduct(deal.name);
-  return {
-    id: linkedProduct?.id ?? 0,
-    name: t(`home.flash_deal_names.${index}`, { defaultValue: deal.name }),
-    img: deal.img,
-    price: parseXaf(deal.price),
-    old: parseXaf(deal.old),
-    stock: deal.stock,
-    isApiProduct: false,
-  };
-}
-
-function resolveFallbackProduct(name: string) {
-  const exactMap: Record<string, number> = {
-    "Ensemble Wax 3 Pièces": 9,
-    "Laptop HP Intel i5": 10,
-    "Coffret Beauté Naturelle": 3,
-    "Chaussures Sport Running": 18,
-    "Pagne Hollandais Vlisco": 28,
-  };
-
-  const explicitId = exactMap[name];
-  if (explicitId) {
-    return V29_PRODUCTS.find((product) => product.id === explicitId) ?? null;
-  }
-
-  const normalize = (value: string) =>
-    value
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9]+/g, " ")
-      .trim();
-
-  const normalizedName = normalize(name);
-  return (
-    V29_PRODUCTS.find((product) => {
-      const title = normalize(product.title);
-      return title.includes(normalizedName) || normalizedName.includes(title);
-    }) ?? null
-  );
-}
+// Feuille de route D9 : les mêmes offres flash que /flash-deals, servies par le serveur (ordre des préférences,
+// heure du serveur pour le compte à rebours) ; plus de jeu de démonstration.
+import { dealHref, discountOf, soldRatio, useDeadlineCountdown, useFlashDeals } from "@/data/flashDeals";
 
 interface FlashPanelProps {
   trackTop: number;
@@ -131,64 +26,19 @@ export default function FlashPanel({
   trackHeight,
   topOffset,
 }: FlashPanelProps) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const panelRef = useRef<HTMLElement | null>(null);
   const [current, setCurrent] = useState(0);
-  const [deals, setDeals] = useState<FlashDealView[]>(() =>
-    FLASH_DEALS.map((item, index) => fallbackToFlashDeal(item, index, t)),
-  );
+  const deals = useFlashDeals();
   const [mode, setMode] = useState<"start" | "fixed" | "end">("start");
   const [endTop, setEndTop] = useState(0);
-  /* Les offres scénarisées (repli) se retraduisent au changement de langue ;
-     celles de l'API gardent leur texte, déjà traduit côté backend. */
-  const usingFallbackRef = useRef(true);
   const deal = deals[current] ?? deals[0];
   const cd = useDeadlineCountdown(deal?.endsAt);
 
   useEffect(() => {
-    let mounted = true;
-
-    const loadFlashDeals = async () => {
-      try {
-        const response = await productsApi.list({ page_size: 100, is_active: true });
-        if (!mounted) return;
-
-        const apiDeals = response.results
-          .filter((product) => product.active_campaign?.campaign_type === "FLASH")
-          .map(productToFlashDeal)
-          .filter((item) => item.img && item.price > 0 && item.old > item.price);
-
-        if (apiDeals.length) {
-          usingFallbackRef.current = false;
-          setDeals(apiDeals);
-          setCurrent(0);
-        }
-      } catch {
-        if (mounted) {
-          usingFallbackRef.current = true;
-          setDeals(FLASH_DEALS.map((item, index) => fallbackToFlashDeal(item, index, t)));
-          setCurrent(0);
-        }
-      }
-    };
-
-    void loadFlashDeals();
-    return () => {
-      mounted = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [i18n.language]);
-
-  useEffect(() => {
-    if (usingFallbackRef.current) {
-      setDeals(FLASH_DEALS.map((item, index) => fallbackToFlashDeal(item, index, t)));
-    }
-  }, [i18n.language, t]);
-
-  useEffect(() => {
     const timer = window.setInterval(() => {
-      setCurrent((value) => (value + 1) % deals.length);
+      setCurrent((value) => (deals.length ? (value + 1) % deals.length : 0));
     }, 3500);
     return () => window.clearInterval(timer);
   }, [deals.length]);
@@ -225,15 +75,11 @@ export default function FlashPanel({
     };
   }, [trackTop, trackHeight, topOffset]);
 
-  const discount = deal?.old ? Math.round(((deal.old - deal.price) / deal.old) * 100) : 0;
-  const stockProgress = Math.max(8, Math.min(96, 100 - deal.stock * 4));
-  const openDeal = () => {
-    if (deal?.id) {
-      navigate(deal.isApiProduct ? `/product/${deal.id}` : `/product/${deal.id}?mock=1`);
-      return;
-    }
-    navigate("/promotions");
-  };
+  // Sans vente flash en cours, le panneau ne montre rien (D9 : plus de démonstration).
+  if (!deal) return null;
+  const discount = discountOf(deal);
+  const stockProgress = soldRatio(deal);
+  const openDeal = () => navigate(dealHref(deal));
 
   return (
     <div

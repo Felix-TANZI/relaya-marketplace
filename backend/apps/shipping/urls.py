@@ -26,6 +26,9 @@ from .views import (
     RelayPointNearbyView,
     VerifierAdresseView,
     RelayPointComptoirCollectView,
+    RelayPointCourseRetourCollectView,
+    ShipmentMaskedCallView,
+    AdminPrestationsEntreprisesView,
     RelayPointComptoirRefusalView,
     RelayPointParcelEvidenceUploadView,
     RelayPointParcelListView,
@@ -47,6 +50,10 @@ urlpatterns = [
     path("orders/<int:order_id>/messages/", ClientOrderMessagesView.as_view(), name="shipping-client-messages"),
     path("admin/supervision/", AdminSupervisionDashboardView.as_view(), name="shipping-admin-supervision"),
     path("create/", ShipmentCreateView.as_view(), name="shipping-create"),
+    # Feuille de route D33 : appel client-livreur avec numéro masqué
+    path("shipments/<int:pk>/appel/", ShipmentMaskedCallView.as_view(), name="shipping-masked-call"),
+    # R53 : prestations des entreprises de livraison au tarif de leur grille
+    path("admin/prestations/", AdminPrestationsEntreprisesView.as_view(), name="shipping-admin-prestations"),
     path("events/", ShipmentEventCreateView.as_view(), name="shipping-events"),
     path("relay-points/nearby/", RelayPointNearbyView.as_view(), name="shipping-relay-points-nearby"),
     path("quartiers/", QuartiersView.as_view(), name="shipping-quartiers"),
@@ -58,6 +65,8 @@ urlpatterns = [
     path("relay-point/pickup/", RelayPointParcelPickupView.as_view(), name="shipping-relay-pickup"),
     path("relay-point/pickup/check/", RelayPointPickupCodeCheckView.as_view(), name="shipping-relay-pickup-check"),
     path("relay-point/comptoir/encaisser/", RelayPointComptoirCollectView.as_view(), name="shipping-relay-comptoir-collect"),
+    path("relay-point/comptoir/course-retour/", RelayPointCourseRetourCollectView.as_view(),
+         name="shipping-relay-course-retour"),  # R69.1, C4
     path("relay-point/comptoir/refus/", RelayPointComptoirRefusalView.as_view(), name="shipping-relay-comptoir-refusal"),
     path("relay-point/return/", RelayPointParcelReturnView.as_view(), name="shipping-relay-return"),
     path("relay-point/evidence/", RelayPointParcelEvidenceUploadView.as_view(), name="shipping-relay-evidence"),

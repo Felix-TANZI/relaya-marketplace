@@ -29,6 +29,8 @@ export interface MonWallet {
   /** Gestes commerciaux : servent seulement à acheter (R03.6). */
   geste_xaf: number;
   code_defini: boolean;
+  /** Trop de codes faux : bloqué jusqu'à cette date (réinitialisable par SMS). */
+  code_bloque_jusqua: string | null;
   plafond_xaf: number;
   code_des_xaf: number;
   retrait_min_xaf: number;
@@ -47,6 +49,8 @@ export interface DevisRetrait {
 export interface WalletGeste {
   id: number;
   client: string;
+  /** R25.1 : commande du geste, dont il ne dépasse jamais la commission. */
+  commande: number | null;
   montant_xaf: number;
   motif: string;
   statut: 'EN_ATTENTE' | 'CREDITE' | 'REFUSE';
@@ -75,6 +79,10 @@ export const walletApi = {
     api.post<{ reference: string; status: string; message: string }>(
       `${BASE}/me/wallet/topups/`, { montant_xaf, payer_msisdn, payer_operator, cle }),
   definirCode: (code: string, ancien = '') => api.post(`${BASE}/me/wallet/code/`, { code, ancien }),
+  /** Code oublié ou bloqué : un code part par SMS au numéro vérifié du compte. */
+  codeOublie: () => api.post(`${BASE}/me/wallet/code/oublie/`, {}),
+  reinitialiserCode: (code_sms: string, code: string) =>
+    api.post(`${BASE}/me/wallet/code/reinitialiser/`, { code_sms, code }),
   devisRetrait: (montant_xaf: number) =>
     api.get<DevisRetrait>(`${BASE}/me/wallet/withdrawal-quote/`, { params: { montant_xaf } }),
   retirer: (montant_xaf: number, numero: string, cle: string) =>
@@ -84,8 +92,8 @@ export const walletApi = {
 
   // ── Administration (habilitation finance) ──────────────────────────────
   suivi: () => api.get<SuiviWallet>(`${BASE}/admin/wallet/`),
-  demanderGeste: (client_id: number, montant_xaf: number, motif: string) =>
-    api.post<WalletGeste>(`${BASE}/admin/wallet/gestes/`, { client_id, montant_xaf, motif }),
+  demanderGeste: (client_id: number, order_id: number, montant_xaf: number, motif: string) =>
+    api.post<WalletGeste>(`${BASE}/admin/wallet/gestes/`, { client_id, order_id, montant_xaf, motif }),
   deciderGeste: (id: number, accepte: boolean) =>
     api.post<WalletGeste>(`${BASE}/admin/wallet/gestes/${id}/decision/`, { accepte }),
 };

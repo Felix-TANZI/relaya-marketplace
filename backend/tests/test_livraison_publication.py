@@ -49,7 +49,7 @@ def _colis_au_relais(code="123456"):
     colis = Shipment.objects.get(order=o)
     parcel = RelayParcel.objects.get(shipment=colis)  # créé avec la commande, en attente au relais choisi
     parcel.pickup_code, parcel.status = code, RelayParcel.Status.RECEIVED
-    parcel.save(update_fields=["pickup_code", "status"])
+    parcel.save(update_fields=["pickup_code_chiffre", "pickup_code_empreinte", "status"])  # DP-02 : chiffré
     return parcel
 
 

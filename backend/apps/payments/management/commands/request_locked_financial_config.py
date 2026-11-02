@@ -57,24 +57,6 @@ DISTRIBUTION_RULES = [
         ),
     },
     {
-        "target_key": "dist-transport-carrier",
-        "payload": {
-            "name": "Transport à l'entreprise de livraison",
-            "component": "TRANSPORT",
-            "payee_type": "DELIVERY_COMPANY",
-            "basis": "PERCENT_OF_COMPONENT",
-            "value": "70.0000",
-            "priority": 20,
-        },
-        "justification": (
-            "Part a arbitrer contractuellement (valeur provisoire reprise du "
-            "chantier initial) — necessaire pour qu'un livreur/une entreprise de "
-            "livraison touche reellement une part des frais de transport. "
-            "Aujourd'hui, aucun mecanisme ne verse d'argent reel a un livreur : "
-            "0 ligne DistributionRule n'existait en base."
-        ),
-    },
-    {
         "target_key": "dist-transport-platform",
         "payload": {
             "name": "Part plateforme sur le transport",
@@ -84,7 +66,11 @@ DISTRIBUTION_RULES = [
             "value": "0",
             "priority": 10,
         },
-        "justification": "Solde du composant TRANSPORT apres la part transporteur (70%).",
+        "justification": (
+            "Spec v2.1, R53 (decision du porteur du 27/10/2026) : tout le composant TRANSPORT va a BelivaY, qui achete "
+            "la prestation a l'entreprise de livraison selon sa grille signee (apps.shipping.remuneration). Il n'y a "
+            "plus de part du transport a l'entreprise (ancienne regle dist-transport-carrier a 70 %)."
+        ),
     },
     {
         "target_key": "dist-relay-point",
@@ -120,6 +106,20 @@ DISTRIBUTION_RULES = [
 ]
 
 
+# Revue du 29/10 (C5), decision du porteur : l'ancienne part du transport n'est plus utilisee (la grille A10/R53 la
+# remplace). Elle se ferme en base par le meme circuit : une demande ici, approuvee par un second compte.
+FERMETURES = [
+    {
+        "target_key": "dist-transport-carrier",
+        "justification": (
+            "Spec v2.1, A10 et R53 (decision du porteur du 27/10/2026, revue du 29/10 C5) : l'entreprise de livraison "
+            "est payee selon sa grille signee (apps.shipping.remuneration) ; l'ancienne part de 70 % du transport "
+            "n'est plus utilisee. Fermeture en base, avec double validation."
+        ),
+    },
+]
+
+
 class Command(BaseCommand):
     help = (
         "Cree les ConfigChangeRequest (statut PENDING) pour verrouiller EscrowPolicy "
@@ -142,7 +142,8 @@ class Command(BaseCommand):
         created = []
         skipped = []
 
-        def _request(target_model, target_key, payload, justification):
+        def _request(target_model, target_key, payload, justification,
+                     action=ConfigChangeRequest.Action.CREATE):
             deja_en_attente = ConfigChangeRequest.objects.filter(
                 target_model=target_model,
                 target_key=target_key,
@@ -158,7 +159,7 @@ class Command(BaseCommand):
                     payload=payload,
                     justification=justification,
                     requested_by=requester,
-                    action=ConfigChangeRequest.Action.CREATE,
+                    action=action,
                 )
                 created.append(demande)
             except ChangeControlError as exc:
@@ -167,6 +168,9 @@ class Command(BaseCommand):
         _request("EscrowPolicy", "escrow-default", _escrow_default_payload(), ESCROW_JUSTIFICATION)
         for rule in DISTRIBUTION_RULES:
             _request("DistributionRule", rule["target_key"], rule["payload"], rule["justification"])
+        for fermeture in FERMETURES:  # C5 : DEACTIVATE, refusé proprement s'il n'y a plus de version active
+            _request("DistributionRule", fermeture["target_key"], {}, fermeture["justification"],
+                     action=ConfigChangeRequest.Action.DEACTIVATE)
 
         for demande in created:
             self.stdout.write(self.style.SUCCESS(

@@ -11,10 +11,12 @@ from django.contrib.auth.models import User, update_last_login
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics, status
-from rest_framework.decorators import api_view, permission_classes
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import FormParser, MultiPartParser
-from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from apps.common.droits import Partie  # sécurité main 2 : droits par partie
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView as _BaseLoginView
@@ -271,6 +273,51 @@ def _link_apple_identity(user, claims, authorization_code):
         logger.warning("Apple authorization code exchange skipped for user %s: %s", user.pk, exc)
 
 
+# Sécurité avant main 2 : nonce de la connexion Apple. Le serveur l'émet, l'application le passe à Apple, Apple le
+# recopie dans le jeton signé ; à la connexion, le serveur le retire de sa liste. Un jeton volé ou rejoué n'ouvre donc
+# rien. Apple accepte le nonce tel quel ou son empreinte SHA-256 (cas d'iOS) : les deux sont reconnus.
+
+def _duree_nonce_apple() -> int:
+    """Revue du 29/10 (C3) : durée de vie du nonce Apple, réglage r_apple_nonce_s (jamais en dur)."""
+    from apps.regles import services as regles
+
+    return int(regles.reglage("r_apple_nonce_s"))
+
+
+def _consommer_nonce_apple(nonce_du_jeton, nonce_brut=None):
+    import hashlib
+
+    from django.core.cache import cache
+
+    nonce_du_jeton = str(nonce_du_jeton or "")
+    if not nonce_du_jeton:
+        return False
+    candidats = [nonce_du_jeton]
+    nonce_brut = str(nonce_brut or "")
+    if nonce_brut and hashlib.sha256(nonce_brut.encode()).hexdigest() == nonce_du_jeton:
+        candidats.append(nonce_brut)
+    # Revue du 29/10 (A5) : consommation atomique. Avec le cache Redis (et locmem), delete() ne renvoie vrai qu'au
+    # premier appelant qui supprime la clé : deux requêtes simultanées ne peuvent pas utiliser le même nonce.
+    for nonce in candidats:
+        if cache.delete(f"apple-nonce:{nonce[:128]}"):
+            return True
+    return False
+
+
+@extend_schema(tags=["Auth"], summary="Nonce à usage unique pour la connexion Apple")
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def apple_nonce(request):
+    import secrets
+
+    from django.core.cache import cache
+
+    nonce = secrets.token_urlsafe(32)
+    duree = _duree_nonce_apple()
+    cache.set(f"apple-nonce:{nonce}", True, timeout=duree)
+    return Response({"nonce": nonce, "expireDans": duree})
+
+
 @extend_schema(tags=["Auth"], summary="Connexion ou inscription avec Apple")
 @api_view(["POST"])
 @permission_classes([AllowAny])
@@ -282,8 +329,16 @@ def apple_login(request):
     les connexions suivantes n'ont besoin que du jeton, l'utilisateur etant
     deja cree et retrouve par email. Le client transmet aussi
     `authorization_code` : echange contre un refresh_token Apple, conserve
-    pour revoquer l'autorisation a la suppression du compte."""
-    identity_token = str(request.data.get("identity_token", "")).strip()
+    pour revoquer l'autorisation a la suppression du compte, et `nonce`
+    (obtenu par apple_nonce et passe a Apple). Le compte est retrouve par
+    l'identite Apple ; l'email transmis a cote n'est jamais utilise."""
+    return _connexion_apple(request, request.data)
+
+
+def _connexion_apple(request, data):
+    """Le coeur de la connexion Apple, partage par le bouton (jeton du plugin) et le retour web d'Android
+    (feuille de route D33) : `data` porte identity_token, authorization_code, nonce, given_name, family_name."""
+    identity_token = str(data.get("identity_token", "")).strip()
     if not django_settings.APPLE_CLIENT_IDS:
         return Response(
             {"detail": "La connexion Apple n'est pas configuree sur le serveur."},
@@ -310,41 +365,54 @@ def apple_login(request):
     if not subject:
         return Response({"detail": "Jeton Apple invalide."}, status=status.HTTP_400_BAD_REQUEST)
 
-    # L'email n'est present dans le jeton que si Apple le fournit (relay
-    # prive inclus) ; a defaut, on retombe sur celui transmis par le client
-    # lors de la toute premiere autorisation.
-    email = str(claims.get("email") or request.data.get("email") or "").strip().lower()
+    # Sécurité avant main 2 : le jeton doit porter un nonce que ce serveur a émis (apple_nonce), une seule fois.
+    if not _consommer_nonce_apple(claims.get("nonce"), data.get("nonce")):
+        return Response({"detail": "Connexion Apple expirée ou rejouée. Recommencez."},
+                        status=status.HTTP_401_UNAUTHORIZED)
+
+    # Sécurité avant main 2 : on retrouve d'abord le compte par l'identité Apple (« sub »). L'e-mail ne sert qu'à
+    # rattacher ou créer un compte, et seulement s'il vient du jeton signé et qu'Apple l'a vérifié : jamais celui
+    # transmis à côté par l'application.
+    identite = AppleIdentity.objects.select_related("user").filter(subject=subject).first()
+    email = str(claims.get("email") or "").strip().lower()
     email_verified = claims.get("email_verified") in (True, "true")
-
-    matches = User.objects.filter(email__iexact=email) if email else User.objects.none()
-    if matches.count() > 1:
-        return Response(
-            {"detail": "Plusieurs comptes utilisent cet email. Contactez le support BelivaY."},
-            status=status.HTTP_409_CONFLICT,
-        )
-
-    user = matches.first()
-    created = user is None
-    if created:
+    created = False
+    if identite:
+        user = identite.user
+    else:
         if not email or not email_verified:
             return Response(
                 {"detail": "Apple n'a pas confirme d'adresse email pour ce compte. Reessayez la connexion."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        with transaction.atomic():
-            user = User(
-                username=_available_apple_username(email, subject),
-                email=email,
-                first_name=str(request.data.get("given_name", ""))[:150],
-                last_name=str(request.data.get("family_name", ""))[:150],
+        matches = User.objects.filter(email__iexact=email)
+        if matches.count() > 1:
+            return Response(
+                {"detail": "Plusieurs comptes utilisent cet email. Contactez le support BelivaY."},
+                status=status.HTTP_409_CONFLICT,
             )
-            user.set_unusable_password()
-            user.save()
+        user = matches.first()
+        if user is not None and AppleIdentity.objects.filter(user=user).exclude(subject=subject).exists():
+            return Response(
+                {"detail": "Ce compte BelivaY est deja lie a un autre identifiant Apple. Contactez le support BelivaY."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        created = user is None
+        if created:
+            with transaction.atomic():
+                user = User(
+                    username=_available_apple_username(email, subject),
+                    email=email,
+                    first_name=str(data.get("given_name", ""))[:150],
+                    last_name=str(data.get("family_name", ""))[:150],
+                )
+                user.set_unusable_password()
+                user.save()
 
     if not user.is_active:
         return Response({"detail": "Ce compte BelivaY est desactive."}, status=status.HTTP_403_FORBIDDEN)
 
-    _link_apple_identity(user, claims, str(request.data.get("authorization_code", "")).strip())
+    _link_apple_identity(user, claims, str(data.get("authorization_code", "")).strip())
 
     profile = get_or_create_profile(user)
     if profile.two_factor_enabled:
@@ -374,6 +442,65 @@ def apple_login(request):
     _register_session_from_response(response, user, request)
     _marquer_derniere_connexion(user)
     return response
+
+
+# ── Feuille de route D33 : « Se connecter avec Apple » sur Android ──────────────────────────────────────
+#
+# Le plugin natif ne couvre pas Android. L'application ouvre donc la page d'Apple dans sa vue web ; Apple renvoie
+# le résultat ici (response_mode=form_post). Le serveur garde les jetons sous un ticket à usage unique, valable
+# r_apple_ticket_s secondes, et renvoie l'application sur APPLE_RETOUR_URL avec ce ticket : aucun jeton ne passe dans
+# une adresse. L'application échange ensuite le ticket (apple_ticket) et la connexion suit le chemin habituel.
+
+def _duree_ticket_apple() -> int:
+    """Revue du 29/10 (C3) : durée de vie du ticket Android, réglage r_apple_ticket_s (jamais en dur)."""
+    from apps.regles import services as regles
+
+    return int(regles.reglage("r_apple_ticket_s"))
+
+
+@csrf_exempt
+@extend_schema(tags=["Auth"], summary="Retour de la page Apple (Android) : garde les jetons sous un ticket")
+@api_view(["POST"])
+@permission_classes([AllowAny])
+@authentication_classes([])
+def apple_callback(request):
+    import json
+    import secrets
+    from urllib.parse import urlencode
+
+    from django.core.cache import cache
+    from django.http import HttpResponseRedirect
+
+    retour = django_settings.APPLE_RETOUR_URL
+    etat = str(request.data.get("state", ""))[:128]
+    if request.data.get("error") or not request.data.get("id_token"):
+        return HttpResponseRedirect(f"{retour}?{urlencode({'erreur': request.data.get('error') or 'apple', 'state': etat})}")
+    try:  # Apple n'envoie le nom et l'e-mail (champ « user ») qu'à la toute première autorisation
+        utilisateur = json.loads(request.data.get("user") or "{}")
+    except ValueError:
+        utilisateur = {}
+    nom = utilisateur.get("name") or {}
+    ticket = secrets.token_urlsafe(32)
+    cache.set(f"apple-ticket:{ticket}", {
+        "identity_token": request.data.get("id_token"), "authorization_code": request.data.get("code") or "",
+        "email": utilisateur.get("email") or "", "given_name": nom.get("firstName") or "",
+        "family_name": nom.get("lastName") or "",
+    }, timeout=_duree_ticket_apple())
+    return HttpResponseRedirect(f"{retour}?{urlencode({'ticket': ticket, 'state': etat})}")
+
+
+@extend_schema(tags=["Auth"], summary="Échanger le ticket Apple (Android) contre une session BelivaY")
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def apple_ticket(request):
+    from django.core.cache import cache
+
+    cle = f"apple-ticket:{str(request.data.get('ticket', ''))[:64]}"
+    data = cache.get(cle)
+    # Revue du 29/10 (A5) : usage unique atomique ; seul le premier qui supprime le ticket s'en sert.
+    if not data or not cache.delete(cle):
+        return Response({"detail": "Connexion Apple expirée. Recommencez."}, status=status.HTTP_400_BAD_REQUEST)
+    return _connexion_apple(request, data)
 
 
 @extend_schema(tags=["Auth"], summary="Register new user", request=RegisterSerializer, responses={201: UserSerializer})
@@ -694,7 +821,7 @@ def bootstrap_demo_accounts(request):
 
 @extend_schema(tags=["Admin"], summary="List couriers with full performance stats")
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("logistique")])
 def admin_list_couriers(request):
     """
     Liste tous les livreurs avec leurs statistiques de performance :
@@ -799,7 +926,7 @@ def admin_list_couriers(request):
  
 @extend_schema(tags=["Admin"], summary="List open SOS alerts")
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("logistique")])
 def admin_sos_alerts(request):
     """Retourne les alertes SOS avec filtre optionnel status=OPEN|ACKNOWLEDGED|RESOLVED."""
     from apps.shipping.models import CourierSOSAlert
@@ -831,7 +958,7 @@ def admin_sos_alerts(request):
  
 @extend_schema(tags=["Admin"], summary="Acknowledge or resolve a SOS alert")
 @api_view(["PATCH"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("logistique")])
 def admin_resolve_sos(request, pk):
     """Changer le statut d'une alerte SOS : ACKNOWLEDGED ou RESOLVED."""
     from apps.shipping.models import CourierSOSAlert
@@ -857,7 +984,7 @@ def admin_resolve_sos(request, pk):
 
 @extend_schema(tags=["Admin"], summary="Create courier account")
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("logistique")])
 def admin_create_courier(request):
     username = request.data.get("username", "").strip()
     email = request.data.get("email", "").strip()
@@ -922,7 +1049,7 @@ def admin_create_courier(request):
 
 @extend_schema(tags=["Admin"], summary="Update courier account")
 @api_view(["PATCH"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("logistique")])
 def admin_update_courier(request, pk):
     courier = get_object_or_404(CourierProfile.objects.select_related("user"), pk=pk)
     user = courier.user
@@ -957,7 +1084,7 @@ def admin_update_courier(request, pk):
 
 @extend_schema(tags=["Admin"], summary="Delete courier account")
 @api_view(["DELETE"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("logistique")])
 def admin_delete_courier(request, pk):
     profile = get_object_or_404(CourierProfile.objects.select_related("user"), pk=pk)
     user = profile.user
@@ -969,15 +1096,40 @@ def admin_delete_courier(request, pk):
     )
 
 
+class PilotageOuDirection(Partie("pilotage")):
+    """Revue du 1/11 : l'écran de création s'ouvre au pilotage et à la Direction ; le rôle demandé décide ensuite
+    (« admin » : Direction seule ; les autres rôles : pilotage)."""
+
+    def has_permission(self, request, view):
+        from apps.payments.settlements.dp42 import est_direction
+
+        return super().has_permission(request, view) or est_direction(request.user)
+
+
 @extend_schema(tags=["Admin"], summary="Create user by role")
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([PilotageOuDirection])
 def admin_create_user(request):
     from apps.vendors.models import VendorProfile
 
     from .models import DeliveryOrganizationProfile, RelayPointProfile
 
     role = request.data.get("role", "client")
+    # Revue du 1/11 (sécurité, P0) : seule la Direction crée ou promeut un compte « admin » (même règle que DP-42,
+    # apps.payments.settlements.dp42.est_direction) ; l'équipe pilotage garde les autres rôles. Vérifié AVANT toute
+    # écriture : un refus ne laisse ni compte créé, ni compte existant modifié.
+    if role == "admin":
+        from apps.payments.settlements.dp42 import est_direction
+
+        if not est_direction(request.user):
+            return Response({"detail": "Seule la Direction peut créer ou promouvoir un compte administrateur."},
+                            status=status.HTTP_403_FORBIDDEN)
+    else:
+        from apps.common.droits import a_la_partie
+
+        if not a_la_partie(request.user, "pilotage"):
+            return Response({"detail": "Écran réservé à l'équipe « pilotage » pour ce rôle."},
+                            status=status.HTTP_403_FORBIDDEN)
     username = request.data.get("username", "").strip()
     email = request.data.get("email", "").strip()
     password = request.data.get("password", "")
@@ -1045,8 +1197,11 @@ def admin_create_user(request):
         return Response({"detail": message}, status=status.HTTP_400_BAD_REQUEST)
 
     if role == "admin":
+        # Revue du 1/11 : is_superuser n'est jamais accordé par l'API, quoi que contienne la requête ; le
+        # superutilisateur se crée seulement en ligne de commande sur le serveur (createsuperuser). Les droits d'un
+        # administrateur viennent de ses groupes (apps.common.droits).
         user.is_staff = True
-        user.is_superuser = bool(request.data.get("is_superuser", True))
+        user.is_superuser = False
         user.save(update_fields=["is_staff", "is_superuser"])
     elif role == "vendor":
         if hasattr(user, "vendor_profile"):
@@ -1172,15 +1327,32 @@ def admin_create_user(request):
             is_active=True,
         )
     elif role != "client":
-        user.delete()
+        # Revue du 1/11 (noté en chemin) : un rôle invalide ne supprime que le compte qu'on venait de créer, jamais
+        # un compte existant désigné par existing_user_id / existing_identifier.
+        if is_new_user:
+            user.delete()
         return Response({"detail": "Role invalide."}, status=status.HTTP_400_BAD_REQUEST)
 
+    # Revue du 1/11 : chaque création (ou rattachement d'un compte existant) est inscrite au journal d'audit, avec
+    # son auteur et le rôle donné.
+    from django.contrib.contenttypes.models import ContentType
+
+    from apps.common.models import AuditLog
+
+    AuditLog.objects.create(
+        action=AuditLog.Action.CREATE if is_new_user else AuditLog.Action.UPDATE,
+        content_type=ContentType.objects.get_for_model(User), object_id=str(user.pk),
+        object_repr=f"Compte {user.username} · rôle {role}"[:255], actor=request.user,
+        changes={"role": role, "nouveau_compte": is_new_user, "is_staff": user.is_staff,
+                 "is_superuser": user.is_superuser, "ecran": "admin_create_user"},
+        ip_address=request.META.get("REMOTE_ADDR") or None,
+    )
     return Response(UserSerializer(user, context={"request": request}).data, status=status.HTTP_201_CREATED)
 
 
 @extend_schema(tags=["Admin"], summary="List delivery organizations for courier assignment")
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("logistique")])
 def admin_list_delivery_organizations(request):
     organizations = DeliveryOrganizationProfile.objects.select_related("user").filter(
         is_active=True,
@@ -1204,7 +1376,7 @@ def admin_list_delivery_organizations(request):
 
 @extend_schema(tags=["Admin"], summary="List relay points for admin map")
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("logistique")])
 def admin_list_relay_points(request):
     from .models import RelayPointProfile
 
@@ -2593,7 +2765,10 @@ class ComplianceDocumentFileView(APIView):
         if document is None:
             raise Http404
 
-        autorise = document.user_id == request.user.id or request.user.is_staff
+        # Revue du 29/10 (A2), moindre privilège : le propriétaire garde l'accès à sa pièce ; sinon l'équipe conformité.
+        from apps.common.droits import a_la_partie
+
+        autorise = document.user_id == request.user.id or a_la_partie(request.user, "conformite")
         if not autorise or not document.file:
             raise Http404
 

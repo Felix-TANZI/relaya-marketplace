@@ -519,7 +519,7 @@ export default {
     placeholder_id_card: 'ID-XXXXXXXXXX',
     checkbox_approve_immediately: 'Approve immediately (can receive deliveries)',
 
-    checkbox_superuser: 'Super administrator — full unrestricted access',
+    note_admin_direction: 'Management only. The account is never a super administrator (created from the server command line only): its rights come from its team groups.',
 
     btn_cancel: 'Cancel',
     btn_creating: 'Creating…',

@@ -16,7 +16,10 @@ TABLES_PUBLIQUES = {"t_garde", "t_creneaux", "t_univers", "t_formats"}
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def table(request, nom):
-    if nom not in TABLES_PUBLIQUES and not (request.user.is_authenticated and request.user.is_staff):
+    from apps.common.droits import a_la_partie
+
+    # Revue du 29/10 (A2) : les tables non publiques s'ouvrent à l'équipe pilotage, pas à tout le personnel.
+    if nom not in TABLES_PUBLIQUES and not a_la_partie(request.user, "pilotage"):
         return Response({"detail": "Réservé à la console."}, status=403)
     try:
         return Response({"nom": nom, "lignes": services.table(nom)})

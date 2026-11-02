@@ -30,9 +30,9 @@ def _destination(order):
 def find_reassignment_candidate(order_item):
     """Spec v2.1, R35.2 : parmi les autres offres en course pour la destination de la commande (A6), celles dont
     trust ≥ r_trust_rempl et dont prix − prix payé ≤ min(r_ecart_rempl × prix payé ; commission_b) ; la remplaçante
-    est celle de plus grand retard, puis de plus grand score (moteur BV-DEV-09). Une remplaçante plus chère suppose
-    l'avance de l'écart par BelivaY (R35.3), qui relève du module financier : elle n'est pas retenue ici. Même fiche
-    maître, même état. None sans remplaçante (le reste est décidé par un humain)."""
+    est celle de plus grand retard, puis de plus grand score (moteur BV-DEV-09). Une remplaçante plus chère est
+    possible dans cette limite : BelivaY avance l'écart et le reprend sur le vendeur défaillant (R35.3, R25.2 ; voir
+    payments.bridge.bascule). Même fiche maître, même état. None sans remplaçante."""
     from apps.catalog.meilleure_offre import journaliser, meilleure_offre
     from apps.orders.frais import FraisImpossibles
     from apps.orders.models import CommissionSousCommande
@@ -58,7 +58,7 @@ def find_reassignment_candidate(order_item):
     figee = CommissionSousCommande.objects.filter(order=order_item.order, vendor_id=product.vendor_id).first()
     commission_b = figee.commission_b if figee is not None else prix_paye
     candidates = [{"id": o["id"], "prix": o["prix"], "trust": o["trust"], "retard": o["retard"], "score": o["score"]}
-                  for o in r["en_course"] if o["prix"] <= prix_paye]
+                  for o in r["en_course"]]  # l'écart autorisé (R35.2) est appliqué par le moteur
     choix = regles.moteur().bascule(prix_paye, commission_b, candidates)
     if choix["remplacante"] is None:
         return None

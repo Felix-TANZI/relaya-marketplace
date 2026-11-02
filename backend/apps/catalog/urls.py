@@ -19,6 +19,9 @@ router.register(r'master-products', MasterProductViewSet, basename='master-produ
 
 urlpatterns = [
     path('promotions/active/', ActivePromotionCampaignListView.as_view(), name='active-promotions'),
+    # Feuille de route D9 : Flash Deals (heure du serveur, ordre des préférences) et accueil personnalisé
+    path('flash-deals/', views.FlashDealsView.as_view(), name='flash-deals'),
+    path('home/', views.AccueilView.as_view(), name='home'),
     path('promotions/admin/', AdminPromotionCampaignListView.as_view(), name='admin-promotions'),
     path('promotions/admin/<int:pk>/decision/', AdminPromotionCampaignDecisionView.as_view(), name='admin-promotion-decision'),
     path('conditions/', views.list_active_conditions, name='conditions'),

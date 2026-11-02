@@ -24,6 +24,7 @@ import {
   WalletAdminPage,
 } from '@/features/payments/admin';
 import FinanceConfigEditPage from '@/features/admin/FinanceConfigEditPage';
+import ListeVendrediPage from '@/features/payments/admin/payouts/ListeVendrediPage';
 import FinanceConfigPage from '@/features/admin/FinanceConfigPage';
 import {
   PaymentCheckoutPage, PaymentDetailPage, PaymentHistoryPage, RefundsPage,
@@ -124,6 +125,8 @@ const ECRANS: Array<{ path: string; element: React.ReactNode }> = [
 
   // Ecrans qui AGISSENT sur l'argent
   { path: 'finance/payouts', element: <PayoutsPage /> },
+  // DP-42 : liste du vendredi validée en bloc, valideurs de secours
+  { path: 'finance/vendredi', element: <ListeVendrediPage /> },
   { path: 'finance/payouts/:reference', element: <PayoutDetailPage /> },
   { path: 'finance/refunds', element: <AdminRefundsPage /> },
   { path: 'finance/escrow', element: <AdminEscrowsPage /> },

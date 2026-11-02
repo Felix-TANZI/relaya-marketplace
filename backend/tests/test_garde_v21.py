@@ -36,6 +36,9 @@ def commande_au_relais(heures_depuis_arrivee, prix=14000):
     parcel.received_at = timezone.now() - timedelta(hours=heures_depuis_arrivee)
     parcel.pickup_code = "ABC123"
     parcel.save()
+    from tests.aide_preuves import photo
+
+    photo(parcel.shipment, "RELAY_RELEASED")  # R66.3
     return o, parcel
 
 
@@ -53,7 +56,7 @@ def test_pas_de_garde_tant_qu_un_colis_est_attendu():
 
 
 def _remettre(parcel, **donnees):
-    s = RelayParcelPickupSerializer(data={"pickup_code": "ABC123", **donnees},
+    s = RelayParcelPickupSerializer(data={"colis": f"BVY-{parcel.shipment.order_id}-{parcel.shipment_id}", "pickup_code": "ABC123", **donnees},
                                     context={"relay_point": parcel.relay_point, "user": parcel.relay_point.user})
     assert s.is_valid(), s.errors
     return s.save()

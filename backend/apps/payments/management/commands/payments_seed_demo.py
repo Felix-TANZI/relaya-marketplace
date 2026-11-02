@@ -508,6 +508,15 @@ class Command(BaseCommand):
             username=f"{MARQUE}-approver",
             defaults={"email": f"ap@{MARQUE}.test", "is_staff": True},
         )
+        # DP-42 : deux validations, le comptable (Finance) puis le porteur (Direction), deux personnes.
+        porteur_demo, _ = User.objects.get_or_create(
+            username=f"{MARQUE}-director",
+            defaults={"email": f"dir@{MARQUE}.test", "is_staff": True},
+        )
+        from django.contrib.auth.models import Group
+
+        approbateur.groups.add(Group.objects.get_or_create(name="finance-comptable")[0])
+        porteur_demo.groups.add(Group.objects.get_or_create(name="direction")[0])
 
         # ─────────────────────────────────────────────────────────────────
         # LES COMPTES CREES PAR LE PONT N'ONT AUCUN NUMERO
@@ -582,6 +591,8 @@ class Command(BaseCommand):
             try:
                 approve_payout(demande, approved_by=approbateur,
                                comment="Relevé vérifié")
+                approve_payout(demande, approved_by=porteur_demo,
+                               comment="Validé par la direction")
                 approuves += 1
             except SettlementError:
                 continue

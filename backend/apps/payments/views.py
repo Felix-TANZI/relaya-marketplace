@@ -56,8 +56,10 @@ class PaymentDetailView(generics.RetrieveAPIView):
     lookup_field = "id"
 
     def get_queryset(self):
+        from apps.common.droits import a_la_partie
+
         qs = PaymentTransaction.objects.select_related("order")
-        if self.request.user.is_staff:
+        if a_la_partie(self.request.user, "finance"):  # revue du 29/10 (A2) : l'équipe finance, pas tout le personnel
             return qs
         return qs.filter(order__user=self.request.user)
 
@@ -75,8 +77,10 @@ class PaymentListByOrderView(generics.ListAPIView):
         order_id = self.request.query_params.get("order_id")
         if not order_id:
             return PaymentTransaction.objects.none()
+        from apps.common.droits import a_la_partie
+
         qs = PaymentTransaction.objects.select_related("order").filter(order_id=order_id)
-        if not self.request.user.is_staff:
+        if not a_la_partie(self.request.user, "finance"):  # revue du 29/10 (A2)
             qs = qs.filter(order__user=self.request.user)
         return qs.order_by("-created_at")
 

@@ -36,7 +36,7 @@ def test_cree_six_demandes_pending_sans_rien_appliquer(demandeur):
 
     demandes = ConfigChangeRequest.objects.filter(status=ConfigChangeRequest.Status.PENDING)
     # 1 EscrowPolicy + 5 DistributionRule (goods, transport-carrier, transport-platform, relay, payment-fee)
-    assert demandes.count() == 6
+    assert demandes.count() == 5  # plus de part du transport a l entreprise (R53)
     # Aucune version reelle n'existe tant que personne n'a approuve.
     assert EscrowPolicy.objects.count() == 0
     assert DistributionRule.objects.count() == 0
@@ -62,11 +62,13 @@ def test_un_second_compte_peut_approuver_et_les_valeurs_sont_correctes(demandeur
     assert policy.release_delay_hours == 72
     assert policy.dispute_window_days == 7
 
-    transport_demande = ConfigChangeRequest.objects.get(target_key="dist-transport-carrier")
-    approve_change(transport_demande, approved_by=approbateur)
-    rule = DistributionRule.objects.get(config_key="dist-transport-carrier", is_active=True)
-    assert rule.payee_type == DistributionRule.PayeeType.DELIVERY_COMPANY
-    assert rule.value == 70
+    # Spec v2.1, R53 (décision du 27/10/2026) : plus de part du transport à l'entreprise, payée selon sa grille ;
+    # tout le transport va à la plateforme.
+    assert not ConfigChangeRequest.objects.filter(target_key="dist-transport-carrier").exists()
+    plateforme = ConfigChangeRequest.objects.get(target_key="dist-transport-platform")
+    approve_change(plateforme, approved_by=approbateur)
+    rule = DistributionRule.objects.get(config_key="dist-transport-platform", is_active=True)
+    assert rule.payee_type == DistributionRule.PayeeType.PLATFORM
 
 
 def test_relancer_la_commande_ne_duplique_pas_les_demandes_en_attente(demandeur):

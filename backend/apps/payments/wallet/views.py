@@ -36,6 +36,7 @@ def _etat(user) -> dict:
     p = services.portefeuille_de(user)
     return {"ouvert": services.ouvert(), "solde_xaf": p.solde_xaf, "retirable_xaf": p.solde_retirable_xaf,
             "geste_xaf": p.solde_geste_xaf, "code_defini": bool(p.code_hash),
+            "code_bloque_jusqua": p.code_bloque_jusqua,
             "plafond_xaf": regles.reglage("r_wallet_plafond"), "code_des_xaf": regles.reglage("r_wallet_code_des"),
             "retrait_min_xaf": regles.reglage("r_retrait_wallet_min"),
             "mouvements": [_mouvement(m) for m in p.mouvements.all()[:50]]}
@@ -94,6 +95,34 @@ class CodeView(APIView):
         return Response({"code_defini": True})
 
 
+@extend_schema(tags=TAGS, summary="Code du Wallet oublié ou bloqué : code envoyé au numéro vérifié")
+class CodeOublieView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            envoi = services.demander_reinitialisation(request.user)
+        except services.WalletError as exc:
+            return _refus(exc)
+        return Response({"envoye": True, **envoi})
+
+
+@extend_schema(tags=TAGS, summary="Nouveau code du Wallet contre le code reçu par SMS (lève le blocage)")
+class CodeReinitialiserView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            resultat = services.reinitialiser_code(request.user, code_sms=request.data.get("code_sms") or "",
+                                                   nouveau=request.data.get("code") or "")
+        except services.WalletError as exc:
+            return _refus(exc)
+        if not resultat.get("ok"):
+            return Response({"code": "code_sms_faux", "detail": "Code reçu par SMS faux ou expiré.", **resultat},
+                            status=status.HTTP_400_BAD_REQUEST)
+        return Response({"code_defini": True})
+
+
 @extend_schema(tags=TAGS, summary="Frais et somme reçue d'un retrait, avant validation (R03.4)")
 class DevisRetraitView(APIView):
     permission_classes = [IsAuthenticated]
@@ -126,7 +155,8 @@ class RetraitView(APIView):
 # ── Administration (feuille de route D16 : suivi du Wallet) ─────────────────────────────────────────────
 
 def _geste(g: GestePortefeuille) -> dict:
-    return {"id": g.pk, "client": g.client.username, "montant_xaf": g.montant_xaf, "motif": g.motif,
+    return {"id": g.pk, "client": g.client.username, "commande": g.order_id, "montant_xaf": g.montant_xaf,
+            "motif": g.motif,
             "statut": g.statut, "demande_par": g.demande_par.username,
             "decide_par": g.decide_par.username if g.decide_par else None, "le": g.created_at}
 
@@ -152,7 +182,8 @@ class GesteView(APIView):
         client = get_object_or_404(User, pk=request.data.get("client_id"))
         try:
             g = services.demander_geste(client, montant=request.data.get("montant_xaf") or 0,
-                                        motif=request.data.get("motif") or "", demande_par=request.user)
+                                        motif=request.data.get("motif") or "", demande_par=request.user,
+                                        order_id=request.data.get("order_id"))
         except services.WalletError as exc:
             return _refus(exc)
         return Response(_geste(g), status=status.HTTP_201_CREATED)

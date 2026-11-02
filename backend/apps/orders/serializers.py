@@ -3,6 +3,7 @@
 
 from rest_framework import serializers
 import os
+from django.db import transaction
 from django.db.models import Count, Q
 from django.utils.text import slugify
 from django.utils import timezone
@@ -120,6 +121,13 @@ class OrderDetailSerializer(serializers.ModelSerializer):
             'couverture_xaf',
             'frais_momo_xaf',
             'total_a_payer_xaf',
+            # R42 (comptoir) et R51.5 (frais d'absence) : ce qui reste à payer avant le retrait
+            'paiement_comptoir',
+            'reste_comptoir_xaf',
+            'frais_momo_comptoir_xaf',
+            'frais_absence_xaf',
+            'frais_momo_absence_xaf',
+            'frais_absence_paye_le',
             'promesse_at',
             'promesse_texte',
             'items',
@@ -239,7 +247,10 @@ class OrderCreateSerializer(serializers.Serializer):
         return value
 
     def _get_or_create_demo_product(self, item):
-        if not item.get('is_demo'):
+        # Main 2 : un article « démo » ne devient plus un produit, sauf en démonstration autorisée (DONNEES_DEMO_AUTORISEES).
+        from apps.common.demonstration import demonstration_autorisee
+
+        if not item.get('is_demo') or not demonstration_autorisee():
             raise serializers.ValidationError(
                 f"Produit {item['product_id']} introuvable"
             )
@@ -293,8 +304,9 @@ class OrderCreateSerializer(serializers.Serializer):
 
         return product
 
+    @transaction.atomic
     def create(self, validated_data):
-        """Créer une nouvelle commande"""
+        """Créer une nouvelle commande (atomique : une réservation flash refusée n'en laisse rien, D9)"""
         from .models import PlatformSettings
         from apps.shipping.models import Shipment, ShipmentEvent, infer_actor_role
         from apps.orders.models import OrderHistory
@@ -302,6 +314,23 @@ class OrderCreateSerializer(serializers.Serializer):
 
         cart_items = validated_data.pop('cart_items')
         user = self.context['request'].user if self.context['request'].user.is_authenticated else None
+
+        # R69.1, décision du porteur (revue du 29/10, C4) : la course de retour due par le client en tort se paie avant
+        # sa prochaine commande (application ou comptoir, Mobile Money, jamais en espèces R01).
+        if user is not None:
+            from .retours import course_de_retour_due, courses_de_retour_dues
+
+            dues = list(courses_de_retour_dues(user=user))
+            montant = sum(course_de_retour_due(r) for r in dues)
+            if montant > 0:
+                # Le message en premier : l'écran de commande l'affiche tel quel, somme due comprise.
+                raise serializers.ValidationError({
+                    'course_retour': f"Une course de retour de {montant} F reste à payer avant une nouvelle commande "
+                                     "(R69.1). Payez-la depuis votre commande précédente, ou au comptoir d'un relais "
+                                     "par Mobile Money.",
+                    'course_retour_montant_xaf': montant,
+                    'course_retour_commandes': sorted({r.order_id for r in dues}),
+                })
         
         from . import frais as frais_v21
 
@@ -399,6 +428,19 @@ class OrderCreateSerializer(serializers.Serializer):
         if destination.zone_dest:
             destination_zone = _Zone.objects.filter(code=destination.zone_dest).first() or destination_zone
 
+        # Spec v2.1, R41.1 (revue du 29/10, C2) : une valeur_colis par boutique ; le relais choisi doit la couvrir.
+        valeurs_par_boutique: dict = {}
+        for item_data in order_items_data:
+            vendeur = getattr(item_data['product'], 'vendor_id', None)
+            valeurs_par_boutique[vendeur] = valeurs_par_boutique.get(vendeur, 0) + int(item_data['line_total_xaf'])
+        if relay_point_obj is not None:
+            from apps.shipping.garde import peut_garder
+            if not peut_garder(relay_point_obj, valeurs_par_boutique.values()):
+                raise serializers.ValidationError({
+                    'relay_point_id': "Ce point relais ne peut pas garder un colis de cette valeur — choisissez-en un "
+                                      "autre ou la livraison à domicile (R41.1).",
+                })
+
         address_precision = validated_data.get('address_precision') or {}
         if not isinstance(address_precision, dict):
             address_precision = {}
@@ -448,6 +490,13 @@ class OrderCreateSerializer(serializers.Serializer):
         # Créer les articles de la commande
         for item_data in order_items_data:
             OrderItem.objects.create(order=order, **item_data)
+
+        # Feuille de route D9 : le stock flash baisse à la commande, le même pour tous.
+        from . import flash
+        try:
+            flash.reserver(order)
+        except flash.FlashEpuise as exc:
+            raise serializers.ValidationError({'prix_change': "Un prix a changé", 'flash': str(exc)})
 
         # Commission de chaque sous-commande, figée maintenant (A7, A8 ; R13.2, R13.5). Le taux de la commande en
         # garde l'équivalent, pour les écrans qui le lisent encore.
@@ -513,6 +562,7 @@ class OrderCreateSerializer(serializers.Serializer):
         for vendor_user in vendor_users:
             shipment = Shipment.objects.create(
                 order=order, vendor=vendor_user, status=Shipment.Status.CREATED,
+                valeur_colis_xaf=valeurs_par_boutique.get(vendor_user.pk, 0),  # R41.1
             )
             created_shipments.append(shipment)
             ShipmentEvent.record(
@@ -736,6 +786,8 @@ class ReturnSerializer(serializers.ModelSerializer):
     requested_by_name = serializers.SerializerMethodField()
     relay_point_name = serializers.CharField(source='dropoff_relay_point.name', read_only=True, default='')
     is_free_for_buyer = serializers.SerializerMethodField()
+    # R69.1 : ce que le client doit encore pour la course de retour quand il est en tort (0 sinon, ou une fois payé)
+    course_retour_due_xaf = serializers.SerializerMethodField()
 
     class Meta:
         model = Return
@@ -747,6 +799,7 @@ class ReturnSerializer(serializers.ModelSerializer):
             'reviewed_at', 'review_note',
             'received_at', 'inspection_passed', 'inspection_note',
             'refund_amount_xaf', 'is_free_for_buyer',
+            'frais_retour_xaf', 'frais_retour_partie', 'course_retour_due_xaf', 'frais_retour_paye_le',
             'created_at', 'updated_at',
         ]
         read_only_fields = [
@@ -760,10 +813,14 @@ class ReturnSerializer(serializers.ModelSerializer):
         return obj.requested_by.get_full_name() or obj.requested_by.username
 
     def get_is_free_for_buyer(self, obj):
-        # Regle verrouillee (lancement) : tout retour accepte est un retour
-        # pour faute produit — le renvoi n'est jamais facture a l'acheteur.
-        # Le "retour pour convenance" payant est une phase future, non construite.
-        return True
+        # Spec v2.1, R69.1 : la course de retour est gratuite pour le client si son probleme est valide ; elle est a
+        # sa charge s'il est en tort apres l'inspection.
+        return obj.frais_retour_partie != "client"
+
+    def get_course_retour_due_xaf(self, obj):
+        from .retours import course_de_retour_due
+
+        return course_de_retour_due(obj)
 
 
 class ReturnCreateSerializer(serializers.ModelSerializer):

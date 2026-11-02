@@ -25,11 +25,24 @@ def _etapes(shipment):
             (S.RELAY_RECEIVED, "Réception au point relais", "relais", bool(colis and colis.received_at)),
             (S.RELAY_RELEASED, "Remise au client au comptoir", "relais", bool(colis and colis.picked_up_at)),
         ]
+        if colis and colis.returned_at:  # revue du 1/11 (R66.3) : le colis a quitté le relais en retour
+            etapes.append((S.RELAY_RETURNED, "Sortie du relais en retour", "relais", True))
     else:
         livre = shipment.status == Shipment.Status.DELIVERED or ShipmentEvent.objects.filter(
             shipment=shipment, status=Shipment.Status.DELIVERED, actor_role="COURIER").exists()
         etapes.append((S.CUSTOMER_DELIVERY, "Remise au client à domicile", "livreur", livre))
     return etapes
+
+
+def exiger_photo(shipment, etape, champ: str = "photo") -> None:
+    """R66.3, imposé par le serveur (sécurité avant main 2) : pas de changement de main sans la photo de cette étape,
+    déjà envoyée. L'application l'envoie avant l'action ; un appel direct sans photo est refusé."""
+    from rest_framework import serializers
+
+    if not ShipmentEvidence.objects.filter(shipment=shipment, stage=etape).exclude(file="").exists():
+        raise serializers.ValidationError(
+            {champ: f"Photo obligatoire avant ce changement de main (R66.3) : {S(etape).label.lower()}."},
+            code="photo_obligatoire")  # revue du 29/10 (D2) : lu par son code, jamais par son texte
 
 
 def chaine_de_garde(shipment) -> dict:

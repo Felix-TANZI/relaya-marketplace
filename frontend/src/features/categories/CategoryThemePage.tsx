@@ -29,7 +29,6 @@ import useStorefrontCategories from "@/hooks/useStorefrontCategories";
 import { HERO_MIN_HEIGHT, getCategoryTheme, matchesCategory } from "@/data/categoryThemes";
 import { categoryIcon } from "@/data/categoryIcon";
 import { toStorefrontCategory } from "@/data/storefrontCategories";
-import { getV29Products } from "@/data/v29Products";
 import { productsApi, type Product, type ProductListParams } from "@/services/api/products";
 import {
   categorySubtreeIds,
@@ -145,7 +144,7 @@ export default function CategoryThemePage() {
   const { mainRef, trackTop, trackHeight, topOffset } = useSidebarTrack();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [apiProducts, setApiProducts] = useState<Product[]>([]);
-  const [usingMockProducts, setUsingMockProducts] = useState(true);
+  const usingMockProducts = false;  // Main 2 : plus de jeu de démonstration
   /* Chargement déduit : la dernière réponse reçue concerne-t-elle la page affichée ? */
   const productsKey = pageCategoryId === null ? "catalog" : `category-${pageCategoryId}`;
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
@@ -231,16 +230,13 @@ export default function CategoryThemePage() {
         if (pageCategoryId !== null) {
           // Une catégorie de l'admin n'affiche que ses vrais produits.
           setApiProducts(results);
-          setUsingMockProducts(false);
         } else if (results.length > 0) {
           setApiProducts(results);
-          setUsingMockProducts(results.length < 20);
         }
       })
       .catch(() => {
         if (cancelled) return;
         setApiProducts([]);
-        setUsingMockProducts(pageCategoryId === null);
       })
       .finally(() => {
         if (!cancelled) setLoadedKey(productsKey);
@@ -251,7 +247,8 @@ export default function CategoryThemePage() {
     };
   }, [pageCategoryId, productsKey, treeLoading, i18n.language]);
 
-  const sourceProducts = usingMockProducts ? getV29Products(t) : apiProducts;
+  // Main 2 : plus de jeu de démonstration, seulement le vrai catalogue.
+  const sourceProducts = apiProducts;
 
   const categoryProducts = useMemo(
     () => (context ? sourceProducts : sourceProducts.filter((product) => matchesCategory(product, slug))),

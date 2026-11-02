@@ -204,6 +204,11 @@ class Order(TimeStampedModel):
     frais_momo_comptoir_xaf = models.PositiveIntegerField(default=0, help_text="frais Mobile Money du reste (R02.6)")
     comptoir_paye_le = models.DateTimeField(null=True, blank=True)
     comptoir_refuse_le = models.DateTimeField(null=True, blank=True, help_text="refus au comptoir (R42.5, R39.3)")
+    # Spec v2.1, R51 : client absent à domicile, colis transféré au relais de sa zone ; frais d'absence à payer avant
+    # le retrait (R51.4, R51.5), par Mobile Money avec ses frais (R02.6), dans l'application ou au relais.
+    frais_absence_xaf = models.PositiveIntegerField(default=0, help_text="frais_absence (R51.4)")
+    frais_momo_absence_xaf = models.PositiveIntegerField(default=0, help_text="frais Mobile Money des frais d'absence")
+    frais_absence_paye_le = models.DateTimeField(null=True, blank=True)
     frais_detail     = models.JSONField(
         default=dict, blank=True,
         help_text="Calcul des frais figé au paiement (R12.3, R83.3) : boutiques, colis, distances, empreinte des réglages.",
@@ -833,6 +838,10 @@ class Return(models.Model):
         max_length=20, blank=True, default="", verbose_name="Course de retour payée par",
         help_text="vendeur, transporteur, relais ou client (R69.1) ; gratuite pour le client si le problème est validé.",
     )
+    # R69.1 avec R02.6 : quand le client est en tort, il paie la course de retour dans l'application, frais Mobile
+    # Money compris (même chemin que les frais d'absence, R51.5).
+    frais_momo_retour_xaf = models.PositiveIntegerField(default=0, verbose_name="Frais Mobile Money de la course (F)")
+    frais_retour_paye_le = models.DateTimeField(null=True, blank=True, verbose_name="Course de retour payée le")
 
     # ── Brouillon d'inspection (gardé sur l'appareil, sync best-effort) ─────
     draft_inspection = models.JSONField(
@@ -1156,3 +1165,84 @@ class SmsCommande(models.Model):
 
     def __str__(self):
         return f"Commande #{self.order_id} · {self.sorte}"
+
+
+class RemboursementAuto(models.Model):
+    """
+    Feuille de route D32 ; spec v2.1, R71 : chaque demande examinée est journalisée, accordée ou non. Un refus n'est
+    pas un rejet du client : sa demande suit le traitement normal, avec retour du colis.
+    """
+
+    class Statut(models.TextChoices):
+        REFUSE = "REFUSE", "Non éligible : traitement normal"
+        # Sécurité avant main 2 : accordé et enregistré avant l'envoi au prestataire (compté dans les plafonds).
+        EN_COURS = "EN_COURS", "Versement en cours"
+        VERSE = "VERSE", "Remboursé"
+        INCONNU = "INCONNU", "Versement à issue inconnue"
+        ECHEC = "ECHEC", "Versement refusé : traitement normal"
+
+    dispute = models.OneToOneField(Dispute, on_delete=models.PROTECT, related_name="remboursement_auto")
+    order = models.ForeignKey(Order, on_delete=models.PROTECT, related_name="remboursements_auto")
+    order_item = models.ForeignKey(OrderItem, on_delete=models.PROTECT, related_name="remboursements_auto")
+    client = models.ForeignKey(User, on_delete=models.PROTECT, related_name="remboursements_auto")
+    vendor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
+                               related_name="remboursements_auto_vendeur")
+    statut = models.CharField(max_length=10, choices=Statut.choices)
+    raison = models.CharField(max_length=40, blank=True, default="", help_text="condition R71 non remplie")
+    article_xaf = models.PositiveIntegerField(default=0, help_text="R71.1 : article, livraison exclue")
+    frais_momo_xaf = models.PositiveIntegerField(default=0, help_text="R72.1 : part des frais Mobile Money")
+    total_xaf = models.PositiveIntegerField(default=0)
+    # R71.2 : une « personne » = son compte, son numéro Mobile Money, son téléphone.
+    empreinte_numero = models.CharField(max_length=64, blank=True, default="")
+    telephone = models.CharField(max_length=20, blank=True, default="")
+    relais = models.ForeignKey("accounts.RelayPointProfile", on_delete=models.SET_NULL, null=True, blank=True)
+    # R71.2 : relais habituel et nom de retrait normalisé du client au moment de la demande (reconnaître la même
+    # personne derrière plusieurs comptes ; jamais le relais seul)
+    relais_habituel_id = models.PositiveBigIntegerField(null=True, blank=True)
+    nom_retrait = models.CharField(max_length=80, blank=True, default="")
+    payout_reference = models.CharField(max_length=48, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Remboursement automatique"
+        verbose_name_plural = "Remboursements automatiques"
+
+    def __str__(self):
+        return f"Commande #{self.order_id} · {self.get_statut_display()}"
+
+
+class RetraitDroitRemboursementAuto(models.Model):
+    """D32 : le client pris en abus perd définitivement le remboursement automatique, après validation humaine
+    (proposé par un membre de l'équipe, validé par un autre) ; il garde le retour normal."""
+
+    client = models.OneToOneField(User, on_delete=models.PROTECT, related_name="retrait_rembt_auto")
+    motif = models.CharField(max_length=255)
+    propose_par = models.ForeignKey(User, on_delete=models.PROTECT, related_name="retraits_rembt_auto_proposes")
+    valide_par = models.ForeignKey(User, on_delete=models.PROTECT, null=True, blank=True,
+                                   related_name="retraits_rembt_auto_valides")
+    valide_le = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Retrait du remboursement automatique"
+        verbose_name_plural = "Retraits du remboursement automatique"
+
+
+class ReservationFlash(models.Model):
+    """
+    Feuille de route D9 : le stock flash baisse à la commande (PromotionCampaign.stock_claimed), le même pour tous ;
+    il est rendu si la commande est annulée ou reste impayée après le délai de paiement.
+    """
+
+    campaign = models.ForeignKey("catalog.PromotionCampaign", on_delete=models.PROTECT, related_name="reservations")
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="reservations_flash")
+    order_item = models.OneToOneField(OrderItem, on_delete=models.CASCADE, related_name="reservation_flash")
+    qty = models.PositiveIntegerField()
+    rendue_le = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Réservation de stock flash"
+        verbose_name_plural = "Réservations de stock flash"
+

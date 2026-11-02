@@ -18,10 +18,10 @@ from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 
 from apps.client_core.masquage import nettoyer_message
+from apps.common.droits import Partie
 
 from .models import (
     ComplianceDocument,
@@ -62,7 +62,7 @@ def _fil(c, avec_messages=False) -> dict:
 
 @extend_schema(tags=TAG, summary="Fils du support, ceux qui attendent une réponse d'abord")
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("support")])  # sécurité main 2 : droits par partie
 def support_liste(request):
     from apps.messaging.models import Conversation
 
@@ -79,7 +79,7 @@ def support_liste(request):
 
 @extend_schema(tags=TAG, summary="Un fil du support ; répondre ou clore")
 @api_view(["GET", "POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("support")])  # sécurité main 2 : droits par partie
 def support_fil(request, pk):
     from apps.messaging.models import Conversation, Message
     from apps.messaging.services import QUI_SUPPORT
@@ -114,7 +114,7 @@ def support_fil(request, pk):
 
 @extend_schema(tags=TAG, summary="Signaux de fraude réunis")
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("fraude")])  # sécurité main 2 : droits par partie
 def fraude(request):
     from apps.orders.models import Dispute
     from apps.otp.models import CodeOtp
@@ -125,12 +125,14 @@ def fraude(request):
     sanctions = SanctionRecord.objects.filter(lifted_at__isnull=True).filter(
         Q(expires_at__isnull=True) | Q(expires_at__gt=maintenant)).select_related("profile__user")
     codes_bloques = CodeOtp.objects.filter(bloque_jusqua__gt=maintenant)
-    # R66.1 : r_code_essais essais faux d'affilée sur un code bloquent le retrait r_code_blocage_h (jamais le code
-    # lui-même dans cette page : seulement le relais et le nombre d'essais).
+    # Sécurité avant main 2 : les relais dont les remises sont bloquées par trop de codes de retrait faux sur la
+    # période (r_code_relais_echecs en r_code_relais_fenetre_h) ; les codes bloqués d'un colis (R66.1) sont plus bas.
+    from apps.regles import services as regles
+
     retraits_bloques = (RelayPickupAttempt.objects.filter(
-        success=False, created_at__gte=maintenant - timezone.timedelta(hours=RelayPickupAttempt.heures_blocage()))
-        .values("relay_point__name", "code").annotate(n=Count("id"))
-        .filter(n__gte=RelayPickupAttempt.max_essais()))
+        success=False, created_at__gte=maintenant - timezone.timedelta(hours=regles.reglage("r_code_relais_fenetre_h")))
+        .values("relay_point__name").annotate(n=Count("id"))
+        .filter(n__gte=max(1, regles.reglage("r_code_relais_echecs"))))
     colis_bloques = [s for s in Shipment.objects.exclude(codes_essais={}).only("id", "order_id", "codes_essais")
                      if any((v or {}).get("bloque_jusqu") for v in (s.codes_essais or {}).values())]
     litigants = (Dispute.objects.filter(created_at__gte=maintenant - timezone.timedelta(days=90))
@@ -169,7 +171,7 @@ def fraude(request):
 
 @extend_schema(tags=TAG, summary="Vue d'ensemble des livreurs")
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("logistique")])  # sécurité main 2 : droits par partie
 def livreurs_vue(request):
     from apps.shipping.models import CourierSOSAlert, Shipment
 
@@ -223,7 +225,7 @@ def _piece(d: ComplianceDocument) -> dict:
 
 @extend_schema(tags=TAG, summary="File des pièces vendeur, la plus en retard d'abord")
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("conformite")])  # sécurité main 2 : droits par partie
 def kyc_file(request):
     statut = request.query_params.get("statut", ComplianceDocument.Status.PENDING)
     pieces = (ComplianceDocument.objects.filter(owner_role=ComplianceDocument.OwnerRole.VENDOR)
@@ -236,7 +238,7 @@ def kyc_file(request):
 
 @extend_schema(tags=TAG, summary="Décider une pièce vendeur (motif obligatoire pour un refus)")
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([Partie("conformite")])  # sécurité main 2 : droits par partie
 def kyc_decision(request, pk):
     from apps.vendors.kyc import LIBELLES, identite_verifiee
 

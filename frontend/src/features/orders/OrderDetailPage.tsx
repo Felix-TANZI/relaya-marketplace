@@ -31,6 +31,9 @@ import { ordersApi } from "@/services/api/orders";
 import { productsApi } from "@/services/api/products";
 import { customerApi, type Dispute, type Shipment, type OrderChatMessage, type OrderReturn } from "@/services/api/customer";
 import TrackingMap from "@/components/TrackingMap";
+import AppelMasqueButton from "@/components/AppelMasqueButton";
+import FraisAbsenceBlock from "./FraisAbsenceBlock";
+import CourseRetourBlock from "./CourseRetourBlock";
 import { OrderPaymentPanel } from "@/features/payments/OrderPaymentPanel";
 import { PfShellStyles } from "@/styles/pfShell";
 import QrScanner from "@/components/QrScanner";
@@ -1490,6 +1493,7 @@ export default function OrderDetailPage() {
                           {t("cl2_order_dispute.return_refund_progress", { amount: (ret.refund_amount_xaf ?? 0).toLocaleString("fr-FR") })}
                         </p>
                       )}
+                      <CourseRetourBlock ret={ret} orderId={order.id} phone={order.customer_phone} />
                     </div>
                   ))}
                 </div>
@@ -1705,6 +1709,9 @@ export default function OrderDetailPage() {
               </div>
             </section>
 
+            {/* Spec v2.1, R51.5 : frais d'absence à payer avant le retrait. */}
+            <FraisAbsenceBlock order={order} />
+
             <section className="pf-card pf-anim">
               <h2 className="mb-4 text-lg font-bold text-gray-900 dark:text-white">
                 {t('order.detail.shipping_title')}
@@ -1740,6 +1747,10 @@ export default function OrderDetailPage() {
                       {tracking?.courier_name || t('order.detail.shipping_courier_pending')}
                       {tracking?.courier_phone ? ` · ${tracking.courier_phone}` : ""}
                     </p>
+                    {/* Feuille de route D33 : appel au livreur sans voir son numéro (ni lui le vôtre). */}
+                    {tracking?.courier && ["ASSIGNED", "PICKED_UP", "IN_TRANSIT", "OUT_FOR_DELIVERY", "INCIDENT"].includes(tracking.status) && (
+                      <AppelMasqueButton shipmentId={tracking.id} libelle="Appeler le livreur" className="mt-2" />
+                    )}
                   </div>
                 </div>
               </div>

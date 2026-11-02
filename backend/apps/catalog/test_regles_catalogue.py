@@ -92,6 +92,9 @@ def test_prix_minimum_suit_le_reglage_de_l_admin():
 @pytest.fixture
 def admin_client(db):
     admin = get_user_model().objects.create_user(username="admin-cat", email="admin-cat@example.com", password="x", is_staff=True)
+    from django.contrib.auth.models import Group
+
+    admin.groups.add(Group.objects.get_or_create(name="gestion-catalogue")[0])  # sécurité main 2 : partie catalogue
     client = APIClient()
     client.force_authenticate(admin)
     return client

@@ -76,7 +76,9 @@ class Command(BaseCommand):
             comptoir.refuser(order, au_relais, comptoir.NON_RETIRE)
             RelayParcel.objects.filter(pk__in=[c.pk for c in au_relais]).update(non_retrait_processed_at=now)
             return
-        rembourse = garde.rembourse_non_retire(order, au_relais)                         # R39.2
+        # R39.2 : des frais d'absence non payés (R51.5) sont retenus sur ce qui revient au client.
+        absence_due = 0 if order.frais_absence_paye_le else int(order.frais_absence_xaf or 0)
+        rembourse = garde.rembourse_non_retire(order, au_relais, frais_absence_non_payes=absence_due)
         for parcel in au_relais:
             parcel.status = RelayParcel.Status.RETURNED_TO_VENDOR
             parcel.returned_at = now

@@ -519,7 +519,7 @@ export default {
     placeholder_id_card: 'CNI-XXXXXXXXXX',
     checkbox_approve_immediately: 'Approuver immédiatement (peut recevoir des livraisons)',
 
-    checkbox_superuser: 'Super administrateur — accès complet sans restrictions',
+    note_admin_direction: "Réservé à la Direction. Le compte n'est jamais super administrateur (création en ligne de commande sur le serveur seulement) : ses droits viennent des groupes de son équipe.",
 
     btn_cancel: 'Annuler',
     btn_creating: 'Création…',

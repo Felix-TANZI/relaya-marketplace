@@ -243,6 +243,80 @@ def prepare_payment_comptoir(order, *, payer_msisdn: str, payer_operator: str):
     return prepare_payment(order, payer_msisdn=payer_msisdn, payer_operator=payer_operator, phase=COMPTOIR)
 
 
+def prepare_payment_absence(order, *, payer_msisdn: str, payer_operator: str):
+    """
+    Spec v2.1, R51.4 et R51.5 : l'intention des frais d'absence, payes avant le retrait. Ils remunerent l'entreprise
+    (supplement « client absent ») et le relais (part et garde du jour) par leurs propres circuits : tout va donc au
+    produit de la plateforme, sans sequestre ; le client paie aussi les frais Mobile Money (R02.6).
+    """
+    import uuid as _uuid
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from apps.payments.application.collect import _config_snapshot
+    from apps.payments.domain.money import Money
+    from apps.payments.intents.models import PaymentIntent
+
+    from .intent_orders import link_orders
+
+    montant = int(order.frais_absence_xaf or 0) + int(order.frais_momo_absence_xaf or 0)
+    if montant <= 0 or order.frais_absence_paye_le:
+        raise CheckoutError(f"La commande #{order.pk} n'a pas de frais d'absence a payer.")
+    cle = f"order-{order.pk}-absence"
+    existante = PaymentIntent.objects.filter(idempotency_key=cle).first()
+    if existante is not None:
+        return existante
+    intent = PaymentIntent(
+        idempotency_key=cle, buyer=order.user, amount_xaf=montant, currency="XAF",
+        distribution_plan={"total_distributed": montant, "currency": "XAF", "platform_revenue": montant,
+                           "unresolved_rules": [], "needs_reallocation": False, "psp_cost": 0, "holds": []},
+        correlation_id=str(_uuid.uuid4()), expires_at=timezone.now() + timedelta(minutes=30))
+    intent.set_payer(payer_msisdn, payer_operator)
+    intent.config_snapshot = _config_snapshot(Money(montant), payer_operator)
+    intent.save()
+    link_orders(intent, [order])
+    return intent
+
+
+def prepare_payment_course_retour(ret, *, payer_msisdn: str, payer_operator: str):
+    """
+    Spec v2.1, R69.1 : le client en tort paie la course de retour (r_retour), plus les frais Mobile Money (R02.6).
+    BelivaY a deja paye la course a l'entreprise (grille, A10) : tout va au produit de la plateforme, sans sequestre.
+    """
+    import uuid as _uuid
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from apps.orders.retours import course_de_retour_due
+    from apps.payments.application.collect import _config_snapshot
+    from apps.payments.domain.money import Money
+    from apps.payments.intents.models import PaymentIntent
+
+    from .intent_orders import link_orders
+
+    montant = course_de_retour_due(ret)
+    if montant <= 0:
+        raise CheckoutError(f"Le retour #{ret.pk} n'a pas de course de retour a payer.")
+    cle = f"return-{ret.pk}-course-retour"
+    existante = PaymentIntent.objects.filter(idempotency_key=cle).first()
+    if existante is not None and not (existante.is_final or existante.is_expired):
+        return existante
+    if existante is not None:
+        cle = f"{cle}-{_uuid.uuid4().hex[:8]}-course-retour"
+    intent = PaymentIntent(
+        idempotency_key=cle, buyer=ret.order.user, amount_xaf=montant, currency="XAF",
+        distribution_plan={"total_distributed": montant, "currency": "XAF", "platform_revenue": montant,
+                           "unresolved_rules": [], "needs_reallocation": False, "psp_cost": 0, "holds": []},
+        correlation_id=str(_uuid.uuid4()), expires_at=timezone.now() + timedelta(minutes=30))
+    intent.set_payer(payer_msisdn, payer_operator)
+    intent.config_snapshot = _config_snapshot(Money(montant), payer_operator)
+    intent.save()
+    link_orders(intent, [ret.order])
+    return intent
+
+
 def _resoudre_transporteur(order, codes: dict, types: dict) -> None:
     """
     Rattache l'entreprise de livraison SI elle est deja connue.

@@ -1,13 +1,14 @@
 import unicodedata
 from datetime import timedelta
 
-from django.db.models import Case, Count, IntegerField, Sum, When
+from django.db.models import Case, Count, IntegerField, Q, Sum, When
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics, status
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from apps.common.droits import Partie  # sécurité main 2 : droits par partie
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -231,8 +232,25 @@ class ShipmentEventCreateView(generics.CreateAPIView):
         OpenApiParameter(name="city", required=False, type=str),
         OpenApiParameter(name="lat", required=False, type=float),
         OpenApiParameter(name="lng", required=False, type=float),
+        OpenApiParameter(name="panier", required=False, type=str,
+                         description="R41.1 : « id:quantité,id:quantité » ; seuls les relais qui peuvent garder chaque "
+                                     "colis du panier sont proposés"),
     ],
 )
+def _lignes_du_panier(texte):
+    """« id:quantité,… » → [(produit, quantité)] pour R41.1 ; les entrées illisibles ou inconnues sont ignorées."""
+    from apps.catalog.models import Product
+
+    lignes = []
+    for morceau in (texte or "").split(","):
+        pid, _, qty = morceau.partition(":")
+        if pid.strip().isdigit():
+            produit = Product.objects.filter(pk=int(pid)).select_related("vendor").first()
+            if produit is not None:
+                lignes.append((produit, int(qty) if qty.strip().isdigit() else 1))
+    return lignes
+
+
 class RelayPointNearbyView(APIView):
     # Tache D3 — acces visiteur sans compte. Reperer les points relais fait
     # partie de la decouverte : on ne peut pas demander de creer un compte
@@ -256,8 +274,9 @@ class RelayPointNearbyView(APIView):
 
         from apps.orders.frais import FraisImpossibles, destination_relais
         from apps.shipping.entreprises import zones_couvertes
-        from apps.shipping.garde import places_occupees, relais_sature
+        from apps.shipping.garde import peut_garder, places_occupees, relais_sature, valeurs_du_panier
         couvertes = zones_couvertes()
+        valeurs = valeurs_du_panier(_lignes_du_panier(request.query_params.get("panier")))  # R41.1
 
         try:
             buyer_lat = float(lat) if lat is not None else None
@@ -272,6 +291,8 @@ class RelayPointNearbyView(APIView):
                 if destination_relais(relay).zone_dest not in couvertes:
                     continue
             except FraisImpossibles:
+                continue
+            if valeurs and not peut_garder(relay, valeurs):  # R41.1 : son plafond couvre chaque colis du panier
                 continue
             # R41.3 : places occupées (places(format), R40.2) sous r_relais_saturation des places.
             occupancy = places_occupees(relay)
@@ -551,8 +572,9 @@ def _colis_a_payer(request):
         id=request.data.get("parcel_id"), relay_point=relay_point,
         status__in=[RelayParcel.Status.RECEIVED, RelayParcel.Status.STORED],
     )
-    order = parcel.shipment.order
-    if order.payment_status != order.PaymentStatus.VALIDATED:
+    from apps.orders.absence import dus_au_relais
+
+    if not dus_au_relais(parcel.shipment.order)["total"]:
         return parcel, Response({"code": "rien_a_payer", "detail": "Cette commande n'a rien à payer au comptoir."},
                                 status=status.HTTP_409_CONFLICT)
     return parcel, None
@@ -569,16 +591,51 @@ class RelayPointComptoirCollectView(APIView):
 
     def post(self, request):
         from apps.payments.application.collect import CollectError, initiate_collect
-        from apps.payments.bridge.checkout_v2 import CheckoutError, prepare_payment_comptoir
+        from apps.payments.bridge.checkout_v2 import CheckoutError, prepare_payment_absence, prepare_payment_comptoir
 
         parcel, refus = _colis_a_payer(request)
         if refus:
             return refus
         order = parcel.shipment.order
         telephone = (request.data.get("payer_msisdn") or order.customer_phone or "").replace(" ", "")
+        operateur = request.data.get("payer_operator") or ""
         try:
-            intent = prepare_payment_comptoir(order, payer_msisdn=telephone,
-                                              payer_operator=request.data.get("payer_operator") or "")
+            # D'abord le reste du comptoir (R42.4), puis les frais d'absence (R51.5) : un paiement à la fois.
+            if order.payment_status == order.PaymentStatus.VALIDATED:
+                intent = prepare_payment_comptoir(order, payer_msisdn=telephone, payer_operator=operateur)
+            else:
+                intent = prepare_payment_absence(order, payer_msisdn=telephone, payer_operator=operateur)
+            issue = initiate_collect(intent)
+        except (CheckoutError, CollectError) as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"reference": issue.intent.reference, "status": issue.status, "message": issue.message,
+                         "montant_xaf": issue.intent.amount_xaf})
+
+
+@extend_schema(
+    tags=["Relay Point"],
+    summary="Point relais : encaisser par Mobile Money la course de retour due par un client (R69.1, C4)",
+    description="Le gérant saisit le numéro du client ; la demande de paiement part sur ce téléphone. Jamais d'espèces "
+                "(R01). Ne dit rien d'autre que le montant dû.",
+)
+class RelayPointCourseRetourCollectView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        from apps.orders.retours import course_de_retour_due, courses_de_retour_dues
+        from apps.payments.application.collect import CollectError, initiate_collect
+        from apps.payments.bridge.checkout_v2 import CheckoutError, prepare_payment_course_retour
+
+        _get_active_relay_point(request.user)
+        _exiger_permission(request.user, "can_hand_over")
+        telephone = str(request.data.get("payer_msisdn") or "").replace(" ", "")
+        ret = next((r for r in courses_de_retour_dues(telephone=telephone) if course_de_retour_due(r)), None)
+        if not telephone or ret is None:
+            return Response({"code": "rien_a_payer", "detail": "Aucune course de retour due pour ce numéro."},
+                            status=status.HTTP_404_NOT_FOUND)
+        try:
+            intent = prepare_payment_course_retour(ret, payer_msisdn=telephone,
+                                                   payer_operator=request.data.get("payer_operator") or "")
             issue = initiate_collect(intent)
         except (CheckoutError, CollectError) as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
@@ -600,6 +657,10 @@ class RelayPointComptoirRefusalView(APIView):
         parcel, refus = _colis_a_payer(request)
         if refus:
             return refus
+        if parcel.shipment.order.payment_status != parcel.shipment.order.PaymentStatus.VALIDATED:
+            return Response({"code": "pas_de_comptoir",
+                             "detail": "Le refus au comptoir ne vaut que pour le reste d'une commande payée au comptoir "
+                                       "(R42.5)."}, status=status.HTTP_409_CONFLICT)
         colis = list(RelayParcel.objects.select_related("shipment", "relay_point").filter(
             shipment__order=parcel.shipment.order, relay_point=parcel.relay_point,
             status__in=[RelayParcel.Status.RECEIVED, RelayParcel.Status.STORED]))
@@ -626,15 +687,24 @@ class RelayPointParcelEvidenceUploadView(APIView):
         ShipmentEvidence.Stage.RELAY_RELEASED,
         ShipmentEvidence.Stage.RELAY_RELEASED_SIGNATURE,
         ShipmentEvidence.Stage.RELAY_UNPACKING,  # D15 : déballage contesté, photographié devant le client
+        ShipmentEvidence.Stage.RELAY_RETURNED,  # R66.3 (revue du 1/11) : sortie du relais en retour
     }
 
     def post(self, request):
         relay_point = _get_active_relay_point(request.user)
-        parcel_id = request.data.get("parcel_id")
-        parcel = get_object_or_404(
-            RelayParcel.objects.select_related("shipment"), id=parcel_id, relay_point=relay_point,
-        )
         stage = request.data.get("stage")
+        if request.data.get("parcel_id"):
+            parcel = get_object_or_404(
+                RelayParcel.objects.select_related("shipment"), id=request.data.get("parcel_id"),
+                relay_point=relay_point,
+            )
+            shipment = parcel.shipment
+        else:
+            # R66.3 : la photo de réception part avant la réception, quand le colis n'est encore qu'attendu ici.
+            shipment = get_object_or_404(
+                Shipment.objects.filter(Q(relay_parcel__relay_point=relay_point) | Q(order__relay_point=relay_point)),
+                id=request.data.get("shipment_id"),
+            )
         if stage not in self.ALLOWED_STAGES:
             return Response(
                 {"stage": f"Choisissez parmi : {', '.join(self.ALLOWED_STAGES)}."},
@@ -645,7 +715,7 @@ class RelayPointParcelEvidenceUploadView(APIView):
             return Response({"file": "Ce champ est requis."}, status=status.HTTP_400_BAD_REQUEST)
 
         evidence = create_shipment_evidence(
-            shipment=parcel.shipment,
+            shipment=shipment,
             user=request.user,
             actor_role="RELAY_POINT",
             stage=stage,
@@ -878,7 +948,10 @@ class ShipmentTrackView(generics.GenericAPIView):
             getattr(getattr(getattr(shipment, "courier", None), "delivery_organization", None), "user_id", None),
             getattr(getattr(relay_parcel, "relay_point", None), "user_id", None),
         }
-        if not request.user.is_staff and request.user.id not in allowed_user_ids:
+        from apps.common.droits import a_la_partie
+
+        # Revue du 29/10 (A2) : hors des acteurs du colis, seule l'équipe logistique consulte le suivi.
+        if not a_la_partie(request.user, "logistique") and request.user.id not in allowed_user_ids:
             raise PermissionDenied("Vous ne pouvez pas consulter le suivi de cette commande.")
 
         return Response(ShipmentSerializer(shipment, context={"request": request}).data, status=status.HTTP_200_OK)
@@ -955,6 +1028,7 @@ class CourierShipmentEvidenceUploadView(APIView):
     ALLOWED_STAGES = {
         ShipmentEvidence.Stage.COURIER_PICKUP_VENDOR,
         ShipmentEvidence.Stage.CUSTOMER_DELIVERY,
+        ShipmentEvidence.Stage.CUSTOMER_ABSENT,  # R51.1
     }
 
     def post(self, request, id):
@@ -2055,7 +2129,7 @@ LATE_TRACKED_STATUSES = [
     summary="Console de supervision minimale : colis en retard, tournées non prises, subvention par zone",
 )
 class AdminSupervisionDashboardView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [Partie("logistique")]
 
     def get(self, request):
         now = timezone.now()
@@ -2167,3 +2241,54 @@ class VerifierAdresseView(APIView):
             "niveau": r.niveau,
             "zoneExploitee": r.exploitee,
         })
+
+
+@extend_schema(
+    tags=["Shipping"],
+    summary="Appeler le livreur ou le client sans voir son numéro (feuille de route D33)",
+    description="BelivaY appelle la personne qui demande, puis la relie à l'autre : aucun numéro n'est montré. "
+                "Chaque appel est journalisé (preuve du livreur, R51.1).",
+)
+class ShipmentMaskedCallView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        from . import appels
+
+        shipment = get_object_or_404(Shipment.objects.select_related("order", "courier"), pk=pk)
+        try:
+            journal = appels.appeler(shipment, request.user)
+        except PermissionError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+        except appels.AppelIndisponible as exc:  # DP-61 : pas d'opérateur, pas d'appel, pas de numéro
+            return Response({"code": "appel_indisponible", "detail": str(exc)},
+                            status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_409_CONFLICT)
+        return Response({"ok": journal.ok, "message": journal.message or "BelivaY vous appelle : décrochez pour être "
+                                                                         "mis en relation.",
+                         "appels_au_client": appels.appels_au_client(shipment)},
+                        status=status.HTTP_200_OK if journal.ok else status.HTTP_502_BAD_GATEWAY)
+
+
+@extend_schema(tags=["Shipping"], summary="Prestations des entreprises de livraison, au tarif de leur grille (R53)")
+class AdminPrestationsEntreprisesView(APIView):
+    """Feuille de route, partie 2 (R53, R43.1) : chaque prestation faite, son tarif de grille et la semaine de son
+    versement ; les lignes à 0 F (grille absente ou ligne bloquée R54.3) sont à régler par l'équipe."""
+    permission_classes = [Partie("finance")]
+
+    def get(self, request):
+        from django.db.models import Count, Sum
+
+        from .models import PrestationEntreprise
+
+        qs = PrestationEntreprise.objects.select_related("organisation", "shipment")
+        if request.query_params.get("a_verser"):
+            qs = qs.filter(versee_semaine="")
+        totaux = list(qs.order_by().values("organisation__company_name", "versee_semaine")
+                      .annotate(nombre=Count("id"), montant=Sum("montant")).order_by("-versee_semaine"))
+        lignes = [{"id": p.pk, "entreprise": p.organisation.company_name, "colis": p.shipment_id,
+                   "commande": p.shipment.order_id if p.shipment else None, "nature": p.nature, "param": p.param,
+                   "quantite": p.quantite, "tarif": p.tarif, "montant": p.montant, "note": p.note,
+                   "faite_le": p.faite_le, "versee_semaine": p.versee_semaine} for p in qs[:300]]
+        return Response({"totaux": totaux, "lignes": lignes})

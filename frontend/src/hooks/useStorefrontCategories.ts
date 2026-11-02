@@ -48,12 +48,17 @@ export default function useStorefrontCategories(): StorefrontCategoriesState {
   const lang = i18n.language;
   const [tree, setTree] = useState<CategoryTreeNode[] | null>(() => cached.get(lang)?.tree ?? null);
   const [failed, setFailed] = useState(false);
+  const [treeLang, setTreeLang] = useState(lang);
+
+  // Changement de langue sans hit en cache pour CETTE langue : on vide l'affichage plutôt que de laisser l'arbre de
+  // l'ancienne langue le temps du refetch (ajusté pendant le rendu, pas dans l'effet).
+  if (treeLang !== lang) {
+    setTreeLang(lang);
+    setTree(cached.get(lang)?.tree ?? null);
+  }
 
   useEffect(() => {
     let cancelled = false;
-    // Pas de hit en cache pour CETTE langue : on vide l'affichage plutôt que
-    // de laisser l'arbre de l'ancienne langue le temps du refetch.
-    setTree(cached.get(lang)?.tree ?? null);
     loadTree(lang)
       .then((next) => {
         if (!cancelled) setTree(next);

@@ -359,6 +359,18 @@ def return_receive(request, ref):
     if ret.received_at is not None:
         return Response({'ok': False, 'raison': 'deja_recu'})
 
+    # R66.3 (revue du 29/10, C1) : une photo à chaque changement de main, exigée par le serveur ; le retour ne passe
+    # « reçu » qu'avec la photo de sa réception.
+    upload = decode_data_uri(request.data.get('photo'), filename=f"retour-{ret.id}-reception.jpg")
+    if not upload:
+        return Response({'ok': False, 'raison': 'photo_obligatoire',
+                         'detail': "Photo obligatoire à la réception du retour (R66.3)."},
+                        status=status.HTTP_400_BAD_REQUEST)
+    try:
+        create_return_photo(return_obj=ret, user=request.user, upload=upload)
+    except ValidationError as exc:
+        return Response({'detail': exc.detail}, status=status.HTTP_400_BAD_REQUEST)
+
     ret.received_at = timezone.now()
     ret.received_by = request.user
     if ret.status not in (Return.Status.MEDIATION, Return.Status.REPLACEMENT_PENDING, Return.Status.REPLACEMENT_READY):
@@ -502,8 +514,10 @@ def return_replacement(request, ref):
         ret.save(update_fields=['replacement_choice', 'status', 'refund_amount_xaf', 'updated_at'])
         try:
             from apps.payments.bridge import events_in
+            from apps.orders.frais import part_frais_momo
             events_in.return_completed(
                 order_id=ret.order_id, outcome='REFUND', refund_amount_xaf=montant,
+                frais_momo_xaf=part_frais_momo(ret.order, montant),  # R72.1 : retour validé
                 event_id=f"return-{ret.id}-vendor-refund",
                 emitter="apps.vendors.vd07_retours.return_replacement",
             )

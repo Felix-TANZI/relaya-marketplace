@@ -14,6 +14,26 @@ FICHIER_MOTEUR = DOSSIER / "moteur_reference.py"
 EMPREINTE_DONNEES = "e9df827bb756d58f11ecb233a396011354c1029615edc1cb27072732bfcfd9dc"
 EMPREINTE_MOTEUR = "21095446406de1570010586917913ce70c820ff50e851efc41ddcd0e7c63aa91"
 
+# Réglages demandés par la feuille de route V2 Élite mais absents de BV-DEV-07 (fichier verrouillé) : créés par
+# migration, modifiables dans l'admin comme les autres. Toute autre différence avec la référence est une anomalie.
+REGLAGES_FEUILLE_DE_ROUTE = {
+    "r_auto_rmb_plafond_mois",  # D32 : plafond mensuel global du remboursement automatique (0 = fermé)
+    "r_wallet_code_essais",     # sécurité main 2 : codes Wallet faux avant blocage (R03.5)
+    "r_wallet_code_blocage_h",  # sécurité main 2 : durée du blocage du code Wallet, en heures
+    "r_code_relais_echecs",     # sécurité main 2 : codes de retrait faux qui bloquent un relais (R66.1)
+    "r_code_relais_fenetre_h",  # sécurité main 2 : période de ce comptage, en heures
+    "r_secours_jours_max",      # DP-42 : durée maximale d'un accès de valideur de secours
+    "r_rappel_valideurs_h1",    # DP-42 : premier rappel du vendredi aux valideurs
+    "r_rappel_valideurs_h2",    # DP-42 : second rappel du vendredi aux valideurs
+    "r_palier_eleve_livrees",   # R71.1 : palier Élevé, commandes livrées sans litige perdu
+    "r_palier_eleve_litige_mois",       # R71.1 : palier Élevé, aucun litige perdu depuis (mois)
+    "r_palier_eleve_anciennete_mois",   # R71.1 : palier Élevé, ancienneté du compte (mois)
+    "r_relais_habituel_jours",  # R71.2 : relais habituel par défaut, fenêtre des retraits
+    "r_envoi_interrompu_min",   # revue 29/10 (C3) : envoi « en cours » → issue inconnue
+    "r_apple_nonce_s",          # revue 29/10 (C3) : durée de vie du nonce Apple
+    "r_apple_ticket_s",         # revue 29/10 (C3) : durée de vie du ticket Apple Android
+}
+
 
 def empreinte_fichier(chemin: Path) -> str:
     """sha256 du fichier, fins de ligne ramenées à LF (git les convertit en CRLF sous Windows)."""

@@ -34,6 +34,7 @@ class CodeOtp(models.Model):
         DEUX_FA_ACTIVATION = "2fa-activation", "Double authentification : activation"
         DEUX_FA_DESACTIVATION = "2fa-desactivation", "Double authentification : désactivation"
         RELAIS_PIN = "relais-pin", "PIN du point relais"
+        WALLET_CODE = "wallet-code", "Code du Wallet oublié ou bloqué"
         VENDEUR_CONNEXION = "vendeur-connexion", "Vendeur : connexion par numéro"
         VENDEUR_OUVERTURE = "vendeur-ouverture", "Vendeur : numéro à l'ouverture"
         VENDEUR_SECURITE = "vendeur-securite", "Vendeur : geste sensible du propriétaire"

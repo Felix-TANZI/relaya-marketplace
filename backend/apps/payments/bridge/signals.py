@@ -127,7 +127,17 @@ def _traiter(shipment_id: int) -> None:
 
 def _signaler_transporteur(expedition) -> None:
     """
-    Un transporteur est assigne : sa part du transport lui revient.
+    Spec v2.1, R53 (decision du porteur du 27/10/2026) : l'entreprise de livraison est payee selon sa grille signee,
+    prestation par prestation (apps.shipping.remuneration), et non plus par une part du transport. Les frais de
+    livraison payes par le client restent a BelivaY, qui achete la prestation : rien n'est reattribue ici.
+    La regle « dist-transport-carrier » est a retirer de la configuration financiere (double validation).
+    """
+    return
+
+
+def _ancien_signaler_transporteur(expedition) -> None:
+    """
+    (Ancien comportement, garde pour l'historique.) Un transporteur est assigne : sa part du transport lui revient.
 
     Au checkout, aucun transporteur n'etait connu — sa part avait ete
     provisoirement comptabilisee en produit plateforme. Cet evenement la

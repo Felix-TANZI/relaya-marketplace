@@ -386,6 +386,9 @@ class UserSerializer(serializers.ModelSerializer):
     loyalty_points = serializers.SerializerMethodField()
     loyalty_tier = serializers.SerializerMethodField()
     has_usable_password = serializers.SerializerMethodField()
+    # Sécurité avant main 2 : les parties de gestion ouvertes à ce compte (apps.common.droits), pour que l'écran
+    # d'administration n'affiche que ses entrées. Le serveur reste seul juge à chaque appel.
+    parties = serializers.SerializerMethodField()
     
     class Meta:
         model = User
@@ -413,8 +416,16 @@ class UserSerializer(serializers.ModelSerializer):
             "loyalty_points",
             "loyalty_tier",
             "has_usable_password",
+            "parties",
         ]
         read_only_fields = fields
+
+    def get_parties(self, obj):
+        from apps.common.droits import PARTIES, a_la_partie
+
+        if not obj.is_staff and not obj.is_superuser:
+            return []
+        return [p for p in PARTIES if a_la_partie(obj, p)]
     
     def get_has_usable_password(self, obj):
         """False pour les comptes créés via Google/Apple (confirmation de

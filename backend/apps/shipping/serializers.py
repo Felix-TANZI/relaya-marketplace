@@ -12,7 +12,6 @@ from apps.common.translation import request_language, translate_text
 from .models import (
     CourierSOSAlert,
     RelayParcel,
-    RelayPickupAttempt,
     RelayPointReview,
     Shipment,
     ShipmentEvent,
@@ -124,6 +123,13 @@ class ShipmentLocationCreateSerializer(serializers.ModelSerializer):
         return value
 
 
+def _dus(order) -> int:
+    """Ce qui reste à payer au relais avant la remise : reste du comptoir (R42.4) et frais d'absence (R51.5)."""
+    from apps.orders.absence import dus_au_relais
+
+    return dus_au_relais(order)["total"]
+
+
 class ShipmentSerializer(serializers.ModelSerializer):
     events = ShipmentEventSerializer(many=True, read_only=True)
     courier = serializers.SerializerMethodField()
@@ -154,6 +160,28 @@ class ShipmentSerializer(serializers.ModelSerializer):
 
     def get_estimated_availability_at(self, obj):
         return obj.estimated_availability_at()
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # DP-61 : « appel dans l'application ou par numéro masqué, jamais le vrai numéro ». Le client et le livreur ne
+        # reçoivent jamais un numéro complet, opérateur d'appel branché ou non ; seule l'équipe logistique les voit.
+        # Ils s'appellent par POST shipments/<id>/appel/, qui répond « appel indisponible » tant qu'aucun opérateur
+        # réel n'est branché.
+        from apps.common.droits import a_la_partie
+
+        from . import appels
+
+        request = self.context.get("request")
+        if not (request and a_la_partie(request.user, "logistique")):
+            from apps.client_core.masquage import masquer_numero
+
+            for champ in ("courier_phone", "customer_phone", "authorized_pickup_phone"):
+                if data.get(champ):
+                    data[champ] = masquer_numero(data[champ])
+            if isinstance(data.get("courier"), dict) and data["courier"].get("phone"):
+                data["courier"]["phone"] = masquer_numero(data["courier"]["phone"])
+        data["appel_masque"] = appels.masque_actif()  # DP-61 : vrai seulement si un opérateur réel est branché
+        return data
 
     def get_delivery_evidences(self, obj):
         # Cote acheteur, seules les preuves de REMISE (a domicile ou au
@@ -299,7 +327,7 @@ class ShipmentSerializer(serializers.ModelSerializer):
         # D14, R42.4 : invisible aussi tant que le reste n'est pas payé au comptoir.
         request = self.context.get("request")
         if (request and request.user.is_authenticated and request.user.id == obj.order.user_id
-                and obj.order.payment_status != obj.order.PaymentStatus.VALIDATED):
+                and not _dus(obj.order)):
             data["pickup_code"] = parcel.pickup_code
         return data
 
@@ -480,13 +508,11 @@ class RelayParcelSerializer(serializers.ModelSerializer):
     a_payer_comptoir_xaf = serializers.SerializerMethodField()
 
     def get_pickup_ready(self, obj):
-        return bool(obj.pickup_code) and not self.get_a_payer_comptoir_xaf(obj)
+        return bool(obj.pickup_code_empreinte) and not self.get_a_payer_comptoir_xaf(obj)
 
     def get_a_payer_comptoir_xaf(self, obj):
-        order = obj.shipment.order
-        if order.payment_status != order.PaymentStatus.VALIDATED:
-            return 0
-        return int(order.reste_comptoir_xaf or 0) + int(order.frais_momo_comptoir_xaf or 0)
+        # D14 et R51.5 : reste du comptoir et frais d'absence, frais Mobile Money compris.
+        return _dus(obj.shipment.order)
 
     def get_garde_fee_due_xaf(self, obj):
         return obj.garde_fee_due()
@@ -588,7 +614,9 @@ class RelayParcelReceiveSerializer(serializers.Serializer):
 
         # R66.1 : la responsabilité passe du livreur au relais avec le code de dépôt (et la photo de réception, D15).
         from apps.shipping import codes
+        from apps.shipping.preuves import exiger_photo
 
+        exiger_photo(shipment, ShipmentEvidence.Stage.RELAY_RECEIVED)  # R66.3
         codes.verifier(shipment, "depot", shipment.ensure_depot_code(), self.validated_data.get("depot_code"),
                        "depot_code")
 
@@ -598,7 +626,8 @@ class RelayParcelReceiveSerializer(serializers.Serializer):
         ).count()
         capacity = relay_point.storage_capacity or 0
         if capacity and active_count >= capacity:
-            raise serializers.ValidationError({"capacity": "Capacite point relais atteinte."})
+            raise serializers.ValidationError({"capacity": "Capacite point relais atteinte."},
+                                              code="capacite_atteinte")  # D2 : lu par son code (WhatsApp)
 
         import secrets
 
@@ -612,6 +641,10 @@ class RelayParcelReceiveSerializer(serializers.Serializer):
             shipment.save(update_fields=["parcel_size"])
 
         parcel = existing_parcel or RelayParcel(shipment=shipment, relay_point=relay_point)
+        if not shipment.order.frais_absence_xaf:
+            from apps.shipping import remuneration
+
+            remuneration.depot_au_relais(shipment, relay_point)  # R53 : prestation faite, due à l'entreprise
         parcel.relay_point = relay_point
         parcel.status = RelayParcel.Status.STORED
         parcel.slot_code = self.validated_data.get("slot_code") or parcel.slot_code or f"SL-{relay_point.id}-{shipment.id}"
@@ -626,9 +659,11 @@ class RelayParcelReceiveSerializer(serializers.Serializer):
         siblings = list(RelayParcel.objects.filter(shipment__order=shipment.order))
         still_pending = [p for p in siblings if p.id != parcel.id and p.status == RelayParcel.Status.EXPECTED]
         if not still_pending:
-            code = next((p.pickup_code for p in siblings if p.pickup_code), "") or nouveau_code_de_retrait()
-            RelayParcel.objects.filter(id__in=[p.id for p in siblings]).exclude(pickup_code=code).update(pickup_code=code)
-            parcel.refresh_from_db(fields=["pickup_code"])
+            code = next((p.pickup_code for p in siblings if p.pickup_code_empreinte), "") or nouveau_code_de_retrait()
+            # DP-02 : chiffré et empreinte, jamais en clair
+            RelayParcel.objects.filter(id__in=[p.id for p in siblings]).exclude(
+                pickup_code_empreinte=RelayParcel.empreinte_code(code)).update(**RelayParcel.champs_du_code(code))
+            parcel.refresh_from_db(fields=["pickup_code_chiffre", "pickup_code_empreinte"])
             # Feuille de route D7, R78.1 : le code de retrait part aussi par SMS (commandes sans compte comprises) ;
             # D14, R42.4 : pas avant le paiement du reste au comptoir.
             from apps.orders import comptoir
@@ -651,50 +686,39 @@ class RelayParcelReceiveSerializer(serializers.Serializer):
         return parcel
 
 
+def _colis_scanne(relay_point, data):
+    """R66.2 : le colis dont le relais a scanné le QR, ou tapé la référence (saisie manuelle, tracée), en stock chez
+    lui. Revue du 29/10 (D1) : l'identifiant interne parcel_id n'est plus accepté. Renvoie (colis, saisie_manuelle)."""
+    from apps.shipping import retrait
+
+    if not data.get("colis"):
+        raise serializers.ValidationError({"colis": "Scannez d'abord le QR du colis (ou tapez sa référence BVY-…), "
+                                                    "puis saisissez le code du client."}, code="colis_absent")
+    parcel, manuel = retrait.lire_le_colis(relay_point, data.get("colis"))
+    if parcel is None:
+        raise serializers.ValidationError({"colis": "Ce colis n'est pas en stock dans votre relais."},
+                                          code="colis_inconnu")
+    return parcel, manuel
+
+
 class RelayPickupCodeCheckSerializer(serializers.Serializer):
     """
     Verification en direct d'un code de retrait avant la remise. Ne modifie
     aucun `RelayParcel` : seul `RelayParcelPickupSerializer` finalise la
-    remise. Alimente l'ecran comptoir en detectant en direct les deux
-    sous-etats jusque-la invisibles — code faux et colis bloque 24 h apres 3
-    echecs consecutifs (Regles Systeme DEV v2.0 §8.2).
+    remise. Securite avant main 2 : le code se verifie sur le colis scanne
+    (R66.2), essais comptes sur ce colis, plus une limite par relais
+    (apps.shipping.retrait).
     """
 
+    colis = serializers.CharField(required=False, allow_blank=True, default="", help_text="QR ou référence du colis")
     pickup_code = serializers.CharField()
 
     def check(self):
+        from apps.shipping import retrait
+
         relay_point = self.context["relay_point"]
-        code = self.validated_data["pickup_code"]
-
-        locked_until = RelayPickupAttempt.locked_until(relay_point, code)
-        if locked_until:
-            return {"locked": True, "locked_until": locked_until, "attempts_left": 0, "parcels": []}
-
-        parcels = list(
-            RelayParcel.objects.select_related("shipment", "shipment__order", "relay_point")
-            .filter(
-                relay_point=relay_point,
-                pickup_code=code,
-                status__in=[RelayParcel.Status.RECEIVED, RelayParcel.Status.STORED],
-            )
-        )
-        if parcels:
-            RelayPickupAttempt.register(relay_point, code, success=True)
-            return {
-                "locked": False,
-                "locked_until": None,
-                "attempts_left": RelayPickupAttempt.max_essais(),
-                "parcels": parcels,
-            }
-
-        RelayPickupAttempt.register(relay_point, code, success=False)
-        locked_until = RelayPickupAttempt.locked_until(relay_point, code)
-        return {
-            "locked": bool(locked_until),
-            "locked_until": locked_until,
-            "attempts_left": RelayPickupAttempt.attempts_left(relay_point, code),
-            "parcels": [],
-        }
+        parcel, manuel = _colis_scanne(relay_point, self.validated_data)
+        return retrait.controler(relay_point, parcel, self.validated_data["pickup_code"], saisie_manuelle=manuel)
 
 
 class RelayParcelPickupSerializer(serializers.Serializer):
@@ -704,7 +728,7 @@ class RelayParcelPickupSerializer(serializers.Serializer):
     compte encore en stock a ce relais en une seule action, jamais un par un.
     """
 
-    parcel_id = serializers.IntegerField(required=False)
+    colis = serializers.CharField(required=False, allow_blank=True, default="", help_text="QR ou référence du colis")
     pickup_code = serializers.CharField()
     proof_note = serializers.CharField(required=False, allow_blank=True, default="")
     picked_up_by_name = serializers.CharField(required=False, allow_blank=True, default="")
@@ -734,37 +758,29 @@ class RelayParcelPickupSerializer(serializers.Serializer):
     )
 
     def save(self, **kwargs):
+        from apps.shipping import retrait
+
         relay_point = self.context["relay_point"]
         code = self.validated_data["pickup_code"]
 
-        # 3 codes faux consecutifs bloquent ce code 24 h (Regles Systeme DEV
-        # v2.0 §8.2) : verifie ici en dernier recours, meme si l'ecran de
-        # retrait appelle deja RelayPickupCodeCheckSerializer avant d'arriver
-        # jusqu'ici.
-        locked_until = RelayPickupAttempt.locked_until(relay_point, code)
-        if locked_until:
-            raise serializers.ValidationError({
-                "pickup_code": f"Code bloque jusqu'au {locked_until:%d/%m %H:%M} apres 3 codes faux. Seul le support peut debloquer.",
-            })
+        # Securite avant main 2 : le colis scanne d'abord (R66.2), puis le code verifie sur lui, essais comptes sur
+        # ce colis et par relais — meme si l'ecran de retrait a deja appele RelayPickupCodeCheckSerializer.
+        parcel, manuel = _colis_scanne(relay_point, self.validated_data)
+        resultat = retrait.controler(relay_point, parcel, code, saisie_manuelle=manuel)
+        if not resultat["ok"]:  # D2 : un code par cause (code_faux, code_bloque, relais_bloque)
+            raise serializers.ValidationError({"pickup_code": retrait.message_de_refus(resultat)},
+                                              code=retrait.code_de_refus(resultat))
+        parcels = resultat["parcels"]
 
-        parcels = list(
-            RelayParcel.objects.select_related("shipment", "shipment__order", "relay_point")
-            .filter(
-                relay_point=relay_point,
-                pickup_code=code,
-                status__in=[RelayParcel.Status.RECEIVED, RelayParcel.Status.STORED],
-            )
-        )
-        if not parcels:
-            RelayPickupAttempt.register(relay_point, code, success=False)
-            raise serializers.ValidationError({"pickup_code": "Code de retrait incorrect ou colis deja retire."})
-        RelayPickupAttempt.register(relay_point, code, success=True)
+        # D14, R42.4 et R51.5 : jamais de remise avant le paiement de ce qui reste dû au relais, par Mobile Money.
+        from apps.shipping.preuves import exiger_photo
 
-        # D14, R42.4 : jamais de remise avant le paiement du reste au comptoir, par Mobile Money.
-        if any(p.shipment.order.payment_status == Order.PaymentStatus.VALIDATED for p in parcels):
+        for p in parcels:  # R66.3 : chaque colis remis a sa photo de remise
+            exiger_photo(p.shipment, ShipmentEvidence.Stage.RELAY_RELEASED)
+        if any(_dus(p.shipment.order) for p in parcels):
             raise serializers.ValidationError({
-                "comptoir": "Le reste de cette commande n'est pas payé : encaissez-le par Mobile Money avant la remise.",
-            })
+                "comptoir": "Un montant reste à payer pour cette commande : encaissez-le par Mobile Money avant la remise.",
+            }, code="a_payer")
 
         # Retrait par un tiers : si l'acheteur a designe une personne
         # autorisee, le relais doit loguer sa piece d'identite avant de
@@ -773,7 +789,7 @@ class RelayParcelPickupSerializer(serializers.Serializer):
         if any(p.shipment.order.authorized_pickup_name for p in parcels) and not id_reference:
             raise serializers.ValidationError({
                 "picked_up_by_id_reference": "Cette commande est retiree par un tiers autorise : renseignez sa piece d'identite avant de valider.",
-            })
+            }, code="identite_requise")
 
         # R36.3 : la garde (R36.2, une ligne par colis) se paie en espèces au gérant, en une fois, au retrait ; la
         # remise reste bloquée tant qu'il n'a pas confirmé l'encaissement ; chaque encaissement est journalisé.
@@ -908,18 +924,44 @@ class RelayParcelReturnSerializer(serializers.Serializer):
     destination = serializers.ChoiceField(choices=["VENDOR", "BELIVAY"])
     proof_note = serializers.CharField(required=False, allow_blank=True, default="")
 
+    # Revue du 1/11 (R66.3) : seul un colis encore dans le local peut en sortir en retour — jamais un colis déjà remis
+    # au client, déjà reparti, ou seulement attendu.
+    SORTABLES = (RelayParcel.Status.RECEIVED, RelayParcel.Status.STORED, RelayParcel.Status.RETURN_REQUESTED,
+                 RelayParcel.Status.REFUSED)
+
     def save(self, **kwargs):
+        from django.contrib.contenttypes.models import ContentType
+
+        from apps.common.models import AuditLog
+        from apps.shipping.preuves import exiger_photo
+
         relay_point = self.context["relay_point"]
         parcel = get_object_or_404(
             RelayParcel.objects.select_related("shipment", "relay_point"),
             id=self.validated_data["parcel_id"],
             relay_point=relay_point,
         )
+        if parcel.status not in self.SORTABLES:
+            raise serializers.ValidationError(
+                {"parcel_id": f"Ce colis n'est plus dans votre local ({parcel.get_status_display().lower()})."},
+                code="colis_absent")
+        # R66.3 : changement de main, comme les autres (revue du 29/10, C1) — la photo de la sortie part avant.
+        exiger_photo(parcel.shipment, ShipmentEvidence.Stage.RELAY_RETURNED)
         destination = self.validated_data["destination"]
+        avant = parcel.status
         parcel.status = RelayParcel.Status.RETURNED_TO_VENDOR if destination == "VENDOR" else RelayParcel.Status.RETURNED_TO_BELIVAY
         parcel.proof_note = self.validated_data.get("proof_note", parcel.proof_note)
         parcel.returned_at = timezone.now()
         parcel.save()
+
+        user = self.context.get("user")
+        AuditLog.objects.create(  # revue du 1/11 : la sortie en retour au journal d'audit, avec son auteur
+            action=AuditLog.Action.UPDATE, content_type=ContentType.objects.get_for_model(RelayParcel),
+            object_id=str(parcel.pk), object_repr=f"Retour depuis le relais · colis {parcel.pk}"[:255],
+            actor=user if getattr(user, "is_authenticated", False) else None,
+            changes={"de": avant, "vers": parcel.status, "destination": destination, "relais": relay_point.pk,
+                     "regle": "R66.3"},
+        )
 
         ShipmentEvent.record(
             shipment=parcel.shipment,
@@ -977,6 +1019,10 @@ class CourierShipmentActionSerializer(serializers.Serializer):
             "INCIDENT",
             "FAILED",
             "NOTE",
+            # Spec v2.1 : client absent (R51), refus d'un colis conforme à la porte (R85.2), déplacement inutile (R85.3)
+            "ABSENT",
+            "REFUS_PORTE",
+            "DEPLACEMENT_INUTILE",
         ]
     )
     message = serializers.CharField(required=False, allow_blank=True, default="")
@@ -984,6 +1030,9 @@ class CourierShipmentActionSerializer(serializers.Serializer):
     pickup_code = serializers.CharField(required=False, allow_blank=True, default="")
     # D11 : à domicile, code que le client lit dans son suivi et donne au livreur à la porte
     delivery_code = serializers.CharField(required=False, allow_blank=True, default="")
+    # R51.1 : position du livreur devant l'adresse du client absent
+    latitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=False, allow_null=True, default=None)
+    longitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=False, allow_null=True, default=None)
 
     def validate(self, attrs):
         if attrs.get("action") == "INCIDENT" and not attrs.get("message", "").strip():
@@ -1006,6 +1055,30 @@ class CourierShipmentActionSerializer(serializers.Serializer):
         location = self.validated_data.get("location", "")
         order = shipment.order
 
+        if action in ("ABSENT", "REFUS_PORTE", "DEPLACEMENT_INUTILE"):
+            from apps.orders import absence
+
+            try:
+                if action == "ABSENT":
+                    if shipment.status not in (Shipment.Status.OUT_FOR_DELIVERY, Shipment.Status.IN_TRANSIT):
+                        raise absence.AbsenceRefusee("action", "« Client absent » se déclare devant l'adresse, en cours "
+                                                               "de livraison.")
+                    absence.declarer_absence(shipment, request.user, self.validated_data.get("latitude"),
+                                             self.validated_data.get("longitude"))
+                elif action == "REFUS_PORTE":
+                    if shipment.status != Shipment.Status.OUT_FOR_DELIVERY:
+                        raise absence.AbsenceRefusee("action", "Le refus se constate à la porte, en cours de livraison.")
+                    absence.refus_a_la_porte(shipment, request.user, message)
+                else:
+                    if shipment.status != Shipment.Status.ASSIGNED:
+                        raise absence.AbsenceRefusee("action", "Le déplacement inutile se déclare au ramassage, chez "
+                                                               "le vendeur.")
+                    absence.deplacement_inutile(shipment, request.user, message)
+            except absence.AbsenceRefusee as exc:
+                raise serializers.ValidationError({exc.champ: exc.message})
+            shipment.refresh_from_db()
+            return shipment
+
         if action == "ACCEPT":
             shipment.status = Shipment.Status.ASSIGNED
             shipment.accepted_at = timezone.now()
@@ -1025,6 +1098,9 @@ class CourierShipmentActionSerializer(serializers.Serializer):
             # son espace ; le livreur le saisit ici pour valider le transfert.
             from apps.shipping import codes
 
+            from apps.shipping.preuves import exiger_photo
+
+            exiger_photo(shipment, ShipmentEvidence.Stage.COURIER_PICKUP_VENDOR)  # R66.3
             codes.verifier(shipment, "remise", shipment.ensure_pickup_confirmation_code(),
                            self.validated_data.get("pickup_code"), "pickup_code")  # R66.1
             shipment.status = Shipment.Status.PICKED_UP
@@ -1050,10 +1126,16 @@ class CourierShipmentActionSerializer(serializers.Serializer):
                 # R66.1 : au relais, c'est le gérant qui réceptionne avec le code de dépôt (RelayParcelReceiveSerializer)
                 raise serializers.ValidationError(
                     {"action": "Colis pour un point relais : il est réceptionné par le gérant avec le code de dépôt."})
+            from apps.shipping.preuves import exiger_photo
+
+            exiger_photo(shipment, ShipmentEvidence.Stage.CUSTOMER_DELIVERY)  # R66.3
             codes.verifier(shipment, "livraison", shipment.ensure_delivery_code(),
                            self.validated_data.get("delivery_code"), "delivery_code")  # D11
             shipment.status = Shipment.Status.DELIVERED
             order.mark_delivered()
+            from apps.shipping import remuneration
+
+            remuneration.course_a_domicile(shipment)  # R53 : prestation faite, due à l'entreprise
         elif action == "INCIDENT":
             shipment.status = Shipment.Status.INCIDENT
         elif action == "FAILED":

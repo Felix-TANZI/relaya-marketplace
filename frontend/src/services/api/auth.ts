@@ -35,6 +35,8 @@ export interface User {
   loyalty_tier?:          string;
   // false pour les comptes créés via Google/Apple (sans mot de passe)
   has_usable_password?:   boolean;
+  /** Sécurité avant main 2 : parties de gestion ouvertes à ce compte (le serveur reste seul juge). */
+  parties?:               string[];
 }
 
 export interface CourierProfile {
@@ -159,9 +161,18 @@ export const authApi = {
     });
   },
 
+  /** Feuille de route D33 : Apple sur Android — le ticket à usage unique laissé par le retour de la page Apple. */
+  appleTicket: async (ticket: string): Promise<LoginResult> =>
+    http<LoginResult>('/api/auth/apple/ticket/', { method: 'POST', body: JSON.stringify({ ticket }) }),
+
+  /** Sécurité avant main 2 : nonce à usage unique, passé à Apple puis vérifié dans le jeton par le serveur. */
+  appleNonce: async (): Promise<string> =>
+    (await http<{ nonce: string }>('/api/auth/apple/nonce/', { method: 'POST', body: '{}' })).nonce,
+
   appleLogin: async (payload: {
     identityToken: string;
     authorizationCode?: string | null;
+    nonce?: string | null;
     email?: string | null;
     givenName?: string | null;
     familyName?: string | null;
@@ -171,7 +182,7 @@ export const authApi = {
       body: JSON.stringify({
         identity_token: payload.identityToken,
         authorization_code: payload.authorizationCode || undefined,
-        email: payload.email || undefined,
+        nonce: payload.nonce || undefined,
         given_name: payload.givenName || undefined,
         family_name: payload.familyName || undefined,
       }),

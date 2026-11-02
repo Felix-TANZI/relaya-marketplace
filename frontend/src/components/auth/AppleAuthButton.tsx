@@ -2,14 +2,19 @@ import { useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { SignInWithApple } from '@capacitor-community/apple-sign-in';
 import { useTranslation } from 'react-i18next';
+import { authApi } from '@/services/api/auth';
 
 export interface AppleCredential {
   identityToken: string;
   authorizationCode: string | null;
+  nonce: string | null;
   email: string | null;
   givenName: string | null;
   familyName: string | null;
 }
+
+/** D33 : « state » du retour web d'Apple (Android), comparé au retour pour écarter une réponse forgée. */
+export const APPLE_STATE_KEY = 'belivay_apple_state';
 
 interface AppleAuthButtonProps {
   onCredential: (credential: AppleCredential) => Promise<void>;
@@ -39,7 +44,11 @@ function AppleGlyph() {
  *    Apple Developer avec son URL de redirection, puis a fournir au build via
  *    VITE_APPLE_SERVICES_ID et a ajouter a APPLE_CLIENT_IDS cote backend (sans
  *    quoi le backend rejette le jeton, son audience ne correspondant pas).
- *  - Android : le plugin n'implemente pas cette plateforme.
+ *  - Android : le plugin n'implemente pas cette plateforme. Feuille de route D33 :
+ *    la vue web ouvre la page d'Apple (response_mode=form_post) ; Apple renvoie au
+ *    serveur (VITE_APPLE_REDIRECT_URI = /api/auth/apple/callback/), qui renvoie
+ *    l'application sur /auth/apple/retour avec un ticket a usage unique
+ *    (voir AppleRetourPage). Il faut le Services ID et cette adresse de retour.
  *
  * Hors cas fonctionnel, le clic n'echoue pas en silence : l'erreur est remontee
  * a `onError` et affichee en toast (voir handleClick).
@@ -56,16 +65,42 @@ export default function AppleAuthButton({ onCredential, disabled = false, onErro
 
   const handleClick = async () => {
     if (disabled || pending) return;
+    if (Capacitor.getPlatform() === 'android') {
+      const redirectUri = import.meta.env.VITE_APPLE_REDIRECT_URI?.trim();
+      if (!servicesId || !redirectUri) {
+        onError?.(t('cl6_social_auth.apple_login_failed'));
+        return;
+      }
+      let nonce: string;
+      try {
+        nonce = await authApi.appleNonce();
+      } catch {
+        onError?.(t('cl6_social_auth.apple_login_failed'));
+        return;
+      }
+      const state = crypto.randomUUID();
+      sessionStorage.setItem(APPLE_STATE_KEY, state);
+      const params = new URLSearchParams({
+        client_id: servicesId, redirect_uri: redirectUri, response_type: 'code id_token',
+        scope: 'name email', response_mode: 'form_post', state, nonce,
+      });
+      window.location.href = `https://appleid.apple.com/auth/authorize?${params.toString()}`;
+      return;
+    }
     setPending(true);
     try {
+      const nonce = await authApi.appleNonce();
       const { response } = await SignInWithApple.authorize({
         clientId,
-        redirectURI: 'https://belivay.com/auth/apple/callback',
+        // Décision du porteur : le domaine de main 2 (VITE_APPLE_REDIRECT_URI), pas belivay.com qui reste la vitrine.
+        redirectURI: import.meta.env.VITE_APPLE_REDIRECT_URI?.trim() || 'https://belivay.com/auth/apple/callback',
         scopes: 'email name',
+        nonce,
       });
       await onCredential({
         identityToken: response.identityToken,
         authorizationCode: response.authorizationCode,
+        nonce,
         email: response.email,
         givenName: response.givenName,
         familyName: response.familyName,

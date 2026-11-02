@@ -163,10 +163,27 @@ class ActionResult:
     ALREADY = "already"             # deja receptionne, ou deja retire
     NOT_YOURS = "not_yours"         # ce colis n'est pas dans ce relais
     FULL = "full"                   # capacite de stockage atteinte
-    BAD_CODE = "bad_code"           # code de retrait inconnu ici
+    BAD_CODE = "bad_code"           # code de retrait faux pour ce colis
+    BAD_REF = "bad_ref"             # reference du colis absente ou inconnue ici
+    LOCKED = "locked"               # code du colis bloque (R66.1) ou trop de codes faux a ce relais
+    NEEDS_PHOTO = "needs_photo"     # R66.3 : photo du changement de main exigee, prise dans l'application
     NEEDS_APP = "needs_app"         # le coeur demande plus que ce que WhatsApp peut fournir
     INACTIVE = "inactive"           # relais suspendu ou non approuve
     REFUSED = "refused"
+
+
+def _codes_d_erreur(error) -> set[str]:
+    """Revue du 29/10 (D2) : les codes d'une ValidationError du coeur, a plat ({"champ": ["code", …]} -> {…})."""
+    a_plat, pile = set(), [error.get_codes()]
+    while pile:
+        valeur = pile.pop()
+        if isinstance(valeur, dict):
+            pile.extend(valeur.values())
+        elif isinstance(valeur, (list, tuple)):
+            pile.extend(valeur)
+        elif valeur:
+            a_plat.add(str(valeur))
+    return a_plat
 
 
 def receive_parcel(parcel_id: int, relay_id: int, depot_code: str = "") -> str:
@@ -205,24 +222,32 @@ def receive_parcel(parcel_id: int, relay_id: int, depot_code: str = "") -> str:
             serializer.is_valid(raise_exception=True)
             serializer.save()
         except ValidationError as error:
+            codes_ = _codes_d_erreur(error)  # revue du 29/10 (D2) : par code, jamais par le texte
+            if "photo_obligatoire" in codes_:
+                return ActionResult.NEEDS_PHOTO  # R66.3
             if isinstance(error.detail, dict) and "depot_code" in error.detail:
                 return ActionResult.BAD_CODE
-            detail = str(error.detail).lower()
-            if "capacit" in detail or "complet" in detail or "full" in detail:
+            if "capacite_atteinte" in codes_:
                 return ActionResult.FULL
             logger.info("Relais %s : reception du colis %s refusee (%s)", relay_id, parcel_id, error.detail)
             return ActionResult.REFUSED
     return ActionResult.DONE
 
 
-def hand_over(pickup_code: str, relay_id: int) -> tuple[str, list[str]]:
+def hand_over(message: str, relay_id: int) -> tuple[str, list[str]]:
     """
-    « Remettre au client » : le gerant saisit le code annonce par le client,
-    exactement comme au guichet. Renvoie (resultat, references des colis remis).
+    « Remettre au client » : le gerant envoie la reference du colis (BVY-…, sur
+    son etiquette) puis le code annonce par le client, exactement comme au
+    guichet ou il scanne le QR du colis avant le code (securite avant main 2,
+    R66.2). Les essais se comptent sur ce colis et par relais, avec les memes
+    regles (apps.shipping.retrait). Renvoie (resultat, references des colis remis).
     """
+    import re
+
     from rest_framework.exceptions import ValidationError
 
     from apps.accounts.models import RelayPointProfile
+    from apps.shipping import retrait
     from apps.shipping.models import RelayParcel
     from apps.shipping.serializers import RelayParcelPickupSerializer
 
@@ -230,34 +255,43 @@ def hand_over(pickup_code: str, relay_id: int) -> tuple[str, list[str]]:
     if profile is None or not (profile.is_active and profile.status == "APPROVED"):
         return ActionResult.INACTIVE, []
 
-    code = (pickup_code or "").strip().upper()
-    concerned = list(
-        RelayParcel.objects.select_related("shipment")
-        .filter(relay_point_id=relay_id, pickup_code=code, status__in=IN_STORE)
-    )
-    if not concerned:
-        deja = RelayParcel.objects.filter(
-            relay_point_id=relay_id, pickup_code=code, status="PICKED_UP",
-        ).exists()
-        return (ActionResult.ALREADY if deja else ActionResult.BAD_CODE), []
+    mots = re.split(r"[\s,;:]+", (message or "").strip().upper())
+    reference = next((m for m in mots if retrait.reference_du_colis(m)), "")
+    code = next((m for m in mots if m and m != reference), "")
+    if not reference or not code:
+        return ActionResult.BAD_REF, []
+    parcel, _ = retrait.lire_le_colis(profile, reference)  # R66.2 : la référence tapée, saisie manuelle
+    if parcel is None:
+        _, shipment_id = retrait.reference_du_colis(reference)
+        deja = RelayParcel.objects.filter(relay_point_id=relay_id, shipment_id=shipment_id,
+                                          status="PICKED_UP").exists()
+        return (ActionResult.ALREADY if deja else ActionResult.BAD_REF), []
 
-    references = [f"BVY-{item.shipment.order_id}-{item.shipment_id}" for item in concerned]
+    # Revue du 29/10 (D2) : un seul passage par le compteur d'essais, celui du service de remise ; ses refus se
+    # lisent par leur code (jamais par le texte du message). Pas de transaction autour : un code faux doit rester
+    # compté (R66.1).
+    references = [f"BVY-{p.shipment.order_id}-{p.shipment_id}" for p in RelayParcel.objects.select_related(
+        "shipment").filter(relay_point_id=relay_id, status__in=IN_STORE, shipment__order_id=parcel.shipment.order_id,
+                           pickup_code_empreinte=parcel.pickup_code_empreinte)]
     serializer = RelayParcelPickupSerializer(
-        data={"pickup_code": code, "proof_note": "Remise confirmée depuis WhatsApp"},
+        data={"colis": reference, "pickup_code": code, "proof_note": "Remise confirmée depuis WhatsApp"},
         context={"relay_point": profile},
     )
     try:
         serializer.is_valid(raise_exception=True)
-        with transaction.atomic():
-            serializer.save()
+        serializer.save()
     except ValidationError as error:
-        detail = str(error.detail).lower()
-        # Un tiers est autorise a retirer : le coeur exige une piece d'identite,
-        # que WhatsApp ne peut pas recueillir proprement.
-        if "identit" in detail or "id_reference" in detail or "mandataire" in detail:
+        codes_ = _codes_d_erreur(error)
+        if "photo_obligatoire" in codes_:  # R66.3 : la photo de la remise se prend dans l'application
+            return ActionResult.NEEDS_PHOTO, references
+        if "identite_requise" in codes_:  # un tiers retire : sa pièce d'identité se relève dans l'application
             return ActionResult.NEEDS_APP, references
+        if codes_ & {"code_bloque", "relais_bloque"}:
+            return ActionResult.LOCKED, []
+        if "code_faux" in codes_:
+            return ActionResult.BAD_CODE, []
         logger.info("Relais %s : remise refusee (%s)", relay_id, error.detail)
-        return ActionResult.BAD_CODE, []
+        return ActionResult.REFUSED, []
     return ActionResult.DONE, references
 
 

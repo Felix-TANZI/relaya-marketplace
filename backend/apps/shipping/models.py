@@ -308,6 +308,9 @@ class Shipment(models.Model):
     delivery_code = models.CharField(max_length=6, blank=True, default="")
     # R66.1 : essais faux par code {"remise"|"depot"|"livraison": {"n": int, "bloque_jusqu": iso}}
     codes_essais = models.JSONField(default=dict, blank=True)
+    # Spec v2.1, R41.1 (revue du 29/10, C2) : valeur_colis, le prix des produits de ce colis (articles de la boutique
+    # dans la commande, prix payé). Un relais ne garde le colis que si son plafond la couvre.
+    valeur_colis_xaf = models.PositiveIntegerField(default=0)
 
     # Distinct du statut DELIVERED (mis par le livreur) : date a laquelle
     # L'ACHETEUR a confirme la reception de CE colis precis (code saisi).
@@ -527,7 +530,11 @@ class ShipmentEvidence(models.Model):
         # D15 : contestation au retrait, le gérant photographie le déballage devant le client
         RELAY_UNPACKING = "RELAY_UNPACKING", "Déballage contesté au comptoir"
         CUSTOMER_DELIVERY = "CUSTOMER_DELIVERY", "Remise client"
+        # Spec v2.1, R51.1 : preuve de l'absence du client (photo devant l'adresse)
+        CUSTOMER_ABSENT = "CUSTOMER_ABSENT", "Client absent"
         RETURN_DEPOSIT = "RETURN_DEPOSIT", "Dépôt retour"
+        # R66.3, revue du 1/11 : le colis quitte le relais en retour (vers le vendeur ou BelivaY)
+        RELAY_RETURNED = "RELAY_RETURNED", "Sortie du relais en retour"
 
     shipment = models.ForeignKey(Shipment, on_delete=models.CASCADE, related_name="evidences")
     order_item = models.ForeignKey(
@@ -580,7 +587,11 @@ class RelayParcel(models.Model):
     )
     status = models.CharField(max_length=24, choices=Status.choices, default=Status.EXPECTED)
     slot_code = models.CharField(max_length=80, blank=True, default="")
-    pickup_code = models.CharField(max_length=24, blank=True, default="")
+    # Sécurité avant main 2, DP-02 : le code de retrait n'est jamais gardé en clair. Il est chiffré (pour le montrer
+    # au seul client de la commande) et le comptoir le vérifie par son empreinte HMAC, sans le déchiffrer. Ni l'un
+    # ni l'autre ne s'affiche dans l'admin Django.
+    pickup_code_chiffre = models.BinaryField(null=True, blank=True, editable=False)
+    pickup_code_empreinte = models.CharField(max_length=64, blank=True, default="", db_index=True, editable=False)
     proof_note = models.TextField(blank=True, default="")
     received_at = models.DateTimeField(null=True, blank=True)
     picked_up_at = models.DateTimeField(null=True, blank=True)
@@ -616,6 +627,40 @@ class RelayParcel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    @staticmethod
+    def empreinte_code(code) -> str:
+        """DP-02 : empreinte HMAC du code de retrait, seule forme sous laquelle le serveur le compare."""
+        from apps.client_core.chiffrement import empreinte
+
+        code = (code or "").strip().upper()
+        return empreinte(f"retrait:{code}") if code else ""
+
+    @classmethod
+    def champs_du_code(cls, code) -> dict:
+        """Les deux colonnes du code de retrait, pour un .update() sur plusieurs colis (§8.3 : un code par commande)."""
+        from apps.client_core.chiffrement import chiffrer
+
+        code = (code or "").strip().upper()
+        return {"pickup_code_chiffre": chiffrer(code) if code else None, "pickup_code_empreinte": cls.empreinte_code(code)}
+
+    @property
+    def pickup_code(self) -> str:
+        """Le code en clair, déchiffré à la demande : seul le client de la commande le voit (D12, R66.1)."""
+        from apps.client_core.chiffrement import dechiffrer
+
+        return dechiffrer(self.pickup_code_chiffre) if self.pickup_code_chiffre else ""
+
+    @pickup_code.setter
+    def pickup_code(self, code) -> None:
+        for champ, valeur in self.champs_du_code(code).items():
+            setattr(self, champ, valeur)
+
+    def code_correct(self, code) -> bool:
+        import hmac
+
+        soumis = self.empreinte_code(code)
+        return bool(self.pickup_code_empreinte and soumis) and hmac.compare_digest(self.pickup_code_empreinte, soumis)
+
     @property
     def garde_free_until(self):
         """Fin du jour 1, sans garde (t_garde) ; compté depuis l'arrivée du dernier colis de la commande (R37.1)."""
@@ -647,9 +692,12 @@ class RelayParcel(models.Model):
 
 class RelayPickupAttempt(models.Model):
     """
-    Trace chaque code de retrait saisi au comptoir (Règles Système DEV v2.0,
-    §8.2) : 3 essais faux consécutifs sur un même code bloquent ce code 24 h
-    pour ce relais — seul le support peut lever le blocage.
+    Trace chaque code de retrait saisi au comptoir.
+
+    Sécurité avant main 2 : le relais scanne d'abord le QR du colis (R66.2), puis saisit le code. Les essais faux se
+    comptent sur ce colis (R66.1 : r_code_essais essais, blocage r_code_blocage_h, dans Shipment.codes_essais) ; en
+    plus, un relais qui accumule r_code_relais_echecs codes faux en r_code_relais_fenetre_h heures ne peut plus rien
+    remettre jusqu'à ce que la fenêtre s'éclaircisse. Le code saisi n'est jamais gardé : seulement son empreinte (DP-02).
     """
 
     relay_point = models.ForeignKey(
@@ -657,19 +705,22 @@ class RelayPickupAttempt(models.Model):
         on_delete=models.CASCADE,
         related_name="pickup_attempts",
     )
-    code = models.CharField(max_length=24)
+    shipment = models.ForeignKey(Shipment, on_delete=models.CASCADE, null=True, blank=True, related_name="+")
+    code = models.CharField(max_length=64, help_text="empreinte HMAC du code saisi (DP-02), jamais le code")
     success = models.BooleanField(default=False)
+    # R66.2, revue du 29/10 (D1) : le colis désigné par sa référence tapée (QR illisible) plutôt que par son QR.
+    saisie_manuelle = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["-created_at"]
-        indexes = [models.Index(fields=["relay_point", "code", "-created_at"])]
+        indexes = [models.Index(fields=["relay_point", "success", "-created_at"])]
         verbose_name = "Tentative de retrait"
         verbose_name_plural = "Tentatives de retrait"
 
     def __str__(self):
         etat = "ok" if self.success else "echec"
-        return f"RelayPickupAttempt(relay={self.relay_point_id}, code={self.code}, {etat})"
+        return f"RelayPickupAttempt(relay={self.relay_point_id}, colis={self.shipment_id}, {etat})"
 
     @staticmethod
     def max_essais() -> int:
@@ -686,34 +737,25 @@ class RelayPickupAttempt(models.Model):
         return regles.reglage("r_code_blocage_h")
 
     @classmethod
-    def register(cls, relay_point, code, success):
-        return cls.objects.create(relay_point=relay_point, code=(code or "").strip().upper(), success=success)
+    def register(cls, relay_point, code, success, shipment=None, saisie_manuelle=False):
+        return cls.objects.create(relay_point=relay_point, shipment=shipment, success=success,
+                                  code=RelayParcel.empreinte_code(code), saisie_manuelle=saisie_manuelle)
 
     @classmethod
-    def _recent_failures(cls, relay_point, code):
-        """Les echecs consecutifs les plus recents pour ce code, du plus recent au plus ancien."""
-        code = (code or "").strip().upper()
-        recent = cls.objects.filter(relay_point=relay_point, code=code).order_by("-created_at")[: cls.max_essais()]
-        failures = []
-        for attempt in recent:
-            if attempt.success:
-                break
-            failures.append(attempt)
-        return failures
+    def relais_bloque_jusqua(cls, relay_point):
+        """Fin du blocage du relais s'il a trop de codes faux sur la période, sinon None."""
+        from apps.regles import services as regles
 
-    @classmethod
-    def locked_until(cls, relay_point, code):
-        """Date de levee du blocage si ce code vient de subir 3 echecs consecutifs, sinon None."""
-        failures = cls._recent_failures(relay_point, code)
-        if len(failures) < cls.max_essais():
+        limite = regles.reglage("r_code_relais_echecs")
+        fenetre = timezone.timedelta(hours=regles.reglage("r_code_relais_fenetre_h"))
+        if limite <= 0:
             return None
-        until = failures[0].created_at + timezone.timedelta(hours=cls.heures_blocage())
-        return until if timezone.now() < until else None
-
-    @classmethod
-    def attempts_left(cls, relay_point, code):
-        """Essais encore disponibles avant blocage (0 si deja au seuil)."""
-        return max(0, cls.max_essais() - len(cls._recent_failures(relay_point, code)))
+        echecs = list(cls.objects.filter(relay_point=relay_point, success=False,
+                                         created_at__gte=timezone.now() - fenetre)
+                      .order_by("-created_at").values_list("created_at", flat=True)[:limite])
+        if len(echecs) < limite:
+            return None
+        return echecs[-1] + fenetre
 
 
 class ShipmentMessage(models.Model):
@@ -928,3 +970,57 @@ class LigneGrille(models.Model):
 
         self.controle, self.plafond_achat, self.controle_note = controler(self, self.grille.signee_le)
         super().save(*args, **kwargs)
+
+
+class AppelMasque(models.Model):
+    """
+    Feuille de route D33 : appel client-livreur avec numéro masqué. BelivaY appelle les deux personnes et les met en
+    relation : aucun des deux ne voit le numéro de l'autre. Le journal sert aussi de preuve au livreur (R51.1 :
+    r_client_appels appels avant de constater une absence).
+    """
+
+    class Sens(models.TextChoices):
+        CLIENT_VERS_LIVREUR = "CLIENT_LIVREUR", "Le client appelle le livreur"
+        LIVREUR_VERS_CLIENT = "LIVREUR_CLIENT", "Le livreur appelle le client"
+
+    shipment = models.ForeignKey(Shipment, on_delete=models.CASCADE, related_name="appels_masques")
+    sens = models.CharField(max_length=16, choices=Sens.choices)
+    demande_par = models.ForeignKey(User, on_delete=models.PROTECT, related_name="appels_masques")
+    prestataire = models.CharField(max_length=60)
+    ok = models.BooleanField(default=False)
+    reference = models.CharField(max_length=120, blank=True, default="")
+    message = models.CharField(max_length=255, blank=True, default="")
+    le = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-le"]
+        verbose_name = "Appel masqué"
+        verbose_name_plural = "Appels masqués"
+
+
+class PrestationEntreprise(models.Model):
+    """
+    Spec v2.1, R53 (feuille de route, décision du 27/10/2026 : la grille remplace la part du transport) : chaque
+    prestation faite par une entreprise de livraison, payée au tarif de sa ligne de grille ; versée le vendredi
+    suivant (R43.1). Une ligne par prestation, pour la traçabilité et le contrôle de l'équipe finance.
+    """
+
+    organisation = models.ForeignKey("accounts.DeliveryOrganizationProfile", on_delete=models.PROTECT,
+                                     related_name="prestations")
+    shipment = models.ForeignKey(Shipment, on_delete=models.PROTECT, null=True, blank=True, related_name="prestations")
+    nature = models.CharField(max_length=24, help_text="type de ligne de grille (LigneGrille.Type)")
+    param = models.CharField(max_length=20, blank=True, default="")
+    ligne = models.ForeignKey(LigneGrille, on_delete=models.SET_NULL, null=True, blank=True)
+    quantite = models.PositiveIntegerField(default=1)
+    tarif = models.PositiveIntegerField(default=0)
+    montant = models.PositiveIntegerField(default=0)
+    note = models.CharField(max_length=200, blank=True, default="")
+    faite_le = models.DateTimeField(default=timezone.now, db_index=True)
+    versee_semaine = models.CharField(max_length=10, blank=True, default="", help_text="vendredi du versement")
+
+    class Meta:
+        ordering = ["-faite_le"]
+        constraints = [models.UniqueConstraint(fields=["shipment", "nature", "param"], name="prestation_unique")]
+        verbose_name = "Prestation d'entreprise de livraison"
+        verbose_name_plural = "Prestations d'entreprises de livraison"
+

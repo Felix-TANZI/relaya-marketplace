@@ -266,7 +266,7 @@ def build_batches_for_cycle(cycle_key: str = "", *, now=None,
 
 @db_transaction.atomic
 def request_payout(batch: SettlementBatch, *, requested_by,
-                   justification: str = "") -> PayoutRequest:
+                   justification: str = "", liste: str = "") -> PayoutRequest:
     """
     Cree une demande de versement pour un lot confirme.
 
@@ -300,13 +300,19 @@ def request_payout(batch: SettlementBatch, *, requested_by,
     if montant <= 0:
         raise SettlementError(f"Lot {batch.reference} : rien à verser après les frais de versement.")
 
-    minimum = int(_politique_valeur(politique, "min_payout_xaf", 0))
+    # Spec v2.1, R22.2 et R43.1 : le versement du vendredi part « sans minimum ». Le minimum de la politique ne
+    # vaut plus que pour un versement exceptionnel, hors cycle.
+    minimum = int(_politique_valeur(politique, "min_payout_xaf", 0)) if batch.is_exceptional else 0
     maximum = int(_politique_valeur(politique, "max_payout_xaf", 0))
     if minimum and montant < minimum:
         raise SettlementError(
             f"Montant {montant} inferieur au minimum de versement {minimum}."
         )
-    if maximum and montant > maximum:
+    # R22.2, R43.1 (revue du 29/10, B1) : le lot du vendredi n'est JAMAIS refuse. Au-dela du maximum, il est cree,
+    # marque « montant eleve », la finance est alertee, et la double validation DP-42 s'applique comme a tout lot.
+    # Le maximum ne peut refuser qu'un versement exceptionnel.
+    montant_eleve = bool(maximum and montant > maximum)
+    if montant_eleve and batch.is_exceptional:
         raise SettlementError(
             f"Montant {montant} superieur au maximum de versement {maximum}."
         )
@@ -319,6 +325,7 @@ def request_payout(batch: SettlementBatch, *, requested_by,
         seuil = int(_politique_valeur(politique, "dual_approval_threshold_xaf", 0))
         if seuil and montant >= seuil:
             requises = max(requises, 2)
+    requises = max(requises, 2)  # DP-42 : deux validations pour TOUS les versements (comptable puis porteur)
 
     demande = PayoutRequest(
         batch=batch, payee=batch.payee, amount_xaf=montant, psp_fee_xaf=frais_versement,
@@ -328,12 +335,33 @@ def request_payout(batch: SettlementBatch, *, requested_by,
         requested_by=requested_by,
         justification=justification.strip(),
         status=PayoutRequest.Status.DRAFT,
+        liste=liste,
+        montant_eleve=montant_eleve,
     )
     demande.save()
     demande.transition_to(PayoutRequest.Status.PENDING_APPROVAL)
 
     batch.transition_to(SettlementBatch.Status.PENDING_APPROVAL)
+    if montant_eleve:
+        _alerter_montant_eleve(demande, maximum)
     return demande
+
+
+def _alerter_montant_eleve(demande: PayoutRequest, maximum: int) -> None:
+    """B1 : un versement du vendredi au-dela du maximum de la politique part quand meme ; la finance est prevenue."""
+    from django.contrib.auth.models import User
+
+    from apps.payments.api.admin.permissions import FINANCE_GROUP
+    from apps.payments.bridge import notifications
+
+    titre = f"Versement d'un montant eleve : {demande.reference}"
+    message = (f"{demande.amount_xaf} F pour {demande.payee.display_label}, au-dela du maximum de la politique "
+               f"({maximum} F). Le versement du vendredi n'est jamais refuse (R22.2, R43.1) : verifiez-le avant "
+               "les deux validations (DP-42).")
+    for user in User.objects.filter(is_active=True, groups__name=FINANCE_GROUP).distinct():
+        notifications.prevenir(user, titre, message)
+    logger.warning("Versement %s au-dela du maximum (%s F > %s F) : signale a la finance.",
+                   demande.reference, demande.amount_xaf, maximum)
 
 
 def _verifier_exception(batch: SettlementBatch, politique) -> None:
@@ -429,7 +457,12 @@ def approve_payout(payout: PayoutRequest, *, approved_by,
 
     Controle double : ici pour un message clair, et en base par une
     contrainte — un contournement par requete directe echoue aussi.
+
+    DP-42 : deux validations par deux personnes differentes, le comptable
+    (Finance) en premier, le porteur (Direction) en second (settlements.dp42).
     """
+    from . import dp42
+
     payout = PayoutRequest.objects.select_for_update().get(pk=payout.pk)
 
     if payout.status != PayoutRequest.Status.PENDING_APPROVAL:
@@ -447,9 +480,16 @@ def approve_payout(payout: PayoutRequest, *, approved_by,
             f"{approved_by} a deja approuve ce versement. "
             "Une seule approbation par personne."
         )
+    try:
+        titre = dp42.controler(payout, approved_by)
+    except dp42.Dp42Error as exc:
+        raise SettlementError(str(exc)) from exc
+    if payout.required_approvals < 2:  # demande creee avant DP-42
+        PayoutRequest.objects.filter(pk=payout.pk).update(required_approvals=2)
 
     PayoutApproval.objects.create(
         payout=payout, approved_by=approved_by, comment=comment,
+        role=titre["role"], secours=titre["secours"],
     )
     payout.refresh_from_db()
 
@@ -491,7 +531,6 @@ def _liberer_lot(payout: PayoutRequest) -> None:
 # 4. EXECUTION — le moment ou l'argent sort
 # ─────────────────────────────────────────────────────────────────────────────
 
-@db_transaction.atomic
 def execute_payout(payout: PayoutRequest) -> PayoutRequest:
     """
     Emet le versement aupres du prestataire.
@@ -511,32 +550,37 @@ def execute_payout(payout: PayoutRequest) -> PayoutRequest:
     (r_versement), retenus sur le montant envoye ; ils ne sont plus une
     charge de la plateforme.
     """
-    payout = PayoutRequest.objects.select_for_update().select_related("payee").get(
-        pk=payout.pk
-    )
-
-    if payout.status == PayoutRequest.Status.PAID:
-        return payout
-    if payout.status != PayoutRequest.Status.APPROVED:
-        raise SettlementError(
-            f"Le versement {payout.reference} est en {payout.status} : "
-            "seule une demande approuvee peut etre executee."
+    # Sécurité avant main 2 : l'argent ne part jamais depuis l'intérieur d'une transaction. On enregistre « en cours »
+    # et on valide en base, PUIS on appelle le prestataire, PUIS on conclut dans une nouvelle transaction. Si le
+    # processus tombe pendant l'envoi, la trace « en cours » reste : la réconciliation la traite comme une issue
+    # inconnue (resolve_unknown_payouts), jamais comme un versement qui n'aurait pas eu lieu.
+    with db_transaction.atomic():
+        payout = PayoutRequest.objects.select_for_update().select_related("payee").get(
+            pk=payout.pk
         )
 
-    blocages = payout_blockers(payout.payee)
-    if blocages:
-        raise SettlementError(
-            f"Versement bloque pour {payout.payee.payee_code} : "
-            + " ".join(blocages)
-        )
+        if payout.status == PayoutRequest.Status.PAID:
+            return payout
+        if payout.status != PayoutRequest.Status.APPROVED:
+            raise SettlementError(
+                f"Le versement {payout.reference} est en {payout.status} : "
+                "seule une demande approuvee peut etre executee."
+            )
 
-    prestataire = get_active_provider()
-    payout.provider_code = prestataire.code
-    payout.transition_to(PayoutRequest.Status.PROCESSING, save=False)
-    payout.executed_at = timezone.now()
-    payout.save(update_fields=["provider_code", "status", "executed_at"])
-    if payout.batch_id:
-        payout.batch.transition_to(SettlementBatch.Status.PROCESSING)
+        blocages = payout_blockers(payout.payee)
+        if blocages:
+            raise SettlementError(
+                f"Versement bloque pour {payout.payee.payee_code} : "
+                + " ".join(blocages)
+            )
+
+        prestataire = get_active_provider()
+        payout.provider_code = prestataire.code
+        payout.transition_to(PayoutRequest.Status.PROCESSING, save=False)
+        payout.executed_at = timezone.now()
+        payout.save(update_fields=["provider_code", "status", "executed_at"])
+        if payout.batch_id:
+            payout.batch.transition_to(SettlementBatch.Status.PROCESSING)
 
     try:
         resultat = prestataire.withdraw(WithdrawRequest(
@@ -553,38 +597,40 @@ def execute_payout(payout: PayoutRequest) -> PayoutRequest:
             payout, f"Incident technique : {type(exc).__name__} — {exc}",
         )
 
-    payout.provider_reference = resultat.provider_reference
-    payout.provider_status_raw = resultat.raw_status
-    payout.response_payload = resultat.raw_response or {}
-    payout.error_code = resultat.error_code
-    payout.error_message = resultat.error_message
+    with db_transaction.atomic():
+        payout.provider_reference = resultat.provider_reference
+        payout.provider_status_raw = resultat.raw_status
+        payout.response_payload = resultat.raw_response or {}
+        payout.error_code = resultat.error_code
+        payout.error_message = resultat.error_message
 
-    if not resultat.accepted:
-        payout.transition_to(PayoutRequest.Status.FAILED, save=False)
+        if not resultat.accepted:
+            payout.transition_to(PayoutRequest.Status.FAILED, save=False)
+            payout.save()
+            if payout.batch_id:
+                payout.batch.transition_to(SettlementBatch.Status.FAILED)
+            if resultat.error_code == "ER301":
+                logger.error(
+                    "SOLDE MARCHAND INSUFFISANT sur %s. Gel des reglements requis.",
+                    payout.reference,
+                )
+            return payout
+
         payout.save()
+        _comptabiliser_versement(payout)
+
+        payout.transition_to(PayoutRequest.Status.PAID, save=False)
+        payout.settled_at = timezone.now()
+        payout.save(update_fields=["status", "settled_at"])
         if payout.batch_id:
-            payout.batch.transition_to(SettlementBatch.Status.FAILED)
-        if resultat.error_code == "ER301":
-            logger.error(
-                "SOLDE MARCHAND INSUFFISANT sur %s. Gel des reglements requis.",
-                payout.reference,
-            )
+            payout.batch.transition_to(SettlementBatch.Status.PAID)
+
+        logger.info("Versement %s execute : %s XAF vers %s",
+                    payout.reference, payout.amount_xaf, payout.payee.payee_code)
         return payout
 
-    payout.save()
-    _comptabiliser_versement(payout)
 
-    payout.transition_to(PayoutRequest.Status.PAID, save=False)
-    payout.settled_at = timezone.now()
-    payout.save(update_fields=["status", "settled_at"])
-    if payout.batch_id:
-        payout.batch.transition_to(SettlementBatch.Status.PAID)
-
-    logger.info("Versement %s execute : %s XAF vers %s",
-                payout.reference, payout.amount_xaf, payout.payee.payee_code)
-    return payout
-
-
+@db_transaction.atomic
 def _issue_inconnue(payout: PayoutRequest, message: str) -> PayoutRequest:
     """
     Timeout ou incident : on NE SAIT PAS si l'argent est parti.
@@ -841,12 +887,17 @@ def request_withdrawal(payee: PayeeAccount, *, requested_by,
 
 @db_transaction.atomic
 def create_refund(intent, *, amount_xaf: int, reason: str, requested_by,
-                  detail: str = "", holds=None):
+                  detail: str = "", holds=None, frais_momo_xaf: int = 0, automatique: str = ""):
     """
     Cree une demande de remboursement.
 
     Ne rembourse RIEN : la sortie de fonds passe par `execute_refund`, apres
     approbation par un tiers.
+
+    `automatique` (revue du 29/10, B4, decision du porteur) : la regle qui impose son delai — "R68.1" (d'office
+    r_inspection_h apres la reception) ou "R35.4" (le jour meme, sans remplacant). Le remboursement est alors
+    approuve des sa creation, sans personne : une approbation pourrait faire manquer le delai. Il part toujours
+    vers le moyen de paiement d'origine (R68.2) et figure dans la liste quotidienne de la finance et de la direction.
     """
     from apps.payments.escrow.models import EscrowHold
     from apps.payments.intents.models import PaymentIntent
@@ -885,10 +936,15 @@ def create_refund(intent, *, amount_xaf: int, reason: str, requested_by,
         )
     )
 
+    if automatique and automatique not in REMBOURSEMENTS_AUTOMATIQUES:
+        raise SettlementError(f"Remboursement automatique inconnu : {automatique}.")
     remboursement = Refund(
         intent=intent, amount_xaf=amount_xaf, reason=reason,
-        detail=detail.strip(), requested_by=requested_by,
-        status=Refund.Status.PENDING_APPROVAL,
+        frais_momo_xaf=max(0, min(int(frais_momo_xaf or 0), amount_xaf)),
+        detail=(f"{detail.strip()} [automatique, {automatique}]" if automatique else detail.strip()),
+        requested_by=requested_by,
+        status=Refund.Status.APPROVED if automatique else Refund.Status.PENDING_APPROVAL,
+        approved_at=timezone.now() if automatique else None,
     )
     remboursement.save()
     if sequestres:
@@ -897,6 +953,21 @@ def create_refund(intent, *, amount_xaf: int, reason: str, requested_by,
     logger.info("Remboursement %s cree : %s XAF sur %s",
                 remboursement.reference, amount_xaf, intent.reference)
     return remboursement
+
+
+# B4 : les seules regles dont le delai impose un remboursement sans approbation humaine.
+REMBOURSEMENTS_AUTOMATIQUES = {"R68.1", "R35.4"}
+
+
+def remboursements_systeme_du_jour(jour) -> dict:
+    """B4 : la liste quotidienne, en lecture seule, des remboursements crees par le systeme (total et detail)."""
+    lignes = (Refund.objects.filter(requested_by__username="belivay-system", created_at__date=jour)
+              .select_related("intent").order_by("created_at"))
+    detail = [{"reference": r.reference, "montant_xaf": r.amount_xaf, "motif": r.reason, "detail": r.detail,
+               "statut": r.status, "automatique": "[automatique," in (r.detail or ""), "le": r.created_at}
+              for r in lignes]
+    return {"jour": jour.isoformat(), "nombre": len(detail), "total_xaf": sum(d["montant_xaf"] for d in detail),
+            "detail": detail}
 
 
 @db_transaction.atomic
@@ -926,7 +997,6 @@ def approve_refund(refund, *, approved_by):
     return refund
 
 
-@db_transaction.atomic
 def execute_refund(refund):
     """
     Rembourse le PAYEUR, via le meme chemin qu'un versement.
@@ -946,69 +1016,74 @@ def execute_refund(refund):
     """
     from apps.payments.escrow.models import EscrowHold
 
-    refund = Refund.objects.select_for_update().select_related(
-        "intent").get(pk=refund.pk)
+    # Sécurité avant main 2 : l'argent ne part jamais depuis l'intérieur d'une transaction. On enregistre « en cours »
+    # et on valide en base, PUIS on appelle le prestataire, PUIS on conclut dans une nouvelle transaction. Si le
+    # processus tombe pendant l'envoi, la trace « en cours » reste : la réconciliation la traite comme une issue
+    # inconnue (resolve_unknown_payouts), jamais comme un versement qui n'aurait pas eu lieu.
+    with db_transaction.atomic():
+        refund = Refund.objects.select_for_update().select_related(
+            "intent").get(pk=refund.pk)
 
-    if refund.status == Refund.Status.PAID:
-        return refund
-    if refund.status != Refund.Status.APPROVED:
-        raise SettlementError(
-            f"Le remboursement {refund.reference} est en {refund.status} : "
-            "seule une demande approuvee peut etre executee."
+        if refund.status == Refund.Status.PAID:
+            return refund
+        if refund.status != Refund.Status.APPROVED:
+            raise SettlementError(
+                f"Le remboursement {refund.reference} est en {refund.status} : "
+                "seule une demande approuvee peut etre executee."
+            )
+
+        intent = refund.intent
+        from apps.payments.wallet import services as wallet
+
+        if intent.provider_code == wallet.PRESTATAIRE:
+            # Spec v2.1, R03.6 (feuille de route D16) : paye par le Wallet, rembourse sur le Wallet.
+            wallet.rembourser(refund)
+            refund.status = Refund.Status.PAID
+            refund.save(update_fields=["status"])
+            _solder_sequestres(refund)
+            return refund
+
+        numero = intent.payer_msisdn
+        if not numero:
+            raise SettlementError(
+                f"Le numero du payeur est introuvable sur {intent.reference}. "
+                "Un remboursement ne peut PAS partir vers un autre numero."
+            )
+
+        prestataire = get_active_provider()
+
+        # Le remboursement emprunte le meme chemin qu'un versement : on cree
+        # une PayoutRequest pour beneficier de sa machine a etats, de son
+        # UUID4, et de son traitement de l'issue inconnue.
+        from apps.payments.bridge.actors import payee_for_buyer
+
+        beneficiaire = payee_for_buyer(intent.buyer, create=True)
+        beneficiaire.set_momo_number(numero, intent.payer_operator or "MTN")
+        beneficiaire.save(update_fields=[
+            "momo_number_enc", "momo_number_masked", "momo_fingerprint",
+            "momo_operator", "updated_at",
+        ])
+
+        versement = PayoutRequest(
+            batch=None, payee=beneficiaire, amount_xaf=refund.amount_xaf,
+            required_approvals=0,
+            payee_msisdn_masked=intent.payer_msisdn_masked,
+            payee_operator=intent.payer_operator,
+            requested_by=refund.requested_by,
+            justification=f"Remboursement {refund.reference} — {refund.reason}",
+            provider_code=prestataire.code,
+            status=PayoutRequest.Status.DRAFT,
         )
+        versement.save()
+        versement.transition_to(PayoutRequest.Status.PENDING_APPROVAL, save=False)
+        versement.transition_to(PayoutRequest.Status.APPROVED, save=False)
+        versement.transition_to(PayoutRequest.Status.PROCESSING, save=False)
+        versement.executed_at = timezone.now()
+        versement.save()
 
-    intent = refund.intent
-    from apps.payments.wallet import services as wallet
-
-    if intent.provider_code == wallet.PRESTATAIRE:
-        # Spec v2.1, R03.6 (feuille de route D16) : paye par le Wallet, rembourse sur le Wallet.
-        wallet.rembourser(refund)
-        refund.status = Refund.Status.PAID
-        refund.save(update_fields=["status"])
-        _solder_sequestres(refund)
-        return refund
-
-    numero = intent.payer_msisdn
-    if not numero:
-        raise SettlementError(
-            f"Le numero du payeur est introuvable sur {intent.reference}. "
-            "Un remboursement ne peut PAS partir vers un autre numero."
-        )
-
-    prestataire = get_active_provider()
-
-    # Le remboursement emprunte le meme chemin qu'un versement : on cree
-    # une PayoutRequest pour beneficier de sa machine a etats, de son
-    # UUID4, et de son traitement de l'issue inconnue.
-    from apps.payments.bridge.actors import payee_for_buyer
-
-    beneficiaire = payee_for_buyer(intent.buyer, create=True)
-    beneficiaire.set_momo_number(numero, intent.payer_operator or "MTN")
-    beneficiaire.save(update_fields=[
-        "momo_number_enc", "momo_number_masked", "momo_fingerprint",
-        "momo_operator", "updated_at",
-    ])
-
-    versement = PayoutRequest(
-        batch=None, payee=beneficiaire, amount_xaf=refund.amount_xaf,
-        required_approvals=0,
-        payee_msisdn_masked=intent.payer_msisdn_masked,
-        payee_operator=intent.payer_operator,
-        requested_by=refund.requested_by,
-        justification=f"Remboursement {refund.reference} — {refund.reason}",
-        provider_code=prestataire.code,
-        status=PayoutRequest.Status.DRAFT,
-    )
-    versement.save()
-    versement.transition_to(PayoutRequest.Status.PENDING_APPROVAL, save=False)
-    versement.transition_to(PayoutRequest.Status.APPROVED, save=False)
-    versement.transition_to(PayoutRequest.Status.PROCESSING, save=False)
-    versement.executed_at = timezone.now()
-    versement.save()
-
-    refund.payout = versement
-    refund.status = Refund.Status.PROCESSING
-    refund.save(update_fields=["payout", "status"])
+        refund.payout = versement
+        refund.status = Refund.Status.PROCESSING
+        refund.save(update_fields=["payout", "status"])
 
     try:
         resultat = prestataire.withdraw(WithdrawRequest(
@@ -1025,51 +1100,140 @@ def execute_refund(refund):
             refund, versement,
             f"Incident technique : {type(exc).__name__} — {exc}")
 
-    versement.provider_reference = resultat.provider_reference
-    versement.provider_status_raw = resultat.raw_status
-    versement.response_payload = resultat.raw_response or {}
-    versement.error_code = resultat.error_code
-    versement.error_message = resultat.error_message
+    with db_transaction.atomic():
+        versement.provider_reference = resultat.provider_reference
+        versement.provider_status_raw = resultat.raw_status
+        versement.response_payload = resultat.raw_response or {}
+        versement.error_code = resultat.error_code
+        versement.error_message = resultat.error_message
 
-    if not resultat.accepted:
-        versement.transition_to(PayoutRequest.Status.FAILED, save=False)
+        if not resultat.accepted:
+            versement.transition_to(PayoutRequest.Status.FAILED, save=False)
+            versement.save()
+            refund.status = Refund.Status.FAILED
+            refund.save(update_fields=["status"])
+            return refund
+
         versement.save()
-        refund.status = Refund.Status.FAILED
+
+        # L'argent quitte le sequestre pour retourner a l'acheteur ; la part des frais Mobile Money (R72.1) sort du
+        # produit, ou elle avait ete reconnue a l'encaissement.
+        post(
+            kind=LedgerTransaction.Kind.REFUND,
+            lines=[
+                *lignes_de_remboursement(refund),
+                credit(coa.psp_account_for(intent.payer_operator, degraded=True),
+                       refund.amount_xaf, label="Sortie de tresorerie"),
+            ],
+            description=(
+                f"Remboursement {refund.reference} vers le payeur de "
+                f"{intent.reference} — {refund.reason}"
+            ),
+            source_type="Refund", source_ref=refund.reference,
+            correlation_id=intent.correlation_id,
+            created_by_label="settlements.services.execute_refund",
+        )
+
+        versement.transition_to(PayoutRequest.Status.PAID, save=False)
+        versement.settled_at = timezone.now()
+        versement.save(update_fields=["status", "settled_at"])
+
+        refund.status = Refund.Status.PAID
         refund.save(update_fields=["status"])
+
+        _solder_sequestres(refund)
+
+        logger.info("Remboursement %s execute : %s XAF vers le payeur de %s",
+                    refund.reference, refund.amount_xaf, intent.reference)
         return refund
 
-    versement.save()
 
-    # L'argent quitte le sequestre pour retourner a l'acheteur.
-    post(
-        kind=LedgerTransaction.Kind.REFUND,
-        lines=[
-            debit(coa.ESCROW_LIABILITY, refund.amount_xaf,
-                  label=f"Remboursement {refund.reference}"),
-            credit(coa.psp_account_for(intent.payer_operator, degraded=True),
-                   refund.amount_xaf, label="Sortie de tresorerie"),
-        ],
-        description=(
-            f"Remboursement {refund.reference} vers le payeur de "
-            f"{intent.reference} — {refund.reason}"
-        ),
-        source_type="Refund", source_ref=refund.reference,
-        correlation_id=intent.correlation_id,
-        created_by_label="settlements.services.execute_refund",
-    )
+def verser_a_un_client(*, user, msisdn: str, operator: str, masque: str, montant: int, reference: str,
+                       justification: str, debits: list, autres_credits: list | None = None):
+    """
+    Envoie `montant` par Mobile Money sur le numero d'un client, par le meme chemin qu'un remboursement : une
+    PayoutRequest sans approbation (la regle metier a deja tranche), JAMAIS de reessai, une issue inconnue portee
+    en transit et laissee a la reconciliation.
 
-    versement.transition_to(PayoutRequest.Status.PAID, save=False)
-    versement.settled_at = timezone.now()
-    versement.save(update_fields=["status", "settled_at"])
+    `debits` (et `autres_credits`) sont les lignes a ecrire en cas de succes, avec CREDIT tresorerie `montant`.
+    Retourne (versement, etat) ; etat vaut PAID, FAILED ou UNKNOWN.
+    Feuille de route D16 (retrait du Wallet, R03.4) et D32 (remboursement automatique, R71).
+    """
+    from apps.payments.bridge.actors import payee_for_buyer
 
-    refund.status = Refund.Status.PAID
-    refund.save(update_fields=["status"])
+    # Sécurité avant main 2 : l'argent ne part jamais depuis l'intérieur d'une transaction. On enregistre « en cours »
+    # et on valide en base, PUIS on appelle le prestataire, PUIS on conclut dans une nouvelle transaction. Si le
+    # processus tombe pendant l'envoi, la trace « en cours » reste : la réconciliation la traite comme une issue
+    # inconnue (resolve_unknown_payouts), jamais comme un versement qui n'aurait pas eu lieu.
+    with db_transaction.atomic():
+        prestataire = get_active_provider()
+        beneficiaire = payee_for_buyer(user, create=True)
+        beneficiaire.set_momo_number(msisdn, operator or "MTN")
+        beneficiaire.save(update_fields=["momo_number_enc", "momo_number_masked", "momo_fingerprint", "momo_operator",
+                                         "updated_at"])
+        versement = PayoutRequest(
+            batch=None, payee=beneficiaire, amount_xaf=montant, required_approvals=0, payee_msisdn_masked=masque,
+            payee_operator=operator, requested_by=user, justification=justification[:255],
+            provider_code=prestataire.code, status=PayoutRequest.Status.DRAFT)
+        versement.save()
+        for etat in (PayoutRequest.Status.PENDING_APPROVAL, PayoutRequest.Status.APPROVED,
+                     PayoutRequest.Status.PROCESSING):
+            versement.transition_to(etat, save=False)
+        versement.executed_at = timezone.now()
+        versement.save()
 
-    _solder_sequestres(refund)
+        tresorerie = coa.psp_account_for(operator, degraded=True)
 
-    logger.info("Remboursement %s execute : %s XAF vers le payeur de %s",
-                refund.reference, refund.amount_xaf, intent.reference)
-    return refund
+    try:
+        resultat = prestataire.withdraw(WithdrawRequest(
+            external_reference=versement.provider_external_reference, amount_xaf=montant, msisdn=msisdn,
+            operator=operator or "", description=f"BelivaY {reference}"))
+    except Exception as exc:  # ProviderTimeout ou incident : on ne sait pas si l'argent est parti
+        message = str(exc) if isinstance(exc, ProviderTimeout) else f"Incident technique : {type(exc).__name__} — {exc}"
+        logger.error("Issue INCONNUE sur %s : %s. Ne JAMAIS retenter sans reconciliation.", reference, message)
+        with db_transaction.atomic():
+            versement.error_message = message
+            versement.transition_to(PayoutRequest.Status.UNKNOWN, save=False)
+            versement.save(update_fields=["status", "error_message"])
+            post(kind=LedgerTransaction.Kind.PAYOUT,
+                 lines=[debit(coa.PSP_IN_TRANSIT, montant, label=f"Versement a issue inconnue {reference}"),
+                        credit(tresorerie, montant, label="Sortie presumee")],
+                 description=f"{justification} — issue INCONNUE. Reconciliation obligatoire.",
+                 source_type="PayoutRequest", source_ref=versement.reference,
+                 created_by_label="settlements.services.verser_a_un_client")
+        return versement, PayoutRequest.Status.UNKNOWN
+
+    with db_transaction.atomic():
+        versement.provider_reference = resultat.provider_reference
+        versement.provider_status_raw = resultat.raw_status
+        versement.response_payload = resultat.raw_response or {}
+        versement.error_code, versement.error_message = resultat.error_code, resultat.error_message
+        if not resultat.accepted:
+            versement.transition_to(PayoutRequest.Status.FAILED, save=False)
+            versement.save()
+            return versement, PayoutRequest.Status.FAILED
+        versement.save()
+        post(kind=LedgerTransaction.Kind.PAYOUT,
+             lines=[*debits, credit(tresorerie, montant, label="Sortie de tresorerie"), *(autres_credits or [])],
+             description=justification, source_type="PayoutRequest", source_ref=versement.reference,
+             created_by_label="settlements.services.verser_a_un_client")
+        versement.transition_to(PayoutRequest.Status.PAID, save=False)
+        versement.settled_at = timezone.now()
+        versement.save(update_fields=["status", "settled_at"])
+        return versement, PayoutRequest.Status.PAID
+
+
+def lignes_de_remboursement(refund) -> list:
+    """DEBIT du sequestre pour les articles et la livraison, DEBIT du produit pour les frais Mobile Money (R72.1)."""
+    frais = int(refund.frais_momo_xaf or 0)
+    lignes = []
+    if refund.amount_xaf - frais > 0:
+        lignes.append(debit(coa.ESCROW_LIABILITY, refund.amount_xaf - frais,
+                            label=f"Remboursement {refund.reference}"))
+    if frais > 0:
+        lignes.append(debit(coa.REVENUE_COMMISSION, frais,
+                            label=f"Frais Mobile Money rendus (R72.1) {refund.reference}"))
+    return lignes
 
 
 def _solder_sequestres(refund) -> None:
@@ -1081,7 +1245,7 @@ def _solder_sequestres(refund) -> None:
     """
     from apps.payments.escrow.models import EscrowHold
 
-    restant = refund.amount_xaf
+    restant = refund.amount_xaf - int(refund.frais_momo_xaf or 0)
     for hold in refund.source_holds.select_for_update().all():
         if restant <= 0:
             break
@@ -1138,6 +1302,7 @@ def _refleter_sequestre(hold) -> None:
         )
 
 
+@db_transaction.atomic
 def _remboursement_inconnu(refund, versement, message: str):
     """
     Timeout : on NE SAIT PAS si l'argent est parti vers l'acheteur.
@@ -1540,13 +1705,15 @@ def _systeme():
     return auteur
 
 
-def remunerer_semaine(payee: PayeeAccount, *, montant: int, semaine: str, detail: str):
+def remunerer_semaine(payee: PayeeAccount, *, montant: int, semaine: str, detail: str, regle: str = "R40.4",
+                      libelle: str = "Versement du relais"):
     """Spec v2.1, R40.4 et R40.5 : le versement de la semaine d'un point relais, calculé par la formule de la spec
     (apps.regles), entre au lot comme un ajustement ; négatif, il devient une créance reportée au vendredi suivant.
+    Sert aussi aux prestations d'une entreprise de livraison (R53, regle="R53").
     Approuvé par la règle (comme compensate_relay_parcel), jamais par une personne ; idempotent par semaine."""
     if montant == 0:
         return None
-    evenement = f"R40.4:{semaine}"
+    evenement = f"{regle}:{semaine}"
     existant = Adjustment.objects.filter(payee=payee, source_event=evenement).first()
     if existant is not None:
         return existant
@@ -1555,8 +1722,8 @@ def remunerer_semaine(payee: PayeeAccount, *, montant: int, semaine: str, detail
         direction=Adjustment.Direction.DEBIT if montant > 0 else Adjustment.Direction.CREDIT,
         category=Adjustment.Category.REBILLING if montant > 0 else Adjustment.Category.CORRECTION,
         amount_xaf=abs(montant), remaining_xaf=abs(montant),
-        reason=f"Versement du relais, semaine {semaine} (R40.4). {detail}"[:500],
-        source_event=evenement, source_contract="spec-v2.1#R40.4",
+        reason=f"{libelle}, semaine {semaine} ({regle}). {detail}"[:500],
+        source_event=evenement, source_contract=f"spec-v2.1#{regle}",
         status=Adjustment.Status.APPROVED, approved_by=None, approved_at=timezone.now(), created_by=_systeme(),
     )
     ajustement.save()
@@ -1570,11 +1737,14 @@ def versements_du_vendredi(now=None, refus=None) -> dict:
     versement ; l'équipe finance les approuve (maker-checker), puis l'exécution part toute seule."""
     from apps.regles import services as regles
 
+    from . import dp42
+
     local = timezone.localtime(now or timezone.now())
     if local.weekday() != VENDREDI or local.hour >= regles.reglage("r_versement_heure"):
         return {"skipped": True}
     fin = local.replace(hour=0, minute=0, second=0, microsecond=0)  # jeudi à minuit
     systeme = _systeme()
+    liste = dp42.cle_du_vendredi(local)  # DP-42 : une liste, validée en bloc par le comptable puis le porteur
     lots, demandes, erreurs = 0, 0, []
     for payee in PayeeAccount.objects.filter(is_active=True).exclude(payee_type__in=["PLATFORM", "BUYER"]):
         motif = refus(payee) if refus else None  # règle métier lue par le pont (ex. D19 : pièces du vendeur)
@@ -1587,11 +1757,12 @@ def versements_du_vendredi(now=None, refus=None) -> dict:
                 continue
             lots += 1
             confirm_batch(lot)
-            request_payout(lot, requested_by=systeme, justification="Versement du vendredi (R22.2, R43.1).")
+            request_payout(lot, requested_by=systeme, justification="Versement du vendredi (R22.2, R43.1).",
+                           liste=liste)
             demandes += 1
         except Exception as exc:  # un bénéficiaire bloqué (KYC, numéro) n'arrête pas les autres
             erreurs.append(f"{payee.payee_code} : {exc}")
-    return {"skipped": False, "batches": lots, "payout_requests": demandes, "errors": erreurs[:20]}
+    return {"skipped": False, "batches": lots, "payout_requests": demandes, "errors": erreurs[:20], "liste": liste}
 
 
 def _prochaine_date(payee: PayeeAccount):
@@ -1676,3 +1847,31 @@ def amount_due(payee: PayeeAccount) -> dict:
         "next_settlement_at": _prochaine_date(payee),
         "blockers": payout_blockers(payee),
     }
+
+
+def requalifier_envois_interrompus(minutes: int | None = None) -> dict:
+    """
+    Securite avant main 2 : un versement ou un remboursement reste « en cours » (PROCESSING) quand le processus tombe
+    entre l'enregistrement et la conclusion. Passe r_envoi_interrompu_min minutes, on ne sait pas si l'argent est
+    parti : il devient une issue INCONNUE, portee en transit, que la reconciliation tranche. Jamais de renvoi.
+    """
+    from apps.regles import services as regles
+
+    # Revue du 29/10 (C3) : délai en réglage r_…, modifiable dans l'administration, plus en variable d'environnement.
+    minutes = minutes if minutes is not None else int(regles.reglage("r_envoi_interrompu_min"))
+    limite = timezone.now() - timedelta(minutes=minutes)
+    message = f"Envoi interrompu : toujours en cours apres {minutes} min. Issue inconnue, reconciliation obligatoire."
+    n = 0
+    for versement in PayoutRequest.objects.filter(status=PayoutRequest.Status.PROCESSING, executed_at__lt=limite):
+        with db_transaction.atomic():
+            versement = PayoutRequest.objects.select_for_update().get(pk=versement.pk)
+            if versement.status != PayoutRequest.Status.PROCESSING:
+                continue
+            refund = Refund.objects.filter(payout=versement, status=Refund.Status.PROCESSING).select_related(
+                "intent").first()
+            if refund is not None:
+                _remboursement_inconnu(refund, versement, message)
+            else:
+                _issue_inconnue(versement, message)
+            n += 1
+    return {"requalifies": n}

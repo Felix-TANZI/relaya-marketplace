@@ -54,6 +54,9 @@ APPLE_TEAM_ID = os.getenv("APPLE_TEAM_ID", "").strip()
 APPLE_KEY_ID = os.getenv("APPLE_KEY_ID", "").strip()
 APPLE_PRIVATE_KEY = os.getenv("APPLE_PRIVATE_KEY", "")
 APPLE_PRIVATE_KEY_PATH = os.getenv("APPLE_PRIVATE_KEY_PATH", "").strip()
+# Feuille de route D33 : sur Android, la page d'Apple renvoie au serveur (apple/callback/), qui renvoie l'application
+# ici avec un ticket. Par défaut, l'adresse servie par Capacitor dans l'application elle-même.
+APPLE_RETOUR_URL = os.getenv("APPLE_RETOUR_URL", "https://localhost/auth/apple/retour").strip()
 
 INSTALLED_APPS = [
     # Django
@@ -360,6 +363,9 @@ BELIVAY_SMS_FOURNISSEUR = os.getenv("BELIVAY_SMS_FOURNISSEUR", "apps.otp.prestat
 # compte de service, et BELIVAY_PUSH=apps.notifications_client.prestataires.FCMPush
 # dans l'environnement — aucun changement de code necessaire.
 BELIVAY_PUSH = os.getenv("BELIVAY_PUSH", "apps.notifications_client.prestataires.PushConsole")
+# Feuille de route D33 : opérateur d'appel masqué client-livreur, à brancher à la signature du contrat (chemin d'une
+# classe apps.shipping.appels.PrestataireAppel). Tant que c'est la console, les numéros restent visibles.
+BELIVAY_APPELS = os.getenv("BELIVAY_APPELS", "apps.shipping.appels.AppelConsole")
 FCM_CREDENTIALS_PATH = os.getenv("FCM_CREDENTIALS_PATH", "")
 
 from datetime import timedelta
@@ -467,7 +473,25 @@ SUPPORT_EMAIL = "support@belivay.com"
 PAYMENTS_ENCRYPTION_KEY = os.getenv("PAYMENTS_ENCRYPTION_KEY", "")
 # Deuxieme cle acceptee en lecture pendant une rotation.
 PAYMENTS_ENCRYPTION_KEY_OLD = os.getenv("PAYMENTS_ENCRYPTION_KEY_OLD", "")
-PAYMENTS_FINGERPRINT_SALT = os.getenv("PAYMENTS_FINGERPRINT_SALT", "belivay-momo")
+# DP-02, revue du 29/10 (A4) : aucun sel par défaut. Un code de retrait n'a que 10^6 valeurs : avec un sel public,
+# son empreinte se retrouve. payments_preflight bloque un sel absent, public ou de moins de 32 caractères.
+# ATTENTION : le sel se pose UNE SEULE FOIS, avant la migration shipping 0032 ; le changer ensuite rend toutes les
+# empreintes fausses (plus aucun code de retrait accepté, plus aucun numéro reconnu).
+PAYMENTS_FINGERPRINT_SALT = os.getenv("PAYMENTS_FINGERPRINT_SALT", "")
+# DP-61 (revue du 29/10, A1) : la console d'appel, sans opérateur, ne garde que ses derniers appels.
+BELIVAY_APPELS_CONSOLE_MAX = int(os.getenv("BELIVAY_APPELS_CONSOLE_MAX", "100"))
+# DP-61, décision du porteur du 2026-10-31 : tant que l'opérateur d'appel masqué n'est pas sous contrat, une dérogation
+# écrite (date et motif, ex. « 2026-10-31 contrat operateur en cours ») laisse démarrer la production. Les numéros restent
+# masqués et l'appel répond « indisponible » (A1) ; check --deploy et payments_preflight le signalent à chaque fois.
+# À retirer le jour où BELIVAY_APPELS désigne l'opérateur.
+BELIVAY_APPELS_DEROGATION = os.getenv("BELIVAY_APPELS_DEROGATION", "").strip()
+# Revue du 1/11 : vrai seulement dans relaya.settings.prod (garde-fous propres à la production).
+BELIVAY_PRODUCTION = False
+# Revue du 1/11 : date (AAAA-MM-JJ) du compte rendu « OK » de l'essai de la migration shipping 0032 sur une copie ;
+# « essai-copie » sur la copie pendant l'essai. Sans elle, 0032 refuse de partir en production
+# (apps.shipping.garde_0032, PROCEDURE_MIGRATION_0032.md).
+BELIVAY_MIGRATION_0032_VALIDEE = os.getenv("BELIVAY_MIGRATION_0032_VALIDEE", "").strip()
+# (Revue du 29/10, C3 : le délai d'un envoi interrompu est désormais le réglage r_envoi_interrompu_min.)
 
 # ── CAMPAY — secrets en environnement UNIQUEMENT ─────────────────────────────
 # Jamais en base, jamais lisibles depuis l'administration.

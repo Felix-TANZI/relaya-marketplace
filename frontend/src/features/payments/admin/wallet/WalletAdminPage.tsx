@@ -20,6 +20,7 @@ export default function WalletAdminPage() {
   const [erreur, setErreur] = useState('');
   const [occupe, setOccupe] = useState(false);
   const [client, setClient] = useState('');
+  const [commande, setCommande] = useState('');
   const [montant, setMontant] = useState('');
   const [motif, setMotif] = useState('');
 
@@ -61,15 +62,16 @@ export default function WalletAdminPage() {
             </div>
           </AdminCard>
 
-          <AdminCard title="Geste commercial (R03.6)">
+          <AdminCard title="Geste commercial (R03.6 ; jamais plus que la commission de la commande, R25.1)">
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               <input placeholder="Identifiant du client" value={client} onChange={(e) => setClient(e.target.value)} />
+              <input placeholder="Commande n°" inputMode="numeric" value={commande} onChange={(e) => setCommande(e.target.value)} />
               <input placeholder="Montant (F)" inputMode="numeric" value={montant} onChange={(e) => setMontant(e.target.value)} />
               <input placeholder="Motif" value={motif} onChange={(e) => setMotif(e.target.value)} style={{ flex: 1 }} />
               <button
                 type="button"
-                disabled={occupe || !client || !montant || !motif.trim()}
-                onClick={() => agir(() => walletApi.demanderGeste(Number(client), Number(montant), motif))}
+                disabled={occupe || !client || !commande || !montant || !motif.trim()}
+                onClick={() => agir(() => walletApi.demanderGeste(Number(client), Number(commande), Number(montant), motif))}
               >
                 Demander
               </button>
@@ -78,7 +80,7 @@ export default function WalletAdminPage() {
               <tbody>
                 {data.gestes.map((g) => (
                   <tr key={g.id}>
-                    <td>{g.client}</td>
+                    <td>{g.client}{g.commande ? ` · #${g.commande}` : ''}</td>
                     <td><Money value={g.montant_xaf} /></td>
                     <td>{g.motif}</td>
                     <td>{g.statut} · demandé par {g.demande_par}{g.decide_par ? ` · décidé par ${g.decide_par}` : ''}</td>

@@ -158,6 +158,9 @@ export interface OrderReturn {
   inspection_note: string;
   refund_amount_xaf: number | null;
   is_free_for_buyer: boolean;
+  /** R69.1 : course de retour encore due par le client en tort (0 sinon). */
+  course_retour_due_xaf?: number;
+  frais_retour_partie?: string;
   created_at: string;
   updated_at: string;
 }
@@ -290,8 +293,13 @@ export const customerApi = {
   ): Promise<OrderReturn> =>
     api.post<OrderReturn>(`/orders/${orderId}/returns/`, data),
 
-  getNearbyRelayPoints: async (params: { city?: string; lat?: number; lng?: number }): Promise<NearbyRelayPoint[]> => {
+  getNearbyRelayPoints: async (params: {
+    city?: string; lat?: number; lng?: number;
+    /** R41.1 : les articles du panier, pour ne proposer que les relais qui peuvent garder chaque colis. */
+    panier?: { id: number; quantity: number }[];
+  }): Promise<NearbyRelayPoint[]> => {
     const query = new URLSearchParams();
+    if (params.panier?.length) query.set('panier', params.panier.map((l) => `${l.id}:${l.quantity}`).join(','));
     if (params.city) query.set('city', params.city);
     if (params.lat != null) query.set('lat', String(params.lat));
     if (params.lng != null) query.set('lng', String(params.lng));

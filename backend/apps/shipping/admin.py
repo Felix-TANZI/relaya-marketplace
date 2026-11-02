@@ -110,12 +110,10 @@ class ShipmentAdmin(admin.ModelAdmin):
         )
     status_badge.short_description = 'Statut'
 
-    actions = ['mark_delivered', 'mark_failed']
-
-    def mark_delivered(self, request, queryset):
-        count = queryset.exclude(status='DELIVERED').update(status='DELIVERED')
-        self.message_user(request, f"{count} livraison(s) marquée(s) comme livrée(s).")
-    mark_delivered.short_description = "Marquer comme livré"
+    # R66.3 (revue du 29/10, C1) : « Marquer comme livré » est supprimé. Une action groupée de l'admin Django ne peut
+    # exiger ni photo ni motif, et elle passait par un update direct, hors de la chaîne de garde et du journal. Une
+    # livraison se constate par le parcours normal (code du client et photo de remise).
+    actions = ['mark_failed']
 
     def mark_failed(self, request, queryset):
         count = queryset.exclude(status__in=['DELIVERED', 'CANCELLED']).update(status='FAILED')
@@ -145,9 +143,10 @@ class ShipmentMessageAdmin(admin.ModelAdmin):
 
 @admin.register(RelayParcel)
 class RelayParcelAdmin(admin.ModelAdmin):
-    list_display = ("id", "shipment", "relay_point", "status", "slot_code", "pickup_code", "updated_at")
+    # DP-02 : le code de retrait ne s'affiche ni ne se cherche ici (il est chiffré, vérifié par empreinte).
+    list_display = ("id", "shipment", "relay_point", "status", "slot_code", "updated_at")
     list_filter = ("status", "relay_point")
-    search_fields = ("shipment__order__id", "relay_point__name", "slot_code", "pickup_code")
+    search_fields = ("shipment__order__id", "relay_point__name", "slot_code")
     readonly_fields = ("created_at", "updated_at", "received_at", "picked_up_at", "returned_at")
     ordering = ("-updated_at",)
 

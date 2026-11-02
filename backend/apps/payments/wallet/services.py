@@ -7,6 +7,8 @@
 #   R03.4  retrait >= r_retrait_wallet_min ; frais = ceil(montant x r_retrait_wallet), payes par le client ;
 #          seulement vers le numero Mobile Money qui a recharge
 #   R03.5  paiement de plus de r_wallet_code_des : code a 4 chiffres ; solde jamais au-dela de r_wallet_plafond
+#          (securite avant main 2 : r_wallet_code_essais codes faux bloquent r_wallet_code_blocage_h heures ;
+#          reinitialisation par un code envoye au numero verifie)
 #   R03.6  un geste commercial ne se retire jamais ; une commande payee par le Wallet est remboursee sur le Wallet
 #
 # Ecritures au grand livre (compte 2050, dette envers les clients) :
@@ -70,22 +72,98 @@ def _mouvement(p: Portefeuille, sorte, reference, retirable=0, geste=0, **extra)
                                                 part_retirable_xaf=retirable, part_geste_xaf=geste, **extra)
 
 
+def recharges_en_attente(user) -> int:
+    """Les recharges lancées mais pas encore confirmées : une fois payées, elles entreront dans le solde."""
+    from django.db.models import Q, Sum
+
+    from apps.payments.intents.models import PaymentIntent
+
+    S = PaymentIntent.Status
+    return int(PaymentIntent.objects.filter(buyer=user, idempotency_key__startswith=CLE_RECHARGE).filter(
+        Q(status=S.PROCESSING) | Q(status__in=[S.DRAFT, S.REQUIRES_ACTION], expires_at__gt=timezone.now()))
+        .aggregate(t=Sum("amount_xaf"))["t"] or 0)
+
+
 def _plafond(p: Portefeuille, montant: int) -> None:
-    if p.solde_xaf + montant > regles.reglage("r_wallet_plafond"):  # R03.5
+    # R03.5, sécurité avant main 2 : le solde, plus les recharges encore en attente, plus celle-ci.
+    if p.solde_xaf + recharges_en_attente(p.client) + montant > regles.reglage("r_wallet_plafond"):
         raise WalletError("wallet_plafond",
                           f"Le solde du Wallet ne peut pas dépasser {regles.reglage('r_wallet_plafond')} F.")
 
 
 # ── Code a 4 chiffres (R03.5) ────────────────────────────────────────────────────────────────────────────
 
+def controler_code(user, code: str, *, motif: str = "") -> None:
+    """Verifie le code et compte les erreurs dans sa propre transaction : l'erreur levee ensuite ne l'annule pas.
+    Quatre chiffres se trouvent en quelques milliers d'essais ; seul le serveur peut compter."""
+    erreur = None
+    with db_transaction.atomic():
+        p = portefeuille_de(user, verrou=True)
+        maintenant = timezone.now()
+        if p.code_bloque_jusqua and p.code_bloque_jusqua > maintenant:
+            erreur = WalletError("code_bloque", "Trop de codes faux : le code du Wallet est bloqué jusqu'au "
+                                 f"{timezone.localtime(p.code_bloque_jusqua):%d/%m à %H:%M}. "
+                                 "Vous pouvez le réinitialiser par un code reçu par SMS.")
+        elif p.code_valide(code):
+            if p.code_echecs or p.code_bloque_jusqua:
+                p.code_echecs, p.code_bloque_jusqua = 0, None
+                p.save(update_fields=["code_echecs", "code_bloque_jusqua", "updated_at"])
+        elif not code:
+            erreur = WalletError("code_requis", motif or "Le code du Wallet est demandé.")
+        else:
+            p.code_echecs += 1
+            restants = regles.reglage("r_wallet_code_essais") - p.code_echecs
+            if restants <= 0:
+                p.code_echecs = 0
+                p.code_bloque_jusqua = maintenant + timedelta(hours=regles.reglage("r_wallet_code_blocage_h"))
+                erreur = WalletError("code_bloque", "Code faux. Le code du Wallet est bloqué "
+                                     f"{regles.reglage('r_wallet_code_blocage_h')} h ; "
+                                     "vous pouvez le réinitialiser par un code reçu par SMS.")
+            else:
+                erreur = WalletError("code_faux", f"Code faux. Encore {restants} essai(s).")
+            p.save(update_fields=["code_echecs", "code_bloque_jusqua", "updated_at"])
+    if erreur is not None:
+        raise erreur
+
+
 def definir_code(user, code: str, ancien: str = "") -> None:
     if not re.fullmatch(r"\d{4}", code or ""):
         raise WalletError("code_format", "Le code du Wallet compte 4 chiffres.")
+    if portefeuille_de(user).code_hash:
+        controler_code(user, ancien, motif="L'ancien code est demandé.")
     p = portefeuille_de(user, verrou=True)
-    if p.code_hash and not p.code_valide(ancien):
-        raise WalletError("code_faux", "L'ancien code est faux.")
     p.definir_code(code)
     p.save(update_fields=["code_hash", "updated_at"])
+
+
+def demander_reinitialisation(user) -> dict:
+    """Code oublie ou bloque : un code part au numero verifie du compte, jamais a un numero saisi."""
+    from apps.payments.bridge import codes
+
+    numero = codes.numero_verifie(user)
+    if not numero:
+        raise WalletError("numero_non_verifie", "Vérifiez d'abord votre numéro pour réinitialiser le code du Wallet.")
+    return codes.envoyer_code(user, numero)
+
+
+def reinitialiser_code(user, *, code_sms: str, nouveau: str) -> dict:
+    """Le code recu par SMS remplace l'ancien code du Wallet et leve le blocage."""
+    from apps.payments.bridge import codes
+
+    if not re.fullmatch(r"\d{4}", nouveau or ""):
+        raise WalletError("code_format", "Le code du Wallet compte 4 chiffres.")
+    numero = codes.numero_verifie(user)
+    if not numero:
+        raise WalletError("numero_non_verifie", "Vérifiez d'abord votre numéro pour réinitialiser le code du Wallet.")
+    resultat = codes.verifier_code(user, numero, str(code_sms or "").strip())
+    if not resultat.get("ok"):
+        return resultat
+    with db_transaction.atomic():
+        p = portefeuille_de(user, verrou=True)
+        p.definir_code(nouveau)
+        p.code_echecs, p.code_bloque_jusqua = 0, None
+        p.save(update_fields=["code_hash", "code_echecs", "code_bloque_jusqua", "updated_at"])
+    return resultat
 
 
 # ── Recharge (R03.3) ─────────────────────────────────────────────────────────────────────────────────────
@@ -101,11 +179,11 @@ def preparer_recharge(user, *, montant: int, msisdn: str, operator: str, cle: st
     montant = int(montant)
     if montant <= 0:
         raise WalletError("montant", "Montant de recharge invalide.")
-    _plafond(portefeuille_de(user), montant)
     cle = f"{CLE_RECHARGE}{cle or uuid.uuid4()}"
     existante = PaymentIntent.objects.filter(idempotency_key=cle, buyer=user).first()
     if existante is not None:
         return existante
+    _plafond(portefeuille_de(user, verrou=True), montant)  # verrou : deux recharges simultanées attendent leur tour
     intent = PaymentIntent(
         idempotency_key=cle, buyer=user, amount_xaf=montant, currency="XAF",
         distribution_plan={"total_distributed": montant, "currency": "XAF", "platform_revenue": 0,
@@ -135,9 +213,18 @@ def crediter_recharge(intent) -> MouvementPortefeuille:
 
 # ── Paiement d'une commande (R02.5, R03.3, R03.5) ────────────────────────────────────────────────────────
 
-@db_transaction.atomic
 def payer(intent, *, user, code: str = ""):
-    """Paie l'intention d'une commande avec le Wallet, sans frais ; les gestes servent en premier."""
+    """Paie l'intention d'une commande avec le Wallet, sans frais ; les gestes servent en premier.
+    Le code (R03.5) est controle avant la transaction du paiement, pour que ses erreurs restent comptees."""
+    _exiger_ouvert()
+    if intent.amount_xaf > regles.reglage("r_wallet_code_des"):  # R03.5
+        controler_code(user, code, motif=f"Au-delà de {regles.reglage('r_wallet_code_des')} F, "
+                                         "le code du Wallet est demandé.")
+    return _payer(intent, user=user)
+
+
+@db_transaction.atomic
+def _payer(intent, *, user):
     from apps.payments.application.collect import confirm_payment
     from apps.payments.intents.models import PaymentAttempt, PaymentIntent
 
@@ -151,9 +238,6 @@ def payer(intent, *, user, code: str = ""):
         raise WalletError("intention", "Ce paiement n'est plus ouvert.")
     p = portefeuille_de(user, verrou=True)
     montant = intent.amount_xaf
-    if montant > regles.reglage("r_wallet_code_des") and not p.code_valide(code):  # R03.5
-        raise WalletError("code_requis" if not code else "code_faux",
-                          f"Au-delà de {regles.reglage('r_wallet_code_des')} F, le code du Wallet est demandé.")
     if p.solde_xaf < montant:
         raise WalletError("solde_insuffisant", "Solde du Wallet insuffisant.")
     geste = min(p.solde_geste_xaf, montant)
@@ -183,8 +267,10 @@ def rembourser(refund) -> None:
     _mouvement(p, MouvementPortefeuille.Sorte.REMBOURSEMENT, f"remboursement-{refund.reference}",
                retirable=refund.amount_xaf - part_geste, geste=part_geste, intent_reference=intent.reference,
                libelle="Remboursement sur le Wallet")
+    from apps.payments.settlements.services import lignes_de_remboursement
+
     post(kind=LedgerTransaction.Kind.REFUND,
-         lines=[debit(coa.ESCROW_LIABILITY, refund.amount_xaf, label=f"Remboursement {refund.reference}"),
+         lines=[*lignes_de_remboursement(refund),
                 credit(coa.WALLET_LIABILITY, refund.amount_xaf, label="Credit du Wallet")],
          description=f"Remboursement {refund.reference} sur le Wallet ({intent.reference}) — R03.6",
          source_type="Refund", source_ref=refund.reference, correlation_id=intent.correlation_id,
@@ -193,12 +279,31 @@ def rembourser(refund) -> None:
 
 # ── Geste commercial (R03.6) : demande, puis approbation par un autre membre de l'equipe ─────────────────
 
-def demander_geste(user, *, montant: int, motif: str, demande_par) -> GestePortefeuille:
+def _plafond_geste(order_id, montant: int, sauf=None) -> None:
+    """R25.1 : les gestes d'une commande (en attente ou credites) ne depassent jamais sa commission_b."""
+    from django.db.models import Sum
+
+    from apps.payments.bridge.gestes import commission_de_la_commande
+
+    deja = (GestePortefeuille.objects.filter(order_id=order_id).exclude(statut=GestePortefeuille.Statut.REFUSE)
+            .exclude(pk=getattr(sauf, "pk", None)).aggregate(t=Sum("montant_xaf"))["t"] or 0)
+    plafond = commission_de_la_commande(order_id)
+    if deja + int(montant) > plafond:
+        raise WalletError("geste_plafond", f"Un geste ne peut pas dépasser la commission de la commande "
+                                           f"({plafond} F, dont {deja} F déjà accordés) — R25.1.")
+
+
+def demander_geste(user, *, montant: int, motif: str, demande_par, order_id=None) -> GestePortefeuille:
+    from apps.payments.bridge.gestes import commande_du_client
+
     _exiger_ouvert()
     if int(montant) <= 0 or not (motif or "").strip():
         raise WalletError("geste", "Montant et motif obligatoires.")
-    return GestePortefeuille.objects.create(client=user, montant_xaf=int(montant), motif=motif.strip()[:200],
-                                            demande_par=demande_par)
+    if not order_id or not commande_du_client(order_id, user):
+        raise WalletError("geste_commande", "Un geste se rattache à une commande de ce client (R25.1).")
+    _plafond_geste(order_id, montant)
+    return GestePortefeuille.objects.create(client=user, order_id=order_id, montant_xaf=int(montant),
+                                            motif=motif.strip()[:200], demande_par=demande_par)
 
 
 @db_transaction.atomic
@@ -214,6 +319,8 @@ def decider_geste(geste: GestePortefeuille, *, par, accepte: bool) -> GestePorte
         geste.save(update_fields=["statut", "decide_par", "decide_le"])
         return geste
     _exiger_ouvert()
+    if geste.order_id:
+        _plafond_geste(geste.order_id, geste.montant_xaf, sauf=geste)  # R25.1, revu au moment de crediter
     p = portefeuille_de(geste.client, verrou=True)
     _plafond(p, geste.montant_xaf)
     _mouvement(p, MouvementPortefeuille.Sorte.GESTE, f"geste-{geste.pk}", geste=geste.montant_xaf,
@@ -257,16 +364,13 @@ def devis_retrait(user, montant: int) -> dict:
             "numeros": [i.payer_msisdn_masked for i in numeros_de_recharge(user)]}
 
 
-@db_transaction.atomic
 def retirer(user, *, montant: int, numero_masque: str = "", cle: str = ""):
     """
     Le client retire `montant` de la part retirable ; il recoit montant - frais sur un numero qui a recharge.
     Meme chemin et memes garde-fous qu'un versement : jamais de reessai, une issue inconnue reste a reconcilier.
     """
-    from apps.payments.bridge.actors import payee_for_buyer
-    from apps.payments.infrastructure.providers.base import ProviderTimeout, WithdrawRequest
-    from apps.payments.infrastructure.providers.registry import get_active_provider
     from apps.payments.settlements.models import PayoutRequest
+    from apps.payments.settlements.services import verser_a_un_client
 
     _exiger_ouvert()
     montant = int(montant)
@@ -281,73 +385,32 @@ def retirer(user, *, montant: int, numero_masque: str = "", cle: str = ""):
     if source is None:
         raise WalletError("numero", "Le retrait part seulement vers un numéro qui a rechargé ce Wallet.")
     frais = frais_retrait(montant)
-    p = portefeuille_de(user, verrou=True)
-    if p.solde_retirable_xaf < montant:  # R03.6 : jamais les gestes
-        raise WalletError("solde_insuffisant", "Montant supérieur à la part retirable du Wallet.")
-    mouvement = _mouvement(p, MouvementPortefeuille.Sorte.RETRAIT, reference, retirable=-montant, frais_xaf=frais,
-                           libelle="Retrait vers Mobile Money")
+    # Sécurité avant main 2 : le Wallet est débité et validé en base AVANT l'envoi ; l'envoi part hors transaction ;
+    # la conclusion (référence, ou part rendue si l'opérateur refuse) suit dans une nouvelle transaction.
+    with db_transaction.atomic():
+        p = portefeuille_de(user, verrou=True)
+        if p.solde_retirable_xaf < montant:  # R03.6 : jamais les gestes
+            raise WalletError("solde_insuffisant", "Montant supérieur à la part retirable du Wallet.")
+        mouvement = _mouvement(p, MouvementPortefeuille.Sorte.RETRAIT, reference, retirable=-montant,
+                               frais_xaf=frais, libelle="Retrait vers Mobile Money")
 
-    prestataire = get_active_provider()
-    beneficiaire = payee_for_buyer(user, create=True)
-    beneficiaire.set_momo_number(source.payer_msisdn, source.payer_operator or "MTN")
-    beneficiaire.save(update_fields=["momo_number_enc", "momo_number_masked", "momo_fingerprint", "momo_operator",
-                                     "updated_at"])
-    versement = PayoutRequest(
-        batch=None, payee=beneficiaire, amount_xaf=montant - frais, required_approvals=0,
-        payee_msisdn_masked=source.payer_msisdn_masked, payee_operator=source.payer_operator, requested_by=user,
-        justification=f"Retrait du Wallet {reference} — R03.4", provider_code=prestataire.code,
-        status=PayoutRequest.Status.DRAFT)
-    versement.save()
-    for etat in (PayoutRequest.Status.PENDING_APPROVAL, PayoutRequest.Status.APPROVED,
-                 PayoutRequest.Status.PROCESSING):
-        versement.transition_to(etat, save=False)
-    versement.executed_at = timezone.now()
-    versement.save()
-    mouvement.payout_reference = versement.reference
-    mouvement.save(update_fields=["payout_reference"])
-
-    tresorerie = coa.psp_account_for(source.payer_operator, degraded=True)
-    try:
-        resultat = prestataire.withdraw(WithdrawRequest(
-            external_reference=versement.provider_external_reference, amount_xaf=montant - frais,
-            msisdn=source.payer_msisdn, operator=source.payer_operator or "", description=f"BelivaY {reference}"))
-    except Exception as exc:  # ProviderTimeout ou incident : on ne sait pas si l'argent est parti
-        message = str(exc) if isinstance(exc, ProviderTimeout) else f"Incident technique : {type(exc).__name__} — {exc}"
-        logger.error("Issue INCONNUE sur le retrait %s : %s. Ne JAMAIS retenter sans reconciliation.",
-                     reference, message)
-        versement.error_message = message
-        versement.transition_to(PayoutRequest.Status.UNKNOWN, save=False)
-        versement.save(update_fields=["status", "error_message"])
-        post(kind=LedgerTransaction.Kind.PAYOUT,
-             lines=[debit(coa.PSP_IN_TRANSIT, montant - frais, label=f"Retrait a issue inconnue {reference}"),
-                    credit(tresorerie, montant - frais, label="Sortie presumee")],
-             description=f"Retrait du Wallet {reference} — issue INCONNUE. Reconciliation obligatoire.",
-             source_type="PayoutRequest", source_ref=versement.reference,
-             created_by_label="wallet.services.retirer")
-        return mouvement
-
-    versement.provider_reference = resultat.provider_reference
-    versement.provider_status_raw = resultat.raw_status
-    versement.response_payload = resultat.raw_response or {}
-    versement.error_code, versement.error_message = resultat.error_code, resultat.error_message
-    if not resultat.accepted:
-        versement.transition_to(PayoutRequest.Status.FAILED, save=False)
-        versement.save()
-        # Rien n'est parti : la part retirable est rendue, aucune ecriture au grand livre.
-        return _mouvement(p, MouvementPortefeuille.Sorte.RETRAIT_ANNULE, f"{reference}-annule", retirable=montant,
-                          payout_reference=versement.reference,
-                          libelle=(resultat.error_message or "Retrait refusé par l'opérateur")[:200])
-    versement.save()
-    lignes = [debit(coa.WALLET_LIABILITY, montant, label=f"Retrait {reference}"),
-              credit(tresorerie, montant - frais, label="Sortie de tresorerie")]
-    if frais:
-        lignes.append(credit(coa.REVENUE_WALLET_WITHDRAWAL_FEE, frais, label="Frais de retrait (R03.4)"))
-    post(kind=LedgerTransaction.Kind.PAYOUT, lines=lignes,
-         description=f"Retrait du Wallet {reference} vers {source.payer_msisdn_masked} — R03.4",
-         source_type="PayoutRequest", source_ref=versement.reference, created_by_label="wallet.services.retirer")
-    versement.transition_to(PayoutRequest.Status.PAID, save=False)
-    versement.settled_at = timezone.now()
-    versement.save(update_fields=["status", "settled_at"])
+    versement, etat = verser_a_un_client(
+        user=user, msisdn=source.payer_msisdn, operator=source.payer_operator or "",
+        masque=source.payer_msisdn_masked, montant=montant - frais, reference=reference,
+        justification=f"Retrait du Wallet {reference} vers {source.payer_msisdn_masked} — R03.4",
+        debits=[debit(coa.WALLET_LIABILITY, montant, label=f"Retrait {reference}")],
+        autres_credits=[credit(coa.REVENUE_WALLET_WITHDRAWAL_FEE, frais, label="Frais de retrait (R03.4)")]
+        if frais else [])
+    with db_transaction.atomic():
+        mouvement.payout_reference = versement.reference
+        mouvement.save(update_fields=["payout_reference"])
+        if etat == PayoutRequest.Status.FAILED:
+            # Rien n'est parti : la part retirable est rendue, aucune ecriture au grand livre.
+            p = portefeuille_de(user, verrou=True)
+            return _mouvement(p, MouvementPortefeuille.Sorte.RETRAIT_ANNULE, f"{reference}-annule",
+                              retirable=montant, payout_reference=versement.reference,
+                              libelle=(versement.error_message or "Retrait refusé par l'opérateur")[:200])
+    # UNKNOWN : la part reste debitee du Wallet, le compte 2050 attend la reconciliation (voir suivi()).
     return mouvement
 
 

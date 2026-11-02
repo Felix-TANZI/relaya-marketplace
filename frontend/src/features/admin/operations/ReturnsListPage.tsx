@@ -37,10 +37,25 @@ export default function ReturnsListPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  /** R66.3 : le constat de réception exige une photo ; on la demande avant d'appeler le serveur. */
+  const choisirPhoto = () =>
+    new Promise<File | null>((resolve) => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = () => resolve(input.files?.[0] ?? null);
+      input.click();
+    });
+
   const handleMarkReceived = async (id: number) => {
+    const photo = await choisirPhoto();
+    if (!photo) {
+      showToast('Photo obligatoire pour constater la réception du retour (R66.3).', 'error');
+      return;
+    }
     setActingId(id);
     try {
-      const updated = await adminApi.markReturnReceived(id);
+      const updated = await adminApi.markReturnReceived(id, photo);
       setReturns((current) => current.map((r) => (r.id === id ? updated : r)));
     } catch (error) {
       showToast(error instanceof Error ? error.message : t('ad5b_returns.toast_action_error'), 'error');

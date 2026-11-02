@@ -17,15 +17,26 @@ from .views import (
     MyPendingEvidenceRequestsView,
     OrderReturnListCreateView,
     DevisPanierView,
+    PayerCourseRetourView,
+    PayerFraisAbsenceView,
 )
+from .remboursement_auto_admin import ProposerRetraitView, SuiviRemboursementAutoView, ValiderRetraitView
 
 urlpatterns = [
     path("", OrderCreateView.as_view(), name="order-create"),  # Create a new order
     path("frais/", DevisPanierView.as_view(), name="order-devis-panier"),  # Frais et total avant le paiement (A1, A2)
+    # Feuille de route D32 : suivi des remboursements automatiques sans retour (R71)
+    path("admin/remboursements-auto/", SuiviRemboursementAutoView.as_view(), name="admin-rembt-auto"),
+    path("admin/remboursements-auto/retraits/", ProposerRetraitView.as_view(), name="admin-rembt-auto-retrait"),
+    path("admin/remboursements-auto/retraits/<int:pk>/valider/", ValiderRetraitView.as_view(),
+         name="admin-rembt-auto-retrait-valider"),
     path("my-orders/", MyOrdersView.as_view(), name="my-orders"), # List orders for the authenticated user
     path("<int:id>/", OrderDetailView.as_view(), name="order-detail"), # Retrieve order details by ID
     path("<int:id>/tracking/", OrderTrackingView.as_view(), name="order-tracking"),
     path("<int:id>/cancel/", CancelOrderView.as_view(), name="order-cancel"),
+    path("<int:id>/frais-absence/payer/", PayerFraisAbsenceView.as_view(), name="order-frais-absence"),  # R51.5
+    path("<int:id>/returns/<int:return_id>/course-retour/payer/", PayerCourseRetourView.as_view(),
+         name="order-course-retour"),  # R69.1
     path("<int:id>/confirm-receipt/", ConfirmReceiptView.as_view(), name="order-confirm-receipt"),
     path("<int:id>/extend-relay-garde/", ExtendRelayGardeView.as_view(), name="order-extend-relay-garde"),
     path("<int:id>/disputes/", OrderDisputeListCreateView.as_view(), name="order-disputes"),

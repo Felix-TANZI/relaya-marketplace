@@ -82,5 +82,6 @@ export function Tableau({ entetes, lignes, vide }: { entetes: string[]; lignes: 
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- aide de format partagée, pas un composant
 export const dateCourte = (d: string | null | undefined) =>
   d ? new Date(d).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';

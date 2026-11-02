@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { ArrowRight, Check, Minus, Package, Plus, ShieldCheck, ShoppingCart, Store, Trash2, Truck, Undo2 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
-import { getV29Products } from "@/data/v29Products";
 import { PfShellStyles } from "@/styles/pfShell";
 import { OperatorLogo } from "@/features/payments/OperatorLogo";
 import CartRecommendationsSection from "@/components/cart/CartRecommendationsSection";
@@ -13,7 +12,6 @@ const CHECKOUT_SELECTED_CART_IDS_KEY = "belivay_checkout_selected_cart_ids";
 export default function CartPage() {
   const { t, i18n } = useTranslation();
   const { items, removeItem, updateQuantity, itemCount, addItem } = useCart();
-  const mockProducts = useMemo(() => getV29Products(t), [t]);
   const [selectedIds, setSelectedIds] = useState<number[]>(() => items.map((i) => i.id));
   const itemIdsKey = items.map((i) => i.id).join(",");
   const [lastItemIdsKey, setLastItemIdsKey] = useState(itemIdsKey);
@@ -77,20 +75,6 @@ export default function CartPage() {
     );
   }
 
-  const suggestions = (() => {
-    const map: Record<string, string[]> = {
-      shoes: ["femme", "homme", "beaute"], femme: ["shoes", "beaute", "maison"], homme: ["shoes", "tech"],
-      phone: ["tech", "maison"], tech: ["phone", "maison"], beaute: ["femme", "super"],
-      maison: ["tech", "super"], super: ["beaute", "maison"], sport: ["shoes", "homme"], bebe: ["femme", "super"],
-    };
-    const inCart = new Set(items.map((i) => i.id));
-    const cats = new Set<string>();
-    items.forEach((i) => { const m = mockProducts.find((p) => p.id === i.id); if (m?.category?.slug) cats.add(m.category.slug); });
-    const targets = new Set<string>();
-    cats.forEach((c) => (map[c] || []).forEach((x) => targets.add(x)));
-    if (!targets.size) mockProducts.slice(0, 4).forEach((p) => p.category?.slug && targets.add(p.category.slug));
-    return mockProducts.filter((p) => !inCart.has(p.id) && p.category?.slug && targets.has(p.category.slug)).slice(0, 6);
-  })();
 
   return (
     <>
@@ -118,7 +102,7 @@ export default function CartPage() {
               <div className="pf-card pf-anim" style={{ padding: 0, overflow: "hidden" }}>
                 {items.map((item) => {
                   const selected = selectedIdSet.has(item.id);
-                  const link = `/product/${item.id}${item.isDemo ? "?mock=1" : ""}`;
+                  const link = `/product/${item.id}`;
                   return (
                     <div key={item.id} className={`pf-line${selected ? "" : " off"}`}>
                       <button
@@ -168,35 +152,6 @@ export default function CartPage() {
                 })}
               </div>
 
-              {suggestions.length > 0 && (
-                <section className="pf-card pf-anim">
-                  <div className="pf-row-between pf-mb">
-                    <span className="pf-card-title">{t('cl1_cart.complete_your_order')}</span>
-                  </div>
-                  <div className="pf-xsell">
-                    {suggestions.map((p) => {
-                      const price = p.price_final || p.price_xaf;
-                      const img = p.images?.[0]?.image_url || p.media?.[0]?.url;
-                      return (
-                        <div key={p.id} className="pf-xcard">
-                          <Link to={`/product/${p.id}?mock=1`}>
-                            <div className="img">{img ? <img src={img} alt={p.title} loading="lazy" /> : <Package size={22} className="pf-muted" />}</div>
-                            <div style={{ fontSize: 11.5, fontWeight: 700, lineHeight: 1.35, color: "var(--pf-text)" }}>{p.title}</div>
-                            <div className="pf-order-total" style={{ marginTop: 3, fontSize: 12 }}>{fmt(price)}</div>
-                          </Link>
-                          <button
-                            className="pf-btn-accent"
-                            style={{ marginTop: 8, width: "100%", justifyContent: "center", padding: "7px 10px", fontSize: 11 }}
-                            onClick={() => addItem({ id: p.id, name: p.title, price, quantity: 1, image: img, isDemo: true })}
-                          >
-                            + {t('cl1_cart.add')}
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </section>
-              )}
             </div>
 
             {/* ═══ Cart Recommendations Section ═══ */}

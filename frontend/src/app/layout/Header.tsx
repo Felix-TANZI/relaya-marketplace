@@ -49,11 +49,8 @@ import { customerApi } from "@/services/api/customer";
 import { productsApi } from "@/services/api/products";
 import { ordersApi } from "@/services/api/orders";
 import { getUnreadSupportCount, SUPPORT_UPDATED_EVENT } from "@/lib/supportInbox";
-import {
-  ACCOUNT_UPDATED_EVENT,
-  formatXaf,
-  getBelivayAccount,
-} from "@/lib/belivayAccount";
+// Feuille de route D16 et DP-17 : le vrai Wallet, montré seulement quand il est ouvert.
+import { useWallet } from "@/features/profile/WalletPanel";
 
 /** Statuts d'une commande encore en cours de traitement ou d'acheminement. */
 const CLOSED_ORDER_STATUSES = [
@@ -143,7 +140,7 @@ export default function Header() {
   });
   const [activeOrdersCount, setActiveOrdersCount] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
-  const [walletBalance, setWalletBalance] = useState(0);
+  const wallet = useWallet();
   const [searchQuery, setSearchQuery] = useState("");
   const [lastSyncedSearch, setLastSyncedSearch] = useState<string | null>(null);
   const [searchFilterOpen, setSearchFilterOpen] = useState(false);
@@ -207,22 +204,16 @@ export default function Header() {
     };
   }, []);
 
-  /* Messages non lus et solde du Compte BelivaY — les deux pastilles du menu
-     profil. Les stores émettent un événement, le header n'a rien à sonder. */
+  /* Messages non lus — la pastille du menu profil. Le store émet un événement, le header n'a rien à sonder. */
   useEffect(() => {
-    const sync = () => {
-      setUnreadMessages(getUnreadSupportCount(t));
-      setWalletBalance(getBelivayAccount().availableXaf);
-    };
+    const sync = () => setUnreadMessages(getUnreadSupportCount(t));
 
     sync();
     window.addEventListener(SUPPORT_UPDATED_EVENT, sync);
-    window.addEventListener(ACCOUNT_UPDATED_EVENT, sync);
     window.addEventListener("storage", sync);
 
     return () => {
       window.removeEventListener(SUPPORT_UPDATED_EVENT, sync);
-      window.removeEventListener(ACCOUNT_UPDATED_EVENT, sync);
       window.removeEventListener("storage", sync);
     };
   }, [t]);
@@ -402,13 +393,14 @@ export default function Header() {
           icon: MessageSquare,
           badge: unreadMessages > 0 ? String(unreadMessages) : undefined,
         },
-        {
-          label: t("header_nav.belivay_account"),
+        // DP-17 : aucune mention du Wallet tant qu'il est fermé.
+        ...(wallet?.ouvert ? [{
+          label: "Mon Wallet",
           to: "/profile?panel=compte-belivay",
           icon: Wallet,
-          note: walletBalance > 0 ? formatXaf(walletBalance) : t("header.wallet"),
-          tone: "accent",
-        },
+          note: `${wallet.solde_xaf.toLocaleString("fr-FR")} F`,
+          tone: "accent" as const,
+        }] : []),
       ],
     },
     {

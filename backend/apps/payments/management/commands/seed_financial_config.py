@@ -121,16 +121,9 @@ DISTRIBUTION_RULES = [
         "priority": 10,
         "notes": "La commission est prelevee au niveau du sequestre, pas ici.",
     },
-    {
-        "config_key": "dist-transport-carrier",
-        "name": "Transport a l'entreprise de livraison",
-        "component": DistributionRule.Component.TRANSPORT,
-        "payee_type": DistributionRule.PayeeType.DELIVERY_COMPANY,
-        "basis": DistributionRule.Basis.PERCENT_OF_COMPONENT,
-        "value": Decimal("70.0000"),
-        "priority": 20,
-        "notes": "Part a arbitrer contractuellement.",
-    },
+    # Spec v2.1, R53 (decision du 27/10/2026) : plus de part du transport a l'entreprise de livraison ; elle est
+    # payee selon sa grille (apps.shipping.remuneration). L'ancienne regle « dist-transport-carrier » (70 %) n'est
+    # plus semee ; dans une base existante, la clore par la double validation de la configuration financiere.
     {
         "config_key": "dist-transport-platform",
         "name": "Part plateforme sur le transport",
@@ -230,9 +223,11 @@ PAYOUT_POLICIES = [
     {
         "config_key": "payout-default",
         "name": "Politique de versement par defaut",
-        "min_payout_xaf": 1000,
+        # R22.2, R43.1 : le vendredi « sans minimum » ; ce minimum ne vaut que pour un versement exceptionnel.
+        "min_payout_xaf": 0,
         "max_payout_xaf": 5_000_000,
-        "required_approvals": 1,
+        # DP-42 : deux validations pour tous les versements (le comptable puis le porteur).
+        "required_approvals": 2,
         "dual_approval_threshold_xaf": 100_000,
         "momo_change_cooling_hours": 72,
         "auto_execute_on_approval": False,

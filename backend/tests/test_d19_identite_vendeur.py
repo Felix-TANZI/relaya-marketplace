@@ -273,11 +273,16 @@ def test_un_visiteur_sans_compte_n_accede_pas(api_client, vendeur):
 def test_l_administration_peut_examiner_la_piece(api_client, vendeur, django_user_model):
     """Sans quoi personne ne pourrait valider une CNI."""
     piece = _deposer(vendeur, CNI_RECTO)
+    from django.contrib.auth.models import Group
+
     agent = django_user_model.objects.create_user(
         username="agent_kyc", email="agent.kyc@example.com", password="Kyc-2026",
         is_staff=True,
     )
     api_client.force_authenticate(agent)
+    # Revue du 29/10 (A2) : être du personnel ne suffit plus, il faut l'équipe conformité.
+    assert api_client.get(f"{PIECES}{piece.id}/file/").status_code == 404
+    agent.groups.add(Group.objects.get_or_create(name="gestion-conformite")[0])
 
     reponse = api_client.get(f"{PIECES}{piece.id}/file/")
 

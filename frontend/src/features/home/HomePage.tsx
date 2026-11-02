@@ -16,13 +16,9 @@ import {
   ArrowRight, Eye, LayoutGrid, ShoppingCart, ShieldCheck, Star, Truck,
   Flame, Sparkles, Globe, Gem,
 } from "lucide-react";
-import {
-  getV29Products,
-  getByCat,
-  getTopProducts,
-  getNewProducts,
-} from "@/data/v29Products";
 import { productsApi, type Product } from "@/services/api/products";
+import { http } from "@/services/api/http";
+import { interetsDejaProposes } from "@/features/interets/InteretsPage";
 import { HERO_MIN_HEIGHT } from "@/data/categoryThemes";
 import { productInStorefrontCategory } from "@/data/storefrontCategories";
 import useStorefrontCategories from "@/hooks/useStorefrontCategories";
@@ -49,16 +45,37 @@ export default function HomePage() {
   const [visibleCount, setVisibleCount] = useState(20);
   const [lastCat, setLastCat] = useState(activeCat);
   const [apiProducts, setApiProducts] = useState<Product[]>([]);
-  const [usingMockProducts, setUsingMockProducts] = useState(true);
+  // Feuille de route D9 : plus de jeu de démonstration, l'accueil montre le vrai catalogue.
+  const usingMockProducts = false;
+  /* D9 : ordre des univers servi par le serveur — les choix du client, puis ce qu'il regarde, met en favori et
+     achète ; sans choix, l'accueil général. */
+  const [ordreUnivers, setOrdreUnivers] = useState<string[]>([]);
 
-  /* Catégories de la vitrine : celles créées par l'admin, avec leurs images. */
-  const { categories: storefront } = useStorefrontCategories();
+  /* Catégories de la vitrine : celles créées par l'admin, avec leurs images, dans l'ordre des préférences. */
+  const { categories: vitrine } = useStorefrontCategories();
+  const storefront = useMemo(() => {
+    if (!ordreUnivers.length) return vitrine;
+    const rang = (slug: string) => {
+      const i = ordreUnivers.indexOf(slug);
+      return i < 0 ? ordreUnivers.length : i;
+    };
+    return [...vitrine].sort((a, b) => (a.slug === "all" ? -1 : b.slug === "all" ? 1 : rang(a.slug) - rang(b.slug)));
+  }, [vitrine, ordreUnivers]);
   const activeStorefront = storefront.find((category) => category.slug === activeCat);
-  /* Les produits de démonstration sont rangés par thème statique, pas par id. */
-  const mockSlug = activeStorefront?.themeSlug ?? activeCat;
+
   /* Une catégorie de l'admin montre toujours ses vrais produits (validés), jamais
      la démo : l'article qu'un vendeur y publie doit s'y retrouver. */
   const realCategoryActive = Boolean(activeStorefront?.node);
+
+  /* D9 : à la première ouverture d'un client connecté sans univers choisis, la page « Ce qui t'intéresse ». */
+  useEffect(() => {
+    if (interetsDejaProposes() || !localStorage.getItem("access_token")) return;
+    http<string[]>("/api/me/interets")
+      .then((univers) => {
+        if (!univers.length) navigate("/interets");
+      })
+      .catch(() => undefined);
+  }, [navigate]);
 
   useEffect(() => {
     let cancelled = false;
@@ -68,24 +85,23 @@ export default function HomePage() {
       .then((response) => {
         if (cancelled) return;
         const results = response.results ?? [];
-        if (results.length > 0) {
-          setApiProducts(results);
-          setUsingMockProducts(results.length < 20);
-        }
+        setApiProducts(results);
       })
       .catch(() => {
-        if (!cancelled) {
-          setApiProducts([]);
-          setUsingMockProducts(true);
-        }
+        if (!cancelled) setApiProducts([]);
       });
+    http<{ rangees: { univers: { slug: string } }[] }>("/api/catalog/home/?par_rangee=1")
+      .then((accueil) => {
+        if (!cancelled) setOrdreUnivers(accueil.rangees.map((rangee) => rangee.univers.slug));
+      })
+      .catch(() => undefined);
 
     return () => {
       cancelled = true;
     };
   }, [i18n.language]);
 
-  const sourceProducts = usingMockProducts ? getV29Products(t) : apiProducts;
+  const sourceProducts = apiProducts;
   /* La grille de l'accueil montre-t-elle des produits de démonstration ? */
   const filteredAreMock = usingMockProducts && !realCategoryActive;
 
@@ -97,11 +113,9 @@ export default function HomePage() {
         return apiProducts.filter((product) => productInStorefrontCategory(product, activeStorefront));
       }
 
-      if (usingMockProducts) return getByCat(mockSlug, t);
-
       return sourceProducts.filter((product) => productInStorefrontCategory(product, activeStorefront));
     },
-    [activeCat, activeStorefront, apiProducts, mockSlug, realCategoryActive, sourceProducts, usingMockProducts, t]
+    [activeCat, activeStorefront, apiProducts, realCategoryActive, sourceProducts]
   );
 
   const sortedProducts = useMemo(() => {
@@ -191,14 +205,10 @@ export default function HomePage() {
 
   /* ── Featured sections (horizontal scroll, top of page) ── */
   const popular = useMemo(() => {
-    if (filteredAreMock) {
-      return activeCat === "all" ? getTopProducts(t) : getByCat(mockSlug, t);
-    }
-
     return [...allFiltered]
       .sort((a, b) => (((b.discount_percent ?? b.discount ?? 0) * 1000) + (b.reviews_count ?? 0)) - (((a.discount_percent ?? a.discount ?? 0) * 1000) + (a.reviews_count ?? 0)))
       .slice(0, 24);
-  }, [activeCat, allFiltered, filteredAreMock, mockSlug, t]);
+  }, [allFiltered]);
 
   /* « À la une » — les mieux notés d'abord, c'est la vitrine de la page mobile. */
   const featured = useMemo(
@@ -243,13 +253,11 @@ export default function HomePage() {
           mock: usingMockProducts && !theme.node,
           products: theme.node
             ? apiProducts.filter((product) => productInStorefrontCategory(product, theme))
-            : usingMockProducts
-              ? (theme.themeSlug ? getByCat(theme.themeSlug, t) : [])
-              : sourceProducts.filter((product) => productInStorefrontCategory(product, theme)),
+            : sourceProducts.filter((product) => productInStorefrontCategory(product, theme)),
         }))
         .filter((entry) => entry.products.length >= 4)
         .slice(0, 6),
-    [apiProducts, sourceProducts, storefront, usingMockProducts, t],
+    [apiProducts, sourceProducts, storefront, usingMockProducts],
   );
 
   /* Chiffres du bandeau promotions, calculés sur le catalogue réellement affiché. */
@@ -275,12 +283,10 @@ export default function HomePage() {
   }, [sourceProducts]);
 
   const newProds = useMemo(() => {
-    if (usingMockProducts) return getNewProducts(t);
-
     return [...sourceProducts]
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 12);
-  }, [sourceProducts, usingMockProducts, t]);
+  }, [sourceProducts]);
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#fff7ef_0%,#fff 14%,#f8fafc 100%)] dark:bg-gray-950">

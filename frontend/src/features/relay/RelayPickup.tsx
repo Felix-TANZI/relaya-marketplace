@@ -87,6 +87,8 @@ export type BuyerInspection = "ACCEPTED" | "SKIPPED";
 
 export interface HandOverInput {
   parcelIds: number[];
+  /** Sécurité avant main 2 (R66.2) : le QR (ou la référence) du colis scanné avant le code. */
+  colis: string;
   code: string;
   inspection: BuyerInspection;
   photo: File;
@@ -474,25 +476,33 @@ function IssueSheet({
  * chiffre et ou l'on accuse le client d'avoir le mauvais code.
  */
 function PickupScanSheet({
+  mode = "client",
   onCancel,
   onDecoded,
 }: {
+  /** « colis » : le QR du colis (R66.2), transmis tel quel au serveur ; « client » : le code de retrait. */
+  mode?: "colis" | "client";
   onCancel: () => void;
   onDecoded: (code: string) => void;
 }) {
   const { videoRef, canvasRef, error, streaming } = useQrCamera({
     onDecode: (value) => {
-      const code = value.trim().replace(/[^a-z0-9]/gi, "").toUpperCase().slice(0, 6);
+      const code = mode === "colis"
+        ? value.trim()
+        : value.trim().replace(/[^a-z0-9]/gi, "").toUpperCase().slice(0, 6);
       if (code) onDecoded(code);
     },
   });
+  const titre = mode === "colis" ? "Scanner le QR du colis" : "Scanner le QR du client";
 
   return (
-    <RelaySheet label="Scanner le QR du client" onClose={onCancel} size="sm">
+    <RelaySheet label={titre} onClose={onCancel} size="sm">
       <RelaySheetHeader
         icon={QrCode}
-        title="Scanner le QR du client"
-        subtitle="Le client l'affiche dans sa commande. Il porte le même code que son SMS."
+        title={titre}
+        subtitle={mode === "colis"
+          ? "Le QR collé sur le colis, sorti du casier. Le code du client se vérifie ensuite sur ce colis."
+          : "Le client l'affiche dans sa commande. Il porte le même code que son SMS."}
         onClose={onCancel}
       />
 
@@ -548,7 +558,7 @@ export default function RelayPickup({
    * blocage 24 h (§8.2) doivent survivre a un rechargement de page et etre
    * visibles de BelivaY, donc vivre cote serveur.
    */
-  onCheckCode: (code: string) => Promise<PickupCodeCheck>;
+  onCheckCode: (colis: string, code: string) => Promise<PickupCodeCheck>;
   onHandOver: (input: HandOverInput) => Promise<boolean>;
   onIssue: (input: CounterIssueInput) => Promise<boolean>;
   /**
@@ -570,6 +580,14 @@ export default function RelayPickup({
   const [onCounter, setOnCounter] = useState<number[]>([]);
   const [sheet, setSheet] = useState<BuyerInspection | "ISSUE" | null>(null);
   const [scanOpen, setScanOpen] = useState(false);
+  /**
+   * Sécurité avant main 2 (R66.2) : le colis d'abord, scanné (ou sa référence
+   * tapée si la caméra manque), puis le code. Les essais faux se comptent sur
+   * ce colis, et le serveur limite aussi les codes faux de tout le relais.
+   */
+  const [colis, setColis] = useState("");
+  const [reference, setReference] = useState("");
+  const [scanColisOpen, setScanColisOpen] = useState(false);
   const [signatureHelp, setSignatureHelp] = useState(false);
   const [checking, setChecking] = useState(false);
   const [check, setCheck] = useState<PickupCodeCheck | null>(null);
@@ -602,7 +620,7 @@ export default function RelayPickup({
   const runCheck = (next: string) => {
     checkedCodeRef.current = next;
     setChecking(true);
-    onCheckCode(next)
+    onCheckCode(colis, next)
       .then((result) => { if (checkedCodeRef.current === next) setCheck(result); })
       .catch(() => { if (checkedCodeRef.current === next) setCheck(null); })
       .finally(() => { if (checkedCodeRef.current === next) setChecking(false); });
@@ -640,6 +658,7 @@ export default function RelayPickup({
   ) => {
     const success = await onHandOver({
       parcelIds: matched.map((parcel) => parcel.id),
+      colis,
       code: code.toUpperCase(),
       inspection,
       authorizedName: matched.find((parcel) => parcel.authorizedName)?.authorizedName || "",
@@ -649,6 +668,7 @@ export default function RelayPickup({
     if (success) {
       setSheet(null);
       changeCode("");
+      setColis("");
     }
   };
 
@@ -711,10 +731,51 @@ export default function RelayPickup({
         </section>
       ) : null}
 
-      {!resolved && !locked ? (
+      {!colis ? (
         <section className="rounded-[14px] border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
           <label className="block text-[11px] font-black uppercase leading-none tracking-[0.1em] text-slate-500 dark:text-slate-400">
-            Code de retrait du client
+            1. Le colis du client
+          </label>
+          <button
+            type="button"
+            onClick={() => setScanColisOpen(true)}
+            className="mt-3 flex w-full items-center justify-center gap-2.5 rounded-[12px] bg-[#2456D6] px-4 py-3.5 text-[15px] font-black text-white transition active:scale-[.97]"
+          >
+            <QrCode size={18} strokeWidth={2.2} /> Scanner le QR du colis
+          </button>
+          <div className="mt-3 flex gap-2">
+            <input
+              value={reference}
+              onChange={(event) => setReference(event.target.value.toUpperCase())}
+              autoComplete="off"
+              placeholder="ou la référence : BVY-12-34"
+              className="min-w-0 flex-1 rounded-[12px] border border-slate-200 bg-white px-3 py-2.5 text-[14px] font-bold text-slate-900 outline-none focus:border-[#2456D6] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+            />
+            <button
+              type="button"
+              disabled={!/^BVY?-\d+-\d+$/.test(reference.trim())}
+              onClick={() => { setColis(reference.trim()); setReference(""); }}
+              className="rounded-[12px] border border-slate-200 px-4 text-[14px] font-black text-slate-700 disabled:opacity-40 dark:border-slate-700 dark:text-slate-100"
+            >
+              OK
+            </button>
+          </div>
+          <p className="mt-3 text-[13.5px] font-medium leading-[1.5] text-slate-500 dark:text-slate-400">
+            Sortez le colis du casier et scannez son QR : le code du client se vérifie ensuite sur ce colis précis.
+          </p>
+        </section>
+      ) : null}
+
+      {colis && !resolved && !locked ? (
+        <section className="rounded-[14px] border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
+          <div className="mb-3 flex items-center justify-between gap-2 text-[13px] font-semibold text-slate-500 dark:text-slate-400">
+            <span>Colis scanné ✓</span>
+            <button type="button" className="font-black text-[#2456D6]" onClick={() => { changeCode(""); setColis(""); }}>
+              Changer de colis
+            </button>
+          </div>
+          <label className="block text-[11px] font-black uppercase leading-none tracking-[0.1em] text-slate-500 dark:text-slate-400">
+            2. Code de retrait du client
           </label>
           <input
             value={code}
@@ -1000,6 +1061,18 @@ export default function RelayPickup({
             J'ai compris
           </button>
         </RelaySheet>
+      ) : null}
+
+      {scanColisOpen ? (
+        <PickupScanSheet
+          mode="colis"
+          onCancel={() => setScanColisOpen(false)}
+          onDecoded={(value) => {
+            setScanColisOpen(false);
+            changeCode("");
+            setColis(value);
+          }}
+        />
       ) : null}
 
       {scanOpen ? (

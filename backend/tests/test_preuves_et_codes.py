@@ -49,7 +49,14 @@ def _colis(relais, statut):
     return colis
 
 
-def _agir(colis, action, **codes):
+def _agir(colis, action, photo_prise=True, **codes):
+    """Comme l'application : la photo de l'étape part avant l'action (R66.3), sauf si le test veut s'en passer."""
+    from tests.aide_preuves import photo
+
+    etape = {"PICKED_UP": ShipmentEvidence.Stage.COURIER_PICKUP_VENDOR,
+             "DELIVERED": ShipmentEvidence.Stage.CUSTOMER_DELIVERY}.get(action)
+    if photo_prise and etape and not colis.evidences.filter(stage=etape).exclude(file="").exists():
+        photo(colis, etape, colis.courier.user)
     s = CourierShipmentActionSerializer(data={"action": action, **codes},
                                         context={"shipment": colis, "request": SimpleNamespace(user=colis.courier.user)})
     s.is_valid(raise_exception=True)
@@ -77,6 +84,9 @@ def test_trois_essais_faux_bloquent_le_code():
 def test_le_relais_receptionne_avec_le_code_de_depot():
     colis = _colis(True, Shipment.Status.PICKED_UP)
     relais = colis.order.relay_point
+    from tests.aide_preuves import photo
+
+    photo(colis, ShipmentEvidence.Stage.RELAY_RECEIVED, relais.user)  # R66.3
     sans_code = RelayParcelReceiveSerializer(data={"shipment_id": colis.id}, context={"relay_point": relais})
     sans_code.is_valid(raise_exception=True)
     with pytest.raises(serializers.ValidationError, match="Code de dépôt incorrect"):
@@ -110,10 +120,17 @@ def test_chaque_code_n_est_vu_que_par_son_destinataire():
 
 
 def test_la_preuve_manquante_designe_le_responsable():
+    """Depuis R66.3 côté serveur, l'application ne peut plus remettre sans photo ; une remise sans preuve ne vient
+    que de l'historique (avant la règle) ou d'une saisie hors application. La chaîne de garde désigne toujours
+    l'acteur qui devait prendre la photo (D15)."""
+    from tests.aide_preuves import photo
+
     colis = _colis(False, Shipment.Status.OUT_FOR_DELIVERY)
-    ShipmentEvidence.objects.create(shipment=colis, stage=ShipmentEvidence.Stage.COURIER_PICKUP_VENDOR,
-                                    uploaded_by=colis.courier.user, actor_role="COURIER")
-    _agir(colis, "DELIVERED", delivery_code=colis.ensure_delivery_code())
+    photo(colis, ShipmentEvidence.Stage.COURIER_PICKUP_VENDOR, colis.courier.user)
+    with pytest.raises(serializers.ValidationError, match="Photo obligatoire"):
+        _agir(colis, "DELIVERED", photo_prise=False, delivery_code=colis.ensure_delivery_code())   # R66.3
+    Shipment.objects.filter(pk=colis.pk).update(status=Shipment.Status.DELIVERED)          # remise sans preuve
+    colis.refresh_from_db()
     chaine = chaine_de_garde(colis)
     assert chaine["responsable"] == "livreur"                                            # D15, R66.3
     assert chaine["etape_sans_preuve"] == "CUSTOMER_DELIVERY"

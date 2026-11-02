@@ -1327,7 +1327,10 @@ def admin_create_user(request):
             is_active=True,
         )
     elif role != "client":
-        user.delete()
+        # Revue du 1/11 (noté en chemin) : un rôle invalide ne supprime que le compte qu'on venait de créer, jamais
+        # un compte existant désigné par existing_user_id / existing_identifier.
+        if is_new_user:
+            user.delete()
         return Response({"detail": "Role invalide."}, status=status.HTTP_400_BAD_REQUEST)
 
     # Revue du 1/11 : chaque création (ou rattachement d'un compte existant) est inscrite au journal d'audit, avec

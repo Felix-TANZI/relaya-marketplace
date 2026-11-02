@@ -74,3 +74,11 @@ def test_la_direction_seule_ne_cree_pas_les_autres_roles():
     r = c.post(URL, {"role": "client", "username": "client_dir", "password": "MotDePasse-123"}, format="json")
     assert r.status_code == 403
     assert not User.objects.filter(username="client_dir").exists()
+
+
+def test_un_role_invalide_ne_supprime_jamais_un_compte_existant():
+    _, c = _membre("pilote4", "gestion-pilotage")
+    existant = User.objects.create_user("compte_existant", password="p")
+    r = c.post(URL, {"role": "inconnu", "existing_user_id": existant.pk}, format="json")
+    assert r.status_code == 400
+    assert User.objects.filter(pk=existant.pk).exists()

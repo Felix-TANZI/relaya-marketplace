@@ -1096,15 +1096,40 @@ def admin_delete_courier(request, pk):
     )
 
 
+class PilotageOuDirection(Partie("pilotage")):
+    """Revue du 1/11 : l'écran de création s'ouvre au pilotage et à la Direction ; le rôle demandé décide ensuite
+    (« admin » : Direction seule ; les autres rôles : pilotage)."""
+
+    def has_permission(self, request, view):
+        from apps.payments.settlements.dp42 import est_direction
+
+        return super().has_permission(request, view) or est_direction(request.user)
+
+
 @extend_schema(tags=["Admin"], summary="Create user by role")
 @api_view(["POST"])
-@permission_classes([Partie("pilotage")])
+@permission_classes([PilotageOuDirection])
 def admin_create_user(request):
     from apps.vendors.models import VendorProfile
 
     from .models import DeliveryOrganizationProfile, RelayPointProfile
 
     role = request.data.get("role", "client")
+    # Revue du 1/11 (sécurité, P0) : seule la Direction crée ou promeut un compte « admin » (même règle que DP-42,
+    # apps.payments.settlements.dp42.est_direction) ; l'équipe pilotage garde les autres rôles. Vérifié AVANT toute
+    # écriture : un refus ne laisse ni compte créé, ni compte existant modifié.
+    if role == "admin":
+        from apps.payments.settlements.dp42 import est_direction
+
+        if not est_direction(request.user):
+            return Response({"detail": "Seule la Direction peut créer ou promouvoir un compte administrateur."},
+                            status=status.HTTP_403_FORBIDDEN)
+    else:
+        from apps.common.droits import a_la_partie
+
+        if not a_la_partie(request.user, "pilotage"):
+            return Response({"detail": "Écran réservé à l'équipe « pilotage » pour ce rôle."},
+                            status=status.HTTP_403_FORBIDDEN)
     username = request.data.get("username", "").strip()
     email = request.data.get("email", "").strip()
     password = request.data.get("password", "")
@@ -1172,8 +1197,11 @@ def admin_create_user(request):
         return Response({"detail": message}, status=status.HTTP_400_BAD_REQUEST)
 
     if role == "admin":
+        # Revue du 1/11 : is_superuser n'est jamais accordé par l'API, quoi que contienne la requête ; le
+        # superutilisateur se crée seulement en ligne de commande sur le serveur (createsuperuser). Les droits d'un
+        # administrateur viennent de ses groupes (apps.common.droits).
         user.is_staff = True
-        user.is_superuser = bool(request.data.get("is_superuser", True))
+        user.is_superuser = False
         user.save(update_fields=["is_staff", "is_superuser"])
     elif role == "vendor":
         if hasattr(user, "vendor_profile"):
@@ -1302,6 +1330,20 @@ def admin_create_user(request):
         user.delete()
         return Response({"detail": "Role invalide."}, status=status.HTTP_400_BAD_REQUEST)
 
+    # Revue du 1/11 : chaque création (ou rattachement d'un compte existant) est inscrite au journal d'audit, avec
+    # son auteur et le rôle donné.
+    from django.contrib.contenttypes.models import ContentType
+
+    from apps.common.models import AuditLog
+
+    AuditLog.objects.create(
+        action=AuditLog.Action.CREATE if is_new_user else AuditLog.Action.UPDATE,
+        content_type=ContentType.objects.get_for_model(User), object_id=str(user.pk),
+        object_repr=f"Compte {user.username} · rôle {role}"[:255], actor=request.user,
+        changes={"role": role, "nouveau_compte": is_new_user, "is_staff": user.is_staff,
+                 "is_superuser": user.is_superuser, "ecran": "admin_create_user"},
+        ip_address=request.META.get("REMOTE_ADDR") or None,
+    )
     return Response(UserSerializer(user, context={"request": request}).data, status=status.HTTP_201_CREATED)
 
 

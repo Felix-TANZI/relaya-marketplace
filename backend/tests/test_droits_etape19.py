@@ -49,6 +49,8 @@ IS_STAFF_AUTORISES = [
      "attribution du statut à la création d'un compte (démonstration, création par l'administration)"),
     ("accounts/views.py", r'user\.save\(update_fields=\["is_staff", "is_superuser"\]\)',
      "enregistrement de ce statut, même création de compte"),
+    ("accounts/views.py", r'"is_staff": user\.is_staff,$',
+     "valeur inscrite au journal d'audit de la création du compte (revue du 1/11), aucun droit"),
     ("vendors/views.py", r"filter\(.*is_staff=(True|False)",
      "filtre de requête pour compter ou cibler des comptes (statistiques, envois), aucun droit"),
     ("vendors/views.py", r"^is_active=True, is_staff=False",

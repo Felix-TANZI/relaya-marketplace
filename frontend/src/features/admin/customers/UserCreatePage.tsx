@@ -52,8 +52,6 @@ interface FormData {
   opening_hours:        string;
   storage_capacity:     string;
   relay_status:         string;
-  // Admin
-  is_superuser:         boolean;
 }
 
 interface DeliveryOrganizationOption {
@@ -118,7 +116,6 @@ export default function UserCreatePage() {
     zones: '', vehicle_type: 'MOTORBIKE', id_card: '', delivery_organization_id: '', is_approved: true,
     company_name: '', manager_name: '', contract_reference: '', organization_status: 'APPROVED',
     relay_point_name: '', relay_code: '', opening_hours: '', storage_capacity: '', relay_status: 'APPROVED',
-    is_superuser: false,
   });
   const [deliveryOrganizations, setDeliveryOrganizations] = useState<DeliveryOrganizationOption[]>([]);
 
@@ -200,7 +197,6 @@ export default function UserCreatePage() {
           id_card:              form.id_card.trim(),
           delivery_organization_id: form.delivery_organization_id,
           is_approved:          form.is_approved,
-          is_superuser:         form.is_superuser,
         }),
       });
       toastRef.current(t('ad2_user_create.toast_account_created', { username: form.username }), 'success');
@@ -594,15 +590,11 @@ export default function UserCreatePage() {
             </>
           )}
 
-          {/* Champs spécifiques ADMIN */}
+          {/* Rôle ADMIN (revue du 1/11) : réservé à la Direction ; jamais superutilisateur par l'application. Les
+              droits viennent des groupes de l'équipe, à donner ensuite dans la fiche du compte. */}
           {form.role === 'admin' && (
-            <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
-              <input type="checkbox" id="is_superuser" checked={form.is_superuser}
-                onChange={e => fld('is_superuser', e.target.checked)}
-                style={{ width: 15, height: 15, accentColor: T.red, cursor: 'pointer' }} />
-              <label htmlFor="is_superuser" style={{ fontSize: 13, color: T.text, cursor: 'pointer' }}>
-                {t('ad2_user_create.checkbox_superuser')}
-              </label>
+            <div className="p-3 rounded-xl" style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', fontSize: 13, color: T.text }}>
+              {t('ad2_user_create.note_admin_direction')}
             </div>
           )}
         </div>

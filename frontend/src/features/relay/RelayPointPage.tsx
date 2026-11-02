@@ -1418,7 +1418,7 @@ export default function RelayPointPage() {
    * les colis acceptes, et marquer les autres comme restes est plus juste
    * que d'annuler tout le lot.
    */
-  const validateOutbound = async (ids: number[]): Promise<boolean> => {
+  const validateOutbound = async (ids: number[], photo: File): Promise<boolean> => {
     if (ids.length === 0) return false;
     setOperationBusy(true);
     setOperationMessage(null);
@@ -1426,6 +1426,14 @@ export default function RelayPointPage() {
     try {
       for (const parcelId of ids) {
         try {
+          // R66.3 (revue du 1/11) : la photo de la sortie d'abord, rattachée à ce colis ; le serveur refuse la sortie
+          // sans elle.
+          const photoForm = new FormData();
+          photoForm.append("parcel_id", String(parcelId));
+          photoForm.append("stage", "RELAY_RETURNED");
+          photoForm.append("file", photo, photo.name || "sortie.jpg");
+          await http("/api/shipping/relay-point/evidence/", { method: "POST", body: photoForm });
+
           await http("/api/shipping/relay-point/return/", {
             method: "POST",
             body: JSON.stringify({

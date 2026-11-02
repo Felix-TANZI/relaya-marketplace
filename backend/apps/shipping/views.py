@@ -687,6 +687,7 @@ class RelayPointParcelEvidenceUploadView(APIView):
         ShipmentEvidence.Stage.RELAY_RELEASED,
         ShipmentEvidence.Stage.RELAY_RELEASED_SIGNATURE,
         ShipmentEvidence.Stage.RELAY_UNPACKING,  # D15 : déballage contesté, photographié devant le client
+        ShipmentEvidence.Stage.RELAY_RETURNED,  # R66.3 (revue du 1/11) : sortie du relais en retour
     }
 
     def post(self, request):

@@ -25,6 +25,8 @@ def _etapes(shipment):
             (S.RELAY_RECEIVED, "Réception au point relais", "relais", bool(colis and colis.received_at)),
             (S.RELAY_RELEASED, "Remise au client au comptoir", "relais", bool(colis and colis.picked_up_at)),
         ]
+        if colis and colis.returned_at:  # revue du 1/11 (R66.3) : le colis a quitté le relais en retour
+            etapes.append((S.RELAY_RETURNED, "Sortie du relais en retour", "relais", True))
     else:
         livre = shipment.status == Shipment.Status.DELIVERED or ShipmentEvent.objects.filter(
             shipment=shipment, status=Shipment.Status.DELIVERED, actor_role="COURIER").exists()

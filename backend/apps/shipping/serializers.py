@@ -924,18 +924,44 @@ class RelayParcelReturnSerializer(serializers.Serializer):
     destination = serializers.ChoiceField(choices=["VENDOR", "BELIVAY"])
     proof_note = serializers.CharField(required=False, allow_blank=True, default="")
 
+    # Revue du 1/11 (R66.3) : seul un colis encore dans le local peut en sortir en retour — jamais un colis déjà remis
+    # au client, déjà reparti, ou seulement attendu.
+    SORTABLES = (RelayParcel.Status.RECEIVED, RelayParcel.Status.STORED, RelayParcel.Status.RETURN_REQUESTED,
+                 RelayParcel.Status.REFUSED)
+
     def save(self, **kwargs):
+        from django.contrib.contenttypes.models import ContentType
+
+        from apps.common.models import AuditLog
+        from apps.shipping.preuves import exiger_photo
+
         relay_point = self.context["relay_point"]
         parcel = get_object_or_404(
             RelayParcel.objects.select_related("shipment", "relay_point"),
             id=self.validated_data["parcel_id"],
             relay_point=relay_point,
         )
+        if parcel.status not in self.SORTABLES:
+            raise serializers.ValidationError(
+                {"parcel_id": f"Ce colis n'est plus dans votre local ({parcel.get_status_display().lower()})."},
+                code="colis_absent")
+        # R66.3 : changement de main, comme les autres (revue du 29/10, C1) — la photo de la sortie part avant.
+        exiger_photo(parcel.shipment, ShipmentEvidence.Stage.RELAY_RETURNED)
         destination = self.validated_data["destination"]
+        avant = parcel.status
         parcel.status = RelayParcel.Status.RETURNED_TO_VENDOR if destination == "VENDOR" else RelayParcel.Status.RETURNED_TO_BELIVAY
         parcel.proof_note = self.validated_data.get("proof_note", parcel.proof_note)
         parcel.returned_at = timezone.now()
         parcel.save()
+
+        user = self.context.get("user")
+        AuditLog.objects.create(  # revue du 1/11 : la sortie en retour au journal d'audit, avec son auteur
+            action=AuditLog.Action.UPDATE, content_type=ContentType.objects.get_for_model(RelayParcel),
+            object_id=str(parcel.pk), object_repr=f"Retour depuis le relais · colis {parcel.pk}"[:255],
+            actor=user if getattr(user, "is_authenticated", False) else None,
+            changes={"de": avant, "vers": parcel.status, "destination": destination, "relais": relay_point.pk,
+                     "regle": "R66.3"},
+        )
 
         ShipmentEvent.record(
             shipment=parcel.shipment,

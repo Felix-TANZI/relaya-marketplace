@@ -533,6 +533,8 @@ class ShipmentEvidence(models.Model):
         # Spec v2.1, R51.1 : preuve de l'absence du client (photo devant l'adresse)
         CUSTOMER_ABSENT = "CUSTOMER_ABSENT", "Client absent"
         RETURN_DEPOSIT = "RETURN_DEPOSIT", "Dépôt retour"
+        # R66.3, revue du 1/11 : le colis quitte le relais en retour (vers le vendeur ou BelivaY)
+        RELAY_RETURNED = "RELAY_RETURNED", "Sortie du relais en retour"
 
     shipment = models.ForeignKey(Shipment, on_delete=models.CASCADE, related_name="evidences")
     order_item = models.ForeignKey(

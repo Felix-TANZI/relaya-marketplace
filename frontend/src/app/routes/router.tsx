@@ -217,6 +217,10 @@ const NotificationsAdminPage = lazy(() => import('@/features/admin/system/Notifi
 const LogsPage = lazy(() => import('@/features/admin/system/LogsPage'));
 const SettingsPage = lazy(() => import('@/features/admin/SettingsPage'));
 const UserCreatePage = lazy(() => import('@/features/admin/customers/UserCreatePage'));
+// DEV-SRV-01, T07-4/5 : écrans de l'agent de terrain.
+const AgentVendeursPage = lazy(() => import('@/features/admin/terrain/AgentVendeursPage'));
+const AgentInscriptionPage = lazy(() => import('@/features/admin/terrain/AgentInscriptionPage'));
+const AgentVendeurPage = lazy(() => import('@/features/admin/terrain/AgentVendeurPage'));
 // ── Live ─────────────────────────────────────────────────────────────────────
 const LiveUsersPage = lazy(() => import('@/features/admin/LiveUsersPage'));
 const LiveMapPage = lazy(() => import('@/features/admin/LiveMapPage'));
@@ -466,6 +470,11 @@ export const router = createBrowserRouter([
       { path: 'vendors/certifications', element: <CertificationsPage /> },
       { path: 'vendors/modifications',  element: <ModificationsPage /> },
       { path: 'vendors/:id',            element: <VendorDetailPage /> },
+
+      // ── AGENT DE TERRAIN (DEV-SRV-01, T07-4/5) ──────────────────────────
+      { path: 'terrain',          element: <AgentVendeursPage /> },
+      { path: 'terrain/inscrire', element: <AgentInscriptionPage /> },
+      { path: 'terrain/:id',      element: <AgentVendeurPage /> },
 
     
       // ── DELIVERY MANAGEMENT ───────────────────────────────────────────────

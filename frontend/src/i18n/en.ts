@@ -1388,6 +1388,8 @@
     vendors_subscriptions:'Subscriptions',
     vendors_certifications:'Certifications',
     vendors_modifications:'Shop Modifications',
+    agent_vendors:        'My registrations (field)',
+    agent_register:       'Register a seller',
     section_deliveries:   'Delivery Management',
     deliveries_overview:  'Overview',
     deliveries_list:      'All Drivers',

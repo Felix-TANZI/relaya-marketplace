@@ -78,6 +78,9 @@ const SECTIONS: NavSection[] = [
       { key: 'vendors_list',          path: '/admin/vendors',               icon: Store, end: true },
       { key: 'vendors_map',           path: '/admin/vendors/map',           icon: MapPin },
       { key: 'vendors_kyc',           path: '/admin/vendors/kyc',           icon: FileCheck },
+      // DEV-SRV-01, T07-4 : agents de terrain (groupe agents-terrain).
+      { key: 'agent_vendors',         path: '/admin/terrain',               icon: Store, end: true },
+      { key: 'agent_register',        path: '/admin/terrain/inscrire',      icon: UserPlus },
       // ─────────────────────────────────────────────────────────────────
       // ANCIEN SYSTEME DE RETRAIT — neutralise cote backend.
       //
@@ -199,7 +202,7 @@ const PARTIE_DE: Record<string, string> = {
   customers_loyalty: 'clients', customers_broadcast: 'clients',
   vendors_overview: 'vendeurs', vendors_list: 'vendeurs', vendors_map: 'vendeurs', vendors_kyc: 'conformite',
   vendors_withdrawals: 'finance', vendors_subscriptions: 'vendeurs', vendors_certifications: 'vendeurs',
-  vendors_modifications: 'vendeurs',
+  vendors_modifications: 'vendeurs', agent_vendors: 'terrain', agent_register: 'terrain',
   catalog_categories: 'catalogue', catalog_variants: 'catalogue', catalog_brands: 'catalogue',
   catalog_attributes: 'catalogue', catalog_colors: 'catalogue',
   deliveries_overview: 'logistique', deliveries_list: 'logistique', deliveries_organization: 'logistique',

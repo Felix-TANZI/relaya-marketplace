@@ -8,6 +8,7 @@ from . import chart_views
 from . import views_money_v2
 from . import vd07_litiges
 from . import vd07_retours
+from . import views_agent
 
 app_name = 'vendors'
 
@@ -123,6 +124,13 @@ urlpatterns = [
 
     # AVIS VENDEUR
     path('reviews/',                                views.vendor_reviews,       name='vendor-reviews'),
+
+    #  AGENT DE TERRAIN (DEV-SRV-01, T07-4/5) — inscription d'un vendeur depuis admin.belivay.com
+    path('agent/vendeurs',                          views_agent.agent_vendeurs,        name='agent-vendeurs'),
+    path('agent/vendeurs/<int:vendor_id>',          views_agent.agent_vendeur,         name='agent-vendeur'),
+    path('agent/vendeurs/<int:vendor_id>/pieces',   views_agent.agent_vendeur_piece,   name='agent-vendeur-piece'),
+    path('agent/vendeurs/<int:vendor_id>/produits', views_agent.agent_vendeur_produit, name='agent-vendeur-produit'),
+    path('agent/vendeurs/<int:vendor_id>/acces',    views_agent.agent_vendeur_acces,   name='agent-vendeur-acces'),
 
     #  ADMINISTRATION
     path('admin/vendors/',                           views.admin_list_vendors,       name='admin-list-vendors'),

@@ -439,18 +439,6 @@ class VendorLocation(models.Model):
     created_at           = models.DateTimeField(auto_now_add=True)
     updated_at           = models.DateTimeField(auto_now=True)
 
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        # La zone de tarification du vendeur suit le quartier de son emplacement principal.
-        if self.is_main and self.quartier:
-            from apps.shipping.models import Zone
-            from apps.shipping.zones import quartier as ligne_quartier
-
-            q = ligne_quartier(self.quartier)
-            zone = Zone.objects.filter(code=q["zone"]).first() if q else None
-            if zone is not None and self.vendor.zone_id != zone.id:
-                VendorProfile.objects.filter(pk=self.vendor_id).update(zone=zone)
-
     class Meta:
         ordering = ['-is_main', 'name']
         verbose_name = "Emplacement de boutique"
@@ -467,6 +455,16 @@ class VendorLocation(models.Model):
         super().save(*args, **kwargs)
         if self.is_main:
             VendorLocation.objects.filter(vendor=self.vendor, is_main=True).exclude(pk=self.pk).update(is_main=False)
+            # La zone de tarification du vendeur suit le quartier de son emplacement principal. (DEV-SRV-01 : cette
+            # règle vivait dans une première méthode save() que la seconde masquait ; elle n'avait jamais tourné.)
+            if self.quartier:
+                from apps.shipping.models import Zone
+                from apps.shipping.zones import quartier as ligne_quartier
+
+                q = ligne_quartier(self.quartier)
+                zone = Zone.objects.filter(code=q["zone"]).first() if q else None
+                if zone is not None and self.vendor.zone_id != zone.id:
+                    VendorProfile.objects.filter(pk=self.vendor_id).update(zone=zone)
 
 
 # ─── NOTE INTERNE VENDEUR / COMMANDE ─────────────────────────────────────────
@@ -892,3 +890,23 @@ class VendorReward(models.Model):
         if self.available_until and timezone.now() > self.available_until:
             return False
         return True
+
+
+class InscriptionParAgent(models.Model):
+    """
+    DEV-SRV-01, T07-4 : « l'agent crée le compte au nom du vendeur, photographie sa pièce d'identité sur place et
+    saisit son catalogue ». Garde qui a inscrit la boutique : l'agent ne travaille que sur les vendeurs qu'il a
+    inscrits (apps.vendors.agent_terrain), et le journal d'audit garde le détail de chaque geste.
+    """
+
+    vendor = models.OneToOneField(VendorProfile, on_delete=models.CASCADE, related_name="inscription_par_agent")
+    agent = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="vendeurs_inscrits")
+    cree_le = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-cree_le"]
+        verbose_name = "Inscription par un agent"
+        verbose_name_plural = "Inscriptions par un agent"
+
+    def __str__(self):
+        return f"{self.vendor.business_name} inscrit par {self.agent_id}"

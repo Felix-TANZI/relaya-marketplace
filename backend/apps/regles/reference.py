@@ -32,6 +32,7 @@ REGLAGES_FEUILLE_DE_ROUTE = {
     "r_envoi_interrompu_min",   # revue 29/10 (C3) : envoi « en cours » → issue inconnue
     "r_apple_nonce_s",          # revue 29/10 (C3) : durée de vie du nonce Apple
     "r_apple_ticket_s",         # revue 29/10 (C3) : durée de vie du ticket Apple Android
+    "r_acces_provisoire_h",     # DEV-SRV-01 (T07-5) : validité du mot de passe provisoire remis par l'agent
 }
 
 

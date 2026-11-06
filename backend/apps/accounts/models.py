@@ -1136,3 +1136,28 @@ class AppleIdentity(models.Model):
 
     def __str__(self):
         return f"Apple {self.subject[-8:]} → {self.user_id}"
+
+
+class AccesProvisoire(models.Model):
+    """
+    DEV-SRV-01, T07-5 : le vendeur inscrit par un agent reçoit son accès par un mot de passe provisoire, remis sur
+    place (décision du porteur du 2026-11-06 : aucun SMS ne part encore). Le mot de passe expire après
+    r_acces_provisoire_h et doit être changé à la première connexion ; la fiche disparaît dès que le mot de passe
+    change, quel que soit l'écran (apps.accounts.acces_provisoire).
+    """
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="acces_provisoire")
+    cree_par = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
+    expire_le = models.DateTimeField()
+    cree_le = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Accès provisoire"
+        verbose_name_plural = "Accès provisoires"
+
+    def __str__(self):
+        return f"Accès provisoire de {self.user_id} (expire le {self.expire_le:%d/%m/%Y %H:%M})"
+
+    @property
+    def expire(self) -> bool:
+        return timezone.now() >= self.expire_le

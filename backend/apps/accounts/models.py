@@ -8,6 +8,7 @@ import secrets
 
 from django.utils import timezone
 from apps.catalog.models import Product
+from apps.common.storage import pieces_confidentielles
 
 
 class CourierProfile(models.Model):
@@ -157,7 +158,8 @@ class ComplianceDocument(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="compliance_documents")
     owner_role = models.CharField(max_length=30, choices=OwnerRole.choices)
     document_type = models.CharField(max_length=60)
-    file = models.FileField(upload_to="compliance/%Y/%m/")
+    # DEV-SRV-01, R8 : sur R2, jamais sur le disque du serveur (apps.common.storage).
+    file = models.FileField(upload_to="compliance/%Y/%m/", storage=pieces_confidentielles)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     review_note = models.CharField(max_length=255, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)

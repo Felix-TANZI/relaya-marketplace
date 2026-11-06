@@ -34,6 +34,7 @@ from .serializers import (
     RequiredDocumentTypeSerializer, SubscriptionPlanSerializer,
 )
 from apps.common.tasks import send_plain_email
+from apps.common.storage import StockageIndisponible, televersement_en_memoire
 from django.conf import settings as django_settings
 from .serializers import (
     VendorProfileSerializer, 
@@ -6213,6 +6214,7 @@ def vendor_mod_requests_list(request):
         return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
  
  
+@televersement_en_memoire  # DEV-SRV-01, R8 : en mémoire jusqu'à R2, jamais dans un fichier temporaire
 @extend_schema(tags=["Vendors"], summary="Create modification request")
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -6265,21 +6267,27 @@ def vendor_mod_request_create(request):
                 'detail': f'Vous avez déjà une demande en cours (#{pending.id}, statut: {pending.status}). Attendez sa résolution.',
             }, status=400)
  
-        mod_request = ShopModificationRequest.objects.create(
-            vendor           = profile,
-            fields_requested = fields_requested,
-            reason           = reason,
-            status           = 'PENDING',
-        )
- 
-        # Upload pièces jointes initiales si présentes
-        files = request.FILES.getlist('files')
-        for f in files:
-            ShopModificationDocument.objects.create(
-                modification_request = mod_request,
-                file                 = f,
-                description          = f.name,
-            )
+        # DEV-SRV-01, R8 : si R2 refuse une pièce, la demande n'est pas créée (rien de gardé sur le disque).
+        try:
+            with transaction.atomic():
+                mod_request = ShopModificationRequest.objects.create(
+                    vendor           = profile,
+                    fields_requested = fields_requested,
+                    reason           = reason,
+                    status           = 'PENDING',
+                )
+
+                # Upload pièces jointes initiales si présentes
+                files = request.FILES.getlist('files')
+                for f in files:
+                    ShopModificationDocument.objects.create(
+                        modification_request = mod_request,
+                        file                 = f,
+                        description          = f.name,
+                    )
+        except StockageIndisponible:
+            return Response({'detail': "Les pièces n'ont pas pu être enregistrées. Réessayez dans quelques minutes."},
+                            status=503)
  
         # Notification email au vendeur
         try:
@@ -6308,6 +6316,7 @@ def vendor_mod_request_create(request):
         return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
  
  
+@televersement_en_memoire  # DEV-SRV-01, R8 : en mémoire jusqu'à R2, jamais dans un fichier temporaire
 @extend_schema(tags=["Vendors"], summary="Upload documents for modification request")
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -6330,22 +6339,28 @@ def vendor_mod_request_upload_docs(request, request_id):
         if not files:
             return Response({'detail': 'Au moins un fichier requis.'}, status=400)
  
-        for i, f in enumerate(files):
-            doc_type = None
-            if i < len(doc_type_ids):
-                try:
-                    doc_type = RequiredDocumentType.objects.get(id=int(doc_type_ids[i]))
-                except (RequiredDocumentType.DoesNotExist, ValueError):
-                    pass
-            ShopModificationDocument.objects.create(
-                modification_request = mod_request,
-                file                 = f,
-                document_type        = doc_type,
-                description          = f.name,
-            )
- 
-        mod_request.status = 'DOCS_UPLOADED'
-        mod_request.save()
+        # DEV-SRV-01, R8 : tout ou rien ; si R2 refuse une pièce, la demande garde son statut.
+        try:
+            with transaction.atomic():
+                for i, f in enumerate(files):
+                    doc_type = None
+                    if i < len(doc_type_ids):
+                        try:
+                            doc_type = RequiredDocumentType.objects.get(id=int(doc_type_ids[i]))
+                        except (RequiredDocumentType.DoesNotExist, ValueError):
+                            pass
+                    ShopModificationDocument.objects.create(
+                        modification_request = mod_request,
+                        file                 = f,
+                        document_type        = doc_type,
+                        description          = f.name,
+                    )
+
+                mod_request.status = 'DOCS_UPLOADED'
+                mod_request.save()
+        except StockageIndisponible:
+            return Response({'detail': "Les pièces n'ont pas pu être enregistrées. Réessayez dans quelques minutes."},
+                            status=503)
  
         # Notification email
         try:

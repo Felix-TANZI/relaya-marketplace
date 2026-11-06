@@ -21,6 +21,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import NotFound
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+
+from apps.common.storage import televersement_en_memoire
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.client_core.erreurs import ErreurClient
@@ -231,6 +233,7 @@ def shops_open(request):
 PIECES_KYC = {"recto": "CNI_RECTO", "verso": "CNI_VERSO", "selfie": "SELFIE_VIDEO"}
 
 
+@televersement_en_memoire  # DEV-SRV-01, R8 : en mémoire jusqu'à R2, jamais dans un fichier temporaire
 @extend_schema(tags=TAG, summary="Session — submit a KYC piece")
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])

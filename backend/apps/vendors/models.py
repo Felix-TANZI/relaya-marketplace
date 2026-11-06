@@ -6,6 +6,8 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.utils.text import slugify
 
+from apps.common.storage import pieces_confidentielles
+
 
 # ─── PLAN D'ABONNEMENT ────────────────────────────────────────────────────────
 
@@ -375,8 +377,10 @@ class ShopModificationDocument(models.Model):
         RequiredDocumentType, on_delete=models.SET_NULL, null=True, blank=True,
         verbose_name="Type de document"
     )
+    # DEV-SRV-01, R8 : pièces de la boutique sur R2, jamais sur le disque du serveur (apps.common.storage).
     file        = models.FileField(
         upload_to='vendors/mod_docs/%Y/%m/',
+        storage=pieces_confidentielles,
         verbose_name="Fichier"
     )
     description = models.CharField(max_length=255, blank=True)

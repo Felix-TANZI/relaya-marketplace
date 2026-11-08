@@ -92,6 +92,22 @@ class AgentTerrainTests(TestCase):
 
         self.assertFalse(AccesProvisoire.objects.filter(user=vendeur).exists())
 
+    def test_me_signale_le_mot_de_passe_a_changer_jusqu_au_changement(self):
+        mot_de_passe = self.inscrire().json()["mot_de_passe_provisoire"]
+        vendeur = APIClient()
+        vendeur.force_authenticate(VendorProfile.objects.get(business_name="Chez Mama Ngono").user)
+        self.assertIs(vendeur.get(reverse("auth-me")).json()["doit_changer_mot_de_passe"], True)
+
+        reponse = vendeur.post(reverse("auth-change-password"), {
+            "old_password": mot_de_passe, "new_password": "Ngono-Boutique-2026", "new_password2": "Ngono-Boutique-2026",
+        }, format="json")
+
+        self.assertEqual(reponse.status_code, 200, reponse.content)
+        self.assertIs(vendeur.get(reverse("auth-me")).json()["doit_changer_mot_de_passe"], False)
+        connexion = APIClient().post(reverse("auth-login"),
+                                     {"username": "699112233", "password": "Ngono-Boutique-2026"}, format="json")
+        self.assertNotIn("doit_changer_mot_de_passe", connexion.json())
+
     def test_numero_deja_utilise_par_un_compte_refuse_sans_toucher_au_compte(self):
         client = User.objects.create_user("client_existant", password="secret-du-client")
         VendorProfile.objects.create(user=client, business_name="Autre", business_description="-",

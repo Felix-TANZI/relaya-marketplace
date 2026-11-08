@@ -464,6 +464,13 @@ export default function AdminLayout() {
     close();
   }, [location.pathname]);
 
+  // DEV-SRV-01 (T07-4) : un compte qui n'a que la partie « terrain » arrive sur ses inscriptions.
+  useEffect(() => {
+    const parties = user?.parties ?? [];
+    const agentSeulement = !user?.is_superuser && parties.includes('terrain') && !parties.includes('pilotage');
+    if (agentSeulement && location.pathname === '/admin/dashboard') navigate('/admin/terrain', { replace: true });
+  }, [user, location.pathname, navigate]);
+
   const handleLogout = () => { logout(); navigate('/'); };
 
   const initials = user

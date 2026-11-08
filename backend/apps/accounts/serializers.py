@@ -401,6 +401,9 @@ class UserSerializer(serializers.ModelSerializer):
     # Sécurité avant main 2 : les parties de gestion ouvertes à ce compte (apps.common.droits), pour que l'écran
     # d'administration n'affiche que ses entrées. Le serveur reste seul juge à chaque appel.
     parties = serializers.SerializerMethodField()
+    # DEV-SRV-01, T07-5 : compte ouvert par un agent, mot de passe provisoire pas encore changé ; les écrans
+    # renvoient vers « Choisissez votre mot de passe » tant que c'est vrai.
+    doit_changer_mot_de_passe = serializers.SerializerMethodField()
     
     class Meta:
         model = User
@@ -429,8 +432,14 @@ class UserSerializer(serializers.ModelSerializer):
             "loyalty_tier",
             "has_usable_password",
             "parties",
+            "doit_changer_mot_de_passe",
         ]
         read_only_fields = fields
+
+    def get_doit_changer_mot_de_passe(self, obj):
+        from .models import AccesProvisoire
+
+        return AccesProvisoire.objects.filter(user=obj).exists()
 
     def get_parties(self, obj):
         from apps.common.droits import PARTIES, a_la_partie

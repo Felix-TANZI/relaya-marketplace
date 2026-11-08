@@ -37,6 +37,8 @@ export interface User {
   has_usable_password?:   boolean;
   /** Sécurité avant main 2 : parties de gestion ouvertes à ce compte (le serveur reste seul juge). */
   parties?:               string[];
+  /** DEV-SRV-01 (T07-5) : compte ouvert par un agent, mot de passe provisoire à changer avant tout. */
+  doit_changer_mot_de_passe?: boolean;
 }
 
 export interface CourierProfile {

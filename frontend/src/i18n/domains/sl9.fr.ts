@@ -189,4 +189,17 @@ export default {
     install_why_offline: 'Continue de fonctionner même sans réseau.',
     install_why_notifications: 'Recevez vos notifications de commandes.',
   },
+  sl9_acces_provisoire: {
+    title: 'Choisissez votre mot de passe',
+    subtitle: 'Votre compte a été ouvert par un agent BelivaY. Remplacez le mot de passe provisoire qu’il vous a remis par le vôtre.',
+    provisional: 'Mot de passe provisoire (remis par l’agent)',
+    new_password: 'Nouveau mot de passe',
+    confirm: 'Confirmez le nouveau mot de passe',
+    hint: 'Au moins 8 caractères, pas uniquement des chiffres.',
+    submit: 'Enregistrer mon mot de passe',
+    mismatch: 'Les deux mots de passe ne sont pas identiques.',
+    success: 'Mot de passe enregistré. Bienvenue sur BelivaY !',
+    error: 'Mot de passe non enregistré.',
+    logout: 'Ce n’est pas mon compte',
+  },
 };

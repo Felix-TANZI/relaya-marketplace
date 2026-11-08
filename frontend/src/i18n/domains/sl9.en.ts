@@ -189,4 +189,17 @@ export default {
     install_why_offline: 'Keeps working even without a network.',
     install_why_notifications: 'Get your order notifications.',
   },
+  sl9_acces_provisoire: {
+    title: 'Choose your password',
+    subtitle: 'Your account was opened by a BelivaY agent. Replace the temporary password they gave you with your own.',
+    provisional: 'Temporary password (from the agent)',
+    new_password: 'New password',
+    confirm: 'Confirm the new password',
+    hint: 'At least 8 characters, not only digits.',
+    submit: 'Save my password',
+    mismatch: 'The two passwords don’t match.',
+    success: 'Password saved. Welcome to BelivaY!',
+    error: 'Password not saved.',
+    logout: 'This isn’t my account',
+  },
 };

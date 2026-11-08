@@ -84,7 +84,7 @@ export default {
     err_missing_photos: 'Add at least {{min}} photos',
     err_missing_condition: 'Indicate the product condition',
     err_missing_stock: 'Indicate your stock',
-    err_price_too_low: 'The minimum price is 500 F',
+    err_price_too_low: 'The minimum price is {{min}}',
     err_missing_dimensions: 'Weight and dimensions are required above 5 kg or 50 cm',
     seller_note_color: 'Color chosen by the seller: {{color}}',
     toast_draft_saved: 'Draft saved',

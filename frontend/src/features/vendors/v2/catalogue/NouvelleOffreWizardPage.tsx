@@ -21,7 +21,7 @@ import {
 import { palette } from '../theme';
 import { PageHeader, StepsBar } from './ui';
 import {
-  MIN_PHOTOS, MIN_PUBLISHABLE_PRICE_XAF, oversizeFieldsRequired, parsePriceInput, tierToCommissionTier,
+  MIN_PHOTOS, fmtXAF, prixTropBas, usePrixMinPubliable, oversizeFieldsRequired, parsePriceInput, tierToCommissionTier,
 } from './helpers';
 import { emptyDraft, type NewOfferDraft } from './types';
 import StepProduit from './steps/StepProduit';
@@ -35,6 +35,7 @@ type View = 'step1' | 'sheet_request' | 'step2' | 'step3' | 'step4' | 'sent';
 
 export default function NouvelleOffreWizardPage() {
   const { t } = useTranslation();
+  const prixMin = usePrixMinPubliable();
   const { theme } = useTheme();
   const p = palette(theme);
   const navigate = useNavigate();
@@ -76,7 +77,7 @@ export default function NouvelleOffreWizardPage() {
     const stock = parseInt(draft.stockQuantity, 10);
     if (Number.isNaN(stock) || stock < 0) return t('sl10_catalogue.err_missing_stock');
     const price = parsePriceInput(draft.priceXaf);
-    if (price < MIN_PUBLISHABLE_PRICE_XAF) return t('sl10_catalogue.err_price_too_low');
+    if (prixTropBas(price, prixMin)) return t('sl10_catalogue.err_price_too_low', { min: fmtXAF(prixMin) });
     const weight = parseFloat(draft.weightKg) || 0;
     const dim = parseFloat(draft.dimensionsCm) || 0;
     if (oversizeFieldsRequired(weight, dim) && (!draft.weightKg || !draft.dimensionsCm)) {
@@ -233,7 +234,7 @@ export default function NouvelleOffreWizardPage() {
           <div className="mt-4">
             <button
               type="button"
-              disabled={!draft.conditionId || parsePriceInput(draft.priceXaf) < MIN_PUBLISHABLE_PRICE_XAF}
+              disabled={!draft.conditionId || prixTropBas(parsePriceInput(draft.priceXaf), prixMin)}
               onClick={() => setView('step4')}
               className="w-full rounded-2xl font-bold text-white disabled:opacity-50"
               style={{ background: p.orange, padding: '14px', fontSize: 14, minHeight: 48 }}

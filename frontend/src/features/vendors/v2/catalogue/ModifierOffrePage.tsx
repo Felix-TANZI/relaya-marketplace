@@ -42,7 +42,7 @@ import {
 import { palette } from '../theme';
 import { Card, CenterState, PageHeader, PrimaryButton } from './ui';
 import {
-  MAX_PHOTOS, MIN_PHOTOS, MIN_PUBLISHABLE_PRICE_XAF, parsePriceInput, tierToCommissionTier,
+  MAX_PHOTOS, MIN_PHOTOS, fmtXAF, prixTropBas, usePrixMinPubliable, parsePriceInput, tierToCommissionTier,
 } from './helpers';
 import { emptyDraft, type NewOfferDraft } from './types';
 import StepStockPrix from './steps/StepStockPrix';
@@ -50,6 +50,7 @@ import StepPhotos from './steps/StepPhotos';
 
 export default function ModifierOffrePage() {
   const { t } = useTranslation();
+  const prixMin = usePrixMinPubliable();
   const { theme } = useTheme();
   const p = palette(theme);
   const navigate = useNavigate();
@@ -140,7 +141,7 @@ export default function ModifierOffrePage() {
     const stock = parseInt(draft.stockQuantity, 10);
     if (Number.isNaN(stock) || stock < 0) { showToast(t('sl10_catalogue.err_missing_stock'), 'error'); return; }
     const price = parsePriceInput(draft.priceXaf);
-    if (price < MIN_PUBLISHABLE_PRICE_XAF) { showToast(t('sl10_catalogue.err_price_too_low'), 'error'); return; }
+    if (prixTropBas(price, prixMin)) { showToast(t('sl10_catalogue.err_price_too_low', { min: fmtXAF(prixMin) }), 'error'); return; }
 
     setBusy(true);
     try {

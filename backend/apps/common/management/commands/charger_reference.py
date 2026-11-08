@@ -12,7 +12,7 @@ t_quartiers, t_grille_reference), les groupes de droits, les états de produit, 
 
 Ce que fait cette commande, dans l'ordre, sans créer aucun compte, boutique, produit ni commande :
 catégories et taxonomie, attributs, marques, couleurs, plan comptable, configuration financière, groupe finance,
-paramètres métier, questions fréquentes. Chaque étape est idempotente : relancer ne double rien.
+plans d'abonnement vendeur, paramètres métier, questions fréquentes. Chaque étape est idempotente : relancer ne double rien.
 
 Le prestataire de paiement factice (MOCK) que crée la configuration financière est DÉSACTIVÉ ici, sauf sur un serveur
 de démonstration (DONNEES_DEMO_AUTORISEES=1) : sur le site réel, un paiement factice validerait une commande sans
@@ -38,6 +38,7 @@ ETAPES = (
     ("seed_chart_of_accounts", "plan comptable"),
     ("seed_financial_config", "configuration financière (véhicules, frais, séquestre, versements)"),
     ("payments_finance_group", "groupe et droits « finance »"),
+    ("charger_plans_vendeur", "plans d'abonnement vendeur (prix affichés = prix facturés)"),
     ("charger_parametres", "paramètres métier en vigueur"),
     ("charger_faq", "questions fréquentes"),
 )

@@ -177,7 +177,7 @@ export default {
     returns_status_closed_no_refund: 'Closed, no refund',
     returns_how_title: 'How it works',
     returns_how_body_1: 'A return is distinct from a dispute: here, an item physically comes back.',
-    returns_how_body_2: 'No storage fee on a returned parcel; the return trip (500 F) is charged to the party at fault.',
+    returns_how_body_2: 'No storage fee on a returned parcel; the return trip ({{montant}}) is charged to the party at fault.',
     returns_reason_not_as_described: 'Not as described',
     returns_reason_damaged: 'Damaged',
     returns_reason_counterfeit: 'Counterfeit',

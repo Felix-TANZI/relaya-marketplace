@@ -181,6 +181,9 @@ export default {
     visibility_favorites_campaign_title: 'Campagne « favoris »',
     visibility_favorites_campaign_desc: 'Facturé par client touché.',
     visibility_confirm_desc: 'Confirmer cette mise en avant pour {{price}} ?',
+    // DEV-SRV-01 (T02-5) : options pas encore vendues par l'API, aucun tarif affiché.
+    visibility_soon_banner: 'Ces options de visibilité arrivent bientôt. Leurs tarifs s’afficheront ici dès qu’elles seront ouvertes à l’achat.',
+    visibility_soon: 'Bientôt',
     visibility_not_wired: 'Le paiement Mobile Money de cette option n’est pas encore branché. Écrivez au support pour l’activer.',
     visibility_guardrails_title: 'Les garde-fous',
     visibility_guardrail_1: 'Jamais de contenu payé mélangé aux résultats de recherche organiques.',

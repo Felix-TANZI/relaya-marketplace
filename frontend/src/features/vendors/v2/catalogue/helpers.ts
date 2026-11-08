@@ -4,6 +4,7 @@
 // est documentée en commentaire, jamais silencieuse.
 
 import { useEffect, useState } from 'react';
+import { useReglagesPublics } from '@/hooks/useReglagesPublics';
 import {
   vendorsApi,
   type VendorProduct,
@@ -18,8 +19,16 @@ import type { MonthlyProductStats, ProductAttention, ProductCardState, ProductLi
 
 // ── Constantes verrouillées (PRX-03, référentiel unique) ────────────────────
 
-/** Prix minimum publiable (PRX-03) — jamais négociable. */
-export const MIN_PUBLISHABLE_PRICE_XAF = 500;
+/** Prix minimum publiable (PRX-03, R19.1) : le réglage r_prix_min_publiable du serveur, jamais une valeur écrite
+ *  ici (DEV-SRV-01, T05 — l'écran disait 500 F quand la règle vaut 1 000 F). null tant qu'il n'est pas chargé. */
+export function usePrixMinPubliable(): number | null {
+  return useReglagesPublics()?.r_prix_min_publiable ?? null;
+}
+
+/** Prix sous le minimum ? Sans minimum connu, l'écran ne bloque pas : le serveur refuse de toute façon (R19.1). */
+export function prixTropBas(prix: number, minimum: number | null): boolean {
+  return minimum !== null && prix < minimum;
+}
 
 /** Photos réelles (PHO-01) : 3 minimum, 8 maximum. */
 export const MIN_PHOTOS = 3;

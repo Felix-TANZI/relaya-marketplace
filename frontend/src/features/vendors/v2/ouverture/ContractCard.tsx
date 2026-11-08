@@ -6,7 +6,9 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CalendarClock, ChevronRight, FileText, Gauge, Signature, ShieldCheck, Wallet } from 'lucide-react';
+import { useReglagesPublics } from '@/hooks/useReglagesPublics';
 import { Collapsible, PrimaryButton, Toggle } from '../commandes/ui';
+import { fmtXAF } from '../catalogue/helpers';
 import type { VendorPalette } from '../theme';
 import { DarkCard, DARK_HERO_TEXT, DARK_HERO_TEXT_MUTED } from './DarkCard';
 
@@ -18,14 +20,18 @@ export interface ContractCardProps {
 
 export default function ContractCard({ p, onSign, signing }: ContractCardProps) {
   const { t } = useTranslation();
+  // DEV-SRV-01, T05 : chiffres du contrat = réglages r_com_min, r_plafond_nouveau, r_nouveau_seuil (jamais en dur).
+  const reglages = useReglagesPublics();
   const [isRegistered, setIsRegistered] = useState(false);
   const [rccmNiu, setRccmNiu] = useState('');
 
   const lines = [
     { text: t('sl9_ouverture.contract_line_retention'), icon: Wallet },
-    { text: t('sl9_ouverture.contract_line_minimum'), icon: Wallet },
+    { text: t('sl9_ouverture.contract_line_minimum', { montant: fmtXAF(reglages?.r_com_min) }), icon: Wallet },
     { text: t('sl9_ouverture.contract_line_payout'), icon: Wallet },
-    { text: t('sl9_ouverture.contract_line_starter_cap'), icon: Gauge },
+    { text: t('sl9_ouverture.contract_line_starter_cap', {
+      plafond: fmtXAF(reglages?.r_plafond_nouveau), commandes: reglages?.r_nouveau_seuil ?? '—',
+    }), icon: Gauge },
     { text: t('sl9_ouverture.contract_line_termination'), icon: CalendarClock },
   ];
 

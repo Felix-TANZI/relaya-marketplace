@@ -10,11 +10,12 @@ from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
+from django.urls import reverse
 
 from apps.catalog.models import Category, Product
 from apps.common.demonstration import comptes_de_demonstration
 from apps.payments.config.models import ProviderConfig
-from apps.vendors.models import VendorProfile
+from apps.vendors.models import SubscriptionPlan, VendorProfile
 
 RACINE = Path(settings.BASE_DIR).parent
 
@@ -83,6 +84,39 @@ class ChargerReferenceTests(TestCase):
         lancer("charger_reference")
 
         self.assertTrue(ProviderConfig.current().filter(provider_code="MOCK").exists())
+
+
+class PlansVendeurTests(TestCase):
+    """T02-5 / T05 : les prix des plans vivent en base (admin), plus dans l'écran vendeur."""
+
+    def test_cree_la_grille_des_plans(self):
+        lancer("charger_plans_vendeur")
+
+        prix = {p.code: (p.price_monthly_xaf, p.price_annual_xaf) for p in SubscriptionPlan.objects.all()}
+        self.assertEqual(prix, {"FREE": (0, 0), "STARTER": (2500, 25000), "PRO": (7500, 75000)})
+
+    def test_un_prix_regle_dans_l_admin_n_est_jamais_ecrase(self):
+        SubscriptionPlan.objects.create(code="PRO", name="Pro", price_monthly_xaf=9000, price_annual_xaf=90000)
+
+        lancer("charger_plans_vendeur")
+
+        self.assertEqual(SubscriptionPlan.objects.get(code="PRO").price_monthly_xaf, 9000)
+
+
+class ReglagesPublicsTests(TestCase):
+    """T02-5 / T05 : les écrans lisent les réglages qu'ils affichent, au lieu de les recopier."""
+
+    def test_rend_la_liste_fermee_avec_les_valeurs_en_vigueur(self):
+        from apps.regles.models import Reglage
+
+        Reglage.objects.filter(nom="r_prix_min_publiable").update(valeur=1500)
+
+        reponse = self.client.get(reverse("regles-reglages-publics"))
+
+        self.assertEqual(reponse.status_code, 200)
+        self.assertEqual(set(reponse.json()),
+                         {"r_prix_min_publiable", "r_com_min", "r_plafond_nouveau", "r_nouveau_seuil", "r_retour"})
+        self.assertEqual(reponse.json()["r_prix_min_publiable"], 1500)
 
 
 class CompterTablesTests(TestCase):

@@ -63,3 +63,16 @@ mv "$TMP" "$FINAL"
 find "$BACKUP_DIR" -name "belivay_*.sql.gz" -mtime +$RETENTION_DAYS -delete
 
 log "Sauvegarde terminee : $(basename "$FINAL") ($(du -h "$FINAL" | cut -f1))"
+
+# Copie chiffrée hors du serveur (DEV-SRV-01, T06-2) : une sauvegarde qui reste sur le serveur disparaît avec lui.
+# Son échec n'annule pas la sauvegarde locale, déjà vérifiée : il est inscrit au journal, que le diagnostic de
+# maintenance (maintenance.yml) lit et signale.
+set +e
+"$PROJECT_DIR/ops/sauvegarde/copier-vers-r2.sh" "$FINAL" >> "$BACKUP_DIR/backup.log" 2>&1
+CODE_R2=$?
+set -e
+case "$CODE_R2" in
+  0) log "Copie R2 terminee" ;;
+  3) log "COPIE R2 NON CONFIGUREE (BACKUP_R2_BUCKET)" ;;
+  *) log "ECHEC de la copie R2 (code $CODE_R2)" ;;
+esac

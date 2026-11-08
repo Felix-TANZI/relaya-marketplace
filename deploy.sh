@@ -9,13 +9,21 @@ echo "🚀 Déploiement Relaya Production"
 # ALLOWED_HOSTS, etc.) — le `env_file:` déclaré dans ce fichier ne
 # fournit ces valeurs qu'AU CONTENEUR, pas à l'interpolation du compose
 # lui-même.
-COMPOSE="docker compose -f docker-compose.prod.yml --env-file .env.prod"
+# DEV-SRV-01, T04/T05 : le même dépôt déploie la vitrine (docker-compose.prod.yml, par défaut) ou le site réel
+# seul (BELIVAY_COMPOSE=docker-compose.reel.yml dans .env.prod) ; seule la configuration change.
+FICHIER_COMPOSE="$(grep -m1 '^BELIVAY_COMPOSE=' .env.prod 2>/dev/null | cut -d'=' -f2-)"
+FICHIER_COMPOSE="${FICHIER_COMPOSE:-docker-compose.prod.yml}"
+SITE_REEL=0
+[ "$FICHIER_COMPOSE" = "docker-compose.reel.yml" ] && SITE_REEL=1
+COMPOSE="docker compose -f $FICHIER_COMPOSE --env-file .env.prod"
 
 # Images construites par ce dépôt. Les autres services (postgres, redis,
 # nginx, certbot, pgbouncer) sont des images officielles, jamais reconstruites.
 # frontend-client (ancien site de belivay.com) n'est plus construit : la vitrine
 # le remplace (vitrine, vitrine-comptes ; PR-VITRINE.md).
 SERVICES_BUILD="backend celery-worker vitrine vitrine-comptes frontend-seller frontend-courier frontend-admin frontend-relay-point frontend-delivery-org"
+# Site réel : pas de vitrine ; l'espace client (shop.belivay.com) est un portail comme les autres.
+[ "$SITE_REEL" -eq 1 ] && SERVICES_BUILD="backend celery-worker frontend-client frontend-seller frontend-courier frontend-admin frontend-relay-point frontend-delivery-org"
 
 # Docker Compose nomme les images <nom-du-dossier>-<service> (ex. belivay-backend).
 IMG_PREFIX="$(basename "$PWD" | tr '[:upper:]' '[:lower:]')"
@@ -25,6 +33,12 @@ IMG_PREFIX="$(basename "$PWD" | tr '[:upper:]' '[:lower:]')"
 # connexion vers ce serveur-ci ; -k ignore le certificat, uniquement pour ce
 # test local.
 HEALTH_URL="https://belivay.com/api/auth/health/"
+HEALTH_HOTE="belivay.com"
+# Site réel : le back-end ne répond que sur api.belivay.com (nginx/reel.conf).
+if [ "$SITE_REEL" -eq 1 ]; then
+  HEALTH_URL="https://api.belivay.com/api/auth/health/"
+  HEALTH_HOTE="api.belivay.com"
+fi
 
 # Vitrine : la page d'un espace (ses fichiers sous /vendeur/assets/) et le
 # service des comptes réels (réponse JSON, base branchée ou non).
@@ -39,7 +53,8 @@ vitrine_ok() {
 check_health() {
   local i
   for i in $(seq 1 12); do
-    if curl -fsSk --max-time 10 --resolve belivay.com:443:127.0.0.1 "$HEALTH_URL" 2>/dev/null | grep -q '"status": *"ok"' && vitrine_ok; then
+    if curl -fsSk --max-time 10 --resolve "$HEALTH_HOTE:443:127.0.0.1" "$HEALTH_URL" 2>/dev/null | grep -q '"status": *"ok"' &&
+      { [ "$SITE_REEL" -eq 1 ] || vitrine_ok; }; then
       echo "  ✓ Application en bonne santé (back-end et vitrine)"
       return 0
     fi
@@ -151,12 +166,12 @@ if basculer; then
   echo "✅ Déploiement terminé !"
   # L'ancien site client (profil « ancien-front ») ne reçoit plus de trafic :
   # arrêté s'il tourne encore depuis le déploiement précédent.
-  $COMPOSE --profile ancien-front stop frontend-client >/dev/null 2>&1 || true
+  [ "$SITE_REEL" -eq 1 ] || $COMPOSE --profile ancien-front stop frontend-client >/dev/null 2>&1 || true
   # Supprime les images orphelines (celles de deux versions en arrière) et
   # le cache de build. Les images « previous » sont conservées.
   docker system prune -f
   $COMPOSE ps
-  echo "🌐 Site accessible sur https://belivay.com"
+  if [ "$SITE_REEL" -eq 1 ]; then echo "🌐 Site réel : https://api.belivay.com (et ses portails)"; else echo "🌐 Site accessible sur https://belivay.com"; fi
 else
   echo "⚠️  La nouvelle version ne répond pas correctement."
   if revenir_en_arriere; then

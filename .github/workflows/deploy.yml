@@ -76,6 +76,13 @@ jobs:
           # ── Réseau / sécurité ────────────────────────────────────────
           ALLOWED_HOSTS=${{ vars.ALLOWED_HOSTS }}
           CORS_ALLOWED_ORIGINS=${{ vars.CORS_ALLOWED_ORIGINS }}
+          CSRF_TRUSTED_ORIGINS=${{ vars.CSRF_TRUSTED_ORIGINS }}
+
+          # ── Vitrine ou site réel (DEV-SRV-01, T04/T05 ; ops/SITE-REEL.md) ──
+          # Vide = vitrine (docker-compose.prod.yml). Site réel : docker-compose.reel.yml.
+          BELIVAY_COMPOSE=${{ vars.BELIVAY_COMPOSE }}
+          VITE_API_URL=${{ vars.VITE_API_URL }}
+          VITE_SITE_URL=${{ vars.VITE_SITE_URL }}
           WEB_CONCURRENCY=${{ vars.WEB_CONCURRENCY }}
 
           # ── Stockage (Cloudflare R2) ─────────────────────────────────

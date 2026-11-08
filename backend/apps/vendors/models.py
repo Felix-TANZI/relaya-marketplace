@@ -186,7 +186,10 @@ class VendorProfile(models.Model):
 
     @property
     def public_url(self):
-        return f"https://belivay.com?ref={self.shop_slug}" if self.shop_slug else None
+        # DEV-SRV-01, T05 : le site public vient de la configuration (PUBLIC_SITE_URL), pas du code.
+        from django.conf import settings
+
+        return f"{settings.PUBLIC_SITE_URL}?ref={self.shop_slug}" if self.shop_slug else None
 
     @property
     def active_plan_code(self):

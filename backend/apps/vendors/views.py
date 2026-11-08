@@ -6120,7 +6120,7 @@ def vendor_upload_shop_banner(request):
 def vendor_shop_qr(request):
     try:
         profile = VendorProfile.objects.get(user=request.user)
-        qr_url = f"https://belivay.com?ref={profile.shop_slug}" if profile.shop_slug else "https://belivay.com"
+        qr_url = profile.public_url or django_settings.PUBLIC_SITE_URL  # DEV-SRV-01, T05 : site public configuré
         return Response({
             'slug':       profile.shop_slug,
             'public_url': qr_url,

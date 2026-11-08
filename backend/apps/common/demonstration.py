@@ -42,6 +42,8 @@ MARQUEURS_UTILISATEUR = (
     "relais_demo",
     "vendeur_demo",
     "admin_demo",
+    "preuve_",        # seed_evidence_demo (preuve_admin, preuve_client...) — DEV-SRV-01, T01
+    "demo-finance-",  # payments_seed_demo (demo-finance-buyer-1...) — DEV-SRV-01, T01
 )
 
 MESSAGE_REFUS = (

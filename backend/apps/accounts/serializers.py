@@ -436,7 +436,7 @@ class UserSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = fields
 
-    def get_doit_changer_mot_de_passe(self, obj):
+    def get_doit_changer_mot_de_passe(self, obj) -> bool:
         from .models import AccesProvisoire
 
         return AccesProvisoire.objects.filter(user=obj).exists()

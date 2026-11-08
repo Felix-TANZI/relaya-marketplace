@@ -11,13 +11,13 @@
 
 from django.db import transaction
 from drf_spectacular.utils import extend_schema
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
 from apps.accounts.compliance import FichierRefuse
 from apps.catalog.models import ProductImage
-from apps.catalog.serializers import ProductCreateUpdateSerializer
+from apps.catalog.serializers import ProductCreateUpdateSerializer, ProductSerializer
 from apps.common.droits import Partie
 from apps.common.storage import televersement_en_memoire
 
@@ -26,6 +26,59 @@ from .ouverture import Refus
 from .views import MAX_IMAGE_SIZE_BYTES, MAX_IMAGES_PER_PRODUCT
 
 TAG = ["Agent terrain"]
+
+
+# ── Description des échanges pour le schéma OpenAPI (cliquet de la revue du 29/10, E1) ──────────────────────────
+# La logique reste dans apps.vendors.agent_terrain ; ces sérialiseurs ne servent qu'à documenter.
+
+class _Identite(serializers.Serializer):
+    verifiee = serializers.BooleanField()
+    manquantes = serializers.ListField(child=serializers.CharField())
+    refusees = serializers.ListField(child=serializers.CharField())
+    en_attente = serializers.ListField(child=serializers.CharField())
+
+
+class FicheVendeurSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    boutique = serializers.CharField()
+    telephone = serializers.CharField()
+    identifiant = serializers.CharField()
+    quartier = serializers.CharField()
+    statut = serializers.CharField()
+    identite = _Identite()
+    pieces = serializers.DictField(child=serializers.CharField(allow_null=True))
+    produits = serializers.IntegerField()
+    acces_provisoire_expire_le = serializers.DateTimeField(allow_null=True)
+    inscrit_le = serializers.DateTimeField()
+    mot_de_passe_provisoire = serializers.CharField(required=False, help_text="Rendu une seule fois.")
+
+
+class InscriptionSerializer(serializers.Serializer):
+    boutique = serializers.CharField()
+    telephone = serializers.CharField()
+    quartier = serializers.CharField(help_text="Nom d'un quartier de t_quartiers (ou appellation sans ambiguïté).")
+    gerant = serializers.CharField(required=False)
+    latitude = serializers.FloatField(required=False, allow_null=True)
+    longitude = serializers.FloatField(required=False, allow_null=True)
+    reperes = serializers.CharField(required=False)
+
+
+class PieceAgentSerializer(serializers.Serializer):
+    piece = serializers.ChoiceField(choices=["recto", "verso", "selfie"])
+    fichier = serializers.FileField()
+
+
+class ProduitAgentSerializer(ProductCreateUpdateSerializer):
+    stock_quantity = serializers.IntegerField(required=False, min_value=0)
+    photos = serializers.ListField(child=serializers.ImageField(), required=False)
+
+    class Meta(ProductCreateUpdateSerializer.Meta):
+        fields = [*ProductCreateUpdateSerializer.Meta.fields, "stock_quantity", "photos"]
+
+
+class RefusSerializer(serializers.Serializer):
+    raison = serializers.CharField(required=False)
+    detail = serializers.CharField()
 
 
 def _ip(request):
@@ -48,7 +101,10 @@ def _point(valeur):
         return None
 
 
-@extend_schema(tags=TAG, summary="Agent — list or register vendors")
+@extend_schema(methods=["GET"], tags=TAG, summary="Agent — list my registered vendors",
+               operation_id="agent_vendeurs_liste", responses=FicheVendeurSerializer(many=True))
+@extend_schema(methods=["POST"], tags=TAG, summary="Agent — register a vendor", operation_id="agent_vendeurs_inscrire",
+               request=InscriptionSerializer, responses={201: FicheVendeurSerializer, 400: RefusSerializer})
 @api_view(["GET", "POST"])
 @permission_classes([Partie("terrain")])
 def agent_vendeurs(request):
@@ -76,7 +132,8 @@ def agent_vendeurs(request):
                     status=status.HTTP_201_CREATED)
 
 
-@extend_schema(tags=TAG, summary="Agent — one registered vendor")
+@extend_schema(tags=TAG, summary="Agent — one registered vendor", operation_id="agent_vendeur_fiche",
+               responses={200: FicheVendeurSerializer, 404: RefusSerializer})
 @api_view(["GET"])
 @permission_classes([Partie("terrain")])
 def agent_vendeur(request, vendor_id):
@@ -85,7 +142,9 @@ def agent_vendeur(request, vendor_id):
 
 
 @televersement_en_memoire  # R8 : la photo reste en mémoire jusqu'à R2, jamais dans un fichier temporaire
-@extend_schema(tags=TAG, summary="Agent — upload the vendor's ID photo taken on site")
+@extend_schema(tags=TAG, summary="Agent — upload the vendor's ID photo taken on site",
+               request={"multipart/form-data": PieceAgentSerializer},
+               responses={201: FicheVendeurSerializer, 400: RefusSerializer, 404: RefusSerializer})
 @api_view(["POST"])
 @permission_classes([Partie("terrain")])
 def agent_vendeur_piece(request, vendor_id):
@@ -105,7 +164,9 @@ def agent_vendeur_piece(request, vendor_id):
     return Response(agent_terrain.fiche(profil), status=status.HTTP_201_CREATED)
 
 
-@extend_schema(tags=TAG, summary="Agent — add a product to the vendor's catalogue")
+@extend_schema(tags=TAG, summary="Agent — add a product to the vendor's catalogue",
+               request={"multipart/form-data": ProduitAgentSerializer, "application/json": ProduitAgentSerializer},
+               responses={201: ProductSerializer, 400: RefusSerializer, 404: RefusSerializer})
 @api_view(["POST"])
 @permission_classes([Partie("terrain")])
 def agent_vendeur_produit(request, vendor_id):
@@ -136,7 +197,8 @@ def agent_vendeur_produit(request, vendor_id):
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-@extend_schema(tags=TAG, summary="Agent — new temporary password for the vendor")
+@extend_schema(tags=TAG, summary="Agent — new temporary password for the vendor", request=None,
+               responses={200: FicheVendeurSerializer, 404: RefusSerializer, 409: RefusSerializer})
 @api_view(["POST"])
 @permission_classes([Partie("terrain")])
 def agent_vendeur_acces(request, vendor_id):

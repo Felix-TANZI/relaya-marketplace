@@ -74,6 +74,7 @@ import {
 } from "@/lib/supportInbox";
 // Feuille de route D16 et DP-17 : le vrai Wallet (API), affiché seulement quand il est ouvert.
 import WalletPanel, { useWalletOuvert } from "./WalletPanel";
+import { SITE_URL } from '@/config/site';
 
 type FontSize = "small" | "normal" | "large";
 type PanelId =
@@ -1180,7 +1181,7 @@ export default function ProfilePage() {
 
   const renderParrain = () => {
     const refCode = (user?.username || "belivay").toUpperCase();
-    const refLink = `https://belivay.com/register?ref=${user?.username || ""}`;
+    const refLink = `${SITE_URL}/register?ref=${user?.username || ""}`;
     const share = () => {
       if (navigator.clipboard) {
         navigator.clipboard

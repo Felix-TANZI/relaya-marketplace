@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { SITE_URL } from '@/config/site';
 
 /**
  * Metadonnees par page, sans dependance.
@@ -19,7 +20,7 @@ import { useEffect } from "react";
  * un second conflit npm par-dessus celui de Capacitor.
  */
 
-const SITE = "https://belivay.com";
+const SITE = SITE_URL;
 const NOM = "BelivaY";
 
 /** Repere les balises que nous avons creees, pour les retirer au demontage. */

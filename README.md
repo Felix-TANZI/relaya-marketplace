@@ -248,10 +248,14 @@ relaya-marketplace/
 │   ├── Dockerfile.prod       # Production
 │   └── package.json          # Dépendances Node
 │
-├── nginx/                     # Config Nginx production
+├── vitrine/                   # Vitrine de démonstration (six espaces, PR-VITRINE.md)
+├── config/                    # Modèles de réglages : vitrine.env.example, reel.env.example
+├── ops/                       # Guides et scripts d'exploitation (sauvegardes, transfert, applis…)
+├── nginx/                     # nginx.conf (vitrine), reel.conf (site réel), maintenance/
 ├── certbot/                   # Certificats SSL
 ├── docker-compose.yml         # Dev environment
-├── docker-compose.prod.yml    # Production environment
+├── docker-compose.prod.yml    # Production : vitrine
+├── docker-compose.reel.yml    # Production : site réel seul
 ├── deploy.sh                  # Script déploiement
 ├── .env                       # Variables d'environnement (racine)
 ├── .env.prod                  # Variables prod (racine)
@@ -287,34 +291,70 @@ relaya-marketplace/
 
 ---
 
-## 🚀 Déploiement
+## 🚀 Déploiement : vitrine ou site réel
 
-### Production
-```bash
-# 1. Configuration
-cp .env .env.prod
-# Éditer .env.prod avec les vraies valeurs
+Un seul dépôt déploie deux versions qui ne se mélangent jamais (ordre de mission DEV-SRV-01, règles R1 à R8). **Seule la configuration change.**
 
-# 2. Déploiement
-./deploy.sh
+| | Vitrine (démonstration) | Site réel |
+|---|---|---|
+| Docker | `docker-compose.prod.yml` | `docker-compose.reel.yml` |
+| nginx | `nginx/nginx.conf` | `nginx/reel.conf` |
+| Écrans | `vitrine/` (six espaces de démonstration) | `frontend/` (six portails, un par `VITE_PORTAL_ROLE`) |
+| API | `belivay.com/api`, puis `api-demo.belivay.com` | `api.belivay.com` |
+| Données | jeux de démonstration (`charger_demonstration`) | réelles, référence seule à la création (`charger_reference`) |
+| Modèle de réglages | `config/vitrine.env.example` | `config/reel.env.example` |
+| Sélecteur | `BELIVAY_COMPOSE` vide | `BELIVAY_COMPOSE=docker-compose.reel.yml` |
 
-# Ou manuellement :
-docker-compose -f docker-compose.prod.yml up --build -d
-docker-compose -f docker-compose.prod.yml exec backend python manage.py migrate
-docker-compose -f docker-compose.prod.yml exec backend python manage.py createsuperuser
+### Comment un déploiement se fait
+
+1. Les réglages se renseignent dans **GitHub → Settings → Environments** (environnement du serveur), d'après le modèle `config/*.env.example`. **Rien ne s'édite à la main sur le serveur.**
+2. Une PR est fusionnée dans `main`. Le CI (`ci.yml`) doit être vert, puis `deploy.yml` démarre après l'approbation de l'environnement. Il :
+   - génère `.env.prod` ;
+   - met le serveur sur le commit testé ;
+   - lance `deploy.sh`.
+3. `deploy.sh` lit `BELIVAY_COMPOSE`. Il :
+   - sauvegarde la base (`backup.sh`) ;
+   - garde la version en service pour un retour arrière ;
+   - construit les images une par une ;
+   - bascule ;
+   - applique les migrations ;
+   - vérifie la santé : `belivay.com` pour la vitrine, `api.belivay.com` pour le site réel ;
+   - **revient automatiquement à la version précédente** si la santé échoue.
+
+Un clone propre se déploie dans l'une ou l'autre version en changeant uniquement `BELIVAY_COMPOSE` et les réglages de l'environnement.
+
+### Créer une base neuve
+
+```sh
+python manage.py migrate
+python manage.py charger_reference        # zones, catégories, plans, configuration — aucun compte, aucune activité
+python manage.py createsuperuser          # puis les autres comptes depuis l'admin, rattachés à leurs groupes
+python manage.py compter_tables           # « Base vide » : la capture à transmettre (T02)
+
+# Vitrine seulement, jamais sur le site réel :
+DONNEES_DEMO_AUTORISEES=1 python manage.py charger_demonstration
 ```
 
-### SSL (Let's Encrypt)
-```bash
-# Obtenir certificat
-docker-compose -f docker-compose.prod.yml run --rm certbot certonly \
-  --webroot --webroot-path=/var/www/certbot \
-  -d belivay.com -d www.belivay.com
+### Guides d'exploitation (`ops/`)
 
-# Renouvellement automatique (via cron dans le conteneur certbot)
-```
+| Guide | Contenu |
+|---|---|
+| `ops/SITE-REEL.md` | Adresses du site réel, DNS, certificat, réglages, vérifications |
+| `ops/sauvegarde/LISEZMOI.md` | Sauvegardes chiffrées sur R2, test de restauration (T06) |
+| `ops/transfert/PROCEDURE-TRANSFERT.md` | Transfert du site réel MAIN 2 → MAIN 1, répétition, retour arrière (T14-T18) |
+| `ops/APPLIS-MOBILES.md` | Construire les six applis vers la bonne API (T12) |
+| `ops/CONTROLE-APPELS.md` | Vérifier que chaque écran n'appelle que la bonne API (T10) |
 
----
+### Branches
+
+- `main` : seule branche déployée. **Elle est protégée** : on n'y pousse jamais directement, elle reçoit des PR relues avec le CI vert.
+- `dev` : branche d'intégration. Le travail arrive par PR depuis des branches de travail (`mission/…`, `feat/…`, `fix/…`).
+
+Pour protéger `main` (propriétaire du dépôt) : **Settings → Branches → Add branch ruleset**, cible `main`, puis cocher :
+
+- *Require a pull request before merging* ;
+- *Require status checks to pass* : `Backend (Django)`, `Frontend (React / Vite)`, `Gitleaks` ;
+- *Block force pushes*.
 
 ## 🛠️ Commandes Utiles
 

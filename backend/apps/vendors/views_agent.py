@@ -8,6 +8,7 @@
 #   POST /api/vendors/agent/vendeurs/<id>/pieces         photo de la pièce prise sur place (recto, verso, selfie)
 #   POST /api/vendors/agent/vendeurs/<id>/produits       saisir un produit du catalogue (+ photos)
 #   POST /api/vendors/agent/vendeurs/<id>/acces          nouveau mot de passe provisoire
+#   POST /api/vendors/agent/vendeurs/<id>/mobile-money   numéro Mobile Money du vendeur (T07-2), en attente de vérification
 
 from django.db import transaction
 from drf_spectacular.utils import extend_schema
@@ -31,11 +32,22 @@ TAG = ["Agent terrain"]
 # ── Description des échanges pour le schéma OpenAPI (cliquet de la revue du 29/10, E1) ──────────────────────────
 # La logique reste dans apps.vendors.agent_terrain ; ces sérialiseurs ne servent qu'à documenter.
 
-class _Identite(serializers.Serializer):
-    verifiee = serializers.BooleanField()
+class _PourPublier(serializers.Serializer):
     manquantes = serializers.ListField(child=serializers.CharField())
     refusees = serializers.ListField(child=serializers.CharField())
     en_attente = serializers.ListField(child=serializers.CharField())
+
+
+class _Identite(_PourPublier):
+    verifiee = serializers.BooleanField(help_text="Dossier complet (trois pièces) : condition du versement.")
+    peut_publier = serializers.BooleanField(help_text="CNI validée et numéro Mobile Money renseigné (T07-2).")
+    mobile_money = serializers.BooleanField()
+    pour_publier = _PourPublier()
+
+
+class _MobileMoney(serializers.Serializer):
+    numero = serializers.CharField(help_text="Numéro masqué.")
+    verifie = serializers.BooleanField()
 
 
 class FicheVendeurSerializer(serializers.Serializer):
@@ -47,6 +59,7 @@ class FicheVendeurSerializer(serializers.Serializer):
     statut = serializers.CharField()
     identite = _Identite()
     pieces = serializers.DictField(child=serializers.CharField(allow_null=True))
+    mobile_money = _MobileMoney(allow_null=True)
     produits = serializers.IntegerField()
     acces_provisoire_expire_le = serializers.DateTimeField(allow_null=True)
     inscrit_le = serializers.DateTimeField()
@@ -74,6 +87,10 @@ class ProduitAgentSerializer(ProductCreateUpdateSerializer):
 
     class Meta(ProductCreateUpdateSerializer.Meta):
         fields = [*ProductCreateUpdateSerializer.Meta.fields, "stock_quantity", "photos"]
+
+
+class MobileMoneyAgentSerializer(serializers.Serializer):
+    telephone = serializers.CharField(help_text="Numéro Mobile Money camerounais (MTN ou Orange).")
 
 
 class RefusSerializer(serializers.Serializer):
@@ -210,3 +227,20 @@ def agent_vendeur_acces(request, vendor_id):
     except Refus as refus:
         return Response({"raison": refus.raison, "detail": refus.message}, status=status.HTTP_409_CONFLICT)
     return Response({**agent_terrain.fiche(profil), "mot_de_passe_provisoire": mot_de_passe})
+
+
+@extend_schema(tags=TAG, summary="Agent — record the vendor's Mobile Money number (pending verification)",
+               operation_id="agent_vendeur_mobile_money", request=MobileMoneyAgentSerializer,
+               responses={200: FicheVendeurSerializer, 400: RefusSerializer, 404: RefusSerializer})
+@api_view(["POST"])
+@permission_classes([Partie("terrain")])
+def agent_vendeur_mobile_money(request, vendor_id):
+    profil, erreur = _vendeur_ou_404(request, vendor_id)
+    if erreur:
+        return erreur
+    try:
+        agent_terrain.enregistrer_mobile_money(request.user, profil, str(request.data.get("telephone") or ""),
+                                               ip=_ip(request))
+    except Refus as refus:
+        return Response({"raison": refus.raison, "detail": refus.message}, status=status.HTTP_400_BAD_REQUEST)
+    return Response(agent_terrain.fiche(profil))

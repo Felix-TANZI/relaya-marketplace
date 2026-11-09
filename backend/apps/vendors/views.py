@@ -7086,12 +7086,12 @@ def admin_approve_product(request, product_id):
     # bouton du vendeur ne suffirait pas : approuver ici rendrait l'offre
     # visible tout autant. Le moderateur est prevenu de ce qui manque plutot
     # que de se voir opposer un refus muet.
-    from apps.vendors.kyc import etat_verification, identite_verifiee
-    if product.vendor and not identite_verifiee(product.vendor):
+    from apps.vendors.kyc import etat_verification, peut_publier
+    if product.vendor and not peut_publier(product.vendor):
         etat = etat_verification(product.vendor)
         return Response(
             {
-                'detail': "Identite du vendeur non verifiee : publication impossible.",
+                'detail': "Piece d'identite du vendeur non verifiee ou numero Mobile Money absent : publication impossible.",
                 'piece_identite': etat,
             },
             status=status.HTTP_409_CONFLICT,
@@ -9800,8 +9800,8 @@ def vd_offer_publish(request, offer_id):
     # Meme forme de reponse que les autres refus metier de cet endpoint
     # (ok/raison/detail) : l'ecran sait deja l'afficher, et le detail dit au
     # vendeur quelles pieces fournir ou refaire.
-    from apps.vendors.kyc import etat_verification, identite_verifiee
-    if not identite_verifiee(request.user):
+    from apps.vendors.kyc import etat_verification, peut_publier
+    if not peut_publier(request.user):
         return Response({
             'ok': False,
             'raison': 'identite_non_verifiee',

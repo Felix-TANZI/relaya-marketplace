@@ -26,6 +26,13 @@ def _identite_vendeur_verifiee(user):
             document_type=piece, file=SimpleUploadedFile(f"{piece}.jpg", b"x"),
             status=ComplianceDocument.Status.APPROVED,
         )
+    # DEV-SRV-01 T07-2 : publier exige aussi un numero Mobile Money renseigne.
+    from apps.accounts.models import PayoutAccount
+
+    PayoutAccount.objects.get_or_create(
+        user=user, owner_role=PayoutAccount.OwnerRole.VENDOR, phone_e164="+237670000099",
+        defaults={"national_number": "670000099", "operator": "MTN"},
+    )
 
 
 # Fiche publiable selon la spécification v2.1 : univers (R16.1), poids et dimensions (R63.1).

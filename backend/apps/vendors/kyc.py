@@ -26,16 +26,33 @@ from django.conf import settings
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied
 
-#: Les trois pieces exigees, nommees comme le document les nomme.
+# ── Deux paliers (DEV-SRV-01 T07-2, 2026-11-09) ─────────────────────────────
+# D19 distingue deja les deux : « refuser la publication tant que LA piece
+# n'est pas verifiee » et « exiger les documents COMPLETS avant le premier
+# versement ». T07-2 le precise : « piece d'identite et numero Mobile Money
+# au premier produit ».
+#   - PUBLIER : CNI recto + verso validees, numero Mobile Money renseigne ;
+#   - ETRE VERSE : les trois pieces validees (selfie video compris), et le
+#     numero verifie par code, exige de son cote par le module financier
+#     (seul un numero verifie atteint PayeeAccount).
+# Le versement reste donc aussi strict qu'avant ; seule la publication cesse
+# d'attendre le selfie.
+
+#: Les trois pieces du dossier complet, nommees comme le document les nomme.
 CNI_RECTO = "CNI_RECTO"
 CNI_VERSO = "CNI_VERSO"
 SELFIE_VIDEO = "SELFIE_VIDEO"
 PIECES_EXIGEES: tuple[str, ...] = (CNI_RECTO, CNI_VERSO, SELFIE_VIDEO)
+#: La piece d'identite exigee pour publier.
+PIECES_PUBLICATION: tuple[str, ...] = (CNI_RECTO, CNI_VERSO)
+#: Pas une piece : le numero de versement (accounts.PayoutAccount), exige pour publier.
+MOBILE_MONEY = "MOBILE_MONEY"
 
 LIBELLES = {
     CNI_RECTO: "CNI (recto)",
     CNI_VERSO: "CNI (verso)",
     SELFIE_VIDEO: "Selfie video",
+    MOBILE_MONEY: "Numero Mobile Money",
 }
 
 #: Delai de reponse promis par D19 : « Repondre en 48 h ouvrees au plus. »
@@ -85,56 +102,105 @@ def pieces_en_attente(user) -> list[str]:
     ]
 
 
-def identite_verifiee(user) -> bool:
-    """
-    Vrai seulement si les TROIS pieces sont deposees et validees.
-
-    Une piece en attente ne vaut pas accord : c'est tout l'objet du controle.
-    """
+def _validees(user, pieces) -> bool:
     from apps.accounts.models import ComplianceDocument
 
     deposees = _documents(user)
     return all(
         piece in deposees
         and deposees[piece].status == ComplianceDocument.Status.APPROVED
-        for piece in PIECES_EXIGEES
+        for piece in pieces
     )
 
 
+def identite_verifiee(user) -> bool:
+    """
+    Dossier complet : vrai seulement si les TROIS pieces sont deposees et
+    validees. C'est la condition du VERSEMENT (D19).
+
+    Une piece en attente ne vaut pas accord : c'est tout l'objet du controle.
+    """
+    return _validees(user, PIECES_EXIGEES)
+
+
+def mobile_money_renseigne(user) -> bool:
+    """Un numero Mobile Money de versement est enregistre pour l'activite de vendeur (verifie ou non)."""
+    from apps.accounts.models import PayoutAccount
+
+    return PayoutAccount.objects.filter(
+        user=user, owner_role=PayoutAccount.OwnerRole.VENDOR,
+    ).exclude(status=PayoutAccount.Status.DISABLED).exists()
+
+
+def peut_publier(user) -> bool:
+    """
+    Condition de PUBLICATION (D19, T07-2) : CNI recto et verso validees,
+    numero Mobile Money renseigne. Le selfie video n'est exige qu'au versement.
+    """
+    return piece_identite_verifiee(user) and mobile_money_renseigne(user)
+
+
+def piece_identite_verifiee(user) -> bool:
+    """CNI recto et verso validees (sans le selfie video)."""
+    return _validees(user, PIECES_PUBLICATION)
+
+
+def _a_fournir_pour_publier(user) -> tuple[list[str], list[str], list[str]]:
+    """(a fournir, a refaire, en attente) parmi ce qu'exige la publication."""
+    manquantes = [p for p in pieces_manquantes(user) if p in PIECES_PUBLICATION]
+    if not mobile_money_renseigne(user):
+        manquantes.append(MOBILE_MONEY)
+    refusees = [p for p in pieces_refusees(user) if p in PIECES_PUBLICATION]
+    attente = [p for p in pieces_en_attente(user) if p in PIECES_PUBLICATION]
+    return manquantes, refusees, attente
+
+
 def etat_verification(user) -> dict:
-    """Etat lisible, pour l'ecran vendeur et l'administration."""
+    """
+    Etat lisible, pour l'ecran vendeur et l'administration.
+
+    `verifiee` garde son sens d'origine (dossier complet, condition du
+    versement) ; `peut_publier` dit si les offres peuvent etre publiees, et
+    `pour_publier` ce qui manque encore pour cela.
+    """
+    manquantes, refusees, attente = _a_fournir_pour_publier(user)
     return {
         "verifiee": identite_verifiee(user),
+        "peut_publier": peut_publier(user),
+        "mobile_money": mobile_money_renseigne(user),
         "manquantes": [LIBELLES[p] for p in pieces_manquantes(user)],
         "refusees": [LIBELLES[p] for p in pieces_refusees(user)],
         "en_attente": [LIBELLES[p] for p in pieces_en_attente(user)],
+        "pour_publier": {
+            "manquantes": [LIBELLES[p] for p in manquantes],
+            "refusees": [LIBELLES[p] for p in refusees],
+            "en_attente": [LIBELLES[p] for p in attente],
+        },
     }
 
 
-def exiger_identite_verifiee(user, action: str) -> None:
+def exiger_publication_possible(user, action: str) -> None:
     """
-    Leve PermissionDenied tant que l'identite n'est pas verifiee.
+    Leve PermissionDenied tant que la publication n'est pas possible.
 
     `action` sert a dire au vendeur CE QU'IL vient de tenter, et le message
     lui dit quoi faire — une interdiction sans explication se traduit en appel
     au support.
     """
-    if identite_verifiee(user):
+    if peut_publier(user):
         return
 
     details = []
-    manquantes = pieces_manquantes(user)
-    refusees = pieces_refusees(user)
-    attente = pieces_en_attente(user)
+    manquantes, refusees, attente = _a_fournir_pour_publier(user)
     if manquantes:
         details.append("a fournir : " + ", ".join(LIBELLES[p] for p in manquantes))
     if refusees:
         details.append("a refaire : " + ", ".join(LIBELLES[p] for p in refusees))
     if attente and not manquantes and not refusees:
-        details.append("vos pieces sont en cours de verification")
+        details.append("votre piece est en cours de verification")
 
     raise PermissionDenied(
-        f"{action} necessite une piece d'identite verifiee"
+        f"{action} necessite une piece d'identite verifiee et un numero Mobile Money"
         + (f" ({' ; '.join(details)})." if details else ".")
     )
 

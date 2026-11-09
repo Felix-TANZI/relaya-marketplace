@@ -131,6 +131,8 @@ urlpatterns = [
     path('agent/vendeurs/<int:vendor_id>/pieces',   views_agent.agent_vendeur_piece,   name='agent-vendeur-piece'),
     path('agent/vendeurs/<int:vendor_id>/produits', views_agent.agent_vendeur_produit, name='agent-vendeur-produit'),
     path('agent/vendeurs/<int:vendor_id>/acces',    views_agent.agent_vendeur_acces,   name='agent-vendeur-acces'),
+    path('agent/vendeurs/<int:vendor_id>/mobile-money', views_agent.agent_vendeur_mobile_money,
+         name='agent-vendeur-mobile-money'),
 
     #  ADMINISTRATION
     path('admin/vendors/',                           views.admin_list_vendors,       name='admin-list-vendors'),

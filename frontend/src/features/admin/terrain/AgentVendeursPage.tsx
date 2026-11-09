@@ -36,7 +36,9 @@ export default function AgentVendeursPage() {
   useEffect(() => { void charger(); }, [charger]);
 
   const pieces = (v: FicheVendeur) =>
-    v.identite.verifiee ? k('identity_verified') : k('pieces_count', { n: Object.values(v.pieces).filter(Boolean).length });
+    v.identite.verifiee ? k('identity_verified')
+      : v.identite.peut_publier ? k('can_publish')
+        : k('pieces_count', { n: Object.values(v.pieces).filter(Boolean).length });
 
   return (
     <div className="p-4 sm:p-6">

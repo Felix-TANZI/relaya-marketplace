@@ -15,7 +15,7 @@ from django.db.models import Q
 
 from apps.accounts import acces_provisoire
 from apps.accounts.compliance import deposer_piece
-from apps.accounts.models import AccesProvisoire, ComplianceDocument
+from apps.accounts.models import AccesProvisoire, ComplianceDocument, PayoutAccount
 from apps.common.models import AuditLog
 from apps.common.phone import normalize_cameroon_phone
 from apps.shipping import zones
@@ -113,6 +113,33 @@ def deposer_piece_pour(agent, profil: VendorProfile, piece: str, fichier, ip=Non
     return document
 
 
+def enregistrer_mobile_money(agent, profil: VendorProfile, telephone: str, ip=None) -> PayoutAccount:
+    """
+    T07-2 : « pièce d'identité et numéro Mobile Money au premier produit ». L'agent saisit le numéro du vendeur sur
+    place. Il reste EN ATTENTE de vérification : aucun code n'est envoyé ici, le vendeur le demande depuis son espace,
+    et rien ne lui est versé avant (seul un numéro vérifié atteint le module financier). Un numéro déjà vérifié
+    identique n'est pas remis en attente.
+    """
+    from apps.accounts.serializers import enregistrer_numero_versement
+
+    numero = normalize_cameroon_phone(telephone or "")
+    if not numero["is_valid"] or not numero["is_mobile"]:
+        raise Refus("numero", "Numéro Mobile Money camerounais invalide.")
+    deja = PayoutAccount.objects.filter(user=profil.user, owner_role=PayoutAccount.OwnerRole.VENDOR,
+                                        phone_e164=numero["e164"], status=PayoutAccount.Status.VERIFIED).first()
+    if deja is not None:
+        return deja
+    compte = enregistrer_numero_versement(profil.user, PayoutAccount.OwnerRole.VENDOR, numero,
+                                          label="Saisi par l'agent de terrain", envoyer_code=False)
+    journaliser(agent, profil, "mobile_money", {"numero": _masque(compte)}, ip)
+    return compte
+
+
+def _masque(compte: PayoutAccount) -> str:
+    n = compte.national_number or ""
+    return f"+237 {n[:3]} *** {n[-3:]}" if n else ""
+
+
 def nouvel_acces(agent, profil: VendorProfile, ip=None) -> str:
     """Nouveau mot de passe provisoire (vendeur qui a perdu le sien ou l'a laissé expirer). Jamais sur un compte dont
     le vendeur a déjà choisi son mot de passe : il passe alors par « mot de passe oublié »."""
@@ -126,6 +153,8 @@ def nouvel_acces(agent, profil: VendorProfile, ip=None) -> str:
 def fiche(profil: VendorProfile) -> dict:
     acces = AccesProvisoire.objects.filter(user=profil.user).first()
     emplacement = profil.locations.filter(is_main=True).first()
+    momo = PayoutAccount.objects.filter(user=profil.user, owner_role=PayoutAccount.OwnerRole.VENDOR).exclude(
+        status=PayoutAccount.Status.DISABLED).order_by("-is_primary", "-created_at").first()
     return {
         "id": profil.id,
         "boutique": profil.business_name,
@@ -138,6 +167,8 @@ def fiche(profil: VendorProfile) -> dict:
                               if d.owner_role == ComplianceDocument.OwnerRole.VENDOR and d.document_type == type_),
                              None)
                    for cle, type_ in PIECES.items()},
+        "mobile_money": {"numero": _masque(momo), "verifie": momo.status == PayoutAccount.Status.VERIFIED}
+        if momo else None,
         "produits": profil.user.products.count(),
         "acces_provisoire_expire_le": acces.expire_le.isoformat() if acces else None,
         "inscrit_le": profil.inscription_par_agent.cree_le.isoformat(),

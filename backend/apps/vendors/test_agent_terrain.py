@@ -179,6 +179,74 @@ class AgentTerrainTests(TestCase):
 
         self.assertEqual(reponse.status_code, 400)
 
+    # ── Numéro Mobile Money (T07-2) ──────────────────────────────────────────────────────────────────────────────
+
+    def momo(self, vendeur_id, telephone="677445566"):
+        return self.api.post(reverse("vendors:agent-vendeur-mobile-money", args=[vendeur_id]),
+                             {"telephone": telephone}, format="json")
+
+    def test_numero_mobile_money_enregistre_en_attente_sans_envoyer_de_code(self):
+        from apps.accounts.models import PayoutAccount
+
+        vendeur_id = self.inscrire().json()["id"]
+        with patch("apps.otp.services.envoyer") as envoyer:
+            reponse = self.momo(vendeur_id)
+
+        self.assertEqual(reponse.status_code, 200, reponse.content)
+        envoyer.assert_not_called()  # le vendeur demandera son code lui-même, avant son premier versement
+        compte = PayoutAccount.objects.get(user__vendor_profile__id=vendeur_id)
+        self.assertEqual((compte.owner_role, compte.phone_e164, compte.status),
+                         ("VENDOR", "+237677445566", "PENDING_VERIFICATION"))
+        self.assertEqual(reponse.json()["mobile_money"], {"numero": "+237 677 *** 566", "verifie": False})
+        self.assertIs(reponse.json()["identite"]["mobile_money"], True)
+        self.assertNotIn("677445566", str(AuditLog.objects.filter(changes__geste="mobile_money").get().changes))
+
+    def test_un_numero_enregistre_ne_va_pas_au_module_financier(self):
+        # Seul un numéro vérifié par code atteint PayeeAccount : rien n'est versé sur un numéro saisi par l'agent.
+        from apps.payments.bridge.actors import payee_for_vendor
+
+        vendeur_id = self.inscrire().json()["id"]
+        self.momo(vendeur_id)
+
+        compte = payee_for_vendor(VendorProfile.objects.get(pk=vendeur_id))
+        self.assertTrue(compte is None or not compte.momo_number)
+
+    def test_numero_mobile_money_invalide_refuse(self):
+        vendeur_id = self.inscrire().json()["id"]
+
+        reponse = self.momo(vendeur_id, "12345")
+
+        self.assertEqual(reponse.status_code, 400)
+        self.assertEqual(reponse.json()["raison"], "numero")
+
+    def test_un_numero_deja_verifie_n_est_pas_remis_en_attente(self):
+        from apps.accounts.models import PayoutAccount
+
+        vendeur_id = self.inscrire().json()["id"]
+        self.momo(vendeur_id)
+        PayoutAccount.objects.update(status="VERIFIED")
+
+        self.momo(vendeur_id)
+
+        self.assertEqual(PayoutAccount.objects.get().status, "VERIFIED")
+
+    def test_la_cni_validee_et_le_numero_ouvrent_la_publication_sans_le_selfie(self):
+        from apps.vendors import kyc
+
+        vendeur_id = self.inscrire().json()["id"]
+        user = VendorProfile.objects.get(pk=vendeur_id).user
+        for cote in ("recto", "verso"):
+            self.api.post(reverse("vendors:agent-vendeur-piece", args=[vendeur_id]),
+                          {"piece": cote, "fichier": SimpleUploadedFile("cni.jpg", b"jpeg", "image/jpeg")},
+                          format="multipart")
+        ComplianceDocument.objects.update(status="APPROVED")
+        self.assertFalse(kyc.peut_publier(user))  # il manque le numéro
+
+        fiche = self.momo(vendeur_id).json()
+
+        self.assertIs(fiche["identite"]["peut_publier"], True)
+        self.assertIs(fiche["identite"]["verifiee"], False)  # selfie manquant : pas encore de versement
+
     # ── Catalogue ────────────────────────────────────────────────────────────────────────────────────────────────
 
     def test_produit_saisi_pour_le_vendeur_en_attente_de_moderation(self):

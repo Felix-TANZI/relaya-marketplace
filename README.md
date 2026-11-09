@@ -342,6 +342,7 @@ DONNEES_DEMO_AUTORISEES=1 python manage.py charger_demonstration
 | `ops/SITE-REEL.md` | Adresses du site réel, DNS, certificat, réglages, vérifications |
 | `ops/sauvegarde/LISEZMOI.md` | Sauvegardes chiffrées sur R2, test de restauration (T06) |
 | `ops/transfert/PROCEDURE-TRANSFERT.md` | Transfert du site réel MAIN 2 → MAIN 1, répétition, retour arrière (T14-T18) |
+| `ops/lancement/LANCEMENT-14-DECEMBRE.md` | Lancement public : belivay.com, CamPay en production, retrait de la vitrine (T21-T25) |
 | `ops/APPLIS-MOBILES.md` | Construire les six applis vers la bonne API (T12) |
 | `ops/CONTROLE-APPELS.md` | Vérifier que chaque écran n'appelle que la bonne API (T10) |
 

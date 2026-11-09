@@ -15,6 +15,12 @@ class ContactMessageSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'email', 'phone', 'subject', 'message', 'created_at']
         read_only_fields = ['id', 'created_at']
     
+    def validate(self, attrs):
+        # DEV-SRV-01, T09 : il faut pouvoir répondre — par e-mail ou par téléphone.
+        if not (attrs.get("email") or "").strip() and not (attrs.get("phone") or "").strip():
+            raise serializers.ValidationError({"email": "Indiquez un e-mail ou un numéro de téléphone."})
+        return attrs
+
     def validate_message(self, value):
         """Validation du message"""
         if len(value.strip()) < 10:

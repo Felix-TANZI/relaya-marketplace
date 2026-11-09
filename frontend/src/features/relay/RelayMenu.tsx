@@ -68,6 +68,24 @@ interface MenuRow {
 }
 
 /**
+ * DEV-SRV-01, T09 (décision du porteur du 2026-11-08) : écrans de démonstration (faux code, faux colis), visibles
+ * seulement sur le poste de développement, jamais sur le site réel.
+ */
+const SECTION_ETATS: { title: string; rows: MenuRow[] } = {
+  title: "Écrans d'état et d'accès",
+  rows: [
+    { id: "etats", icon: User, label: "Connexion", focus: "connexion" },
+    { id: "etats", icon: UserPlus, label: "Invitation d'un employé", focus: "invitation" },
+    { id: "etats", icon: LayoutGrid, label: "Relais neuf (écrans vides)", focus: "neuf" },
+    { id: "etats", icon: Store, label: "Statut du relais", focus: "statut" },
+    { id: "etats", icon: Wifi, label: "Hors connexion", focus: "offline" },
+    { id: "etats", icon: AlertTriangle, label: "États d'erreur", focus: "erreur" },
+    { id: "etats", icon: ScanLine, label: "Caméra", focus: "camera" },
+    { id: "etats", icon: Download, label: "Installer l'application", focus: "install" },
+  ],
+};
+
+/**
  * Les sections sous la grille, dans l'ordre où un gérant les ouvre : ce qui
  * bouge aujourd'hui, puis l'argent, puis sa réputation, puis les papiers.
  */
@@ -103,19 +121,8 @@ const SECTIONS: Array<{ title: string; rows: MenuRow[] }> = [
       { id: "formation", icon: GraduationCap, label: "Formation" },
     ],
   },
-  {
-    title: "Écrans d'état et d'accès",
-    rows: [
-      { id: "etats", icon: User, label: "Connexion", focus: "connexion" },
-      { id: "etats", icon: UserPlus, label: "Invitation d'un employé", focus: "invitation" },
-      { id: "etats", icon: LayoutGrid, label: "Relais neuf (écrans vides)", focus: "neuf" },
-      { id: "etats", icon: Store, label: "Statut du relais", focus: "statut" },
-      { id: "etats", icon: Wifi, label: "Hors connexion", focus: "offline" },
-      { id: "etats", icon: AlertTriangle, label: "États d'erreur", focus: "erreur" },
-      { id: "etats", icon: ScanLine, label: "Caméra", focus: "camera" },
-      { id: "etats", icon: Download, label: "Installer l'application", focus: "install" },
-    ],
-  },
+  // DEV-SRV-01, T09 : écrans de démonstration, sur le poste de développement seulement (SECTION_ETATS).
+  ...(import.meta.env.DEV ? [SECTION_ETATS] : []),
   {
     title: "Compte",
     rows: [

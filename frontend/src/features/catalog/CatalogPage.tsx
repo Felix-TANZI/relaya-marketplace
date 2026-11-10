@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import i18n from "@/i18n";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -713,7 +714,7 @@ export default function CatalogPage() {
         onClick={() => { setCurrentPage(Math.max(1, currentPage - 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
         disabled={currentPage === 1}
         className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-600 transition hover:border-primary hover:text-primary disabled:opacity-40 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
-        aria-label="Page précédente"
+        aria-label={i18n.t("t03.page_precedente")}
       >
         <ChevronLeft size={16} />
       </button>

@@ -26,6 +26,7 @@
  * autres le disent au lieu de faire semblant.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
+import i18n from "@/i18n";
 import { Camera, Lock, Send, ShoppingCart, Truck } from "lucide-react";
 import { http } from "@/services/api/http";
 import { customerApi, type DisputeEvidenceRequest } from "@/services/api/customer";
@@ -62,7 +63,7 @@ function heure(value: string | null) {
 }
 
 /** Réponses d'un mot, celles qu'on tape dix fois par semaine. */
-const RAPIDES = ["Photo ajoutée", "Le colis est rangé", "Rappelez-moi"];
+const RAPIDES = ["Photo ajoutée", i18n.t("rl3.le_colis_est_range"), "Rappelez-moi"];
 
 export default function RelayInbox({ onError, relay, onNavigate, outbound = 0, arrivals = 0 }: RelayInboxProps) {
   const [requests, setRequests] = useState<DisputeEvidenceRequest[]>([]);
@@ -97,7 +98,7 @@ export default function RelayInbox({ onError, relay, onNavigate, outbound = 0, a
       time: heure(demande.created_at),
       avatar: "initials" as const,
       initials: "LT",
-      status: demande.status === "PENDING" ? "En examen" : "Pièce envoyée",
+      status: demande.status === "PENDING" ? "En examen" : i18n.t("rl3.piece_envoyee"),
       request: demande,
       messages: [
         {
@@ -107,7 +108,7 @@ export default function RelayInbox({ onError, relay, onNavigate, outbound = 0, a
           at: demande.created_at,
         },
         ...(demande.responded_at
-          ? [{ id: `d-${demande.id}-ok`, from: "relais" as Sender, body: "Photo envoyée", at: demande.responded_at, attachment: true }]
+          ? [{ id: `d-${demande.id}-ok`, from: "relais" as Sender, body: i18n.t("rl3.photo_envoyee"), at: demande.responded_at, attachment: true }]
           : []),
       ],
     }));
@@ -116,8 +117,8 @@ export default function RelayInbox({ onError, relay, onNavigate, outbound = 0, a
       {
         key: "support",
         title: "Support BelivaY",
-        subtitle: "Assistance opérationnelle · réception, stockage, retrait",
-        preview: sent.length > 0 ? sent[sent.length - 1].body : "Écrivez-nous : réponse sous un jour ouvré.",
+        subtitle: i18n.t("rl3.assistance_operationnelle_reception_stocka"),
+        preview: sent.length > 0 ? sent[sent.length - 1].body : i18n.t("rl3.ecrivez_nous_reponse_sous_un_jour_ouvre"),
         badge: 0,
         time: sent.length > 0 ? heure(sent[sent.length - 1].at) : "",
         avatar: "cart" as const,
@@ -129,14 +130,14 @@ export default function RelayInbox({ onError, relay, onNavigate, outbound = 0, a
       ...dossiers,
       {
         key: "logistique",
-        title: "Collectes et livraisons",
-        subtitle: "Canal descendant · BelivaY vous informe",
+        title: i18n.t("rl3.collectes_et_livraisons"),
+        subtitle: i18n.t("rl3.canal_descendant_belivay_vous_informe"),
         preview:
           outbound > 0
             ? `${outbound} colis à remettre au prochain passage.`
             : arrivals > 0
               ? `${arrivals} colis annoncés à réceptionner.`
-              : "Aucun mouvement prévu pour l'instant.",
+              : i18n.t("rl3.aucun_mouvement_prevu_pour_l_instant"),
         badge: 0,
         time: "",
         avatar: "truck" as const,
@@ -274,8 +275,8 @@ export default function RelayInbox({ onError, relay, onNavigate, outbound = 0, a
           {courante.messages.length === 0 ? (
             <p className="py-4 text-center text-[13.5px] font-medium text-slate-400 dark:text-slate-500">
               {lectureSeule
-                ? "BelivaY publie ici les collectes et les arrivées. Ce canal ne se répond pas."
-                : "Aucun message pour l'instant."}
+                ? i18n.t("rl3.belivay_publie_ici_les_collectes_et_les_ar")
+                : i18n.t("rl3.aucun_message_pour_l_instant")}
             </p>
           ) : (
             courante.messages.map((message) =>
@@ -316,7 +317,7 @@ export default function RelayInbox({ onError, relay, onNavigate, outbound = 0, a
             onClick={() => onNavigate?.(outbound > 0 ? "sortie" : "reception")}
             className="w-full rounded-[12px] border border-slate-200 bg-white px-4 py-3 text-[15px] font-black text-slate-700 transition active:scale-[.97] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
           >
-            {outbound > 0 ? "Voir ce qui doit partir" : "Voir les arrivées"}
+            {outbound > 0 ? i18n.t("rl3.voir_ce_qui_doit_partir") : i18n.t("rl3.voir_les_arrivees")}
           </button>
         ) : (
           <>
@@ -340,7 +341,7 @@ export default function RelayInbox({ onError, relay, onNavigate, outbound = 0, a
                 type="button"
                 onClick={() => photoRef.current?.click()}
                 disabled={!courante.request || sending}
-                aria-label="Joindre une photo"
+                aria-label={i18n.t("rl3.joindre_une_photo")}
                 className="flex h-[46px] w-[46px] flex-shrink-0 items-center justify-center rounded-[12px] border border-slate-200 bg-white text-slate-600 transition active:scale-90 disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
               >
                 <Camera size={20} strokeWidth={2.2} />
@@ -360,7 +361,7 @@ export default function RelayInbox({ onError, relay, onNavigate, outbound = 0, a
                 onKeyDown={(event) => {
                   if (event.key === "Enter") void envoyer();
                 }}
-                placeholder="Votre message"
+                placeholder={i18n.t("rl3.votre_message")}
                 className="min-w-0 flex-1 rounded-full border border-slate-200 bg-white px-4 py-3 text-[14.5px] font-medium text-slate-900 outline-none transition focus:border-[#2456D6] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
               />
 

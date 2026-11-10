@@ -21,6 +21,7 @@
  * premier réflexe de quiconque a déjà tenu un commerce.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
+import i18n from "@/i18n";
 import { Lock } from "lucide-react";
 import { http } from "@/services/api/http";
 
@@ -51,7 +52,7 @@ const NIVEAUX = [5, 4, 3, 2, 1];
 const THEMES: Array<{ label: string; tone: "good" | "warn" | "bad"; mots: string[] }> = [
   { label: "Rapide", tone: "good", mots: ["rapide", "vite", "rapidement", "efficace"] },
   { label: "Accueillant", tone: "good", mots: ["accueil", "aimable", "gentil", "souriant", "sympa", "poli"] },
-  { label: "Bien rangé", tone: "good", mots: ["range", "propre", "organise", "ordre", "soigne"] },
+  { label: i18n.t("rl3.bien_range"), tone: "good", mots: ["range", "propre", "organise", "ordre", "soigne"] },
   { label: "Attente", tone: "warn", mots: ["attente", "attendre", "attendu", "queue", "monde", "lent"] },
   { label: "Horaires", tone: "bad", mots: ["horaire", "ferme", "fermait", "fermeture", "retard"] },
 ];
@@ -141,7 +142,7 @@ export default function RelayReviews({ onError }: { onError: (error: unknown) =>
           <div className="min-w-0 pb-1">
             <Etoiles note={Math.round(summary.average)} taille="text-[19px]" />
             <div className="mt-1 truncate text-[13px] font-medium text-white/90">
-              {total > 0 ? `${total} avis` : "Aucun avis pour l'instant"}
+              {total > 0 ? `${total} avis` : i18n.t("rl3.aucun_avis_pour_l_instant")}
             </div>
           </div>
         </div>

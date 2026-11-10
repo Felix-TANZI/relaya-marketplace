@@ -22,6 +22,7 @@
  * pas des données. Ils ne bougeront que si le contrat bouge.
  */
 import { useEffect, useState } from "react";
+import i18n from "@/i18n";
 import { Check, Layers } from "lucide-react";
 import { http } from "@/services/api/http";
 
@@ -49,19 +50,19 @@ interface TrustPayload {
 /** Les avantages par palier — engagements contractuels, pas données. */
 const AVANTAGES: Record<string, string[]> = {
   NEW: [
-    "Colis petits, moyens et encombrants (sauf si vous refusez les encombrants)",
+    i18n.t("rl3.colis_petits_moyens_et_encombrants_sauf_si"),
     "Versement chaque vendredi, sans frais",
-    "Accompagnement renforcé du support les 30 premiers jours",
+    i18n.t("rl3.accompagnement_renforce_du_support_les_30"),
   ],
   CONFIRMED: [
-    "Badge « Confirmé » visible au choix du relais",
-    "Proposé en premier aux clients de votre zone",
-    "Hausse de capacité jusqu'à +20 % validée à distance, sans attendre une visite",
+    i18n.t("rl3.badge_confirme_visible_au_choix_du_relais"),
+    i18n.t("rl3.propose_en_premier_aux_clients_de_votre_zo"),
+    i18n.t("rl3.hausse_de_capacite_jusqu_a_20_validee_a_di"),
   ],
   GOLD: [
-    "Tous les avantages Confirmé",
-    "Étagères BelivaY offertes pour agrandir",
-    "Relais ambassadeur : prime pour chaque nouveau relais recruté et ouvert",
+    i18n.t("rl3.tous_les_avantages_confirme"),
+    i18n.t("rl3.etageres_belivay_offertes_pour_agrandir"),
+    i18n.t("rl3.relais_ambassadeur_prime_pour_chaque_nouve"),
   ],
 };
 
@@ -168,7 +169,7 @@ export default function RelayTiers() {
         }}
       >
         {loading ? (
-          <p className="py-4 text-[13.5px] font-medium text-white/60">Lecture de votre palier…</p>
+          <p className="py-4 text-[13.5px] font-medium text-white/60">{i18n.t("rl3.lecture_de_votre_palier")}</p>
         ) : !trust ? (
           <p className="py-4 text-[13.5px] font-medium text-white/60">
             Votre Trust Score n'est pas encore disponible.

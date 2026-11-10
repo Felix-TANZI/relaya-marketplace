@@ -37,6 +37,7 @@
  * le bloc ne la fabrique pas : il montre ce qu'il sait.
  */
 import { useEffect, useState } from "react";
+import i18n from "@/i18n";
 import { useTranslation } from "react-i18next";
 import { Check, ChevronRight, CreditCard, KeyRound, ShieldCheck, Truck, Wifi, WifiOff } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -275,10 +276,10 @@ export default function RelayToday({
     acquired > 0
       ? locale === "en"
         ? "acquired since your last payout"
-        : "acquis depuis votre dernier versement"
+        : i18n.t("rl3.acquis_depuis_votre_dernier_versement")
       : locale === "en"
         ? "total owed, net of deductions"
-        : "total dû, net des retenues";
+        : i18n.t("rl3.total_du_net_des_retenues");
 
   return (
     <div className="space-y-3.5">
@@ -288,14 +289,14 @@ export default function RelayToday({
           {relaisNeuf
             ? locale === "en"
               ? "Welcome to your relay!"
-              : "Bienvenue au relais !"
+              : i18n.t("rl3.bienvenue_au_relais")
             : `${locale === "en" ? "Hello" : "Bonjour"} ${manager}`}
         </h2>
         <p className="mt-1.5 text-[14.5px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">
           {relaisNeuf
             ? locale === "en"
               ? "You are open. Here is how your first day goes."
-              : "Vous êtes ouvert. Voici comment se passe votre premier jour."
+              : i18n.t("rl3.vous_etes_ouvert_voici_comment_se_passe_vo")
             : `${todayLabel(locale)} · ${readyForPickup} ${
                 locale === "en"
                   ? `pickup${readyForPickup > 1 ? "s" : ""} expected today`
@@ -315,15 +316,15 @@ export default function RelayToday({
           className="pr-span pr-sunrise pr-hero overflow-hidden p-[18px]"
         >
           <p className="text-[12.5px] font-black uppercase leading-none tracking-[0.085em] text-white">
-            {locale === "en" ? "Waiting for the first courier" : "En attente du premier livreur"}
+            {locale === "en" ? "Waiting for the first courier" : i18n.t("rl3.en_attente_du_premier_livreur")}
           </p>
           <div className="mt-3 text-[25px] font-black leading-tight tracking-[-0.015em]">
-            {locale === "en" ? "No parcel announced yet" : "Aucun colis annoncé pour l'instant"}
+            {locale === "en" ? "No parcel announced yet" : i18n.t("rl3.aucun_colis_annonce_pour_l_instant")}
           </div>
           <p className="mt-3 text-[14.5px] font-medium leading-[1.58] text-white/95">
             {locale === "en"
               ? "As soon as a delivery company picks a batch for your relay, it appears here with its arrival window."
-              : "Dès qu'une entreprise de livraison choisit un lot pour votre relais, il apparaît ici avec sa fenêtre d'arrivée."}
+              : i18n.t("rl3.des_qu_une_entreprise_de_livraison_choisit")}
           </p>
         </section>
       ) : null}
@@ -351,7 +352,7 @@ export default function RelayToday({
             <span className="text-[58px] font-black leading-[0.82] tracking-[-0.025em]">{arrivalCount}</span>
             <div className="min-w-0 pt-1">
               <div className="text-[18px] font-black leading-tight">
-                {locale === "en" ? "parcels to check in" : "colis à réceptionner"}
+                {locale === "en" ? "parcels to check in" : i18n.t("rl3.colis_a_receptionner")}
               </div>
               {arrivalCourier || arrivalMission ? (
                 <div className="mt-1 truncate text-[13.5px] font-semibold text-white/90">
@@ -365,7 +366,7 @@ export default function RelayToday({
             {capacityMax === 0
               ? locale === "en"
                 ? "Declare your storage capacity so BelivaY can size your arrivals."
-                : "Déclarez votre nombre de places pour que BelivaY calibre vos arrivées."
+                : i18n.t("rl3.declarez_votre_nombre_de_places_pour_que_b")
               : slotsShort
                 ? locale === "en"
                   ? `You need ${arrivalCount} slots and only ${freeSlots} are free. Free some space, or refuse the surplus at check-in.`
@@ -386,7 +387,7 @@ export default function RelayToday({
             className="mt-5 flex w-full items-center justify-center gap-2.5 rounded-[14px] bg-white px-4 py-4 text-[16px] font-black text-[#D95000] shadow-[0_3px_10px_rgba(107,71,0,.18)] transition active:scale-[.97]"
           >
             <KeyRound size={19} strokeWidth={2.4} />
-            {locale === "en" ? "Prepare the check-in" : "Préparer la réception"}
+            {locale === "en" ? "Prepare the check-in" : i18n.t("rl3.preparer_la_reception")}
           </button>
         </section>
       ) : (
@@ -397,12 +398,12 @@ export default function RelayToday({
             </span>
             <div className="min-w-0">
               <div className="text-[15px] font-black text-slate-900 dark:text-white">
-                {locale === "en" ? "No courier inbound" : "Aucun livreur en approche"}
+                {locale === "en" ? "No courier inbound" : i18n.t("rl3.aucun_livreur_en_approche")}
               </div>
               <div className="mt-0.5 text-[13px] font-medium text-slate-500 dark:text-slate-400">
                 {locale === "en"
                   ? "BelivaY warns you as soon as a mission targets your relay."
-                  : "BelivaY vous prévient dès qu'une mission vise votre relais."}
+                  : i18n.t("rl3.belivay_vous_previent_des_qu_une_mission_v")}
               </div>
             </div>
           </div>
@@ -412,9 +413,9 @@ export default function RelayToday({
       {/* ── Etat du local ────────────────────────────────────────────────── */}
       <section className="pr-span pr-span-grid grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Tile
-          label={locale === "en" ? "To hand over" : "À remettre"}
+          label={locale === "en" ? "To hand over" : i18n.t("rl3.a_remettre")}
           value={nf(readyForPickup)}
-          sub={locale === "en" ? "parcels ready for pickup" : "colis prêts au retrait"}
+          sub={locale === "en" ? "parcels ready for pickup" : i18n.t("rl3.colis_prets_au_retrait")}
           onClick={() => onNavigate("retrait")}
         />
         <Tile
@@ -427,13 +428,13 @@ export default function RelayToday({
                 : `à retirer avant ${closingLabel}`
               : locale === "en"
                 ? "storage ends today"
-                : "garde échue aujourd'hui"
+                : i18n.t("rl3.garde_echue_aujourd_hui")
           }
           tone={lastDay > 0 ? "amber" : "slate"}
           onClick={() => onNavigate("stock")}
         />
         <Tile
-          label={locale === "en" ? "To ship out" : "À faire partir"}
+          label={locale === "en" ? "To ship out" : i18n.t("rl3.a_faire_partir")}
           value={nf(outbound)}
           sub={locale === "en" ? "return, send-back, transfer" : "renvoi, retour, transfert"}
           tone={outbound > 0 ? "blue" : "slate"}
@@ -447,7 +448,7 @@ export default function RelayToday({
               ? `${locale === "en" ? "of" : "sur"} ${capacityMax} · ${occupancyPct} % ${locale === "en" ? "used" : "occupé"}`
               : locale === "en"
                 ? "capacity to declare"
-                : "capacité à déclarer"
+                : i18n.t("rl3.capacite_a_declarer")
           }
           onClick={() => onNavigate("capacite")}
         />
@@ -461,36 +462,36 @@ export default function RelayToday({
         <>
           <section className="rounded-[14px] border border-slate-200 bg-white px-4 pb-2 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
             <h3 className="px-1 text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
-              {locale === "en" ? "Your first day" : "Votre premier jour"}
+              {locale === "en" ? "Your first day" : i18n.t("rl3.votre_premier_jour")}
             </h3>
             <ul className="mt-2 divide-y divide-slate-100 dark:divide-slate-800">
               {[
                 {
                   cle: "formation",
                   fait: trainingDone,
-                  titre: locale === "en" ? "Training completed" : "Formation terminée",
-                  detail: locale === "en" ? "The required modules" : "Les modules obligatoires",
+                  titre: locale === "en" ? "Training completed" : i18n.t("rl3.formation_terminee"),
+                  detail: locale === "en" ? "The required modules" : i18n.t("rl3.les_modules_obligatoires"),
                   cible: "formation" as TodayTarget,
                 },
                 {
                   cle: "versement",
                   fait: payoutVerified,
-                  titre: locale === "en" ? "Payout number verified" : "Numéro de versement vérifié",
-                  detail: locale === "en" ? "Confirmed by code" : "Confirmé par code",
+                  titre: locale === "en" ? "Payout number verified" : i18n.t("rl3.numero_de_versement_verifie"),
+                  detail: locale === "en" ? "Confirmed by code" : i18n.t("rl3.confirme_par_code"),
                   cible: "finances" as TodayTarget,
                 },
                 {
                   cle: "etageres",
                   fait: false,
-                  titre: locale === "en" ? "Prepare your shelves" : "Préparez vos étagères",
-                  detail: locale === "en" ? "Label A, B and C as on the plan" : "Étiquetez A, B et C comme sur le plan",
+                  titre: locale === "en" ? "Prepare your shelves" : i18n.t("rl3.preparez_vos_etageres"),
+                  detail: locale === "en" ? "Label A, B and C as on the plan" : i18n.t("rl3.etiquetez_a_b_et_c_comme_sur_le_plan"),
                   cible: "stock" as TodayTarget,
                 },
                 {
                   cle: "horaires",
                   fait: capacityMax > 0 && Boolean(closingLabel),
-                  titre: locale === "en" ? "Check your hours" : "Vérifiez vos horaires",
-                  detail: locale === "en" ? "Clients pick your relay on them" : "Les clients choisissent votre relais selon eux",
+                  titre: locale === "en" ? "Check your hours" : i18n.t("rl3.verifiez_vos_horaires"),
+                  detail: locale === "en" ? "Clients pick your relay on them" : i18n.t("rl3.les_clients_choisissent_votre_relais_selon"),
                   cible: "capacite" as TodayTarget,
                 },
               ].map((ligne) => (
@@ -534,7 +535,7 @@ export default function RelayToday({
           <section className="rounded-[14px] border border-slate-200 bg-white px-5 py-5 text-center shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
             <CreditCard size={22} strokeWidth={2.2} className="mx-auto text-[#2456D6] dark:text-blue-400" />
             <div className="mt-2.5 text-[17px] font-black text-slate-900 dark:text-white">
-              {locale === "en" ? "No earnings yet" : "Pas encore de gains"}
+              {locale === "en" ? "No earnings yet" : i18n.t("rl3.pas_encore_de_gains")}
             </div>
             {/*
               Aucun montant n'est annonce.
@@ -547,7 +548,7 @@ export default function RelayToday({
             <p className="mt-2 text-[13.5px] font-medium leading-[1.5] text-slate-500 dark:text-slate-400">
               {locale === "en"
                 ? "Your first earnings arrive with your first hand-over. Payout every Friday."
-                : "Vos premiers gains arrivent à la première remise. Versement chaque vendredi."}
+                : i18n.t("rl3.vos_premiers_gains_arrivent_a_la_premiere")}
             </p>
           </section>
 
@@ -560,7 +561,7 @@ export default function RelayToday({
             <p className="mt-2 text-[13.5px] font-medium leading-[1.5] text-slate-500 dark:text-slate-400">
               {locale === "en"
                 ? "You start from a neutral mark; it sharpens after your first operations."
-                : "Vous démarrez à une note neutre ; elle se précise après vos premières opérations."}
+                : i18n.t("rl3.vous_demarrez_a_une_note_neutre_elle_se_pr")}
             </p>
           </section>
         </>
@@ -574,7 +575,7 @@ export default function RelayToday({
       <section className="-mx-1 rounded-[14px] border border-slate-200 bg-white px-4 pb-1.5 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
         <div className="flex items-center justify-between gap-3">
           <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
-            {locale === "en" ? "To do now" : "À faire maintenant"}
+            {locale === "en" ? "To do now" : i18n.t("rl3.a_faire_maintenant")}
           </h3>
           <span
             className={`flex h-7 min-w-[28px] items-center justify-center rounded-full px-2 text-[13px] font-black ${
@@ -591,7 +592,7 @@ export default function RelayToday({
           <p className="pb-4 pt-3 text-[13.5px] font-medium text-slate-500 dark:text-slate-400">
             {locale === "en"
               ? "Nothing pending. Your relay is up to date."
-              : "Rien en attente. Votre relais est à jour."}
+              : i18n.t("rl3.rien_en_attente_votre_relais_est_a_jour")}
           </p>
         ) : (
           <ul className="mt-1 divide-y divide-slate-100 dark:divide-slate-800">
@@ -638,7 +639,7 @@ export default function RelayToday({
       >
         <div className="flex items-center justify-between gap-3">
           <p className="text-[13px] font-black uppercase leading-none tracking-[0.075em] text-[#E8A10E]">
-            {locale === "en" ? "Earned this week" : "Gagné cette semaine"}
+            {locale === "en" ? "Earned this week" : i18n.t("rl3.gagne_cette_semaine")}
           </p>
           <ChevronRight size={19} strokeWidth={2.4} className="-mt-0.5 flex-shrink-0 text-[#E8A10E]" />
         </div>
@@ -648,7 +649,7 @@ export default function RelayToday({
         </div>
         <p className="mt-2 text-[13.5px] font-medium leading-[1.5] text-white/75">
           {!due ? (
-            locale === "en" ? "Loading your balance…" : "Chargement de votre solde…"
+            locale === "en" ? "Loading your balance…" : i18n.t("rl3.chargement_de_votre_solde")
           ) : (
             <>
               {earnedLabel}
@@ -656,7 +657,7 @@ export default function RelayToday({
                 <> · {humaniserBlocage(firstBlocker, t)}</>
               ) : due.next_settlement_at ? (
                 <>
-                  {locale === "en" ? " · payout expected " : " · versement prévu "}
+                  {locale === "en" ? " · payout expected " : i18n.t("rl3.versement_prevu")}
                   <strong className="font-black text-white">{formatLong(due.next_settlement_at)}</strong>
                 </>
               ) : due.next_settlement_cycle ? (
@@ -702,7 +703,7 @@ export default function RelayToday({
                   : "Score public acheteur"
                 : locale === "en"
                   ? "Awaiting data"
-                  : "En attente de données"}
+                  : i18n.t("rl3.en_attente_de_donnees")}
             </span>
           </span>
         </button>
@@ -724,7 +725,7 @@ export default function RelayToday({
                 ? `${reviews.count} ${locale === "en" ? "reviews" : "avis"}`
                 : locale === "en"
                   ? "No review yet"
-                  : "Aucun avis pour l'instant"}
+                  : i18n.t("rl3.aucun_avis_pour_l_instant")}
             </span>
           </span>
         </button>
@@ -740,10 +741,10 @@ export default function RelayToday({
         {connected
           ? locale === "en"
             ? "Connected · nothing waiting to be sent"
-            : "Connecté · aucune opération en attente d'envoi"
+            : i18n.t("rl3.connecte_aucune_operation_en_attente_d_env")
           : locale === "en"
             ? "Offline · showing the last data received"
-            : "Hors ligne · affichage des dernières données reçues"}
+            : i18n.t("rl3.hors_ligne_affichage_des_dernieres_donnees")}
       </p>
 
       {footer}

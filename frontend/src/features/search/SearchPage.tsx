@@ -7,7 +7,6 @@ import {
 } from "lucide-react";
 import CatalogProductCard from "@/components/product/CatalogProductCard";
 import { productsApi, type Category, type Product, type ProductListResponse, type SearchMeta } from "@/services/api/products";
-import { searchMockProducts, MOCK_PRODUCTS } from "@/lib/mockProducts";
 
 type SortKey = "relevance" | "price_asc" | "price_desc" | "newest";
 
@@ -86,17 +85,8 @@ export default function SearchPage() {
         if (cats.length > 0) { setCategories(cats); return; }
         throw new Error("empty");
       })
-      .catch(() => {
-        const seen = new Set<number>();
-        const mockCats: Category[] = [];
-        for (const p of MOCK_PRODUCTS) {
-          if (p.category && !seen.has(p.category.id)) {
-            seen.add(p.category.id);
-            mockCats.push(p.category);
-          }
-        }
-        setCategories(mockCats);
-      });
+      // DEV-SRV-01, T09 : sans réponse de l'API, aucune catégorie (plus de catégories tirées de faux produits).
+      .catch(() => setCategories([]));
   }, [i18n.language]);
 
   useEffect(() => {
@@ -119,10 +109,11 @@ export default function SearchPage() {
       });
       const results = response.results ?? [];
       setSearchMeta(response.search_meta ?? null);
-      setProducts(results.length > 0 ? results : searchMockProducts(q));
+      // DEV-SRV-01, T09 : aucun résultat = « aucun résultat », jamais de faux produits.
+      setProducts(results);
     } catch {
       setSearchMeta(null);
-      setProducts(searchMockProducts(q));
+      setProducts([]);
     } finally {
       setLoading(false);
     }

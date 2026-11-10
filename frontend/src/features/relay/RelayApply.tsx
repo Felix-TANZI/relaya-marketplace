@@ -47,6 +47,7 @@ interface Brouillon {
   // Etape « Gerant »
   gerant: string;
   telephone: string;
+  email: string;
   // Etape « Local »
   places: string;
   horaires: string;
@@ -92,6 +93,7 @@ const VIDE: Brouillon = {
   longitude: null,
   gerant: "",
   telephone: "",
+  email: "",
   places: "",
   horaires: "",
   operateur: OPERATEURS[0].cle,
@@ -180,7 +182,8 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
         method: "POST",
         body: JSON.stringify({
           name: brouillon.gerant || brouillon.enseigne,
-          email: "candidature@belivay.test",
+          // DEV-SRV-01, T09 : facultatif ; sans e-mail, le support rappelle au téléphone (plus d'adresse inventée).
+          email: (brouillon.email ?? "").trim(),
           phone: `+237${brouillon.momo || brouillon.telephone}`,
           subject: `[Candidature point relais] ${brouillon.enseigne}`,
           message: [
@@ -518,6 +521,17 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
               className="min-w-0 flex-1 bg-transparent text-[15px] font-semibold tracking-wide text-slate-900 outline-none placeholder:font-medium placeholder:text-slate-300 dark:text-white"
             />
           </div>
+
+          <label className={etiquette}>E-mail (facultatif)</label>
+          <input
+            value={brouillon.email ?? ""}
+            onChange={(event) => modifier("email", event.target.value.trim())}
+            type="email"
+            inputMode="email"
+            placeholder="Pour recevoir la réponse par e-mail"
+            aria-label="E-mail (facultatif)"
+            className={champ}
+          />
 
           <div className="mt-4 grid grid-cols-2 gap-3">
             {PIECES_GERANT.map((piece) => {

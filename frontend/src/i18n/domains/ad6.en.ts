@@ -52,8 +52,8 @@ const ad6_fin_account = {
 };
 
 const ad6_fin_commissions = {
-  title: "Commissions by Category",
-  subtitle: "Grid visible per vendor subscription plan and product family.",
+  title: "Subscription plans and commissions",
+  subtitle: "Seller plans as they are billed (editable in the Django admin).",
   internal_reference: "Internal admin reference",
   plan_free: "Free",
   plan_starter: "Starter",
@@ -74,6 +74,14 @@ const ad6_fin_commissions = {
   table_title: "Commission table",
   th_category: "Category",
   th_volume: "Volume",
+  // DEV-SRV-01, T09 : vrais plans lus dans l'API.
+  load_error: "Couldn't load the plans.",
+  empty: "No plan in the database: run “python manage.py charger_reference”.",
+  inactive: "Disabled",
+  subscribers: "{{count}} subscriber(s)",
+  per_month: "{{price}} / month",
+  per_year: "{{price}} / year",
+  commission_note: "BelivaY's commission does not depend on the plan: it is computed on each sub-order under the rules in force (minimum commission, minimum rate, product family).",
 };
 
 const ad6_fin_finances = {

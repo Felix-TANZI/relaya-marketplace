@@ -14,7 +14,6 @@ import {
   Gift,
   Globe,
   Map,
-  MessageSquareQuote,
   Palette,
   PauseCircle,
   Phone,
@@ -114,24 +113,6 @@ const COMPARISON: { labelKey: string; freeKey: string; plusKey: string; icon?: s
   { labelKey: "cl5_premium.cmp_reco_label", freeKey: "cl5_premium.cmp_reco_free", plusKey: "cl5_premium.cmp_reco_plus" },
   { labelKey: "cl5_premium.cmp_theme_label", freeKey: "cl5_premium.cmp_theme_free", plusKey: "cl5_premium.cmp_theme_plus", icon: "sparkle" },
   { labelKey: "cl5_premium.cmp_support_label", freeKey: "cl5_premium.cmp_support_free", plusKey: "cl5_premium.cmp_support_plus" },
-];
-
-const TESTIMONIALS = [
-  {
-    name: "Felix N.",
-    metaKey: "cl5_premium.testimonial1_meta",
-    quoteKey: "cl5_premium.testimonial1_quote",
-  },
-  {
-    name: "Karine M.",
-    metaKey: "cl5_premium.testimonial2_meta",
-    quoteKey: "cl5_premium.testimonial2_quote",
-  },
-  {
-    name: "Paul T.",
-    metaKey: "cl5_premium.testimonial3_meta",
-    quoteKey: "cl5_premium.testimonial3_quote",
-  },
 ];
 
 const FAQ = [
@@ -645,46 +626,8 @@ export default function PremiumPage() {
           </p>
         </section>
 
-        {/* ═════════════════════════ Témoignages ═════════════════════════ */}
-        <section className="mt-8">
-          <h2 className="flex items-center gap-2 text-[17px] font-black text-gray-900 dark:text-white">
-            <MessageSquareQuote size={18} className="text-[#F47920]" />
-            {t("cl5_premium.testimonials_heading")}
-          </h2>
-
-          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {TESTIMONIALS.map((testimonial) => (
-              <article
-                key={testimonial.name}
-                className="pf-card"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5">
-                    <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#F8A45E,#F47920)] text-[13px] font-black text-white">
-                      {testimonial.name.charAt(0)}
-                    </span>
-                    <div>
-                      <p className="text-[13px] font-extrabold text-gray-900 dark:text-white">
-                        {testimonial.name}
-                      </p>
-                      <p className="text-[11px] text-gray-400">{t(testimonial.metaKey)}</p>
-                    </div>
-                  </div>
-
-                  <span className="flex flex-shrink-0 gap-0.5">
-                    {Array.from({ length: 5 }).map((_, index) => (
-                      <Star key={index} size={11} className="text-amber-400" fill="currentColor" />
-                    ))}
-                  </span>
-                </div>
-
-                <p className="mt-3 text-[12px] italic leading-relaxed text-gray-600 dark:text-gray-400">
-                  « {t(testimonial.quoteKey)} »
-                </p>
-              </article>
-            ))}
-          </div>
-        </section>
+        {/* DEV-SRV-01, T09 : la section « Témoignages » montrait trois avis inventés (Felix N., Karine M., Paul T.) :
+            retirée jusqu'à de vrais avis d'abonnés. */}
 
         {/* ═════════════════════ Questions fréquentes ═════════════════════ */}
         <section className="mt-8">

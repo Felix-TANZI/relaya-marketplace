@@ -125,7 +125,8 @@ export default {
     numero_subtitle: 'Le seul numéro où BelivaY vous paie. Toujours à votre nom.',
     numero_current_number: 'Numéro actuel',
     numero_current_active: 'Actif',
-    numero_warning: 'Avant de changer : vos retraits sont bloqués {{days}} jours le temps qu’une personne vérifie. Rien n’est perdu. Le numéro doit être à votre nom.',
+    numero_current_pending: 'Code à confirmer',
+    numero_warning: 'Le nouveau numéro doit être à votre nom. Un code lui est envoyé : vos versements partent sur ce numéro une fois le code confirmé.',
     numero_operator_label: 'Opérateur',
     numero_new_number_label: 'Nouveau numéro',
     numero_invalid_number: 'Numéro invalide pour le Cameroun (9 chiffres).',
@@ -144,10 +145,10 @@ export default {
     numero_confirming: 'Enregistrement…',
     numero_save_error: 'Impossible d’enregistrer ce numéro pour l’instant.',
 
-    numero_done_title: 'Numéro enregistré',
+    numero_done_title: 'Numéro vérifié',
     numero_review_kicker: 'Revue annoncée : {{days}} jours',
     numero_review_until: 'Jusqu’au {{date}}',
-    numero_review_explain: 'Une personne de BelivaY vérifie normalement ce changement avant le premier versement sur ce numéro — ça protège votre argent si quelqu’un a pris votre téléphone.',
+    numero_review_explain: 'C’est sur ce numéro que BelivaY vous verse vos gains. Par sécurité, après un changement de numéro, les versements reprennent une fois le délai de sécurité passé : cela protège votre argent si quelqu’un a pris votre téléphone.',
     numero_honest_note: 'Remarque honnête : cette revue de 7 jours n’est pas encore appliquée par le serveur aujourd’hui. Le numéro que vous venez d’enregistrer est en réalité déjà actif pour vos prochaines demandes de retrait, sans délai d’attente imposé côté serveur pour l’instant.',
     numero_back_to_versements: 'Retour à Versements',
 

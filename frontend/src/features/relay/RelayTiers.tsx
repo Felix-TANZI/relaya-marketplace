@@ -57,11 +57,9 @@ const AVANTAGES: Record<string, string[]> = {
     "Badge « Confirmé » visible au choix du relais",
     "Proposé en premier aux clients de votre zone",
     "Hausse de capacité jusqu'à +20 % validée à distance, sans attendre une visite",
-    "Colis de plus de 100 000 F orientés en priorité vers vous",
   ],
   GOLD: [
     "Tous les avantages Confirmé",
-    "+25 F par colis remis (bonus qualité)",
     "Étagères BelivaY offertes pour agrandir",
     "Relais ambassadeur : prime pour chaque nouveau relais recruté et ouvert",
   ],

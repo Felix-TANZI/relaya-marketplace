@@ -146,7 +146,7 @@ export default {
     contract_no_deposit: 'Aucune caution, aucun dépôt, aucun frais d’entrée.',
     contract_read_full: 'Lire le contrat complet',
     contract_why_amount: 'Pourquoi ce montant ?',
-    contract_why_amount_example: 'Exemple : un ITEL AC52 vendu 20 000 F vous laisse 17 840 F gardés.',
+    contract_why_amount_example: 'Le montant exact gardé dépend du prix et de la catégorie de chaque produit.',
     discovery_offer_title: 'Offre de découverte',
     discovery_offer_body: 'Dès votre première commande payée, gardez 3 points de plus sur chaque vente pendant 3 mois ou 50 commandes.',
     is_registered_toggle: 'Je suis immatriculé (RCCM / NIU)',

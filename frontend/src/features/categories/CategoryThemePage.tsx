@@ -426,7 +426,9 @@ export default function CategoryThemePage() {
 
   const { accent } = theme;
 
-  /* Chiffres du hero : réels pour une catégorie de la base, éditoriaux pour un thème. */
+  /* Chiffres du hero : réels pour une catégorie de la base. Un thème sans catégorie en base n'a plus de chiffres
+     éditoriaux (DEV-SRV-01 T09 : « 1 850 produits », « 310 vendeurs », « 4,6 / 5 » étaient inventés) : seules les
+     tuiles qui ont une valeur s'affichent. */
   const ratedProducts = categoryProducts.filter((product) => (product.rating_average ?? 0) > 0);
   const averageRating = ratedProducts.length
     ? ratedProducts.reduce((sum, product) => sum + (product.rating_average ?? 0), 0) / ratedProducts.length
@@ -443,7 +445,7 @@ export default function CategoryThemePage() {
         { icon: ShieldCheck, num: theme.vendors, label: "Vendeurs certifiés" },
         { icon: Star, num: theme.rating, label: "Note moyenne" },
         { icon: Truck, num: theme.delivery, label: "Livraison" },
-      ];
+      ].filter((stat) => stat.num);
 
   /* Sous-catégories proposées dans le panneau de filtres. */
   const panelSubItems = context

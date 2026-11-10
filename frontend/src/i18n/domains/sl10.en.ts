@@ -117,7 +117,7 @@ export default {
     sheet_field_category: 'Category',
     sheet_field_category_example: 'E.g.: Phones',
     sheet_field_photo: 'Add a photo',
-    sheet_priority_toggle: 'Priority sheet · 1,000 F',
+    sheet_priority_toggle: 'Priority sheet',
     sheet_how_it_works_detail: 'BelivaY writes the sheet (title, description, reference photos) within 48h, or 24h with the priority option. Your offer stays in draft in the meantime.',
     sheet_cta_send: 'Send the request',
     sheet_sent_toast: 'We noted your search.',

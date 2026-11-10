@@ -24,7 +24,8 @@ def test_b4_sans_remplacant_le_remboursement_part_le_jour_meme_sans_approbation(
     assert r.status == Refund.Status.APPROVED and r.approved_by_id is None             # personne n'a eu à approuver
     execute_approved_refunds()
     r.refresh_from_db()
-    assert r.status == Refund.Status.PAID and r.created_at.date() == timezone.localdate()   # le jour même
+    # Date du jour à Yaoundé des deux côtés : created_at.date() donnait la date UTC, fausse entre 23 h et minuit UTC.
+    assert r.status == Refund.Status.PAID and timezone.localdate(r.created_at) == timezone.localdate()   # le jour même
     from apps.payments.settlements.services import remboursements_systeme_du_jour
 
     jour = remboursements_systeme_du_jour(timezone.localdate())

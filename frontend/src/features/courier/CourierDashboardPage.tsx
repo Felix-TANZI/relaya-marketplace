@@ -1,5 +1,4 @@
 import { type ComponentType, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import i18n from "@/i18n";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Capacitor } from "@capacitor/core";

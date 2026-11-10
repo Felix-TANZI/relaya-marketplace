@@ -44,12 +44,16 @@ def ligne_quartier(nom: str) -> dict:
     return ligne
 
 
-def compte_existant(numero: dict) -> bool:
+def compte_existant(numero: dict, sauf=None) -> bool:
+    """Un compte (client, vendeur, livreur…) porte déjà ce numéro ; `sauf` : sans compter ce compte-là."""
     valeurs = {numero["national"], numero["e164"], f"237{numero['national']}"}
-    return User.objects.filter(
+    comptes = User.objects.filter(
         Q(profile__phone__in=valeurs) | Q(vendor_profile__phone__in=valeurs) | Q(courier_profile__phone__in=valeurs)
         | Q(relay_point_profile__phone__in=valeurs) | Q(delivery_organization_profile__phone__in=valeurs)
-    ).exists()
+    )
+    if sauf is not None:
+        comptes = comptes.exclude(pk=sauf.pk)
+    return comptes.exists()
 
 
 def _identifiant_libre(national: str) -> str:
@@ -59,6 +63,40 @@ def _identifiant_libre(national: str) -> str:
         n += 1
         identifiant = f"{base}-{n}"
     return identifiant
+
+
+def creer_compte_vendeur(*, nom: str, numero: dict, ligne: dict, gerant: str = "", latitude=None, longitude=None,
+                         reperes: str = "", mot_de_passe: str | None = None) -> VendorProfile:
+    """
+    Le compte et la boutique EN ATTENTE, avec l'emplacement principal dans son quartier (la zone en découle).
+    Commun aux deux parcours de T07 : l'agent (sans mot de passe : il remet un accès provisoire) et l'inscription
+    seule (mot de passe choisi par le vendeur). À appeler dans une transaction ; lève Refus (apps.vendors.ouverture).
+    """
+    user = User.objects.create_user(username=_identifiant_libre(numero["national"]),
+                                    first_name=(gerant or "").strip()[:150])
+    if mot_de_passe:
+        user.set_password(mot_de_passe)
+    else:
+        user.set_unusable_password()
+    user.save(update_fields=["password"])
+    return ouvrir_dans_son_quartier(user, nom=nom, numero=numero, ligne=ligne, gerant=gerant, latitude=latitude,
+                                    longitude=longitude, reperes=reperes)
+
+
+def ouvrir_dans_son_quartier(user, *, nom: str, numero: dict, ligne: dict, gerant: str = "", latitude=None,
+                             longitude=None, reperes: str = "") -> VendorProfile:
+    """La boutique EN ATTENTE d'un compte (nouveau ou déjà client), avec son emplacement principal dans le quartier."""
+    gerant = (gerant or "").strip()
+    reperes = (reperes or "").strip()
+    profil = ouvrir_boutique(user, nom=nom, telephone=numero["e164"], adresse=ligne["quartier"],
+                             ville=ligne["commune"])
+    VendorLocation.objects.create(
+        vendor=profil, name=profil.business_name[:200], address=ligne["quartier"], description=reperes,
+        phone=numero["e164"], representative_name=(gerant or profil.business_name)[:200],
+        representative_phone=numero["e164"], latitude=latitude, longitude=longitude,
+        quartier=ligne["quartier"], is_main=True,
+    )
+    return profil
 
 
 def inscrire_vendeur(agent, *, nom: str, telephone: str, quartier: str, gerant: str = "", latitude=None,
@@ -73,23 +111,12 @@ def inscrire_vendeur(agent, *, nom: str, telephone: str, quartier: str, gerant: 
         raise Refus("compte_existant", "Ce numéro a déjà un compte BelivaY : le vendeur ouvre sa boutique depuis son "
                                        "compte (menu « Ouvrir ma boutique »).")
     ligne = ligne_quartier(quartier)
-    gerant = (gerant or "").strip()
-    reperes = (reperes or "").strip()
 
     with transaction.atomic():
-        user = User.objects.create_user(username=_identifiant_libre(numero["national"]), first_name=gerant[:150])
-        user.set_unusable_password()
-        user.save(update_fields=["password"])
-        profil = ouvrir_boutique(user, nom=nom, telephone=numero["e164"], adresse=ligne["quartier"],
-                                 ville=ligne["commune"])
-        VendorLocation.objects.create(
-            vendor=profil, name=profil.business_name[:200], address=ligne["quartier"], description=reperes,
-            phone=numero["e164"], representative_name=(gerant or profil.business_name)[:200],
-            representative_phone=numero["e164"], latitude=latitude, longitude=longitude,
-            quartier=ligne["quartier"], is_main=True,
-        )
+        profil = creer_compte_vendeur(nom=nom, numero=numero, ligne=ligne, gerant=gerant, latitude=latitude,
+                                      longitude=longitude, reperes=reperes)
         InscriptionParAgent.objects.create(vendor=profil, agent=agent)
-        mot_de_passe = acces_provisoire.donner(user, agent)
+        mot_de_passe = acces_provisoire.donner(profil.user, agent)
         journaliser(agent, profil, "creation", {"quartier": ligne["quartier"], "statut": profil.status}, ip)
     return profil, mot_de_passe
 

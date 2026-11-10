@@ -78,6 +78,39 @@ export async function previewZoneLabel(lat: number, lng: number): Promise<string
   }
 }
 
+// ── Inscription seule (DEV-SRV-01 T07-1) — backend : apps/vendors/views_inscription.py ──────────────────
+
+export interface QuartierPublic { quartier: string; commune: string; zone: string }
+export interface EnvoiCode { destination: string; valideMinutes: number; renvoiSecondes: number }
+export interface InscriptionVendeur {
+  telephone: string;
+  code: string;
+  nom: string;
+  quartier: string;
+  /** Sans compte connecté seulement : le vendeur choisit son mot de passe. */
+  mot_de_passe?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  reperes?: string;
+}
+
+/** Quartiers de Yaoundé (t_quartiers), lus sur le serveur : aucune liste écrite dans le code. */
+export async function listeQuartiers(): Promise<QuartierPublic[]> {
+  return (await http<{ quartiers: QuartierPublic[] }>('/api/shipping/quartiers/')).quartiers;
+}
+
+/** POST /api/vendors/inscription/code — le code part au numéro (moteur de codes unique du serveur). */
+export function demanderCodeInscription(telephone: string): Promise<EnvoiCode> {
+  return http<EnvoiCode>('/api/vendors/inscription/code', { method: 'POST', body: JSON.stringify({ telephone }) });
+}
+
+/** POST /api/vendors/inscription — code vérifié, compte et boutique créés EN ATTENTE dans leur quartier. */
+export function inscrireVendeur(donnees: InscriptionVendeur): Promise<{ id: number; boutique: string; statut: string }> {
+  return http('/api/vendors/inscription', { method: 'POST', body: JSON.stringify(donnees) });
+}
+
+// Ancien pont de code, encore utilisé par l'écran « Changer de numéro » (argent/ChangerNumeroFlow.tsx) : ses deux
+// adresses n'existent pas côté serveur (signalé, DEV-SRV-01). L'ouverture de boutique ne s'en sert plus.
 interface OtpResponse {
   challenge_id?: string;
 }

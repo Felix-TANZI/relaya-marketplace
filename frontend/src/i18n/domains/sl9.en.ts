@@ -77,7 +77,14 @@ export default {
 
     // Open my shop screen — step 1/3 (OUV-01 to OUV-05)
     open_shop_title: 'Open my shop',
-    open_shop_subtitle: 'No paperwork: a name, a number, a point on the map.',
+    open_shop_subtitle: 'No paperwork: a name, a number, your neighbourhood.',
+    quartier_label: 'Your neighbourhood',
+    quartier_placeholder: 'E.g. Bastos, Mvog-Ada…',
+    quartier_unknown: 'Unknown neighbourhood: pick it from the list.',
+    password_label: 'Your password',
+    password_hint: 'At least 8 characters. You will sign in with your number and this password.',
+    optional: 'optional',
+    one_account_per_phone: 'One BelivaY account per phone number.',
     business_name_label: 'Shop name',
     business_name_placeholder: 'E.g. Chez Maman Douala',
     business_name_hint: 'This name stays internal: it is never shown to the customer.',
@@ -94,7 +101,7 @@ export default {
     zone_computing: 'Zone computed by BelivaY when you open.',
     location_helper_note: 'Place the point from your shop: it is used to compute delivery.',
     open_shop_submit: 'Open my shop',
-    open_shop_how_it_works_body: 'Your number is verified by SMS to protect your account. The delivery zone is then computed automatically from the point placed on the map. At most two seller accounts per phone number.',
+    open_shop_how_it_works_body: 'Your number is verified by SMS to protect your account. The delivery zone comes from your neighbourhood; the point on the map refines it. BelivaY reviews your shop. To publish your first product, you will be asked for your ID card and your Mobile Money number.',
     already_seller: 'Already a seller?',
 
     // Publish and get paid screen — step 2: KYC (KYC-01, KYC-06 to KYC-09)

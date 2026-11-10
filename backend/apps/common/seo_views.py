@@ -27,7 +27,7 @@ LIMITE_URLS = 20000
 
 
 def _base() -> str:
-    return getattr(settings, "PUBLIC_SITE_URL", "https://belivay.com").rstrip("/")
+    return settings.PUBLIC_SITE_URL
 
 
 def _rendre(entrees) -> HttpResponse:

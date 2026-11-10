@@ -31,6 +31,7 @@ import {
   Zap,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { lienSupportWhatsApp } from "@/config/support";
 
 /* ────────────────────────────── Données ────────────────────────────── */
 
@@ -425,7 +426,7 @@ export default function AboutPage() {
               </button>
 
               <a
-                href="https://wa.me/237689002812"
+                href={lienSupportWhatsApp()}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-2 rounded-full bg-[#22C55E] px-6 py-3 text-[13px] font-black text-white transition-transform duration-200 hover:-translate-y-0.5"

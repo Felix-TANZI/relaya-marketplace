@@ -63,6 +63,8 @@ Ajouter `-d courier.belivay.com -d relay-point.belivay.com -d delivery-org.beliv
 | `VITE_API_URL` | variable | `https://api.belivay.com` (valeur par défaut du compose réel) |
 | `VITE_SITE_URL` | variable | `https://shop.belivay.com`, puis `https://belivay.com` le 14/12 |
 | `FRONTEND_URL` | variable | `https://shop.belivay.com` : liens des e-mails, plans du site |
+| `VITE_SUPPORT_WHATSAPP` | variable, facultative | le numéro WhatsApp du support, en chiffres avec l'indicatif (`2376XXXXXXXX`). Sans elle, celui de `docker-compose.reel.yml`. |
+| `DJANGO_SECRET_KEY` | secret | obligatoire : en production, le serveur refuse de démarrer sans elle (R5) |
 | `WHATSAPP_VENDOR_APP_URL`, `WHATSAPP_COURIER_APP_URL`, `WHATSAPP_RELAY_APP_URL` | variables, facultatives | par défaut, les nouvelles adresses |
 
 Les applications mobiles (T12) gardent leurs origines propres (`https://localhost`, `capacitor://localhost`). Elles sont déjà autorisées.

@@ -83,6 +83,8 @@ jobs:
           BELIVAY_COMPOSE=${{ vars.BELIVAY_COMPOSE }}
           VITE_API_URL=${{ vars.VITE_API_URL }}
           VITE_SITE_URL=${{ vars.VITE_SITE_URL }}
+          # R5 : numéro WhatsApp du support (2376XXXXXXXX) ; vide = celui de docker-compose.*.yml.
+          VITE_SUPPORT_WHATSAPP=${{ vars.VITE_SUPPORT_WHATSAPP }}
           WEB_CONCURRENCY=${{ vars.WEB_CONCURRENCY }}
 
           # ── Stockage (Cloudflare R2) ─────────────────────────────────

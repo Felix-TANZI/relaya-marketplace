@@ -233,7 +233,7 @@ class OublierMotDePasse(VuePublique):
         user = get_user_model().objects.filter(email__iexact=email, is_active=True).first()
         if user is not None:
             jeton, minutes = services.creer_jeton_mdp(user)
-            site = getattr(settings, "BELIVAY_SITE_URL", "https://belivay.com").rstrip("/")
+            site = settings.BELIVAY_SITE_URL
             # Page du site qui lit le jeton : /mdp-nouveau (site/src/pages/CL-03/MdpNouveau.tsx).
             chemin = getattr(settings, "BELIVAY_LIEN_MDP", "/mdp-nouveau?jeton={jeton}").format(jeton=jeton)
             send_mail(

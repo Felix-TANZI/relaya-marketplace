@@ -3,6 +3,8 @@
 // Aucune valeur métier fabriquée ici : uniquement du formatage et des constantes
 // canoniques reprises telles quelles des documents de spec (jamais inventées).
 
+import { lienSupportWhatsApp } from '@/config/support';
+
 /** Montant en francs CFA, séparateur d'espaces, jamais de décimale (DS-10 : arrondi au franc). */
 export function formatXAF(n: number | null | undefined): string {
   if (n === null || n === undefined || Number.isNaN(n)) return '—';
@@ -124,8 +126,7 @@ export function mapLegacyPlanCode(code: string): SellerPlanKey {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Numéro WhatsApp support unique — repris de app/layout/Header.tsx et Footer.tsx. */
-export const SUPPORT_WHATSAPP_NUMBER = '237689002812';
-
+/** Le numéro vient de la configuration (config/support.ts, VITE_SUPPORT_WHATSAPP) : DEV-SRV-01, règle R5. */
 export function buildWhatsAppSupportLink(message: string): string {
-  return `https://wa.me/${SUPPORT_WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+  return lienSupportWhatsApp(message);
 }

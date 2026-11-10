@@ -4,7 +4,7 @@
 //   - Endpoints public : list par master, detail par SKU
 //   - Endpoint vendor CRUCIAL : find-or-create (idempotent)
 
-import { http } from "./http";
+import { API_BASE_URL, http } from "./http";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
@@ -98,8 +98,6 @@ export interface FindOrCreateResult {
   created: boolean;   // true si nouvelle création, false si existant retrouvé
 }
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL ?? "http://localhost:8000")
-  .replace(/\/api\/?$/, "");
 
 export const variantsApi = {
   /**

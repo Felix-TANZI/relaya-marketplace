@@ -7,14 +7,17 @@ ARG VITE_PORTAL_ROLE=client
 ARG VITE_GOOGLE_CLIENT_ID
 ARG VITE_GOOGLE_MAPS_API_KEY
 ARG VITE_MAP_PROVIDER=openstreetmap
-# DEV-SRV-01, R5 : adresse du site public (liens partagés, QR) ; vide = celle de src/config/site.ts.
+# DEV-SRV-01, R5 : adresse du site public (liens partagés, QR), donnée par docker-compose.*.yml.
 ARG VITE_SITE_URL
+# R5 : numéro WhatsApp du support (chiffres, indicatif compris) ; il n'est plus écrit dans les écrans.
+ARG VITE_SUPPORT_WHATSAPP
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_PORTAL_ROLE=$VITE_PORTAL_ROLE
 ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 ENV VITE_GOOGLE_MAPS_API_KEY=$VITE_GOOGLE_MAPS_API_KEY
 ENV VITE_MAP_PROVIDER=$VITE_MAP_PROVIDER
 ENV VITE_SITE_URL=$VITE_SITE_URL
+ENV VITE_SUPPORT_WHATSAPP=$VITE_SUPPORT_WHATSAPP
 
 COPY package*.json ./
 # --legacy-peer-deps : @codetrix-studio/capacitor-google-auth (utilise pour

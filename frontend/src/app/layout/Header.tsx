@@ -51,6 +51,7 @@ import { ordersApi } from "@/services/api/orders";
 import { getUnreadSupportCount, SUPPORT_UPDATED_EVENT } from "@/lib/supportInbox";
 // Feuille de route D16 et DP-17 : le vrai Wallet, montré seulement quand il est ouvert.
 import { useWallet } from "@/features/profile/WalletPanel";
+import { lienSupportWhatsApp } from "@/config/support";
 
 /** Statuts d'une commande encore en cours de traitement ou d'acheminement. */
 const CLOSED_ORDER_STATUSES = [
@@ -443,7 +444,7 @@ export default function Header() {
         { label: t("header_nav.help_center"), to: "/help", icon: CircleHelp },
         {
           label: t("header_nav.whatsapp_support"),
-          to: "https://wa.me/237689002812",
+          to: lienSupportWhatsApp(),
           icon: MessageSquare,
           external: true,
         },

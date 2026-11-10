@@ -2,11 +2,11 @@
 // Client API pour interagir avec le backend Relaya Marketplace
 
 import i18n from "@/i18n";
+import { API_BASE_URL } from "./http";
 
 // Configuration du client API
-const API_BASE_URL = (import.meta.env.VITE_API_URL || "http://localhost:8000")
-  .replace(/\/api\/?$/, "")
-  .replace(/\/$/, "");
+// Adresse de l'API : la définition unique de http.ts (règle R5). L'ancienne copie retombait sur localhost:8000 quand
+// VITE_API_URL était vide, c'est-à-dire justement dans la configuration « même domaine » de la production.
 
 function normalizeEndpoint(endpoint: string): string {
   if (endpoint.startsWith("http")) {

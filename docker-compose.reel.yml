@@ -149,6 +149,7 @@ services:
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
         VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
         VITE_MAP_PROVIDER: ${VITE_MAP_PROVIDER:-openstreetmap}
+        VITE_SUPPORT_WHATSAPP: ${VITE_SUPPORT_WHATSAPP:-237689002812}
     restart: unless-stopped
     networks:
       - relaya-network
@@ -164,6 +165,7 @@ services:
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
         VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
         VITE_MAP_PROVIDER: ${VITE_MAP_PROVIDER:-openstreetmap}
+        VITE_SUPPORT_WHATSAPP: ${VITE_SUPPORT_WHATSAPP:-237689002812}
     restart: unless-stopped
     networks:
       - relaya-network
@@ -179,6 +181,7 @@ services:
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
         VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
         VITE_MAP_PROVIDER: ${VITE_MAP_PROVIDER:-openstreetmap}
+        VITE_SUPPORT_WHATSAPP: ${VITE_SUPPORT_WHATSAPP:-237689002812}
     restart: unless-stopped
     networks:
       - relaya-network
@@ -194,6 +197,7 @@ services:
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
         VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
         VITE_MAP_PROVIDER: ${VITE_MAP_PROVIDER:-openstreetmap}
+        VITE_SUPPORT_WHATSAPP: ${VITE_SUPPORT_WHATSAPP:-237689002812}
     restart: unless-stopped
     networks:
       - relaya-network
@@ -209,6 +213,7 @@ services:
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
         VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
         VITE_MAP_PROVIDER: ${VITE_MAP_PROVIDER:-openstreetmap}
+        VITE_SUPPORT_WHATSAPP: ${VITE_SUPPORT_WHATSAPP:-237689002812}
     restart: unless-stopped
     networks:
       - relaya-network
@@ -224,6 +229,7 @@ services:
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
         VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
         VITE_MAP_PROVIDER: ${VITE_MAP_PROVIDER:-openstreetmap}
+        VITE_SUPPORT_WHATSAPP: ${VITE_SUPPORT_WHATSAPP:-237689002812}
     restart: unless-stopped
     networks:
       - relaya-network

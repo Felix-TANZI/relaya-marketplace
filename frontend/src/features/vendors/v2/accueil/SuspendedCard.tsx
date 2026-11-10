@@ -11,8 +11,9 @@ import { AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import { palette } from '../theme';
+import { lienSupportWhatsApp } from '@/config/support';
 
-const SUPPORT_WHATSAPP_URL = 'https://wa.me/237689002812';
+const SUPPORT_WHATSAPP_URL = lienSupportWhatsApp();
 
 export default function SuspendedCard({ shopName }: { shopName: string }) {
   const { t } = useTranslation();

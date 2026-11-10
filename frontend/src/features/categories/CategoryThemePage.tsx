@@ -433,22 +433,22 @@ export default function CategoryThemePage() {
     : 0;
   const heroStats = context
     ? [
-        { icon: ShoppingCart, num: loading ? "…" : categoryProducts.length.toLocaleString("fr-FR"), label: "Produits" },
-        { icon: Layers, num: String(context.page.children.length), label: "Sous-catégories" },
-        { icon: Star, num: averageRating ? `${averageRating.toFixed(1)} / 5` : "—", label: "Note moyenne" },
-        { icon: Truck, num: theme.delivery, label: "Livraison" },
+        { icon: ShoppingCart, num: loading ? "…" : categoryProducts.length.toLocaleString("fr-FR"), label: i18n.t("t03.stat_produits") },
+        { icon: Layers, num: String(context.page.children.length), label: i18n.t("t03.stat_sous_categories") },
+        { icon: Star, num: averageRating ? `${averageRating.toFixed(1)} / 5` : "—", label: i18n.t("t03.stat_note") },
+        { icon: Truck, num: theme.delivery, label: i18n.t("t03.stat_livraison") },
       ]
     : [
-        { icon: ShoppingCart, num: theme.count, label: "Produits" },
-        { icon: ShieldCheck, num: theme.vendors, label: "Vendeurs certifiés" },
-        { icon: Star, num: theme.rating, label: "Note moyenne" },
-        { icon: Truck, num: theme.delivery, label: "Livraison" },
+        { icon: ShoppingCart, num: theme.count, label: i18n.t("t03.stat_produits") },
+        { icon: ShieldCheck, num: theme.vendors, label: i18n.t("t03.stat_vendeurs") },
+        { icon: Star, num: theme.rating, label: i18n.t("t03.stat_note") },
+        { icon: Truck, num: theme.delivery, label: i18n.t("t03.stat_livraison") },
       ];
 
   /* Sous-catégories proposées dans le panneau de filtres. */
   const panelSubItems = context
     ? [
-        { key: "__all__", label: "Tous les articles", count: categoryProducts.length, selected: !selectedNode, onSelect: clearSelection },
+        { key: "__all__", label: i18n.t("t03.tous_les_articles"), count: categoryProducts.length, selected: !selectedNode, onSelect: clearSelection },
         ...context.page.children.map((child) => ({
           key: child.slug,
           label: child.name,
@@ -458,7 +458,7 @@ export default function CategoryThemePage() {
         })),
       ]
     : [
-        { key: "__all__", label: "Tous les articles", count: categoryProducts.length, selected: activeFacet === null, onSelect: () => setActiveFacet(null) },
+        { key: "__all__", label: i18n.t("t03.tous_les_articles"), count: categoryProducts.length, selected: activeFacet === null, onSelect: () => setActiveFacet(null) },
         ...theme.facets.map((facet) => ({
           key: facet,
           label: facet,

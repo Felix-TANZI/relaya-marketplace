@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import i18n from "@/i18n";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -380,7 +381,7 @@ export default function TrackingMap({
           markers={[
             { id: "vendor", position: origin, title: originLabel, color: "#0F172A", emoji: "🏪" },
             ...(currentLocation
-              ? [{ id: "delivery", position: currentLocation, title: "Position GPS actuelle du livreur", color: "#F47920", emoji: deliveryEmoji(vehicleType) }]
+              ? [{ id: "delivery", position: currentLocation, title: i18n.t("t03.carte_position_livreur"), color: "#F47920", emoji: deliveryEmoji(vehicleType) }]
               : []),
             { id: "customer", position: destination, title: destLabel, color: "#16A34A", emoji: "📦" },
           ]}
@@ -412,8 +413,8 @@ export default function TrackingMap({
             }`}
           >
             {isNearDestination
-              ? "Livreur arrivé dans la zone de destination"
-              : `Distance restante : ${remainingDistance < 1000
+              ? i18n.t("t03.carte_livreur_arrive")
+              : `${i18n.t("t03.carte_distance_restante")} ${remainingDistance < 1000
                   ? `${Math.round(remainingDistance)} m`
                   : `${(remainingDistance / 1000).toFixed(1)} km`}`}
           </div>
@@ -442,7 +443,7 @@ export default function TrackingMap({
 
         {currentLocation ? (
           <Marker position={currentLocation} icon={deliveryIcon}>
-            <Popup>Position GPS actuelle du livreur</Popup>
+            <Popup>{i18n.t("t03.carte_position_livreur")}</Popup>
           </Marker>
         ) : null}
 
@@ -475,8 +476,8 @@ export default function TrackingMap({
           }`}
         >
           {isNearDestination
-            ? "Livreur arrivé dans la zone de destination"
-            : `Distance restante : ${remainingDistance < 1000
+            ? i18n.t("t03.carte_livreur_arrive")
+            : `${i18n.t("t03.carte_distance_restante")} ${remainingDistance < 1000
                 ? `${Math.round(remainingDistance)} m`
                 : `${(remainingDistance / 1000).toFixed(1)} km`}`}
         </div>

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import i18n from "@/i18n";
 import { Capacitor } from '@capacitor/core';
 import { SocialLogin } from '@capgo/capacitor-social-login';
 
@@ -64,10 +65,11 @@ interface GoogleAuthButtonProps {
   onError?: (message: string) => void;
 }
 
-const LABEL_TEXT: Record<NonNullable<GoogleAuthButtonProps['label']>, string> = {
-  signin_with: 'Se connecter avec Google',
-  signup_with: "S'inscrire avec Google",
-  continue_with: 'Continuer avec Google',
+// DEV-SRV-01 T03 : libellés traduits à l'affichage (i18n), plus écrits en français.
+const LABEL_TEXT: Record<NonNullable<GoogleAuthButtonProps['label']>, () => string> = {
+  signin_with: () => i18n.t("t03.google_se_connecter"),
+  signup_with: () => i18n.t("t03.google_inscrire"),
+  continue_with: () => i18n.t("t03.google_continuer"),
 };
 
 function GoogleGlyph() {
@@ -114,7 +116,7 @@ function NativeGoogleButton({ onCredential, disabled, label, onError }: {
       const cancelled = /cancel/i.test(message);
       if (!cancelled) {
         console.error('SocialLogin.login(google) a echoue', error);
-        onError?.('Connexion Google indisponible pour le moment. Reessayez ou utilisez un autre mode de connexion.');
+        onError?.(i18n.t("t03.google_indisponible"));
       }
     } finally {
       setPending(false);
@@ -129,7 +131,7 @@ function NativeGoogleButton({ onCredential, disabled, label, onError }: {
       className="flex min-h-11 w-full items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
     >
       <GoogleGlyph />
-      {pending ? 'Connexion...' : LABEL_TEXT[label]}
+      {pending ? i18n.t("t03.google_connexion") : LABEL_TEXT[label]()}
     </button>
   );
 }
@@ -211,7 +213,7 @@ export default function GoogleAuthButton({
     script.async = true;
     script.defer = true;
     script.onload = render;
-    script.onerror = () => unavailableRef.current?.('Impossible de charger Google. Verifiez votre connexion.');
+    script.onerror = () => unavailableRef.current?.(i18n.t("t03.google_chargement"));
     document.head.appendChild(script);
   }, [isNative, clientId, label, locale]);
 

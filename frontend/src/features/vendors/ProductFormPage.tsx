@@ -7,6 +7,7 @@
 // Sous-catégorie : apparaît après sélection d'une catégorie parente
 
 import { useEffect, useState, useRef } from "react";
+import i18n from "@/i18n";
 import { http } from "@/services/api/http";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -1224,7 +1225,7 @@ export default function ProductFormPage() {
                   label={t("sl3_product_form.label_category")}
                   required
                   error={errors.category}
-                  hint="Choisissez la sous-catégorie la plus précise : c'est là que les acheteurs trouveront votre produit."
+                  hint={i18n.t("t03.sous_categorie_aide")}
                 >
                   <CategoryTreePicker
                     value={selectedCategoryId}

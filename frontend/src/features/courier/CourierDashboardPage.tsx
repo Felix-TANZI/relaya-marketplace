@@ -1,4 +1,5 @@
 import { type ComponentType, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import i18n from "@/i18n";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Capacitor } from "@capacitor/core";
@@ -1649,7 +1650,7 @@ export default function CourierDashboardPage() {
               </button>
               {/* Feuille de route D33 : appel au client sans voir son numéro ; chaque appel est la preuve de R51.1. */}
               {selectedShipment ? (
-                <AppelMasqueButton shipmentId={selectedShipment.id} libelle="Appeler le client" className="border-white/20 text-white" />
+                <AppelMasqueButton shipmentId={selectedShipment.id} libelle={i18n.t("t03.appeler_client")} className="border-white/20 text-white" />
               ) : null}
             </div>
             {/* Spec v2.1 : client absent (R51), refus à la porte (R85.2), déplacement inutile (R85.3). */}

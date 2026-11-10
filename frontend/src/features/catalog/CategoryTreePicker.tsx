@@ -16,6 +16,7 @@
 //     vérifiée côté serveur à l'enregistrement)
 
 import { createElement, useEffect, useMemo, useRef, useState } from "react";
+import i18n from "@/i18n";
 import {
   Check, ChevronDown, ChevronLeft, ChevronRight, Folder, Loader2, RefreshCw,
   Search, ShieldAlert, Store, Tag, X,
@@ -65,7 +66,7 @@ const normalize = (value: string) =>
   value.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
 
 function countLabel(count: number) {
-  return `${count} sous-catégorie${count > 1 ? "s" : ""}`;
+  return i18n.t("t03.n_sous_categories", { count });
 }
 
 export function CategoryTreePicker({
@@ -77,7 +78,7 @@ export function CategoryTreePicker({
   error,
   className = "",
   disabled = false,
-  placeholder = "Choisir une catégorie",
+  placeholder = i18n.t("t03.choisir_categorie"),
 }: CategoryTreePickerProps) {
   const [tree, setTree] = useState<CategoryTreeNode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -108,7 +109,7 @@ export function CategoryTreePicker({
       })
       .catch(() => {
         if (controller.signal.aborted) return;
-        setFetchError("Impossible de charger les catégories.");
+        setFetchError(i18n.t("t03.categories_erreur"));
         setIsLoading(false);
       });
 
@@ -287,7 +288,7 @@ export function CategoryTreePicker({
             </>
           ) : (
             <span className="block truncate text-sm text-gray-400">
-              {isLoading ? "Chargement des catégories…" : placeholder}
+              {isLoading ? i18n.t("t03.categories_chargement") : placeholder}
             </span>
           )}
         </span>
@@ -329,7 +330,7 @@ export function CategoryTreePicker({
               value={query}
               onChange={(e) => { setQuery(e.target.value); setActiveIndex(0); }}
               placeholder="Rechercher (ex : robes, casques…)"
-              aria-label="Rechercher une catégorie"
+              aria-label={i18n.t("t03.chercher_categorie")}
               aria-controls={listboxId}
               className="min-w-0 flex-1 bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-400 dark:text-white"
             />
@@ -338,7 +339,7 @@ export function CategoryTreePicker({
                 type="button"
                 onClick={() => { setQuery(""); searchRef.current?.focus(); }}
                 className="text-gray-400 hover:text-primary"
-                aria-label="Effacer la recherche"
+                aria-label={i18n.t("t03.effacer_recherche")}
               >
                 <X size={13} />
               </button>
@@ -391,10 +392,10 @@ export function CategoryTreePicker({
           ) : options.length === 0 ? (
             <p className="p-4 text-sm text-gray-500 dark:text-gray-400">
               {searchResults
-                ? `Aucune catégorie ne correspond à « ${query.trim()} ».`
+                ? i18n.t("t03.categories_aucune_recherche", { q: query.trim() })
                 : tree.length === 0
-                  ? "Aucune catégorie n'a encore été créée par l'équipe BelivaY."
-                  : "Aucune sous-catégorie disponible."}
+                  ? i18n.t("t03.categories_aucune")
+                  : i18n.t("t03.sous_categories_aucune")}
             </p>
           ) : (
             <div ref={listRef} id={listboxId} role="listbox" aria-label="Catégories" className="max-h-72 overflow-auto py-1">
@@ -495,7 +496,7 @@ function CategoryOption({ index, node, trail, isSelected, isActive, onHover, onC
       {node.requires_admin_approval && (
         <span
           className="flex flex-shrink-0 items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-medium text-orange-700 dark:bg-orange-900/20 dark:text-orange-300"
-          title="Modération renforcée requise pour cette catégorie"
+          title={i18n.t("t03.moderation_renforcee")}
         >
           <ShieldAlert size={10} />
           Sensible

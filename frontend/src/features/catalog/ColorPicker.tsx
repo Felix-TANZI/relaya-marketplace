@@ -9,6 +9,7 @@
 //   - Filtre "neutres uniquement" optionnel
 
 import { useEffect, useState } from "react";
+import i18n from "@/i18n";
 import { Check, Loader2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import {
@@ -88,7 +89,7 @@ export function ColorPicker({
       })
       .catch(() => {
         if (controller.signal.aborted) return;
-        setFetchError("Impossible de charger le dictionnaire des couleurs.");
+        setFetchError(i18n.t("t03.couleurs_erreur"));
         setIsLoading(false);
       });
 

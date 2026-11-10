@@ -37,6 +37,8 @@ import sl7En from "./domains/sl7.en";
 import sl8Fr from "./domains/sl8.fr";
 import sl8En from "./domains/sl8.en";
 import sl9Fr from "./domains/sl9.fr";
+import t03Fr from "./domains/t03.fr";
+import t03En from "./domains/t03.en";
 import sl9En from "./domains/sl9.en";
 import sl10Fr from "./domains/sl10.fr";
 import sl10En from "./domains/sl10.en";
@@ -111,6 +113,7 @@ const mergedFr = {
   ...misc1Fr,
   ...hm1Fr,
   ...hm2Fr,
+  ...t03Fr,
 };
 
 const mergedEn = {
@@ -124,6 +127,7 @@ const mergedEn = {
   ...misc1En,
   ...hm1En,
   ...hm2En,
+  ...t03En,
 };
 
 i18n.use(initReactI18next).init({

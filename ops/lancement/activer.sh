@@ -2,6 +2,7 @@
 # Active (ou retire) une configuration du lancement préparée à l'avance — DEV-SRV-01, T21 / T22 / T24 / T25.
 # « Le 14 décembre, on applique ; on ne construit plus. »
 #
+#   ops/lancement/activer.sh vitrine                 # la vitrine sur MAIN 1, du transfert au 14/12 (T08, T13)
 #   ops/lancement/activer.sh belivay-com             # belivay.com → espace client réel (T24)
 #   ops/lancement/activer.sh redirections-vitrine    # adresses françaises → anglaises, arrêt d'api-demo (T25)
 #   ops/lancement/activer.sh <nom> --retirer         # retour arrière
@@ -26,7 +27,7 @@ if [ "${1:-}" = "--etat" ]; then
   exit 0
 fi
 
-NOM="${1:?Usage : $0 <belivay-com|redirections-vitrine> [--retirer] | --etat}"
+NOM="${1:?Usage : $0 <vitrine|belivay-com|redirections-vitrine> [--retirer] | --etat}"
 [ -f "$PRETS/$NOM.conf" ] || { echo "Configuration préparée introuvable : $PRETS/$NOM.conf" >&2; exit 2; }
 mkdir -p "$ACTIFS"
 
@@ -36,6 +37,20 @@ if [ "${2:-}" = "--retirer" ]; then
   echo "« $NOM » retiré : nginx rechargé sans elle."
   exit 0
 fi
+
+# La vitrine (du 18/11 au 14/12) et les configurations du 14/12 répondent aux mêmes adresses (belivay.com, vendeur.…) :
+# une seule à la fois. Le 14/12 : « activer.sh vitrine --retirer », puis belivay-com et redirections-vitrine.
+case "$NOM" in
+  vitrine) RIVALES="belivay-com redirections-vitrine" ;;
+  belivay-com|redirections-vitrine) RIVALES="vitrine" ;;
+  *) RIVALES="" ;;
+esac
+for rivale in $RIVALES; do
+  if [ -f "$ACTIFS/$rivale.conf" ]; then
+    echo "« $rivale » est active et sert les mêmes adresses : retirez-la d'abord ($0 $rivale --retirer)." >&2
+    exit 3
+  fi
+done
 
 cp "$PRETS/$NOM.conf" "$ACTIFS/$NOM.conf"
 if recharger; then

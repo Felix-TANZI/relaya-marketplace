@@ -24,6 +24,13 @@ COMPOSE="docker compose -f $FICHIER_COMPOSE --env-file .env.prod"
 SERVICES_BUILD="backend celery-worker vitrine vitrine-comptes frontend-seller frontend-courier frontend-admin frontend-relay-point frontend-delivery-org"
 # Site réel : pas de vitrine ; l'espace client (shop.belivay.com) est un portail comme les autres.
 [ "$SITE_REEL" -eq 1 ] && SERVICES_BUILD="backend celery-worker frontend-client frontend-seller frontend-courier frontend-admin frontend-relay-point frontend-delivery-org"
+# Décision du porteur (11/11) : sur MAIN 1, la vitrine tourne avec le site réel jusqu'au 14/12 (VITRINE_SUR_REEL=1 dans
+# .env.prod ; ops/MAIN1-REEL-ET-VITRINE.md). Son service n'existe que dans le profil « vitrine » de docker-compose.reel.yml.
+VITRINE_SUR_REEL="$(grep -m1 '^VITRINE_SUR_REEL=' .env.prod 2>/dev/null | cut -d'=' -f2-)"
+if [ "$SITE_REEL" -eq 1 ] && [ "$VITRINE_SUR_REEL" = "1" ]; then
+  COMPOSE="$COMPOSE --profile vitrine"
+  SERVICES_BUILD="$SERVICES_BUILD vitrine"
+fi
 
 # Docker Compose nomme les images <nom-du-dossier>-<service> (ex. belivay-backend).
 IMG_PREFIX="$(basename "$PWD" | tr '[:upper:]' '[:lower:]')"

@@ -1,7 +1,9 @@
 # docker-compose.reel.yml — SITE RÉEL seul (MAIN 2, puis MAIN 1 après la bascule) — DEV-SRV-01, T04 / T05 / T11.
 #
 # Même chose que docker-compose.prod.yml, sauf :
-#   - ni vitrine ni serveur de comptes Neon (règles R1, R2 : la vitrine ne vit jamais avec le site réel) ;
+#   - pas de serveur de comptes Neon ; la vitrine n'y tourne que du 18/11 au 14/12, sur MAIN 1, si VITRINE_SUR_REEL=1
+#     (décision du porteur du 11/11, ops/MAIN1-REEL-ET-VITRINE.md) : son propre service, ses propres adresses, aucun
+#     accès au back-end réel (R1, R2 : nginx/lancement-pret/vitrine.conf répond 410 à tout /api/) ;
 #   - l'espace client (frontend-client) est actif : shop.belivay.com, puis belivay.com le 14/12 (T21) ;
 #   - les écrans appellent https://api.belivay.com (VITE_API_URL) et leurs liens publics visent VITE_SITE_URL ;
 #   - nginx charge nginx/reel.conf (api., shop., seller., driver., relay., delivery., admin.belivay.com).
@@ -224,6 +226,24 @@ services:
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
         VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
         VITE_MAP_PROVIDER: ${VITE_MAP_PROVIDER:-openstreetmap}
+    restart: unless-stopped
+    networks:
+      - relaya-network
+
+  # ── Vitrine sur MAIN 1, du transfert (18/11) au lancement (14/12) — T08 / T13 ──────────────────────────────────
+  # Démarrée seulement avec le profil « vitrine » (deploy.sh l'ajoute quand .env.prod contient VITRINE_SUR_REEL=1).
+  # Fichiers seulement : aucun secret, aucune base, aucun appel au back-end réel (VITE_SOURCE=demo : comptes, SMS,
+  # identité et paiement simulés dans le navigateur, R2 et R3). nginx ne la sert qu'une fois
+  # nginx/lancement-pret/vitrine.conf activé (ops/lancement/activer.sh vitrine).
+  vitrine:
+    profiles: ["vitrine"]
+    build:
+      context: ./vitrine
+      target: web
+      args:
+        SITE_URL: https://belivay.com
+        VITE_SOURCE: demo
+    read_only: true
     restart: unless-stopped
     networks:
       - relaya-network

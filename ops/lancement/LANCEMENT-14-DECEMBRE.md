@@ -68,9 +68,9 @@ Annonce dans le groupe : « À partir d'aujourd'hui, seules les corrections crit
 | 1 | OWEN | **Certificat** étendu à `belivay.com`, `www.belivay.com` et aux adresses françaises (commande dans `ops/SITE-REEL.md`, en ajoutant ces `-d`) | `ls certbot/conf/live/belivay.com/` |
 | 2 | OWEN | **Réglages GitHub** du site réel :<br>• `VITE_SITE_URL=https://belivay.com` ;<br>• `FRONTEND_URL=https://belivay.com` ;<br>• `https://belivay.com` ajouté à `CORS_ALLOWED_ORIGINS`.<br>Puis déploiement : les écrans sont reconstruits avec les liens publics vers `belivay.com`. | `deploy.sh` vert |
 | 3 | OWEN | **DNS** : `belivay.com`, `www` et les adresses françaises pointent vers MAIN 1 (TTL déjà à 300 s) | `dig +short belivay.com` |
-| 4 | OWEN | `ops/lancement/activer.sh belivay-com` (T24) | `https://belivay.com` ouvre l'espace client réel |
+| 4 | OWEN | `ops/lancement/activer.sh vitrine --retirer`, puis `ops/lancement/activer.sh belivay-com` (T24) | `https://belivay.com` ouvre l'espace client réel |
 | 5 | OWEN + direction | **CamPay en production** : contrôles 5, 6, 8, 9 et 10 de la liste B | transaction de contrôle visible chez CamPay |
-| 6 | JUNIOR | `ops/lancement/activer.sh redirections-vitrine`, puis arrêt de la vitrine et d'`api-demo` (T25) | chaque ancienne adresse française ouvre la bonne page du site réel |
+| 6 | JUNIOR | `ops/lancement/activer.sh vitrine --retirer` **avant le geste 4**, puis `ops/lancement/activer.sh redirections-vitrine`, puis arrêt de la vitrine : variable GitHub `VITRINE_SUR_REEL` vidée, et `docker compose -f docker-compose.reel.yml --env-file .env.prod --profile vitrine stop vitrine` (T25) | chaque ancienne adresse française ouvre la bonne page du site réel |
 | 7 | NZIKO | **Premier achat réel de bout en bout** : commande, paiement Mobile Money, suivi | capture dans le groupe |
 
 **Retour arrière, le jour J :**
@@ -80,15 +80,8 @@ Annonce dans le groupe : « À partir d'aujourd'hui, seules les corrections crit
 
 Les données et les comptes ne sont pas touchés par ces gestes.
 
-## Point d'architecture à trancher (avant le 18 novembre)
+## MAIN 1 porte le site réel et la vitrine jusqu'au 14/12 (décision du porteur du 11/11)
 
-Le document prévoit que **MAIN 1 porte à la fois le site réel et la vitrine** entre le 18 novembre et le 14 décembre. Or :
+Comme le prévoit le document, la vitrine vit sur MAIN 1 avec le site réel, sous **un seul nginx**, et sur ses propres adresses : belivay.com, www, boutique, vendeur, relais, livreur et livraison. Elle tourne comme un service à part du site réel (`vitrine`, profil `vitrine` de `docker-compose.reel.yml`). Elle ne parle jamais au back-end réel : tous ses `/api/` répondent 410. La vitrine étant en démonstration complète, elle n'a pas besoin d'`api-demo` (R1, R2, R3).
 
-- la vitrine (`docker-compose.prod.yml`) et le site réel (`docker-compose.reel.yml`) ont **chacun leur nginx sur les ports 80 et 443**, donc ils ne peuvent pas tourner tels quels sur le même serveur ;
-- la vitrine a besoin de son propre back-end (`api-demo`) et de sa propre base (règle R1), qui n'existent pas encore (T08).
-
-Trois façons d'en sortir, à décider avec JUNIOR :
-
-1. **Un seul nginx sur MAIN 1** qui sert les deux : `reel.conf` plus les adresses françaises de la vitrine. Il faut alors deux projets Docker reliés par un réseau commun.
-2. **La vitrine reste sur un autre serveur** jusqu'au 14/12 : le plus simple, mais cela s'écarte du tableau du document.
-3. **La vitrine reste sur MAIN 2** après le transfert : elle partagerait alors le serveur de test, qui deviendrait aussi celui de la démonstration.
+La mise en route est décrite dans `ops/MAIN1-REEL-ET-VITRINE.md`. Le 14/12, le geste 6 ci-dessus commence par retirer la vitrine : `activer.sh vitrine --retirer`. `activer.sh` refuse d'ailleurs `belivay-com` et `redirections-vitrine` tant que la vitrine est active, car elles servent les mêmes adresses.

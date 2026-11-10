@@ -12,6 +12,7 @@ import { Animations } from '@client/composants/Animations'
 import { FeuillesLarges } from '@client/composants/Feuille'
 import { RetourMemoire } from '@client/composants/RetourMemoire'
 import { installerSuivi } from '@client/connecteurs/suivi'
+import { RubanDemo } from '@client/composants/RubanDemo'
 import App from './App'
 import { BandeauPresentation } from './demo/presentation'
 import { SignauxDuRelais } from './composants/Globaux'
@@ -47,6 +48,7 @@ void precharger(routeDe(location.pathname.slice(BASE.length))).then(() => {
           <GardeErreurs>
             <SessionProvider>
               <App />
+              <RubanDemo />
               <BandeauPresentation />
               <RetourMemoire />
               <Animations />

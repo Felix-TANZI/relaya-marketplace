@@ -27,6 +27,7 @@ import { GardeErreurs } from './composants/Garde'
 import { precharger, ROUTES } from './config/routes'
 import { routeDe } from './config/pages'
 import { chargerAnglais, i18n } from '@client/i18n/i18next'
+import { RubanDemo } from '@client/composants/RubanDemo'
 import { chargerDictionnaireAnglais } from './i18n/dictionnaire'
 import { PreferencesProvider } from './preferences'
 import { SessionProvider } from './session'
@@ -82,6 +83,7 @@ void Promise.all([precharger(routeDe(location.pathname.slice(BASE.length))), dic
           <GardeErreurs>
             <SessionProvider>
               <App />
+              <RubanDemo />
               <RetourMemoire />
               <Animations />
               <FeuillesLarges />

@@ -20,8 +20,8 @@ COMPOSE="docker compose -f $FICHIER_COMPOSE --env-file .env.prod"
 # Images construites par ce dépôt. Les autres services (postgres, redis,
 # nginx, certbot, pgbouncer) sont des images officielles, jamais reconstruites.
 # frontend-client (ancien site de belivay.com) n'est plus construit : la vitrine
-# le remplace (vitrine, vitrine-comptes ; PR-VITRINE.md).
-SERVICES_BUILD="backend celery-worker vitrine vitrine-comptes frontend-seller frontend-courier frontend-admin frontend-relay-point frontend-delivery-org"
+# le remplace (vitrine ; PR-VITRINE.md). Plus de service de comptes Neon (DEV-SRV-01, R2, décision du 11/11).
+SERVICES_BUILD="backend celery-worker vitrine frontend-seller frontend-courier frontend-admin frontend-relay-point frontend-delivery-org"
 # Site réel : pas de vitrine ; l'espace client (shop.belivay.com) est un portail comme les autres.
 [ "$SITE_REEL" -eq 1 ] && SERVICES_BUILD="backend celery-worker frontend-client frontend-seller frontend-courier frontend-admin frontend-relay-point frontend-delivery-org"
 # Décision du porteur (11/11) : sur MAIN 1, la vitrine tourne avec le site réel jusqu'au 14/12 (VITRINE_SUR_REEL=1 dans
@@ -47,14 +47,12 @@ if [ "$SITE_REEL" -eq 1 ]; then
   HEALTH_HOTE="api.belivay.com"
 fi
 
-# Vitrine : la page d'un espace (ses fichiers sous /vendeur/assets/) et le
-# service des comptes réels (réponse JSON, base branchée ou non).
+# Vitrine : la page d'un espace (ses fichiers sous /vendeur/assets/). Plus de service de comptes à tester : la vitrine
+# est en démonstration complète et nginx répond 410 à ses anciens appels de comptes (DEV-SRV-01, R2).
 VITRINE_URL="https://belivay.com/vendeur/"
-COMPTES_URL="https://belivay.com/api/auth/etat?espace=client"
 
 vitrine_ok() {
-  curl -fsSk --max-time 10 --resolve belivay.com:443:127.0.0.1 "$VITRINE_URL" 2>/dev/null | grep -q 'src="/vendeur/assets/' &&
-    curl -fsSk --max-time 10 --resolve belivay.com:443:127.0.0.1 "$COMPTES_URL" 2>/dev/null | grep -q '"base":'
+  curl -fsSk --max-time 10 --resolve belivay.com:443:127.0.0.1 "$VITRINE_URL" 2>/dev/null | grep -q 'src="/vendeur/assets/'
 }
 
 check_health() {
@@ -93,7 +91,7 @@ fi
 # Une étiquette empêche `docker system prune` de les supprimer.
 # ─────────────────────────────────────────────────────────────────────────
 echo "📌 Conservation de la version actuelle (retour arrière possible)..."
-# Un service qui n'a encore jamais tourné (vitrine, vitrine-comptes au premier
+# Un service qui n'a encore jamais tourné (vitrine au premier
 # déploiement) n'a pas de version précédente : il est laissé de côté ici et
 # au retour arrière, sans priver les autres services du leur.
 HAVE_PREVIOUS=1
@@ -104,7 +102,7 @@ for svc in $SERVICES_BUILD; do
     PREVIOUS_SERVICES="$PREVIOUS_SERVICES $svc"
   else
     case "$svc" in
-      vitrine|vitrine-comptes) echo "  (première version de $svc : pas de version précédente)" ;;
+      vitrine) echo "  (première version de $svc : pas de version précédente)" ;;
       *) HAVE_PREVIOUS=0 ;;
     esac
   fi

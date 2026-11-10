@@ -1,0 +1,8 @@
+{
+  "source": "Grille des plans vendeur (VD-10 §PLN, maquette Plans.jpg) — valeurs de départ chargées par charger_plans_vendeur ; ensuite, l'admin fait foi (DEV-SRV-01, T02-5, décision du porteur du 2026-11-08).",
+  "plans": [
+    {"code": "FREE", "name": "Gratuit", "price_monthly_xaf": 0, "price_annual_xaf": 0, "display_order": 0},
+    {"code": "STARTER", "name": "Boost", "price_monthly_xaf": 2500, "price_annual_xaf": 25000, "display_order": 1},
+    {"code": "PRO", "name": "Pro", "price_monthly_xaf": 7500, "price_annual_xaf": 75000, "display_order": 2}
+  ]
+}

@@ -12,7 +12,7 @@ import type { CommissionTier } from '@/services/api/vendorsV2';
 import type { VendorPalette } from '../../theme';
 import { Card, Collapsible, KeepAmountBar } from '../ui';
 import {
-  fmtPercent1, fmtXAF, MIN_PUBLISHABLE_PRICE_XAF, oversizeFieldsRequired, parsePriceInput,
+  fmtPercent1, fmtXAF, prixTropBas, usePrixMinPubliable, oversizeFieldsRequired, parsePriceInput,
   previewKeep, useDebouncedValue,
 } from '../helpers';
 import type { NewOfferDraft } from '../types';
@@ -27,6 +27,7 @@ export default function StepStockPrix({
   p: VendorPalette;
   t: (key: string, opts?: Record<string, unknown>) => string;
 }) {
+  const prixMin = usePrixMinPubliable();
   const priceValue = parsePriceInput(draft.priceXaf);
   const debouncedPrice = useDebouncedValue(priceValue, 300);
   const preview = useMemo(() => previewKeep(debouncedPrice || 0, tier), [debouncedPrice, tier]);
@@ -35,7 +36,7 @@ export default function StepStockPrix({
   const dimCm = parseFloat(draft.dimensionsCm) || 0;
   const needsDimensions = oversizeFieldsRequired(weightKg, dimCm);
 
-  const priceTooLow = priceValue > 0 && priceValue < MIN_PUBLISHABLE_PRICE_XAF;
+  const priceTooLow = priceValue > 0 && prixTropBas(priceValue, prixMin);
 
   return (
     <div>
@@ -102,7 +103,7 @@ export default function StepStockPrix({
         ) : null}
       </div>
 
-      <Field label={t('sl10_catalogue.field_price')} required hint={t('sl10_catalogue.field_price_min', { min: fmtXAF(MIN_PUBLISHABLE_PRICE_XAF) })} p={p}>
+      <Field label={t('sl10_catalogue.field_price')} required hint={t('sl10_catalogue.field_price_min', { min: fmtXAF(prixMin) })} p={p}>
         <input
           type="number"
           min={0}
@@ -114,11 +115,11 @@ export default function StepStockPrix({
       </Field>
       {priceTooLow ? (
         <p className="-mt-2 mb-3" style={{ fontSize: 11.5, color: p.red }}>
-          {t('sl10_catalogue.field_price_too_low', { min: fmtXAF(MIN_PUBLISHABLE_PRICE_XAF) })}
+          {t('sl10_catalogue.field_price_too_low', { min: fmtXAF(prixMin) })}
         </p>
       ) : null}
 
-      {priceValue >= MIN_PUBLISHABLE_PRICE_XAF ? (
+      {!prixTropBas(priceValue, prixMin) ? (
         <div className="mb-3">
           <KeepAmountBar
             amount={fmtXAF(preview.kept_xaf)}

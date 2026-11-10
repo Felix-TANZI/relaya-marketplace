@@ -13,7 +13,7 @@ import {
   Truck,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { getCategoryTheme } from "@/data/categoryThemes";
+import { chiffre, useChiffresPublics } from "@/hooks/useChiffresPublics";
 
 interface Pillar {
   icon: LucideIcon;
@@ -65,14 +65,12 @@ const MARKETPLACE_LINKS: { icon: LucideIcon; labelKey: string; to: string }[] = 
 
 export default function WhyBelivaySection() {
   const { t } = useTranslation();
-  /* Les volumes viennent du thème « Tout voir » : une seule source à maintenir. */
-  const catalogue = getCategoryTheme("all", t);
-
-  const marketplaceStats = [
-    { value: catalogue?.count ?? "15 240", labelKey: "why_belivay.stat_products" },
-    { value: catalogue?.vendors ?? "3 200", labelKey: "why_belivay.stat_vendors" },
-    { value: "50K+", labelKey: "why_belivay.stat_clients" },
-    { value: (catalogue?.rating ?? "4.8 / 5").split(" ")[0], labelKey: "why_belivay.stat_satisfaction", star: true },
+  /* DEV-SRV-01 T09 : comptés dans la base par le serveur, plus écrits ici (« 15 240 », « 3 200 », « 50K+ », « 4,8 »).
+     Clients et satisfaction n'ont pas encore de source : ils ne sont pas affichés. */
+  const chiffres = useChiffresPublics();
+  const marketplaceStats: { value: string; labelKey: string; star?: boolean }[] = [
+    { value: chiffre(chiffres?.produits), labelKey: "why_belivay.stat_products" },
+    { value: chiffre(chiffres?.boutiques), labelKey: "why_belivay.stat_vendors" },
   ];
 
   return (
@@ -160,8 +158,8 @@ export default function WhyBelivaySection() {
             </div>
           </div>
 
-          {/* Chiffres — quatre pastilles alignées, à la suite de l'identité. */}
-          <div className="grid grid-cols-4 gap-2 lg:flex lg:flex-1 lg:flex-nowrap lg:items-center">
+          {/* Chiffres réels — deux pastilles, à la suite de l'identité. */}
+          <div className="grid grid-cols-2 gap-2 lg:flex lg:flex-1 lg:flex-nowrap lg:items-center">
             {marketplaceStats.map((stat) => (
               <article
                 key={stat.labelKey}

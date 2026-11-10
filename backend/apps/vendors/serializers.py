@@ -2417,7 +2417,12 @@ def build_remise(order, vendor_profile) -> dict:
 
     livreur = None
     niveau_requis = 'Nouveau'
-    plafonds = {'nouveau': 75000, 'confirme': 250000}
+    # DEV-SRV-01 T05 : les plafonds viennent de t_paliers_entreprise (« Nouveau » 75 000 F, « Confirmé » 250 000 F au
+    # lancement), plus d'une copie écrite ici.
+    from apps.regles import services as regles
+
+    paliers = {ligne['palier']: ligne['valeur_max_colis'] for ligne in regles.table('t_paliers_entreprise')}
+    plafonds = {'nouveau': paliers.get('Nouveau'), 'confirme': paliers.get('Confirmé')}
     if shipment and shipment.courier_id:
         livreur_base = _livreur_for_shipment(shipment) or {}
         niveau = 'Confirme'

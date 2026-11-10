@@ -30,7 +30,7 @@ import {
 } from '@/services/api/vendors';
 import { palette } from '../theme';
 import { Card, CenterState, Collapsible, PageHeader, Pill, PrimaryButton } from './ui';
-import { fmtXAF, MIN_PUBLISHABLE_PRICE_XAF, parsePriceInput, primaryImageOf, tierToCommissionTier } from './helpers';
+import { fmtXAF, prixTropBas, usePrixMinPubliable, parsePriceInput, primaryImageOf, tierToCommissionTier } from './helpers';
 import { emptyDraft, type NewOfferDraft } from './types';
 import StepPhotos from './steps/StepPhotos';
 import StepStockPrix from './steps/StepStockPrix';
@@ -43,6 +43,7 @@ type Phase = 'pick' | 'price' | 'recap' | 'sent';
 
 export default function DupliquerProduitPage() {
   const { t } = useTranslation();
+  const prixMin = usePrixMinPubliable();
   const { theme } = useTheme();
   const p = palette(theme);
   const navigate = useNavigate();
@@ -282,7 +283,7 @@ export default function DupliquerProduitPage() {
           <div className="mt-4">
             <PrimaryButton
               p={p}
-              disabled={!draft.conditionId || parsePriceInput(draft.priceXaf) < MIN_PUBLISHABLE_PRICE_XAF}
+              disabled={!draft.conditionId || prixTropBas(parsePriceInput(draft.priceXaf), prixMin)}
               onClick={() => setPhase('recap')}
             >
               {t('sl10_catalogue.cta_continue')}

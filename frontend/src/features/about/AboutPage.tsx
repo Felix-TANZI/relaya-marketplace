@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { PfShellStyles } from "@/styles/pfShell";
+import { chiffre, useChiffresPublics } from "@/hooks/useChiffresPublics";
 import {
   BarChart3,
   ChevronDown,
@@ -34,12 +35,9 @@ import type { LucideIcon } from "lucide-react";
 
 /* ────────────────────────────── Données ────────────────────────────── */
 
-const STATS: { value: string; labelKey: string; bg: string; color: string; star?: boolean }[] = [
-  { value: "3 200+", labelKey: "cl5_about.stat_sellers_label", bg: "#fff4ea", color: "#C85E14" },
-  { value: "15K+", labelKey: "cl5_about.stat_products_label", bg: "#eafaf0", color: "#047857" },
-  { value: "4", labelKey: "cl5_about.stat_countries_label", bg: "#eaf1fe", color: "#1D4ED8" },
-  { value: "4.8", labelKey: "cl5_about.stat_satisfaction_label", bg: "#fff9e6", color: "#B45309", star: true },
-];
+// DEV-SRV-01 T09 : les chiffres viennent de la base (useChiffresPublics), plus écrits ici (« 3 200+ », « 15K+ »,
+// « 4 pays », « 4,8 ») ; pays et satisfaction n'ont pas de source réelle et ne sont plus affichés.
+type Stat = { value: string; labelKey: string; bg: string; color: string; star?: boolean };
 
 const ESCROW_STEPS: { titleKey: string; textKey: string; bg: string; dot: string }[] = [
   {
@@ -189,6 +187,11 @@ const LEGAL: { icon: LucideIcon; titleKey: string; subKey: string; bg: string; c
 export default function AboutPage() {
   const { t } = useTranslation();
   const [openLegal, setOpenLegal] = useState<string | null>(null);
+  const chiffres = useChiffresPublics();
+  const STATS: Stat[] = [
+    { value: chiffre(chiffres?.boutiques), labelKey: "cl5_about.stat_sellers_label", bg: "#fff4ea", color: "#C85E14" },
+    { value: chiffre(chiffres?.produits), labelKey: "cl5_about.stat_products_label", bg: "#eafaf0", color: "#047857" },
+  ];
 
   return (
     <div className="pf-root" style={{ minHeight: "100vh" }}>
@@ -220,7 +223,7 @@ export default function AboutPage() {
         </section>
 
         {/* ═══════════════════════ Chiffres d'ouverture ═══════════════════════ */}
-        <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <section className="grid grid-cols-2 gap-3">
           {STATS.map((item) => (
             <article key={item.labelKey} className="pf-stat pf-anim" style={{ flexDirection: "column", justifyContent: "center", textAlign: "center", gap: 4 }}>
               <p style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, fontSize: 26, fontWeight: 800, lineHeight: 1, color: item.color }}>

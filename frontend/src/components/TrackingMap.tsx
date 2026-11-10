@@ -2,17 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "@/lib/leafletIcons";
 import { geocodingApiUrl, isGoogleMapsEnabled, mapAttribution, mapTileUrl } from "@/config/maps";
 import { GoogleMap } from "@/components/maps/GoogleMap";
 import { googleGeocodeAddress } from "@/lib/googleMaps";
 
 // Fix default marker icons in React
-delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
-  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
-});
 
 const vendorIcon = new L.DivIcon({
   html: `

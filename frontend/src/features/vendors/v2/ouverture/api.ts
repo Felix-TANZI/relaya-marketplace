@@ -134,19 +134,16 @@ export async function verifyShopPhoneOtp(phone: string, code: string): Promise<v
 // ── Mot de passe oublié ──────────────────────────────────────────────────────
 
 /**
- * Aucun endpoint de réinitialisation n'existe dans authApi aujourd'hui (le
- * lien "/forgot-password" est déjà un lien mort ailleurs dans l'app — voir
- * PortalLoginCard.tsx). On tente un endpoint plausible ; en cas d'échec (404
- * ou réseau), l'appelant affiche quand même la confirmation générique
- * ("si un compte existe…") : ne jamais révéler si l'identifiant correspond à
- * un compte, qu'il existe un backend ou non — pratique de sécurité standard,
- * indépendante du succès technique de l'appel.
+ * POST /api/vendors/auth/password-reset (DEV-SRV-01 T07-5) : le lien part par SMS au numéro du vendeur, ou à son
+ * e-mail, et ramène à l'espace vendeur (apps/otp/oubli.py). L'appel visait /api/auth/password-reset/, une adresse qui
+ * n'existait pas. En cas d'échec, l'appelant affiche quand même la confirmation générique (« si un compte existe… ») :
+ * ne jamais révéler si l'identifiant correspond à un compte.
  */
 export async function requestPasswordResetLink(identifier: string): Promise<void> {
   try {
-    await http<void>('/api/auth/password-reset/', {
+    await http<void>('/api/vendors/auth/password-reset', {
       method: 'POST',
-      body: JSON.stringify({ identifier }),
+      body: JSON.stringify({ identifiant: identifier }),
     });
   } catch {
     // Volontairement silencieux — voir commentaire ci-dessus.

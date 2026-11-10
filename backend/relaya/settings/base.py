@@ -360,7 +360,8 @@ SPECTACULAR_SETTINGS = {
 # pour valider le socle en local.
 BELIVAY_PARAMETRES_JSON = BASE_DIR / "apps" / "client_core" / "donnees" / "parametres-en-vigueur.json"
 BELIVAY_INTERRUPTEURS_JSON = BASE_DIR / "apps" / "client_core" / "donnees" / "interrupteurs.json"
-BELIVAY_SITE_URL = os.getenv("BELIVAY_SITE_URL", "https://belivay.com")
+# DEV-SRV-01, R5 : une seule adresse du site par defaut, PUBLIC_SITE_URL (jusqu'au 14/12, belivay.com est la vitrine).
+BELIVAY_SITE_URL = (os.getenv("BELIVAY_SITE_URL") or PUBLIC_SITE_URL).rstrip("/")
 # Feuille de route D7 : aiguillage SMS / WhatsApp, prestataire SMS reel a brancher a la signature du contrat (R78.2).
 BELIVAY_SMS = os.getenv("BELIVAY_SMS", "apps.otp.prestataires.Aiguillage")
 BELIVAY_SMS_FOURNISSEUR = os.getenv("BELIVAY_SMS_FOURNISSEUR", "apps.otp.prestataires.SmsConsole")
@@ -587,10 +588,12 @@ CATALOGUE_OFFRES_MINIMUM_PAR_CATEGORIE = int(
 # ========================================
 
 # CSRF Configuration pour HTTPS
-CSRF_TRUSTED_ORIGINS = [
+# DEV-SRV-01, R5 : par la configuration (CSRF_TRUSTED_ORIGINS). Les deux adresses ci-dessous ne servent que si elle est
+# vide, pour que le serveur actuel garde son comportement ; le site réel les donne toutes (config/reel.env.example).
+CSRF_TRUSTED_ORIGINS = _origines("CSRF_TRUSTED_ORIGINS") or [
     'https://belivay.com',
     'https://www.belivay.com',
-] + _origines("CSRF_TRUSTED_ORIGINS")  # DEV-SRV-01 : api.belivay.com et les portails, par la configuration
+]
 
 # Sécurité HTTPS en production
 if not DEBUG:

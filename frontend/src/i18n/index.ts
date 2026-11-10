@@ -37,6 +37,8 @@ import sl7En from "./domains/sl7.en";
 import sl8Fr from "./domains/sl8.fr";
 import sl8En from "./domains/sl8.en";
 import sl9Fr from "./domains/sl9.fr";
+import mdpFr from "./domains/mdp.fr";
+import mdpEn from "./domains/mdp.en";
 import sl9En from "./domains/sl9.en";
 import sl10Fr from "./domains/sl10.fr";
 import sl10En from "./domains/sl10.en";
@@ -113,6 +115,7 @@ const mergedFr = {
   ...misc1Fr,
   ...hm1Fr,
   ...hm2Fr,
+  ...mdpFr,
 };
 
 const mergedEn = {
@@ -126,6 +129,7 @@ const mergedEn = {
   ...misc1En,
   ...hm1En,
   ...hm2En,
+  ...mdpEn,
 };
 
 i18n.use(initReactI18next).init({

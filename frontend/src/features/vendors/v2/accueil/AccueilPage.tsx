@@ -31,8 +31,9 @@ import ScoreApproachingCard from './ScoreApproachingCard';
 import SuspendedCard from './SuspendedCard';
 import OfflineBanner, { HandoverSyncCard, OfflineSyncInfoBanner } from './OfflineBanner';
 import ShopIdentityBar from '../ShopIdentityBar';
+import { lienSupportWhatsApp } from '@/config/support';
 
-const SUPPORT_WHATSAPP_URL = 'https://wa.me/237689002812';
+const SUPPORT_WHATSAPP_URL = lienSupportWhatsApp();
 
 /** "Besoin d'aide ?" (Premier jour) : saisie assistée + support WhatsApp (A16). */
 function HelpBlock() {

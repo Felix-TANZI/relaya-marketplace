@@ -68,7 +68,7 @@ export default {
     forgot_identifier_label: 'Username, email or phone',
     forgot_placeholder: 'Username, email or phone',
     forgot_submit: 'Get the link',
-    forgot_delay_note: 'The link arrives by email. It is valid for a limited time.',
+    forgot_delay_note: 'The link arrives by SMS on your number, or by email. It is valid for a limited time.',
     forgot_security_tip: 'BelivaY never asks for your password or your Mobile Money secret code in a message.',
     forgot_no_access_hint: 'No longer have access to your account?',
     forgot_sent_title: 'Link sent',

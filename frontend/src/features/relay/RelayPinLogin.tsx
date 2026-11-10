@@ -21,6 +21,7 @@
  * local.
  */
 import { useCallback, useEffect, useState } from "react";
+import i18n from "@/i18n";
 import { Store } from "lucide-react";
 import { RelayPinPad } from "./RelayUi";
 import { http } from "@/services/api/http";
@@ -88,7 +89,7 @@ export default function RelayPinLogin({ onAuthenticated }: { onAuthenticated: ()
         setEtape("oubli");
       }
     } catch {
-      setErreur("Connexion impossible. Vérifiez votre réseau.");
+      setErreur(i18n.t("rl3.connexion_impossible_verifiez_votre_reseau"));
     } finally {
       setBusy(false);
     }
@@ -105,8 +106,8 @@ export default function RelayPinLogin({ onAuthenticated }: { onAuthenticated: ()
       // viendra pas.
       setInfo(
         reponse.channel === "sms"
-          ? "Un code à 6 chiffres vous a été envoyé par SMS."
-          : "Un code à 6 chiffres a été envoyé à l'adresse e-mail du compte.",
+          ? i18n.t("rl3.un_code_a_6_chiffres_vous_a_ete_envoye_par")
+          : i18n.t("rl3.un_code_a_6_chiffres_a_ete_envoye_a_l_adre"),
       );
     } catch {
       setInfo("");
@@ -135,7 +136,7 @@ export default function RelayPinLogin({ onAuthenticated }: { onAuthenticated: ()
         (erreurAppel as { data?: { detail?: string; attempts_left?: number } })?.data ?? {};
       setErreur(
         detail.detail
-          ?? "Numéro ou code incorrect."
+          ?? i18n.t("rl3.numero_ou_code_incorrect")
             + (detail.attempts_left !== undefined ? ` ${detail.attempts_left} essais restants.` : ""),
       );
       setPin("");
@@ -160,7 +161,7 @@ export default function RelayPinLogin({ onAuthenticated }: { onAuthenticated: ()
       await consulter(numeroComplet);
     } catch (erreurAppel) {
       const detail = (erreurAppel as { data?: { detail?: string; pin?: string } })?.data ?? {};
-      setErreur(detail.pin ?? detail.detail ?? "Code invalide ou expiré.");
+      setErreur(detail.pin ?? detail.detail ?? i18n.t("rl3.code_invalide_ou_expire"));
     } finally {
       setBusy(false);
     }
@@ -209,7 +210,7 @@ export default function RelayPinLogin({ onAuthenticated }: { onAuthenticated: ()
                   inputMode="numeric"
                   autoComplete="tel-national"
                   placeholder="6 91 24 83 50"
-                  aria-label="Numéro de téléphone"
+                  aria-label={i18n.t("rl3.numero_de_telephone")}
                   className="min-w-0 flex-1 bg-transparent text-[17px] font-bold tracking-wide text-slate-900 outline-none placeholder:font-medium placeholder:text-slate-300 dark:text-white"
                 />
               </div>
@@ -304,7 +305,7 @@ export default function RelayPinLogin({ onAuthenticated }: { onAuthenticated: ()
         {etape === "oubli" ? (
           <section className="rounded-[14px] bg-white px-5 pb-5 pt-4 shadow-[0_2px_12px_rgba(60,35,15,.08)] dark:bg-slate-900">
             <h1 className="text-[23px] font-black tracking-[-0.03em] text-slate-900 dark:text-white">
-              {status?.has_pin ? "PIN oublié" : "Créer votre PIN"}
+              {status?.has_pin ? i18n.t("rl3.pin_oublie") : i18n.t("rl3.creer_votre_pin")}
             </h1>
             <p className="mt-1.5 text-[13.5px] font-medium leading-snug text-slate-500 dark:text-slate-400">
               {info || "Un code de réinitialisation est envoyé au compte."} Un employé peut aussi
@@ -320,7 +321,7 @@ export default function RelayPinLogin({ onAuthenticated }: { onAuthenticated: ()
               inputMode="numeric"
               autoComplete="one-time-code"
               placeholder="000000"
-              aria-label="Code reçu"
+              aria-label={i18n.t("rl3.code_recu")}
               className="mt-2 w-full rounded-[12px] border border-slate-200 bg-white px-4 py-3 text-center text-[22px] font-black tracking-[0.3em] text-slate-900 outline-none transition focus:border-[#2456D6] placeholder:text-slate-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
             />
 

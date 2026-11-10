@@ -17,6 +17,7 @@
  * de la lumière sur une étiquette déjà difficile à lire.
  */
 import { useState } from "react";
+import i18n from "@/i18n";
 import { Eye, EyeOff, Keyboard, X } from "lucide-react";
 import { useQrCamera } from "@/lib/useQrCamera";
 
@@ -28,7 +29,7 @@ export default function RelayCamera({
   onManual,
   onCaptured,
   /** Ce que la photo doit montrer, affiché dans le cadre. */
-  consigne = "Photo de remise · colis entier, étiquette visible",
+  consigne = i18n.t("rl3.photo_de_remise_colis_entier_etiquette_vis"),
   /** Combien de photos sont attendues à cette étape. */
   attendues = 1,
 }: {
@@ -102,7 +103,7 @@ export default function RelayCamera({
         <button
           type="button"
           onClick={() => setTorche((actuel) => !actuel)}
-          aria-label={torche ? "Éteindre la lampe" : "Allumer la lampe"}
+          aria-label={torche ? i18n.t("rl3.eteindre_la_lampe") : i18n.t("rl3.allumer_la_lampe")}
           aria-pressed={torche}
           className="flex h-[42px] w-[42px] flex-shrink-0 items-center justify-center rounded-full bg-white/10 transition active:scale-[.92]"
         >
@@ -200,7 +201,7 @@ export default function RelayCamera({
                 quitter l'ecran. */}
             <span className="h-[52px] w-[52px] flex-shrink-0 overflow-hidden rounded-[12px] bg-white/10">
               {prises.length > 0 ? (
-                <img src={prises[prises.length - 1]} alt="Dernière photo" className="h-full w-full object-cover" />
+                <img src={prises[prises.length - 1]} alt={i18n.t("rl3.derniere_photo")} className="h-full w-full object-cover" />
               ) : null}
             </span>
 
@@ -208,7 +209,7 @@ export default function RelayCamera({
               type="button"
               onClick={declencher}
               disabled={!streaming}
-              aria-label="Prendre la photo"
+              aria-label={i18n.t("rl3.prendre_la_photo")}
               className="flex h-[74px] w-[74px] flex-shrink-0 items-center justify-center rounded-full border-[4px] border-white transition active:scale-[.92] disabled:opacity-40"
             >
               <span className="h-[58px] w-[58px] rounded-full bg-white/0" />

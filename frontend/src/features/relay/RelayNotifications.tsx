@@ -25,6 +25,7 @@
  * l'écran ne prétend pas qu'ils le soient.
  */
 import { ArrowLeftRight, Bell, Clock, CreditCard, Moon, Package, Scale, ShieldCheck, TriangleAlert, Truck } from "lucide-react";
+import i18n from "@/i18n";
 import type { LucideIcon } from "lucide-react";
 
 /** Les natures d'entrée, et la couleur qui leur correspond. */
@@ -258,7 +259,7 @@ export default function RelayNotifications({
   const maintenant = new Date();
 
   const tuiles = [
-    { valeur: summary.toReceive, label: "colis à recevoir" },
+    { valeur: summary.toReceive, label: i18n.t("rl3.colis_a_recevoir") },
     { valeur: summary.pickupsExpected, label: "retraits attendus" },
     { valeur: summary.outbound, label: summary.outbound > 1 ? "renvois" : "renvoi" },
   ];
@@ -309,7 +310,7 @@ export default function RelayNotifications({
             ? `${summary.freePlaces} place${summary.freePlaces > 1 ? "s" : ""} libre${
                 summary.freePlaces > 1 ? "s" : ""
               } ce matin. Bonne journée au guichet.`
-            : "Capacité non déclarée — renseignez vos places pour suivre ce qui reste. Bonne journée au guichet."}
+            : i18n.t("rl3.capacite_non_declaree_renseignez_vos_place")}
         </p>
       </section>
 
@@ -360,7 +361,7 @@ export default function RelayNotifications({
             <LigneReglage
               icon="cloche"
               titre="Notifications push"
-              detail="Gratuites, pour tout ce qui est à faire"
+              detail={i18n.t("rl3.gratuites_pour_tout_ce_qui_est_a_faire")}
               dernier={false}
             >
               <Bascule
@@ -377,7 +378,7 @@ export default function RelayNotifications({
               /* La maquette annonce « 15 min avant son arrivee ». Le portail
                  relais ne recoit ni position du livreur ni heure de passage :
                  on promet l'avis, pas le delai. */
-              detail="Quand une mission est annoncée vers votre comptoir"
+              detail={i18n.t("rl3.quand_une_mission_est_annoncee_vers_votre")}
               dernier={false}
             >
               <Bascule
@@ -391,7 +392,7 @@ export default function RelayNotifications({
             <LigneReglage
               icon="versement"
               titre="Versements"
-              detail="Envoi ou refus, sans montant : le détail est dans l'app"
+              detail={i18n.t("rl3.envoi_ou_refus_sans_montant_le_detail_est")}
               dernier={false}
             >
               <Bascule
@@ -404,14 +405,14 @@ export default function RelayNotifications({
 
             <LigneReglage
               icon="horloge"
-              titre="Heure du résumé"
+              titre={i18n.t("rl3.heure_du_resume")}
               detail={`Réglable, jamais avant ${settings.digest_earliest_hour} h`}
               dernier={false}
             >
               <select
                 value={settings.digest_hour}
                 disabled={settingsBusy}
-                aria-label="Heure du résumé"
+                aria-label={i18n.t("rl3.heure_du_resume")}
                 onChange={(event) => onChangeSettings({ digest_hour: Number(event.target.value) })}
                 className={PASTILLE}
               >
@@ -424,14 +425,14 @@ export default function RelayNotifications({
             <LigneReglage
               icon="lune"
               titre="Heures calmes"
-              detail="Rien pendant cette plage, sauf l'urgent"
+              detail={i18n.t("rl3.rien_pendant_cette_plage_sauf_l_urgent")}
               dernier={false}
             >
               <span className="flex flex-shrink-0 items-center gap-1">
                 <select
                   value={settings.quiet_from_hour}
                   disabled={settingsBusy}
-                  aria-label="Début des heures calmes"
+                  aria-label={i18n.t("rl3.debut_des_heures_calmes")}
                   onChange={(event) => onChangeSettings({ quiet_from_hour: Number(event.target.value) })}
                   className={PASTILLE}
                 >
@@ -443,7 +444,7 @@ export default function RelayNotifications({
                 <select
                   value={settings.quiet_to_hour}
                   disabled={settingsBusy}
-                  aria-label="Fin des heures calmes"
+                  aria-label={i18n.t("rl3.fin_des_heures_calmes")}
                   onChange={(event) => onChangeSettings({ quiet_to_hour: Number(event.target.value) })}
                   className={PASTILLE}
                 >
@@ -456,8 +457,8 @@ export default function RelayNotifications({
 
             <LigneReglage
               icon="bouclier"
-              titre="Score et sanctions"
-              detail="Alerte avant un seuil, sanction ou descente proposée, avec « Contester »"
+              titre={i18n.t("rl3.score_et_sanctions")}
+              detail={i18n.t("rl3.alerte_avant_un_seuil_sanction_ou_descente")}
               dernier
             >
               {/* Pas d'interrupteur, et c'est voulu : une alerte de sanction

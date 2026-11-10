@@ -21,6 +21,7 @@
  * et c'est exactement sur cette promesse qu'il aurait installé.
  */
 import { useEffect, useState } from "react";
+import i18n from "@/i18n";
 import { Bell, Download, Gauge, Maximize2, WifiOff } from "lucide-react";
 
 /**
@@ -39,17 +40,17 @@ type Plateforme = "iphone" | "android";
 
 const ETAPES: Record<Plateforme, Array<{ titre: string; detail: string }>> = {
   iphone: [
-    { titre: "Ouvrez ce lien dans Safari", detail: "L'installation n'est possible que depuis Safari" },
-    { titre: "Touchez le bouton Partager", detail: "Le carré avec une flèche, en bas de l'écran" },
-    { titre: "« Sur l'écran d'accueil »", detail: "Faites défiler la liste si besoin" },
-    { titre: "Touchez « Ajouter »", detail: "L'icône BelivaY apparaît sur votre écran" },
+    { titre: i18n.t("rl3.ouvrez_ce_lien_dans_safari"), detail: i18n.t("rl3.l_installation_n_est_possible_que_depuis_s") },
+    { titre: i18n.t("rl3.touchez_le_bouton_partager"), detail: i18n.t("rl3.le_carre_avec_une_fleche_en_bas_de_l_ecran") },
+    { titre: i18n.t("rl3.sur_l_ecran_d_accueil"), detail: i18n.t("rl3.faites_defiler_la_liste_si_besoin") },
+    { titre: "Touchez « Ajouter »", detail: i18n.t("rl3.l_icone_belivay_apparait_sur_votre_ecran") },
   ],
   android: [
     {
       titre: "Touchez « Installer » ci-dessous",
-      detail: "Ou le menu ⋮ de Chrome → « Installer l'application »",
+      detail: i18n.t("rl3.ou_le_menu_de_chrome_installer_l_applicati"),
     },
-    { titre: "Confirmez", detail: "L'icône BelivaY apparaît dans vos applications" },
+    { titre: "Confirmez", detail: i18n.t("rl3.l_icone_belivay_apparait_dans_vos_applicat") },
   ],
 };
 
@@ -63,18 +64,18 @@ const ETAPES: Record<Plateforme, Array<{ titre: string; detail: string }>> = {
 const RAISONS: Array<{ icon: LucideIcon; titre: string; detail: string }> = [
   {
     icon: Maximize2,
-    titre: "Plein écran",
-    detail: "Sans barre d'adresse : plus de place pour les colis et les codes",
+    titre: i18n.t("rl3.plein_ecran"),
+    detail: i18n.t("rl3.sans_barre_d_adresse_plus_de_place_pour_le"),
   },
   {
     icon: Gauge,
     titre: "Ouverture directe",
-    detail: "Une icône sur l'écran d'accueil, sans passer par le navigateur",
+    detail: i18n.t("rl3.une_icone_sur_l_ecran_d_accueil_sans_passe"),
   },
   {
     icon: Bell,
-    titre: "Toujours la bonne adresse",
-    detail: "Plus de lien à retrouver, ni de mauvais portail ouvert par erreur",
+    titre: i18n.t("rl3.toujours_la_bonne_adresse"),
+    detail: i18n.t("rl3.plus_de_lien_a_retrouver_ni_de_mauvais_por"),
   },
 ];
 
@@ -187,7 +188,7 @@ export default function RelayInstall() {
               className="pr-btn flex w-full items-center justify-center gap-2.5 rounded-[12px] px-4 py-3.5 text-[16px] font-black text-white transition active:scale-[.97] disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none dark:disabled:from-slate-700 dark:disabled:to-slate-700"
             >
               <Download size={18} strokeWidth={2.4} />
-              {installe ? "Déjà installée" : "Installer"}
+              {installe ? i18n.t("rl3.deja_installee") : "Installer"}
             </button>
             {/* Sans invite captee, le bouton ne peut rien faire : on dit ou
                 aller plutot que de laisser appuyer dans le vide. */}

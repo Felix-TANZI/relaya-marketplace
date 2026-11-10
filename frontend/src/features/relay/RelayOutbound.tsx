@@ -24,6 +24,7 @@
  * qu'il existe — mais aucun colis ne peut porter ce motif aujourd'hui.
  */
 import { useMemo, useState } from "react";
+import i18n from "@/i18n";
 import { Camera, Check, Layers, Truck } from "lucide-react";
 
 /** Pourquoi un colis quitte le relais. */
@@ -89,10 +90,10 @@ const REASON_LABEL: Record<OutboundReason, string> = {
  */
 const REASONS: Array<[string, string]> = [
   ["Non retiré en 7 jours (J8)", "renvoi, 500 F client"],
-  ["Retour validé déposé", "vers le vendeur"],
+  ["Retour validé déposé", i18n.t("rl3.vers_le_vendeur")],
   ["Client change de relais", "transfert, 400 F client"],
-  ["Refus au comptoir", "après constat ou annulation"],
-  ["Fermeture déclarée", "vers le relais voisin"],
+  ["Refus au comptoir", i18n.t("rl3.apres_constat_ou_annulation")],
+  ["Fermeture déclarée", i18n.t("rl3.vers_le_relais_voisin")],
 ];
 
 /** « mar. 22 » — assez pour se reperer dans la semaine, sans la surcharger. */
@@ -120,7 +121,7 @@ function jourRelatif(date: Date, maintenant: Date) {
 }
 
 const TABS = [
-  { key: "todo", label: "À remettre" },
+  { key: "todo", label: i18n.t("rl3.a_remettre") },
   { key: "batches", label: "Collectes" },
   { key: "gone", label: "Partis" },
 ] as const;
@@ -211,13 +212,13 @@ export default function RelayOutbound({
   const collecte = useMemo(() => {
     if (pending.length === 0) {
       return {
-        titre: "Rien à faire partir",
-        detail: "Aucun colis n'attend de sortir de votre local.",
+        titre: i18n.t("rl3.rien_a_faire_partir"),
+        detail: i18n.t("rl3.aucun_colis_n_attend_de_sortir_de_votre_lo"),
       };
     }
     const colis = `${pending.length} colis à remettre`;
     return {
-      titre: "Au prochain passage",
+      titre: i18n.t("rl3.au_prochain_passage"),
       // `courierRef` ne vaut que pour un livreur deja en route vers le relais :
       // c'est lui qui repartira avec les sorties, il n'y a pas deux passages.
       detail: courierRef ? `${courierRef} en route · ${colis}` : `${colis} · aucun livreur annoncé`,
@@ -370,7 +371,7 @@ export default function RelayOutbound({
               <label className="mt-3 flex cursor-pointer items-center gap-3 rounded-[12px] border border-dashed border-slate-300 px-4 py-3 text-[14px] font-semibold text-slate-700 dark:border-slate-700 dark:text-slate-200">
                 <Camera size={19} strokeWidth={2.2} className="flex-shrink-0 text-[#EF6A00]" />
                 <span className="min-w-0 flex-1 truncate">
-                  {photo ? `Photo prise : ${photo.name}` : "Photo de la sortie (obligatoire)"}
+                  {photo ? `Photo prise : ${photo.name}` : i18n.t("rl3.photo_de_la_sortie_obligatoire")}
                 </span>
                 <input
                   type="file"
@@ -387,7 +388,7 @@ export default function RelayOutbound({
                 onClick={() => void validate()}
                 className="pr-btn mt-3 flex w-full items-center justify-center gap-2.5 rounded-[12px] px-4 py-4 text-[17px] font-black text-white transition active:scale-[.97] disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none dark:disabled:from-slate-700 dark:disabled:to-slate-700"
               >
-                <Check size={19} strokeWidth={3} /> {busy ? "Validation..." : "Valider la sortie"}
+                <Check size={19} strokeWidth={3} /> {busy ? "Validation..." : i18n.t("rl3.valider_la_sortie")}
               </button>
             </>
           )}
@@ -418,7 +419,7 @@ export default function RelayOutbound({
                 // qui les emportera, les annoncer sur chaque ligne ferait croire
                 // a autant de reprises qu'il y a de passages.
                 const reprise = rang === 0 && pending.length > 0 ? `reprend ${pending.length} colis` : "";
-                const depot = passage.drop_count > 0 ? `Dépose ${passage.drop_count} colis` : "Aucun dépôt prévu";
+                const depot = passage.drop_count > 0 ? `Dépose ${passage.drop_count} colis` : i18n.t("rl3.aucun_depot_prevu");
 
                 return (
                   <li key={passage.tournee_id} className="flex items-start gap-3 py-3.5">
@@ -430,7 +431,7 @@ export default function RelayOutbound({
                         {quand}
                         {/* Une tournee pas encore revendiquee n'a pas d'entreprise :
                             on le dit, plutot que de laisser un « · » orphelin. */}
-                        {passage.company ? ` · ${passage.company}` : " · entreprise à désigner"}
+                        {passage.company ? ` · ${passage.company}` : i18n.t("rl3.entreprise_a_designer")}
                       </span>
                       <span className="mt-1 block text-[13px] font-medium leading-snug text-slate-500 dark:text-slate-400">
                         {reprise ? `${depot} · ${reprise}` : depot}

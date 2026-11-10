@@ -18,6 +18,7 @@
  * un relais qui se croit formé ouvre son comptoir.
  */
 import { useCallback, useEffect, useState } from "react";
+import i18n from "@/i18n";
 import { Eye, GraduationCap, Globe, KeyRound, Package, Scale, Smartphone, Undo2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { http } from "@/services/api/http";
@@ -46,12 +47,12 @@ interface Module {
  * durées sont du contenu pédagogique, donc côté interface.
  */
 const MODULES: Module[] = [
-  { key: "reception", icon: Package, titre: "Réception et scellés", minutes: 12 },
-  { key: "cni", icon: KeyRound, titre: "Retrait, codes et tiers", minutes: 10 },
-  { key: "stockage", icon: Smartphone, titre: "Sécurité du stockage", minutes: 8 },
-  { key: "litige", icon: Scale, titre: "Constat de litige", minutes: 10 },
-  { key: "relation", icon: Undo2, titre: "Relation client et avis", minutes: 6 },
-  { key: "pidgin", icon: Globe, titre: "Servir en anglais et en pidgin", minutes: 15 },
+  { key: "reception", icon: Package, titre: i18n.t("rl3.reception_et_scelles"), minutes: 12 },
+  { key: "cni", icon: KeyRound, titre: i18n.t("rl3.retrait_codes_et_tiers"), minutes: 10 },
+  { key: "stockage", icon: Smartphone, titre: i18n.t("rl3.securite_du_stockage"), minutes: 8 },
+  { key: "litige", icon: Scale, titre: i18n.t("rl3.constat_de_litige"), minutes: 10 },
+  { key: "relation", icon: Undo2, titre: i18n.t("rl3.relation_client_et_avis"), minutes: 6 },
+  { key: "pidgin", icon: Globe, titre: i18n.t("rl3.servir_en_anglais_et_en_pidgin"), minutes: 15 },
 ];
 
 /** Circonférence de l'anneau de progression (r = 42 dans un viewBox de 100). */
@@ -126,7 +127,7 @@ export default function RelayTrainingMobile({
             forme ? "text-[#52D69A]" : "text-[#8FB0FF]"
           }`}
         >
-          {forme ? "Obligatoires terminés" : `${noyauFaits} / ${noyauTotal} obligatoires`}
+          {forme ? i18n.t("rl3.obligatoires_termines") : `${noyauFaits} / ${noyauTotal} obligatoires`}
         </p>
         <div className="mt-2 text-[22px] font-black leading-tight">
           {loading ? "…" : forme ? "Relais formé" : "Formation à terminer"}
@@ -135,7 +136,7 @@ export default function RelayTrainingMobile({
           {forme
             ? facultatifsFaits > 0
               ? `${facultatifsFaits} module facultatif suivi en plus`
-              : "Un module facultatif reste disponible"
+              : i18n.t("rl3.un_module_facultatif_reste_disponible")
             : `Il reste ${Math.max(0, noyauTotal - noyauFaits)} module${
                 noyauTotal - noyauFaits > 1 ? "s" : ""
               } à suivre avant d'ouvrir`}

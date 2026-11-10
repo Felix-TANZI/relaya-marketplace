@@ -20,6 +20,7 @@
  * changer de quartier, si — d'où la ligne qui le dit sous le bouton.
  */
 import { useState } from "react";
+import i18n from "@/i18n";
 import { Check, Settings2, ShoppingCart } from "lucide-react";
 import { RelaySheet, RelaySheetHeader } from "./RelayUi";
 
@@ -40,10 +41,10 @@ export interface RelaySettingsProfile {
 
 /** Ce que le gérant peut corriger lui-même, dans l'ordre où l'écran les montre. */
 const CHAMPS = [
-  { cle: "name", label: "Nom affiché", aide: "Le nom que les clients voient sur la carte.", type: "text" },
-  { cle: "manager_name", label: "Nom du gérant", aide: "La personne responsable du comptoir.", type: "text" },
-  { cle: "phone", label: "Téléphone", aide: "Le numéro que les livreurs appellent.", type: "tel" },
-  { cle: "address", label: "Adresse", aide: "Rue et repère : c'est ce que lit un livreur.", type: "text" },
+  { cle: "name", label: i18n.t("rl3.nom_affiche"), aide: i18n.t("rl3.le_nom_que_les_clients_voient_sur_la_carte"), type: "text" },
+  { cle: "manager_name", label: i18n.t("rl3.nom_du_gerant"), aide: i18n.t("rl3.la_personne_responsable_du_comptoir"), type: "text" },
+  { cle: "phone", label: "Téléphone", aide: i18n.t("rl3.le_numero_que_les_livreurs_appellent"), type: "tel" },
+  { cle: "address", label: "Adresse", aide: i18n.t("rl3.rue_et_repere_c_est_ce_que_lit_un_livreur"), type: "text" },
   { cle: "city", label: "Ville", aide: "", type: "text" },
 ] as const;
 
@@ -89,11 +90,11 @@ function IdentitySheet({
 
   const enregistrer = async () => {
     if (vide) {
-      setErreur("Aucun de ces champs ne peut rester vide.");
+      setErreur(i18n.t("rl3.aucun_de_ces_champs_ne_peut_rester_vide"));
       return;
     }
     if (!motDePasse) {
-      setErreur("Entrez votre mot de passe pour confirmer.");
+      setErreur(i18n.t("rl3.entrez_votre_mot_de_passe_pour_confirmer"));
       return;
     }
     setBusy(true);
@@ -126,7 +127,7 @@ function IdentitySheet({
         icon={Settings2}
         tone="bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
         title="Mes informations"
-        subtitle="Corrigez ce qui a changé, puis confirmez avec votre mot de passe."
+        subtitle={i18n.t("rl3.corrigez_ce_qui_a_change_puis_confirmez_av")}
         onClose={onClose}
       />
 
@@ -150,7 +151,7 @@ function IdentitySheet({
         <div className="pr-rule" />
 
         <label className="block">
-          <span className="pr-kicker block uppercase">Votre mot de passe</span>
+          <span className="pr-kicker block uppercase">{i18n.t("rl3.votre_mot_de_passe")}</span>
           <input
             value={motDePasse}
             type="password"
@@ -265,7 +266,7 @@ export default function RelaySettings({
               }`}
             >
               {verifie ? <Check size={14} strokeWidth={3} /> : null}
-              {verifie ? "Relais vérifié" : profile.status}
+              {verifie ? i18n.t("rl3.relais_verifie") : profile.status}
             </span>
             {profile.tier ? (
               <span className="rounded-full border border-[#C9D7FB] bg-[#EAF0FF] px-3.5 py-[6px] text-[13px] font-bold text-[#2456D6] dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200">
@@ -283,7 +284,7 @@ export default function RelaySettings({
         </h3>
 
         <dl className="mt-2 divide-y divide-slate-100 dark:divide-slate-800">
-          <Info label="Nom affiché" value={profile.name || "à définir"} />
+          <Info label={i18n.t("rl3.nom_affiche")} value={profile.name || "à définir"} />
           <Info label="Adresse" value={profile.address || "à compléter"} />
           <Info label="Ville" value={profile.city || "à définir"} />
           {profile.relayCode ? <Info label="Code relais" value={profile.relayCode} /> : null}

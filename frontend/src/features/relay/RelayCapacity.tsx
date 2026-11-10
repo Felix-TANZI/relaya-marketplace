@@ -22,6 +22,7 @@
  * taux de change — sans elles, « 40 places » ne veut rien dire.
  */
 import { useState } from "react";
+import i18n from "@/i18n";
 import { Box, CalendarX, Check, Clock, Minus, Plus, X } from "lucide-react";
 import {
   DAY_END,
@@ -145,7 +146,7 @@ export default function RelayCapacity({
             type="button"
             onClick={() => setDraft((current) => Math.max(plancher, current - 1))}
             disabled={draft <= plancher || busy}
-            aria-label="Retirer une place"
+            aria-label={i18n.t("rl3.retirer_une_place")}
             className="flex h-[52px] w-[52px] flex-shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition active:scale-90 disabled:opacity-35 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
           >
             <Minus size={22} strokeWidth={2.4} />
@@ -161,7 +162,7 @@ export default function RelayCapacity({
             type="button"
             onClick={() => setDraft((current) => current + 1)}
             disabled={busy}
-            aria-label="Ajouter une place"
+            aria-label={i18n.t("rl3.ajouter_une_place")}
             className="flex h-[52px] w-[52px] flex-shrink-0 items-center justify-center pr-sunrise rounded-full shadow-[0_4px_12px_rgba(217,80,0,.35)] transition active:scale-90 disabled:opacity-50"
           >
             <Plus size={24} strokeWidth={2.6} />
@@ -228,8 +229,8 @@ export default function RelayCapacity({
             </div>
             <p className="mt-1 text-[12.5px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">
               {bulky
-                ? "Un encombrant occupe cinq places. Si votre arrière-boutique ne suit plus, refusez-les : ils seront signalés dès la commande et ne vous seront plus attribués."
-                : "Les encombrants sont refusés : ils sont signalés dès la commande et ne vous sont jamais attribués. Votre grille tarifaire, elle, ne change pas."}
+                ? i18n.t("rl3.un_encombrant_occupe_cinq_places_si_votre")
+                : i18n.t("rl3.les_encombrants_sont_refuses_ils_sont_sign")}
             </p>
           </div>
           {/* Le bouton bascule tout de suite et part avec l'enregistrement
@@ -240,7 +241,7 @@ export default function RelayCapacity({
             type="button"
             role="switch"
             aria-checked={bulky}
-            aria-label="Accepter les encombrants"
+            aria-label={i18n.t("rl3.accepter_les_encombrants")}
             disabled={busy}
             onClick={() => setBulky((on) => !on)}
             className={`mt-0.5 flex h-[30px] w-[52px] flex-shrink-0 items-center rounded-full px-[3px] transition active:scale-95 disabled:opacity-60 ${
@@ -401,7 +402,7 @@ export default function RelayCapacity({
               disabled={!lunch.on}
               className="block text-left text-[15px] font-black leading-tight text-slate-900 transition enabled:active:scale-[.98] disabled:text-slate-400 dark:text-white dark:disabled:text-slate-500"
             >
-              {lunch.on ? `${lunch.from} h – ${lunch.to} h` : "Aucune pause déclarée"}
+              {lunch.on ? `${lunch.from} h – ${lunch.to} h` : i18n.t("rl3.aucune_pause_declaree")}
             </button>
             <p className="mt-1 text-[12.5px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">
               Les clients la voient ; aucun livreur n'est envoyé à ce moment
@@ -441,7 +442,7 @@ export default function RelayCapacity({
             type="button"
             role="switch"
             aria-checked={lunch.on}
-            aria-label="Déclarer une pause déjeuner"
+            aria-label={i18n.t("rl3.declarer_une_pause_dejeuner")}
             onClick={() => setLunch((current) => ({ ...current, on: !current.on }))}
             className={`mt-0.5 flex h-[30px] w-[52px] flex-shrink-0 items-center rounded-full px-[3px] transition ${
               lunch.on ? "bg-[#2456D6]" : "bg-slate-300 dark:bg-slate-700"

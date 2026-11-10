@@ -25,6 +25,7 @@
  * contrat — ce qui sera payé, plutôt qu'un tableau vide.
  */
 import { useEffect, useState } from "react";
+import i18n from "@/i18n";
 import { useTranslation } from "react-i18next";
 import { Check, CircleHelp, Smartphone, TriangleAlert } from "lucide-react";
 import { http } from "@/services/api/http";
@@ -78,17 +79,17 @@ const SOUCIS: Array<{ id: string; icon: typeof Check; tone: string; title: strin
     id: "non-recu",
     icon: CircleHelp,
     tone: "bg-[#EAF0FF] text-[#3A6BEA] dark:bg-blue-950 dark:text-blue-300",
-    title: "Versement non reçu",
-    body: "Signalez-le avec la référence : réponse avant lundi midi",
+    title: i18n.t("rl3.versement_non_recu"),
+    body: i18n.t("rl3.signalez_le_avec_la_reference_reponse_avan"),
   },
   {
     id: "refuse",
     icon: TriangleAlert,
     tone: "bg-[#FDECEA] text-[#B42318] dark:bg-red-950 dark:text-red-300",
-    title: "Versement refusé",
+    title: i18n.t("rl3.versement_refuse"),
     body:
-      "Numéro au nom d'un tiers, compte plein ou préfixe qui ne correspond pas : 3 nouveaux essais "
-      + "à 24 h d'intervalle, puis suspension et appel du support",
+      i18n.t("rl3.numero_au_nom_d_un_tiers_compte_plein_ou_p")
+      + i18n.t("rl3.a_24_h_d_intervalle_puis_suspension_et_app"),
   },
 ];
 
@@ -157,7 +158,7 @@ export default function RelayPayouts({
         setCompte(c.find((item) => item.is_primary) ?? c.find((item) => item.status === "VERIFIED") ?? c[0] ?? null);
       })
       .catch((exc: unknown) => {
-        if (monte) setErreur(exc instanceof Error ? exc.message : "Impossible de charger vos versements.");
+        if (monte) setErreur(exc instanceof Error ? exc.message : i18n.t("rl3.impossible_de_charger_vos_versements"));
       });
     return () => { monte = false; };
   }, []);
@@ -275,7 +276,7 @@ export default function RelayPayouts({
             <p className="mt-1 truncate font-mono text-[19px] font-black tracking-[0.06em]">
               {versement?.payee_msisdn_masked
                 ? `${operateur || "MoMo"} ${versement.payee_msisdn_masked}`
-                : "Numéro à configurer"}
+                : i18n.t("rl3.numero_a_configurer")}
             </p>
           </div>
           {operateur ? (
@@ -493,10 +494,10 @@ export default function RelayPayouts({
                     compte.status === "VERIFIED" && compte.verified_at
                       ? `vérifié par code le ${JOUR_MOIS.format(new Date(compte.verified_at))}`
                       : compte.status === "PENDING_VERIFICATION"
-                        ? "code de vérification en attente"
-                        : "compte désactivé",
+                        ? i18n.t("rl3.code_de_verification_en_attente")
+                        : i18n.t("rl3.compte_desactive"),
                   ].join(" · ")
-                : "Aucun numéro enregistré — les versements sont suspendus tant qu'il manque."}
+                : i18n.t("rl3.aucun_numero_enregistre_les_versements_son")}
             </p>
           </div>
           {compte ? (
@@ -507,7 +508,7 @@ export default function RelayPayouts({
                   : "border-[#F0DA9C] bg-[#FFF4D6] text-[#8A5A00] dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300"
               }`}
             >
-              {compte.status === "VERIFIED" ? "Vérifié" : compte.status === "DISABLED" ? "Désactivé" : "À vérifier"}
+              {compte.status === "VERIFIED" ? "Vérifié" : compte.status === "DISABLED" ? "Désactivé" : i18n.t("rl3.a_verifier")}
             </span>
           ) : null}
         </div>

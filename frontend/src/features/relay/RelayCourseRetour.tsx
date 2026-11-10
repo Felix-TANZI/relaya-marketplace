@@ -4,6 +4,7 @@
 // (R01). Le gérant saisit le numéro du client ; le serveur dit seulement s'il y a une somme due et l'encaisse.
 
 import { useState } from "react";
+import i18n from "@/i18n";
 import { http } from "@/services/api/http";
 
 export default function RelayCourseRetour({ onError }: { onError: (error: unknown) => void }) {
@@ -38,7 +39,7 @@ export default function RelayCourseRetour({ onError }: { onError: (error: unknow
         espèces : la demande de paiement part sur son téléphone.
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
-        <input className="rounded-lg border px-3 py-2" inputMode="tel" placeholder="Numéro du client" value={numero}
+        <input className="rounded-lg border px-3 py-2" inputMode="tel" placeholder={i18n.t("rl3.numero_du_client")} value={numero}
           onChange={(e) => setNumero(e.target.value)} />
         <select className="rounded-lg border px-3 py-2" value={operateur} onChange={(e) => setOperateur(e.target.value)}>
           <option value="MTN">MTN MoMo</option>

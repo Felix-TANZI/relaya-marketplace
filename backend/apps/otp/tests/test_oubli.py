@@ -34,7 +34,7 @@ def faux_sms():
 
 @pytest.fixture
 def vendeur_sans_email():
-    user = User.objects.create_user("v677001122", password="Ancien-2026")
+    user = User.objects.create_user("v677001122")  # sans mot de passe : il en choisit un par le lien
     VendorProfile.objects.create(user=user, business_name="Chez Tantine", phone="+237677001122")
     return user
 
@@ -60,7 +60,7 @@ def test_vendeur_sans_email_recoit_le_lien_par_sms_et_change_son_mot_de_passe(ap
 
 def test_client_par_email(api_client, faux_sms, settings):
     settings.BELIVAY_SITE_URL = "https://shop.belivay.com"
-    User.objects.create_user("carine", email="carine@exemple.cm", password="x")
+    User.objects.create_user("carine", email="carine@exemple.cm")
 
     reponse = api_client.post(OUBLI, {"email": "carine@exemple.cm"}, format="json")
 

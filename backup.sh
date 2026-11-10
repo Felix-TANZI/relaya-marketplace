@@ -44,7 +44,8 @@ trap cleanup EXIT
 
 # On écrit d'abord dans un fichier .partial : une sauvegarde n'apparaît sous
 # son vrai nom qu'une fois vérifiée.
-docker compose -f docker-compose.prod.yml --env-file .env.prod exec -T postgres \
+FICHIER_COMPOSE=$(grep -m1 '^BELIVAY_COMPOSE=' .env.prod | cut -d'=' -f2-)  # DEV-SRV-01 : vitrine ou site réel
+docker compose -f "${FICHIER_COMPOSE:-docker-compose.prod.yml}" --env-file .env.prod exec -T postgres \
   pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" | gzip > "$TMP"
 
 # Vérifications : archive lisible de bout en bout, et taille plausible.

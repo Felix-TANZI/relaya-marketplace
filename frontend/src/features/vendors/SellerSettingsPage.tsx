@@ -15,7 +15,7 @@ import {
   Mail, Clock, Wifi, WifiOff,
 } from 'lucide-react';
 import { authApi, type User as AuthUser } from '@/services/api/auth';
-import { http } from '@/services/api/http';
+import { http, API_BASE_URL } from '@/services/api/http';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
@@ -23,6 +23,7 @@ import { useToast } from '@/context/ToastContext';
 import { CAMEROON, detectOperator, formatNational, isValidNationalNumber, toE164, toNationalNumber } from '@/lib/phone';
 import { PayoutAccountVerificationCard } from '@/components/payments/PayoutAccountVerificationCard';
 import AvatarCropDialog from '@/components/profile/AvatarCropDialog';
+import { SITE_URL } from '@/config/site';
 
 // ─── Thème ────────────────────────────────────────────────────────────────────
 const T = {
@@ -469,7 +470,7 @@ export default function SellerSettingsPage() {
     try {
       setSavingPwd(true);
       const token = localStorage.getItem('access_token');
-      const res = await fetch('/api/auth/change-password/', {
+      const res = await fetch(`${API_BASE_URL}/api/auth/change-password/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ old_password: oldPwd, new_password: newPwd, new_password2: newPwd2 }),
@@ -556,7 +557,7 @@ export default function SellerSettingsPage() {
       const token   = localStorage.getItem('access_token');
       const refresh = localStorage.getItem('refresh_token');
       if (token) {
-        await fetch('/api/auth/logout/', {
+        await fetch(`${API_BASE_URL}/api/auth/logout/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ refresh }),
@@ -570,7 +571,7 @@ export default function SellerSettingsPage() {
 
   const handleCopySlug = () => {
     if (!vendor?.shop_slug) return;
-    navigator.clipboard.writeText(`https://belivay.com?ref=${vendor.shop_slug}`);
+    navigator.clipboard.writeText(`${SITE_URL}?ref=${vendor.shop_slug}`);
     setCopiedSlug(true); setTimeout(() => setCopiedSlug(false), 2000);
     showToast(t('sl2_settings.link_copied'), 'success');
   };

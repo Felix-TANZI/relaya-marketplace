@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import { SignInWithApple } from '@capacitor-community/apple-sign-in';
 import { useTranslation } from 'react-i18next';
 import { authApi } from '@/services/api/auth';
+import { SITE_URL } from '@/config/site';
 
 export interface AppleCredential {
   identityToken: string;
@@ -93,7 +94,7 @@ export default function AppleAuthButton({ onCredential, disabled = false, onErro
       const { response } = await SignInWithApple.authorize({
         clientId,
         // Décision du porteur : le domaine de main 2 (VITE_APPLE_REDIRECT_URI), pas belivay.com qui reste la vitrine.
-        redirectURI: import.meta.env.VITE_APPLE_REDIRECT_URI?.trim() || 'https://belivay.com/auth/apple/callback',
+        redirectURI: import.meta.env.VITE_APPLE_REDIRECT_URI?.trim() || `${SITE_URL}/auth/apple/callback`,
         scopes: 'email name',
         nonce,
       });

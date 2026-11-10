@@ -252,6 +252,11 @@ PUBLIC_SITE_URL = os.getenv(
     os.getenv("FRONTEND_URL") or "https://belivay.com",
 ).rstrip("/")
 
+def _origines(nom: str) -> list[str]:
+    """Liste d'origines séparées par des virgules dans la variable `nom` (vide = aucune)."""
+    return [o.strip().rstrip("/") for o in os.getenv(nom, "").split(",") if o.strip()]
+
+
 # CORS
 frontend_url = os.getenv("FRONTEND_URL")
 CORS_ALLOWED_ORIGINS = [
@@ -283,9 +288,11 @@ CORS_ALLOWED_ORIGINS = [
 ]
 # Origines supplémentaires pour le site espace-client-belivay (déployé à part,
 # voir espace-client-belivay/site/README.md) une fois son domaine connu.
-CORS_ALLOWED_ORIGINS += [
-    origin for origin in os.getenv("CORS_EXTRA_ORIGINS", "").split(",") if origin
-]
+CORS_ALLOWED_ORIGINS += _origines("CORS_EXTRA_ORIGINS")
+# DEV-SRV-01, T05/T11 : les portails du site réel (seller., admin., relay., driver., delivery., shop.belivay.com)
+# appellent api.belivay.com ; leurs origines viennent de la configuration. deploy.yml transmettait déjà
+# CORS_ALLOWED_ORIGINS, mais rien ne la lisait.
+CORS_ALLOWED_ORIGINS += _origines("CORS_ALLOWED_ORIGINS")
 CORS_ALLOW_CREDENTIALS = True
 
 from corsheaders.defaults import default_headers as _cors_default_headers
@@ -583,7 +590,7 @@ CATALOGUE_OFFRES_MINIMUM_PAR_CATEGORIE = int(
 CSRF_TRUSTED_ORIGINS = [
     'https://belivay.com',
     'https://www.belivay.com',
-]
+] + _origines("CSRF_TRUSTED_ORIGINS")  # DEV-SRV-01 : api.belivay.com et les portails, par la configuration
 
 # Sécurité HTTPS en production
 if not DEBUG:

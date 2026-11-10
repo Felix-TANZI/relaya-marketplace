@@ -6,7 +6,9 @@ import i18n from "@/i18n";
 
 // En production, on utilise une URL relative (chaîne vide) car tout passe par le même nginx
 // En développement, on utilise l'URL complète du backend
-const API_BASE_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '');
+// DEV-SRV-01, T05/T11 : « /api » sur un même domaine, ou https://api.belivay.com pour le site réel ; exportée pour
+// les rares appels qui n'utilisent pas http() (téléchargements de fichiers, envois multipart).
+export const API_BASE_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '');
 
 interface RequestConfig extends RequestInit {
   headers?: Record<string, string>;

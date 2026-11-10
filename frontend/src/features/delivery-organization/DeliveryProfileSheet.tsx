@@ -31,6 +31,7 @@ import {
 import * as QRCode from "qrcode";
 import { http } from "@/services/api/http";
 import type { OrgTab } from "./deliveryNav";
+import { SITE_URL } from '@/config/site';
 
 /**
  * Preference locale a l'appareil : demander confirmation avant d'affecter une
@@ -244,7 +245,7 @@ export function DeliverySettingsContent({
       return;
     }
     let cancelled = false;
-    QRCode.toDataURL(`https://belivay.com/partenaires/${encodeURIComponent(reference)}`, {
+    QRCode.toDataURL(`${SITE_URL}/partenaires/${encodeURIComponent(reference)}`, {
       width: 320,
       margin: 1,
       color: { dark: "#0E7490", light: "#FFFFFF" },

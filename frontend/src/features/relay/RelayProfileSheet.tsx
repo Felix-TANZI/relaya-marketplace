@@ -31,6 +31,7 @@ import {
 import * as QRCode from "qrcode";
 import { http } from "@/services/api/http";
 import type { RelayTab } from "./relayNav";
+import { SITE_URL } from '@/config/site';
 
 /** Preference locale a l'appareil : exiger un PIN avant de valider un retrait. */
 const PIN_STORAGE_KEY = "belivay-relay-pickup-pin";
@@ -238,7 +239,7 @@ export function RelaySettingsContent({
       return;
     }
     let cancelled = false;
-    QRCode.toDataURL(`https://belivay.com/relais/${profile.relayCode}`, {
+    QRCode.toDataURL(`${SITE_URL}/relais/${profile.relayCode}`, {
       width: 320,
       margin: 1,
       color: { dark: "#1E3A8A", light: "#FFFFFF" },

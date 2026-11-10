@@ -122,7 +122,8 @@ export default {
     numero_subtitle: 'The only number BelivaY pays you on. Always in your name.',
     numero_current_number: 'Current number',
     numero_current_active: 'Active',
-    numero_warning: 'Before changing: your withdrawals are blocked for {{days}} days while someone reviews the change. Nothing is lost. The number must be in your name.',
+    numero_current_pending: 'Code to confirm',
+    numero_warning: 'The new number must be in your name. A code is sent to it: your payouts go to this number once the code is confirmed.',
     numero_operator_label: 'Operator',
     numero_new_number_label: 'New number',
     numero_invalid_number: 'Invalid number for Cameroon (9 digits).',
@@ -141,10 +142,10 @@ export default {
     numero_confirming: 'Saving…',
     numero_save_error: 'Could not save this number right now.',
 
-    numero_done_title: 'Number registered',
+    numero_done_title: 'Number verified',
     numero_review_kicker: 'Announced review: {{days}} days',
     numero_review_until: 'Until {{date}}',
-    numero_review_explain: 'Someone at BelivaY normally reviews this change before the first payout to this number — this protects your money if someone took your phone.',
+    numero_review_explain: 'BelivaY pays your earnings to this number. For security, after a number change, payouts resume once the security delay has passed: this protects your money if someone took your phone.',
     numero_honest_note: 'Honest note: this 7-day review is not yet enforced by the server today. The number you just registered is actually already active for your next withdrawal requests, with no server-side waiting period for now.',
     numero_back_to_versements: 'Back to Payouts',
 

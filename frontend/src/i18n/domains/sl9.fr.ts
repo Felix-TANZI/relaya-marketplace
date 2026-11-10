@@ -68,7 +68,7 @@ export default {
     forgot_identifier_label: 'Identifiant, e-mail ou téléphone',
     forgot_placeholder: 'Identifiant, e-mail ou téléphone',
     forgot_submit: 'Recevoir le lien',
-    forgot_delay_note: 'Le lien arrive par e-mail. Il vaut un temps limité.',
+    forgot_delay_note: 'Le lien arrive par SMS sur votre numéro, ou par e-mail. Il vaut un temps limité.',
     forgot_security_tip: 'BelivaY ne vous demande jamais votre mot de passe ni votre code secret Mobile Money par message.',
     forgot_no_access_hint: 'Plus accès à votre compte ?',
     forgot_sent_title: 'Lien envoyé',

@@ -26,9 +26,22 @@ jobs:
       - name: Installer les dépendances
         run: npm ci --legacy-peer-deps
 
+      # DEV-SRV-01, T12 : « les versions destinées à Google Play et à l'App Store pointent vers api.belivay.com ;
+      # aucune ne pointe vers api-demo ». L'adresse vient du réglage MOBILE_API_URL (Settings > Variables), jamais
+      # du code (règle R5). Une appli n'a pas de domaine propre : l'adresse doit être absolue, en https.
       - name: Construire le bundle web (portail client)
+        env:
+          VITE_API_URL: ${{ vars.MOBILE_API_URL }}
+          VITE_SITE_URL: ${{ vars.VITE_SITE_URL }}
         run: |
-          export VITE_API_URL=https://belivay.com/api
+          case "$VITE_API_URL" in
+            https://*) ;;
+            *) echo "::error::Réglage MOBILE_API_URL absent ou invalide (attendu : https://api.belivay.com)."; exit 1 ;;
+          esac
+          case "$VITE_API_URL" in
+            *api-demo*) echo "::warning::Construction d'une appli de DÉMONSTRATION (api-demo) : à ne pas publier." ;;
+          esac
+          echo "Appli construite vers : $VITE_API_URL"
           export VITE_GOOGLE_CLIENT_ID=582094155516-insnk09ptfqa6faunktufc5nhrrihsmj.apps.googleusercontent.com
           npm run build:client
 

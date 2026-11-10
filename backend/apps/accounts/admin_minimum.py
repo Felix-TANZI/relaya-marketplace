@@ -240,7 +240,8 @@ def kyc_file(request):
 @api_view(["POST"])
 @permission_classes([Partie("conformite")])  # sécurité main 2 : droits par partie
 def kyc_decision(request, pk):
-    from apps.vendors.kyc import LIBELLES, identite_verifiee
+    from apps.vendors.kyc import (LIBELLES, PIECES_PUBLICATION, identite_verifiee, peut_publier,
+                                 piece_identite_verifiee)
 
     d = ComplianceDocument.objects.filter(pk=pk, owner_role=ComplianceDocument.OwnerRole.VENDOR).select_related(
         "user").first()
@@ -261,6 +262,12 @@ def kyc_decision(request, pk):
         titre, texte = f"Pièce refusée : {libelle}", f"Motif : {motif}. Déposez une nouvelle pièce depuis votre espace."
     elif identite_verifiee(d.user):
         titre, texte = "Identité vérifiée", "Vos trois pièces sont validées : vous pouvez publier et être versé."
+    elif peut_publier(d.user):
+        titre, texte = "Pièce d'identité validée", ("Vous pouvez publier. Le selfie vidéo reste à valider avant "
+                                                   "votre premier versement.")
+    elif d.document_type in PIECES_PUBLICATION and piece_identite_verifiee(d.user):
+        titre, texte = "Pièce d'identité validée", ("Ajoutez votre numéro Mobile Money depuis votre espace pour "
+                                                   "pouvoir publier.")
     else:
         titre, texte = f"Pièce validée : {libelle}", "Il reste des pièces à valider avant de publier."
     UserNotification.objects.create(user=d.user, title=titre[:160], message=texte,

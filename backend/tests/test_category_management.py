@@ -334,7 +334,7 @@ def _approved_vendor(username="vendeur-parcours"):
 
 
 def _identite_vendeur_verifiee(user):
-    """Dépose les trois pièces exigées par D19, déjà validées."""
+    """Dépose les trois pièces exigées par D19, déjà validées, et un numéro Mobile Money (T07-2)."""
     from django.core.files.uploadedfile import SimpleUploadedFile
 
     from apps.accounts.models import ComplianceDocument
@@ -346,6 +346,13 @@ def _identite_vendeur_verifiee(user):
             document_type=piece, file=SimpleUploadedFile(f"{piece}.jpg", b"x"),
             status=ComplianceDocument.Status.APPROVED,
         )
+    # DEV-SRV-01 T07-2 : publier exige aussi un numero Mobile Money renseigne.
+    from apps.accounts.models import PayoutAccount
+
+    PayoutAccount.objects.get_or_create(
+        user=user, owner_role=PayoutAccount.OwnerRole.VENDOR, phone_e164="+237670000099",
+        defaults={"national_number": "670000099", "operator": "MTN"},
+    )
 
 
 def _public_titles(api_client, **params):

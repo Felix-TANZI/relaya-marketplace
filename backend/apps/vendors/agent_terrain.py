@@ -15,7 +15,7 @@ from django.db.models import Q
 
 from apps.accounts import acces_provisoire
 from apps.accounts.compliance import deposer_piece
-from apps.accounts.models import AccesProvisoire, ComplianceDocument
+from apps.accounts.models import AccesProvisoire, ComplianceDocument, PayoutAccount
 from apps.common.models import AuditLog
 from apps.common.phone import normalize_cameroon_phone
 from apps.shipping import zones
@@ -44,12 +44,16 @@ def ligne_quartier(nom: str) -> dict:
     return ligne
 
 
-def compte_existant(numero: dict) -> bool:
+def compte_existant(numero: dict, sauf=None) -> bool:
+    """Un compte (client, vendeur, livreur…) porte déjà ce numéro ; `sauf` : sans compter ce compte-là."""
     valeurs = {numero["national"], numero["e164"], f"237{numero['national']}"}
-    return User.objects.filter(
+    comptes = User.objects.filter(
         Q(profile__phone__in=valeurs) | Q(vendor_profile__phone__in=valeurs) | Q(courier_profile__phone__in=valeurs)
         | Q(relay_point_profile__phone__in=valeurs) | Q(delivery_organization_profile__phone__in=valeurs)
-    ).exists()
+    )
+    if sauf is not None:
+        comptes = comptes.exclude(pk=sauf.pk)
+    return comptes.exists()
 
 
 def _identifiant_libre(national: str) -> str:
@@ -59,6 +63,40 @@ def _identifiant_libre(national: str) -> str:
         n += 1
         identifiant = f"{base}-{n}"
     return identifiant
+
+
+def creer_compte_vendeur(*, nom: str, numero: dict, ligne: dict, gerant: str = "", latitude=None, longitude=None,
+                         reperes: str = "", mot_de_passe: str | None = None) -> VendorProfile:
+    """
+    Le compte et la boutique EN ATTENTE, avec l'emplacement principal dans son quartier (la zone en découle).
+    Commun aux deux parcours de T07 : l'agent (sans mot de passe : il remet un accès provisoire) et l'inscription
+    seule (mot de passe choisi par le vendeur). À appeler dans une transaction ; lève Refus (apps.vendors.ouverture).
+    """
+    user = User.objects.create_user(username=_identifiant_libre(numero["national"]),
+                                    first_name=(gerant or "").strip()[:150])
+    if mot_de_passe:
+        user.set_password(mot_de_passe)
+    else:
+        user.set_unusable_password()
+    user.save(update_fields=["password"])
+    return ouvrir_dans_son_quartier(user, nom=nom, numero=numero, ligne=ligne, gerant=gerant, latitude=latitude,
+                                    longitude=longitude, reperes=reperes)
+
+
+def ouvrir_dans_son_quartier(user, *, nom: str, numero: dict, ligne: dict, gerant: str = "", latitude=None,
+                             longitude=None, reperes: str = "") -> VendorProfile:
+    """La boutique EN ATTENTE d'un compte (nouveau ou déjà client), avec son emplacement principal dans le quartier."""
+    gerant = (gerant or "").strip()
+    reperes = (reperes or "").strip()
+    profil = ouvrir_boutique(user, nom=nom, telephone=numero["e164"], adresse=ligne["quartier"],
+                             ville=ligne["commune"])
+    VendorLocation.objects.create(
+        vendor=profil, name=profil.business_name[:200], address=ligne["quartier"], description=reperes,
+        phone=numero["e164"], representative_name=(gerant or profil.business_name)[:200],
+        representative_phone=numero["e164"], latitude=latitude, longitude=longitude,
+        quartier=ligne["quartier"], is_main=True,
+    )
+    return profil
 
 
 def inscrire_vendeur(agent, *, nom: str, telephone: str, quartier: str, gerant: str = "", latitude=None,
@@ -73,23 +111,12 @@ def inscrire_vendeur(agent, *, nom: str, telephone: str, quartier: str, gerant: 
         raise Refus("compte_existant", "Ce numéro a déjà un compte BelivaY : le vendeur ouvre sa boutique depuis son "
                                        "compte (menu « Ouvrir ma boutique »).")
     ligne = ligne_quartier(quartier)
-    gerant = (gerant or "").strip()
-    reperes = (reperes or "").strip()
 
     with transaction.atomic():
-        user = User.objects.create_user(username=_identifiant_libre(numero["national"]), first_name=gerant[:150])
-        user.set_unusable_password()
-        user.save(update_fields=["password"])
-        profil = ouvrir_boutique(user, nom=nom, telephone=numero["e164"], adresse=ligne["quartier"],
-                                 ville=ligne["commune"])
-        VendorLocation.objects.create(
-            vendor=profil, name=profil.business_name[:200], address=ligne["quartier"], description=reperes,
-            phone=numero["e164"], representative_name=(gerant or profil.business_name)[:200],
-            representative_phone=numero["e164"], latitude=latitude, longitude=longitude,
-            quartier=ligne["quartier"], is_main=True,
-        )
+        profil = creer_compte_vendeur(nom=nom, numero=numero, ligne=ligne, gerant=gerant, latitude=latitude,
+                                      longitude=longitude, reperes=reperes)
         InscriptionParAgent.objects.create(vendor=profil, agent=agent)
-        mot_de_passe = acces_provisoire.donner(user, agent)
+        mot_de_passe = acces_provisoire.donner(profil.user, agent)
         journaliser(agent, profil, "creation", {"quartier": ligne["quartier"], "statut": profil.status}, ip)
     return profil, mot_de_passe
 
@@ -113,6 +140,33 @@ def deposer_piece_pour(agent, profil: VendorProfile, piece: str, fichier, ip=Non
     return document
 
 
+def enregistrer_mobile_money(agent, profil: VendorProfile, telephone: str, ip=None) -> PayoutAccount:
+    """
+    T07-2 : « pièce d'identité et numéro Mobile Money au premier produit ». L'agent saisit le numéro du vendeur sur
+    place. Il reste EN ATTENTE de vérification : aucun code n'est envoyé ici, le vendeur le demande depuis son espace,
+    et rien ne lui est versé avant (seul un numéro vérifié atteint le module financier). Un numéro déjà vérifié
+    identique n'est pas remis en attente.
+    """
+    from apps.accounts.serializers import enregistrer_numero_versement
+
+    numero = normalize_cameroon_phone(telephone or "")
+    if not numero["is_valid"] or not numero["is_mobile"]:
+        raise Refus("numero", "Numéro Mobile Money camerounais invalide.")
+    deja = PayoutAccount.objects.filter(user=profil.user, owner_role=PayoutAccount.OwnerRole.VENDOR,
+                                        phone_e164=numero["e164"], status=PayoutAccount.Status.VERIFIED).first()
+    if deja is not None:
+        return deja
+    compte = enregistrer_numero_versement(profil.user, PayoutAccount.OwnerRole.VENDOR, numero,
+                                          label="Saisi par l'agent de terrain", envoyer_code=False)
+    journaliser(agent, profil, "mobile_money", {"numero": _masque(compte)}, ip)
+    return compte
+
+
+def _masque(compte: PayoutAccount) -> str:
+    n = compte.national_number or ""
+    return f"+237 {n[:3]} *** {n[-3:]}" if n else ""
+
+
 def nouvel_acces(agent, profil: VendorProfile, ip=None) -> str:
     """Nouveau mot de passe provisoire (vendeur qui a perdu le sien ou l'a laissé expirer). Jamais sur un compte dont
     le vendeur a déjà choisi son mot de passe : il passe alors par « mot de passe oublié »."""
@@ -126,6 +180,8 @@ def nouvel_acces(agent, profil: VendorProfile, ip=None) -> str:
 def fiche(profil: VendorProfile) -> dict:
     acces = AccesProvisoire.objects.filter(user=profil.user).first()
     emplacement = profil.locations.filter(is_main=True).first()
+    momo = PayoutAccount.objects.filter(user=profil.user, owner_role=PayoutAccount.OwnerRole.VENDOR).exclude(
+        status=PayoutAccount.Status.DISABLED).order_by("-is_primary", "-created_at").first()
     return {
         "id": profil.id,
         "boutique": profil.business_name,
@@ -138,6 +194,8 @@ def fiche(profil: VendorProfile) -> dict:
                               if d.owner_role == ComplianceDocument.OwnerRole.VENDOR and d.document_type == type_),
                              None)
                    for cle, type_ in PIECES.items()},
+        "mobile_money": {"numero": _masque(momo), "verifie": momo.status == PayoutAccount.Status.VERIFIED}
+        if momo else None,
         "produits": profil.user.products.count(),
         "acces_provisoire_expire_le": acces.expire_le.isoformat() if acces else None,
         "inscrit_le": profil.inscription_par_agent.cree_le.isoformat(),

@@ -13,8 +13,16 @@ export interface FicheVendeur {
   identifiant: string;
   quartier: string;
   statut: 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED';
-  identite: { verifiee: boolean; manquantes: string[]; refusees: string[]; en_attente: string[] };
+  /** `verifiee` : dossier complet (trois pièces), condition du versement. `peut_publier` : CNI validée et numéro
+   *  Mobile Money renseigné (T07-2). */
+  identite: {
+    verifiee: boolean; peut_publier: boolean; mobile_money: boolean;
+    manquantes: string[]; refusees: string[]; en_attente: string[];
+    pour_publier: { manquantes: string[]; refusees: string[]; en_attente: string[] };
+  };
   pieces: Record<Piece, StatutPiece>;
+  /** Numéro masqué ; `verifie` passe à vrai quand le vendeur confirme son code depuis son espace. */
+  mobile_money: { numero: string; verifie: boolean } | null;
   produits: number;
   acces_provisoire_expire_le: string | null;
   inscrit_le: string;
@@ -48,6 +56,8 @@ export const terrainApi = {
   },
   ajouterProduit: (id: number, produit: FormData) =>
     http<{ id: number; title: string }>(`${BASE}/${id}/produits`, { method: 'POST', body: produit }),
+  enregistrerMobileMoney: (id: number, telephone: string) =>
+    http<FicheVendeur>(`${BASE}/${id}/mobile-money`, { method: 'POST', body: JSON.stringify({ telephone }) }),
   nouvelAcces: (id: number) => http<FicheVendeur>(`${BASE}/${id}/acces`, { method: 'POST' }),
   quartiers: () => http<{ quartiers: Quartier[] }>('/api/shipping/quartiers/'),
 };

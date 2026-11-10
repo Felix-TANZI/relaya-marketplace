@@ -275,29 +275,38 @@ class PayoutAccountCreateSerializer(serializers.Serializer):
         return data
 
     def create(self, validated_data):
-        user = self.context["request"].user
-        normalized = validated_data["normalized_phone"]
-        is_primary = validated_data.get("is_primary", True)
-        if is_primary:
-            PayoutAccount.objects.filter(
-                user=user,
-                owner_role=validated_data["owner_role"],
-                is_primary=True,
-            ).update(is_primary=False)
-
-        account, _ = PayoutAccount.objects.update_or_create(
-            user=user,
-            owner_role=validated_data["owner_role"],
-            phone_e164=normalized["e164"],
-            defaults={
-                "label": validated_data.get("label", ""),
-                "national_number": normalized["national"],
-                "operator": normalized["operator"],
-                "status": PayoutAccount.Status.PENDING_VERIFICATION,
-                "is_primary": is_primary,
-                "verified_at": None,
-            },
+        return enregistrer_numero_versement(
+            self.context["request"].user, validated_data["owner_role"], validated_data["normalized_phone"],
+            label=validated_data.get("label", ""), is_primary=validated_data.get("is_primary", True),
         )
+
+
+def enregistrer_numero_versement(user, owner_role, normalized, *, label="", is_primary=True, envoyer_code=True):
+    """
+    Enregistre un numero Mobile Money de versement, toujours EN ATTENTE de verification.
+
+    Seul un numero verifie par code atteint le module financier (PayoutAccountVerifyView, puis
+    apps.payments.bridge.payout_accounts) : rien n'est donc verse sur un numero simplement enregistre.
+    `envoyer_code=False` sert a l'agent de terrain (DEV-SRV-01 T07-2) : le vendeur demandera son code
+    lui-meme, depuis son espace, avant son premier versement.
+    """
+    if is_primary:
+        PayoutAccount.objects.filter(user=user, owner_role=owner_role, is_primary=True).update(is_primary=False)
+
+    account, _ = PayoutAccount.objects.update_or_create(
+        user=user,
+        owner_role=owner_role,
+        phone_e164=normalized["e164"],
+        defaults={
+            "label": label,
+            "national_number": normalized["national"],
+            "operator": normalized["operator"],
+            "status": PayoutAccount.Status.PENDING_VERIFICATION,
+            "is_primary": is_primary,
+            "verified_at": None,
+        },
+    )
+    if envoyer_code:
         # D6 : le code part vraiment au numero a verifier, par le moteur de codes unique.
         from apps.otp import services as codes
         from apps.otp.models import CodeOtp
@@ -306,7 +315,7 @@ class PayoutAccountCreateSerializer(serializers.Serializer):
                       exiger_utilisateur=True)
         account.last_sent_at = timezone.now()
         account.save(update_fields=["last_sent_at", "updated_at"])
-        return account
+    return account
 
 
 class PayoutAccountVerifySerializer(serializers.Serializer):

@@ -5,38 +5,64 @@ name: CD - Déploiement Production
 # sont passés. workflow_dispatch permet en plus de relancer un déploiement
 # à la main depuis l'onglet "Actions" de GitHub, sans repasser par un
 # terminal ni toucher au serveur directement.
+#
+# DEV-SRV-01, T20 : « MAIN 2 reçoit en premier chaque nouveau déploiement ». Ce workflow sait aussi être APPELÉ
+# (workflow_call) pour un environnement GitHub donné : deploy-chaine.yml l'appelle pour « Belivay Test » (MAIN 2), puis
+# pour « Belivay Prod » (MAIN 1) si le premier a réussi. Tant que la variable de dépôt MAIN2_ACTIF n'est pas « 1 »,
+# rien ne change : ce workflow déploie seul la production, comme avant.
 on:
   workflow_run:
     workflows: ["CI"]
     branches: [main]
     types: [completed]
   workflow_dispatch:
+    inputs:
+      environnement:
+        description: "Environnement GitHub à déployer"
+        type: choice
+        options: ["Belivay Prod", "Belivay Test"]
+        default: "Belivay Prod"
+  workflow_call:
+    inputs:
+      environnement:
+        description: "Environnement GitHub (« Belivay Test » pour MAIN 2, « Belivay Prod » pour MAIN 1)"
+        type: string
+        required: true
+      sha:
+        description: "Commit à déployer (celui qui a passé le CI)"
+        type: string
+        required: true
 
-# Empêche deux déploiements de se marcher dessus si deux push arrivent
-# coup sur coup.
+# Empêche deux déploiements d'un même serveur de se marcher dessus si deux push arrivent coup sur coup. Un groupe par
+# environnement : MAIN 2 et MAIN 1 ont chacun le leur.
 concurrency:
-  group: production-deploy
+  group: deploy-${{ inputs.environnement || 'Belivay Prod' }}
   cancel-in-progress: false
 
 jobs:
   deploy:
-    name: Déployer sur le serveur
+    name: Déployer sur le serveur (${{ inputs.environnement || 'Belivay Prod' }})
     runs-on: ubuntu-latest
+    # Appelé par deploy-chaine.yml, ou lancé à la main : toujours. Déclenché seul par le CI : seulement tant que la
+    # chaîne MAIN 2 → MAIN 1 n'est pas active (sinon la production serait déployée deux fois, et sans passer par MAIN 2).
     if: >
       github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'success'
+      inputs.sha != '' ||
+      (github.event.workflow_run.conclusion == 'success' && vars.MAIN2_ACTIF != '1')
 
     # Charge les secrets/variables définis dans Settings > Environments >
-    # "Belivay Prod", et applique la règle "Required reviewers" que tu as
-    # configurée : ce job restera en attente d'approbation manuelle
-    # (onglet Actions) avant de contacter le serveur.
-    environment: "Belivay Prod"
+    # "Belivay Prod" (ou "Belivay Test" pour MAIN 2), et applique la règle
+    # "Required reviewers" que tu as configurée : ce job restera en attente
+    # d'approbation manuelle (onglet Actions) avant de contacter le serveur.
+    environment: ${{ inputs.environnement || 'Belivay Prod' }}
 
     steps:
       - name: Déterminer le commit à déployer
         id: sha
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          if [ -n "${{ inputs.sha }}" ]; then
+            echo "sha=${{ inputs.sha }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "sha=${{ github.sha }}" >> "$GITHUB_OUTPUT"
           else
             echo "sha=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"

@@ -3,7 +3,7 @@
 > **Mise à jour DEV-SRV-01 v1.7 (novembre 2026)** — les règles R1, R2, R3 et R6 remplacent le choix « comptes réels » décrit plus bas :
 >
 > - la vitrine est construite en **démonstration complète** (`VITE_SOURCE=demo`, `vitrine/Dockerfile`) : comptes, SMS, vérification d'identité et paiement sont simulés dans le navigateur, et la vitrine n'appelle **plus aucun serveur** (ni Neon, ni le back-end réel) ;
-> - nginx répond **410** aux anciens appels de comptes (`/api/auth/*?espace=…`, `/api/admin/comptes*?espace=…`). Le service `vitrine-comptes` reste dans le docker-compose, injoignable ; les comptes déjà créés sur Neon ne sont ni modifiés ni supprimés ;
+> - nginx répond **410** aux anciens appels de comptes (`/api/auth/*?espace=…`, `/api/admin/comptes*?espace=…`). Le service `vitrine-comptes` est retiré du déploiement (décision du porteur du 11/11 ; son code reste dans `vitrine/site/serveur/`) ; les comptes déjà créés sur Neon ne sont ni modifiés ni supprimés ;
 > - la vitrine est **fermée aux moteurs de recherche** : `robots.txt` « Disallow: / » et en-tête `X-Robots-Tag: noindex, nofollow` sur belivay.com ;
 > - un **ruban « Démonstration »** permanent s'affiche dans les cinq espaces vendeur, entreprise, livreur, relais et console ; le bandeau du client ne dit plus que « les comptes sont réels ».
 >

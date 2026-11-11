@@ -33,6 +33,20 @@
 # d'alerte — confirme caractere pour caractere identique a l'exception du
 # job "vitrine" ajoute et de la liste de branches. Ignore par chemin,
 # meme principe que les deux fichiers de tests ci-dessus.
+#
+# PR #90 (T07-2, DEV-SRV-01) : alerte 39882398, "Kyc-2026" dans
+# backend/tests/test_d19_identite_vendeur.py — mot de passe d'un compte
+# admin de test jetable, deja retire du fichier (commit 68a3b087,
+# remplace par force_authenticate qui n'a pas besoin de mot de passe).
+# Ignore par valeur exacte, meme principe que les commits de PR #70.
+#
+# PR #94 (T07-5, DEV-SRV-01) : alerte 39898948, "Ancien-2026" dans
+# backend/apps/otp/tests/test_oubli.py — mot de passe d'un compte
+# vendeur de test jetable, deja retire du fichier (commit 3e46573a).
+# Ces deux alertes restent ouvertes sur le dashboard GitGuardian : cette
+# exclusion evite qu'un futur scan les re-signale, mais la fermeture des
+# incidents eux-memes (marquer "faux positif") demande un acces au
+# dashboard, que cette configuration ne donne pas.
 
 version: 2
 
@@ -52,3 +66,7 @@ secret:
       match: "ClientSolide2026!"
     - name: "accounts/tests.py - mot de passe test compte existant"
       match: "Existing2026"
+    - name: "test_d19_identite_vendeur.py - mot de passe test admin conformite (PR #90, alerte 39882398)"
+      match: "Kyc-2026"
+    - name: "otp/tests/test_oubli.py - mot de passe test vendeur sans email (PR #94, alerte 39898948)"
+      match: "Ancien-2026"

@@ -4,6 +4,7 @@
 // physique + inspection du colis retourne (jamais a la simple demande).
 
 import { useEffect, useState, useCallback } from 'react';
+import i18n from "@/i18n";
 import { useTranslation } from 'react-i18next';
 import { RotateCcw, PackageCheck, CheckCircle2, XCircle } from 'lucide-react';
 import { adminApi } from '@/services/api/admin';
@@ -50,7 +51,7 @@ export default function ReturnsListPage() {
   const handleMarkReceived = async (id: number) => {
     const photo = await choisirPhoto();
     if (!photo) {
-      showToast('Photo obligatoire pour constater la réception du retour (R66.3).', 'error');
+      showToast(i18n.t("ad9.photo_obligatoire_pour_constater_la_recept"), 'error');
       return;
     }
     setActingId(id);

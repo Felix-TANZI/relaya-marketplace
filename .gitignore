@@ -133,3 +133,9 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# DEV-SRV-01, T14 : fichier témoin de la maintenance, posé et retiré sur le serveur (ops/transfert/maintenance.sh).
+nginx/maintenance/actif
+
+# DEV-SRV-01, T21/T22 : configurations du lancement activées sur le serveur (ops/lancement/activer.sh).
+nginx/lancement/*.conf

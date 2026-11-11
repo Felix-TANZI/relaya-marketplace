@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>BelivaY · Maintenance</title>
+  <style>
+    :root { --fond: #fff7f0; --texte: #1f2937; --doux: #6b7280; --orange: #f47920; }
+    @media (prefers-color-scheme: dark) { :root { --fond: #111827; --texte: #f9fafb; --doux: #9ca3af; } }
+    body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+           background: var(--fond); color: var(--texte); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    main { max-width: 32rem; padding: 2rem 1rem; text-align: center; }
+    h1 { color: var(--orange); font-size: 1.6rem; margin: 0 0 .75rem; }
+    p { color: var(--doux); line-height: 1.5; margin: .5rem 0; }
+    hr { border: 0; border-top: 1px solid rgba(127,127,127,.25); margin: 1.5rem 0; }
+  </style>
+</head>
+<body>
+  <main>
+    <!-- DEV-SRV-01, T14 / T18 : servie par nginx tant que nginx/maintenance/actif existe (ops/transfert/maintenance.sh). -->
+    <h1>BelivaY revient dans quelques instants</h1>
+    <p>Nous déplaçons le site vers un serveur plus puissant. Vos comptes, boutiques et commandes sont conservés.</p>
+    <p>Merci de réessayer un peu plus tard.</p>
+    <hr>
+    <h1 lang="en">BelivaY will be back shortly</h1>
+    <p lang="en">We are moving the site to a more powerful server. Your accounts, shops and orders are kept.</p>
+    <p lang="en">Please try again a little later.</p>
+  </main>
+</body>
+</html>

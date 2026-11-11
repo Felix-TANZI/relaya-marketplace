@@ -2,7 +2,7 @@
 // Service API — espace vendeur BelivaY.
 // Types alignés sur le cycle de vie complet du backend.
 
-import { http } from "./http";
+import { http, API_BASE_URL } from './http';
 import type { OrderReturn } from "./customer";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -961,7 +961,7 @@ export const vendorsApi = {
   /** Télécharge la liste produits en CSV. */
   exportProductsCSV: async (): Promise<Blob> => {
     const token = localStorage.getItem("access_token");
-    const res = await fetch("/api/vendors/products/export/csv/", {
+    const res = await fetch(`${API_BASE_URL}/api/vendors/products/export/csv/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error("Erreur export CSV");
@@ -1059,7 +1059,7 @@ export const vendorsApi = {
   /** Télécharge le reçu PDF d'une commande (articles du vendeur uniquement). */
   downloadOrderReceiptPDF: async (orderId: number): Promise<Blob> => {
     const token = localStorage.getItem("access_token");
-    const res = await fetch(`/api/vendors/orders/${orderId}/receipt-pdf/`, {
+    const res = await fetch(`${API_BASE_URL}/api/vendors/orders/${orderId}/receipt-pdf/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error("Erreur génération du reçu PDF");

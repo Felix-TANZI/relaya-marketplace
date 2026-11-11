@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { vendorsApi } from '@/services/api/vendors';
 import { useToast } from '@/context/ToastContext';
+import { API_BASE_URL } from '@/services/api/http';
 
 const T = {
   orange: '#F47920', orangeL: '#FFF3E8', orangeB: 'rgba(244,121,32,0.12)',
@@ -183,7 +184,7 @@ function TrialModal({ plan, onClose, onSuccess }: {
     try {
       setLoading(true);
       const token = localStorage.getItem('access_token');
-      const res = await fetch('/api/vendors/plans/trial/', {
+      const res = await fetch(`${API_BASE_URL}/api/vendors/plans/trial/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ plan_code: plan.code }),

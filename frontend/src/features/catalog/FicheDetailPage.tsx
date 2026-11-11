@@ -24,6 +24,7 @@ import { VariantSelector } from './VariantSelector';
 import { attributesApi, type MasterProductAxes } from '@/services/api/attributes';
 import { variantsApi, type ProductVariantLight } from '@/services/api/variants';
 import RelatedProductsSection from '@/components/catalog/RelatedProductsSection';
+import { SITE_URL } from '@/config/site';
 
 function fmtXAF(n: number) { return n.toLocaleString('fr-FR').replace(/[\u202f\u00a0]/g, ' ') + ' FCFA'; }
 
@@ -475,7 +476,7 @@ export default function FicheDetailPage() {
             availability: enStock
               ? "https://schema.org/InStock"
               : "https://schema.org/OutOfStock",
-            url: `https://belivay.com/product/${master.slug}`,
+            url: `${SITE_URL}/product/${master.slug}`,
           },
         }
       : {}),

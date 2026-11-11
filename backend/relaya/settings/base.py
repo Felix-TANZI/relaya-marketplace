@@ -197,6 +197,14 @@ CELERY_TASK_DEFAULT_QUEUE = "belivay"
 CELERY_TIMEZONE = "Africa/Douala"
 
 LANGUAGE_CODE = "fr"
+# Règle de mot de passe de toute la plateforme (décision du porteur, 2026-11-11) : MDP-LONG du registre des paramètres
+# (« 8 caractères au moins, dont un chiffre »), mots de passe trop courants refusés, trop proches de l'identifiant aussi.
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "apps.accounts.validateurs.RegleMotDePasse"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+]
+
 TIME_ZONE = "Africa/Douala"
 USE_I18N = True
 USE_TZ = True

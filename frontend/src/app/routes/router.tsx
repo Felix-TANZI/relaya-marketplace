@@ -217,6 +217,11 @@ const NotificationsAdminPage = lazy(() => import('@/features/admin/system/Notifi
 const LogsPage = lazy(() => import('@/features/admin/system/LogsPage'));
 const SettingsPage = lazy(() => import('@/features/admin/SettingsPage'));
 const UserCreatePage = lazy(() => import('@/features/admin/customers/UserCreatePage'));
+const MotDePasseProvisoirePage = lazy(() => import('@/features/auth/MotDePasseProvisoirePage'));
+// DEV-SRV-01, T07-4/5 : écrans de l'agent de terrain.
+const AgentVendeursPage = lazy(() => import('@/features/admin/terrain/AgentVendeursPage'));
+const AgentInscriptionPage = lazy(() => import('@/features/admin/terrain/AgentInscriptionPage'));
+const AgentVendeurPage = lazy(() => import('@/features/admin/terrain/AgentVendeurPage'));
 // ── Live ─────────────────────────────────────────────────────────────────────
 const LiveUsersPage = lazy(() => import('@/features/admin/LiveUsersPage'));
 const LiveMapPage = lazy(() => import('@/features/admin/LiveMapPage'));
@@ -296,6 +301,8 @@ export const router = createBrowserRouter([
       { path: 'orders/:id',       element: <ProtectedRoute><OrderDetailPage /></ProtectedRoute> },
       { path: 'notifications',    element: <ProtectedRoute><NotificationsPage /></ProtectedRoute> },
       { path: 'profile',          element: <ProtectedRoute><ProfilePage /></ProtectedRoute> },
+      // DEV-SRV-01 (T07-5) : premier choix du mot de passe d'un compte ouvert par un agent.
+      { path: 'mot-de-passe-provisoire', element: <ProtectedRoute><MotDePasseProvisoirePage /></ProtectedRoute> },
       ...buyerPaymentRoutes,
 
       // Fallback
@@ -466,6 +473,11 @@ export const router = createBrowserRouter([
       { path: 'vendors/certifications', element: <CertificationsPage /> },
       { path: 'vendors/modifications',  element: <ModificationsPage /> },
       { path: 'vendors/:id',            element: <VendorDetailPage /> },
+
+      // ── AGENT DE TERRAIN (DEV-SRV-01, T07-4/5) ──────────────────────────
+      { path: 'terrain',          element: <AgentVendeursPage /> },
+      { path: 'terrain/inscrire', element: <AgentInscriptionPage /> },
+      { path: 'terrain/:id',      element: <AgentVendeurPage /> },
 
     
       // ── DELIVERY MANAGEMENT ───────────────────────────────────────────────

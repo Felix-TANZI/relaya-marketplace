@@ -103,6 +103,17 @@ jobs:
           AWS_S3_ADDRESSING_STYLE=${{ vars.AWS_S3_ADDRESSING_STYLE }}
           AWS_QUERYSTRING_EXPIRE=${{ vars.AWS_QUERYSTRING_EXPIRE }}
 
+          # ── Sauvegardes hors du serveur (DEV-SRV-01, T06-2) ──────────
+          # Bucket R2 DÉDIÉ, avec ses propres accès (pas ceux des photos
+          # ci-dessus). Seule la clé PUBLIQUE age vient ici : la clé privée
+          # reste hors du serveur (ops/sauvegarde/LISEZMOI.md).
+          BACKUP_R2_BUCKET=${{ vars.BACKUP_R2_BUCKET }}
+          BACKUP_R2_ENDPOINT=${{ vars.BACKUP_R2_ENDPOINT }}
+          BACKUP_R2_ACCESS_KEY_ID=${{ secrets.BACKUP_R2_ACCESS_KEY_ID }}
+          BACKUP_R2_SECRET_ACCESS_KEY=${{ secrets.BACKUP_R2_SECRET_ACCESS_KEY }}
+          BACKUP_R2_RETENTION_JOURS=${{ vars.BACKUP_R2_RETENTION_JOURS }}
+          BACKUP_AGE_RECIPIENT=${{ vars.BACKUP_AGE_RECIPIENT }}
+
           # ── Paiements (CamPay / MoMo) ────────────────────────────────
           CAMPAY_TOKEN=${{ secrets.CAMPAY_TOKEN }}
           CAMPAY_TOKEN_SANDBOX=${{ secrets.CAMPAY_TOKEN_SANDBOX }}
@@ -206,7 +217,7 @@ jobs:
             cd "${{ vars.TARGET_PATH }}"
             git fetch origin main
             git reset --hard "${{ steps.sha.outputs.sha }}"
-            chmod +x deploy.sh backup.sh
+            chmod +x deploy.sh backup.sh ops/sauvegarde/*.sh
             ./deploy.sh
 
       - name: Résumé

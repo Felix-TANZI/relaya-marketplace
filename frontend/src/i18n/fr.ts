@@ -1345,6 +1345,8 @@
     vendors_subscriptions:'Abonnements',
     vendors_certifications:'Certifications',
     vendors_modifications:'Modifications Boutique',
+    agent_vendors:        'Mes inscriptions (terrain)',
+    agent_register:       'Inscrire un vendeur',
  
     // Delivery Management
     section_deliveries:   'Delivery Management',

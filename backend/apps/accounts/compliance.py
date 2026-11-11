@@ -7,6 +7,10 @@
 
 import os
 
+from django.db import transaction
+
+from apps.common.storage import StockageIndisponible
+
 from .models import ComplianceDocument
 
 #: Un selfie vidéo ne tient pas dans les formats d'une pièce scannée, ni dans 10 Mo (D19) : deux jeux de règles.
@@ -32,15 +36,21 @@ def deposer_piece(user, owner_role: str, document_type: str, fichier) -> tuple[C
     if fichier.size > taille_max:
         raise FichierRefuse(f"Le fichier ne doit pas dépasser {taille_max // (1024 * 1024)} Mo.")
 
-    document, cree = ComplianceDocument.objects.get_or_create(
-        user=user, owner_role=owner_role, document_type=document_type[:60], defaults={"file": fichier},
-    )
-    if not cree:
-        ancien = document.file
-        document.file = fichier
-        document.status = ComplianceDocument.Status.PENDING
-        document.review_note = ""
-        document.save(update_fields=["file", "status", "review_note", "updated_at"])
-        if ancien and ancien.name != document.file.name:
-            ancien.delete(save=False)
+    # DEV-SRV-01, R8 : la pièce va sur R2 ou nulle part ; si R2 la refuse, la fiche n'est ni créée ni modifiée.
+    try:
+        with transaction.atomic():
+            document, cree = ComplianceDocument.objects.get_or_create(
+                user=user, owner_role=owner_role, document_type=document_type[:60], defaults={"file": fichier},
+            )
+            ancien = None
+            if not cree:
+                ancien = document.file
+                document.file = fichier
+                document.status = ComplianceDocument.Status.PENDING
+                document.review_note = ""
+                document.save(update_fields=["file", "status", "review_note", "updated_at"])
+    except StockageIndisponible:
+        raise FichierRefuse("La pièce n'a pas pu être enregistrée. Réessayez dans quelques minutes.")
+    if ancien and ancien.name != document.file.name:
+        ancien.delete(save=False)
     return document, cree

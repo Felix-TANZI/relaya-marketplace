@@ -106,7 +106,19 @@ class BelivayTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         attrs = attrs.copy()
         attrs["username"] = resolve_login_identifier(attrs.get("username", ""))
-        return super().validate(attrs)
+        data = super().validate(attrs)
+        # DEV-SRV-01, T07-5 : compte ouvert par un agent, mot de passe provisoire remis sur place.
+        from rest_framework.exceptions import AuthenticationFailed
+
+        from .models import AccesProvisoire
+
+        acces = AccesProvisoire.objects.filter(user=self.user).first()
+        if acces is not None:
+            if acces.expire:
+                raise AuthenticationFailed("Mot de passe provisoire expiré : demandez un nouvel accès à l'agent BelivaY.",
+                                           code="acces_provisoire_expire")
+            data["doit_changer_mot_de_passe"] = True
+        return data
 
 
 class CourierProfileSerializer(serializers.ModelSerializer):
@@ -389,6 +401,9 @@ class UserSerializer(serializers.ModelSerializer):
     # Sécurité avant main 2 : les parties de gestion ouvertes à ce compte (apps.common.droits), pour que l'écran
     # d'administration n'affiche que ses entrées. Le serveur reste seul juge à chaque appel.
     parties = serializers.SerializerMethodField()
+    # DEV-SRV-01, T07-5 : compte ouvert par un agent, mot de passe provisoire pas encore changé ; les écrans
+    # renvoient vers « Choisissez votre mot de passe » tant que c'est vrai.
+    doit_changer_mot_de_passe = serializers.SerializerMethodField()
     
     class Meta:
         model = User
@@ -417,8 +432,14 @@ class UserSerializer(serializers.ModelSerializer):
             "loyalty_tier",
             "has_usable_password",
             "parties",
+            "doit_changer_mot_de_passe",
         ]
         read_only_fields = fields
+
+    def get_doit_changer_mot_de_passe(self, obj) -> bool:
+        from .models import AccesProvisoire
+
+        return AccesProvisoire.objects.filter(user=obj).exists()
 
     def get_parties(self, obj):
         from apps.common.droits import PARTIES, a_la_partie

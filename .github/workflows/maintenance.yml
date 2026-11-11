@@ -66,6 +66,13 @@ jobs:
               fi
               echo "--- Journal des sauvegardes (5 dernières lignes) ---"
               tail -5 /var/backups/belivay/backup.log 2>/dev/null || echo "Pas de journal"
+              # DEV-SRV-01, T06-2 : la sauvegarde doit aussi exister hors du serveur (copie chiffrée sur R2).
+              DERNIERE_R2=$(grep -iE "copie R2" /var/backups/belivay/backup.log 2>/dev/null | tail -1)
+              case "$DERNIERE_R2" in
+                *"Copie R2 terminee"*) echo "Copie R2 : ${DERNIERE_R2}" ;;
+                *) echo "ALERTE : la dernière sauvegarde n'est pas copiée sur R2 — ${DERNIERE_R2:-aucune trace}"
+                   PROBLEME=1 ;;
+              esac
               echo "=== Traces OOM (dmesg) ==="
               (sudo -n dmesg -T 2>/dev/null || dmesg -T 2>/dev/null) \
                 | grep -iE "out of memory|killed process" \

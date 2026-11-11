@@ -17,6 +17,8 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from apps.common.droits import Partie  # sécurité main 2 : droits par partie
+from apps.common.storage import televersement_en_memoire
+from django.utils.decorators import method_decorator
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView as _BaseLoginView
@@ -2660,6 +2662,8 @@ class RelayTeamView(APIView):
         return Response(self._payload(membre))
 
 
+# DEV-SRV-01, R8 : la pièce reçue reste en mémoire jusqu'à R2, jamais dans un fichier temporaire du serveur.
+@method_decorator(televersement_en_memoire, name="dispatch")
 class ComplianceDocumentListCreateView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]

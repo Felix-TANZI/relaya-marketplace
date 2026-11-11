@@ -54,6 +54,7 @@ Variables du dépôt à renseigner :
 |---|---|
 | `MOBILE_API_URL` | `https://api.belivay.com` |
 | `VITE_SITE_URL` | `https://shop.belivay.com`, puis `https://belivay.com` le 14/12 (liens partagés et QR) |
+| `VITE_SUPPORT_WHATSAPP` | numéro WhatsApp du support, en chiffres, indicatif compris (facultatif : sinon celui des sites) |
 
 ## Vérifier avant de publier
 

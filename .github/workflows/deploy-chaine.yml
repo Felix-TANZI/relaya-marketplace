@@ -1,0 +1,33 @@
+name: CD - Chaîne MAIN 2 puis MAIN 1
+
+# DEV-SRV-01, T20 : « Convertir MAIN 2 en serveur de test … Terminé quand MAIN 2 reçoit en premier chaque nouveau
+# déploiement. » Après un CI vert sur main, le même commit part d'abord sur MAIN 2 (environnement GitHub
+# « Belivay Test »), puis sur MAIN 1 (« Belivay Prod ») seulement si MAIN 2 a réussi — son test de santé compris
+# (deploy.sh). Le jour où un déploiement casse, il casse sur le serveur de test.
+#
+# Éteinte tant que la variable de dépôt MAIN2_ACTIF ne vaut pas « 1 » (Settings > Secrets and variables > Actions >
+# Variables) : deploy.yml déploie alors seul la production, comme avant. Mise en route : ops/MAIN2-SERVEUR-DE-TEST.md.
+on:
+  workflow_run:
+    workflows: ["CI"]
+    branches: [main]
+    types: [completed]
+
+jobs:
+  main2:
+    name: MAIN 2 (serveur de test)
+    if: github.event.workflow_run.conclusion == 'success' && vars.MAIN2_ACTIF == '1'
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environnement: "Belivay Test"
+      sha: ${{ github.event.workflow_run.head_sha }}
+    secrets: inherit
+
+  main1:
+    name: MAIN 1 (production)
+    needs: main2
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environnement: "Belivay Prod"
+      sha: ${{ github.event.workflow_run.head_sha }}
+    secrets: inherit

@@ -261,7 +261,7 @@ export default function CheckoutPage() {
             moyen,
           }));
         } catch { /* le devis se recalculera au prochain changement */ }
-        showToast("Un prix a changé", { description: t('cl1_checkout.price_changed_hint'), type: "warning" });
+        showToast(i18n.t("t03.prix_change"), { description: t('cl1_checkout.price_changed_hint'), type: "warning" });
         return;
       }
       showToast(error instanceof Error ? t('cl1_checkout.order_rejected_with_reason', { reason: error.message }) : t('cl1_checkout.order_rejected_by_server'), "error");
@@ -582,8 +582,8 @@ export default function CheckoutPage() {
                   <label className="pf-info-note" style={{ cursor: "pointer", alignItems: "flex-start" }}>
                     <input type="checkbox" checked={auComptoir} onChange={(e) => setAuComptoir(e.target.checked)} style={{ marginTop: 3 }} />
                     <div className="pf-muted-sm" style={{ lineHeight: 1.6, color: "var(--pf-text)" }}>
-                      <b>Payer le reste au comptoir du relais</b>
-                      <div>Une avance maintenant, le reste par Mobile Money au retrait. Le code de retrait arrive après ce paiement.</div>
+                      <b>{i18n.t("t03.comptoir_titre")}</b>
+                      <div>{i18n.t("t03.comptoir_detail")}</div>
                     </div>
                   </label>
                 )}

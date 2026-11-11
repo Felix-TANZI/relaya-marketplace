@@ -26,6 +26,7 @@
  *                       partent en preuve, BelivaY tranche.
  */
 import { useEffect, useRef, useState } from "react";
+import i18n from "@/i18n";
 import { useTranslation } from "react-i18next";
 import {
   AlertTriangle,
@@ -141,7 +142,7 @@ const COUNTER_SITUATIONS: Array<{
     title: "Commande payable au retrait",
     body:
       "Pas encore de code : retrouvez le colis par sa référence ou le numéro du client. Le ticket affiche "
-      + "le montant à encaisser (ex. 18 500 F : articles + garde ; la livraison est toujours payée d'avance). "
+      + "le montant à encaisser (articles + garde ; la livraison est toujours payée d'avance). "
       + "Le client paie en MoMo sur son téléphone : ce paiement débloque le code. Jamais d'espèces. "
       + "Les conditions sont vérifiées à la commande, pas par vous.",
   },
@@ -149,50 +150,50 @@ const COUNTER_SITUATIONS: Array<{
     id: "refuse",
     icon: X,
     tone: "bg-[#FDECEA] text-[#B42318] dark:bg-red-950 dark:text-red-300",
-    title: "Le client refuse le colis",
+    title: i18n.t("rl3.le_client_refuse_le_colis"),
     body:
-      "Avec un motif (non conforme, abîmé, contrefaçon) : ouvrez un constat au comptoir, avec photos. "
-      + "Le colis reste chez vous sans frais jusqu'à la décision, puis passe dans « À faire partir ». "
-      + "Commande payable au retrait refusée sans motif : elle est annulée, le colis repart au vendeur et "
-      + "la livraison n'est pas remboursée. Après deux refus, le client doit payer d'avance.",
+      i18n.t("rl3.avec_un_motif_non_conforme_abime_contrefac")
+      + i18n.t("rl3.le_colis_reste_chez_vous_sans_frais_jusqu")
+      + i18n.t("rl3.commande_payable_au_retrait_refusee_sans_m")
+      + i18n.t("rl3.la_livraison_n_est_pas_remboursee_apres_de"),
   },
   {
     id: "multiple",
     icon: Layers,
     tone: "bg-[#EAF0FF] text-[#3A6BEA] dark:bg-blue-950 dark:text-blue-300",
-    title: "Plusieurs colis pour un même client",
+    title: i18n.t("rl3.plusieurs_colis_pour_un_meme_client"),
     body:
-      "Un code par groupe de remise, envoyé à l'arrivée du dernier colis du groupe. L'écran liste tous les "
-      + "emplacements : deux colis annoncés, deux colis remis, sinon la validation est refusée. Une seule photo.",
+      i18n.t("rl3.un_code_par_groupe_de_remise_envoye_a_l_ar")
+      + i18n.t("rl3.emplacements_deux_colis_annonces_deux_coli"),
   },
   {
     id: "contest",
     icon: Scale,
     tone: "bg-[#FFF4D6] text-[#E8A10E] dark:bg-amber-950 dark:text-amber-300",
-    title: "Le client ouvre et conteste sur place",
+    title: i18n.t("rl3.le_client_ouvre_et_conteste_sur_place"),
     body:
-      "Il touche « Un problème » à l'étape « Tout est en ordre ? » : ne remettez pas le colis. Le constat au "
-      + "comptoir s'ouvre, photos tout de suite ; le colis reste chez vous sans frais jusqu'à la décision.",
+      i18n.t("rl3.il_touche_un_probleme_a_l_etape_tout_est_e")
+      + i18n.t("rl3.comptoir_s_ouvre_photos_tout_de_suite_le_c"),
   },
   {
     id: "code",
     icon: Lock,
     tone: "bg-[#F1ECE6] text-[#9FAACB] dark:bg-slate-800 dark:text-slate-300",
-    title: "Code bloqué ou oublié",
+    title: i18n.t("rl3.code_bloque_ou_oublie"),
     body:
-      "Le client réaffiche son code (QR ou 6 chiffres) dans son app. Sans app, il demande un renvoi payant "
-      + "par SMS, 3 fois par 24 h au plus. Après 3 codes faux, seul le support débloque. Vous ne voyez "
-      + "jamais le code.",
+      i18n.t("rl3.le_client_reaffiche_son_code_qr_ou_6_chiff")
+      + i18n.t("rl3.par_sms_3_fois_par_24_h_au_plus_apres_3_co")
+      + i18n.t("rl3.jamais_le_code"),
   },
   {
     id: "transfer",
     icon: MapPin,
     tone: "bg-[#EAF0FF] text-[#3A6BEA] dark:bg-blue-950 dark:text-blue-300",
-    title: "Le client veut changer de relais",
+    title: i18n.t("rl3.le_client_veut_changer_de_relais"),
     body:
-      "Il le demande dans son app : gratuit avant la collecte, 400 F si le colis est déjà arrivé. Un nouveau "
-      + "code remplace l'ancien. Le colis passe dans « À faire partir » ; au nouveau relais, les jours offerts "
-      + "repartent de zéro.",
+      i18n.t("rl3.il_le_demande_dans_son_app_gratuit_avant_l")
+      + i18n.t("rl3.code_remplace_l_ancien_le_colis_passe_dans")
+      + i18n.t("rl3.repartent_de_zero"),
   },
 ];
 
@@ -248,14 +249,14 @@ function HandOverSheet({
       if (photo) URL.revokeObjectURL(photo.url);
       setPhoto({ file: optimized, url: URL.createObjectURL(optimized) });
     } catch {
-      setError("Cette photo n'a pas pu être préparée. Reprenez-la.");
+      setError(i18n.t("rl3.cette_photo_n_a_pas_pu_etre_preparee_repre"));
     }
   };
 
   const accepted = inspection === "ACCEPTED";
 
   return (
-    <RelaySheet label="Confirmer la remise" onClose={onCancel} size="sm">
+    <RelaySheet label={i18n.t("rl3.confirmer_la_remise")} onClose={onCancel} size="sm">
       <RelaySheetHeader
         icon={accepted ? CheckCircle2 : PackageCheck}
         tone={
@@ -263,11 +264,11 @@ function HandOverSheet({
             ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-300"
             : "bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-200"
         }
-        title={accepted ? "Colis ouvert et accepté" : "Remise sans ouverture"}
+        title={accepted ? i18n.t("rl3.colis_ouvert_et_accepte") : "Remise sans ouverture"}
         subtitle={
           accepted
-            ? "Le client a vérifié son colis devant vous. Sa fenêtre de retour se ferme et le vendeur sera payé."
-            : "Le client repart sans ouvrir. Sa fenêtre de retour de 7 jours reste entière."
+            ? i18n.t("rl3.le_client_a_verifie_son_colis_devant_vous")
+            : i18n.t("rl3.le_client_repart_sans_ouvrir_sa_fenetre_de")
         }
         onClose={onCancel}
       />
@@ -309,7 +310,7 @@ function HandOverSheet({
 
       <label className="mt-4 flex cursor-pointer items-center justify-center gap-2 rounded-[14px] border border-dashed border-slate-300 bg-white px-4 py-3.5 text-sm font-black text-slate-600 transition active:scale-[.98] dark:border-slate-600 dark:bg-slate-950 dark:text-slate-200">
         <Camera size={17} />
-        {photo ? "Photo de la remise prête — reprendre" : "Photo de la remise (obligatoire)"}
+        {photo ? i18n.t("rl3.photo_de_la_remise_prete_reprendre") : i18n.t("rl3.photo_de_la_remise_obligatoire")}
         <input
           type="file"
           accept="image/*"
@@ -325,8 +326,8 @@ function HandOverSheet({
 
       <div className="mt-4">
         <SignaturePad
-          label="Signature du client"
-          hint="Contrôle au retrait : code + photo + signature"
+          label={i18n.t("rl3.signature_du_client")}
+          hint={i18n.t("rl3.controle_au_retrait_code_photo_signature")}
           onChange={setSignature}
           disabled={busy}
         />
@@ -351,7 +352,7 @@ function HandOverSheet({
             accepted ? "bg-emerald-600 hover:bg-emerald-700" : "bg-blue-600 hover:bg-blue-700"
           }`}
         >
-          <CheckCircle2 size={16} /> {busy ? "Validation..." : "Valider la remise"}
+          <CheckCircle2 size={16} /> {busy ? "Validation..." : i18n.t("rl3.valider_la_remise")}
         </button>
       </div>
     </RelaySheet>
@@ -385,17 +386,17 @@ function IssueSheet({
       if (photo) URL.revokeObjectURL(photo.url);
       setPhoto({ file: optimized, url: URL.createObjectURL(optimized) });
     } catch {
-      setError("Cette photo n'a pas pu être préparée. Reprenez-la.");
+      setError(i18n.t("rl3.cette_photo_n_a_pas_pu_etre_preparee_repre"));
     }
   };
 
   return (
-    <RelaySheet label="Constat au comptoir" onClose={onCancel} size="sm">
+    <RelaySheet label={i18n.t("rl3.constat_au_comptoir")} onClose={onCancel} size="sm">
       <RelaySheetHeader
         icon={AlertTriangle}
         tone="bg-orange-50 text-orange-600 dark:bg-orange-950 dark:text-orange-300"
-        title="Constat au comptoir"
-        subtitle="Le colis ne sort pas. Vos photos partent en preuve et BelivaY reprend la main."
+        title={i18n.t("rl3.constat_au_comptoir")}
+        subtitle={i18n.t("rl3.le_colis_ne_sort_pas_vos_photos_partent_en")}
         onClose={onCancel}
       />
 
@@ -422,14 +423,14 @@ function IssueSheet({
           value={description}
           onChange={(event) => setDescription(event.target.value)}
           rows={3}
-          placeholder="Ex : le client a ouvert le colis, l'article est cassé."
+          placeholder={i18n.t("rl3.ex_le_client_a_ouvert_le_colis_l_article_e")}
           className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-950 outline-none transition focus:border-orange-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
         />
       </label>
 
       <label className="mt-4 flex cursor-pointer items-center justify-center gap-2 rounded-[14px] border border-dashed border-slate-300 bg-white px-4 py-3.5 text-sm font-black text-slate-600 transition active:scale-[.98] dark:border-slate-600 dark:bg-slate-950 dark:text-slate-200">
         <Camera size={17} />
-        {photo ? "Photo prête — reprendre" : "Photo du constat (obligatoire)"}
+        {photo ? i18n.t("rl3.photo_prete_reprendre") : i18n.t("rl3.photo_du_constat_obligatoire")}
         <input
           type="file"
           accept="image/*"
@@ -457,7 +458,7 @@ function IssueSheet({
           onClick={() => photo && onConfirm({ parcelId, photos: [photo.file], description: description.trim() })}
           className="inline-flex items-center gap-2 rounded-2xl bg-orange-600 px-5 py-2.5 text-sm font-black text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <AlertTriangle size={16} /> {busy ? "Envoi..." : "Envoyer le constat"}
+          <AlertTriangle size={16} /> {busy ? "Envoi..." : i18n.t("rl3.envoyer_le_constat")}
         </button>
       </div>
     </RelaySheet>
@@ -493,7 +494,7 @@ function PickupScanSheet({
       if (code) onDecoded(code);
     },
   });
-  const titre = mode === "colis" ? "Scanner le QR du colis" : "Scanner le QR du client";
+  const titre = mode === "colis" ? i18n.t("rl3.scanner_le_qr_du_colis") : i18n.t("rl3.scanner_le_qr_du_client");
 
   return (
     <RelaySheet label={titre} onClose={onCancel} size="sm">
@@ -501,8 +502,8 @@ function PickupScanSheet({
         icon={QrCode}
         title={titre}
         subtitle={mode === "colis"
-          ? "Le QR collé sur le colis, sorti du casier. Le code du client se vérifie ensuite sur ce colis."
-          : "Le client l'affiche dans sa commande. Il porte le même code que son SMS."}
+          ? i18n.t("rl3.le_qr_colle_sur_le_colis_sorti_du_casier_l")
+          : i18n.t("rl3.le_client_l_affiche_dans_sa_commande_il_po")}
         onClose={onCancel}
       />
 
@@ -514,7 +515,7 @@ function PickupScanSheet({
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-blue-200/70">
             <QrCode size={72} strokeWidth={1.2} />
             <span className="px-6 text-center text-xs font-bold">
-              {error ? "Caméra indisponible — saisissez le code à la main" : "Activation de la caméra..."}
+              {error ? i18n.t("rl3.camera_indisponible_saisissez_le_code_a_la") : i18n.t("rl3.activation_de_la_camera")}
             </span>
           </div>
         ) : null}
@@ -748,7 +749,7 @@ export default function RelayPickup({
               value={reference}
               onChange={(event) => setReference(event.target.value.toUpperCase())}
               autoComplete="off"
-              placeholder="ou la référence : BVY-12-34"
+              placeholder={i18n.t("rl3.ou_la_reference_bvy_12_34")}
               className="min-w-0 flex-1 rounded-[12px] border border-slate-200 bg-white px-3 py-2.5 text-[14px] font-bold text-slate-900 outline-none focus:border-[#2456D6] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
             />
             <button
@@ -769,7 +770,7 @@ export default function RelayPickup({
       {colis && !resolved && !locked ? (
         <section className="rounded-[14px] border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
           <div className="mb-3 flex items-center justify-between gap-2 text-[13px] font-semibold text-slate-500 dark:text-slate-400">
-            <span>Colis scanné ✓</span>
+            <span>{i18n.t("rl3.colis_scanne")}</span>
             <button type="button" className="font-black text-[#2456D6]" onClick={() => { changeCode(""); setColis(""); }}>
               Changer de colis
             </button>
@@ -812,7 +813,7 @@ export default function RelayPickup({
                       : "rl1_pickup_lock.attempts_remaining_plural",
                     { count: attemptsLeft },
                   )
-                : "Aucun colis en stock ne porte ce code. Vérifiez les 6 chiffres du SMS du client."}
+                : i18n.t("rl3.aucun_colis_en_stock_ne_porte_ce_code_veri")}
             </p>
           ) : (
             <p className="mt-3 text-[13.5px] font-medium leading-[1.5] text-slate-500 dark:text-slate-400">
@@ -847,9 +848,9 @@ export default function RelayPickup({
           </p>
 
           <div className="mt-4 space-y-3">
-            <SummaryRow label="Colis annoncés" value={String(matched.length)} />
+            <SummaryRow label={i18n.t("rl3.colis_annonces")} value={String(matched.length)} />
             <SummaryRow
-              label="Colis posés sur le comptoir"
+              label={i18n.t("rl3.colis_poses_sur_le_comptoir")}
               value={`${onCounter.length} sur ${matched.length}`}
               tone={allOnCounter ? undefined : "text-orange-600 dark:text-orange-400"}
             />
@@ -1035,11 +1036,11 @@ export default function RelayPickup({
       </button>
 
       {signatureHelp ? (
-        <RelaySheet label="Signature du client" onClose={() => setSignatureHelp(false)} size="sm">
+        <RelaySheet label={i18n.t("rl3.signature_du_client")} onClose={() => setSignatureHelp(false)} size="sm">
           <RelaySheetHeader
             icon={PenLine}
-            title="Comment le client signe"
-            subtitle="Ce qui vaut preuve de remise, et ce qui n'existe pas encore."
+            title={i18n.t("rl3.comment_le_client_signe")}
+            subtitle={i18n.t("rl3.ce_qui_vaut_preuve_de_remise_et_ce_qui_n_e")}
             onClose={() => setSignatureHelp(false)}
           />
           <p className="text-[13.5px] font-medium leading-[1.55] text-slate-500 dark:text-slate-400">

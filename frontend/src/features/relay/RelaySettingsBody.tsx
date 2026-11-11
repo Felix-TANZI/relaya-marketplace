@@ -15,6 +15,7 @@
  * promesse de sécurité fausse coûte plus cher qu'une case grise.
  */
 import { useEffect, useState } from "react";
+import i18n from "@/i18n";
 import {
   Download,
   Eye,
@@ -35,7 +36,7 @@ import { RelaySheet, RelaySheetHeader } from "./RelayUi";
 const TAILLES = [
   { key: "normal", label: "Normale", zoom: 1 },
   { key: "large", label: "Grande", zoom: 1.15 },
-  { key: "xlarge", label: "Très grande", zoom: 1.3 },
+  { key: "xlarge", label: i18n.t("rl3.tres_grande"), zoom: 1.3 },
 ] as const;
 
 type TailleKey = (typeof TAILLES)[number]["key"];
@@ -155,43 +156,43 @@ function Bascule({
 /** Ce que le portail ne sait pas encore faire, dit sans détour. */
 const INDISPONIBLES: Record<string, { title: string; body: string }> = {
   pin: {
-    title: "Code PIN de remise",
+    title: i18n.t("rl3.code_pin_de_remise"),
     body:
-      "Pas encore disponible. La remise se prouve aujourd'hui par la signature du client au doigt et la "
-      + "photo, prises au comptoir. Aucun code secret n'est conservé côté BelivaY, et le code de retrait ne "
-      + "peut pas en tenir lieu : il a déjà servi à ouvrir la remise.",
+      i18n.t("rl3.pas_encore_disponible_la_remise_se_prouve")
+      + i18n.t("rl3.photo_prises_au_comptoir_aucun_code_secret")
+      + i18n.t("rl3.peut_pas_en_tenir_lieu_il_a_deja_servi_a_o"),
   },
   twofa: {
-    title: "Double vérification",
+    title: i18n.t("rl3.double_verification"),
     body:
-      "Pas encore disponible. Votre compte s'ouvre avec vos seuls identifiants, sur n'importe quel appareil. "
-      + "Ne les confiez à personne : les remises faites avec sont tracées à votre nom.",
+      i18n.t("rl3.pas_encore_disponible_votre_compte_s_ouvre")
+      + i18n.t("rl3.ne_les_confiez_a_personne_les_remises_fait"),
   },
   devices: {
-    title: "Appareils connectés",
+    title: i18n.t("rl3.appareils_connectes"),
     body:
-      "Pas encore disponible. BelivaY ne tient pas la liste des appareils où votre compte est ouvert, et ne "
-      + "peut pas les déconnecter à distance. Si vous pensez qu'un autre appareil y a accès, changez votre "
-      + "mot de passe et prévenez le support.",
+      i18n.t("rl3.pas_encore_disponible_belivay_ne_tient_pas")
+      + i18n.t("rl3.peut_pas_les_deconnecter_a_distance_si_vou")
+      + i18n.t("rl3.mot_de_passe_et_prevenez_le_support"),
   },
   team: {
-    title: "Mon équipe",
+    title: i18n.t("rl3.mon_equipe"),
     body:
-      "Pas encore disponible. Un point relais est un compte unique : ni second identifiant, ni rôle limité. "
-      + "Si quelqu'un tient le comptoir à votre place, il travaille sous votre compte et les remises sont "
-      + "tracées à votre nom.",
+      i18n.t("rl3.pas_encore_disponible_un_point_relais_est")
+      + i18n.t("rl3.si_quelqu_un_tient_le_comptoir_a_votre_pla")
+      + i18n.t("rl3.tracees_a_votre_nom"),
   },
   data: {
-    title: "Mes données",
+    title: i18n.t("rl3.mes_donnees"),
     body:
-      "Pas encore disponible depuis cet écran. Vos preuves — photos de réception et de remise, signatures — "
-      + "restent attachées à chaque expédition. Une demande d'accès ou de correction se fait par le support.",
+      i18n.t("rl3.pas_encore_disponible_depuis_cet_ecran_vos")
+      + i18n.t("rl3.restent_attachees_a_chaque_expedition_une"),
   },
   close: {
-    title: "Clôturer le compte",
+    title: i18n.t("rl3.cloturer_le_compte"),
     body:
-      "Pas encore disponible depuis cet écran. La clôture se demande au support : il faut d'abord que tous "
-      + "vos colis en garde soient sortis et que votre dernier versement soit crédité.",
+      i18n.t("rl3.pas_encore_disponible_depuis_cet_ecran_la")
+      + i18n.t("rl3.vos_colis_en_garde_soient_sortis_et_que_vo"),
   },
 };
 
@@ -259,32 +260,32 @@ export default function RelaySettingsBody({
           <Ligne
             icon={Lock}
             tone="amber"
-            title="Code PIN de remise"
-            body="Prévu, pas encore actif : la remise se signe au doigt"
+            title={i18n.t("rl3.code_pin_de_remise")}
+            body={i18n.t("rl3.prevu_pas_encore_actif_la_remise_se_signe")}
             onClick={() => setSheet("pin")}
-            right={<Bascule on={false} disabled label="Code PIN de remise" />}
+            right={<Bascule on={false} disabled label={i18n.t("rl3.code_pin_de_remise")} />}
           />
           <Ligne
             icon={ShieldCheck}
             tone="amber"
-            title="Double vérification"
-            body="Prévu, pas encore actif : code SMS sur un nouvel appareil"
+            title={i18n.t("rl3.double_verification")}
+            body={i18n.t("rl3.prevu_pas_encore_actif_code_sms_sur_un_nou")}
             onClick={() => setSheet("twofa")}
-            right={<Bascule on={false} disabled label="Double vérification" />}
+            right={<Bascule on={false} disabled label={i18n.t("rl3.double_verification")} />}
           />
           <Ligne
             icon={Smartphone}
             tone="blue"
-            title="Appareils connectés"
-            body="Déconnexion à distance — pas encore disponible"
+            title={i18n.t("rl3.appareils_connectes")}
+            body={i18n.t("rl3.deconnexion_a_distance_pas_encore_disponib")}
             onClick={() => setSheet("devices")}
             right={<span className="mt-1.5"><Chevron /></span>}
           />
           <Ligne
             icon={User}
             tone="blue"
-            title="Mon équipe"
-            body="Un compte unique aujourd'hui · ils reçoivent et remettent sous votre nom"
+            title={i18n.t("rl3.mon_equipe")}
+            body={i18n.t("rl3.un_compte_unique_aujourd_hui_ils_recoivent")}
             onClick={() => setSheet("team")}
             right={<span className="mt-1.5"><Chevron /></span>}
           />
@@ -300,18 +301,18 @@ export default function RelaySettingsBody({
           <Ligne
             icon={Moon}
             tone="amber"
-            title="Thème sombre"
-            body="Pour le guichet en fin de journée"
+            title={i18n.t("rl3.theme_sombre")}
+            body={i18n.t("rl3.pour_le_guichet_en_fin_de_journee")}
             right={
-              <Bascule on={theme === "dark"} label="Thème sombre" onToggle={onToggleTheme} />
+              <Bascule on={theme === "dark"} label={i18n.t("rl3.theme_sombre")} onToggle={onToggleTheme} />
             }
           />
 
           <Ligne
             icon={Eye}
             tone="amber"
-            title="Taille du texte"
-            body="Normale, Grande (115 %) ou Très grande (130 %)"
+            title={i18n.t("rl3.taille_du_texte")}
+            body={i18n.t("rl3.normale_grande_115_ou_tres_grande_130")}
             onClick={() => setTailleOpen((current) => !current)}
             right={
               <span className="mt-0.5 flex-shrink-0 rounded-full bg-[#EAF0FF] px-3.5 py-[6px] text-[13px] font-bold text-[#2456D6] dark:bg-blue-950 dark:text-blue-200">
@@ -373,7 +374,7 @@ export default function RelaySettingsBody({
             icon={Wifi}
             tone="amber"
             title="Hors connexion"
-            body="Consultation seule : les réceptions et remises exigent le réseau"
+            body={i18n.t("rl3.consultation_seule_les_receptions_et_remis")}
             right={
               <span className="mt-0.5 flex-shrink-0 rounded-full border border-[#F0DA9C] bg-[#FFF4D6] px-3 py-[5px] text-[12.5px] font-bold text-[#8A5A00] dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300">
                 Partiel
@@ -385,7 +386,7 @@ export default function RelaySettingsBody({
             icon={Download}
             tone="blue"
             title="Installer l'application"
-            body="Icône sur l'écran d'accueil, caméra et preuves hors navigateur"
+            body={i18n.t("rl3.icone_sur_l_ecran_d_accueil_camera_et_preu")}
             onClick={onInstall}
             right={<span className="mt-1.5"><Chevron /></span>}
           />
@@ -393,7 +394,7 @@ export default function RelaySettingsBody({
           <Ligne
             icon={Smartphone}
             tone="blue"
-            title="Numéro de versement"
+            title={i18n.t("rl3.numero_de_versement")}
             body={payoutMasked || "Aucun numéro enregistré"}
             onClick={onOpenPayout}
             right={<span className="mt-1.5"><Chevron /></span>}
@@ -402,8 +403,8 @@ export default function RelaySettingsBody({
           <Ligne
             icon={FileText}
             tone="blue"
-            title="Mes données"
-            body="Consulter, corriger, exporter — par le support"
+            title={i18n.t("rl3.mes_donnees")}
+            body={i18n.t("rl3.consulter_corriger_exporter_par_le_support")}
             onClick={() => setSheet("data")}
             right={<span className="mt-1.5"><Chevron /></span>}
           />
@@ -411,8 +412,8 @@ export default function RelaySettingsBody({
           <Ligne
             icon={LogOut}
             tone="blue"
-            title="Clôturer le compte"
-            body="Avec un préavis de 30 jours"
+            title={i18n.t("rl3.cloturer_le_compte")}
+            body={i18n.t("rl3.avec_un_preavis_de_30_jours")}
             onClick={() => setSheet("close")}
             right={<span className="mt-1.5"><Chevron /></span>}
           />
@@ -437,7 +438,7 @@ export default function RelaySettingsBody({
           <RelaySheetHeader
             icon={ShieldCheck}
             title={INDISPONIBLES[sheet].title}
-            subtitle="Ce que le portail fait aujourd'hui, et ce qu'il ne fait pas encore."
+            subtitle={i18n.t("rl3.ce_que_le_portail_fait_aujourd_hui_et_ce_q")}
             onClose={() => setSheet(null)}
           />
           <p className="text-[13.5px] font-medium leading-[1.55] text-slate-500 dark:text-slate-400">

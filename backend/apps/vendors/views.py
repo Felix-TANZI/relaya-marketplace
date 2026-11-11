@@ -34,6 +34,7 @@ from .serializers import (
     RequiredDocumentTypeSerializer, SubscriptionPlanSerializer,
 )
 from apps.common.tasks import send_plain_email
+from apps.common.storage import StockageIndisponible, televersement_en_memoire
 from django.conf import settings as django_settings
 from .serializers import (
     VendorProfileSerializer, 
@@ -6120,7 +6121,7 @@ def vendor_upload_shop_banner(request):
 def vendor_shop_qr(request):
     try:
         profile = VendorProfile.objects.get(user=request.user)
-        qr_url = f"https://belivay.com?ref={profile.shop_slug}" if profile.shop_slug else "https://belivay.com"
+        qr_url = profile.public_url or django_settings.PUBLIC_SITE_URL  # DEV-SRV-01, T05 : site public configuré
         return Response({
             'slug':       profile.shop_slug,
             'public_url': qr_url,
@@ -6213,6 +6214,7 @@ def vendor_mod_requests_list(request):
         return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
  
  
+@televersement_en_memoire  # DEV-SRV-01, R8 : en mémoire jusqu'à R2, jamais dans un fichier temporaire
 @extend_schema(tags=["Vendors"], summary="Create modification request")
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -6265,21 +6267,27 @@ def vendor_mod_request_create(request):
                 'detail': f'Vous avez déjà une demande en cours (#{pending.id}, statut: {pending.status}). Attendez sa résolution.',
             }, status=400)
  
-        mod_request = ShopModificationRequest.objects.create(
-            vendor           = profile,
-            fields_requested = fields_requested,
-            reason           = reason,
-            status           = 'PENDING',
-        )
- 
-        # Upload pièces jointes initiales si présentes
-        files = request.FILES.getlist('files')
-        for f in files:
-            ShopModificationDocument.objects.create(
-                modification_request = mod_request,
-                file                 = f,
-                description          = f.name,
-            )
+        # DEV-SRV-01, R8 : si R2 refuse une pièce, la demande n'est pas créée (rien de gardé sur le disque).
+        try:
+            with transaction.atomic():
+                mod_request = ShopModificationRequest.objects.create(
+                    vendor           = profile,
+                    fields_requested = fields_requested,
+                    reason           = reason,
+                    status           = 'PENDING',
+                )
+
+                # Upload pièces jointes initiales si présentes
+                files = request.FILES.getlist('files')
+                for f in files:
+                    ShopModificationDocument.objects.create(
+                        modification_request = mod_request,
+                        file                 = f,
+                        description          = f.name,
+                    )
+        except StockageIndisponible:
+            return Response({'detail': "Les pièces n'ont pas pu être enregistrées. Réessayez dans quelques minutes."},
+                            status=503)
  
         # Notification email au vendeur
         try:
@@ -6308,6 +6316,7 @@ def vendor_mod_request_create(request):
         return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
  
  
+@televersement_en_memoire  # DEV-SRV-01, R8 : en mémoire jusqu'à R2, jamais dans un fichier temporaire
 @extend_schema(tags=["Vendors"], summary="Upload documents for modification request")
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -6330,22 +6339,28 @@ def vendor_mod_request_upload_docs(request, request_id):
         if not files:
             return Response({'detail': 'Au moins un fichier requis.'}, status=400)
  
-        for i, f in enumerate(files):
-            doc_type = None
-            if i < len(doc_type_ids):
-                try:
-                    doc_type = RequiredDocumentType.objects.get(id=int(doc_type_ids[i]))
-                except (RequiredDocumentType.DoesNotExist, ValueError):
-                    pass
-            ShopModificationDocument.objects.create(
-                modification_request = mod_request,
-                file                 = f,
-                document_type        = doc_type,
-                description          = f.name,
-            )
- 
-        mod_request.status = 'DOCS_UPLOADED'
-        mod_request.save()
+        # DEV-SRV-01, R8 : tout ou rien ; si R2 refuse une pièce, la demande garde son statut.
+        try:
+            with transaction.atomic():
+                for i, f in enumerate(files):
+                    doc_type = None
+                    if i < len(doc_type_ids):
+                        try:
+                            doc_type = RequiredDocumentType.objects.get(id=int(doc_type_ids[i]))
+                        except (RequiredDocumentType.DoesNotExist, ValueError):
+                            pass
+                    ShopModificationDocument.objects.create(
+                        modification_request = mod_request,
+                        file                 = f,
+                        document_type        = doc_type,
+                        description          = f.name,
+                    )
+
+                mod_request.status = 'DOCS_UPLOADED'
+                mod_request.save()
+        except StockageIndisponible:
+            return Response({'detail': "Les pièces n'ont pas pu être enregistrées. Réessayez dans quelques minutes."},
+                            status=503)
  
         # Notification email
         try:
@@ -7071,12 +7086,12 @@ def admin_approve_product(request, product_id):
     # bouton du vendeur ne suffirait pas : approuver ici rendrait l'offre
     # visible tout autant. Le moderateur est prevenu de ce qui manque plutot
     # que de se voir opposer un refus muet.
-    from apps.vendors.kyc import etat_verification, identite_verifiee
-    if product.vendor and not identite_verifiee(product.vendor):
+    from apps.vendors.kyc import etat_verification, peut_publier
+    if product.vendor and not peut_publier(product.vendor):
         etat = etat_verification(product.vendor)
         return Response(
             {
-                'detail': "Identite du vendeur non verifiee : publication impossible.",
+                'detail': "Piece d'identite du vendeur non verifiee ou numero Mobile Money absent : publication impossible.",
                 'piece_identite': etat,
             },
             status=status.HTTP_409_CONFLICT,
@@ -9785,8 +9800,8 @@ def vd_offer_publish(request, offer_id):
     # Meme forme de reponse que les autres refus metier de cet endpoint
     # (ok/raison/detail) : l'ecran sait deja l'afficher, et le detail dit au
     # vendeur quelles pieces fournir ou refaire.
-    from apps.vendors.kyc import etat_verification, identite_verifiee
-    if not identite_verifiee(request.user):
+    from apps.vendors.kyc import etat_verification, peut_publier
+    if not peut_publier(request.user):
         return Response({
             'ok': False,
             'raison': 'identite_non_verifiee',

@@ -300,7 +300,7 @@ export default {
     err_description_required: 'Full description is required.',
     err_description_min: 'Full description required (min 20 characters).',
     err_attr_required: '"{{name}}" is required.',
-    err_price_min: 'Minimum price: 100 XAF.',
+    err_price_min: 'Minimum price: {{min}}.',
     err_compare_at: 'The strikethrough price must be higher than the sale price.',
     err_stock_invalid: 'Invalid stock.',
     err_threshold_required: 'Stock alert threshold required.',

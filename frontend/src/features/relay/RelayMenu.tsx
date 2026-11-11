@@ -35,6 +35,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import i18n from "@/i18n";
 import { AlertTriangle, Boxes, ChevronLeft, Download, HelpCircle, KeyRound, LayoutGrid, Package, ScanLine, Settings2, Wifi } from "lucide-react";
 import type { RelayTab } from "./relayNav";
 
@@ -68,6 +69,24 @@ interface MenuRow {
 }
 
 /**
+ * DEV-SRV-01, T09 (décision du porteur du 2026-11-08) : écrans de démonstration (faux code, faux colis), visibles
+ * seulement sur le poste de développement, jamais sur le site réel.
+ */
+const SECTION_ETATS: { title: string; rows: MenuRow[] } = {
+  title: i18n.t("rl3.ecrans_d_etat_et_d_acces"),
+  rows: [
+    { id: "etats", icon: User, label: "Connexion", focus: "connexion" },
+    { id: "etats", icon: UserPlus, label: i18n.t("rl3.invitation_d_un_employe"), focus: "invitation" },
+    { id: "etats", icon: LayoutGrid, label: i18n.t("rl3.relais_neuf_ecrans_vides"), focus: "neuf" },
+    { id: "etats", icon: Store, label: i18n.t("rl3.statut_du_relais"), focus: "statut" },
+    { id: "etats", icon: Wifi, label: "Hors connexion", focus: "offline" },
+    { id: "etats", icon: AlertTriangle, label: i18n.t("rl3.etats_d_erreur"), focus: "erreur" },
+    { id: "etats", icon: ScanLine, label: "Caméra", focus: "camera" },
+    { id: "etats", icon: Download, label: "Installer l'application", focus: "install" },
+  ],
+};
+
+/**
  * Les sections sous la grille, dans l'ordre où un gérant les ouvre : ce qui
  * bouge aujourd'hui, puis l'argent, puis sa réputation, puis les papiers.
  */
@@ -75,53 +94,42 @@ const SECTIONS: Array<{ title: string; rows: MenuRow[] }> = [
   {
     title: "Opérations",
     rows: [
-      { id: "sortie", icon: Truck, label: "À faire partir", count: "outbound", tone: "info" },
-      { id: "litiges", icon: Scale, label: "Constats et retours", tone: "alert" },
+      { id: "sortie", icon: Truck, label: i18n.t("rl3.a_faire_partir"), count: "outbound", tone: "info" },
+      { id: "litiges", icon: Scale, label: i18n.t("rl3.constats_et_retours"), tone: "alert" },
       { id: "historique", icon: History, label: "Historique" },
       { id: "notifications", icon: Bell, label: "Notifications", tone: "alert" },
       { id: "messagerie", icon: MessageCircle, label: "Messagerie", tone: "alert" },
     ],
   },
   {
-    title: "Argent et performance",
+    title: i18n.t("rl3.argent_et_performance"),
     rows: [
       { id: "finances", icon: CreditCard, label: "Versements" },
       { id: "rapports", icon: BarChart3, label: "Rapports" },
       { id: "trust", icon: ShieldCheck, label: "Trust Score", count: "trust", tone: "value" },
-      { id: "avis", icon: Star, label: "Avis des clients" },
+      { id: "avis", icon: Star, label: i18n.t("rl3.avis_des_clients") },
       { id: "niveaux", icon: Layers, label: "Paliers" },
     ],
   },
   {
     title: "Mon relais",
     rows: [
-      { id: "capacite", icon: Clock, label: "Capacité et horaires" },
+      { id: "capacite", icon: Clock, label: i18n.t("rl3.capacite_et_horaires") },
       { id: "fermeture", icon: CalendarX, label: "Fermeture exceptionnelle" },
       { id: "kyc", icon: FileText, label: "Documents" },
-      { id: "reseau", icon: User, label: "Mon équipe" },
-      { id: "inscription", icon: Store, label: "Activation et partenariat" },
+      { id: "reseau", icon: User, label: i18n.t("rl3.mon_equipe") },
+      { id: "inscription", icon: Store, label: i18n.t("rl3.activation_et_partenariat") },
       { id: "formation", icon: GraduationCap, label: "Formation" },
     ],
   },
-  {
-    title: "Écrans d'état et d'accès",
-    rows: [
-      { id: "etats", icon: User, label: "Connexion", focus: "connexion" },
-      { id: "etats", icon: UserPlus, label: "Invitation d'un employé", focus: "invitation" },
-      { id: "etats", icon: LayoutGrid, label: "Relais neuf (écrans vides)", focus: "neuf" },
-      { id: "etats", icon: Store, label: "Statut du relais", focus: "statut" },
-      { id: "etats", icon: Wifi, label: "Hors connexion", focus: "offline" },
-      { id: "etats", icon: AlertTriangle, label: "États d'erreur", focus: "erreur" },
-      { id: "etats", icon: ScanLine, label: "Caméra", focus: "camera" },
-      { id: "etats", icon: Download, label: "Installer l'application", focus: "install" },
-    ],
-  },
+  // DEV-SRV-01, T09 : écrans de démonstration, sur le poste de développement seulement (SECTION_ETATS).
+  ...(import.meta.env.DEV ? [SECTION_ETATS] : []),
   {
     title: "Compte",
     rows: [
       { id: "aide", icon: HelpCircle, label: "Aide" },
       { id: "parametres", icon: Settings2, label: "Paramètres" },
-      { id: "inscription", icon: Store, label: "Devenir point relais (nouveau gérant)", focus: "candidature" },
+      { id: "inscription", icon: Store, label: i18n.t("rl3.devenir_point_relais_nouveau_gerant"), focus: "candidature" },
     ],
   },
 ];

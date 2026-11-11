@@ -160,7 +160,7 @@ def test_verifier_exige_un_compte(api_client):
 
 def test_oubli_toujours_202_meme_sans_compte(api_client):
     r = api_client.post("/api/auth/password/forgot", {"email": "personne@exemple.cm"}, format="json")
-    assert r.status_code == 202 and r.json() == {"destination": "p••••••@exemple.cm", "valideMinutes": 30}
+    assert r.status_code == 202 and r.json() == {"destination": "p••••••@exemple.cm", "canal": "email", "valideMinutes": 30}
     assert mail.outbox == []
 
 
@@ -168,14 +168,16 @@ def _jeton_du_mail() -> str:
     return re.search(r"jeton=([\w-]+)", mail.outbox[-1].body).group(1)
 
 
-def test_oubli_puis_nouveau_mot_de_passe_ferme_les_sessions(api_client):
+def test_oubli_puis_nouveau_mot_de_passe_ferme_les_sessions(api_client, settings):
+    # DEV-SRV-01, R5 : le lien suit l'adresse configurée (BELIVAY_SITE_URL), plus une adresse écrite dans la vue.
+    settings.BELIVAY_SITE_URL = "https://shop.belivay.com"
     from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
     from rest_framework_simplejwt.tokens import RefreshToken
 
     u = creer_client(email="carine@exemple.cm")
     RefreshToken.for_user(u)  # une session ouverte ailleurs
     assert api_client.post("/api/auth/password/forgot", {"email": "Carine@exemple.cm"}, format="json").status_code == 202
-    assert "https://belivay.com/" in mail.outbox[-1].body
+    assert "https://shop.belivay.com/mdp-nouveau?jeton=" in mail.outbox[-1].body
     jeton = _jeton_du_mail()
     r = api_client.post("/api/auth/password/reset", {"jeton": jeton, "mot_de_passe": "nouveau2026"}, format="json")
     assert r.status_code == 200 and r.json()["ok"] is True and r.json()["email"].endswith("@exemple.cm")

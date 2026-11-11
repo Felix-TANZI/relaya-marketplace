@@ -22,6 +22,7 @@
  * retrait — et non sur une appréciation.
  */
 import { useEffect, useMemo, useState } from "react";
+import i18n from "@/i18n";
 import { Download, FileSpreadsheet, FileText } from "lucide-react";
 import { http } from "@/services/api/http";
 import { listRelaySettlements, type RelaySettlement } from "@/services/api/relaySettlements";
@@ -55,14 +56,12 @@ const TRANCHES: Array<{
   barre: string;
   texte: string;
 }> = [
-  { cle: "j01", label: "Le 1er jour · offert", max: 1, barre: "bg-[#1F7A4D]", texte: "text-[#1F7A4D] dark:text-emerald-400" },
-  { cle: "j23", label: "2e ou 3e jour · offert", max: 3, barre: "bg-[#E8A10E]", texte: "text-[#8A5A00] dark:text-amber-400" },
-  { cle: "j47", label: "Du 4e au 7e jour · 200 F par jour", max: 7, barre: "bg-[#EF6A00]", texte: "text-[#EF6A00] dark:text-orange-400" },
-  { cle: "renvoi", label: "Renvoyés", max: null, barre: "bg-[#B42318]", texte: "text-[#B42318] dark:text-red-400" },
+  { cle: "j01", label: i18n.t("rl3.le_1er_jour_offert"), max: 1, barre: "bg-[#1F7A4D]", texte: "text-[#1F7A4D] dark:text-emerald-400" },
+  { cle: "j23", label: i18n.t("rl3.2e_ou_3e_jour_offert"), max: 3, barre: "bg-[#E8A10E]", texte: "text-[#8A5A00] dark:text-amber-400" },
+  { cle: "j47", label: i18n.t("rl3.du_4e_au_7e_jour"), max: 7, barre: "bg-[#EF6A00]", texte: "text-[#EF6A00] dark:text-orange-400" },
+  { cle: "renvoi", label: i18n.t("rl3.renvoyes"), max: null, barre: "bg-[#B42318]", texte: "text-[#B42318] dark:text-red-400" },
 ];
 
-/** Montant facture au client par jour de garde, au-dela de la gratuite. */
-const GARDE_TARIF_JOUR = 200;
 
 interface ReportParcel {
   id: number;
@@ -74,7 +73,7 @@ interface ReportParcel {
 type PeriodKey = "mois" | "trimestre" | "ouverture";
 
 const PERIODES: Array<{ key: PeriodKey; label: string }> = [
-  { key: "mois", label: "Ce mois" },
+  { key: "mois", label: i18n.t("rl3.ce_mois") },
   { key: "trimestre", label: "Trimestre" },
   { key: "ouverture", label: "Depuis l'ouverture" },
 ];
@@ -104,8 +103,8 @@ function debutDe(periode: PeriodKey, maintenant: Date): Date | null {
 /** Le titre de la carte sombre suit la fenêtre, pas l'inverse. */
 function titreDe(periode: PeriodKey, maintenant: Date) {
   if (periode === "mois") return `Gagné en ${MOIS.format(maintenant)}`;
-  if (periode === "trimestre") return "Gagné ce trimestre";
-  return "Gagné depuis l'ouverture";
+  if (periode === "trimestre") return i18n.t("rl3.gagne_ce_trimestre");
+  return i18n.t("rl3.gagne_depuis_l_ouverture");
 }
 
 function dansLaFenetre(valeur: string | null, debut: Date | null) {
@@ -283,7 +282,7 @@ export default function RelayReportsMobile({ onError }: { onError?: (error: unkn
       return Number.isNaN(date.getTime()) ? "" : date.toLocaleString("fr-FR");
     };
     const lignes = [
-      ["Colis", "Recu le", "Remis le", "Reparti le", "Jours de garde"].join(";"),
+      ["Colis", i18n.t("rl3.recu_le"), i18n.t("rl3.remis_le"), i18n.t("rl3.reparti_le"), i18n.t("rl3.jours_de_garde")].join(";"),
       ...retenus.map((parcel) => {
         const sortie = parcel.picked_up_at || parcel.returned_at;
         let passes = "";
@@ -346,16 +345,16 @@ export default function RelayReportsMobile({ onError }: { onError?: (error: unkn
 <h1>${titreDe(periode, maintenant)}</h1>
 <div class="total">${nf(totalGagne)} FCFA</div>
 <table>
-  <tr><th>Colis reçus</th><td style="text-align:right">${nf(volumes.recus)}</td><td></td></tr>
+  <tr><th>{i18n.t("rl3.colis_recus")}</th><td style="text-align:right">${nf(volumes.recus)}</td><td></td></tr>
   <tr><th>Colis remis</th><td style="text-align:right">${nf(volumes.remis)}</td><td></td></tr>
   <tr><th>Repartis</th><td style="text-align:right">${nf(volumes.renvoyes)}</td><td></td></tr>
 </table>
 <table>
-  <tr><th>Délai de retrait</th><th style="text-align:right">Part</th><th style="text-align:right">Colis</th></tr>
+  <tr><th>{i18n.t("rl3.delai_de_retrait")}</th><th style="text-align:right">Part</th><th style="text-align:right">Colis</th></tr>
   ${lignes}
 </table>
-<p class="note">Garde gratuite jusqu'au 3e jour, puis ${nf(GARDE_TARIF_JOUR)} F par jour
-jusqu'au 7e. Montants issus des règlements arrêtés par BelivaY.</p>
+<p class="note">Garde facturée au client selon la grille de garde de BelivaY. Montants issus des règlements
+arrêtés par BelivaY.</p>
 </body></html>`);
     fenetre.document.close();
     fenetre.focus();
@@ -370,7 +369,7 @@ jusqu'au 7e. Montants issus des règlements arrêtés par BelivaY.</p>
       {/* ── L'échelle de temps ─────────────────────────────────────────── */}
       <div
         role="tablist"
-        aria-label="Période du rapport"
+        aria-label={i18n.t("rl3.periode_du_rapport")}
         className="grid grid-cols-3 gap-1 rounded-[14px] bg-[#E8EDF8] p-1 dark:bg-slate-800/70"
       >
         {PERIODES.map((item) => {
@@ -413,7 +412,7 @@ jusqu'au 7e. Montants issus des règlements arrêtés par BelivaY.</p>
 
         {barres.length === 0 ? (
           <p className="mt-5 text-[13.5px] font-medium text-white/60">
-            {loading ? "Lecture de vos règlements…" : `Aucun règlement arrêté sur ${periodeLabel}.`}
+            {loading ? i18n.t("rl3.lecture_de_vos_reglements") : `Aucun règlement arrêté sur ${periodeLabel}.`}
           </p>
         ) : (
           <>
@@ -461,17 +460,17 @@ jusqu'au 7e. Montants issus des règlements arrêtés par BelivaY.</p>
       {/* ── Les volumes ────────────────────────────────────────────────── */}
       <div className="pr-span grid grid-cols-2 gap-3">
         <Carte
-          titre="Colis reçus"
+          titre={i18n.t("rl3.colis_recus")}
           valeur={nf(volumes.recus)}
           detail={periode === "mois" ? `en ${MOIS.format(maintenant)}` : `sur ${periodeLabel}`}
         />
         <Carte
           titre="Colis remis"
           valeur={nf(volumes.remis)}
-          detail={volumes.renvoyes > 0 ? `+ ${nf(volumes.renvoyes)} repartis` : "remis au client"}
+          detail={volumes.renvoyes > 0 ? `+ ${nf(volumes.renvoyes)} repartis` : i18n.t("rl3.remis_au_client")}
         />
         <Carte
-          titre="À temps"
+          titre={i18n.t("rl3.a_temps")}
           /* Sans colis sorti, le pourcentage n'existe pas. « 0 % » se lirait
              comme un echec, alors qu'il n'y a simplement rien a mesurer. */
           valeur={volumes.aTempsPct === null ? "—" : `${volumes.aTempsPct} %`}
@@ -524,14 +523,12 @@ jusqu'au 7e. Montants issus des règlements arrêtés par BelivaY.</p>
             </dl>
 
             {/*
-              Le montant vient du code de facturation, pas de la maquette.
-              `RelayParcel.GARDE_DAILY_FEE_XAF` vaut 200 F, et la gratuite
-              court jusqu'a J+3. Annoncer autre chose ferait deux verites sur
-              la meme ligne de facture.
+              Aucun montant ici : la garde suit la grille t_garde du serveur
+              (apps/shipping/garde.py), affichée par RelayGardeGrid. Un montant
+              recopié finirait par contredire la facture.
             */}
             <p className="mt-2 text-[13px] font-medium leading-[1.5] text-slate-400 dark:text-slate-500">
-              Plus un colis part tôt, plus votre place tourne. La garde est offerte jusqu'au 3e jour,
-              puis facturée {nf(GARDE_TARIF_JOUR)} F par jour au client jusqu'au 7e.
+              {i18n.t("rl3.plus_un_colis_part_tot_garde_selon_grille")}
             </p>
           </>
         )}
@@ -545,14 +542,14 @@ jusqu'au 7e. Montants issus des règlements arrêtés par BelivaY.</p>
         <ul className="mt-2 divide-y divide-slate-100 dark:divide-slate-800">
           <LigneExport
             icon={FileText}
-            titre="Relevé mensuel · PDF"
-            detail="Montants, colis et garde, pour votre comptabilité"
+            titre={i18n.t("rl3.releve_mensuel_pdf")}
+            detail={i18n.t("rl3.montants_colis_et_garde_pour_votre_comptab")}
             onClick={telechargerPdf}
           />
           <LigneExport
             icon={FileSpreadsheet}
-            titre="Relevé d'activité · CSV"
-            detail="Chaque réception, remise et retour"
+            titre={i18n.t("rl3.releve_d_activite_csv")}
+            detail={i18n.t("rl3.chaque_reception_remise_et_retour")}
             onClick={telechargerCsv}
           />
         </ul>

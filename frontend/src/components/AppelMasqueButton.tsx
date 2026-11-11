@@ -4,6 +4,7 @@
 // (POST /api/shipping/shipments/<id>/appel/). Chaque appel est journalisé (preuve du livreur, R51.1).
 
 import { useState } from "react";
+import i18n from "@/i18n";
 import { PhoneCall } from "lucide-react";
 import { useToast } from "@/context/ToastContext";
 import { http } from "@/services/api/http";
@@ -24,9 +25,9 @@ export default function AppelMasqueButton({ shipmentId, libelle, className = "" 
       const r = await http<{ ok: boolean; message: string }>(`/api/shipping/shipments/${shipmentId}/appel/`, {
         method: "POST",
       });
-      showToast(r.message || "BelivaY vous appelle : décrochez pour être mis en relation.", r.ok ? "success" : "error");
+      showToast(r.message || i18n.t("t03.appel_en_cours"), r.ok ? "success" : "error");
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Appel impossible pour le moment.", "error");
+      showToast(e instanceof Error ? e.message : i18n.t("t03.appel_impossible"), "error");
     } finally {
       setEnCours(false);
     }
@@ -40,7 +41,7 @@ export default function AppelMasqueButton({ shipmentId, libelle, className = "" 
       className={`inline-flex items-center gap-2 rounded-full border border-primary px-4 py-2 text-sm font-bold text-primary disabled:opacity-50 ${className}`}
     >
       <PhoneCall size={16} />
-      {enCours ? "Mise en relation…" : libelle}
+      {enCours ? i18n.t("t03.appel_mise_en_relation") : libelle}
     </button>
   );
 }

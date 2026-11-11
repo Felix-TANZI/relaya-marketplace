@@ -14,6 +14,7 @@ import {
   Component, type ReactNode, type ErrorInfo,
 } from "react";
 import { Link } from "react-router-dom";
+import i18n from "@/i18n";
 import { useTranslation } from "react-i18next";
 import {
   Search, Check, X, RefreshCw, Eye, Plus, Edit3, Trash2,
@@ -293,7 +294,7 @@ export default function AdminCategoriesPage() {
       else await adminApi.toggleCategoryApproval(cat.id, newValue);
       showToast(t("ad3_categories.toast_updated_name", { name: cat.name }), "success");
       load();
-    } catch (err) { showToast(errorMessage(err, "Mise à jour impossible."), "error"); }
+    } catch (err) { showToast(errorMessage(err, i18n.t("ad9.mise_a_jour_impossible")), "error"); }
   };
 
   const handleMoveOrder = async (cat: AdminCategory, delta: number) => {
@@ -301,7 +302,7 @@ export default function AdminCategoriesPage() {
     try {
       await adminApi.moveCategoryOrder(cat.id, newOrder);
       load();
-    } catch (err) { showToast(errorMessage(err, "Déplacement impossible."), "error"); }
+    } catch (err) { showToast(errorMessage(err, i18n.t("ad9.deplacement_impossible")), "error"); }
   };
 
   const handleDelete = async (cat: AdminCategory) => {
@@ -355,7 +356,7 @@ export default function AdminCategoriesPage() {
         "success",
       );
       load();
-    } catch (err) { showToast(errorMessage(err, "Mise à jour impossible."), "error"); }
+    } catch (err) { showToast(errorMessage(err, i18n.t("ad9.mise_a_jour_impossible")), "error"); }
   };
 
   return (
@@ -366,7 +367,7 @@ export default function AdminCategoriesPage() {
           <h1 style={{
             fontFamily: "'Syne', sans-serif", fontSize: 24, fontWeight: 800,
             color: T.text, marginBottom: 4,
-          }}>Gestion des catégories</h1>
+          }}>{i18n.t("ad9.gestion_des_categories")}</h1>
           <p style={{ fontSize: 13, color: T.muted, maxWidth: 640 }}>
             Les catégories et sous-catégories créées ici, avec leur nom et leur image, sont
             celles que voient les acheteurs et que les vendeurs choisissent pour publier.
@@ -419,7 +420,7 @@ export default function AdminCategoriesPage() {
         <button
           onClick={() => setMissingImageOnly((v) => !v)}
           style={missingImageOnly ? btnColored("#F59E0B") : btnGhost(T)}
-          title="Afficher seulement les catégories à illustrer"
+          title={i18n.t("ad9.afficher_seulement_les_categories_a_illust")}
           aria-pressed={missingImageOnly}
         >
           <ImageOff size={12} /> Sans image{stats.withoutImage > 0 ? ` (${stats.withoutImage})` : ""}
@@ -462,10 +463,10 @@ export default function AdminCategoriesPage() {
             <FolderTree size={32} style={{ margin: "0 auto 12px", opacity: 0.4 }} />
             <p style={{ fontSize: 13 }}>
               {missingImageOnly && !search
-                ? "Toutes les catégories ont une image."
+                ? i18n.t("ad9.toutes_les_categories_ont_une_image")
                 : search || missingImageOnly
-                  ? "Aucune catégorie ne correspond à la recherche."
-                  : "Aucune catégorie. Créez la première avec « Nouvelle catégorie »."}
+                  ? i18n.t("ad9.aucune_categorie_ne_correspond_a_la_recher")
+                  : i18n.t("ad9.aucune_categorie_creez_la_premiere_avec_no")}
             </p>
           </div>
         ) : (
@@ -594,7 +595,7 @@ function TreeNode({
             src={node.image_url}
             alt=""
             loading="lazy"
-            title={level === 0 ? "Bannière côté acheteur" : "Pastille côté acheteur"}
+            title={level === 0 ? i18n.t("ad9.banniere_cote_acheteur") : i18n.t("ad9.pastille_cote_acheteur")}
             style={{
               width: level === 0 ? 40 : 28, height: 28, flexShrink: 0,
               borderRadius: level === 0 ? 7 : "50%", objectFit: "cover",
@@ -985,7 +986,7 @@ function CategoryDetailModal({
       setDetail(updated);
       showToast(t("ad3_categories.toast_updated_generic"), "success");
       onModified();
-    } catch (err) { showToast(errorMessage(err, "Mise à jour impossible."), "error"); }
+    } catch (err) { showToast(errorMessage(err, i18n.t("ad9.mise_a_jour_impossible")), "error"); }
   };
 
   const handleDelete = async () => {
@@ -1049,7 +1050,7 @@ function CategoryDetailModal({
                 <img
                   src={detail.image_url}
                   alt=""
-                  title={detail.parent ? "Pastille côté acheteur" : "Bannière côté acheteur"}
+                  title={detail.parent ? i18n.t("ad9.pastille_cote_acheteur") : i18n.t("ad9.banniere_cote_acheteur")}
                   style={{
                     width: detail.parent ? 64 : 104, height: 64, flexShrink: 0,
                     borderRadius: detail.parent ? "50%" : 14, objectFit: "cover",
@@ -1407,7 +1408,7 @@ function CategoryFormModal({ category, initialParentId, initialKind, tree, onClo
       showToast(t("ad3_categories.toast_name_too_short"), "warning"); return;
     }
     if (kind === "sub" && !form.parent) {
-      showToast("Choisissez la catégorie parente de cette sous-catégorie.", "warning"); return;
+      showToast(i18n.t("ad9.choisissez_la_categorie_parente_de_cette_s"), "warning"); return;
     }
     const payload: CategoryUpdatePayload = {
       ...form,
@@ -1452,7 +1453,7 @@ function CategoryFormModal({ category, initialParentId, initialKind, tree, onClo
               fontSize: 20, fontWeight: 800, color: T.text, margin: 0,
               fontFamily: "'Syne', sans-serif",
             }}>
-              {isEdit ? category.name : kind === "root" ? "Nouvelle catégorie" : "Nouvelle sous-catégorie"}
+              {isEdit ? category.name : kind === "root" ? i18n.t("ad9.nouvelle_categorie") : i18n.t("ad9.nouvelle_sous_categorie")}
             </h2>
           </div>
           <button onClick={onClose} style={{
@@ -1465,11 +1466,11 @@ function CategoryFormModal({ category, initialParentId, initialKind, tree, onClo
           {/* BLOC 0 — Nature : catégorie principale ou sous-catégorie */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             <KindCard T={T} active={kind === "root"} onClick={() => chooseKind("root")}
-              icon={FolderTree} title="Catégorie principale"
-              hint="Un univers de la boutique, affiché en grande bannière." />
+              icon={FolderTree} title={i18n.t("ad9.categorie_principale")}
+              hint={i18n.t("ad9.un_univers_de_la_boutique_affiche_en_grand")} />
             <KindCard T={T} active={kind === "sub"} onClick={() => chooseKind("sub")}
               icon={Layers} title="Sous-catégorie"
-              hint="Rangée dans une catégorie, affichée en pastille ronde." />
+              hint={i18n.t("ad9.rangee_dans_une_categorie_affichee_en_past")} />
           </div>
 
           {/* BLOC 1 — Identité */}
@@ -1477,7 +1478,7 @@ function CategoryFormModal({ category, initialParentId, initialKind, tree, onClo
             <BlockTitle T={T} icon={BookOpen}>{t("ad3_categories.block_identity")}</BlockTitle>
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <FormField label="Nom *" T={T}
-                hint="Tel qu'il apparaîtra aux acheteurs et dans le sélecteur des vendeurs.">
+                hint={i18n.t("ad9.tel_qu_il_apparaitra_aux_acheteurs_et_dans")}>
                 <input value={form.name ?? ""} onChange={(e) => setForm({ ...form, name: e.target.value })}
                   placeholder={kind === "root" ? "Ex : Mode Femme" : "Ex : Robes"}
                   style={inputStyle(T)} autoFocus />
@@ -1485,12 +1486,12 @@ function CategoryFormModal({ category, initialParentId, initialKind, tree, onClo
               </FormField>
 
               {kind === "sub" && (
-                <FormField label="Catégorie parente *" T={T}
-                  hint="La sous-catégorie s'affichera dans la page de ce parent.">
+                <FormField label={i18n.t("ad9.categorie_parente")} T={T}
+                  hint={i18n.t("ad9.la_sous_categorie_s_affichera_dans_la_page")}>
                   <select value={form.parent ?? ""}
                     onChange={(e) => setForm({ ...form, parent: e.target.value ? Number(e.target.value) : null })}
                     style={inputStyle(T)}>
-                    <option value="">— Choisir un parent —</option>
+                    <option value="">{i18n.t("ad9.choisir_un_parent")}</option>
                     {flatTree.map((n) => (
                       <option key={n.id} value={n.id}>
                         {"— ".repeat(n.level)}{n.name}
@@ -1539,7 +1540,7 @@ function CategoryFormModal({ category, initialParentId, initialKind, tree, onClo
               <ClientPreview
                 T={T}
                 kind={kind}
-                name={form.name?.trim() || (kind === "root" ? "Nom de la catégorie" : "Sous-catégorie")}
+                name={form.name?.trim() || (kind === "root" ? i18n.t("ad9.nom_de_la_categorie") : "Sous-catégorie")}
                 description={form.description ?? ""}
                 image={shownImage}
                 parentName={parentName}
@@ -1550,8 +1551,8 @@ function CategoryFormModal({ category, initialParentId, initialKind, tree, onClo
           {/* BLOC 3 — Apparence */}
           <div>
             <BlockTitle T={T} icon={Sparkles}>Icône</BlockTitle>
-            <FormField label="Icône de repli" T={T}
-              hint="Affichée à la place de l'image tant qu'aucune image n'est définie, et dans les listes compactes.">
+            <FormField label={i18n.t("ad9.icone_de_repli")} T={T}
+              hint={i18n.t("ad9.affichee_a_la_place_de_l_image_tant_qu_auc")}>
               <button onClick={() => setShowIconPicker(true)} style={{
                 width: "100%", padding: "12px 14px", borderRadius: 12,
                 background: T.input, border: `1.5px solid ${T.inputBorder}`,
@@ -1635,7 +1636,7 @@ function CategoryFormModal({ category, initialParentId, initialKind, tree, onClo
             boxShadow: `0 3px 10px ${T.red}44`,
           }}>
             {busy ? <RefreshCw size={14} className="animate-spin" /> : <Check size={14} />}
-            {isEdit ? "Enregistrer" : kind === "root" ? "Créer la catégorie" : "Créer la sous-catégorie"}
+            {isEdit ? "Enregistrer" : kind === "root" ? i18n.t("ad9.creer_la_categorie") : i18n.t("ad9.creer_la_sous_categorie")}
           </button>
         </div>
       </ModalShell>
@@ -1689,7 +1690,7 @@ function CategoryImageInput({ T, kind, preview, onPick, onRemove, onError }: {
 
   const accept = (file: File | undefined) => {
     if (!file) return;
-    if (!IMAGE_TYPES.includes(file.type)) { onError("Format accepté : JPG, PNG ou WEBP."); return; }
+    if (!IMAGE_TYPES.includes(file.type)) { onError(i18n.t("ad9.format_accepte_jpg_png_ou_webp")); return; }
     if (file.size > IMAGE_MAX_BYTES) { onError("Image trop lourde : 5 Mo maximum."); return; }
     onPick(file);
   };
@@ -1764,7 +1765,7 @@ function ClientPreview({ T, kind, name, description, image, parentName }: {
       <div style={{
         fontSize: 10, fontWeight: 800, color: T.mutedL, letterSpacing: "0.06em",
         textTransform: "uppercase", display: "flex", alignItems: "center", gap: 5,
-      }}><Eye size={11} /> Aperçu côté acheteur</div>
+      }}><Eye size={11} /> {i18n.t("ad9.apercu_cote_acheteur")}</div>
 
       {kind === "root" ? (
         <div style={{
@@ -1807,8 +1808,8 @@ function ClientPreview({ T, kind, name, description, image, parentName }: {
 
       <div style={{ fontSize: 10.5, color: T.muted, lineHeight: 1.45 }}>
         {kind === "root"
-          ? "Grande bannière de la page catégorie et frame du carrousel d'accueil."
-          : `Pastille ronde dans la page « ${parentName ?? "catégorie parente"} ».`}
+          ? i18n.t("ad9.grande_banniere_de_la_page_categorie_et_fr")
+          : `Pastille ronde dans la page « ${parentName ?? i18n.t("ad9.categorie_parente_2")} ».`}
         {" "}Le vendeur retrouve la même image dans son sélecteur.
       </div>
     </div>

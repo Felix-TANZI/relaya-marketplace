@@ -133,3 +133,15 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# DEV-SRV-01, T14 : fichier témoin de la maintenance, posé et retiré sur le serveur (ops/transfert/maintenance.sh).
+nginx/maintenance/actif
+
+# DEV-SRV-01, T21/T22 : configurations du lancement activées sur le serveur (ops/lancement/activer.sh).
+nginx/lancement/*.conf
+# DEV-SRV-01, T12 : les APK se construisent (ops/applis/construire-appli.sh) et se distribuent par les stores,
+# jamais par le dépôt (6 APK de 75 Mo y vivaient, construits vers l’ancienne adresse).
+frontend/apks/
+*.apk
+*.aab
+*.ipa

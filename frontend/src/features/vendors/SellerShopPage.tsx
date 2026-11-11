@@ -20,23 +20,18 @@ import {
 } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import '@/lib/leafletIcons';
 import { vendorsApi } from '@/services/api/vendors';
-import { http } from '@/services/api/http';
+import { http, API_BASE_URL } from '@/services/api/http';
 import { useToast } from '@/context/ToastContext';
 import { geocodingApiUrl, isGoogleMapsEnabled, mapAttribution, mapTileUrl } from '@/config/maps';
 import { GoogleMap } from '@/components/maps/GoogleMap';
 import { googleGeocodeAddress, googleReverseGeocode } from '@/lib/googleMaps';
 import { ensureImageUnderLimit, ensureImagesUnderLimit } from '@/lib/imageCompression';
 import * as QRCode from 'qrcode';
+import { SITE_URL } from '@/config/site';
 
 // ─── Fix icônes Leaflet (Vite / Webpack) ─────────────────────────────────────
-interface LeafletIconDefault extends L.Icon.Default { _getIconUrl?: unknown; }
-delete (L.Icon.Default.prototype as LeafletIconDefault)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl:       'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl:     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-});
 
 // ─── Thème ────────────────────────────────────────────────────────────────────
 const T = {
@@ -396,7 +391,7 @@ function ModRequestModal({
       files.forEach(f => form.append('files', f));
 
       const token = localStorage.getItem('access_token');
-      const res = await fetch('/api/vendors/mod-requests/create/', {
+      const res = await fetch(`${API_BASE_URL}/api/vendors/mod-requests/create/`, {
         method: 'POST', body: form,
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -1020,7 +1015,7 @@ export default function SellerShopPage() {
 
       // QR code — généré dès qu'on a le slug
       if (shopData.shop_slug) {
-        const qrTarget = `https://belivay.com?ref=${shopData.shop_slug}`;
+        const qrTarget = `${SITE_URL}?ref=${shopData.shop_slug}`;
         try {
           const url = await QRCode.toDataURL(qrTarget, {
             width: 280, margin: 2,
@@ -1070,7 +1065,7 @@ export default function SellerShopPage() {
   };
 
   const handleCopy = () => {
-    const url = shop?.public_url || `https://belivay.com?ref=${shop?.shop_slug}`;
+    const url = shop?.public_url || `${SITE_URL}?ref=${shop?.shop_slug}`;
     navigator.clipboard.writeText(url);
     setCopied(true); setTimeout(() => setCopied(false), 2000);
     showToast(t('sl1_shop.toast_link_copied'), 'success');
@@ -1143,7 +1138,7 @@ export default function SellerShopPage() {
   );
 
   const tier  = shop?.certification_tier || 'BRONZE';
-  const qrUrl = shop?.public_url || `https://belivay.com?ref=${shop?.shop_slug}`;
+  const qrUrl = shop?.public_url || `${SITE_URL}?ref=${shop?.shop_slug}`;
   const pendingModReq = modRequests.find(r => ['PENDING','DOCS_REQUIRED','DOCS_UPLOADED'].includes(r.status));
 
   return (

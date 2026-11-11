@@ -175,7 +175,7 @@ export default {
       'Vos actions sont mises en file et envoyées avec leur heure d’origine dès que le réseau revient.',
     error_value_cap_title: 'Plafond de valeur',
     error_value_cap_detail:
-      'Cet article dépasse 250 000 F : seule une entreprise de livraison Or, assurée, peut le prendre en charge.',
+      'Cet article dépasse le plafond de valeur des paliers Nouveau et Confirmé : seule une entreprise de livraison Or, assurée, peut le prendre en charge.',
     error_value_cap_why: 'Ce plafond protège la valeur de l’article pendant le transport.',
 
     // Remis au livreur (VD-06 §REM-04/06/07/08)

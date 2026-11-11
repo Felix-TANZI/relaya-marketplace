@@ -54,9 +54,14 @@ for (const f of fichiers(dist)) {
   }
 }
 
+// DEV-SRV-01, R6 : la démonstration (VITE_DEMO=1) est fermée aux moteurs de recherche ; seul le vrai site s'y ouvre.
+const demonstration = process.env.VITE_DEMO === '1'
 writeFileSync(
   join(dist, 'robots.txt'),
-  ['# BelivaY : pages publiques ouvertes aux moteurs ; la console d’administration (/admin/) est en « noindex ».', 'User-agent: *', 'Allow: /', '', `Sitemap: ${site}/sitemap.xml`, ''].join('\n'),
+  (demonstration
+    ? ['# BelivaY : version de démonstration, fermée aux moteurs de recherche (DEV-SRV-01, R6).', 'User-agent: *', 'Disallow: /', '']
+    : ['# BelivaY : pages publiques ouvertes aux moteurs ; la console d’administration (/admin/) est en « noindex ».', 'User-agent: *', 'Allow: /', '', `Sitemap: ${site}/sitemap.xml`, '']
+  ).join('\n'),
 )
 const echapper = (s) => s.replaceAll('&', '&amp;')
 writeFileSync(

@@ -28,6 +28,8 @@ interface AuthContextType {
   verify2FA: (userId: number, code: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
+  /** Relit le profil (/me) : après un changement qui le modifie, comme le mot de passe provisoire. */
+  refreshUser: () => Promise<void>;
   isAuthenticated: boolean;
 }
 
@@ -113,6 +115,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await login(data.username, data.password); // nouveau compte → jamais de 2FA
   };
 
+  const refreshUser = async () => {
+    setUser(await authApi.me());
+  };
+
   const logout = () => {
     clearOfflineCache();
     localStorage.removeItem('access_token');
@@ -126,7 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, googleLogin, appleLogin, appleTicketLogin, verify2FA, register, logout, isAuthenticated: !!user }}
+      value={{ user, loading, login, googleLogin, appleLogin, appleTicketLogin, verify2FA, register, logout, refreshUser, isAuthenticated: !!user }}
     >
       {children}
     </AuthContext.Provider>

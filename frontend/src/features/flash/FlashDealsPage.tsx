@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import i18n from "@/i18n";
 import { useNavigate } from "react-router-dom";
 import { AlarmClock, Clock, Flame, Heart, Zap } from "lucide-react";
 import {
@@ -115,7 +116,7 @@ export default function FlashDealsPage() {
                   <button
                     type="button"
                     onClick={() => toggleFavorite(deal.id)}
-                    aria-label={isFavorite ? `Retirer ${deal.name} des favoris` : `Ajouter ${deal.name} aux favoris`}
+                    aria-label={isFavorite ? i18n.t("t03.flash_favori_retirer", { nom: deal.name }) : i18n.t("t03.flash_favori_ajouter", { nom: deal.name })}
                     aria-pressed={isFavorite}
                     className="absolute right-2.5 top-2.5 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-primary shadow-sm transition hover:bg-white"
                   >

@@ -9,6 +9,7 @@
 // approuve par un autre : le serveur refuse que le demandeur approuve.
 
 import { useCallback, useEffect, useState } from 'react';
+import i18n from "@/i18n";
 
 import { walletApi, type SuiviWallet } from '../../api/wallet.api';
 import Money from '../../shared/Money';
@@ -36,7 +37,7 @@ export default function WalletAdminPage() {
       await fn();
       charger();
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : 'Action refusée.');
+      setErreur(e instanceof Error ? e.message : i18n.t("ad9.action_refusee"));
     } finally {
       setOccupe(false);
     }
@@ -44,27 +45,27 @@ export default function WalletAdminPage() {
 
   return (
     <AdminPageShell
-      title="Wallet des clients"
-      subtitle={data ? (data.ouvert ? 'Ouvert' : 'Fermé (r_wallet_ouvert = 0, R03.1)') : undefined}
+      title={i18n.t("ad9.wallet_des_clients")}
+      subtitle={data ? (data.ouvert ? 'Ouvert' : i18n.t("ad9.ferme_r_wallet_ouvert_0_r03_1")) : undefined}
       backTo="/admin/finance"
     >
       {erreur && <div role="alert" style={{ color: '#b91c1c', marginBottom: 12 }}>{erreur}</div>}
       {data && (
         <>
-          <AdminCard title="Contrôle du grand livre">
+          <AdminCard title={i18n.t("ad9.controle_du_grand_livre")}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(170px,1fr))', gap: 12 }}>
               <div>Wallets<br /><b>{data.wallets}</b></div>
               <div>Part retirable<br /><Money value={data.retirable_xaf} /></div>
               <div>Gestes (non retirables)<br /><Money value={data.geste_xaf} /></div>
-              <div>Retraits à issue inconnue<br /><Money value={data.retraits_inconnus_xaf} /></div>
+              <div>{i18n.t("ad9.retraits_a_issue_inconnue")}<br /><Money value={data.retraits_inconnus_xaf} /></div>
               <div>Compte 2050<br /><Money value={data.grand_livre_2050_xaf} /></div>
               <div>Écart<br /><Money value={data.ecart_xaf} tone={data.ecart_xaf === 0 ? 'positive' : 'negative'} /></div>
             </div>
           </AdminCard>
 
-          <AdminCard title="Geste commercial (R03.6 ; jamais plus que la commission de la commande, R25.1)">
+          <AdminCard title={i18n.t("ad9.geste_commercial_r03_6_jamais_plus_que_la")}>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              <input placeholder="Identifiant du client" value={client} onChange={(e) => setClient(e.target.value)} />
+              <input placeholder={i18n.t("ad9.identifiant_du_client")} value={client} onChange={(e) => setClient(e.target.value)} />
               <input placeholder="Commande n°" inputMode="numeric" value={commande} onChange={(e) => setCommande(e.target.value)} />
               <input placeholder="Montant (F)" inputMode="numeric" value={montant} onChange={(e) => setMontant(e.target.value)} />
               <input placeholder="Motif" value={motif} onChange={(e) => setMotif(e.target.value)} style={{ flex: 1 }} />

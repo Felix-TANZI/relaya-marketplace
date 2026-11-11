@@ -48,7 +48,12 @@ RUN for d in site espace-vendeur espace-entreprise espace-livreur espace-relais 
 COPY . .
 # Mêmes variables que le projet Vercel (site/vercel.json, build.env) ; SITE_URL : adresse canonique, robots.txt, sitemap.
 ARG SITE_URL=https://belivay.com
-ENV VITE_DEMO=1 VITE_SOURCE=hybride SITE_URL=${SITE_URL} SANS_INSTALLATION=1
+# DEV-SRV-01, R2 « la vitrine ne crée jamais un compte réel », R1 « aucun croisement », R3 « SMS, vérification
+# d'identité et paiement simulés » : VITE_SOURCE=demo, tout (comptes compris) vient de la démonstration et reste dans
+# le navigateur ; la vitrine n'appelle plus aucun serveur. « hybride » (comptes réels sur Neon) reste possible à la
+# main (--build-arg VITE_SOURCE=hybride), mais n'est plus la valeur de la vitrine.
+ARG VITE_SOURCE=demo
+ENV VITE_DEMO=1 VITE_SOURCE=${VITE_SOURCE} SITE_URL=${SITE_URL} SANS_INSTALLATION=1
 RUN sh site/outils/construire-tout.sh && node serveur/compresser.mjs site/dist
 
 # ── Cible « web » (dernière : cible par défaut) ──

@@ -48,13 +48,16 @@ def send_contact_emails(self, contact_message_id):
         body=support_text,
         from_email=settings.DEFAULT_FROM_EMAIL,
         to=[support_email],
-        reply_to=[contact_message.email]
+        reply_to=[contact_message.email] if contact_message.email else None,
     )
     support_mail.attach_alternative(support_html, "text/html")
     support_mail.send()
     
     
     #  EMAIL DE CONFIRMATION AU CLIENT
+    # DEV-SRV-01, T09 : sans e-mail (candidature d'un point relais par téléphone), pas de confirmation à envoyer.
+    if not contact_message.email:
+        return
     
     
     confirmation_subject = "Votre message a été reçu - Relaya"

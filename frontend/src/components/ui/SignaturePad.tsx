@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import i18n from "@/i18n";
 
 /**
  * Pave de signature manuscrite (souris, stylet ou doigt).
@@ -102,7 +103,7 @@ export default function SignaturePad({
     <div>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-black text-slate-950 dark:text-white">{label}</p>
-        {hasStroke ? <span className="text-[11px] font-black uppercase tracking-[0.12em] text-emerald-600">Signé</span> : null}
+        {hasStroke ? <span className="text-[11px] font-black uppercase tracking-[0.12em] text-emerald-600">{i18n.t("t03.signe")}</span> : null}
       </div>
       {hint ? <p className="mt-0.5 text-xs font-semibold text-slate-500 dark:text-slate-400">{hint}</p> : null}
       <canvas

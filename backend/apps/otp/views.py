@@ -21,9 +21,7 @@
 #
 # Débit limité par la portée « otp » de REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] (relaya : 10/min).
 
-from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.core.mail import send_mail
 from drf_spectacular.utils import extend_schema
 from rest_framework import exceptions, status
 from rest_framework.response import Response
@@ -228,22 +226,12 @@ class OublierMotDePasse(VuePublique):
     def post(self, request):
         s = OubliSerializer(data=request.data)
         s.is_valid(raise_exception=True)
-        email = s.validated_data["email"].strip()
-        minutes = parametres.entier("MDP-LIEN")
-        user = get_user_model().objects.filter(email__iexact=email, is_active=True).first()
-        if user is not None:
-            jeton, minutes = services.creer_jeton_mdp(user)
-            site = getattr(settings, "BELIVAY_SITE_URL", "https://belivay.com").rstrip("/")
-            # Page du site qui lit le jeton : /mdp-nouveau (site/src/pages/CL-03/MdpNouveau.tsx).
-            chemin = getattr(settings, "BELIVAY_LIEN_MDP", "/mdp-nouveau?jeton={jeton}").format(jeton=jeton)
-            send_mail(
-                "Ton nouveau mot de passe BelivaY",
-                f"Bonjour {user.first_name or ''},\n\nPour choisir un nouveau mot de passe, ouvre ce lien (valable {minutes} minutes, "
-                f"une seule fois) :\n{site}{chemin}\n\nSi tu n'as rien demandé, ignore ce message : ton mot de passe ne change pas.",
-                None,
-                [user.email],
-            )
-        return Response({"destination": masquer_email(email), "valideMinutes": minutes}, status=status.HTTP_202_ACCEPTED)
+        # DEV-SRV-01 T07-5 : une seule façon d'envoyer le lien, pour tous les comptes, par e-mail ou par SMS
+        # (apps.otp.oubli) ; il ramène au portail de la demande quand celui-ci est l'un des portails configurés.
+        from .oubli import envoyer_lien
+
+        envoi = envoyer_lien(s.validated_data["identifiant"], origine=request.headers.get("Origin"))
+        return Response(envoi, status=status.HTTP_202_ACCEPTED)
 
 
 class NouveauMotDePasse(VuePublique):

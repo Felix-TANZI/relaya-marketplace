@@ -21,7 +21,9 @@ from .tournees import bourse_tournees_for_organization, claim_tournee_for_organi
 # Mot de passe de fixture : jamais relu, juste exige par create_user()/create_superuser().
 # Genere plutot qu'ecrit en dur pour ne pas faire remonter de faux positifs sur les
 # scanners de secrets (GitGuardian/Gitleaks).
-TEST_PASSWORD = secrets.token_urlsafe(16)
+# Toujours au moins un chiffre : la règle MDP-LONG l'exige (AUTH_PASSWORD_VALIDATORS) ; token_urlsafe n'en contient
+# aucun environ 2 fois sur 100, et le test échouait alors au hasard.
+TEST_PASSWORD = secrets.token_urlsafe(16) + "7"
 
 
 class ShipmentTrackingTests(APITestCase):

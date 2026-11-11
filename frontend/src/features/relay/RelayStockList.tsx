@@ -17,6 +17,7 @@
  * l'inaction coûte quelque chose.
  */
 import { useMemo, useState } from "react";
+import i18n from "@/i18n";
 import {
   CELL_STYLE,
   STATE_LABEL,
@@ -125,7 +126,7 @@ export default function RelayStockList({
               // destination. Le reste a un montant, ou rien.
               const fin =
                 state === "return"
-                  ? "à remettre au livreur"
+                  ? i18n.t("rl3.a_remettre_au_livreur")
                   : parcel.gardeFeeXaf > 0
                     ? `${nf(parcel.gardeFeeXaf)} F`
                     : "sans frais";

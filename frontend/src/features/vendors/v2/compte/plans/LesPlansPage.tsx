@@ -36,11 +36,12 @@ type PaidPlanKey = 'BOOST' | 'PRO';
 /** Code backend réel à envoyer à subscribePlan() pour chaque plan payant — bijection fixe avec mapLegacyPlanCode. */
 const BACKEND_CODE: Record<PaidPlanKey, 'STARTER' | 'PRO'> = { BOOST: 'STARTER', PRO: 'PRO' };
 
-/** Grille tarifaire canonique (Plans.jpg) — jamais fabriquée, jamais dépendue du backend legacy. */
-const STATIC_PLANS = {
-  FREE: { priceMonthly: 0, priceAnnual: null as number | null, featureKeys: ['plans_free_feature_1', 'plans_free_feature_2', 'plans_free_feature_3'] },
-  BOOST: { priceMonthly: 2500, priceAnnual: 25000, featureKeys: ['plans_boost_feature_1', 'plans_boost_feature_2', 'plans_boost_feature_3', 'plans_boost_feature_4'] },
-  PRO: { priceMonthly: 7500, priceAnnual: 75000, featureKeys: ['plans_pro_feature_1', 'plans_pro_feature_2', 'plans_pro_feature_3', 'plans_pro_feature_4'] },
+/** Avantages de chaque plan (textes traduits). Les PRIX ne sont pas ici : ils viennent de l'API (SubscriptionPlan,
+ *  réglé dans l'admin), celle-là même qui facture l'abonnement — DEV-SRV-01, T02-5 / T05. */
+const PLAN_FEATURES = {
+  FREE: ['plans_free_feature_1', 'plans_free_feature_2', 'plans_free_feature_3'],
+  BOOST: ['plans_boost_feature_1', 'plans_boost_feature_2', 'plans_boost_feature_3', 'plans_boost_feature_4'],
+  PRO: ['plans_pro_feature_1', 'plans_pro_feature_2', 'plans_pro_feature_3', 'plans_pro_feature_4'],
 } as const;
 
 export default function LesPlansPage() {
@@ -69,6 +70,13 @@ export default function LesPlansPage() {
 
   // Repli honnête : la plupart des boutiques démarrent sur Free (VD-D14) ;
   // dès que getPlans() répond, la pastille "Plan actuel" reflète la vraie valeur.
+  /** Prix réel d'un plan (API) ; null tant qu'il n'existe pas en base — formatXAF affiche alors « — », jamais un prix inventé. */
+  const prix = (plan: 'FREE' | PaidPlanKey, cycle: 'mensuel' | 'annuel'): number | null => {
+    const code = plan === 'FREE' ? 'FREE' : BACKEND_CODE[plan];
+    const trouve = data?.plans.find((x) => x.code === code);
+    if (!trouve) return null;
+    return cycle === 'mensuel' ? trouve.price_monthly_xaf : trouve.price_annual_xaf;
+  };
   const activePlanKey: SellerPlanKey = mapLegacyPlanCode(data?.active_plan_code ?? 'FREE');
   const isCurrent = (key: SellerPlanKey) => activePlanKey === key;
 
@@ -137,7 +145,7 @@ export default function LesPlansPage() {
                 {isCurrent('FREE') ? currentBadge : null}
               </div>
               <div className="text-right flex-shrink-0">
-                <p className="font-black" style={{ fontSize: 17, color: p.text }}>{formatXAF(STATIC_PLANS.FREE.priceMonthly)}</p>
+                <p className="font-black" style={{ fontSize: 17, color: p.text }}>{formatXAF(prix('FREE', 'mensuel'))}</p>
                 <p style={{ fontSize: 10.5, color: p.textMuted }}>{t('sl11_compte.plans_per_month')}</p>
               </div>
             </div>
@@ -161,7 +169,7 @@ export default function LesPlansPage() {
               <p style={{ fontSize: 10.5, color: p.textMuted }}>{t('sl11_compte.plans_discovery_note_short')}</p>
             </div>
 
-            {featureList(STATIC_PLANS.FREE.featureKeys)}
+            {featureList(PLAN_FEATURES.FREE)}
 
             <div className="rounded-xl p-2.5 mb-3 flex items-center gap-2" style={{ background: `${p.green}14` }}>
               <Check size={14} color={p.green} className="flex-shrink-0" />
@@ -189,14 +197,14 @@ export default function LesPlansPage() {
                 {isCurrent('BOOST') ? currentBadge : null}
               </div>
               <div className="text-right flex-shrink-0">
-                <p className="font-black" style={{ fontSize: 17, color: p.text }}>{formatXAF(STATIC_PLANS.BOOST.priceMonthly)}</p>
+                <p className="font-black" style={{ fontSize: 17, color: p.text }}>{formatXAF(prix('BOOST', 'mensuel'))}</p>
                 <p style={{ fontSize: 10.5, color: p.textMuted }}>{t('sl11_compte.plans_per_month')}</p>
               </div>
             </div>
             <p className="mb-3" style={{ fontSize: 11, color: p.textMuted }}>
-              {t('sl11_compte.plans_boost_annual', { amount: formatXAF(STATIC_PLANS.BOOST.priceAnnual) })}
+              {t('sl11_compte.plans_boost_annual', { amount: formatXAF(prix('BOOST', 'annuel')) })}
             </p>
-            {featureList(STATIC_PLANS.BOOST.featureKeys)}
+            {featureList(PLAN_FEATURES.BOOST)}
             <button
               type="button"
               onClick={() => setTrialSheet('BOOST')}
@@ -216,14 +224,14 @@ export default function LesPlansPage() {
                 {isCurrent('PRO') ? currentBadge : null}
               </div>
               <div className="text-right flex-shrink-0">
-                <p className="font-black" style={{ fontSize: 17, color: p.text }}>{formatXAF(STATIC_PLANS.PRO.priceMonthly)}</p>
+                <p className="font-black" style={{ fontSize: 17, color: p.text }}>{formatXAF(prix('PRO', 'mensuel'))}</p>
                 <p style={{ fontSize: 10.5, color: p.textMuted }}>{t('sl11_compte.plans_per_month')}</p>
               </div>
             </div>
             <p className="mb-3" style={{ fontSize: 11, color: p.textMuted }}>
-              {t('sl11_compte.plans_boost_annual', { amount: formatXAF(STATIC_PLANS.PRO.priceAnnual) })}
+              {t('sl11_compte.plans_boost_annual', { amount: formatXAF(prix('PRO', 'annuel')) })}
             </p>
-            {featureList(STATIC_PLANS.PRO.featureKeys)}
+            {featureList(PLAN_FEATURES.PRO)}
             <button
               type="button"
               onClick={() => setTrialSheet('PRO')}

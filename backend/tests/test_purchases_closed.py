@@ -22,7 +22,9 @@ from apps.common.purchases import CODE_INTERRUPTEUR, purchases_open_for
 
 pytestmark = pytest.mark.django_db
 # Mot de passe de fixture : jamais relu, juste exige par create_user().
-TEST_PASSWORD = secrets.token_urlsafe(16)
+# Toujours au moins un chiffre : la règle MDP-LONG l'exige (AUTH_PASSWORD_VALIDATORS) ; token_urlsafe n'en contient
+# aucun environ 2 fois sur 100, et le test échouait alors au hasard.
+TEST_PASSWORD = secrets.token_urlsafe(16) + "7"
 
 ORDERS_URL = "/api/orders/"
 PAY_URL = "/api/payments/v2/me/payments/REF-QUI-N-EXISTE-PAS/pay/"

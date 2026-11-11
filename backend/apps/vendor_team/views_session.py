@@ -13,7 +13,6 @@
 import re
 from datetime import timedelta
 
-from django.contrib.auth import get_user_model
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
@@ -21,6 +20,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import NotFound
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+
+from apps.common.storage import televersement_en_memoire
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.client_core.erreurs import ErreurClient
@@ -145,35 +146,15 @@ def auth_password_reset_request(request):
     if not identifiant:
         return Response({"ok": False, "raison": "vide"})
 
-    User = get_user_model()
-    user = None
-    if "@" in identifiant:
-        user = User.objects.filter(email__iexact=identifiant, is_active=True).first()
-    else:
-        numero = numero_local(identifiant) or identifiant
-        profile = VendorProfile.objects.filter(phone__endswith=numero).select_related("user").first()
-        user = profile.user if profile else None
+    # DEV-SRV-01 T07-5 : même envoi que pour les clients (apps.otp.oubli). Avant, rien ne partait pour un vendeur sans
+    # e-mail (la plupart : inscrits par téléphone ou par un agent), le lien visait la boutique et non l'espace vendeur,
+    # et l'écran annonçait 15 minutes quelle que soit la durée réglée (MDP-LIEN).
+    from apps.otp.oubli import envoyer_lien
 
-    minutes = 15  # LienMotDePasse.valideMinutes (VD03-R04) : constante documentée côté frontend, pas une
-    # clé de registre confirmée côté serveur à ce jour (voir PWD_RESET_LINK_TTL_MIN dans session.ts).
-    if user is not None:
-        from apps.otp import services as otp_services
-
-        jeton, _minutes_otp = otp_services.creer_jeton_mdp(user)
-        if user.email:
-            from django.conf import settings as dj_settings
-            from django.core.mail import send_mail
-
-            site = getattr(dj_settings, "BELIVAY_SITE_URL", "https://belivay.com").rstrip("/")
-            send_mail(
-                "Nouveau mot de passe — espace vendeur BelivaY",
-                f"Pour choisir un nouveau mot de passe, ouvre ce lien (valable {minutes} minutes) :\n"
-                f"{site}/vendeur/mdp-nouveau?jeton={jeton}",
-                None,
-                [user.email],
-            )
-
-    return Response({"ok": True, "lien": {"envoyeA": _ms(timezone.now()), "valideMinutes": minutes, "renvoiSecondes": 60}})
+    envoi = envoyer_lien(identifiant, origine=request.headers.get("Origin"))
+    return Response({"ok": True, "lien": {"envoyeA": _ms(timezone.now()), "valideMinutes": envoi["valideMinutes"],
+                                          "renvoiSecondes": 60, "canal": envoi["canal"],
+                                          "destination": envoi["destination"]}})
 
 
 # ── Ouverture : POST /shops (déjà authentifié), KYC, signature du contrat ──────────────────────────────────
@@ -231,6 +212,7 @@ def shops_open(request):
 PIECES_KYC = {"recto": "CNI_RECTO", "verso": "CNI_VERSO", "selfie": "SELFIE_VIDEO"}
 
 
+@televersement_en_memoire  # DEV-SRV-01, R8 : en mémoire jusqu'à R2, jamais dans un fichier temporaire
 @extend_schema(tags=TAG, summary="Session — submit a KYC piece")
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])

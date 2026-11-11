@@ -7,6 +7,7 @@
 // Ces actions touchent l'argent du client et du vendeur : elles ne se rejouent jamais hors ligne.
 
 import { useState } from "react";
+import i18n from "@/i18n";
 import { http } from "@/services/api/http";
 
 interface Props {
@@ -18,10 +19,10 @@ interface Props {
 
 const position = () =>
   new Promise<{ latitude: number; longitude: number }>((resolve, reject) => {
-    if (!navigator.geolocation) return reject(new Error("Position indisponible sur cet appareil."));
+    if (!navigator.geolocation) return reject(new Error(i18n.t("t03.pos_indisponible_appareil")));
     navigator.geolocation.getCurrentPosition(
       (p) => resolve({ latitude: Number(p.coords.latitude.toFixed(6)), longitude: Number(p.coords.longitude.toFixed(6)) }),
-      () => reject(new Error("Autorisez la position pour déclarer l'absence (R51.1).")),
+      () => reject(new Error(i18n.t("t03.pos_autoriser"))),
       { enableHighAccuracy: true, timeout: 10000 },
     );
   });
@@ -39,7 +40,7 @@ export default function CourierExceptionsPanel({ shipmentId, status, aDomicile, 
       await http(`/api/shipping/my-shipments/${shipmentId}/action/`, { method: "POST", body: JSON.stringify(corps) });
       onDone(ok);
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : "Action refusée.");
+      setErreur(e instanceof Error ? e.message : i18n.t("t03.action_refusee"));
     } finally {
       setOccupe(false);
     }
@@ -55,7 +56,7 @@ export default function CourierExceptionsPanel({ shipmentId, status, aDomicile, 
       await http(`/api/shipping/my-shipments/${shipmentId}/evidence/`, { method: "POST", body: form });
       setPhotoEnvoyee(true);
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : "Photo non envoyée.");
+      setErreur(e instanceof Error ? e.message : i18n.t("t03.photo_non_envoyee"));
     } finally {
       setOccupe(false);
     }
@@ -64,9 +65,9 @@ export default function CourierExceptionsPanel({ shipmentId, status, aDomicile, 
   const declarerAbsence = async () => {
     try {
       const pos = await position();
-      await agir({ action: "ABSENT", ...pos }, "Client absent : le colis part au relais de sa zone. Déposez-le avec le code de dépôt.");
+      await agir({ action: "ABSENT", ...pos }, i18n.t("t03.absent_ok"));
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : "Position indisponible.");
+      setErreur(e instanceof Error ? e.message : i18n.t("t03.pos_indisponible"));
     }
   };
 
@@ -79,38 +80,38 @@ export default function CourierExceptionsPanel({ shipmentId, status, aDomicile, 
       {erreur && <p role="alert" className="mb-2 font-semibold text-red-300">{erreur}</p>}
       {enLivraison && (
         <>
-          <p className="font-bold">Client absent (R51)</p>
-          <p className="mt-1 text-white/70">Appelez 2 fois avec « Appeler le client », attendez 10 min, prenez la photo devant l'adresse.</p>
+          <p className="font-bold">{i18n.t("t03.absent_titre")}</p>
+          <p className="mt-1 text-white/70">{i18n.t("t03.absent_aide")}</p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <label className="cursor-pointer rounded-full border border-white/20 px-4 py-2 font-bold">
-              {photoEnvoyee ? "Photo envoyée ✓" : "Photo devant l'adresse"}
+              {photoEnvoyee ? i18n.t("t03.photo_envoyee") : i18n.t("t03.photo_adresse")}
               <input type="file" accept="image/*" capture="environment" className="hidden" disabled={occupe}
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) void envoyerPhoto(f); }} />
             </label>
             <button type="button" disabled={occupe || !photoEnvoyee} onClick={() => void declarerAbsence()}
               className="rounded-full bg-amber-500 px-4 py-2 font-bold text-black disabled:opacity-50">
-              Déclarer le client absent
+              {i18n.t("t03.absent_declarer")}
             </button>
           </div>
-          <p className="mt-4 font-bold">Refus à la porte (R85.2)</p>
-          <p className="mt-1 text-white/70">Le colis n'est jamais ouvert à la porte. S'il est refusé, il repart au vendeur.</p>
+          <p className="mt-4 font-bold">{i18n.t("t03.refus_titre")}</p>
+          <p className="mt-1 text-white/70">{i18n.t("t03.refus_aide")}</p>
           <button type="button" disabled={occupe}
-            onClick={() => { if (window.confirm("Le client refuse le colis : il repart au vendeur. Confirmer ?")) void agir({ action: "REFUS_PORTE", message: motif }, "Refus enregistré : le colis repart au vendeur."); }}
+            onClick={() => { if (window.confirm(i18n.t("t03.refus_confirmer"))) void agir({ action: "REFUS_PORTE", message: motif }, i18n.t("t03.refus_ok")); }}
             className="mt-2 rounded-full border border-red-400/40 px-4 py-2 font-bold text-red-200 disabled:opacity-50">
-            Le client refuse le colis
+            {i18n.t("t03.refus_bouton")}
           </button>
         </>
       )}
       {auRamassage && (
         <>
-          <p className="font-bold">Déplacement inutile (R85.3)</p>
+          <p className="font-bold">{i18n.t("t03.deplacement_titre")}</p>
           <div className="mt-2 flex flex-wrap gap-2">
-            <input value={motif} onChange={(e) => setMotif(e.target.value)} placeholder="Boutique fermée, produit non conforme…"
+            <input value={motif} onChange={(e) => setMotif(e.target.value)} placeholder={i18n.t("t03.deplacement_exemple")}
               className="min-w-0 flex-1 rounded-full border border-white/20 bg-transparent px-4 py-2" />
             <button type="button" disabled={occupe || !motif.trim()}
-              onClick={() => void agir({ action: "DEPLACEMENT_INUTILE", message: motif }, "Déplacement inutile enregistré.")}
+              onClick={() => void agir({ action: "DEPLACEMENT_INUTILE", message: motif }, i18n.t("t03.deplacement_ok"))}
               className="rounded-full border border-white/20 px-4 py-2 font-bold disabled:opacity-50">
-              Déclarer
+              {i18n.t("t03.declarer")}
             </button>
           </div>
         </>

@@ -6,6 +6,7 @@
 // l'accueil et les Flash Deals sont ensuite rangés dans cet ordre (GET /api/catalog/home/, /flash-deals/).
 
 import { useEffect, useState } from "react";
+import i18n from "@/i18n";
 import { useNavigate } from "react-router-dom";
 import { Check } from "lucide-react";
 import useStorefrontCategories from "@/hooks/useStorefrontCategories";
@@ -68,7 +69,7 @@ export default function InteretsPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">Qu'est-ce qui t'intéresse ?</h1>
+      <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">{i18n.t("t03.interets_titre")}</h1>
       <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
         Choisis tes univers : ils passeront en premier sur l'accueil et dans les ventes flash. Tu peux changer d'avis
         à tout moment dans ton profil.

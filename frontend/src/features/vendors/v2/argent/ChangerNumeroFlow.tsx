@@ -15,39 +15,20 @@
 // partagé par un autre écran, en reprenant le design system v2 (palette(theme))
 // au lieu des tokens ad hoc de vendorTheme.
 //
-// MANQUE BACKEND (vérification par SMS du nouveau numéro de versement) :
-// aucun endpoint dédié n'existe (confirmé par ouverture/api.ts:148-152,
-// verifyPayoutNumber() applique déjà le changement IMMÉDIATEMENT via
-// vendorsApi.savePaymentPreferences, sans aucune étape de vérification). On
-// réutilise donc le flux SMS générique déjà réel et déjà utilisé ailleurs
-// (POST /api/auth/otp/ et /api/auth/verify/, via le hook useSmsOtp — voir
-// ouverture/useSmsOtp.ts, conçu pour vérifier le numéro de la boutique à
-// l'ouverture) : ce sont des endpoints "envoyer/vérifier un code SMS pour un
-// numéro arbitraire", réutilisables ici sans rien inventer.
-// Simplification assumée : la maquette Numero_code.html demande DEUX codes
-// (nouveau numéro + "second facteur" envoyé au téléphone personnel déjà
-// enregistré). Il n'existe qu'un seul vrai flux OTP ; on ne fabrique donc
-// PAS un second code factice. Un seul code (celui du nouveau numéro) est
-// demandé ici, et ce renoncement est documenté dans la note affichée à
-// l'étape 2.
-// Enfin, l'étape 3 (Numero_ok.html) promet une revue de 7 jours avant que le
-// nouveau numéro soit actif, avec l'ancien numéro qui reste utilisable entre
-// temps. Rien de tel n'existe côté serveur : l'appel réel
-// (savePaymentPreferences) applique le changement tout de suite. L'écran de
-// fin affiche donc le palier "en revue" pour rester fidèle à la maquette,
-// MAIS avec une note honnête indiquant que le numéro est en réalité déjà actif
-// — jamais un faux statut "vérifié" qui laisserait croire à une revue réelle.
+// DEV-SRV-01 T07-3 : branché sur les vrais numéros de versement du serveur (POST /api/auth/payout-accounts/,
+// puis /api/auth/payout-accounts/<id>/verify/ avec le code reçu au numéro). L'ancienne version appelait
+// /api/auth/otp/ et /api/auth/verify/, qui n'existent pas : aucun vendeur ne pouvait vérifier son numéro, donc
+// aucun ne pouvait être payé. Un seul code (celui du nouveau numéro), comme le serveur le prévoit.
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowRight, Check, Clock, Info, ShieldCheck } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
-import { vendorsApi, type VendorProfile, type WithdrawalOperator } from '@/services/api/vendors';
+import { vendorsApi, type WithdrawalOperator } from '@/services/api/vendors';
 import { CAMEROON, detectOperator, isValidNationalNumber } from '@/lib/phone';
 import { OperatorLogo } from '@/features/payments/OperatorLogo';
-import { useSmsOtp } from '@/features/vendors/v2/ouverture/useSmsOtp';
-import { useToast } from '@/context/ToastContext';
+import { http } from '@/services/api/http';
 import { palette } from '../theme';
 import ScreenHeader from '../compte/shared/ScreenHeader';
 
@@ -162,63 +143,99 @@ function CodeBoxesInline({ value, onChange, disabled, p }: {
   );
 }
 
-const REVIEW_DAYS = 7;
+// DEV-SRV-01 T07-3 « Être payé » : le numéro est un vrai numéro de versement (accounts.PayoutAccount, rôle VENDOR),
+// vérifié par le code que le serveur envoie au numéro lui-même ; une fois vérifié, il est reporté au module financier
+// (payments.bridge.payout_accounts) et c'est lui que le versement du vendredi utilise. Par sécurité, le serveur
+// n'y verse rien pendant un délai après un changement de numéro (refroidissement de PayeeAccount).
+interface CompteVersement {
+  id: number;
+  owner_role: string;
+  phone_e164: string;
+  masked_phone: string;
+  operator: string;
+  status: 'PENDING_VERIFICATION' | 'VERIFIED' | 'DISABLED';
+  is_primary: boolean;
+}
+
+const RENVOI_SECONDES = 60;
 
 export default function ChangerNumeroFlow() {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const p = palette(theme);
   const navigate = useNavigate();
-  const { showToast } = useToast();
 
-  const [profile, setProfile] = useState<VendorProfile | null>(null);
+  const [actuel, setActuel] = useState<CompteVersement | null>(null);
   const [step, setStep] = useState<Step>('form');
   const [operator, setOperator] = useState<Operator>('MTN_MOMO');
   const [phone, setPhone] = useState('');
-  const [confirming, setConfirming] = useState(false);
+  const [compteId, setCompteId] = useState<number | null>(null);
+  const [code, setCode] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState(0);
 
-  const otp = useSmsOtp(`+237${phone}`);
-
-  useEffect(() => { vendorsApi.getProfile().then(setProfile).catch(() => {}); }, []);
+  useEffect(() => {
+    http<CompteVersement[]>('/api/auth/payout-accounts/')
+      .then((comptes) => setActuel(comptes.find((c) => c.owner_role === 'VENDOR' && c.is_primary && c.status !== 'DISABLED') ?? null))
+      .catch(() => setActuel(null));
+  }, []);
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const id = window.setInterval(() => setCooldown((c) => Math.max(0, c - 1)), 1000);
+    return () => window.clearInterval(id);
+  }, [cooldown]);
 
   const valid = isValidNationalNumber(phone, CAMEROON);
   const detected = detectOperator(phone);
   const mismatch = valid && detected !== null && detected.name !== OP_NAME[operator];
   const canSendCode = valid && !mismatch;
 
-  const handleSendCode = async () => {
-    if (!canSendCode) return;
-    setStep('otp');
-    await otp.send();
-  };
-
-  const handleConfirm = async () => {
+  // Étape 1 → 2 : le numéro est enregistré EN ATTENTE et le serveur envoie le code au numéro lui-même.
+  const envoyerCode = async () => {
+    setBusy(true);
+    setError(null);
     try {
-      setConfirming(true);
-      // MANQUE BACKEND (voir en-tête) : pas d'endpoint "appliquer après revue" —
-      // on retombe sur le vrai endpoint existant, qui applique tout de suite.
-      await vendorsApi.savePaymentPreferences({
-        default_withdrawal_operator: operator,
-        default_withdrawal_phone: `+237${phone}`,
+      const compte = await http<CompteVersement>('/api/auth/payout-accounts/', {
+        method: 'POST', body: JSON.stringify({ owner_role: 'VENDOR', phone: `+237${phone}`, is_primary: true }),
       });
-      setStep('done');
+      setCompteId(compte.id);
+      setCode('');
+      setCooldown(RENVOI_SECONDES);
+      setStep('otp');
     } catch (err) {
-      showToast(err instanceof Error ? err.message : t('sl12_argent.numero_save_error'), 'error');
+      setError(err instanceof Error ? err.message : t('sl12_argent.numero_save_error'));
     } finally {
-      setConfirming(false);
+      setBusy(false);
     }
   };
 
-  const reviewUntil = new Date();
-  reviewUntil.setDate(reviewUntil.getDate() + REVIEW_DAYS);
+  // Étape 2 → 3 : le code vérifié rend le numéro payable ; le profil garde le même numéro par défaut qu'avant.
+  const verifier = async () => {
+    if (compteId === null || code.length < 6) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await http<CompteVersement>(`/api/auth/payout-accounts/${compteId}/verify/`, {
+        method: 'POST', body: JSON.stringify({ code }),
+      });
+      await vendorsApi.savePaymentPreferences({ default_withdrawal_operator: operator, default_withdrawal_phone: `+237${phone}` })
+        .catch(() => undefined);
+      setStep('done');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('sl9_ouverture.otp_error_invalid'));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   if (step === 'done') {
     return (
       <div className="pb-24 pt-2">
         <ScreenHeader title={t('sl12_argent.numero_title')} />
         <div className="flex flex-col items-center text-center mt-2 mb-4">
-          <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: `${p.amber}1A`, border: `1px solid ${p.amber}40` }}>
-            <ShieldCheck size={30} color={p.amber} />
+          <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: `${p.green}1A`, border: `1px solid ${p.green}40` }}>
+            <ShieldCheck size={30} color={p.green} />
           </div>
           <h1 className="font-black mt-3" style={{ fontSize: 17, color: p.text }}>{t('sl12_argent.numero_done_title')}</h1>
           <p className="mt-1" style={{ fontSize: 12.5, color: p.textMuted }}>
@@ -226,22 +243,10 @@ export default function ChangerNumeroFlow() {
           </p>
         </div>
 
-        <div className="rounded-2xl p-4 mb-3" style={{ background: 'linear-gradient(135deg,#1C1209 0%,#2B1A0C 52%,#3A230D 100%)', color: '#fff' }}>
-          <p className="font-bold uppercase" style={{ fontSize: 10, letterSpacing: '.14em', color: 'rgba(255,255,255,.5)' }}>
-            {t('sl12_argent.numero_review_kicker', { days: REVIEW_DAYS })}
-          </p>
-          <p className="font-black mt-1.5" style={{ fontSize: 18 }}>
-            {t('sl12_argent.numero_review_until', { date: reviewUntil.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long' }) })}
-          </p>
-          <p className="mt-2" style={{ fontSize: 12, color: 'rgba(255,255,255,.75)', lineHeight: 1.5 }}>
-            {t('sl12_argent.numero_review_explain')}
-          </p>
-        </div>
-
         <div className="rounded-2xl p-3.5 mb-3 flex items-start gap-2.5" style={{ background: `${p.amber}12`, border: `1px solid ${p.amber}35` }}>
           <Info size={16} color={p.amber} className="flex-shrink-0 mt-0.5" />
           <p style={{ fontSize: 11.5, color: p.text, lineHeight: 1.5 }}>
-            {t('sl12_argent.numero_honest_note')}
+            {t('sl12_argent.numero_review_explain')}
           </p>
         </div>
 
@@ -262,7 +267,7 @@ export default function ChangerNumeroFlow() {
         <ScreenHeader
           title={t('sl12_argent.numero_code_title')}
           subtitle={t('sl12_argent.numero_code_subtitle')}
-          onBack={() => setStep('form')}
+          onBack={() => { setStep('form'); setError(null); }}
         />
         <p className="mb-1.5" style={{ fontSize: 12, fontWeight: 700, color: p.textMuted }}>
           {t('sl12_argent.numero_step_2_of_3')}
@@ -271,47 +276,28 @@ export default function ChangerNumeroFlow() {
           <p className="font-bold mb-3" style={{ fontSize: 12.5, color: p.text }}>
             {t('sl12_argent.numero_code_sent_to', { phone: `+237 ${phone}` })}
           </p>
-          <CodeBoxesInline value={otp.code} onChange={otp.setCode} disabled={otp.step === 'verifying'} p={p} />
-          {otp.error ? <p className="mt-2 text-center" style={{ fontSize: 12, color: p.red }}>{t(otp.error)}</p> : null}
+          <CodeBoxesInline value={code} onChange={setCode} disabled={busy} p={p} />
+          {error ? <p className="mt-2 text-center" style={{ fontSize: 12, color: p.red }}>{error}</p> : null}
           <div className="flex items-center justify-center mt-3" style={{ fontSize: 12, color: p.textMuted }}>
-            {otp.cooldown > 0 ? (
-              t('sl9_ouverture.resend_code_in', { seconds: otp.cooldown })
+            {cooldown > 0 ? (
+              t('sl9_ouverture.resend_code_in', { seconds: cooldown })
             ) : (
-              <button type="button" onClick={() => void otp.send()} disabled={otp.sending} className="font-bold disabled:opacity-50" style={{ color: p.orange }}>
+              <button type="button" onClick={() => void envoyerCode()} disabled={busy} className="font-bold disabled:opacity-50" style={{ color: p.orange }}>
                 {t('sl9_ouverture.resend_code')}
               </button>
             )}
           </div>
         </div>
 
-        <div className="rounded-xl p-3 mb-4 flex items-start gap-2" style={{ background: p.cardAlt }}>
-          <Info size={14} color={p.textMuted} className="flex-shrink-0 mt-0.5" />
-          <p style={{ fontSize: 11, color: p.textMuted, lineHeight: 1.45 }}>
-            {t('sl12_argent.numero_single_code_note')}
-          </p>
-        </div>
-
         <button
           type="button"
-          onClick={async () => { await otp.verify(); }}
-          disabled={otp.code.length < 6 || otp.step === 'verifying'}
+          onClick={() => void verifier()}
+          disabled={code.length < 6 || busy}
           className="w-full flex items-center justify-center gap-2 rounded-xl font-bold text-white disabled:opacity-50"
           style={{ padding: 14, fontSize: 13.5, background: p.orange }}
         >
-          {otp.step === 'verifying' ? t('sl9_ouverture.verifying') : t('sl12_argent.numero_verify_cta')}
+          <ArrowRight size={15} />{busy ? t('sl9_ouverture.verifying') : t('sl12_argent.numero_verify_cta')}
         </button>
-
-        {otp.step === 'verified' ? (
-          <div className="mt-3">
-            <button
-              type="button" onClick={handleConfirm} disabled={confirming}
-              className="w-full flex items-center justify-center gap-2 rounded-xl font-bold text-white disabled:opacity-50"
-              style={{ padding: 14, fontSize: 13.5, background: p.green }}
-            >
-              <ArrowRight size={15} />{confirming ? t('sl12_argent.numero_confirming') : t('sl12_argent.numero_confirm_cta')}
-            </button>
-          </div>
-        ) : null}
       </div>
     );
   }
@@ -320,15 +306,16 @@ export default function ChangerNumeroFlow() {
     <div className="pb-24 pt-2">
       <ScreenHeader title={t('sl12_argent.numero_title')} subtitle={t('sl12_argent.numero_subtitle')} />
 
-      {profile?.default_withdrawal_phone ? (
+      {actuel ? (
         <div className="rounded-2xl p-3.5 mb-4 flex items-center gap-3" style={{ background: p.cardAlt, border: `1px solid ${p.border}` }}>
-          <OperatorLogo provider={(profile.default_withdrawal_operator || 'MTN_MOMO') as Operator} size={38} />
+          <OperatorLogo provider={(actuel.operator.startsWith('ORANGE') ? 'ORANGE_MONEY' : 'MTN_MOMO') as Operator} size={38} />
           <div className="flex-1 min-w-0">
             <p className="font-bold" style={{ fontSize: 12.5, color: p.text }}>{t('sl12_argent.numero_current_number')}</p>
-            <p style={{ fontSize: 11.5, color: p.textMuted }}>{profile.default_withdrawal_phone}</p>
+            <p style={{ fontSize: 11.5, color: p.textMuted }}>{actuel.masked_phone}</p>
           </div>
-          <span className="rounded-full font-bold flex items-center gap-1" style={{ fontSize: 10, padding: '4px 9px', background: `${p.green}1A`, color: p.green }}>
-            <Check size={11} />{t('sl12_argent.numero_current_active')}
+          <span className="rounded-full font-bold flex items-center gap-1" style={{ fontSize: 10, padding: '4px 9px',
+            background: `${actuel.status === 'VERIFIED' ? p.green : p.amber}1A`, color: actuel.status === 'VERIFIED' ? p.green : p.amber }}>
+            {actuel.status === 'VERIFIED' ? <><Check size={11} />{t('sl12_argent.numero_current_active')}</> : t('sl12_argent.numero_current_pending')}
           </span>
         </div>
       ) : null}
@@ -336,7 +323,7 @@ export default function ChangerNumeroFlow() {
       <div className="rounded-xl p-3 mb-4 flex items-start gap-2" style={{ background: `${p.amber}12`, border: `1px solid ${p.amber}35` }}>
         <Clock size={15} color={p.amber} className="flex-shrink-0 mt-0.5" />
         <p style={{ fontSize: 11.5, color: p.text, lineHeight: 1.5 }}>
-          {t('sl12_argent.numero_warning', { days: REVIEW_DAYS })}
+          {t('sl12_argent.numero_warning')}
         </p>
       </div>
 
@@ -350,8 +337,10 @@ export default function ChangerNumeroFlow() {
         <PhoneField value={phone} onChange={setPhone} expected={operator} p={p} />
       </div>
 
+      {error ? <p className="mb-3 text-center" style={{ fontSize: 12, color: p.red }}>{error}</p> : null}
+
       <button
-        type="button" onClick={handleSendCode} disabled={!canSendCode}
+        type="button" onClick={() => void envoyerCode()} disabled={!canSendCode || busy}
         className="w-full flex items-center justify-center gap-2 rounded-xl font-bold text-white disabled:opacity-50"
         style={{ padding: 14, fontSize: 13.5, background: p.orange }}
       >

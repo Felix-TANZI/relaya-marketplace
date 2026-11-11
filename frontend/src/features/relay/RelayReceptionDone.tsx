@@ -14,6 +14,7 @@
  * une tournée entière au relais suivant.
  */
 import { Bell, Check, Layers, LayoutGrid, Lock, Truck } from "lucide-react";
+import i18n from "@/i18n";
 
 const HEURE = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" });
 
@@ -100,7 +101,7 @@ export default function RelayReceptionDone({
               <span className="mt-1 block text-[13px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">
                 {placesUsed} / {capacityMax} places
                 {outbound > 0 ? ` · ${apres} après la collecte` : ""}
-                {pct >= 90 ? ". Au-dessus de 90 %, BelivaY suspend les nouveaux envois" : ""}
+                {pct >= 90 ? i18n.t("rl3.au_dessus_de_90_belivay_suspend_les_nouvea") : ""}
               </span>
             </span>
           </li>
@@ -124,7 +125,7 @@ export default function RelayReceptionDone({
                 <span className="mt-1 block text-[13px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">
                   {outbound > 0
                     ? `${outbound} colis sortant${outbound > 1 ? "s" : ""} avant qu'il reparte`
-                    : "Rien à faire partir avec ce livreur"}
+                    : i18n.t("rl3.rien_a_faire_partir_avec_ce_livreur")}
                 </span>
               </span>
               {outbound > 0 ? (

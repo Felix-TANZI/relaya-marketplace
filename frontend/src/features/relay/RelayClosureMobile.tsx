@@ -31,6 +31,7 @@
  * gérant tranquille sur une mécanique qui n'existe pas.
  */
 import { useEffect, useMemo, useState } from "react";
+import i18n from "@/i18n";
 import { AlertTriangle, CalendarDays, CalendarX2, Check, Clock3, Truck, User } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { http } from "@/services/api/http";
@@ -68,25 +69,25 @@ const MOTIFS: Motif[] = [
     key: "conge",
     icon: CalendarDays,
     label: "Congé",
-    rule: "À déclarer 48 h avant · aucun justificatif",
+    rule: i18n.t("rl3.a_declarer_48_h_avant_aucun_justificatif"),
     noticeHours: 48,
-    proof: "Aucun justificatif requis.",
+    proof: i18n.t("rl3.aucun_justificatif_requis"),
   },
   {
     key: "maladie",
     icon: AlertTriangle,
     label: "Maladie",
-    rule: "Le jour même · justificatif sous 48 h",
+    rule: i18n.t("rl3.le_jour_meme_justificatif_sous_48_h"),
     noticeHours: 0,
-    proof: "Certificat médical à téléverser sous 48 h dans Documents KYC.",
+    proof: i18n.t("rl3.certificat_medical_a_televerser_sous_48_h"),
   },
   {
     key: "famille",
     icon: User,
     label: "Urgence familiale",
-    rule: "Le jour même · justificatif sous 7 jours",
+    rule: i18n.t("rl3.le_jour_meme_justificatif_sous_7_jours"),
     noticeHours: 0,
-    proof: "Justificatif à téléverser sous 7 jours dans Documents KYC.",
+    proof: i18n.t("rl3.justificatif_a_televerser_sous_7_jours_dan"),
   },
   {
     key: "force-majeure",
@@ -94,7 +95,7 @@ const MOTIFS: Motif[] = [
     label: "Force majeure",
     rule: "Coupure, inondation, sinistre",
     noticeHours: 0,
-    proof: "Déclaration de sinistre ou dépôt de plainte à joindre au dossier.",
+    proof: i18n.t("rl3.declaration_de_sinistre_ou_depot_de_plaint"),
   },
 ];
 
@@ -131,11 +132,11 @@ const TRANCHES: Tranche[] = [
     boite: "border-[#BFE3CF] bg-[#E6F4EC] dark:border-emerald-800 dark:bg-emerald-950/30",
     texte: "text-[#1F7A4D] dark:text-emerald-300",
     corps:
-      "Rien ne bouge : vous gardez les colis. Les clients voient « rouvre demain », les livreurs ne passent pas.",
+      i18n.t("rl3.rien_ne_bouge_vous_gardez_les_colis_les_cl"),
   },
   {
     key: "moyen",
-    label: "1 à 3 jours",
+    label: i18n.t("rl3.1_a_3_jours"),
     maxJours: 3,
     jours: 3,
     icon: Truck,
@@ -151,11 +152,11 @@ const TRANCHES: Tranche[] = [
     maxJours: Infinity,
     jours: 7,
     icon: AlertTriangle,
-    impact: "Relais masqué",
+    impact: i18n.t("rl3.relais_masque"),
     boite: "border-[#F0DA9C] bg-[#FFF4D6] dark:border-amber-800 dark:bg-amber-950/30",
     texte: "text-[#8A5A00] dark:text-amber-300",
     corps:
-      "Idem, et votre relais est masqué du choix des clients jusqu'à votre retour. Au-delà de 14 jours, BelivaY vous appelle pour faire le point.",
+      i18n.t("rl3.idem_et_votre_relais_est_masque_du_choix_d"),
   },
 ];
 
@@ -462,7 +463,7 @@ export default function RelayClosureMobile({ onError, relay }: RelayClosureMobil
           <div className="flex items-start justify-between gap-4 py-3">
             <dt className="text-[14px] font-medium text-slate-500 dark:text-slate-400">Du</dt>
             <dd className="text-right text-[14px] font-black text-slate-900 dark:text-white">
-              {dateDebut ? JOUR_LONG.format(dateDebut) : "touchez un jour"}
+              {dateDebut ? JOUR_LONG.format(dateDebut) : i18n.t("rl3.touchez_un_jour")}
             </dd>
           </div>
           <div className="flex items-start justify-between gap-4 py-3">
@@ -473,13 +474,13 @@ export default function RelayClosureMobile({ onError, relay }: RelayClosureMobil
                   {JOUR_LONG.format(dateFin)}
                   {reouverture ? (
                     <span className="font-bold text-slate-500 dark:text-slate-400">
-                      {" · réouverture "}
+                      {i18n.t("rl3.reouverture")}
                       {JOUR_LONG.format(reouverture).replace(/ \d+ \w+$/, (m) => m)}
                     </span>
                   ) : null}
                 </>
               ) : (
-                "touchez un second jour"
+                i18n.t("rl3.touchez_un_second_jour")
               )}
             </dd>
           </div>
@@ -549,7 +550,7 @@ export default function RelayClosureMobile({ onError, relay }: RelayClosureMobil
             durees contradictoires sur le meme ecran. */}
         <div
           role="tablist"
-          aria-label="Durée de la fermeture"
+          aria-label={i18n.t("rl3.duree_de_la_fermeture")}
           className="mt-3 grid grid-cols-3 gap-1 rounded-[14px] bg-[#E8EDF8] p-1 dark:bg-slate-800/70"
         >
           {TRANCHES.map((item) => {
@@ -582,7 +583,7 @@ export default function RelayClosureMobile({ onError, relay }: RelayClosureMobil
               {/* Le nombre de colis vient du stock reel, pas d'un exemple :
                   c'est lui qui dit au gerant l'ampleur du transfert. */}
               {tranche.key === "moyen"
-                ? tranche.corps.replace("Vos colis partent", `Vos ${stock} colis partent`)
+                ? tranche.corps.replace(i18n.t("rl3.vos_colis_partent"), `Vos ${stock} colis partent`)
                 : tranche.corps}
             </span>
           </p>
@@ -625,7 +626,7 @@ export default function RelayClosureMobile({ onError, relay }: RelayClosureMobil
           disabled={!pret || busy}
           className="pr-btn flex w-full items-center justify-center gap-2.5 rounded-[12px] px-4 py-4 text-[17px] font-black text-white transition active:scale-[.97] disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none dark:disabled:from-slate-700 dark:disabled:to-slate-700"
         >
-          <CalendarX2 size={19} strokeWidth={2.4} /> {busy ? "Envoi…" : "Déclarer la fermeture"}
+          <CalendarX2 size={19} strokeWidth={2.4} /> {busy ? "Envoi…" : i18n.t("rl3.declarer_la_fermeture")}
         </button>
       )}
 
@@ -651,7 +652,7 @@ export default function RelayClosureMobile({ onError, relay }: RelayClosureMobil
                       {item.reasonLabel} ·{" "}
                       {item.preavisJours > 0
                         ? `déclaré ${item.preavisJours} jour${item.preavisJours > 1 ? "s" : ""} avant`
-                        : "déclaré le jour même"}
+                        : i18n.t("rl3.declare_le_jour_meme")}
                     </span>
                   </span>
                   <span className="flex-shrink-0 rounded-full border border-[#BFE3CF] bg-[#E6F4EC] px-3 py-[5px] text-[12.5px] font-semibold text-[#1F7A4D] dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">

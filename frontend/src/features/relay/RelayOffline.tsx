@@ -23,6 +23,7 @@
  * Rien n'est simulé : une file vide affiche une file vide.
  */
 import { useCallback, useEffect, useState } from "react";
+import i18n from "@/i18n";
 import {
   Camera, Check, CreditCard, FileText, KeyRound, Package, RefreshCw, WifiOff,
 } from "lucide-react";
@@ -58,32 +59,32 @@ const VERDICT_STYLE: Record<Verdict, { label: string; classe: string; tuile: str
 const CAPACITES: Array<{ icon: LucideIcon; titre: string; detail: string; verdict: Verdict }> = [
   {
     icon: Package,
-    titre: "Recevoir un lot",
-    detail: "Code de dépôt vérifié si le lot était déjà téléchargé",
+    titre: i18n.t("rl3.recevoir_un_lot"),
+    detail: i18n.t("rl3.code_de_depot_verifie_si_le_lot_etait_deja"),
     verdict: "oui",
   },
   {
     icon: KeyRound,
-    titre: "Remettre un colis sans montant dû",
-    detail: "Code vérifié sur la liste chiffrée du téléphone",
+    titre: i18n.t("rl3.remettre_un_colis_sans_montant_du"),
+    detail: i18n.t("rl3.code_verifie_sur_la_liste_chiffree_du_tele"),
     verdict: "oui",
   },
   {
     icon: CreditCard,
-    titre: "Remettre avec paiement",
-    detail: "Le paiement Mobile Money exige le réseau",
+    titre: i18n.t("rl3.remettre_avec_paiement"),
+    detail: i18n.t("rl3.le_paiement_mobile_money_exige_le_reseau"),
     verdict: "non",
   },
   {
     icon: Camera,
-    titre: "Photos, constats, dépôts, sorties",
-    detail: "Enregistrés et envoyés plus tard",
+    titre: i18n.t("rl3.photos_constats_depots_sorties"),
+    detail: i18n.t("rl3.enregistres_et_envoyes_plus_tard"),
     verdict: "oui",
   },
   {
     icon: FileText,
-    titre: "Panne générale annoncée",
-    detail: "Par SMS ou WhatsApp de diffusion : registre papier, colis sans montant seulement",
+    titre: i18n.t("rl3.panne_generale_annoncee"),
+    detail: i18n.t("rl3.par_sms_ou_whatsapp_de_diffusion_registre"),
     verdict: "papier",
   },
 ];
@@ -103,7 +104,7 @@ function decrire(entry: PendingEvidence) {
     RELAY_RELEASED: { titre: "Remise", icon: Check },
     RELAY_RELEASED_SIGNATURE: { titre: "Signature", icon: Check },
     RELAY_REFUSED: { titre: "Réserve", icon: Camera },
-    RETURN_DEPOSIT: { titre: "Dépôt retour", icon: Package },
+    RETURN_DEPOSIT: { titre: i18n.t("rl3.depot_retour"), icon: Package },
   };
   const connu = libelles[stage] ?? { titre: "Opération", icon: Camera };
   return { titre: [connu.titre, ref].filter(Boolean).join(" "), icon: connu.icon };
@@ -151,11 +152,11 @@ export default function RelayOffline() {
       setMessage(
         bilan.sent > 0
           ? `${bilan.sent} opération${bilan.sent > 1 ? "s" : ""} envoyée${bilan.sent > 1 ? "s" : ""}.`
-          : "Rien n'a pu partir. Le réseau est toujours absent.",
+          : i18n.t("rl3.rien_n_a_pu_partir_le_reseau_est_toujours"),
       );
       charger();
     } catch {
-      setMessage("L'envoi a échoué. Vos opérations restent en attente.");
+      setMessage(i18n.t("rl3.l_envoi_a_echoue_vos_operations_restent_en"));
     } finally {
       setBusy(false);
     }
@@ -188,7 +189,7 @@ export default function RelayOffline() {
             <p className="mt-1 text-[13.5px] font-medium leading-snug text-[#1F7A4D] dark:text-emerald-300/85">
               {file.length > 0
                 ? `${file.length} opération${file.length > 1 ? "s" : ""} attend${file.length > 1 ? "ent" : ""} encore de partir.`
-                : "Tout est à jour."}
+                : i18n.t("rl3.tout_est_a_jour")}
             </p>
           </div>
         </section>
@@ -293,7 +294,7 @@ export default function RelayOffline() {
             className="mt-3 flex w-full items-center justify-center gap-2.5 rounded-[12px] bg-[#2456D6] px-4 py-3.5 text-[16px] font-black text-white shadow-[0_4px_14px_rgba(36,86,214,.35)] transition active:scale-[.97] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none dark:disabled:bg-slate-700"
           >
             <RefreshCw size={18} strokeWidth={2.4} className={busy ? "animate-spin" : ""} />
-            {busy ? "Envoi…" : "Réessayer l'envoi"}
+            {busy ? "Envoi…" : i18n.t("rl3.reessayer_l_envoi")}
           </button>
         ) : null}
 

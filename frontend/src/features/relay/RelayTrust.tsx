@@ -22,6 +22,7 @@
  * ne garde pas — l'historique du score — n'est pas inventé.
  */
 import { useCallback, useEffect, useState } from "react";
+import i18n from "@/i18n";
 import { Camera, Clock, Layers, MessageCircle, ShieldCheck, Star, TriangleAlert } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { http } from "@/services/api/http";
@@ -49,7 +50,7 @@ export interface RelayTrustScore {
 /** Les cinq critères, dans l'ordre où le contrat les pèse. */
 const CRITERIA: Array<[string, string]> = [
   ["punctuality", "Ponctualité"],
-  ["security", "Sécurité du stockage"],
+  ["security", i18n.t("rl3.securite_du_stockage")],
   ["satisfaction", "Satisfaction"],
   ["disputes", "Litiges"],
   ["seniority", "Ancienneté"],
@@ -57,9 +58,9 @@ const CRITERIA: Array<[string, string]> = [
 
 /** Ce sur quoi un gérant peut agir dès demain matin. */
 const LEVIERS: Array<{ icon: LucideIcon; label: string }> = [
-  { icon: Camera, label: "Photo à chaque remise" },
+  { icon: Camera, label: i18n.t("rl3.photo_a_chaque_remise") },
   { icon: Clock, label: "Horaires tenus" },
-  { icon: MessageCircle, label: "Répondre vite à BelivaY" },
+  { icon: MessageCircle, label: i18n.t("rl3.repondre_vite_a_belivay") },
 ];
 
 /** Demi-cercle de la jauge : rayon 80 dans un viewBox de 200. */
@@ -132,7 +133,7 @@ export default function RelayTrust({
             <div className="text-[52px] font-black leading-none tracking-[-0.03em] text-slate-900 dark:text-white">
               {loading ? "—" : score}
             </div>
-            <div className="mt-1 text-[13px] font-medium text-slate-400 dark:text-slate-500">sur 100</div>
+            <div className="mt-1 text-[13px] font-medium text-slate-400 dark:text-slate-500">{i18n.t("rl3.sur_100")}</div>
           </div>
         </div>
 
@@ -160,7 +161,7 @@ export default function RelayTrust({
               {trust.sample_size > 0 ? ` sur ${trust.sample_size} opérations.` : "."}
             </>
           ) : (
-            " Il reste à 0 tant que BelivaY n'a pas assez d'opérations pour le calculer."
+            i18n.t("rl3.il_reste_a_0_tant_que_belivay_n_a_pas_asse")
           )}
         </p>
       </section>

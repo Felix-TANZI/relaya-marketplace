@@ -16,6 +16,7 @@
  * Rien ne part avant la dernière étape.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
+import i18n from "@/i18n";
 import { Camera, Check, FileText, GraduationCap, MapPin, Phone, Send, Smartphone, Store, User } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { http } from "@/services/api/http";
@@ -29,10 +30,10 @@ const ETAPES = ["Commerce", "Gérant", "Local", "Versement", "Convention"] as co
 const TYPES = ["Boutique", "Pharmacie", "Papeterie", "Salon", "Station", "Autre"];
 
 const SUITE: Array<{ icon: LucideIcon; titre: string; detail: string }> = [
-  { icon: Phone, titre: "Appel sous 48 h", detail: "Un agent confirme votre dossier" },
-  { icon: MapPin, titre: "Visite du local", detail: "Rangement et comptoir contrôlés" },
-  { icon: GraduationCap, titre: "Formation", detail: "Les modules obligatoires, sur téléphone" },
-  { icon: Store, titre: "Ouverture", detail: "Votre relais apparaît sur la carte des clients" },
+  { icon: Phone, titre: "Appel sous 48 h", detail: i18n.t("rl3.un_agent_confirme_votre_dossier") },
+  { icon: MapPin, titre: i18n.t("rl3.visite_du_local"), detail: i18n.t("rl3.rangement_et_comptoir_controles") },
+  { icon: GraduationCap, titre: "Formation", detail: i18n.t("rl3.les_modules_obligatoires_sur_telephone") },
+  { icon: Store, titre: "Ouverture", detail: i18n.t("rl3.votre_relais_apparait_sur_la_carte_des_cli") },
 ];
 
 const STORAGE_KEY = "belivay.relay.candidature";
@@ -59,7 +60,7 @@ interface Brouillon {
 /** Les pieces demandees a chaque etape. */
 const PIECES_GERANT: Array<{ cle: string; icon: LucideIcon; label: string }> = [
   { cle: "cni", icon: FileText, label: "CNI recto verso" },
-  { cle: "portrait", icon: User, label: "Votre portrait" },
+  { cle: "portrait", icon: User, label: i18n.t("rl3.votre_portrait") },
 ];
 
 const PHOTOS_LOCAL = ["Façade", "Rangement", "Comptoir"];
@@ -247,7 +248,7 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
    */
   const promesse = useMemo(() => {
     const petit = grille.find((ligne) => ligne.parcel_size === "SMALL");
-    const remise = petit ? `${nf(petit.amount_xaf)} F par petit colis remis` : "une somme par colis remis";
+    const remise = petit ? `${nf(petit.amount_xaf)} F par petit colis remis` : i18n.t("rl3.une_somme_par_colis_remis");
     return (
       `Un revenu en plus dans votre commerce, sans rien avancer : ${remise}, `
       + `${nf(GARDE_TARIF_JOUR)} F par jour de garde facturé, payés par BelivaY chaque vendredi.`
@@ -260,7 +261,7 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
     const montants = ordre
       .map((taille) => grille.find((ligne) => ligne.parcel_size === taille)?.amount_xaf)
       .filter((montant): montant is number => typeof montant === "number");
-    return montants.length > 0 ? `${montants.map(nf).join(" / ")} F par colis` : "selon la taille du colis";
+    return montants.length > 0 ? `${montants.map(nf).join(" / ")} F par colis` : i18n.t("rl3.selon_la_taille_du_colis");
   }, [grille]);
 
   /** La géolocalisation du navigateur : pas une carte, mais un point vrai. */
@@ -316,7 +317,7 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
         </h2>
         <p className="mt-2.5 text-[14px] font-medium leading-[1.55] text-white/95">{promesse}</p>
         <div className="mt-3.5 flex flex-wrap gap-2">
-          {["Zéro caution", "Matériel fourni", "Réponse sous 48 h"].map((pastille) => (
+          {["Zéro caution", i18n.t("rl3.materiel_fourni"), i18n.t("rl3.reponse_sous_48_h")].map((pastille) => (
             <span
               key={pastille}
               className="rounded-full bg-white/25 px-3.5 py-[6px] text-[12.5px] font-bold leading-none"
@@ -404,7 +405,7 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
         }`}
       >
         <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
-          {["Votre commerce", "Le gérant", "Votre local", "Votre versement", "La convention"][etape]}
+          {["Votre commerce", i18n.t("rl3.le_gerant"), i18n.t("rl3.votre_local"), i18n.t("rl3.votre_versement"), i18n.t("rl3.la_convention")][etape]}
         </h3>
 
       {etape === 0 ? (
@@ -416,8 +417,8 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
         <input
           value={brouillon.enseigne}
           onChange={(event) => modifier("enseigne", event.target.value)}
-          placeholder="Ex. Boutique Mama René"
-          aria-label="Nom du commerce"
+          placeholder={i18n.t("rl3.ex_boutique_mama_rene")}
+          aria-label={i18n.t("rl3.nom_du_commerce")}
           className="mt-2 w-full rounded-[12px] border border-slate-200 bg-white px-4 py-3 text-[15px] font-semibold text-slate-900 outline-none transition focus:border-[#EF6A00] placeholder:font-medium placeholder:text-slate-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
         />
 
@@ -480,10 +481,10 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
         >
           <MapPin size={18} strokeWidth={2.2} />
           {brouillon.latitude !== null
-            ? "Position enregistrée · corriger"
+            ? i18n.t("rl3.position_enregistree_corriger")
             : position === "cherche"
               ? "Localisation…"
-              : "Placer mon commerce sur la carte"}
+              : i18n.t("rl3.placer_mon_commerce_sur_la_carte")}
         </button>
         {position === "erreur" ? (
           <p className="mt-2 text-[12.5px] font-medium text-[#8A5A00] dark:text-amber-400">
@@ -497,12 +498,12 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
       {/* ── Étape 2 : le gérant ────────────────────────────────────────── */}
       {etape === 1 ? (
         <>
-          <label className={etiquette}>Nom et prénom</label>
+          <label className={etiquette}>{i18n.t("rl3.nom_et_prenom")}</label>
           <input
             value={brouillon.gerant}
             onChange={(event) => modifier("gerant", event.target.value)}
-            placeholder="Tel que sur la pièce"
-            aria-label="Nom et prénom"
+            placeholder={i18n.t("rl3.tel_que_sur_la_piece")}
+            aria-label={i18n.t("rl3.nom_et_prenom")}
             className={champ}
           />
 
@@ -597,13 +598,13 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
             })}
           </div>
 
-          <label className={etiquette}>Places estimées</label>
+          <label className={etiquette}>{i18n.t("rl3.places_estimees")}</label>
           <input
             value={brouillon.places}
             onChange={(event) => modifier("places", event.target.value.replace(/\D/g, "").slice(0, 4))}
             inputMode="numeric"
             placeholder="30"
-            aria-label="Places estimées"
+            aria-label={i18n.t("rl3.places_estimees")}
             className={champ}
           />
 
@@ -611,7 +612,7 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
           <input
             value={brouillon.horaires}
             onChange={(event) => modifier("horaires", event.target.value)}
-            placeholder="Ex. 8 h – 19 h, lun. à sam."
+            placeholder={i18n.t("rl3.ex_8_h_19_h_lun_a_sam")}
             aria-label="Horaires habituels"
             className={champ}
           />
@@ -647,7 +648,7 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
             })}
           </div>
 
-          <label className={etiquette}>Numéro de versement</label>
+          <label className={etiquette}>{i18n.t("rl3.numero_de_versement")}</label>
           <div className="mt-2 flex items-center gap-3 rounded-[12px] border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-950">
             <span className="text-[15px] font-bold text-slate-500 dark:text-slate-400">+237</span>
             <input
@@ -655,7 +656,7 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
               onChange={(event) => modifier("momo", event.target.value.replace(/\D/g, "").slice(0, 9))}
               inputMode="numeric"
               placeholder="6XX XX XX XX"
-              aria-label="Numéro de versement"
+              aria-label={i18n.t("rl3.numero_de_versement")}
               className="min-w-0 flex-1 bg-transparent text-[15px] font-semibold tracking-wide text-slate-900 outline-none placeholder:font-medium placeholder:text-slate-300 dark:text-white"
             />
           </div>
@@ -677,13 +678,13 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
             <Smartphone size={18} strokeWidth={2.2} /> Recevoir le code
           </button>
 
-          <label className={etiquette}>Code reçu</label>
+          <label className={etiquette}>{i18n.t("rl3.code_recu")}</label>
           <input
             value={brouillon.code}
             onChange={(event) => modifier("code", event.target.value.replace(/\D/g, "").slice(0, 6))}
             inputMode="numeric"
             placeholder="000000"
-            aria-label="Code reçu"
+            aria-label={i18n.t("rl3.code_recu")}
             className="mt-2 w-full rounded-[12px] border border-slate-200 bg-white px-4 py-3 text-center text-[20px] font-black tracking-[0.3em] text-slate-900 outline-none transition focus:border-[#EF6A00] placeholder:text-slate-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
           />
 
@@ -756,12 +757,12 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
                 trace.current = false;
               }}
               className="h-[150px] w-full touch-none bg-white dark:bg-slate-950"
-              aria-label="Zone de signature"
+              aria-label={i18n.t("rl3.zone_de_signature")}
             />
           </div>
           <div className="mt-1.5 flex items-center justify-between gap-3">
             <span className="text-[12.5px] font-medium text-slate-400 dark:text-slate-500">
-              {signe ? "Signature enregistrée" : "Signez ici avec le doigt"}
+              {signe ? i18n.t("rl3.signature_enregistree") : i18n.t("rl3.signez_ici_avec_le_doigt")}
             </span>
             {signe ? (
               <button
@@ -812,7 +813,7 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
             {etape === ETAPES.length - 1 ? (
               <>
                 <Send size={18} strokeWidth={2.4} />
-                {busy ? "Envoi…" : envoye ? "Demande envoyée" : "Envoyer ma demande"}
+                {busy ? "Envoi…" : envoye ? i18n.t("rl3.demande_envoyee") : "Envoyer ma demande"}
               </>
             ) : (
               "Continuer"

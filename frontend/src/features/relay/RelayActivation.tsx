@@ -22,6 +22,7 @@
  * comme des réglages lus quelque part.
  */
 import { useEffect, useState } from "react";
+import i18n from "@/i18n";
 import { BadgeCheck, Check, CreditCard, Download, FileText, MapPin, Tag } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { http } from "@/services/api/http";
@@ -57,10 +58,10 @@ export interface RelayActivationProps {
 
 /** Les termes du partenariat. Contractuels, pas lus d'une table. */
 const TERMES: Array<{ icon: LucideIcon; titre: string; detail: string }> = [
-  { icon: MapPin, titre: "Exclusivité 300 m", detail: "pendant 6 mois" },
-  { icon: BadgeCheck, titre: "Zéro caution", detail: "rien à avancer" },
-  { icon: Tag, titre: "Matériel fourni", detail: "étiquettes et sacs" },
-  { icon: CreditCard, titre: "Payé le vendredi", detail: "sans frais" },
+  { icon: MapPin, titre: i18n.t("rl3.exclusivite_300_m"), detail: "pendant 6 mois" },
+  { icon: BadgeCheck, titre: i18n.t("rl3.zero_caution"), detail: i18n.t("rl3.rien_a_avancer") },
+  { icon: Tag, titre: i18n.t("rl3.materiel_fourni"), detail: i18n.t("rl3.etiquettes_et_sacs") },
+  { icon: CreditCard, titre: i18n.t("rl3.paye_le_vendredi"), detail: "sans frais" },
 ];
 
 const JOUR_LONG = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" });
@@ -99,35 +100,35 @@ export default function RelayActivation({ relay, documents, payoutVerified }: Re
    */
   const ETAPES: Array<{ titre: string; detail: string; fait: boolean }> = [
     {
-      titre: "Dossier du gérant",
-      detail: "Pièce d'identité, votre portrait et la façade",
+      titre: i18n.t("rl3.dossier_du_gerant"),
+      detail: i18n.t("rl3.piece_d_identite_votre_portrait_et_la_faca"),
       fait: validee("MANAGER_ID") && validee("PREMISES_PHOTOS"),
     },
     {
-      titre: "Numéro de versement vérifié",
-      detail: "Confirmé par code SMS, reçoit les versements",
+      titre: i18n.t("rl3.numero_de_versement_verifie"),
+      detail: i18n.t("rl3.confirme_par_code_sms_recoit_les_versement"),
       fait: payoutVerified,
     },
     {
-      titre: "Convention signée",
-      detail: "Sans caution, sans dépôt, sans frais d'entrée",
+      titre: i18n.t("rl3.convention_signee"),
+      detail: i18n.t("rl3.sans_caution_sans_depot_sans_frais_d_entre"),
       fait: validee(TYPE_CONVENTION),
     },
     {
-      titre: "Visite de BelivaY",
-      detail: "Local, rangement et zone de remise contrôlés",
+      titre: i18n.t("rl3.visite_de_belivay"),
+      detail: i18n.t("rl3.local_rangement_et_zone_de_remise_controle"),
       fait: validee("FIELD_VALIDATION"),
     },
     {
       titre: "Formation suivie",
       detail: training
         ? `Les ${training.core_total} modules obligatoires`
-        : "Les modules obligatoires",
+        : i18n.t("rl3.les_modules_obligatoires"),
       fait: formationFaite,
     },
     {
-      titre: "Capacité et horaires déclarés",
-      detail: "Le relais passe « Ouvert » pour les clients",
+      titre: i18n.t("rl3.capacite_et_horaires_declares"),
+      detail: i18n.t("rl3.le_relais_passe_ouvert_pour_les_clients"),
       fait: relay.capacity > 0 && relay.hours.trim().length > 0,
     },
   ];
@@ -258,7 +259,7 @@ export default function RelayActivation({ relay, documents, payoutVerified }: Re
                   pretend pas qu'elle est signee. */}
               {convention?.updated_at
                 ? `Signée le ${JOUR_LONG.format(new Date(convention.updated_at))}`
-                : "Pas encore au dossier"}
+                : i18n.t("rl3.pas_encore_au_dossier")}
             </p>
           </div>
           {convention?.file_url ? (
@@ -266,7 +267,7 @@ export default function RelayActivation({ relay, documents, payoutVerified }: Re
               href={convention.file_url}
               target="_blank"
               rel="noreferrer"
-              aria-label="Télécharger la convention"
+              aria-label={i18n.t("rl3.telecharger_la_convention")}
               className="flex-shrink-0 rounded-lg p-2 text-[#EF6A00] transition active:scale-[.92] dark:text-orange-400"
             >
               <Download size={20} strokeWidth={2.4} />

@@ -25,6 +25,7 @@
  * ou que le support ouvre à sa place.
  */
 import { useMemo, useState } from "react";
+import i18n from "@/i18n";
 import { Camera, Check, Eye, QrCode, Scale, Send, ShieldCheck, Tag, TriangleAlert } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { ensureImageUnderLimit } from "@/lib/imageCompression";
@@ -60,8 +61,8 @@ export interface ReturnLookup {
 type SealKey = "seal" | "label";
 
 const SEAL_SHOTS: Array<{ key: SealKey; label: string }> = [
-  { key: "seal", label: "Le colis scellé" },
-  { key: "label", label: "L'étiquette" },
+  { key: "seal", label: i18n.t("rl3.le_colis_scelle") },
+  { key: "label", label: i18n.t("rl3.l_etiquette") },
 ];
 
 /** Un colis du relais, vu par l'écran de constat. */
@@ -153,14 +154,14 @@ function formatJour(valeur: string, avecHeure = false) {
  * client pose au comptoir sans que le gérant ait à appeler le support.
  */
 const REGLES: Array<[string, string]> = [
-  ["Le client peut signaler", "7 jours après le retrait"],
+  ["Le client peut signaler", i18n.t("rl3.7_jours_apres_le_retrait")],
   ["Défaut caché · vice caché", "48 h · 100 jours"],
   ["Pendant le dossier", "ni garde ni renvoi"],
   ["Votre rôle", "constater, garder, remettre"],
-  ["Réponse du vendeur", "48 h, sinon raison au client"],
-  ["Médiation BelivaY", "décision sous 48 h"],
-  ["Recours", "un seul, sous 3 jours"],
-  ["Client sans réponse", "dossier clos après 5 jours"],
+  ["Réponse du vendeur", i18n.t("rl3.48_h_sinon_raison_au_client")],
+  ["Médiation BelivaY", i18n.t("rl3.decision_sous_48_h")],
+  ["Recours", i18n.t("rl3.un_seul_sous_3_jours")],
+  ["Client sans réponse", i18n.t("rl3.dossier_clos_apres_5_jours")],
 ];
 
 /** Fenêtre de contestation après remise, en jours (PlatformSettings.litige_window_days). */
@@ -177,20 +178,20 @@ const MOTIFS: Array<{ code: string; label: string; icon: LucideIcon }> = [
   { code: "NOT_AS_DESCRIBED", label: "Non conforme", icon: Tag },
   { code: "DAMAGED", label: "Abîmé", icon: TriangleAlert },
   { code: "COUNTERFEIT", label: "Contrefaçon", icon: ShieldCheck },
-  { code: "OTHER", label: "Défaut caché", icon: Eye },
+  { code: "OTHER", label: i18n.t("rl3.defaut_cache"), icon: Eye },
 ];
 
 /** Les deux clichés du constat. L'ordre est celui dans lequel on les prend. */
 type ShotKey = "parcel" | "problem";
 
 const SHOTS: Array<{ key: ShotKey; label: string }> = [
-  { key: "parcel", label: "Le colis" },
-  { key: "problem", label: "Le problème" },
+  { key: "parcel", label: i18n.t("rl3.le_colis") },
+  { key: "problem", label: i18n.t("rl3.le_probleme") },
 ];
 
 const TABS = [
   { key: "constat", label: "Constat" },
-  { key: "retour", label: "Dépôt de retour" },
+  { key: "retour", label: i18n.t("rl3.depot_de_retour") },
   { key: "dossiers", label: "Dossiers" },
 ] as const;
 
@@ -216,11 +217,11 @@ function ScanSheet({ onCancel, onDecoded }: { onCancel: () => void; onDecoded: (
   });
 
   return (
-    <RelaySheet label="Scanner le colis" onClose={onCancel} size="sm">
+    <RelaySheet label={i18n.t("rl3.scanner_le_colis")} onClose={onCancel} size="sm">
       <RelaySheetHeader
         icon={QrCode}
-        title="Scanner le colis"
-        subtitle="Le QR du client, ou l'étiquette BelivaY du colis."
+        title={i18n.t("rl3.scanner_le_colis")}
+        subtitle={i18n.t("rl3.le_qr_du_client_ou_l_etiquette_belivay_du")}
         onClose={onCancel}
       />
       <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-slate-950">
@@ -316,7 +317,7 @@ export default function RelayDisputes({
       );
       setLookup(retour);
     } catch {
-      setLookupError("Aucun retour validé ne porte cette référence. Le client garde son colis.");
+      setLookupError(i18n.t("rl3.aucun_retour_valide_ne_porte_cette_referen"));
     } finally {
       setLookupBusy(false);
     }
@@ -419,7 +420,7 @@ export default function RelayDisputes({
           qu'ils forment un choix unique, et non trois actions separees. */}
       <div
         role="tablist"
-        aria-label="Constats et retours"
+        aria-label={i18n.t("rl3.constats_et_retours")}
         className="grid grid-cols-3 gap-1 rounded-[14px] bg-[#E8EDF8] p-1 dark:bg-slate-800/70"
       >
         {TABS.map((tab) => {
@@ -462,7 +463,7 @@ export default function RelayDisputes({
               <button
                 type="button"
                 onClick={() => setScanOpen(true)}
-                aria-label="Scanner le QR du client"
+                aria-label={i18n.t("rl3.scanner_le_qr_du_client")}
                 className="flex w-[52px] flex-shrink-0 items-center justify-center rounded-[12px] bg-[#2456D6] text-white transition active:scale-95"
               >
                 <QrCode size={22} strokeWidth={2.2} />
@@ -576,7 +577,7 @@ export default function RelayDisputes({
           <div className="flex items-start gap-3 rounded-[14px] bg-[#EAF0FF] px-4 py-3.5 dark:bg-blue-950/40">
             <ShieldCheck size={19} strokeWidth={2.2} className="mt-0.5 flex-shrink-0 text-[#8FB0FF] dark:text-blue-300" />
             <p className="text-[13.5px] font-medium leading-[1.55] text-[#9FAACB] dark:text-blue-100/80">
-              Le colis reste chez vous <strong className="font-black">sans frais de garde</strong> jusqu'à la
+              Le colis reste chez vous <strong className="font-black">{i18n.t("rl3.sans_frais_de_garde")}</strong> jusqu'à la
               décision. Vous constatez ; le vendeur répond sous 48 h, puis la médiation BelivaY tranche
               sur les photos.
             </p>
@@ -588,7 +589,7 @@ export default function RelayDisputes({
             onClick={() => void submit()}
             className="pr-btn flex w-full items-center justify-center gap-2.5 rounded-[12px] px-4 py-4 text-[17px] font-black text-white transition active:scale-[.97] disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none dark:disabled:from-slate-700 dark:disabled:to-slate-700"
           >
-            <Send size={19} strokeWidth={2.6} /> {busy ? "Envoi..." : "Envoyer le constat"}
+            <Send size={19} strokeWidth={2.6} /> {busy ? "Envoi..." : i18n.t("rl3.envoyer_le_constat")}
           </button>
         </>
       ) : null}
@@ -625,13 +626,13 @@ export default function RelayDisputes({
                   if (event.key === "Enter") void consulter(returnRef);
                 }}
                 placeholder="RT-0000"
-                aria-label="Référence du retour"
+                aria-label={i18n.t("rl3.reference_du_retour")}
                 className="min-w-0 flex-1 rounded-[12px] border border-white/15 bg-white/[.08] px-4 py-3.5 text-[17px] font-black tracking-wide text-white outline-none transition placeholder:font-bold placeholder:text-white/35 focus:border-white/35"
               />
               <button
                 type="button"
                 onClick={() => setReturnScanOpen(true)}
-                aria-label="Scanner l'étiquette du retour"
+                aria-label={i18n.t("rl3.scanner_l_etiquette_du_retour")}
                 className="pr-btn flex w-[58px] flex-shrink-0 items-center justify-center rounded-[12px] transition active:scale-[.95]"
               >
                 <QrCode size={23} strokeWidth={2.2} />
@@ -662,7 +663,7 @@ export default function RelayDisputes({
                       : "border-[#F4C3BE] bg-[#FDECEA] text-[#B42318]"
                   }`}
                 >
-                  {lookup.depositable ? "Motif validé" : "Non déposable"}
+                  {lookup.depositable ? i18n.t("rl3.motif_valide") : i18n.t("rl3.non_deposable")}
                 </span>
               </div>
 
@@ -731,8 +732,8 @@ export default function RelayDisputes({
                     >
                       {sealReady ? <Check size={17} strokeWidth={3} /> : <Camera size={17} strokeWidth={2.4} />}
                       {sealReady
-                        ? "Scellé photographié · prêt à enregistrer"
-                        : "Scellé du retour posé · 2 photos obligatoires"}
+                        ? i18n.t("rl3.scelle_photographie_pret_a_enregistrer")
+                        : i18n.t("rl3.scelle_du_retour_pose_2_photos_obligatoire")}
                     </p>
 
                     <div className="mt-2.5 grid grid-cols-2 gap-2.5">
@@ -771,7 +772,7 @@ export default function RelayDisputes({
                     className="pr-btn mt-3.5 flex w-full items-center justify-center gap-2.5 rounded-[12px] px-4 py-4 text-[17px] font-black text-white transition active:scale-[.97] disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none dark:disabled:from-slate-700 dark:disabled:to-slate-700"
                   >
                     <Check size={19} strokeWidth={3} />
-                    {busy ? "Enregistrement…" : "Enregistrer le dépôt"}
+                    {busy ? "Enregistrement…" : i18n.t("rl3.enregistrer_le_depot")}
                   </button>
                 </>
               ) : (
@@ -840,7 +841,7 @@ export default function RelayDisputes({
                           : "border-[#C9D7FB] bg-[#EAF0FF] text-[#2456D6]"
                       }`}
                     >
-                      {aCompleter ? "À compléter" : file.status}
+                      {aCompleter ? i18n.t("rl3.a_completer") : file.status}
                     </span>
                   </div>
 

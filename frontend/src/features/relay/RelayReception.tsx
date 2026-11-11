@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import i18n from "@/i18n";
 import { useTranslation } from "react-i18next";
 import {
   ArrowRight,
@@ -130,7 +131,7 @@ function ScanDialog({
   const resolved = detected ?? (Number.isInteger(manualParsed) && manualParsed > 0 ? manualParsed : null);
 
   return (
-    <RelaySheet label="Scanner le QR du livreur" onClose={onCancel} size="sm">
+    <RelaySheet label={i18n.t("rl3.scanner_le_qr_du_livreur")} onClose={onCancel} size="sm">
       <RelaySheetHeader
         icon={Camera}
         title={t("rl1_reception.scan_modal_label")}
@@ -246,8 +247,8 @@ function RefusalDialog({
   };
 
   return (
-    <RelaySheet label="Refuser le colis" onClose={onCancel} size="sm">
-      <RelaySheetHeader icon={ShieldAlert} title="Refuser ce colis" subtitle={`Mission ${missionId} — le colis ne sera pas mis en stock.`} onClose={onCancel} />
+    <RelaySheet label={i18n.t("rl3.refuser_le_colis")} onClose={onCancel} size="sm">
+      <RelaySheetHeader icon={ShieldAlert} title={i18n.t("rl3.refuser_ce_colis")} subtitle={`Mission ${missionId} — le colis ne sera pas mis en stock.`} onClose={onCancel} />
 
       <label className="mt-1 block text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
         {t("rl1_reception.refuse_reason_label")}
@@ -392,8 +393,8 @@ function ReceptionDialog({
   const complete = photoCount === PHOTO_SLOTS.length && Boolean(managerSignature) && Boolean(courierSignature);
 
   return (
-    <RelaySheet label="Réception, QR scanné" onClose={onCancel}>
-      <RelaySheetHeader icon={PackagePlus} title="Réception · QR scanné" onClose={onCancel} />
+    <RelaySheet label={i18n.t("rl3.reception_qr_scanne")} onClose={onCancel}>
+      <RelaySheetHeader icon={PackagePlus} title={i18n.t("rl3.reception_qr_scanne_2")} onClose={onCancel} />
 
       <div className="flex items-start gap-3 rounded-[14px] border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/40">
         <CheckCircle2 className="mt-0.5 flex-shrink-0 text-emerald-600" size={18} />
@@ -562,12 +563,12 @@ function CodeDialog({
   const notFound = code.length >= 3 && !matched;
 
   return (
-    <RelaySheet label="Saisir le code de dépôt" onClose={onCancel} size="sm">
+    <RelaySheet label={i18n.t("rl3.saisir_le_code_de_depot")} onClose={onCancel} size="sm">
       <RelaySheetHeader
         icon={KeyRound}
         tone="bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-300"
-        title="Code de dépôt"
-        subtitle="Le livreur le lit dans sa mission. Il désigne le lot qu'il vous remet."
+        title={i18n.t("rl3.code_de_depot")}
+        subtitle={i18n.t("rl3.le_livreur_le_lit_dans_sa_mission_il_desig")}
         onClose={onCancel}
       />
 
@@ -620,7 +621,7 @@ function CodeDialog({
         <p className="mt-3 text-sm font-medium leading-relaxed text-slate-500 dark:text-slate-400">
           {arrivals.length > 0
             ? `${arrivals.length} arrivée${arrivals.length > 1 ? "s" : ""} annoncée${arrivals.length > 1 ? "s" : ""} chez vous en ce moment.`
-            : "Aucune arrivée n'est annoncée chez vous pour l'instant."}
+            : i18n.t("rl3.aucune_arrivee_n_est_annoncee_chez_vous_po")}
         </p>
       )}
 
@@ -932,7 +933,7 @@ export default function RelayReception({
           </div>
 
           <div className="min-w-0 flex-1">
-            <h2 className="text-[17px] font-black leading-tight tracking-[-0.02em]">Saisissez le code de dépôt</h2>
+            <h2 className="text-[17px] font-black leading-tight tracking-[-0.02em]">{i18n.t("rl3.saisissez_le_code_de_depot")}</h2>
             <p className="mt-1.5 text-[13.5px] font-medium leading-[1.45] text-white/65">
               6 chiffres donnés par le livreur. Pas de code, pas de lot.
             </p>

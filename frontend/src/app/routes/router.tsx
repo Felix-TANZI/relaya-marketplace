@@ -60,6 +60,9 @@ const DeliveryOrganizationPage = lazy(() => import('@/features/delivery-organiza
 // AUTH PAGES
 // ─────────────────────────────────────────────────────────────────────────────
 const LoginRoute = lazy(() => import('@/features/auth/LoginRoute'));
+// DEV-SRV-01 T07-5 : « mot de passe oublié » et la page du lien reçu, communs aux six portails.
+const MotDePasseOubliePage = lazy(() => import('@/features/auth/MotDePasseOubliePage'));
+const NouveauMotDePassePage = lazy(() => import('@/features/auth/NouveauMotDePassePage'));
 const RegisterPage = lazy(() => import('@/features/auth/RegisterPage'));
 // ─────────────────────────────────────────────────────────────────────────────
 // SELLER PAGES
@@ -293,6 +296,8 @@ export const router = createBrowserRouter([
       // Feuille de route D33 : retour de la connexion Apple sur Android (ticket à usage unique).
       { path: 'auth/apple/retour', element: <AppleRetourPage /> },
       { path: 'register', element: <PublicRoute><RegisterPage /></PublicRoute> },
+      { path: 'forgot-password', element: <PublicRoute><MotDePasseOubliePage /></PublicRoute> },
+      { path: 'mdp-nouveau',     element: <NouveauMotDePassePage /> },
 
       // Protected (client)
       { path: 'checkout',         element: <ProtectedRoute><CheckoutPage /></ProtectedRoute> },

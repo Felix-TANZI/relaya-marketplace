@@ -18,7 +18,16 @@ class VerificationSerializer(serializers.Serializer):
 
 
 class OubliSerializer(serializers.Serializer):
-    email = serializers.EmailField()
+    # DEV-SRV-01 T07-5 : l'e-mail, ou le numéro de téléphone (comptes sans e-mail : vendeurs, relais, livreurs).
+    email = serializers.EmailField(required=False)
+    identifiant = serializers.CharField(required=False, max_length=120)
+
+    def validate(self, data):
+        valeur = (data.get("identifiant") or data.get("email") or "").strip()
+        if not valeur:
+            raise serializers.ValidationError({"identifiant": "Indique ton e-mail ou ton numéro."})
+        data["identifiant"] = valeur
+        return data
 
 
 class NouveauMotDePasseSerializer(serializers.Serializer):

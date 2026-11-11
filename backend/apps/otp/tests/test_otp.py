@@ -160,7 +160,7 @@ def test_verifier_exige_un_compte(api_client):
 
 def test_oubli_toujours_202_meme_sans_compte(api_client):
     r = api_client.post("/api/auth/password/forgot", {"email": "personne@exemple.cm"}, format="json")
-    assert r.status_code == 202 and r.json() == {"destination": "p••••••@exemple.cm", "valideMinutes": 30}
+    assert r.status_code == 202 and r.json() == {"destination": "p••••••@exemple.cm", "canal": "email", "valideMinutes": 30}
     assert mail.outbox == []
 
 

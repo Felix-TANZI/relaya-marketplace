@@ -16,7 +16,9 @@ pytestmark = pytest.mark.django_db
 
 RELAIS_URL = "/api/shipping/relay-points/nearby/"
 # Mot de passe de fixture : jamais relu, juste exige par create_user().
-TEST_PASSWORD = secrets.token_urlsafe(16)
+# Toujours au moins un chiffre : la règle MDP-LONG l'exige (AUTH_PASSWORD_VALIDATORS) ; token_urlsafe n'en contient
+# aucun environ 2 fois sur 100, et le test échouait alors au hasard.
+TEST_PASSWORD = secrets.token_urlsafe(16) + "7"
 
 
 def _cree_relais(django_user_model, suffixe, **surcharges):

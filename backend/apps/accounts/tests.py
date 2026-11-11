@@ -17,7 +17,9 @@ from .models import CourierProfile, DeliveryOrganizationProfile, RelayPointProfi
 # Mot de passe de fixture : jamais relu, juste exige par create_user()/les
 # serializers d'inscription. Genere plutot qu'ecrit en dur pour ne pas faire
 # remonter de faux positifs sur les scanners de secrets.
-TEST_PASSWORD = secrets.token_urlsafe(16)
+# Toujours au moins un chiffre : la règle MDP-LONG l'exige (AUTH_PASSWORD_VALIDATORS) ; token_urlsafe n'en contient
+# aucun environ 2 fois sur 100, et le test échouait alors au hasard.
+TEST_PASSWORD = secrets.token_urlsafe(16) + "7"
 
 
 @override_settings(GOOGLE_CLIENT_ID="belivay-test.apps.googleusercontent.com")

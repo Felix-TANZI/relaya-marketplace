@@ -180,6 +180,9 @@ export default {
     visibility_favorites_campaign_title: '"Favorites" campaign',
     visibility_favorites_campaign_desc: 'Billed per customer reached.',
     visibility_confirm_desc: 'Confirm this feature for {{price}}?',
+    // DEV-SRV-01 (T02-5) : options pas encore vendues par l'API, aucun tarif affiché.
+    visibility_soon_banner: 'These visibility options are coming soon. Their prices will appear here as soon as they open for purchase.',
+    visibility_soon: 'Soon',
     visibility_not_wired: 'Mobile Money payment for this option is not wired up yet. Write to support to activate it.',
     visibility_guardrails_title: 'The guardrails',
     visibility_guardrail_1: 'Never any paid content mixed into organic search results.',

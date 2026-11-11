@@ -25,6 +25,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import { vendorsApi } from '@/services/api/vendors';
 import type { OrderReturn } from '@/services/api/customer';
+import { useReglagesPublics } from '@/hooks/useReglagesPublics';
 import { palette } from '../theme';
 import {
   Card, CenterState, Collapsible, FilterTabs, Pill, ProductThumb,
@@ -38,6 +39,7 @@ const TABS: ReturnTab[] = ['to_decide', 'on_the_way', 'closed'];
 
 export default function ReturnsListPage() {
   const { t, i18n } = useTranslation();
+  const reglages = useReglagesPublics();  // DEV-SRV-01, T05 : course de retour = r_retour
   const { theme } = useTheme();
   const p = palette(theme);
   const navigate = useNavigate();
@@ -244,7 +246,7 @@ export default function ReturnsListPage() {
 
       <Collapsible title={t('sl8_litiges.returns_how_title')} p={p}>
         <p style={{ marginBottom: 6 }}>{t('sl8_litiges.returns_how_body_1')}</p>
-        <p>{t('sl8_litiges.returns_how_body_2')}</p>
+        <p>{t('sl8_litiges.returns_how_body_2', { montant: fmtXAF(reglages?.r_retour) })}</p>
       </Collapsible>
 
       <p className="mt-5 text-center" style={{ fontSize: 11, color: p.textMuted, lineHeight: 1.5 }}>

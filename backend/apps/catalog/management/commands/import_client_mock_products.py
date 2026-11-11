@@ -3,6 +3,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.utils.text import slugify
 
 from apps.catalog.models import Category, Inventory, Product, ProductMedia
+from apps.common.demonstration import exiger_demonstration_autorisee
 from apps.vendors.models import VendorProfile
 
 
@@ -71,6 +72,8 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        # DEV-SRV-01, T01 / R4 : produits fictifs, jamais dans la base réelle (tâche D31).
+        exiger_demonstration_autorisee()
         shop_name = options["shop"].strip()
 
         try:

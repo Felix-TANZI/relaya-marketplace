@@ -2,12 +2,15 @@ from django.core.management.base import BaseCommand
 from django.utils.text import slugify
 
 from apps.catalog.models import Category, Product, ProductMedia, Inventory
+from apps.common.demonstration import exiger_demonstration_autorisee
 
 
 class Command(BaseCommand):
     help = "Seed initial catalog data (categories, products, media, inventory)."
 
     def handle(self, *args, **options):
+        # DEV-SRV-01, T01 / R4 : faux produits, jamais dans la base réelle (tâche D31).
+        exiger_demonstration_autorisee()
         self.stdout.write(self.style.WARNING("Seeding catalog..."))
 
         # Categories

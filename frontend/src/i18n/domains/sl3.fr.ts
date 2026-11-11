@@ -300,7 +300,7 @@ export default {
     err_description_required: 'La description complète est requise.',
     err_description_min: 'Description complète requise (min 20 caractères).',
     err_attr_required: '"{{name}}" est obligatoire.',
-    err_price_min: 'Prix minimum : 100 FCFA.',
+    err_price_min: 'Prix minimum : {{min}}.',
     err_compare_at: 'Le prix barré doit être supérieur au prix de vente.',
     err_stock_invalid: 'Stock invalide.',
     err_threshold_required: 'Seuil alerte stock requis.',

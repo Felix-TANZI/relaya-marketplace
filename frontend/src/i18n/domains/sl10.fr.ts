@@ -85,7 +85,7 @@ export default {
     err_missing_photos: 'Ajoutez au moins {{min}} photos',
     err_missing_condition: 'Indiquez l’état du produit',
     err_missing_stock: 'Indiquez votre stock',
-    err_price_too_low: 'Le prix minimum est de 500 F',
+    err_price_too_low: 'Le prix minimum est de {{min}}',
     err_missing_dimensions: 'Poids et dimensions obligatoires au-delà de 5 kg ou 50 cm',
     seller_note_color: 'Couleur choisie par le vendeur : {{color}}',
     toast_draft_saved: 'Brouillon enregistré',

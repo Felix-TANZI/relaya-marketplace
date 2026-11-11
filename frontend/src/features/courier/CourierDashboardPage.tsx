@@ -946,10 +946,11 @@ export default function CourierDashboardPage() {
   }, [depotCode, selectedShipment]);
 
   const nextTourStop = activeShipments[0] ?? tourShipments[0] ?? null;
+  // DEV-SRV-01, T09 : estimation seulement à partir de la vraie durée moyenne du livreur ; sans elle (aucune livraison
+  // encore), pas d'estimation — l'écran supposait 24 min par colis (18 par arrêt plus bas), au plancher de 12.
+  const dureeMoyenne = dashboard?.average_delivery_minutes || null;
   const estimatedTourMinutes =
-    activeShipments.length > 0
-      ? activeShipments.length * Math.max(dashboard?.average_delivery_minutes ?? 24, 12)
-      : 0;
+    activeShipments.length > 0 && dureeMoyenne ? activeShipments.length * dureeMoyenne : activeShipments.length ? null : 0;
   const activeDistanceKm =
     activeShipments.length > 0
       ? Number(
@@ -1009,7 +1010,8 @@ export default function CourierDashboardPage() {
     },
   ];
 
-  function formatDuration(totalMinutes: number) {
+  function formatDuration(totalMinutes: number | null) {
+    if (totalMinutes === null) return "—";
     if (!totalMinutes) return t("cr1_dashboard.common.zero_minutes");
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
@@ -1328,7 +1330,7 @@ export default function CourierDashboardPage() {
                     <span>•</span>
                     <span>
                       {t("cr1_dashboard.tournee.recommended_eta", {
-                        duration: formatDuration(Math.max((index + 1) * (dashboard?.average_delivery_minutes ?? 18), 12)),
+                        duration: formatDuration(dureeMoyenne ? (index + 1) * dureeMoyenne : null),
                       })}
                     </span>
                   </div>
@@ -1959,11 +1961,11 @@ export default function CourierDashboardPage() {
             </span>
           </div>
           <div className="grid gap-3 md:grid-cols-3">
-            {zones.map((zone, index) => (
+            {/* DEV-SRV-01, T09 : les zones sont celles du livreur ; les « points chauds » et « horaires optimaux » qui les
+                accompagnaient étaient calculés à partir de leur rang dans la liste (index + 3, 11 + index) : retirés. */}
+            {zones.map((zone) => (
               <div key={zone} className="rounded-[20px] border border-white/5 bg-[linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02))] p-4">
                 <div className="text-[12px] font-black uppercase tracking-[0.16em] text-emerald-300">{zone}</div>
-                <div className="mt-3 text-[24px] font-extrabold text-white">{t("cr1_dashboard.map.hotspots", { count: index + 3 })}</div>
-                <div className="mt-1 text-[12px] text-[#8B949E]">{t("cr1_dashboard.map.optimal_time", { start: 11 + index, end: 15 + index })}</div>
               </div>
             ))}
           </div>

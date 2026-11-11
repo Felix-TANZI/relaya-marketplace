@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PhoneInput } from "@/components/ui/PhoneInput";
+import { lienSupportWhatsApp, numeroSupportAffiche } from '@/config/support';
 import {
   Mail,
   Phone,
@@ -72,8 +73,8 @@ export default function ContactPage() {
     {
       icon: MessageCircle,
       title: t('contact.methods.whatsapp_title'),
-      value: '+237 6XX XX XX XX',
-      link: 'https://wa.me/237',
+      value: numeroSupportAffiche(),
+      link: lienSupportWhatsApp(),
       color: 'text-green-500',
       bg: 'bg-green-50 dark:bg-green-900/10',
       delay: t('contact.methods.whatsapp_response')
@@ -307,7 +308,7 @@ export default function ContactPage() {
                   {t('contact.urgent_call')}
                 </a>
                 <a
-                  href="https://wa.me/237"
+                  href={lienSupportWhatsApp()}
                   className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg text-center font-semibold text-sm hover:bg-green-600 transition-all"
                 >
                   {t('contact.urgent_whatsapp')}

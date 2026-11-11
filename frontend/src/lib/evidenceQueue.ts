@@ -10,6 +10,8 @@
 // Stockage : IndexedDB (le blob photo peut peser plusieurs centaines de Ko,
 // trop pour localStorage sur plusieurs items en attente).
 
+import { API_BASE_URL } from "@/services/api/http";
+
 const DB_NAME = "belivay_evidence_queue";
 const STORE_NAME = "pending";
 const DB_VERSION = 1;
@@ -104,7 +106,7 @@ async function trySend(entry: PendingEvidence): Promise<boolean> {
   Object.entries(entry.fields).forEach(([key, value]) => form.append(key, value));
 
   try {
-    const base = (import.meta.env.VITE_API_URL ?? "http://localhost:8000").replace(/\/api\/?$/, "");
+    const base = API_BASE_URL;
     const response = await fetch(`${base}${entry.endpoint}`, {
       method: "POST",
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,

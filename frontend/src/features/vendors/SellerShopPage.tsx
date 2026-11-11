@@ -20,6 +20,7 @@ import {
 } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import '@/lib/leafletIcons';
 import { vendorsApi } from '@/services/api/vendors';
 import { http, API_BASE_URL } from '@/services/api/http';
 import { useToast } from '@/context/ToastContext';
@@ -31,13 +32,6 @@ import * as QRCode from 'qrcode';
 import { SITE_URL } from '@/config/site';
 
 // ─── Fix icônes Leaflet (Vite / Webpack) ─────────────────────────────────────
-interface LeafletIconDefault extends L.Icon.Default { _getIconUrl?: unknown; }
-delete (L.Icon.Default.prototype as LeafletIconDefault)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl:       'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl:     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-});
 
 // ─── Thème ────────────────────────────────────────────────────────────────────
 const T = {

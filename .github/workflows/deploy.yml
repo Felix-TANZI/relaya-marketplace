@@ -89,6 +89,8 @@ jobs:
           # « 1 » seulement sur la vitrine (config/vitrine.env.example).
           DONNEES_DEMO_AUTORISEES=${{ vars.DONNEES_DEMO_AUTORISEES }}
           COMPTES_DEMO_AUTORISES=${{ vars.COMPTES_DEMO_AUTORISES }}
+          # R5 : numéro WhatsApp du support (2376XXXXXXXX) ; vide = celui de docker-compose.*.yml.
+          VITE_SUPPORT_WHATSAPP=${{ vars.VITE_SUPPORT_WHATSAPP }}
           WEB_CONCURRENCY=${{ vars.WEB_CONCURRENCY }}
 
           # ── Stockage (Cloudflare R2) ─────────────────────────────────

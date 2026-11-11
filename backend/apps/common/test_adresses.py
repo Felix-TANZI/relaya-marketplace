@@ -32,11 +32,11 @@ class OriginesParLaConfigurationTests(SimpleTestCase):
         self.assertIn("https://seller.belivay.com", valeurs["cors"])
         self.assertIn("https://admin.belivay.com", valeurs["cors"])
 
-    def test_csrf_accepte_les_origines_de_la_configuration_en_plus_de_belivay(self):
+    def test_csrf_vient_de_la_configuration_seule_quand_elle_est_donnee(self):
+        # R5 : la configuration remplace les deux adresses par défaut (le site réel n'est pas belivay.com avant le 14/12).
         valeurs = reglages_avec({"CSRF_TRUSTED_ORIGINS": "https://api.belivay.com"})
 
-        self.assertIn("https://api.belivay.com", valeurs["csrf"])
-        self.assertIn("https://belivay.com", valeurs["csrf"])
+        self.assertEqual(valeurs["csrf"], ["https://api.belivay.com"])
 
     def test_sans_variable_rien_n_est_ajoute(self):
         valeurs = reglages_avec({"CORS_ALLOWED_ORIGINS": "", "CSRF_TRUSTED_ORIGINS": ""})

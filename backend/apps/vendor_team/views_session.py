@@ -164,7 +164,7 @@ def auth_password_reset_request(request):
             from django.conf import settings as dj_settings
             from django.core.mail import send_mail
 
-            site = getattr(dj_settings, "BELIVAY_SITE_URL", "https://belivay.com").rstrip("/")
+            site = dj_settings.BELIVAY_SITE_URL
             send_mail(
                 "Nouveau mot de passe — espace vendeur BelivaY",
                 f"Pour choisir un nouveau mot de passe, ouvre ce lien (valable {minutes} minutes) :\n"

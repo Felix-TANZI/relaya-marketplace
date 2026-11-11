@@ -785,15 +785,11 @@ export default function RelayDisputes({
               {/*
                 Ce que le depot coute et rapporte.
 
-                ATTENTION : ces montants sont ecrits en dur. Aucun d'eux n'est
-                lu d'une configuration — ni les 500 F de trajet, ni les
-                200/250/400 F de remise. S'ils changent au contrat, ce
-                paragraphe ne suivra pas tout seul.
+                Aucun montant ici (DEV-SRV-01, T05) : le trajet suit r_retour et
+                la remise, la grille du relais, toutes deux lues sur le serveur.
               */}
               <p className="mt-3.5 text-[13px] font-medium leading-[1.55] text-slate-500 dark:text-slate-400">
-                Jamais facturé, hors capacité. Il part avec la prochaine collecte vers le vendeur, qui
-                l'inspecte sous 48 h ; le trajet (500 F) est payé par la partie en tort. Vous touchez
-                comme un colis remis : 200 F petit, 250 F moyen, 400 F encombrant.
+                {i18n.t("rl3.depot_retour_jamais_facture_selon_grille")}
               </p>
             </section>
           ) : null}

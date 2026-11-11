@@ -58,12 +58,10 @@ const TRANCHES: Array<{
 }> = [
   { cle: "j01", label: i18n.t("rl3.le_1er_jour_offert"), max: 1, barre: "bg-[#1F7A4D]", texte: "text-[#1F7A4D] dark:text-emerald-400" },
   { cle: "j23", label: i18n.t("rl3.2e_ou_3e_jour_offert"), max: 3, barre: "bg-[#E8A10E]", texte: "text-[#8A5A00] dark:text-amber-400" },
-  { cle: "j47", label: "Du 4e au 7e jour · 200 F par jour", max: 7, barre: "bg-[#EF6A00]", texte: "text-[#EF6A00] dark:text-orange-400" },
-  { cle: "renvoi", label: "Renvoyés", max: null, barre: "bg-[#B42318]", texte: "text-[#B42318] dark:text-red-400" },
+  { cle: "j47", label: i18n.t("rl3.du_4e_au_7e_jour"), max: 7, barre: "bg-[#EF6A00]", texte: "text-[#EF6A00] dark:text-orange-400" },
+  { cle: "renvoi", label: i18n.t("rl3.renvoyes"), max: null, barre: "bg-[#B42318]", texte: "text-[#B42318] dark:text-red-400" },
 ];
 
-/** Montant facture au client par jour de garde, au-dela de la gratuite. */
-const GARDE_TARIF_JOUR = 200;
 
 interface ReportParcel {
   id: number;
@@ -355,8 +353,8 @@ export default function RelayReportsMobile({ onError }: { onError?: (error: unkn
   <tr><th>{i18n.t("rl3.delai_de_retrait")}</th><th style="text-align:right">Part</th><th style="text-align:right">Colis</th></tr>
   ${lignes}
 </table>
-<p class="note">Garde gratuite jusqu'au 3e jour, puis ${nf(GARDE_TARIF_JOUR)} F par jour
-jusqu'au 7e. Montants issus des règlements arrêtés par BelivaY.</p>
+<p class="note">Garde facturée au client selon la grille de garde de BelivaY. Montants issus des règlements
+arrêtés par BelivaY.</p>
 </body></html>`);
     fenetre.document.close();
     fenetre.focus();
@@ -525,14 +523,12 @@ jusqu'au 7e. Montants issus des règlements arrêtés par BelivaY.</p>
             </dl>
 
             {/*
-              Le montant vient du code de facturation, pas de la maquette.
-              `RelayParcel.GARDE_DAILY_FEE_XAF` vaut 200 F, et la gratuite
-              court jusqu'a J+3. Annoncer autre chose ferait deux verites sur
-              la meme ligne de facture.
+              Aucun montant ici : la garde suit la grille t_garde du serveur
+              (apps/shipping/garde.py), affichée par RelayGardeGrid. Un montant
+              recopié finirait par contredire la facture.
             */}
             <p className="mt-2 text-[13px] font-medium leading-[1.5] text-slate-400 dark:text-slate-500">
-              Plus un colis part tôt, plus votre place tourne. La garde est offerte jusqu'au 3e jour,
-              puis facturée {nf(GARDE_TARIF_JOUR)} F par jour au client jusqu'au 7e.
+              {i18n.t("rl3.plus_un_colis_part_tot_garde_selon_grille")}
             </p>
           </>
         )}

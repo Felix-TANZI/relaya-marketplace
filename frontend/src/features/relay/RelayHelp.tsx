@@ -18,9 +18,6 @@ import i18n from "@/i18n";
 import { Camera, MessageCircle, Minus, Plus, Search, Send } from "lucide-react";
 import { getRelayTariff, type RelayTariffLine } from "@/services/api/relaySettlements";
 
-/** Garde gratuite puis facturée — `RelayParcel.GARDE_*` côté serveur. */
-const GARDE_GRATUITE_JOURS = 3;
-const GARDE_TARIF_JOUR = 200;
 
 const TAILLES: Record<string, string> = {
   SMALL: "petit",
@@ -68,8 +65,8 @@ const QUESTIONS: Question[] = [
       return (
         "Chaque vendredi, sans frais et sans minimum, sur votre numéro de versement vérifié"
         + (lignes ? ` : ${lignes}` : "")
-        + `. La garde est offerte jusqu'au ${GARDE_GRATUITE_JOURS}e jour, puis facturée `
-        + `${nf(GARDE_TARIF_JOUR)} F par jour au client. C'est BelivaY qui vous paie, même quand la `
+        + ". La garde est facturée au client selon la grille de garde de BelivaY, et vous touchez votre part "
+        + "pour chaque jour et chaque colis gardé. C'est BelivaY qui vous paie, même quand la "
         + "livraison est offerte au client."
       );
     },

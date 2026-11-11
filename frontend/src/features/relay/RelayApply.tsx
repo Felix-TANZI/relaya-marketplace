@@ -23,7 +23,6 @@ import { http } from "@/services/api/http";
 import { getRelayTariff, type RelayTariffLine } from "@/services/api/relaySettlements";
 
 /** Garde gratuite puis facturée — `RelayParcel.GARDE_*` côté serveur. */
-const GARDE_TARIF_JOUR = 200;
 
 const ETAPES = ["Commerce", "Gérant", "Local", "Versement", "Convention"] as const;
 
@@ -254,7 +253,7 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
     const remise = petit ? `${nf(petit.amount_xaf)} F par petit colis remis` : i18n.t("rl3.une_somme_par_colis_remis");
     return (
       `Un revenu en plus dans votre commerce, sans rien avancer : ${remise}, `
-      + `${nf(GARDE_TARIF_JOUR)} F par jour de garde facturé, payés par BelivaY chaque vendredi.`
+      + `une part de garde par jour et par colis gardé, payés par BelivaY chaque vendredi.`
     );
   }, [grille]);
 
@@ -717,7 +716,7 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
               ["Caution", "aucune", true],
               ["Frais d'entrée", "aucun", true],
               ["Rémunération", remuneration, false],
-              ["Garde", `${nf(GARDE_TARIF_JOUR)} F par jour facturé`, false],
+              ["Garde", "une part par jour et par colis gardé", false],
               ["Versement", "chaque vendredi", false],
               ["Exclusivité (50 premiers)", "300 m · 6 mois", false],
             ].map(([terme, valeur, vert]) => (

@@ -401,7 +401,7 @@ def test_la_conformite_previent_le_vendeur_qu_il_peut_publier(api_client, vendeu
     verso = _deposer(vendeur, CNI_VERSO, ComplianceDocument.Status.PENDING)
     _numero_momo(vendeur)
     admin = django_user_model.objects.create_user(
-        username="conformite_d19", password="Kyc-2026", is_staff=True, is_superuser=True)
+        username="conformite_d19", is_staff=True, is_superuser=True)  # force_authenticate : pas de mot de passe
     api_client.force_authenticate(admin)
 
     reponse = api_client.post(f"/api/auth/admin/kyc/pieces/{verso.pk}/", {"decision": "APPROVED"}, format="json")

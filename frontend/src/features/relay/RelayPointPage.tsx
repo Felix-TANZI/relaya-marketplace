@@ -799,8 +799,8 @@ export default function RelayPointPage() {
           : `${todayCounters.freeGarde} colis en garde gratuite`,
         detail: todayCounters.nextFreeEnd
           ? (locale === "en"
-              ? `No fee until ${formatCourt(todayCounters.nextFreeEnd)}, then 200 F per day.`
-              : `Sans frais jusqu'au ${formatCourt(todayCounters.nextFreeEnd)}, puis 200 F par jour.`)
+              ? `No fee until ${formatCourt(todayCounters.nextFreeEnd)}, then charged according to the storage grid.`
+              : `Sans frais jusqu'au ${formatCourt(todayCounters.nextFreeEnd)}, puis facturé selon la grille de garde.`)
           : (locale === "en" ? "No storage fee yet." : i18n.t("rl3.aucun_frais_de_garde_pour_l_instant")),
         onClick: () => setTab("stock"),
       });

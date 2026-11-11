@@ -89,9 +89,9 @@ const REASON_LABEL: Record<OutboundReason, string> = {
  * part-il ? » sans que le gérant ait à appeler le support.
  */
 const REASONS: Array<[string, string]> = [
-  ["Non retiré en 7 jours (J8)", "renvoi, 500 F client"],
+  ["Non retiré en 7 jours (J8)", i18n.t("rl3.renvoi_paye_par_le_client")],
   ["Retour validé déposé", i18n.t("rl3.vers_le_vendeur")],
-  ["Client change de relais", "transfert, 400 F client"],
+  ["Client change de relais", i18n.t("rl3.transfert_paye_par_le_client")],
   ["Refus au comptoir", i18n.t("rl3.apres_constat_ou_annulation")],
   ["Fermeture déclarée", i18n.t("rl3.vers_le_relais_voisin")],
 ];

@@ -1,5 +1,6 @@
 ﻿import { Suspense, useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import i18n from "@/i18n";
 import PageLoader from '@/components/PageLoader';
 import { listMyPayments } from '@/services/api/payments';
 import { useToast } from '@/context/ToastContext';
@@ -120,13 +121,13 @@ export default function AppLayout() {
           const before = seen.get(tx.id);
           if (before && before !== tx.status) {
             if (tx.status === "SUCCESS") {
-              showToast("Paiement confirmé", {
-                description: `Commande #${tx.order} · ${tx.amount_xaf.toLocaleString("fr-FR")} FCFA sous séquestre.`,
+              showToast(i18n.t("t03.paiement_confirme"), {
+                description: i18n.t("t03.paiement_confirme_detail", { commande: tx.order, montant: tx.amount_xaf.toLocaleString("fr-FR") }),
                 type: "success",
               });
             } else if (tx.status === "FAILED" || tx.status === "CANCELLED") {
-              showToast("Paiement non abouti", {
-                description: `Commande #${tx.order} · aucun montant débité. Vous pouvez réessayer.`,
+              showToast(i18n.t("t03.paiement_non_abouti"), {
+                description: i18n.t("t03.paiement_non_abouti_detail", { commande: tx.order }),
                 type: "error",
               });
             }
@@ -153,7 +154,7 @@ export default function AppLayout() {
           dont les metadonnees dependent des donnees (fiche produit) posent
           leur propre <Seo> et sont absentes de la table de RouteSeo. */}
       <RouteSeo />
-      {(!online || usingOfflineCache) && <div role="status" className="fixed inset-x-0 top-0 z-[9998] bg-amber-600 px-4 py-2 text-center text-sm font-bold text-white">Mode hors ligne : les données affichées proviennent du cache et peuvent ne plus être à jour.</div>}
+      {(!online || usingOfflineCache) && <div role="status" className="fixed inset-x-0 top-0 z-[9998] bg-amber-600 px-4 py-2 text-center text-sm font-bold text-white">{i18n.t("t03.hors_ligne")}</div>}
       {!hideChrome && !isCheckout && <TopAdBar />}
       {!hideChrome && !isCheckout && <Header />}
       {/*

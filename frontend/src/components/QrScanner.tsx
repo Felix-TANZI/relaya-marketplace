@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import i18n from "@/i18n";
 import { Camera, X } from "lucide-react";
 import { useQrCamera } from "@/lib/useQrCamera";
 
@@ -12,7 +13,7 @@ type Props = {
  * Scanner QR base navigateur : demande l'acces camera (telephone ou webcam),
  * puis decode chaque frame video via jsQR. Aucun service externe requis.
  */
-export default function QrScanner({ onScan, onClose, title = "Scanner le QR" }: Props) {
+export default function QrScanner({ onScan, onClose, title = i18n.t("t03.qr_scanner") }: Props) {
   const handled = useRef(false);
   const { videoRef, canvasRef, error } = useQrCamera({
     onDecode: (value) => {

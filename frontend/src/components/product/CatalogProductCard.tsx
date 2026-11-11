@@ -6,6 +6,7 @@
 // ProductCard, donc pas de double bouton.
 
 import { useEffect, useState } from "react";
+import i18n from "@/i18n";
 import { Link } from "react-router-dom";
 import { Check, Heart, ShoppingBag, ShoppingCart, Star, Truck } from "lucide-react";
 import type { Product } from "@/services/api/products";
@@ -121,7 +122,7 @@ export default function CatalogProductCard({
         <button
           type="button"
           onClick={handleToggleFavorite}
-          aria-label={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+          aria-label={isFavorite ? i18n.t("t03.favori_retirer") : i18n.t("t03.favori_ajouter")}
           className={`absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full shadow-sm backdrop-blur-sm transition hover:scale-110 active:scale-95 ${
             isFavorite
               ? "bg-pink-500 text-white"

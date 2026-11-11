@@ -1749,7 +1749,7 @@ export default function OrderDetailPage() {
                     </p>
                     {/* Feuille de route D33 : appel au livreur sans voir son numéro (ni lui le vôtre). */}
                     {tracking?.courier && ["ASSIGNED", "PICKED_UP", "IN_TRANSIT", "OUT_FOR_DELIVERY", "INCIDENT"].includes(tracking.status) && (
-                      <AppelMasqueButton shipmentId={tracking.id} libelle="Appeler le livreur" className="mt-2" />
+                      <AppelMasqueButton shipmentId={tracking.id} libelle={i18n.t("t03.appeler_livreur")} className="mt-2" />
                     )}
                   </div>
                 </div>

@@ -4,6 +4,7 @@
 // serveur ; rien n'est calculé dans le navigateur.
 
 import { useState } from "react";
+import i18n from "@/i18n";
 import { http } from "@/services/api/http";
 import type { OrderReturn } from "@/services/api/customer";
 
@@ -19,9 +20,9 @@ export default function CourseRetourBlock({ ret, orderId, phone }: { ret: OrderR
         method: "POST",
         body: JSON.stringify({ payer_msisdn: phone }),
       });
-      setMessage(r.message || "Validez le paiement sur votre téléphone.");
+      setMessage(r.message || i18n.t("t03.paiement_valider_tel"));
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Paiement impossible pour le moment.");
+      setMessage(e instanceof Error ? e.message : i18n.t("t03.paiement_impossible"));
     } finally {
       setEnCours(false);
     }

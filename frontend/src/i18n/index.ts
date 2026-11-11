@@ -41,6 +41,8 @@ import mdpFr from "./domains/mdp.fr";
 import mdpEn from "./domains/mdp.en";
 import t03Fr from "./domains/t03.fr";
 import rl3Fr from "./domains/rl3.fr";
+import ad9Fr from "./domains/ad9.fr";
+import ad9En from "./domains/ad9.en";
 import rl3En from "./domains/rl3.en";
 import t03En from "./domains/t03.en";
 import sl9En from "./domains/sl9.en";
@@ -122,6 +124,7 @@ const mergedFr = {
   ...mdpFr,
   ...t03Fr,
   ...rl3Fr,
+  ...ad9Fr,
 };
 
 const mergedEn = {
@@ -138,6 +141,7 @@ const mergedEn = {
   ...mdpEn,
   ...t03En,
   ...rl3En,
+  ...ad9En,
 };
 
 i18n.use(initReactI18next).init({

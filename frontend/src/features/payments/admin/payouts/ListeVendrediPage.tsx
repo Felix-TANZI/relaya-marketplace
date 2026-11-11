@@ -6,6 +6,7 @@
 // L'écran ne décide rien : rôles, ordre et durée des accès sont contrôlés par le serveur (settlements.dp42).
 
 import { useCallback, useEffect, useState } from 'react';
+import i18n from "@/i18n";
 
 import { api } from '@/services/api/client';
 import { formatXaf } from '../../shared/format';
@@ -34,8 +35,8 @@ interface Secours {
 }
 
 const ROLES: Record<string, string> = {
-  comptable: 'le comptable (Finance)',
-  direction: 'le porteur (Direction)',
+  comptable: i18n.t("ad9.le_comptable_finance"),
+  direction: i18n.t("ad9.le_porteur_direction"),
 };
 const date = (iso: string) => new Date(iso).toLocaleString('fr-FR');
 
@@ -62,7 +63,7 @@ export default function ListeVendrediPage() {
       setMessage({ ton: 'ok', texte: ok });
       charger();
     } catch (e) {
-      setMessage({ ton: 'erreur', texte: e instanceof Error ? e.message : 'Action refusée.' });
+      setMessage({ ton: 'erreur', texte: e instanceof Error ? e.message : i18n.t("ad9.action_refusee") });
     } finally {
       setOccupe(false);
     }
@@ -74,7 +75,7 @@ export default function ListeVendrediPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-4">
       <header>
-        <h1 className="text-2xl font-black">Liste du vendredi</h1>
+        <h1 className="text-2xl font-black">{i18n.t("ad9.liste_du_vendredi")}</h1>
         <p className="text-sm text-slate-500">
           Deux validations par deux personnes différentes : le comptable d'abord, le porteur ensuite (DP-42).
           À valider avant midi le vendredi (R22.2).
@@ -88,7 +89,7 @@ export default function ListeVendrediPage() {
       )}
 
       {!liste || !liste.liste ? (
-        <p className="text-slate-500">Aucune liste du vendredi pour l'instant.</p>
+        <p className="text-slate-500">{i18n.t("ad9.aucune_liste_du_vendredi_pour_l_instant")}</p>
       ) : (
         <section className="rounded-xl border bg-white p-4 dark:bg-slate-900">
           <div className="flex flex-wrap items-end justify-between gap-3">
@@ -98,8 +99,8 @@ export default function ListeVendrediPage() {
               <div className="text-sm text-slate-500">
                 {liste.en_attente
                   ? `${liste.en_attente} en attente (${formatXaf(liste.total_en_attente_xaf)}) · étape : ${
-                    etape ? ROLES[etape] : 'validations dans des étapes différentes'}`
-                  : 'Toute la liste est validée.'}
+                    etape ? ROLES[etape] : i18n.t("ad9.validations_dans_des_etapes_differentes")}`
+                  : i18n.t("ad9.toute_la_liste_est_validee")}
               </div>
             </div>
             <button
@@ -109,7 +110,7 @@ export default function ListeVendrediPage() {
               title={peutValider ? '' : 'Cette étape revient à une autre personne.'}
               onClick={() => void agir(
                 () => api.post(`${BASE}/vendredi/${liste.liste}/valider/`, { empreinte: liste.empreinte }),
-                'Liste validée.')}
+                i18n.t("ad9.liste_validee"))}
             >
               Valider la liste ({formatXaf(liste.total_en_attente_xaf)})
             </button>
@@ -140,7 +141,7 @@ export default function ListeVendrediPage() {
 
       {systeme && (
         <section className="rounded-xl border bg-white p-4 dark:bg-slate-900">
-          <h2 className="text-lg font-black">Remboursements du jour créés par le système</h2>
+          <h2 className="text-lg font-black">{i18n.t("ad9.remboursements_du_jour_crees_par_le_system")}</h2>
           <p className="text-sm text-slate-500">
             Lecture seule. Sans double validation (décision du porteur) : le départ d'office après inspection manquée
             (R68.1) et le remboursement du jour même sans remplaçant (R35.4) partent seuls ; les autres attendent
@@ -164,7 +165,7 @@ export default function ListeVendrediPage() {
       )}
 
       <section className="rounded-xl border bg-white p-4 dark:bg-slate-900">
-        <h2 className="text-lg font-black">Valideurs de secours</h2>
+        <h2 className="text-lg font-black">{i18n.t("ad9.valideurs_de_secours")}</h2>
         <p className="text-sm text-slate-500">
           Accordés par le porteur, pour une durée limitée, avec un motif. Chaque accès et chaque validation faite
           à ce titre restent tracés.
@@ -174,8 +175,8 @@ export default function ListeVendrediPage() {
             onChange={(e) => setNouveau({ ...nouveau, username: e.target.value })} />
           <select className="rounded-lg border px-3 py-2" value={nouveau.role}
             onChange={(e) => setNouveau({ ...nouveau, role: e.target.value })}>
-            <option value="comptable">Remplace le comptable</option>
-            <option value="direction">Remplace le porteur</option>
+            <option value="comptable">{i18n.t("ad9.remplace_le_comptable")}</option>
+            <option value="direction">{i18n.t("ad9.remplace_le_porteur")}</option>
           </select>
           <input className="rounded-lg border px-3 py-2" type="datetime-local" value={nouveau.fin}
             onChange={(e) => setNouveau({ ...nouveau, fin: e.target.value })} />
@@ -185,7 +186,7 @@ export default function ListeVendrediPage() {
             disabled={occupe || !nouveau.username || !nouveau.fin || !nouveau.motif.trim()}
             onClick={() => void agir(
               () => api.post(`${BASE}/secours/`, { ...nouveau, fin: new Date(nouveau.fin).toISOString() }),
-              'Accès de secours accordé.')}>
+              i18n.t("ad9.acces_de_secours_accorde"))}>
             Accorder
           </button>
         </div>
@@ -199,7 +200,7 @@ export default function ListeVendrediPage() {
               </span>
               {s.actif && (
                 <button type="button" className="text-red-600 font-bold" disabled={occupe}
-                  onClick={() => void agir(() => api.post(`${BASE}/secours/${s.id}/revoquer/`, {}), 'Accès retiré.')}>
+                  onClick={() => void agir(() => api.post(`${BASE}/secours/${s.id}/revoquer/`, {}), i18n.t("ad9.acces_retire"))}>
                   Retirer
                 </button>
               )}

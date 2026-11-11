@@ -263,7 +263,7 @@ export default function RelayTrust({
         <p className="text-[13.5px] font-medium leading-[1.55] text-[#9FAACB] dark:text-blue-100/80">
           {trust?.parcel_value_cap_xaf
             ? `Votre palier plafonne la valeur d'un colis à ${trust.parcel_value_cap_xaf.toLocaleString("fr-FR")} F. Au-delà, le colis est orienté vers un relais d'un palier supérieur.`
-            : "Pas de plafond de valeur par colis pour les relais : la protection vient des preuves photo, du PIN de remise et, dès 100 000 F, du porteur nommé par le client avec pièce vérifiée."}
+            : "Chaque palier plafonne la valeur d'un colis ; le vôtre s'affiche ici dès qu'il est connu. Au-delà, le colis est orienté vers un relais d'un palier supérieur."}
         </p>
       </div>
     </div>

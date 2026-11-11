@@ -115,7 +115,8 @@ class ReglagesPublicsTests(TestCase):
 
         self.assertEqual(reponse.status_code, 200)
         self.assertEqual(set(reponse.json()),
-                         {"r_prix_min_publiable", "r_com_min", "r_plafond_nouveau", "r_nouveau_seuil", "r_retour"})
+                         {"r_prix_min_publiable", "r_com_min", "r_plafond_nouveau", "r_nouveau_seuil", "r_retour",
+                          "r_seuil_relais", "r_relais"})
         self.assertEqual(reponse.json()["r_prix_min_publiable"], 1500)
 
 
@@ -154,3 +155,28 @@ class ChargerDemonstrationTests(TestCase):
         self.assertTrue(any(c.startswith("demo-finance-") for c in comptes))
         with self.assertRaises(SystemExit):
             lancer("compter_tables")
+
+
+class ChiffresPublicsTests(TestCase):
+    """DEV-SRV-01 T09 : l'accueil affiche des chiffres comptés dans la base, plus « 15 240 produits, 3 200 vendeurs »."""
+
+    def test_base_vide_tout_a_zero(self):
+        reponse = self.client.get(reverse("chiffres-publics"))
+
+        self.assertEqual(reponse.status_code, 200)
+        self.assertEqual(reponse.json(), {"produits": 0, "boutiques": 0})
+
+    def test_seules_les_boutiques_approuvees_et_les_produits_valides_comptent(self):
+        from apps.catalog.models import Category, ModerationStatus, Product
+        from apps.vendors.models import VendorProfile
+
+        categorie = Category.objects.create(name="Pagnes", slug="pagnes-chiffres")
+        for i, (statut_boutique, moderation) in enumerate([("APPROVED", ModerationStatus.APPROVED),
+                                                            ("PENDING", ModerationStatus.PENDING)]):
+            user = User.objects.create_user(f"vendeur_chiffres_{i}")
+            VendorProfile.objects.create(user=user, business_name=f"Boutique {i}", phone=f"+23767000010{i}",
+                                         status=statut_boutique)
+            Product.objects.create(title=f"Pagne {i}", category=categorie, vendor=user, price_xaf=5000,
+                                   moderation_status=moderation)
+
+        self.assertEqual(self.client.get(reverse("chiffres-publics")).json(), {"produits": 1, "boutiques": 1})

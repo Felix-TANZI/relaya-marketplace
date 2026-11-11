@@ -118,7 +118,7 @@ export default {
     sheet_field_category: 'Catégorie',
     sheet_field_category_example: 'Ex. : Téléphones',
     sheet_field_photo: 'Ajouter une photo',
-    sheet_priority_toggle: 'Fiche prioritaire · 1 000 F',
+    sheet_priority_toggle: 'Fiche prioritaire',
     sheet_how_it_works_detail: 'BelivaY rédige la fiche (titre, description, photos de référence) sous 48 h, ou 24 h avec l’option prioritaire. Votre offre reste en brouillon en attendant.',
     sheet_cta_send: 'Envoyer la demande',
     sheet_sent_toast: 'Nous avons bien noté votre recherche.',

@@ -2,6 +2,7 @@
 
 from django.urls import path, include
 from . import views
+from . import views_chiffres
 from rest_framework.routers import DefaultRouter
 from .views import (
     ActivePromotionCampaignListView,
@@ -22,6 +23,7 @@ urlpatterns = [
     # Feuille de route D9 : Flash Deals (heure du serveur, ordre des préférences) et accueil personnalisé
     path('flash-deals/', views.FlashDealsView.as_view(), name='flash-deals'),
     path('home/', views.AccueilView.as_view(), name='home'),
+    path('chiffres/', views_chiffres.chiffres_publics, name='chiffres-publics'),  # DEV-SRV-01 T09
     path('promotions/admin/', AdminPromotionCampaignListView.as_view(), name='admin-promotions'),
     path('promotions/admin/<int:pk>/decision/', AdminPromotionCampaignDecisionView.as_view(), name='admin-promotion-decision'),
     path('conditions/', views.list_active_conditions, name='conditions'),

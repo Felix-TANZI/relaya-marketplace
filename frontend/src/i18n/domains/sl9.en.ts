@@ -146,7 +146,7 @@ export default {
     contract_no_deposit: 'No deposit, no security fee, no entry fee.',
     contract_read_full: 'Read the full contract',
     contract_why_amount: 'Why this amount?',
-    contract_why_amount_example: 'Example: an ITEL AC52 sold for 20,000 F leaves you with 17,840 F kept.',
+    contract_why_amount_example: 'The exact amount kept depends on the price and category of each product.',
     discovery_offer_title: 'Discovery offer',
     discovery_offer_body: 'From your first paid order, keep 3 extra points on every sale for 3 months or 50 orders.',
     is_registered_toggle: 'I am a registered business (RCCM / NIU)',

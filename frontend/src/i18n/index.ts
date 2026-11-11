@@ -141,7 +141,12 @@ i18n.use(initReactI18next).init({
   },
   lng: savedLang || "fr",
   fallbackLng: "en",
-  interpolation: { escapeValue: false },
+  interpolation: {
+    escapeValue: false,
+    // DEV-SRV-01 T05 : montants des règles disponibles dans tous les textes ({{seuil_relais}}…), remplis depuis le
+    // serveur par i18n/variablesReglages.ts ; « … » le temps qu'ils arrivent, jamais un montant écrit ici.
+    defaultVariables: { seuil_relais: '…', relais_offert: '…' },
+  },
 });
 
 export default i18n;

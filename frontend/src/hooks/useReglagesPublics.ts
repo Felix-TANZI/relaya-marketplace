@@ -14,18 +14,27 @@ export interface ReglagesPublics {
   r_plafond_nouveau: number;
   r_nouveau_seuil: number;
   r_retour: number;
+  /** R07 : livraison offerte au relais dès ce montant de produits… */
+  r_seuil_relais: number;
+  /** … à hauteur de ce montant. */
+  r_relais: number;
 }
 
 let chargement: Promise<ReglagesPublics> | null = null;
+
+/** Un seul appel pour toute l'application (écrans et textes traduits). */
+export function chargerReglagesPublics(): Promise<ReglagesPublics> {
+  chargement ??= http<ReglagesPublics>('/api/regles/reglages/');
+  return chargement.catch((erreur) => { chargement = null; throw erreur; });
+}
 
 export function useReglagesPublics(): ReglagesPublics | null {
   const [reglages, setReglages] = useState<ReglagesPublics | null>(null);
   useEffect(() => {
     let actif = true;
-    chargement ??= http<ReglagesPublics>('/api/regles/reglages/');
-    chargement
+    chargerReglagesPublics()
       .then((valeurs) => { if (actif) setReglages(valeurs); })
-      .catch(() => { chargement = null; });
+      .catch(() => undefined);
     return () => { actif = false; };
   }, []);
   return reglages;

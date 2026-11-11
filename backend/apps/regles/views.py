@@ -10,12 +10,14 @@ from rest_framework.response import Response
 
 from . import services
 
-TABLES_PUBLIQUES = {"t_garde", "t_creneaux", "t_univers", "t_formats"}
+TABLES_PUBLIQUES = {"t_garde", "t_creneaux", "t_univers", "t_formats", "t_paliers_relais", "t_paliers_entreprise"}
 
 # DEV-SRV-01, T02-5 / T05 : « aucun montant écrit dans le code ». Les réglages que les écrans AFFICHENT ou font
 # respecter avant l'envoi (prix minimum, commission minimale, plafond d'un nouveau vendeur, course de retour) se
 # lisent ici au lieu d'être recopiés. Liste fermée : aucun seuil interne (fraude, comptoir, paliers) n'en sort.
-REGLAGES_PUBLICS = ("r_prix_min_publiable", "r_com_min", "r_plafond_nouveau", "r_nouveau_seuil", "r_retour")
+REGLAGES_PUBLICS = ("r_prix_min_publiable", "r_com_min", "r_plafond_nouveau", "r_nouveau_seuil", "r_retour",
+                    # R07 : livraison offerte au relais dès r_seuil_relais, à hauteur de r_relais (textes du site client)
+                    "r_seuil_relais", "r_relais")
 
 
 @extend_schema(tags=["Admin"], summary="Table t_… en vigueur (spécification v2.1)")

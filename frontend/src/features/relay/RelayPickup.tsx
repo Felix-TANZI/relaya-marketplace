@@ -142,7 +142,7 @@ const COUNTER_SITUATIONS: Array<{
     title: "Commande payable au retrait",
     body:
       "Pas encore de code : retrouvez le colis par sa référence ou le numéro du client. Le ticket affiche "
-      + "le montant à encaisser (ex. 18 500 F : articles + garde ; la livraison est toujours payée d'avance). "
+      + "le montant à encaisser (articles + garde ; la livraison est toujours payée d'avance). "
       + "Le client paie en MoMo sur son téléphone : ce paiement débloque le code. Jamais d'espèces. "
       + "Les conditions sont vérifiées à la commande, pas par vous.",
   },

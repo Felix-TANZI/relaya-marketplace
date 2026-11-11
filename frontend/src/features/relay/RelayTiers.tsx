@@ -58,11 +58,9 @@ const AVANTAGES: Record<string, string[]> = {
     i18n.t("rl3.badge_confirme_visible_au_choix_du_relais"),
     i18n.t("rl3.propose_en_premier_aux_clients_de_votre_zo"),
     i18n.t("rl3.hausse_de_capacite_jusqu_a_20_validee_a_di"),
-    "Colis de plus de 100 000 F orientés en priorité vers vous",
   ],
   GOLD: [
     i18n.t("rl3.tous_les_avantages_confirme"),
-    "+25 F par colis remis (bonus qualité)",
     i18n.t("rl3.etageres_belivay_offertes_pour_agrandir"),
     i18n.t("rl3.relais_ambassadeur_prime_pour_chaque_nouve"),
   ],

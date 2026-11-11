@@ -42,6 +42,8 @@ trap 'git checkout -- capacitor.config.ts 2>/dev/null || true' EXIT
 
 echo "→ Écrans de l'appli « $APPLI » construits vers $VITE_API_URL"
 export VITE_API_URL
+# R5 : numéro WhatsApp du support (chiffres, indicatif compris), comme pour les sites (docker-compose.*.yml).
+export VITE_SUPPORT_WHATSAPP="${VITE_SUPPORT_WHATSAPP:-237689002812}"
 npm run "build:$APPLI"
 
 cp "capacitor.$APPLI.config.ts" capacitor.config.ts

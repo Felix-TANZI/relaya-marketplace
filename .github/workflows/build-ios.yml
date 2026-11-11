@@ -33,6 +33,8 @@ jobs:
         env:
           VITE_API_URL: ${{ vars.MOBILE_API_URL }}
           VITE_SITE_URL: ${{ vars.VITE_SITE_URL }}
+          # R5 : numéro WhatsApp du support ; vide = celui des sites (docker-compose.*.yml).
+          VITE_SUPPORT_WHATSAPP: ${{ vars.VITE_SUPPORT_WHATSAPP || '237689002812' }}
         run: |
           case "$VITE_API_URL" in
             https://*) ;;

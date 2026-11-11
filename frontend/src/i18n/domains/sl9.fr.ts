@@ -77,7 +77,14 @@ export default {
 
     // Écran Ouvrir ma boutique — étape 1/3 (OUV-01 à OUV-05)
     open_shop_title: 'Ouvrir ma boutique',
-    open_shop_subtitle: 'Aucun papier : un nom, un numéro, un point sur la carte.',
+    open_shop_subtitle: 'Aucun papier : un nom, un numéro, votre quartier.',
+    quartier_label: 'Votre quartier',
+    quartier_placeholder: 'Ex. Bastos, Mvog-Ada…',
+    quartier_unknown: 'Quartier inconnu : choisissez-le dans la liste.',
+    password_label: 'Votre mot de passe',
+    password_hint: '8 caractères au moins. Vous vous connecterez avec votre numéro et ce mot de passe.',
+    optional: 'facultatif',
+    one_account_per_phone: 'Un seul compte BelivaY par numéro de téléphone.',
     business_name_label: 'Nom de la boutique',
     business_name_placeholder: 'Ex. Chez Maman Douala',
     business_name_hint: "Ce nom reste interne : il n'est jamais montré au client.",
@@ -94,7 +101,7 @@ export default {
     zone_computing: 'Zone calculée par BelivaY à l’ouverture.',
     location_helper_note: 'Posez le point depuis votre boutique : il sert à calculer la livraison.',
     open_shop_submit: 'Ouvrir ma boutique',
-    open_shop_how_it_works_body: "Votre numéro est vérifié par SMS pour protéger votre compte. La zone de livraison est ensuite calculée automatiquement à partir du point posé sur la carte. Deux comptes vendeur au plus par numéro de téléphone.",
+    open_shop_how_it_works_body: "Votre numéro est vérifié par SMS pour protéger votre compte. La zone de livraison découle de votre quartier ; le point sur la carte la précise. Votre boutique est examinée par BelivaY. Pour publier votre premier produit, on vous demandera votre pièce d'identité et votre numéro Mobile Money.",
     already_seller: 'Déjà vendeur ?',
 
     // Écran Publier et être payé — étape 2 : KYC (KYC-01, KYC-06 à KYC-09)

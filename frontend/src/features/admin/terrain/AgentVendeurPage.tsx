@@ -6,7 +6,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
-import { Camera, KeyRound, PackagePlus, Store } from 'lucide-react';
+import { Camera, KeyRound, PackagePlus, Smartphone, Store } from 'lucide-react';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import { useToast } from '@/context/ToastContext';
 import { categoriesApi, type Category } from '@/services/api/categories';
@@ -39,6 +39,8 @@ export default function AgentVendeurPage() {
   const [photos, setPhotos] = useState<File[]>([]);
   const [envoiProduit, setEnvoiProduit] = useState(false);
   const [motDePasse, setMotDePasse] = useState<string | null>(null);
+  const [numeroMomo, setNumeroMomo] = useState('');
+  const [envoiMomo, setEnvoiMomo] = useState(false);
   const champPhotos = useRef<HTMLInputElement>(null);
 
   const charger = useCallback(async () => {
@@ -89,6 +91,20 @@ export default function AgentVendeurPage() {
     }
   };
 
+  const enregistrerMomo = async (e: FormEvent) => {
+    e.preventDefault();
+    setEnvoiMomo(true);
+    try {
+      setFiche(await terrainApi.enregistrerMobileMoney(vendeurId, numeroMomo));
+      setNumeroMomo('');
+      toast.current(k('toast_momo_ok'), 'success');
+    } catch (erreur) {
+      toast.current(erreur instanceof Error ? erreur.message : k('toast_error_momo'), 'error');
+    } finally {
+      setEnvoiMomo(false);
+    }
+  };
+
   const nouvelAcces = async () => {
     try {
       const reponse = await terrainApi.nouvelAcces(vendeurId);
@@ -120,7 +136,8 @@ export default function AgentVendeurPage() {
       <Section titre={k('pieces_section')}>
         <div className="p-4">
           <p className="text-sm mb-3" style={{ color: T.muted }}>
-            {fiche.identite.verifiee ? k('identity_verified') : k('pieces_explain')}
+            {fiche.identite.verifiee ? k('identity_verified')
+              : fiche.identite.peut_publier ? k('can_publish_selfie_left') : k('pieces_explain')}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {PIECES.map(({ piece, accept, capture }) => (
@@ -137,6 +154,25 @@ export default function AgentVendeurPage() {
             ))}
           </div>
         </div>
+      </Section>
+
+      <Section titre={k('momo_section')}>
+        <form onSubmit={(e) => void enregistrerMomo(e)} className="p-4 space-y-3">
+          <p className="text-sm" style={{ color: fiche.mobile_money ? T.text : T.muted }}>
+            {fiche.mobile_money
+              ? k(fiche.mobile_money.verifie ? 'momo_verified' : 'momo_pending', { numero: fiche.mobile_money.numero })
+              : k('momo_explain')}
+          </p>
+          <div className="flex gap-2">
+            <input required type="tel" inputMode="tel" maxLength={20} placeholder={k('field_momo')} value={numeroMomo}
+              onChange={(e) => setNumeroMomo(e.target.value)} className="flex-1 px-3 py-2 rounded-xl text-sm" style={style} />
+            <button type="submit" disabled={envoiMomo} className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold disabled:opacity-60"
+              style={{ background: T.cardAlt, color: T.text, border: `1px solid ${T.border}` }}>
+              <Smartphone size={15} /> {envoiMomo ? '…' : k(fiche.mobile_money ? 'momo_change' : 'momo_save')}
+            </button>
+          </div>
+          <p className="text-xs" style={{ color: T.muted }}>{k('momo_note')}</p>
+        </form>
       </Section>
 
       <Section titre={k('catalogue_section', { n: fiche.produits })}>

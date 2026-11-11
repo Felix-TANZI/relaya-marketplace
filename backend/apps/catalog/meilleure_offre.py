@@ -39,14 +39,14 @@ def mois_depuis_ouverture(maintenant=None) -> int:
 
 def _boutique_eligible(vendeur) -> bool:
     """R32.1 : pièce d'identité vérifiée ; boutique non suspendue, position GPS renseignée, pas « Fermé aujourd'hui »."""
-    from apps.vendors.kyc import identite_verifiee
+    from apps.vendors.kyc import peut_publier
 
     profil = getattr(vendeur, "vendor_profile", None)
     if profil is None or profil.is_paused or profil.closed_today_date == timezone.localdate():
         return False
     if not profil.locations.filter(is_active=True, latitude__isnull=False, longitude__isnull=False).exists():
         return False
-    return identite_verifiee(vendeur)
+    return peut_publier(vendeur)
 
 
 def _trust(vendeur) -> float:

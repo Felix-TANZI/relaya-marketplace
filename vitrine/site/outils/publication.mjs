@@ -30,6 +30,21 @@ export const PAGES_PUBLIQUES = [
   '/entreprise/',
   '/livreur/',
   '/relais/',
+  // Pages légales statiques (public/legal/) : lues sans script par les moteurs et les examinateurs des boutiques d'applis.
+  ...[
+    'documents',
+    'confidentialite',
+    'suppression-compte',
+    'conditions-utilisation',
+    'conditions-vente',
+    'retours-litiges',
+    'garde-relais',
+    'paiement-comptoir-carte',
+    'comptes-diaspora',
+    'paiement-lien',
+    'cookies',
+    'mentions-legales',
+  ].map((f) => '/legal/' + f + '.html'),
 ]
 
 function fichiers(dossier) {

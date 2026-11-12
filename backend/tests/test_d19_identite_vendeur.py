@@ -45,7 +45,7 @@ def _publier(offer_id=999999):
 @pytest.fixture
 def vendeur(django_user_model):
     user = django_user_model.objects.create_user(
-        username="vendeur_d19", email="vendeur.d19@example.com", password="Kyc-2026",
+        username="vendeur_d19", email="vendeur.d19@example.com",
     )
     VendorProfile.objects.create(
         user=user, business_name="Boutique D19", business_description="Test",
@@ -72,7 +72,6 @@ def _toutes_validees(user):
 def test_une_boutique_se_cree_sans_piece_d_identite(api_client, django_user_model):
     client = django_user_model.objects.create_user(
         username="client_devient_vendeur", email="client.dv@example.com",
-        password="Kyc-2026",
     )
     api_client.force_authenticate(client)
 
@@ -148,7 +147,7 @@ def test_l_administrateur_ne_peut_pas_publier_pour_un_vendeur_non_verifie(
         moderation_status=ModerationStatus.PENDING,
     )
     admin = django_user_model.objects.create_user(
-        username="admin_d19", email="admin.d19@example.com", password="Kyc-2026",
+        username="admin_d19", email="admin.d19@example.com",
         is_staff=True, is_superuser=True,
     )
     api_client.force_authenticate(admin)
@@ -253,7 +252,7 @@ def test_un_autre_vendeur_ne_voit_rien_et_ignore_que_la_piece_existe(
     """404 et non 403 : « interdit » confirmerait que la piece existe."""
     piece = _deposer(vendeur, CNI_RECTO)
     curieux = django_user_model.objects.create_user(
-        username="curieux", email="curieux@example.com", password="Kyc-2026",
+        username="curieux", email="curieux@example.com",
     )
     api_client.force_authenticate(curieux)
 
@@ -276,7 +275,7 @@ def test_l_administration_peut_examiner_la_piece(api_client, vendeur, django_use
     from django.contrib.auth.models import Group
 
     agent = django_user_model.objects.create_user(
-        username="agent_kyc", email="agent.kyc@example.com", password="Kyc-2026",
+        username="agent_kyc", email="agent.kyc@example.com",
         is_staff=True,
     )
     api_client.force_authenticate(agent)

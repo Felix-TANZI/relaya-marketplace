@@ -43,7 +43,7 @@ export default {
       "autorisez_la_camera_dans_les_reglages_du_n": " — allow the camera in the browser settings, then run the test again. Without a camera, reception is done by entering the code manually.",
       "autres_offres_du_meme_produit": "Other offers for the same product",
       "autres_situations_au_comptoir": "Other situations at the counter",
-      "avant_de_valider_la_remise_invitez_le_clie": "Before confirming the handover, invite the customer to open their parcel here, in front of you. “Everything is in order” closes the return window and releases the seller's money.",
+      "avant_de_valider_la_remise_invitez_le_clie": "Before confirming the handover, invite the customer to open their parcel here, in front of you. “Everything is in order” records that opening; the customer then confirms receipt in their app — you never confirm on their behalf.",
       "avant_votre_premiere_remise_suivez_les": "Before your first handover, complete the ",
       "avis_d_arrivee_puis_code_en_deux_messages": " — arrival notice then code, in two messages",
       "bv_40077_est": "BV-40077 is ",

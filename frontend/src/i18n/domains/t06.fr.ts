@@ -43,7 +43,7 @@ export default {
       "autorisez_la_camera_dans_les_reglages_du_n": " — autorisez la caméra dans les réglages du navigateur, puis relancez le test. Sans caméra, la réception se fait en saisissant le code à la main.",
       "autres_offres_du_meme_produit": "Autres offres du même produit",
       "autres_situations_au_comptoir": "Autres situations au comptoir",
-      "avant_de_valider_la_remise_invitez_le_clie": "Avant de valider la remise, invitez le client à ouvrir son colis ici, devant vous. « Tout est en ordre » ferme la fenêtre de retour et libère l'argent du vendeur.",
+      "avant_de_valider_la_remise_invitez_le_clie": "Avant de valider la remise, invitez le client à ouvrir son colis ici, devant vous. « Tout est en ordre » enregistre cette ouverture ; c'est le client qui confirme ensuite la réception dans son application — vous ne confirmez jamais à sa place.",
       "avant_votre_premiere_remise_suivez_les": "Avant votre première remise, suivez les ",
       "avis_d_arrivee_puis_code_en_deux_messages": " : avis d'arrivée puis code, en deux messages",
       "bv_40077_est": "BV-40077 est ",

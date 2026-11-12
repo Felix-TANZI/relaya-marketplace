@@ -208,12 +208,8 @@ export default function RelayStatus({
   return (
     <div className="space-y-4">
       <header className="pt-0.5">
-        <h2 className="text-[27px] font-black leading-[1.15] tracking-[-0.015em] text-slate-900 dark:text-white">
-          Statut du relais
-        </h2>
-        <p className="mt-1.5 text-[14.5px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">
-          Ce que voit le gérant quand son relais n'est pas « Ouvert ».
-        </p>
+        <h2 className="text-[27px] font-black leading-[1.15] tracking-[-0.015em] text-slate-900 dark:text-white">{i18n.t("t06.statut_du_relais")}</h2>
+        <p className="mt-1.5 text-[14.5px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">{i18n.t("t06.ce_que_voit_le_gerant_quand_son_relais_n_e")}</p>
       </header>
 
       <div
@@ -324,8 +320,7 @@ export default function RelayStatus({
 
             <p className="mt-3.5 text-[14px] font-medium leading-[1.55] text-slate-600 dark:text-slate-300">
               {sanction ? (
-                <>
-                  Depuis le {JOUR_MOIS.format(new Date(sanction.since))} · niveau {sanction.level} sur{" "}
+                <>{i18n.t("t06.depuis_le")}{JOUR_MOIS.format(new Date(sanction.since))} · niveau {sanction.level} sur{" "}
                   {sanction.max_level}
                   {/* Une decision humaine et une sanction automatique ne se
                       contestent pas de la meme facon : on le dit. */}
@@ -345,9 +340,7 @@ export default function RelayStatus({
               type="button"
               onClick={() => onNavigate("litiges")}
               className="pr-btn mt-4 w-full rounded-[12px] px-4 py-3.5 text-[16px] font-black text-white transition active:scale-[.97]"
-            >
-              Voir la décision et le motif
-            </button>
+            >{i18n.t("t06.voir_la_decision_et_le_motif")}</button>
             <button
               type="button"
               onClick={() => onNavigate("messagerie")}
@@ -398,9 +391,7 @@ export default function RelayStatus({
               <span className="flex h-[44px] w-[44px] flex-shrink-0 items-center justify-center rounded-[12px] bg-[#FFF4D6] text-[#8A5A00] dark:bg-amber-950/50 dark:text-amber-300">
                 <CalendarX2 size={21} strokeWidth={2.2} />
               </span>
-              <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
-                Fermé temporairement
-              </h3>
+              <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">{i18n.t("t06.ferme_temporairement")}</h3>
             </div>
 
             <p className="mt-3.5 text-[14px] font-medium leading-[1.55] text-slate-600 dark:text-slate-300">
@@ -420,10 +411,7 @@ export default function RelayStatus({
                     : i18n.t("rl3.vos_colis_restent_en_garde_chez_vous_les_c")}
                 </>
               ) : (
-                <>
-                  Aucune fermeture n'est déclarée depuis cet appareil. Déclarez-en une pour prévenir
-                  BelivaY et vos clients.
-                </>
+                <>{i18n.t("t06.aucune_fermeture_n_est_declaree_depuis_cet")}</>
               )}
             </p>
 
@@ -439,10 +427,7 @@ export default function RelayStatus({
       ) : null}
 
       <p className="flex items-start gap-2.5 rounded-[14px] bg-[#EAF0FF] px-4 py-3.5 text-[13px] font-medium leading-[1.55] text-[#1E4BC4] dark:bg-blue-950/40 dark:text-blue-200">
-        <Store size={18} strokeWidth={2.2} className="mt-[2px] flex-shrink-0" />
-        Le statut s'affiche aussi dans la pastille de l'en-tête : « En configuration », « Suspendu »
-        (rouge) ou « Fermé jusqu'au … » (ambre).
-      </p>
+        <Store size={18} strokeWidth={2.2} className="mt-[2px] flex-shrink-0" />{i18n.t("t06.le_statut_s_affiche_aussi_dans_la_pastille")}</p>
     </div>
   );
 }

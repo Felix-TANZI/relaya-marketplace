@@ -985,10 +985,7 @@ export default function ProductFormPage() {
                           {t("sl3_product_form.product_chosen", { title: selectedMaster.title })}
                         </p>
                         {selectedMaster.category_name && (
-                          <p className="text-[11px]" style={{ color: T.muted }}>
-                            Catégorie : {selectedMaster.category_name} — celle de la fiche,
-                            où les acheteurs trouveront votre offre.
-                          </p>
+                          <p className="text-[11px]" style={{ color: T.muted }}>{i18n.t("t06.categorie")}{selectedMaster.category_name}{i18n.t("t06.celle_de_la_fiche_ou_les_acheteurs_trouver")}</p>
                         )}
                       </div>
                     </div>
@@ -1003,8 +1000,7 @@ export default function ProductFormPage() {
                         className="flex items-center gap-1.5 pt-1 text-[12px] font-semibold"
                         style={{ color: T.orange }}
                       >
-                        <Plus size={13} /> Mon produit n'est pas dans la liste — créer un nouveau produit
-                      </button>
+                        <Plus size={13} />{i18n.t("t06.mon_produit_n_est_pas_dans_la_liste_creer")}</button>
                     )}
 
                   {!masterLoading &&

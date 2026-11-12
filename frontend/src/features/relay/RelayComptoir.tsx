@@ -49,9 +49,7 @@ export default function RelayComptoir({ parcels, busy, onCollect, onRefuse }: Pr
                 </span>
                 <span className="text-lg font-bold">{parcel.amountXaf.toLocaleString("fr-FR")} F</span>
               </div>
-              <p className="mt-1 text-sm opacity-80">
-                Mobile Money uniquement. Le code de retrait part au client dès que le paiement est confirmé.
-              </p>
+              <p className="mt-1 text-sm opacity-80">{i18n.t("t06.mobile_money_uniquement_le_code_de_retrait")}</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <input
                   className="min-w-0 flex-1 rounded-xl border px-3 py-2"
@@ -91,9 +89,7 @@ export default function RelayComptoir({ parcels, busy, onCollect, onRefuse }: Pr
                       void onRefuse(parcel.id);
                     }
                   }}
-                >
-                  Le client refuse
-                </button>
+                >{i18n.t("t06.le_client_refuse")}</button>
               </div>
             </li>
           );

@@ -148,7 +148,7 @@ export default function AppLayout() {
       Voir index.css — force Plus Jakarta Sans sur tous les titres et
       neutralise Syne (font-display) pour une police unique. */
     <div className="belivay-client min-h-screen flex flex-col overflow-x-hidden bg-bg-light dark:bg-bg-dark transition-colors">
-      <a href="#main-content" className="fixed left-3 top-3 z-[9999] -translate-y-24 rounded-lg bg-gray-950 px-4 py-3 text-sm font-bold text-white transition focus:translate-y-0">Aller au contenu principal</a>
+      <a href="#main-content" className="fixed left-3 top-3 z-[9999] -translate-y-24 rounded-lg bg-gray-950 px-4 py-3 text-sm font-bold text-white transition focus:translate-y-0">{i18n.t("t06.aller_au_contenu_principal")}</a>
       <ScrollToTopOnRouteChange />
       {/* Titre, description, canonical et noindex selon la route. Les pages
           dont les metadonnees dependent des donnees (fiche produit) posent

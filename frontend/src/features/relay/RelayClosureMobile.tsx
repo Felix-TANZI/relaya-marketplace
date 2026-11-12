@@ -144,7 +144,7 @@ const TRANCHES: Tranche[] = [
     boite: "border-[#C9D7FB] bg-[#EAF0FF] dark:border-blue-800 dark:bg-blue-950/30",
     texte: "text-[#2456D6] dark:text-blue-300",
     corps:
-      "Plus aucun nouveau colis dès la veille. Vos colis partent au relais partenaire le plus proche avec la dernière collecte ; les clients reçoivent la nouvelle adresse et un nouveau code, et leurs jours offerts repartent de zéro.",
+      i18n.t("t06.plus_aucun_nouveau_colis_des_la_veille_vos"),
   },
   {
     key: "long",
@@ -405,9 +405,7 @@ export default function RelayClosureMobile({ onError, relay }: RelayClosureMobil
         <h2 className="text-[27px] font-black leading-[1.15] tracking-[-0.015em] text-slate-900 dark:text-white">
           Fermeture exceptionnelle
         </h2>
-        <p className="mt-1.5 text-[14.5px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">
-          Prévenez BelivaY : on s'occupe des colis et des clients.
-        </p>
+        <p className="mt-1.5 text-[14.5px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">{i18n.t("t06.prevenez_belivay_on_s_occupe_des_colis_et")}</p>
       </header>
 
       {/* ── Quand ? ────────────────────────────────────────────────────── */}
@@ -534,8 +532,7 @@ export default function RelayClosureMobile({ onError, relay }: RelayClosureMobil
         {preavisManquant > 0 ? (
           <p className="mt-3 rounded-[12px] border border-[#F0DA9C] bg-[#FFF4D6] px-3.5 py-3 text-[13px] font-semibold leading-snug text-[#8A5A00] dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
             « {motif.label} » demande {motif.noticeHours} h de préavis. Il manque{" "}
-            {Math.ceil(preavisManquant)} h : choisissez un début plus tardif, ou un autre motif.
-          </p>
+            {Math.ceil(preavisManquant)}{i18n.t("t06.h_choisissez_un_debut_plus_tardif_ou_un_au")}</p>
         ) : null}
       </section>
 
@@ -588,9 +585,7 @@ export default function RelayClosureMobile({ onError, relay }: RelayClosureMobil
             </span>
           </p>
         ) : (
-          <p className="mt-3 text-[13.5px] font-medium text-slate-400 dark:text-slate-500">
-            Choisissez une durée, ou touchez des jours dans le calendrier.
-          </p>
+          <p className="mt-3 text-[13.5px] font-medium text-slate-400 dark:text-slate-500">{i18n.t("t06.choisissez_une_duree_ou_touchez_des_jours")}</p>
         )}
 
         <p className="mt-3 px-1 text-[13px] font-medium leading-[1.5] text-slate-400 dark:text-slate-500">
@@ -606,9 +601,7 @@ export default function RelayClosureMobile({ onError, relay }: RelayClosureMobil
           un gerant tranquille sur une mecanique inexistante.
         */}
         {dateDebut ? (
-          <p className="mt-2 px-1 text-[13px] font-medium leading-[1.5] text-slate-400 dark:text-slate-500">
-            Votre déclaration part au support, horodatée. Le transfert est organisé par une
-            personne — il n'est pas automatique. {motif.proof}
+          <p className="mt-2 px-1 text-[13px] font-medium leading-[1.5] text-slate-400 dark:text-slate-500">{i18n.t("t06.votre_declaration_part_au_support_horodate")}{motif.proof}
           </p>
         ) : null}
       </section>
@@ -616,9 +609,7 @@ export default function RelayClosureMobile({ onError, relay }: RelayClosureMobil
       {/* ── Déclarer ───────────────────────────────────────────────────── */}
       {envoye ? (
         <p className="flex items-start gap-2.5 rounded-[14px] border border-[#BFE3CF] bg-[#E6F4EC] px-4 py-3.5 text-[13.5px] font-semibold leading-snug text-[#1F7A4D] dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
-          <Check size={18} strokeWidth={3} className="mt-[1px] flex-shrink-0" />
-          Déclaration transmise. Le support vous confirme la prise en charge des colis.
-        </p>
+          <Check size={18} strokeWidth={3} className="mt-[1px] flex-shrink-0" />{i18n.t("t06.declaration_transmise_le_support_vous_conf")}</p>
       ) : (
         <button
           type="button"
@@ -633,9 +624,7 @@ export default function RelayClosureMobile({ onError, relay }: RelayClosureMobil
       {/* ── Fermetures passées ─────────────────────────────────────────── */}
       {passees.length > 0 ? (
         <section className="rounded-[14px] border border-slate-200 bg-white px-4 pb-2 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
-          <h3 className="px-1 text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
-            Fermetures passées
-          </h3>
+          <h3 className="px-1 text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">{i18n.t("t06.fermetures_passees")}</h3>
           <ul className="mt-2 divide-y divide-slate-100 dark:divide-slate-800">
             {passees.map((item) => {
               const depart = new Date(`${item.from}T00:00:00`);
@@ -662,9 +651,7 @@ export default function RelayClosureMobile({ onError, relay }: RelayClosureMobil
               );
             })}
           </ul>
-          <p className="px-1 pb-2 pt-1 text-[12.5px] font-medium leading-[1.5] text-slate-400 dark:text-slate-500">
-            Cette liste est gardée sur cet appareil. Elle ne remplace pas le suivi du support.
-          </p>
+          <p className="px-1 pb-2 pt-1 text-[12.5px] font-medium leading-[1.5] text-slate-400 dark:text-slate-500">{i18n.t("t06.cette_liste_est_gardee_sur_cet_appareil_el")}</p>
         </section>
       ) : null}
 

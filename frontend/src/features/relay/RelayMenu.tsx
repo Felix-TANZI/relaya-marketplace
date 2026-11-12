@@ -224,8 +224,7 @@ export default function RelayMenu({
               {profile.city ? ` · ${profile.city}` : ""}
             </div>
             <div className="mt-0.5 truncate text-[14px] font-medium text-white/85">
-              {profile.manager}, gérant
-            </div>
+              {profile.manager}{i18n.t("t06.gerant")}</div>
           </div>
 
           <span
@@ -244,9 +243,7 @@ export default function RelayMenu({
 
       {/* ── Le guichet ─────────────────────────────────────────────────── */}
       <section className="px-4 pt-4">
-        <h2 className="text-[12px] font-black uppercase leading-none tracking-[0.1em] text-slate-500 dark:text-slate-400">
-          Le guichet
-        </h2>
+        <h2 className="text-[12px] font-black uppercase leading-none tracking-[0.1em] text-slate-500 dark:text-slate-400">{i18n.t("t06.le_guichet")}</h2>
         <div className="mt-3 grid grid-cols-2 gap-3">
           {GUICHET.map(({ id, icon: Icon }) => {
             const count = badges[id] || 0;

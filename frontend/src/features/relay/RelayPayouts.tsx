@@ -224,9 +224,7 @@ export default function RelayPayouts({
   return (
     <div className="space-y-4">
       <header className="pt-0.5">
-        <h2 className="text-[27px] font-black leading-[1.15] tracking-[-0.015em] text-slate-900 dark:text-white">
-          Vos versements
-        </h2>
+        <h2 className="text-[27px] font-black leading-[1.15] tracking-[-0.015em] text-slate-900 dark:text-white">{i18n.t("t06.vos_versements")}</h2>
         <p className="mt-1.5 text-[14.5px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">
           Chaque vendredi avant 12 h, sans frais, sans rien demander.
         </p>
@@ -270,9 +268,7 @@ export default function RelayPayouts({
 
         <div className="mt-6 flex items-end justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[11px] font-black uppercase tracking-[0.1em] text-white/75">
-              Sera versé sur
-            </p>
+            <p className="text-[11px] font-black uppercase tracking-[0.1em] text-white/75">{i18n.t("t06.sera_verse_sur")}</p>
             <p className="mt-1 truncate font-mono text-[19px] font-black tracking-[0.06em]">
               {versement?.payee_msisdn_masked
                 ? `${operateur || "MoMo"} ${versement.payee_msisdn_masked}`
@@ -293,9 +289,7 @@ export default function RelayPayouts({
 
       {/* ── Le détail ────────────────────────────────────────────────────── */}
       <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-5 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
-        <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
-          Le détail de la semaine
-        </h3>
+        <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">{i18n.t("t06.le_detail_de_la_semaine")}</h3>
         {releve ? (
           <p className="mt-0.5 text-[12.5px] font-medium text-slate-400 dark:text-slate-500">
             {formatPeriode(releve.period_start, releve.period_end, t)}
@@ -325,9 +319,7 @@ export default function RelayPayouts({
           </table>
         ) : grille.length > 0 ? (
           <>
-            <p className="mt-3 text-[13px] font-medium leading-[1.5] text-slate-500 dark:text-slate-400">
-              Aucun relevé clos pour l'instant. Voici ce que votre contrat prévoit par colis remis.
-            </p>
+            <p className="mt-3 text-[13px] font-medium leading-[1.5] text-slate-500 dark:text-slate-400">{i18n.t("t06.aucun_releve_clos_pour_l_instant_voici_ce")}</p>
             <table className="mt-3 w-full">
               <thead>
                 <tr className="border-b border-slate-100 dark:border-slate-800">
@@ -350,10 +342,7 @@ export default function RelayPayouts({
             </table>
           </>
         ) : (
-          <p className="mt-3 text-[13px] font-medium text-slate-500 dark:text-slate-400">
-            Votre grille tarifaire n'est pas encore configurée. Le support la met en place à
-            l'activation du relais.
-          </p>
+          <p className="mt-3 text-[13px] font-medium text-slate-500 dark:text-slate-400">{i18n.t("t06.votre_grille_tarifaire_n_est_pas_encore_co")}</p>
         )}
 
         <div className="mt-3 flex items-baseline justify-between gap-3">
@@ -361,9 +350,7 @@ export default function RelayPayouts({
           <span className="text-[19px] font-black text-[#EF6A00] dark:text-orange-400">{nf(montant)} F</span>
         </div>
 
-        <p className="mt-2 text-[13px] font-medium leading-[1.5] text-slate-400 dark:text-slate-500">
-          C'est BelivaY qui vous paie, même quand la livraison est offerte au client.
-        </p>
+        <p className="mt-2 text-[13px] font-medium leading-[1.5] text-slate-400 dark:text-slate-500">{i18n.t("t06.c_est_belivay_qui_vous_paie_meme_quand_la")}</p>
       </section>
       {/* ── Les termes du contrat ────────────────────────────────────────
           Trois faits, cote a cote, qu'un gerant verifie une fois puis oublie.
@@ -389,8 +376,7 @@ export default function RelayPayouts({
       {/* ── Ce qui est arrivé ────────────────────────────────────────────── */}
       <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-5 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
         <div className="flex items-center justify-between gap-3">
-          <h3 className="text-[17px] font-black capitalize tracking-[-0.02em] text-slate-900 dark:text-white">
-            Reçus en {MOIS.format(maintenant)}
+          <h3 className="text-[17px] font-black capitalize tracking-[-0.02em] text-slate-900 dark:text-white">{i18n.t("t06.recus_en")}{MOIS.format(maintenant)}
           </h3>
           <span className="flex-shrink-0 rounded-full border border-[#BFE3CF] bg-[#E6F4EC] px-3 py-[5px] text-[12.5px] font-bold text-[#1F7A4D] dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
             {nf(totalMois)} F
@@ -398,9 +384,7 @@ export default function RelayPayouts({
         </div>
 
         {duMois.length === 0 ? (
-          <p className="py-5 text-[13.5px] font-medium text-slate-400 dark:text-slate-500">
-            Aucun versement crédité ce mois-ci pour l'instant.
-          </p>
+          <p className="py-5 text-[13.5px] font-medium text-slate-400 dark:text-slate-500">{i18n.t("t06.aucun_versement_credite_ce_mois_ci_pour_l")}</p>
         ) : (
           <ul className="mt-3 divide-y divide-slate-100 dark:divide-slate-800">
             {duMois.map((versement) => (
@@ -422,10 +406,7 @@ export default function RelayPayouts({
           </ul>
         )}
 
-        <p className="mt-3 text-[13px] font-medium leading-[1.5] text-slate-400 dark:text-slate-500">
-          La référence est annoncée à l'arrêté du jeudi minuit et figure sur votre relevé MoMo :
-          c'est votre preuve auprès de l'opérateur.
-        </p>
+        <p className="mt-3 text-[13px] font-medium leading-[1.5] text-slate-400 dark:text-slate-500">{i18n.t("t06.la_reference_est_annoncee_a_l_arrete_du_je")}</p>
       </section>
 
       {/* ── Quand ça coince ──────────────────────────────────────────────── */}
@@ -468,10 +449,7 @@ export default function RelayPayouts({
             </li>
           ))}
         </ul>
-        <p className="mt-2 text-[13px] font-medium leading-[1.5] text-slate-400 dark:text-slate-500">
-          Un versement est prévu, envoyé, crédité, refusé ou suspendu : son état s'affiche ici et
-          dans les notifications.
-        </p>
+        <p className="mt-2 text-[13px] font-medium leading-[1.5] text-slate-400 dark:text-slate-500">{i18n.t("t06.un_versement_est_prevu_envoye_credite_refu")}</p>
       </section>
       {/* ── Le numéro ────────────────────────────────────────────────────
           Dernier bloc de l'écran, et c'est voulu : on ne vient pas ici pour
@@ -484,9 +462,7 @@ export default function RelayPayouts({
             <Smartphone size={19} strokeWidth={2.2} />
           </span>
           <div className="min-w-0 flex-1">
-            <div className="text-[15px] font-black leading-tight text-slate-900 dark:text-white">
-              Numéro de versement
-            </div>
+            <div className="text-[15px] font-black leading-tight text-slate-900 dark:text-white">{i18n.t("t06.numero_de_versement")}</div>
             <p className="mt-1 text-[13px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">
               {compte
                 ? [
@@ -513,18 +489,14 @@ export default function RelayPayouts({
           ) : null}
         </div>
 
-        <p className="mt-4 text-[13px] font-medium leading-[1.5] text-slate-400 dark:text-slate-500">
-          Un nouveau numéro se confirme par deux codes SMS, puis une personne le vérifie : versements
-          suspendus 7 jours, rien n'est perdu.
-        </p>
+        <p className="mt-4 text-[13px] font-medium leading-[1.5] text-slate-400 dark:text-slate-500">{i18n.t("t06.un_nouveau_numero_se_confirme_par_deux_cod")}</p>
 
         <button
           type="button"
           onClick={onChangeNumber}
           className="mt-4 flex w-full items-center justify-center gap-2.5 rounded-[12px] border border-slate-200 bg-white px-4 py-3.5 text-[16px] font-bold text-slate-700 transition active:scale-[.97] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
         >
-          <Smartphone size={18} strokeWidth={2.2} /> Changer de numéro
-        </button>
+          <Smartphone size={18} strokeWidth={2.2} />{i18n.t("t06.changer_de_numero")}</button>
       </section>
     </div>
   );

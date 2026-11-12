@@ -655,7 +655,7 @@ export default function CheckoutPage() {
                   )}
                   {frais?.comptoir ? (
                     <div className="pf-summary-row">
-                      <span className="pf-muted-sm">Au comptoir, au retrait</span>
+                      <span className="pf-muted-sm">{i18n.t("t06.au_comptoir_au_retrait")}</span>
                       <span className="pf-summary-v">{fmt(frais.comptoir.au_comptoir + frais.comptoir.frais_momo_comptoir)}</span>
                     </div>
                   ) : null}

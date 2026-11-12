@@ -353,8 +353,7 @@ export default function RelayReportsMobile({ onError }: { onError?: (error: unkn
   <tr><th>{i18n.t("rl3.delai_de_retrait")}</th><th style="text-align:right">Part</th><th style="text-align:right">Colis</th></tr>
   ${lignes}
 </table>
-<p class="note">Garde facturée au client selon la grille de garde de BelivaY. Montants issus des règlements
-arrêtés par BelivaY.</p>
+<p class="note">{i18n.t("t06.garde_facturee_au_client_selon_la_grille_d")}</p>
 </body></html>`);
     fenetre.document.close();
     fenetre.focus();
@@ -450,9 +449,7 @@ arrêtés par BelivaY.</p>
               ))}
             </div>
 
-            <p className="mt-4 text-[13px] font-medium leading-[1.5] text-white/55">
-              Chaque colonne est un règlement arrêté, aux dates qui figurent sur votre relevé.
-            </p>
+            <p className="mt-4 text-[13px] font-medium leading-[1.5] text-white/55">{i18n.t("t06.chaque_colonne_est_un_reglement_arrete_aux")}</p>
           </>
         )}
       </section>
@@ -489,13 +486,10 @@ arrêtés par BelivaY.</p>
           Ce que le temps de garde coûte au client, et rapporte au relais.
           La barre d'abord : une proportion se lit avant un tableau. */}
       <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-4 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
-        <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
-          Délai de retrait
-        </h3>
+        <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">{i18n.t("t06.delai_de_retrait")}</h3>
 
         {repartition.total === 0 ? (
-          <p className="py-6 text-center text-[13.5px] font-medium text-slate-400 dark:text-slate-500">
-            Aucun colis n'est encore sorti sur {periodeLabel}.
+          <p className="py-6 text-center text-[13.5px] font-medium text-slate-400 dark:text-slate-500">{i18n.t("t06.aucun_colis_n_est_encore_sorti_sur")}{periodeLabel}.
           </p>
         ) : (
           <>

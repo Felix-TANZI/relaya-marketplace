@@ -3,6 +3,7 @@
 // La valeur émise est au format compact "+237690000000" (indicatif + national), ou "" si vide.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import i18n from "@/i18n";
 import { ChevronDown, Check } from 'lucide-react';
 
 type Country = { code: string; name: string; flag: string; dial: string; len: number[] };
@@ -93,7 +94,7 @@ export default function PhoneInput({
   return (
     <div ref={ref} style={{ position: 'relative' }}>
       <div className={`pf-phone${valid ? '' : ' invalid'}`}>
-        <button type="button" className="pf-phone-country" onClick={() => setOpen((v) => !v)} aria-label="Choisir le pays">
+        <button type="button" className="pf-phone-country" onClick={() => setOpen((v) => !v)} aria-label={i18n.t("t06.choisir_le_pays")}>
           <span style={{ fontSize: 16, lineHeight: 1 }}>{country.flag}</span>
           <span>{country.dial}</span>
           <ChevronDown size={13} />
@@ -108,8 +109,7 @@ export default function PhoneInput({
       </div>
 
       {!valid && (
-        <div className="pf-phone-err">
-          Numéro incorrect — {country.name} attend {country.len.join(' ou ')} chiffres ({national.length} saisis).
+        <div className="pf-phone-err">{i18n.t("t06.numero_incorrect")}{country.name} attend {country.len.join(' ou ')} chiffres ({national.length} saisis).
         </div>
       )}
 

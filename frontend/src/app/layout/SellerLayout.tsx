@@ -386,7 +386,7 @@ export default function SellerLayout() {
             {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
           </button>
           <button onClick={() => i18n.changeLanguage(i18n.language.startsWith('fr') ? 'en' : 'fr')}
-            aria-label="Changer de langue"
+            aria-label={i18n.t("t06.changer_de_langue")}
             className="w-9 h-9 rounded-xl flex items-center justify-center transition-all text-[11px] font-black active:scale-90"
             style={{ color: T.muted }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = T.creamAlt; }}

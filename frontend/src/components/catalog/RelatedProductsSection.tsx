@@ -5,6 +5,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import i18n from "@/i18n";
 import { productsApi, type Product } from '@/services/api/products';
 import ProductCard from '@/components/product/ProductCard';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -83,9 +84,7 @@ export default function RelatedProductsSection({
   return (
     <section className="rounded-2xl border border-gray-200/80 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
       <div className="mb-6 flex items-center justify-between">
-        <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-          Autres offres du même produit
-        </h3>
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white">{i18n.t("t06.autres_offres_du_meme_produit")}</h3>
         <div className="flex gap-2">
           <button
             onClick={() => scrollContainer('left')}

@@ -164,7 +164,7 @@ export default function CatalogProductCard({
           <span className="text-base font-black tabular-nums text-primary">{fmt(finalPrice)}</span>
           {compareAt && <span className="text-xs text-gray-400 line-through">{fmt(compareAt)}</span>}
         </div>
-        <button type="button" onClick={handleAddToCart} disabled={!inStock} className="mt-3 hidden min-h-9 w-full items-center justify-center gap-2 rounded-lg bg-primary px-3 text-[13px] font-bold text-white transition hover:bg-primary-dark disabled:bg-gray-300 sm:flex"><ShoppingCart size={15} />{added ? "Ajouté" : inStock ? "Ajouter au panier" : "Indisponible"}</button>
+        <button type="button" onClick={handleAddToCart} disabled={!inStock} className="mt-3 hidden min-h-9 w-full items-center justify-center gap-2 rounded-lg bg-primary px-3 text-[13px] font-bold text-white transition hover:bg-primary-dark disabled:bg-gray-300 sm:flex"><ShoppingCart size={15} />{added ? "Ajouté" : inStock ? i18n.t("t06.ajouter_au_panier") : "Indisponible"}</button>
       </div>
     </article>
   );

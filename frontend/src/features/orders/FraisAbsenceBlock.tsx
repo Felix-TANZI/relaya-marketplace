@@ -32,11 +32,11 @@ export default function FraisAbsenceBlock({ order }: { order: Order }) {
   return (
     <section className="pf-card pf-anim" style={{ borderColor: "#f59e0b" }}>
       <h2 className="text-lg font-bold text-gray-900 dark:text-white">{i18n.t("t03.frais_absence_titre")}</h2>
-      <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-        Vous étiez absent à la livraison : votre colis vous attend au relais {order.relay_point_name || ""}. Frais
-        d'absence : {order.frais_absence_xaf.toLocaleString("fr-FR")} F (+ {(order.frais_momo_absence_xaf || 0).toLocaleString("fr-FR")} F de
-        frais Mobile Money). Vous pouvez aussi les payer au comptoir.
-      </p>
+      <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{i18n.t("t06.frais_absence_texte", {
+        relais: order.relay_point_name || "",
+        frais: order.frais_absence_xaf.toLocaleString("fr-FR"),
+        momo: (order.frais_momo_absence_xaf || 0).toLocaleString("fr-FR"),
+      })}</p>
       <button type="button" disabled={enCours} onClick={() => void payer()}
         className="mt-3 rounded-full bg-primary px-5 py-2 font-bold text-white disabled:opacity-50">
         Payer {total.toLocaleString("fr-FR")} F par Mobile Money

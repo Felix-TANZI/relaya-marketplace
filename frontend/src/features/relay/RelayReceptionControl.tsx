@@ -158,9 +158,7 @@ export default function RelayReceptionControl({
             <Truck size={24} strokeWidth={2.2} />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[12px] font-black uppercase leading-none tracking-[0.09em] text-[#52D69A]">
-              Code de dépôt validé
-            </p>
+            <p className="text-[12px] font-black uppercase leading-none tracking-[0.09em] text-[#52D69A]">{i18n.t("t06.code_de_depot_valide")}</p>
             <div className="mt-2 text-[21px] font-black leading-tight">
               {missionRef} · {lot.length} colis · {places} places
             </div>
@@ -174,13 +172,8 @@ export default function RelayReceptionControl({
       </section>
 
       <header>
-        <h2 className="text-[27px] font-black leading-[1.15] tracking-[-0.015em] text-slate-900 dark:text-white">
-          Contrôlez chaque colis
-        </h2>
-        <p className="mt-1.5 text-[14.5px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">
-          Scannez l'étiquette de chaque colis, puis touchez-le si son scellé est intact (le film, pour
-          un encombrant). L'emplacement dépend de la taille.
-        </p>
+        <h2 className="text-[27px] font-black leading-[1.15] tracking-[-0.015em] text-slate-900 dark:text-white">{i18n.t("t06.controlez_chaque_colis")}</h2>
+        <p className="mt-1.5 text-[14.5px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">{i18n.t("t06.scannez_l_etiquette_de_chaque_colis_puis_t")}</p>
       </header>
 
       {/* ── Le lot ───────────────────────────────────────────────────────── */}
@@ -241,9 +234,7 @@ export default function RelayReceptionControl({
                   </span>
                 </button>
                 {/* R66.1 : un colis n'entre qu'avec son code de depot (QR du colis ou saisie). */}
-                <label className="mb-3 ml-[50px] flex items-center gap-2 text-[12px] font-bold text-slate-500 dark:text-slate-400">
-                  Code de dépôt
-                  <input
+                <label className="mb-3 ml-[50px] flex items-center gap-2 text-[12px] font-bold text-slate-500 dark:text-slate-400">{i18n.t("t06.code_de_depot")}<input
                     value={depotCodes[arrival.shipmentId] || ""}
                     onChange={(event) => onDepotCode(arrival.shipmentId, event.target.value.replace(/\D/g, "").slice(0, 6))}
                     inputMode="numeric"
@@ -263,9 +254,7 @@ export default function RelayReceptionControl({
 
       {/* ── Les anomalies ────────────────────────────────────────────────── */}
       <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-2 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
-        <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
-          Anomalies du lot
-        </h3>
+        <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">{i18n.t("t06.anomalies_du_lot")}</h3>
         <ul className="mt-1 divide-y divide-slate-100 dark:divide-slate-800">
           {ANOMALIES.map(({ id, icon: Icon, tone, title, body }) => (
             <li key={id}>
@@ -310,16 +299,12 @@ export default function RelayReceptionControl({
           onClick={onValidate}
           className="pr-btn flex flex-1 items-center justify-center gap-2.5 rounded-[12px] px-4 py-4 text-[17px] font-black text-white transition active:scale-[.97] disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none dark:disabled:from-slate-700 dark:disabled:to-slate-700"
         >
-          <Check size={19} strokeWidth={3} /> Valider le lot
-        </button>
+          <Check size={19} strokeWidth={3} />{i18n.t("t06.valider_le_lot")}</button>
       </div>
 
       <div className="flex items-start gap-3 rounded-[14px] bg-[#EAF0FF] px-4 py-3.5 dark:bg-blue-950/40">
         <Lock size={18} strokeWidth={2.2} className="mt-0.5 flex-shrink-0 text-[#8FB0FF] dark:text-blue-300" />
-        <p className="text-[13.5px] font-medium leading-[1.55] text-[#9FAACB] dark:text-blue-100/80">
-          Vous ne voyez jamais le vendeur ni le client : uniquement la référence BelivaY, la taille et
-          l'emplacement.
-        </p>
+        <p className="text-[13.5px] font-medium leading-[1.55] text-[#9FAACB] dark:text-blue-100/80">{i18n.t("t06.vous_ne_voyez_jamais_le_vendeur_ni_le_clie")}</p>
       </div>
 
       {sheet === "reserve" ? (
@@ -368,9 +353,7 @@ function ReserveSheet({
       />
 
       {lot.length > 1 ? (
-        <label className="block text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-          Colis concerné
-          <select
+        <label className="block text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">{i18n.t("t06.colis_concerne")}<select
             value={parcelId}
             onChange={(event) => setParcelId(Number(event.target.value))}
             className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-950 outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-white"
@@ -384,9 +367,7 @@ function ReserveSheet({
         </label>
       ) : null}
 
-      <label className="mt-4 block text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-        Ce que vous constatez
-        <textarea
+      <label className="mt-4 block text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">{i18n.t("t06.ce_que_vous_constatez")}<textarea
           value={note}
           onChange={(event) => setNote(event.target.value)}
           rows={3}
@@ -453,9 +434,7 @@ function GapSheet({
         onClose={onCancel}
       />
 
-      <label className="block text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-        Ce que vous comptez
-        <textarea
+      <label className="block text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">{i18n.t("t06.ce_que_vous_comptez")}<textarea
           value={note}
           onChange={(event) => setNote(event.target.value)}
           rows={3}
@@ -464,10 +443,7 @@ function GapSheet({
         />
       </label>
 
-      <p className="mt-3 text-[13px] font-medium leading-[1.5] text-slate-500 dark:text-slate-400">
-        Ne cochez que les colis réellement devant vous. Un colis coché puis jamais rangé devient le
-        vôtre au premier inventaire.
-      </p>
+      <p className="mt-3 text-[13px] font-medium leading-[1.5] text-slate-500 dark:text-slate-400">{i18n.t("t06.ne_cochez_que_les_colis_reellement_devant")}</p>
 
       <div className="mt-5 flex items-center justify-end gap-2">
         <button

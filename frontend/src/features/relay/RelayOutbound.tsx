@@ -237,12 +237,8 @@ export default function RelayOutbound({
   return (
     <div className="space-y-4">
       <header className="pt-0.5">
-        <h2 className="text-[27px] font-black leading-[1.15] tracking-[-0.015em] text-slate-900 dark:text-white">
-          À faire partir
-        </h2>
-        <p className="mt-1.5 text-[14.5px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">
-          Ce que le livreur emporte : renvois, retours, transferts, refus.
-        </p>
+        <h2 className="text-[27px] font-black leading-[1.15] tracking-[-0.015em] text-slate-900 dark:text-white">{i18n.t("t06.a_faire_partir")}</h2>
+        <p className="mt-1.5 text-[14.5px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">{i18n.t("t06.ce_que_le_livreur_emporte_renvois_retours")}</p>
       </header>
 
       {/* ── Prochaine collecte ───────────────────────────────────────────── */}
@@ -307,9 +303,7 @@ export default function RelayOutbound({
           </div>
 
           {pending.length === 0 ? (
-            <p className="py-6 text-center text-[13.5px] font-medium text-slate-400 dark:text-slate-500">
-              Aucun colis à faire partir.
-            </p>
+            <p className="py-6 text-center text-[13.5px] font-medium text-slate-400 dark:text-slate-500">{i18n.t("t06.aucun_colis_a_faire_partir")}</p>
           ) : (
             <>
               <ul className="mt-2 divide-y divide-slate-100 dark:divide-slate-800">
@@ -362,10 +356,7 @@ export default function RelayOutbound({
                 })}
               </ul>
 
-              <p className="mt-3 text-[13px] font-medium leading-[1.5] text-slate-500 dark:text-slate-400">
-                Touchez chaque colis en le tendant au livreur. Il confirme sur son téléphone : la garde
-                lui passe.
-              </p>
+              <p className="mt-3 text-[13px] font-medium leading-[1.5] text-slate-500 dark:text-slate-400">{i18n.t("t06.touchez_chaque_colis_en_le_tendant_au_livr")}</p>
 
               {/* R66.3 : pas de changement de main sans photo — le serveur refuse la sortie sans elle. */}
               <label className="mt-3 flex cursor-pointer items-center gap-3 rounded-[12px] border border-dashed border-slate-300 px-4 py-3 text-[14px] font-semibold text-slate-700 dark:border-slate-700 dark:text-slate-200">
@@ -398,14 +389,10 @@ export default function RelayOutbound({
       {/* ── Collectes et livraisons prévues ──────────────────────────────── */}
       {active === "batches" ? (
         <section className="rounded-[14px] border border-slate-200 bg-white px-4 pb-4 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
-          <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
-            Collectes et livraisons prévues
-          </h3>
+          <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">{i18n.t("t06.collectes_et_livraisons_prevues")}</h3>
 
           {passages.length === 0 ? (
-            <p className="py-6 text-center text-[13.5px] font-medium text-slate-400 dark:text-slate-500">
-              Aucun passage annoncé pour l'instant.
-            </p>
+            <p className="py-6 text-center text-[13.5px] font-medium text-slate-400 dark:text-slate-500">{i18n.t("t06.aucun_passage_annonce_pour_l_instant")}</p>
           ) : (
             <ul className="mt-2 divide-y divide-slate-100 dark:divide-slate-800">
               {passages.map((passage, rang) => {
@@ -460,13 +447,9 @@ export default function RelayOutbound({
       {/* ── Partis cette semaine ─────────────────────────────────────────── */}
       {active === "gone" ? (
         <section className="rounded-[14px] border border-slate-200 bg-white px-4 pb-2 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
-          <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
-            Partis cette semaine
-          </h3>
+          <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">{i18n.t("t06.partis_cette_semaine")}</h3>
           {partis.length === 0 ? (
-            <p className="py-6 text-center text-[13.5px] font-medium text-slate-400 dark:text-slate-500">
-              Aucun colis n'est sorti de votre relais ces sept derniers jours.
-            </p>
+            <p className="py-6 text-center text-[13.5px] font-medium text-slate-400 dark:text-slate-500">{i18n.t("t06.aucun_colis_n_est_sorti_de_votre_relais_ce")}</p>
           ) : (
             <ul className="mt-2 divide-y divide-slate-100 dark:divide-slate-800">
               {partis.map((groupe) => (
@@ -512,9 +495,7 @@ export default function RelayOutbound({
 
       {/* ── Pourquoi un colis part ───────────────────────────────────────── */}
       <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-4 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
-        <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
-          Pourquoi un colis part
-        </h3>
+        <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">{i18n.t("t06.pourquoi_un_colis_part")}</h3>
         <dl className="mt-3 divide-y divide-slate-100 dark:divide-slate-800">
           {REASONS.map(([motif, suite]) => (
             <div key={motif} className="flex items-start justify-between gap-4 py-3">

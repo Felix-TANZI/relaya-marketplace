@@ -56,9 +56,7 @@ export default function AppleRetourPage() {
       {erreur ? (
         <>
           <p role="alert" className="font-semibold text-red-600">{erreur}</p>
-          <button type="button" className="mt-6 rounded-full border px-5 py-2 font-bold" onClick={() => navigate('/login')}>
-            Retour à la connexion
-          </button>
+          <button type="button" className="mt-6 rounded-full border px-5 py-2 font-bold" onClick={() => navigate('/login')}>{i18n.t("t06.retour_a_la_connexion")}</button>
         </>
       ) : deuxFacteurs ? (
         <>

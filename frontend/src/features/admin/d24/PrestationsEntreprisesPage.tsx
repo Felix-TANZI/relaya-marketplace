@@ -46,9 +46,7 @@ export default function PrestationsEntreprisesPage() {
       <EnTete icon={Truck} titre={i18n.t("ad9.prestations_des_entreprises")} sousTitre={i18n.t("ad9.payees_au_tarif_de_leur_grille_le_vendredi")}
         onRefresh={() => void charger()} chargement={chargement} />
       <label className="mb-3 flex items-center gap-2 text-sm font-semibold">
-        <input type="checkbox" checked={aVerser} onChange={(e) => setAVerser(e.target.checked)} />
-        Seulement ce qui reste à verser
-      </label>
+        <input type="checkbox" checked={aVerser} onChange={(e) => setAVerser(e.target.checked)} />{i18n.t("t06.seulement_ce_qui_reste_a_verser")}</label>
       {data && (
         <>
           <Tuiles>

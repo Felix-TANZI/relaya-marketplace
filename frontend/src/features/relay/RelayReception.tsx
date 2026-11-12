@@ -591,8 +591,7 @@ function CodeDialog({
       {matched ? (
         <div className="mt-3 rounded-[14px] border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-800 dark:bg-emerald-950/50">
           <div className="flex items-center gap-2 text-[13px] font-black text-emerald-700 dark:text-emerald-300">
-            <CheckCircle2 size={15} strokeWidth={2.6} /> Arrivée reconnue
-          </div>
+            <CheckCircle2 size={15} strokeWidth={2.6} />{i18n.t("t06.arrivee_reconnue")}</div>
           <div className="mt-1 text-sm font-bold text-slate-950 dark:text-white">
             {matched.internalRef} · {matched.sizeLabel}
           </div>
@@ -600,9 +599,7 @@ function CodeDialog({
             {matched.courierRef || "Livreur à assigner"}
             {matched.vehicleLabel ? ` · ${matched.vehicleLabel}` : ""}
           </div>
-          <label className="mt-3 block text-[11px] font-black uppercase tracking-[0.12em] text-emerald-800 dark:text-emerald-200">
-            Code de dépôt du colis (6 chiffres)
-            <input
+          <label className="mt-3 block text-[11px] font-black uppercase tracking-[0.12em] text-emerald-800 dark:text-emerald-200">{i18n.t("t06.code_de_depot_du_colis_6_chiffres")}<input
               value={depotCode}
               onChange={(event) => setDepotCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
               inputMode="numeric"
@@ -614,9 +611,7 @@ function CodeDialog({
         </div>
       ) : notFound ? (
         <p className="mt-3 flex items-start gap-2 text-sm font-semibold text-red-600 dark:text-red-400">
-          <ShieldAlert size={16} className="mt-0.5 flex-shrink-0" />
-          Aucune arrivée annoncée chez vous ne porte ce code. Vérifiez-le avec le livreur avant d'ouvrir le lot.
-        </p>
+          <ShieldAlert size={16} className="mt-0.5 flex-shrink-0" />{i18n.t("t06.aucune_arrivee_annoncee_chez_vous_ne_porte")}</p>
       ) : (
         <p className="mt-3 text-sm font-medium leading-relaxed text-slate-500 dark:text-slate-400">
           {arrivals.length > 0
@@ -934,17 +929,14 @@ export default function RelayReception({
 
           <div className="min-w-0 flex-1">
             <h2 className="text-[17px] font-black leading-tight tracking-[-0.02em]">{i18n.t("rl3.saisissez_le_code_de_depot")}</h2>
-            <p className="mt-1.5 text-[13.5px] font-medium leading-[1.45] text-white/65">
-              6 chiffres donnés par le livreur. Pas de code, pas de lot.
-            </p>
+            <p className="mt-1.5 text-[13.5px] font-medium leading-[1.45] text-white/65">{i18n.t("t06.6_chiffres_donnes_par_le_livreur_pas_de_co")}</p>
 
             <button
               type="button"
               onClick={() => setCodeOpen(true)}
               className="pr-btn mt-3.5 flex w-full items-center justify-center gap-2.5 rounded-[10px] px-4 py-3 text-[17px] font-black text-white transition active:scale-[.97]"
             >
-              <KeyRound size={19} strokeWidth={2.5} /> Saisir le code
-            </button>
+              <KeyRound size={19} strokeWidth={2.5} />{i18n.t("t06.saisir_le_code")}</button>
 
             {/* Le code peut etre illisible, l'ecran du livreur casse, la
                 batterie vide. Sans cette porte de sortie, la reception
@@ -962,9 +954,7 @@ export default function RelayReception({
 
       <div className="flex items-start gap-3 rounded-xl border border-blue-100 bg-[#EAF0FF] p-4 dark:border-blue-900 dark:bg-blue-950/50">
         <LockKeyhole className="mt-0.5 flex-shrink-0 text-[#8FB0FF] dark:text-blue-300" size={18} />
-        <p className="text-[13.5px] font-medium leading-[1.5] text-[#9FAACB] dark:text-blue-100/80">
-          Vous ne voyez jamais le vendeur ni le client : uniquement la référence BelivaY, la taille et l'emplacement.
-        </p>
+        <p className="text-[13.5px] font-medium leading-[1.5] text-[#9FAACB] dark:text-blue-100/80">{i18n.t("t06.vous_ne_voyez_jamais_le_vendeur_ni_le_clie")}</p>
       </div>
         </>
       )}

@@ -395,9 +395,7 @@ export default function TrackingMap({
           ]}
         />
         {isApproximate ? (
-          <div className="absolute top-3 left-3 z-[500] rounded-full bg-amber-500/95 px-3 py-2 text-xs font-black text-white shadow-lg backdrop-blur">
-            Position approximative — repère non localisé précisément
-          </div>
+          <div className="absolute top-3 left-3 z-[500] rounded-full bg-amber-500/95 px-3 py-2 text-xs font-black text-white shadow-lg backdrop-blur">{i18n.t("t06.position_approximative_repere_non_localise")}</div>
         ) : null}
         {remainingDistance !== null ? (
           <div
@@ -458,9 +456,7 @@ export default function TrackingMap({
         ) : null}
       </MapContainer>
       {isApproximate ? (
-        <div className="absolute top-3 left-3 z-[500] rounded-full bg-amber-500/95 px-3 py-2 text-xs font-black text-white shadow-lg backdrop-blur">
-          Position approximative — repère non localisé précisément
-        </div>
+        <div className="absolute top-3 left-3 z-[500] rounded-full bg-amber-500/95 px-3 py-2 text-xs font-black text-white shadow-lg backdrop-blur">{i18n.t("t06.position_approximative_repere_non_localise")}</div>
       ) : null}
       {remainingDistance !== null ? (
         <div

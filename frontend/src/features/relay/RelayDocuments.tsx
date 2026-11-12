@@ -279,11 +279,7 @@ export default function RelayDocuments({
         Historique, qui les affiche). Ces pieces-ci, elles, ne sont pas
         purgees : `ComplianceDocument` n'a aucune regle de suppression.
       */}
-      <p className="px-1 pb-1 text-center text-[12.5px] font-medium leading-[1.55] text-slate-400 dark:text-slate-500">
-        Une pièce qui expire vous est signalée 30 jours avant. Vos pièces ne sont jamais montrées :
-        les clients voient seulement votre prénom, votre portrait et la façade. Vous pouvez les
-        consulter, les corriger et demander leur export à tout moment.
-      </p>
+      <p className="px-1 pb-1 text-center text-[12.5px] font-medium leading-[1.55] text-slate-400 dark:text-slate-500">{i18n.t("t06.une_piece_qui_expire_vous_est_signalee_30")}</p>
     </div>
   );
 }

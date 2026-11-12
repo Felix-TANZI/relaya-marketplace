@@ -78,8 +78,7 @@ export default function FlashDealsPage() {
             </div>
 
             <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3.5 py-2 text-[12px] font-bold text-white backdrop-blur-sm sm:text-[13px]">
-              <Clock size={14} className="text-amber-200" />
-              Expire dans <span className="tabular-nums tracking-wide">{remaining}</span>
+              <Clock size={14} className="text-amber-200" />{i18n.t("t06.expire_dans")}<span className="tabular-nums tracking-wide">{remaining}</span>
             </span>
           </div>
 
@@ -158,18 +157,14 @@ export default function FlashDealsPage() {
         <section>
           <div className="mb-3 flex items-center gap-2.5">
             <Flame size={18} className="text-orange-500" fill="currentColor" />
-            <h2 className="text-[18px] font-black tracking-tight text-gray-900 sm:text-[20px] dark:text-white">
-              Tous les Flash Deals
-            </h2>
+            <h2 className="text-[18px] font-black tracking-tight text-gray-900 sm:text-[20px] dark:text-white">{i18n.t("t06.tous_les_flash_deals")}</h2>
             <span className="rounded-full bg-[#fff1e5] px-2.5 py-1 text-[11px] font-bold text-primary dark:bg-primary/10">
               {deals.length} offre{deals.length > 1 ? "s" : ""}
             </span>
           </div>
 
           {deals.length === 0 ? (
-            <p className="rounded-[20px] border border-dashed border-[#f1d2bb] bg-white px-4 py-10 text-center text-[13px] font-semibold text-gray-500 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400">
-              Aucune offre flash en cours. Revenez très vite, elles changent chaque jour.
-            </p>
+            <p className="rounded-[20px] border border-dashed border-[#f1d2bb] bg-white px-4 py-10 text-center text-[13px] font-semibold text-gray-500 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400">{i18n.t("t06.aucune_offre_flash_en_cours_revenez_tres_v")}</p>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {deals.map((deal, index) => {
@@ -196,9 +191,7 @@ export default function FlashDealsPage() {
                       ) : null}
 
                       <p className="absolute inset-x-0 bottom-0 flex items-center gap-1.5 bg-[linear-gradient(180deg,transparent,rgba(17,24,39,.85))] px-2.5 pb-2.5 pt-8 text-[11px] font-bold text-white">
-                        <AlarmClock size={12} className="text-amber-300" />
-                        Offre limitée · stock réduit
-                      </p>
+                        <AlarmClock size={12} className="text-amber-300" />{i18n.t("t06.offre_limitee_stock_reduit")}</p>
                     </div>
 
                     <div className="flex flex-col gap-1 p-3">

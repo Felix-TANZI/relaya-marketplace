@@ -145,14 +145,8 @@ export default function RelayCamera({
                 />
               </div>
 
-              <h2 className="mt-6 text-center text-[17px] font-black leading-tight">
-                Visez le QR du colis ou du client
-              </h2>
-              <p className="mt-2 text-center text-[13.5px] font-medium leading-[1.5] text-[#8FB0FF]">
-                Le scan se fait tout seul. Étiquette de colis, code de retrait du client ou étiquette
-                de retour : le même scanner reconnaît le type. Le lot du livreur se reçoit avec son
-                code de dépôt.
-              </p>
+              <h2 className="mt-6 text-center text-[17px] font-black leading-tight">{i18n.t("t06.visez_le_qr_du_colis_ou_du_client")}</h2>
+              <p className="mt-2 text-center text-[13.5px] font-medium leading-[1.5] text-[#8FB0FF]">{i18n.t("t06.le_scan_se_fait_tout_seul_etiquette_de_col")}</p>
             </>
           ) : (
             <>
@@ -178,9 +172,7 @@ export default function RelayCamera({
               {error}
             </p>
           ) : !streaming ? (
-            <p className="mt-4 text-center text-[13px] font-medium text-white/50">
-              Ouverture de la caméra…
-            </p>
+            <p className="mt-4 text-center text-[13px] font-medium text-white/50">{i18n.t("t06.ouverture_de_la_camera")}</p>
           ) : null}
         </div>
       </div>
@@ -193,8 +185,7 @@ export default function RelayCamera({
             onClick={onManual}
             className="flex w-full items-center justify-center gap-2.5 rounded-[12px] bg-white/10 px-4 py-4 text-[16px] font-black text-white transition active:scale-[.97]"
           >
-            <Keyboard size={18} strokeWidth={2.2} /> Saisir le code à la main
-          </button>
+            <Keyboard size={18} strokeWidth={2.2} />{i18n.t("t06.saisir_le_code_a_la_main")}</button>
         ) : (
           <div className="flex items-center justify-between gap-4">
             {/* La derniere prise, pour verifier qu'elle est lisible avant de

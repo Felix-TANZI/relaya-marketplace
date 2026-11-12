@@ -578,19 +578,14 @@ export default function HomePage() {
               <div className="flex flex-col gap-3">
                 {allFiltered.length === 0 && realCategoryActive ? (
                   <div className="flex flex-col items-center gap-2 py-10 text-center">
-                    <p className="text-[14px] font-extrabold text-gray-900 dark:text-white">
-                      Pas encore d'article validé dans « {activeStorefront?.name} »
+                    <p className="text-[14px] font-extrabold text-gray-900 dark:text-white">{i18n.t("t06.pas_encore_d_article_valide_dans")}{activeStorefront?.name} »
                     </p>
-                    <p className="max-w-md text-[12px] text-gray-500 dark:text-gray-400">
-                      Les produits apparaissent ici dès que les vendeurs les publient dans cette
-                      catégorie et que l'équipe BelivaY les a validés.
-                    </p>
+                    <p className="max-w-md text-[12px] text-gray-500 dark:text-gray-400">{i18n.t("t06.les_produits_apparaissent_ici_des_que_les")}</p>
                     <button
                       type="button"
                       onClick={() => navigate(`/categorie/${activeCat}`)}
                       className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-[#ecd3c1] bg-white px-4 py-2 text-[12px] font-bold text-gray-700 transition hover:border-primary hover:text-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
-                    >
-                      Voir la page de la catégorie <ArrowRight size={14} />
+                    >{i18n.t("t06.voir_la_page_de_la_categorie")}<ArrowRight size={14} />
                     </button>
                   </div>
                 ) : null}

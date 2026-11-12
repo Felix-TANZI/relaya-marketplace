@@ -602,9 +602,7 @@ export default function CategoryThemePage() {
                         : "border-[#ecd3c1] bg-white text-gray-700 hover:border-primary hover:text-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
                     }`}
                     style={activeFacet === null ? { background: accent } : undefined}
-                  >
-                    Tout le thème
-                  </button>
+                  >{i18n.t("t06.tout_le_theme")}</button>
                   {theme.facets.map((facet) => {
                     const active = activeFacet === facet;
                     return (

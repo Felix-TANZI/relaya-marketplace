@@ -294,9 +294,7 @@ export default function RelaySettingsBody({
 
       {/* ── Affichage et application ─────────────────────────────────────── */}
       <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-2 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
-        <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
-          Affichage et application
-        </h3>
+        <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">{i18n.t("t06.affichage_et_application")}</h3>
         <div className="mt-1 divide-y divide-slate-100 dark:divide-slate-800">
           <Ligne
             icon={Moon}
@@ -430,8 +428,7 @@ export default function RelaySettingsBody({
         onClick={onLogout}
         className="flex w-full items-center justify-center gap-2.5 rounded-[14px] border border-red-100 bg-[#FDECEA] px-4 py-4 text-[16px] font-black text-[#B42318] transition active:scale-[.97] dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
       >
-        <LogOut size={18} strokeWidth={2.4} /> Se déconnecter
-      </button>
+        <LogOut size={18} strokeWidth={2.4} />{i18n.t("t06.se_deconnecter")}</button>
 
       {sheet && INDISPONIBLES[sheet] ? (
         <RelaySheet label={INDISPONIBLES[sheet].title} onClose={() => setSheet(null)} size="sm">
@@ -451,9 +448,7 @@ export default function RelaySettingsBody({
               onSupport();
             }}
             className="mt-5 w-full rounded-[12px] border border-slate-200 bg-white px-5 py-3 text-[15px] font-black text-slate-700 transition active:scale-[.97] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-          >
-            Écrire au support
-          </button>
+          >{i18n.t("t06.ecrire_au_support")}</button>
         </RelaySheet>
       ) : null}
     </>

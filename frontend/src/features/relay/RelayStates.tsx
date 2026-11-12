@@ -104,15 +104,12 @@ function CameraTest() {
 
       {on && streaming ? (
         <p className="mt-3 flex items-center gap-2 text-[13.5px] font-black text-emerald-600 dark:text-emerald-400">
-          <Check size={16} strokeWidth={3} /> La caméra fonctionne. Le scan des QR est disponible.
-        </p>
+          <Check size={16} strokeWidth={3} />{i18n.t("t06.la_camera_fonctionne_le_scan_des_qr_est_di")}</p>
       ) : null}
 
       {on && error ? (
         <p className="mt-3 text-[13.5px] font-semibold leading-relaxed text-red-600 dark:text-red-400">
-          {error} — autorisez la caméra dans les réglages du navigateur, puis relancez le test. Sans
-          caméra, la réception se fait en saisissant le code à la main.
-        </p>
+          {error}{i18n.t("t06.autorisez_la_camera_dans_les_reglages_du_n")}</p>
       ) : null}
 
       <button
@@ -205,9 +202,7 @@ export default function RelayStates({
                 type="button"
                 onClick={() => onNavigate(pending[0][0] === "KYC BelivaY" ? "kyc" : "capacite")}
                 className="pr-btn mt-3 w-full rounded-[12px] px-4 py-3 text-[15px] font-black text-white transition active:scale-[.97]"
-              >
-                Compléter maintenant
-              </button>
+              >{i18n.t("t06.completer_maintenant")}</button>
             ) : null}
           </>
         );
@@ -227,11 +222,7 @@ export default function RelayStates({
                 value={cache.oldest ? DATE_LONGUE.format(cache.oldest) : "aucune"}
               />
             </div>
-            <p className="mt-3 text-[13px] font-medium leading-[1.55] text-slate-500 dark:text-slate-400">
-              Sans réseau, le portail réaffiche les derniers écrans reçus — vous pouvez consulter, pas
-              valider. Une remise, une réception ou un constat exigent la connexion : ils touchent à
-              l'argent et aux preuves, ils ne se mettent pas en file d'attente.
-            </p>
+            <p className="mt-3 text-[13px] font-medium leading-[1.55] text-slate-500 dark:text-slate-400">{i18n.t("t06.sans_reseau_le_portail_reaffiche_les_derni")}</p>
           </>
         );
 
@@ -239,13 +230,10 @@ export default function RelayStates({
         return (
           <>
             {lastError ? (
-              <div className="rounded-[12px] border border-red-100 bg-red-50 px-4 py-3 text-[13.5px] font-semibold text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
-                Dernière erreur : {lastError}
+              <div className="rounded-[12px] border border-red-100 bg-red-50 px-4 py-3 text-[13.5px] font-semibold text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">{i18n.t("t06.derniere_erreur")}{lastError}
               </div>
             ) : (
-              <p className="text-[13px] font-medium text-slate-500 dark:text-slate-400">
-                Aucune erreur depuis l'ouverture de cet écran.
-              </p>
+              <p className="text-[13px] font-medium text-slate-500 dark:text-slate-400">{i18n.t("t06.aucune_erreur_depuis_l_ouverture_de_cet_ec")}</p>
             )}
             <p className="mt-3 text-[13px] font-medium leading-[1.55] text-slate-500 dark:text-slate-400">
               Une opération refusée ne se perd pas en silence : le message rouge en haut de l'écran dit
@@ -272,22 +260,14 @@ export default function RelayStates({
             <div className="divide-y divide-slate-100 dark:divide-slate-800">
               <Fact label={i18n.t("rl3.version_publiee")} value={`v${release.version}`} />
             </div>
-            <p className="mt-3 text-[13px] font-medium leading-[1.55] text-slate-500 dark:text-slate-400">
-              L'application installée garde la caméra et les preuves même quand le navigateur est
-              fermé. Elle ne passe pas par le Play Store : le fichier vient directement de BelivaY.
-            </p>
+            <p className="mt-3 text-[13px] font-medium leading-[1.55] text-slate-500 dark:text-slate-400">{i18n.t("t06.l_application_installee_garde_la_camera_et")}</p>
             <a
               href={release.apk_url}
               className="pr-btn mt-3 block w-full rounded-[12px] px-4 py-3 text-center text-[15px] font-black text-white transition active:scale-[.97]"
-            >
-              Télécharger l'application
-            </a>
+            >{i18n.t("t06.telecharger_l_application")}</a>
           </>
         ) : (
-          <p className="text-[13px] font-medium leading-[1.55] text-slate-500 dark:text-slate-400">
-            Aucune version n'est publiée pour le portail point relais en ce moment. Continuez depuis
-            le navigateur : toutes les opérations y sont disponibles.
-          </p>
+          <p className="text-[13px] font-medium leading-[1.55] text-slate-500 dark:text-slate-400">{i18n.t("t06.aucune_version_n_est_publiee_pour_le_porta")}</p>
         );
 
       default:
@@ -298,12 +278,8 @@ export default function RelayStates({
   return (
     <div className="space-y-4">
       <header className="pt-0.5">
-        <h2 className="text-[27px] font-black leading-[1.15] tracking-[-0.015em] text-slate-900 dark:text-white">
-          Écrans d'état et d'accès
-        </h2>
-        <p className="mt-1.5 text-[14.5px] font-medium text-slate-500 dark:text-slate-400">
-          Ce que fait le portail quand quelque chose sort de l'ordinaire.
-        </p>
+        <h2 className="text-[27px] font-black leading-[1.15] tracking-[-0.015em] text-slate-900 dark:text-white">{i18n.t("t06.ecrans_d_etat_et_d_acces")}</h2>
+        <p className="mt-1.5 text-[14.5px] font-medium text-slate-500 dark:text-slate-400">{i18n.t("t06.ce_que_fait_le_portail_quand_quelque_chose")}</p>
       </header>
 
       <section className="overflow-hidden rounded-[14px] border border-slate-200 bg-white shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">

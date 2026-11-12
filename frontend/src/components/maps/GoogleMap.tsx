@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import i18n from "@/i18n";
 import { loadGoogleMaps, toGooglePosition, type GoogleMapPosition } from "@/lib/googleMaps";
 
 export interface GoogleMapMarker {
@@ -236,9 +237,7 @@ export function GoogleMap({
         </div>
       ) : null}
       {loadError ? (
-        <div className="absolute inset-0 flex items-center justify-center bg-white/95 px-4 text-center text-sm font-bold text-slate-700">
-          Google Maps est indisponible. Verifiez la cle API et les APIs activees.
-        </div>
+        <div className="absolute inset-0 flex items-center justify-center bg-white/95 px-4 text-center text-sm font-bold text-slate-700">{i18n.t("t06.google_maps_est_indisponible_verifiez_la_c")}</div>
       ) : null}
     </div>
   );

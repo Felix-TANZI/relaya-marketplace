@@ -76,10 +76,7 @@ export default function ListeVendrediPage() {
     <div className="mx-auto max-w-5xl space-y-6 p-4">
       <header>
         <h1 className="text-2xl font-black">{i18n.t("ad9.liste_du_vendredi")}</h1>
-        <p className="text-sm text-slate-500">
-          Deux validations par deux personnes différentes : le comptable d'abord, le porteur ensuite (DP-42).
-          À valider avant midi le vendredi (R22.2).
-        </p>
+        <p className="text-sm text-slate-500">{i18n.t("t06.deux_validations_par_deux_personnes_differ")}</p>
       </header>
 
       {message && (
@@ -166,10 +163,7 @@ export default function ListeVendrediPage() {
 
       <section className="rounded-xl border bg-white p-4 dark:bg-slate-900">
         <h2 className="text-lg font-black">{i18n.t("ad9.valideurs_de_secours")}</h2>
-        <p className="text-sm text-slate-500">
-          Accordés par le porteur, pour une durée limitée, avec un motif. Chaque accès et chaque validation faite
-          à ce titre restent tracés.
-        </p>
+        <p className="text-sm text-slate-500">{i18n.t("t06.accordes_par_le_porteur_pour_une_duree_lim")}</p>
         <div className="mt-3 flex flex-wrap gap-2">
           <input className="rounded-lg border px-3 py-2" placeholder="Identifiant" value={nouveau.username}
             onChange={(e) => setNouveau({ ...nouveau, username: e.target.value })} />

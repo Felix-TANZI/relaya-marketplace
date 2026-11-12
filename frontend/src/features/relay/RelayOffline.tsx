@@ -174,18 +174,14 @@ export default function RelayOffline() {
             <div className="text-[15px] font-black leading-tight text-[#8A5A00] dark:text-amber-200">
               Hors connexion depuis {minutes} min
             </div>
-            <p className="mt-1 text-[13.5px] font-medium leading-snug text-[#8A5A00] dark:text-amber-300/85">
-              Vous pouvez continuer : tout sera envoyé au retour du réseau.
-            </p>
+            <p className="mt-1 text-[13.5px] font-medium leading-snug text-[#8A5A00] dark:text-amber-300/85">{i18n.t("t06.vous_pouvez_continuer_tout_sera_envoye_au")}</p>
           </div>
         </section>
       ) : (
         <section className="flex items-start gap-3 rounded-[14px] border border-[#BFE3CF] bg-[#E6F4EC] px-4 py-3.5 dark:border-emerald-800 dark:bg-emerald-950/30">
           <Check size={19} strokeWidth={2.6} className="mt-[2px] flex-shrink-0 text-[#1F7A4D] dark:text-emerald-400" />
           <div className="min-w-0 flex-1">
-            <div className="text-[15px] font-black leading-tight text-[#155C39] dark:text-emerald-200">
-              Réseau présent
-            </div>
+            <div className="text-[15px] font-black leading-tight text-[#155C39] dark:text-emerald-200">{i18n.t("t06.reseau_present")}</div>
             <p className="mt-1 text-[13.5px] font-medium leading-snug text-[#1F7A4D] dark:text-emerald-300/85">
               {file.length > 0
                 ? i18n.t("c06.relais.operations_en_attente", { count: file.length })
@@ -196,9 +192,7 @@ export default function RelayOffline() {
       )}
 
       {/* ── Ce qui marche sans réseau ──────────────────────────────────── */}
-      <h2 className="px-1 pt-0.5 text-[23px] font-black leading-[1.14] tracking-[-0.03em] text-slate-900 dark:text-white">
-        Ce qui marche sans réseau
-      </h2>
+      <h2 className="px-1 pt-0.5 text-[23px] font-black leading-[1.14] tracking-[-0.03em] text-slate-900 dark:text-white">{i18n.t("t06.ce_qui_marche_sans_reseau")}</h2>
 
       <section className="rounded-[14px] border border-slate-200 bg-white px-4 pb-2 pt-2 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
         <ul className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -245,9 +239,7 @@ export default function RelayOffline() {
         </div>
 
         {file.length === 0 ? (
-          <p className="py-6 text-center text-[13.5px] font-medium text-slate-400 dark:text-slate-500">
-            Rien n'attend. Tout ce que vous avez fait est parti.
-          </p>
+          <p className="py-6 text-center text-[13.5px] font-medium text-slate-400 dark:text-slate-500">{i18n.t("t06.rien_n_attend_tout_ce_que_vous_avez_fait_e")}</p>
         ) : (
           <ul className="mt-2 divide-y divide-slate-100 dark:divide-slate-800">
             {file.map((entry) => {
@@ -314,12 +306,7 @@ export default function RelayOffline() {
         application reste a ecrire.
       */}
       <p className="flex items-start gap-2.5 rounded-[14px] bg-[#EAF0FF] px-4 py-3.5 text-[13px] font-medium leading-[1.55] text-[#1E4BC4] dark:bg-blue-950/40 dark:text-blue-200">
-        <RefreshCw size={18} strokeWidth={2.2} className="mt-[2px] flex-shrink-0" />
-        Les opérations gardent l'heure où elles ont été faites, pas l'heure d'envoi. Une opération en
-        attente depuis plus de {EXPIRATION_HEURES} h expire : il faut la refaire (le registre papier
-        aussi se saisit sous {EXPIRATION_HEURES} h). Ne désinstallez pas l'application tant que des
-        opérations sont en attente.
-      </p>
+        <RefreshCw size={18} strokeWidth={2.2} className="mt-[2px] flex-shrink-0" />{i18n.t("t06.les_operations_gardent_l_heure_ou_elles_on")}{EXPIRATION_HEURES}{i18n.t("t06.h_expire_il_faut_la_refaire_le_registre_pa")}{EXPIRATION_HEURES}{i18n.t("t06.h_ne_desinstallez_pas_l_application_tant_q")}</p>
     </div>
   );
 }

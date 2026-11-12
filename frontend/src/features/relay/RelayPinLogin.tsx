@@ -190,13 +190,9 @@ export default function RelayPinLogin({ onAuthenticated }: { onAuthenticated: ()
               <h1 className="text-[23px] font-black tracking-[-0.03em] text-slate-900 dark:text-white">
                 Connexion
               </h1>
-              <p className="mt-1.5 text-[13.5px] font-medium leading-snug text-slate-500 dark:text-slate-400">
-                Entrez le numéro de téléphone enregistré pour votre relais.
-              </p>
+              <p className="mt-1.5 text-[13.5px] font-medium leading-snug text-slate-500 dark:text-slate-400">{i18n.t("t06.entrez_le_numero_de_telephone_enregistre_p")}</p>
 
-              <label className="mt-4 block text-[11.5px] font-black uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
-                Numéro de téléphone
-              </label>
+              <label className="mt-4 block text-[11.5px] font-black uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">{i18n.t("t06.numero_de_telephone")}</label>
               <div className="mt-2 flex items-center gap-3 rounded-[12px] border-2 border-[#2456D6] bg-white px-4 py-3 dark:bg-slate-950">
                 <span className="text-[16px] font-bold text-slate-500 dark:text-slate-400">+237</span>
                 <input
@@ -250,9 +246,7 @@ export default function RelayPinLogin({ onAuthenticated }: { onAuthenticated: ()
             <h1 className="text-center text-[23px] font-black tracking-[-0.03em] text-slate-900 dark:text-white">
               Bonjour {status?.first_name || ""}
             </h1>
-            <p className="mt-1 text-center text-[13.5px] font-medium text-slate-500 dark:text-slate-400">
-              Entrez votre code PIN à 4 chiffres
-            </p>
+            <p className="mt-1 text-center text-[13.5px] font-medium text-slate-500 dark:text-slate-400">{i18n.t("t06.entrez_votre_code_pin_a_4_chiffres")}</p>
 
             <RelayPinPad value={pin} onChange={taper} />
 
@@ -265,9 +259,7 @@ export default function RelayPinLogin({ onAuthenticated }: { onAuthenticated: ()
                   setErreur("");
                 }}
                 className="text-[13.5px] font-semibold text-slate-500 dark:text-slate-400"
-              >
-                Changer de numéro
-              </button>
+              >{i18n.t("t06.changer_de_numero_2")}</button>
               <button
                 type="button"
                 onClick={() => {
@@ -308,13 +300,9 @@ export default function RelayPinLogin({ onAuthenticated }: { onAuthenticated: ()
               {status?.has_pin ? i18n.t("rl3.pin_oublie") : i18n.t("rl3.creer_votre_pin")}
             </h1>
             <p className="mt-1.5 text-[13.5px] font-medium leading-snug text-slate-500 dark:text-slate-400">
-              {info || "Un code de réinitialisation est envoyé au compte."} Un employé peut aussi
-              demander au gérant de réinitialiser son PIN depuis « Mon équipe ».
-            </p>
+              {info || "Un code de réinitialisation est envoyé au compte."}{i18n.t("t06.un_employe_peut_aussi_demander_au_gerant_d")}</p>
 
-            <label className="mt-4 block text-[11.5px] font-black uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
-              Code reçu
-            </label>
+            <label className="mt-4 block text-[11.5px] font-black uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">{i18n.t("t06.code_recu")}</label>
             <input
               value={code}
               onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
@@ -336,10 +324,7 @@ export default function RelayPinLogin({ onAuthenticated }: { onAuthenticated: ()
               aria-label="Nouveau PIN"
               className="mt-2 w-full rounded-[12px] border border-slate-200 bg-white px-4 py-3 text-center text-[22px] font-black tracking-[0.4em] text-slate-900 outline-none transition focus:border-[#2456D6] placeholder:text-slate-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
             />
-            <p className="mt-2 text-[12.5px] font-medium text-slate-400 dark:text-slate-500">
-              Évitez quatre chiffres identiques ou qui se suivent — ils se devinent avant d'être
-              attaqués.
-            </p>
+            <p className="mt-2 text-[12.5px] font-medium text-slate-400 dark:text-slate-500">{i18n.t("t06.evitez_quatre_chiffres_identiques_ou_qui_s")}</p>
 
             <button
               type="button"

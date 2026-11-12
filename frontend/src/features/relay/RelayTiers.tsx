@@ -154,9 +154,7 @@ export default function RelayTiers() {
         <h2 className="text-[27px] font-black leading-[1.15] tracking-[-0.015em] text-slate-900 dark:text-white">
           Paliers
         </h2>
-        <p className="mt-1.5 text-[14.5px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">
-          Votre palier suit votre Trust Score, tenu dans la durée.
-        </p>
+        <p className="mt-1.5 text-[14.5px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">{i18n.t("t06.votre_palier_suit_votre_trust_score_tenu_d")}</p>
       </header>
 
       {/* ── L'échelle ──────────────────────────────────────────────────── */}
@@ -171,9 +169,7 @@ export default function RelayTiers() {
         {loading ? (
           <p className="py-4 text-[13.5px] font-medium text-white/60">{i18n.t("rl3.lecture_de_votre_palier")}</p>
         ) : !trust ? (
-          <p className="py-4 text-[13.5px] font-medium text-white/60">
-            Votre Trust Score n'est pas encore disponible.
-          </p>
+          <p className="py-4 text-[13.5px] font-medium text-white/60">{i18n.t("t06.votre_trust_score_n_est_pas_encore_disponi")}</p>
         ) : (
           <>
             <div className="flex items-start">
@@ -246,9 +242,7 @@ export default function RelayTiers() {
                   {regle?.tier_display ?? LIBELLE_DEFAUT[tier]}
                 </h3>
                 {courant ? (
-                  <span className="flex-shrink-0 rounded-full border border-[#F0DA9C] bg-[#FFF4D6] px-3 py-[5px] text-[12.5px] font-bold text-[#8A5A00] dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300">
-                    Votre palier
-                  </span>
+                  <span className="flex-shrink-0 rounded-full border border-[#F0DA9C] bg-[#FFF4D6] px-3 py-[5px] text-[12.5px] font-bold text-[#8A5A00] dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300">{i18n.t("t06.votre_palier")}</span>
                 ) : regle ? (
                   // Les DEUX conditions, pas seulement le score : c'est le
                   // volume qui bloque le plus souvent un bon relais.
@@ -285,9 +279,7 @@ export default function RelayTiers() {
               `HYSTERESIS_POINTS` : un palier perdu est un revenu perdu, la
               phrase ne doit pas dépendre d'une constante recopiée. */}
           Un palier ne se perd qu'après {trust?.hysteresis_days ?? 14} jours sous le seuil, avec{" "}
-          {nf(trust?.hysteresis_points ?? 5)} points de marge, et la descente est validée par une
-          personne. Vous êtes alerté 3 points avant chaque seuil.
-        </p>
+          {nf(trust?.hysteresis_points ?? 5)}{i18n.t("t06.points_de_marge_et_la_descente_est_validee")}</p>
       </section>
     </div>
   );

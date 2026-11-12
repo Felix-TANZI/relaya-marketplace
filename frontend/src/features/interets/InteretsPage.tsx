@@ -70,10 +70,7 @@ export default function InteretsPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">{i18n.t("t03.interets_titre")}</h1>
-      <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-        Choisis tes univers : ils passeront en premier sur l'accueil et dans les ventes flash. Tu peux changer d'avis
-        à tout moment dans ton profil.
-      </p>
+      <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{i18n.t("t06.choisis_tes_univers_ils_passeront_en_premi")}</p>
       {loading ? (
         <p className="mt-6 text-sm">Chargement…</p>
       ) : (

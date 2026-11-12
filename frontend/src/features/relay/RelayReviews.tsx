@@ -170,9 +170,7 @@ export default function RelayReviews({ onError }: { onError: (error: unknown) =>
       {/* ── Ce qui revient ───────────────────────────────────────────────── */}
       {themes.length > 0 ? (
         <section>
-          <h3 className="text-[12px] font-black uppercase leading-none tracking-[0.1em] text-slate-500 dark:text-slate-400">
-            Ce qui revient le plus
-          </h3>
+          <h3 className="text-[12px] font-black uppercase leading-none tracking-[0.1em] text-slate-500 dark:text-slate-400">{i18n.t("t06.ce_qui_revient_le_plus")}</h3>
           <div className="mt-3 flex flex-wrap gap-2">
             {themes.map((theme) => (
               <span
@@ -190,9 +188,7 @@ export default function RelayReviews({ onError }: { onError: (error: unknown) =>
           Décalés une ligne sur deux : la colonne de cartes identiques se lit
           comme un tableau, l'alternance comme des voix distinctes. */}
       {reviews.length === 0 ? (
-        <p className="rounded-[14px] border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-[13.5px] font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-500">
-          Les avis arrivent sept jours après le premier retrait.
-        </p>
+        <p className="rounded-[14px] border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-[13.5px] font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-500">{i18n.t("t06.les_avis_arrivent_sept_jours_apres_le_prem")}</p>
       ) : (
         <ul className="space-y-3">
           {reviews.map((review, index) => (
@@ -221,11 +217,7 @@ export default function RelayReviews({ onError }: { onError: (error: unknown) =>
       {/* ── Les règles ───────────────────────────────────────────────────── */}
       <div className="flex items-start gap-3 rounded-[14px] border border-slate-200 bg-white px-4 py-3.5 dark:border-slate-800 dark:bg-slate-900">
         <Lock size={18} strokeWidth={2.2} className="mt-0.5 flex-shrink-0 text-slate-400 dark:text-slate-500" />
-        <p className="text-[13.5px] font-medium leading-[1.55] text-slate-500 dark:text-slate-400">
-          Les avis sont anonymes, ouverts 7 jours après le retrait. Un avis n'est retiré que pour une
-          insulte, une donnée personnelle ou un hors-sujet, avec un motif tracé. Vous pouvez répondre
-          en privé depuis la Messagerie.
-        </p>
+        <p className="text-[13.5px] font-medium leading-[1.55] text-slate-500 dark:text-slate-400">{i18n.t("t06.les_avis_sont_anonymes_ouverts_7_jours_apr")}</p>
       </div>
     </div>
   );

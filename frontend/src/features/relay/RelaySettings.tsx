@@ -162,9 +162,7 @@ function IdentitySheet({
             }}
             className={champClasse}
           />
-          <span className="pr-sub mt-1 block">
-            Celui de votre compte BelivaY, pas votre code PIN de comptoir.
-          </span>
+          <span className="pr-sub mt-1 block">{i18n.t("t06.celui_de_votre_compte_belivay_pas_votre_co")}</span>
         </label>
 
         {erreur ? (
@@ -252,8 +250,7 @@ export default function RelaySettings({
           <h2 className="text-[23px] font-black tracking-[-0.03em] text-slate-900 dark:text-white">
             {profile.manager || username}
           </h2>
-          <p className="mt-1 text-[14px] font-medium text-slate-500 dark:text-slate-400">
-            Gérant · {profile.name}
+          <p className="mt-1 text-[14px] font-medium text-slate-500 dark:text-slate-400">{i18n.t("t06.gerant_2")}{profile.name}
             {profile.city ? `, ${profile.city}` : ""}
           </p>
 
@@ -302,17 +299,14 @@ export default function RelaySettings({
           <Settings2 size={18} strokeWidth={2.2} /> Modifier
         </button>
 
-        <p className="mt-3 text-[13px] font-medium leading-[1.5] text-slate-400 dark:text-slate-500">
-          Corrigez ici ce qui a changé au comptoir. Un vrai déménagement se signale au{" "}
+        <p className="mt-3 text-[13px] font-medium leading-[1.5] text-slate-400 dark:text-slate-500">{i18n.t("t06.corrigez_ici_ce_qui_a_change_au_comptoir_u")}{" "}
           <button
             type="button"
             onClick={onRequestChange}
             className="font-bold text-blue-700 underline underline-offset-2 dark:text-blue-300"
           >
             support
-          </button>{" "}
-          : le relais est revérifié avant que des colis n'y soient envoyés.
-        </p>
+          </button>{" "}{i18n.t("t06.le_relais_est_reverifie_avant_que_des_coli")}</p>
       </section>
 
       {children}

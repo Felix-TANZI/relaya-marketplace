@@ -270,9 +270,7 @@ export default function RelayNotifications({
         <h2 className="text-[27px] font-black leading-[1.15] tracking-[-0.015em] text-slate-900 dark:text-white">
           Notifications
         </h2>
-        <p className="mt-1.5 text-[14.5px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">
-          Un résumé le matin, puis un message seulement quand il faut agir.
-        </p>
+        <p className="mt-1.5 text-[14.5px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">{i18n.t("t06.un_resume_le_matin_puis_un_message_seuleme")}</p>
       </header>
 
       {/* ── Le résumé ──────────────────────────────────────────────────────
@@ -281,9 +279,7 @@ export default function RelayNotifications({
           soit. */}
       <section className="rounded-[14px] border-2 border-[#E8A10E] bg-white px-4 pb-4 pt-3.5 shadow-[0_2px_10px_rgba(232,161,14,.18)] dark:border-amber-600/70 dark:bg-slate-900">
         <div className="flex items-center justify-between gap-3">
-          <h3 className="text-[12.5px] font-black uppercase leading-none tracking-[0.09em] text-[#B84A00] dark:text-amber-400">
-            Résumé du matin
-          </h3>
+          <h3 className="text-[12.5px] font-black uppercase leading-none tracking-[0.09em] text-[#B84A00] dark:text-amber-400">{i18n.t("t06.resume_du_matin")}</h3>
           <Bell size={19} strokeWidth={2.2} className="flex-shrink-0 text-[#E8A10E]" aria-hidden />
         </div>
 
@@ -316,14 +312,10 @@ export default function RelayNotifications({
 
       {/* ── À traiter ──────────────────────────────────────────────────── */}
       <section>
-        <h3 className="px-1 pb-2 text-[11.5px] font-black uppercase leading-none tracking-[0.1em] text-slate-400 dark:text-slate-500">
-          À traiter
-        </h3>
+        <h3 className="px-1 pb-2 text-[11.5px] font-black uppercase leading-none tracking-[0.1em] text-slate-400 dark:text-slate-500">{i18n.t("t06.a_traiter")}</h3>
         {todo.length === 0 ? (
           <div className="rounded-[14px] border border-slate-200 bg-white px-4 py-6 text-center shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
-            <p className="text-[13.5px] font-medium text-slate-400 dark:text-slate-500">
-              Rien n'attend de vous. Le guichet est à jour.
-            </p>
+            <p className="text-[13.5px] font-medium text-slate-400 dark:text-slate-500">{i18n.t("t06.rien_n_attend_de_vous_le_guichet_est_a_jou")}</p>
           </div>
         ) : (
           <ul className="overflow-hidden rounded-[14px] border border-slate-200 bg-white shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
@@ -337,9 +329,7 @@ export default function RelayNotifications({
       {/* ── Pour information ───────────────────────────────────────────── */}
       {info.length > 0 ? (
         <section>
-          <h3 className="px-1 pb-2 text-[11.5px] font-black uppercase leading-none tracking-[0.1em] text-slate-400 dark:text-slate-500">
-            Pour information
-          </h3>
+          <h3 className="px-1 pb-2 text-[11.5px] font-black uppercase leading-none tracking-[0.1em] text-slate-400 dark:text-slate-500">{i18n.t("t06.pour_information")}</h3>
           <ul className="overflow-hidden rounded-[14px] border border-slate-200 bg-white shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
             {info.map((item, rang) => (
               <Ligne key={item.id} item={item} maintenant={maintenant} dernier={rang === info.length - 1} />
@@ -478,11 +468,7 @@ export default function RelayNotifications({
             sur un telephone qui ne sonnera pas.
           */}
           {settings.honored.length === 0 ? (
-            <p className="mt-2.5 px-1 text-[12.5px] font-medium leading-[1.55] text-slate-400 dark:text-slate-500">
-              Vos choix sont enregistrés, mais aucun envoi hors de l'application n'est encore en
-              service : les messages ci-dessus arrivent ici, dans « À traiter ». Ces réglages
-              s'appliqueront dès que l'envoi push sera actif.
-            </p>
+            <p className="mt-2.5 px-1 text-[12.5px] font-medium leading-[1.55] text-slate-400 dark:text-slate-500">{i18n.t("t06.vos_choix_sont_enregistres_mais_aucun_envo")}</p>
           ) : null}
         </section>
       ) : null}

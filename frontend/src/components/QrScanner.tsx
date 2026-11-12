@@ -42,9 +42,7 @@ export default function QrScanner({ onScan, onClose, title = i18n.t("t03.qr_scan
         {error ? (
           <p className="px-4 py-3 text-sm font-semibold text-red-600">{error}</p>
         ) : (
-          <p className="px-4 py-3 text-center text-xs text-gray-500 dark:text-gray-400">
-            Cadre le QR présenté par ton livreur.
-          </p>
+          <p className="px-4 py-3 text-center text-xs text-gray-500 dark:text-gray-400">{i18n.t("t06.cadre_le_qr_presente_par_ton_livreur")}</p>
         )}
       </div>
     </div>

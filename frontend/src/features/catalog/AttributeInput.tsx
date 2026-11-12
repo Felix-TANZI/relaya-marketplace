@@ -136,8 +136,7 @@ function renderInputByType(props: RenderProps): React.ReactNode {
       return (
         <div>
           {props.label}
-          <p className="text-xs text-red-500">
-            Type d'input non supporté : {props.type}
+          <p className="text-xs text-red-500">{i18n.t("t06.type_d_input_non_supporte")}{props.type}
           </p>
         </div>
       );

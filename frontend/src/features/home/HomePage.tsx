@@ -24,6 +24,7 @@ import { productInStorefrontCategory } from "@/data/storefrontCategories";
 import useStorefrontCategories from "@/hooks/useStorefrontCategories";
 import useSidebarTrack from "@/hooks/useSidebarTrack";
 import NearbyProductsSection from "@/components/home/NearbyProductsSection";
+import { VISUEL_ACCUEIL, VISUELS_THEMES } from "@/config/visuels";
 import { FIDELITE_VISIBLE } from "@/config/lancement";
 
 type SortKey = "relevance" | "price-asc" | "price-desc" | "rating" | "newest";
@@ -179,7 +180,7 @@ export default function HomePage() {
     label: t("home.brand_slide.label"),
     title: t("home.brand_slide.title"),
     subtitle: t("home.brand_slide.subtitle"),
-    bg: "url(https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1400&h=500&fit=crop&q=85) center/cover",
+    bg: `url(${VISUEL_ACCUEIL}) center/cover`,
     labelBg: "rgba(244,121,32,0.9)",
     action: () => navigate("/categorie/all"),
   };
@@ -195,13 +196,13 @@ export default function HomePage() {
     }));
   const slides = categorySlides.length > 0 ? [brandSlide, ...categorySlides] : [
     brandSlide,
-    { label: t("home.category_fallback_slides.femme.label"), title: t("home.category_fallback_slides.femme.title"), subtitle: t("home.category_fallback_slides.femme.subtitle"), bg: "url(https://images.unsplash.com/photo-1617019114583-affb34d1b3cd?w=1400&h=500&fit=crop&q=85) center/cover", action: () => navigate("/categorie/femme") },
-    { label: t("home.category_fallback_slides.tech.label"), title: t("home.category_fallback_slides.tech.title"), subtitle: t("home.category_fallback_slides.tech.subtitle"), bg: "url(https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#2563EB", action: () => navigate("/categorie/tech") },
-    { label: t("home.category_fallback_slides.beaute.label"), title: t("home.category_fallback_slides.beaute.title"), subtitle: t("home.category_fallback_slides.beaute.subtitle"), bg: "url(https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#e11d48", action: () => navigate("/categorie/beaute") },
-    { label: t("home.category_fallback_slides.super.label"), title: t("home.category_fallback_slides.super.title"), subtitle: t("home.category_fallback_slides.super.subtitle"), bg: "url(https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#059669", action: () => navigate("/categorie/super") },
-    { label: t("home.category_fallback_slides.maison.label"), title: t("home.category_fallback_slides.maison.title"), subtitle: t("home.category_fallback_slides.maison.subtitle"), bg: "url(https://images.unsplash.com/photo-1616046229478-9901c5536a45?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#78716c", action: () => navigate("/categorie/maison") },
-    { label: t("home.category_fallback_slides.homme.label"), title: t("home.category_fallback_slides.homme.title"), subtitle: t("home.category_fallback_slides.homme.subtitle"), bg: "url(https://images.unsplash.com/photo-1617137968427-85924c800a22?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#1D4ED8", action: () => navigate("/categorie/homme") },
-    { label: t("home.category_fallback_slides.shoes.label"), title: t("home.category_fallback_slides.shoes.title"), subtitle: t("home.category_fallback_slides.shoes.subtitle"), bg: "url(https://images.unsplash.com/photo-1549298916-b41d501d3772?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#7C3AED", action: () => navigate("/categorie/shoes") },
+    { label: t("home.category_fallback_slides.femme.label"), title: t("home.category_fallback_slides.femme.title"), subtitle: t("home.category_fallback_slides.femme.subtitle"), bg: `url(${VISUELS_THEMES.femme}) center/cover`, action: () => navigate("/categorie/femme") },
+    { label: t("home.category_fallback_slides.tech.label"), title: t("home.category_fallback_slides.tech.title"), subtitle: t("home.category_fallback_slides.tech.subtitle"), bg: `url(${VISUELS_THEMES.tech}) center/cover`, labelBg: "#2563EB", action: () => navigate("/categorie/tech") },
+    { label: t("home.category_fallback_slides.beaute.label"), title: t("home.category_fallback_slides.beaute.title"), subtitle: t("home.category_fallback_slides.beaute.subtitle"), bg: `url(${VISUELS_THEMES.beaute}) center/cover`, labelBg: "#e11d48", action: () => navigate("/categorie/beaute") },
+    { label: t("home.category_fallback_slides.super.label"), title: t("home.category_fallback_slides.super.title"), subtitle: t("home.category_fallback_slides.super.subtitle"), bg: `url(${VISUELS_THEMES.super}) center/cover`, labelBg: "#059669", action: () => navigate("/categorie/super") },
+    { label: t("home.category_fallback_slides.maison.label"), title: t("home.category_fallback_slides.maison.title"), subtitle: t("home.category_fallback_slides.maison.subtitle"), bg: `url(${VISUELS_THEMES.maison}) center/cover`, labelBg: "#78716c", action: () => navigate("/categorie/maison") },
+    { label: t("home.category_fallback_slides.homme.label"), title: t("home.category_fallback_slides.homme.title"), subtitle: t("home.category_fallback_slides.homme.subtitle"), bg: `url(${VISUELS_THEMES.homme}) center/cover`, labelBg: "#1D4ED8", action: () => navigate("/categorie/homme") },
+    { label: t("home.category_fallback_slides.shoes.label"), title: t("home.category_fallback_slides.shoes.title"), subtitle: t("home.category_fallback_slides.shoes.subtitle"), bg: `url(${VISUELS_THEMES.shoes}) center/cover`, labelBg: "#7C3AED", action: () => navigate("/categorie/shoes") },
   ];
 
   /* ── Featured sections (horizontal scroll, top of page) ── */

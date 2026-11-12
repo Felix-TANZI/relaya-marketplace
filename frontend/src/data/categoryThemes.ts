@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { TFunction } from "i18next";
+import { VISUELS_THEMES } from "@/config/visuels";
 
 export interface CategoryTheme {
   slug: string;
@@ -44,13 +45,7 @@ export interface CategoryTheme {
   delivery: string;
 }
 
-// Rendu net sur écrans HiDPI : le hero occupe ~1500 px CSS, soit 3000 px réels en dpr 2.
-// `auto=format` laisse Unsplash servir du WebP/AVIF, plus fin à poids égal.
-const IMG = "w=2400&h=900&fit=crop&q=90&auto=format";
-
-// Recadrage carré de la même photo pour la pastille ronde de 32 px : 128 px de source
-// la gardent nette jusqu'en dpr 4.
-const THUMB = "w=128&h=128&fit=crop&q=90&auto=format";
+// Images des thèmes : config/visuels.ts (DEV-SRV-01 v1.8, C03 : visuels BelivaY, plus de photo Unsplash).
 
 const THEME_SEEDS: Omit<CategoryTheme, "thumb">[] = [
   {
@@ -65,7 +60,7 @@ const THEME_SEEDS: Omit<CategoryTheme, "thumb">[] = [
     subtitle: "Tous les produits des boutiques BelivaY",
     description:
       "L'intégralité de l'offre BelivaY, tous thèmes confondus : mode, électronique, beauté, maison, supermarché et bien plus. Paiement Mobile Money sécurisé par escrow, vendeurs vérifiés et livraison à Yaoundé.",
-    image: `https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?${IMG}`,
+    image: VISUELS_THEMES.all,
     facets: ["Nouveautés", "Promotions", "Made in Cameroon", "Livraison 24h", "Coup de cœur"],
     vendors: "",
     rating: "",
@@ -83,7 +78,7 @@ const THEME_SEEDS: Omit<CategoryTheme, "thumb">[] = [
     subtitle: "Vendeurs certifiés BelivaY",
     description:
       "Le vestiaire féminin africain dans toute sa richesse : wax authentique, pagne hollandais Vlisco, robes de cérémonie, tenues casual, sacs en cuir artisanal et bijoux. Toutes les tailles, du S au XXL, chez des couturiers et boutiques vérifiés.",
-    image: `https://images.unsplash.com/photo-1617019114583-affb34d1b3cd?${IMG}`,
+    image: VISUELS_THEMES.femme,
     facets: ["Robes", "Pagne & Wax", "Sacs", "Bijoux", "Pyjamas", "Jeans"],
     vendors: "",
     rating: "",
@@ -101,7 +96,7 @@ const THEME_SEEDS: Omit<CategoryTheme, "thumb">[] = [
     subtitle: "Tenues de cérémonie et casual",
     description:
       "Du grand boubou en bazin riche brodé main au costume deux pièces taillé sur mesure, en passant par les chemises en lin, chinos et accessoires en cuir. Des tailleurs camerounais reconnus, du M au 4XL.",
-    image: `https://images.unsplash.com/photo-1617137968427-85924c800a22?${IMG}`,
+    image: VISUELS_THEMES.homme,
     facets: ["Bazin & Boubou", "Costumes", "Chemises", "Pantalons", "Polos", "Maroquinerie"],
     vendors: "",
     rating: "",
@@ -119,7 +114,7 @@ const THEME_SEEDS: Omit<CategoryTheme, "thumb">[] = [
     subtitle: "Livraison au relais offerte dès {{seuil_relais}} · Vendeurs certifiés Or",
     description:
       "Laptops, téléviseurs, audio, gaming, sécurité et petits accessoires. Produits neufs sous garantie constructeur, importés par des revendeurs certifiés Or dont l'identité et la licence commerciale ont été vérifiées par BelivaY.",
-    image: `https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?${IMG}`,
+    image: VISUELS_THEMES.tech,
     facets: ["Ordinateurs", "Télévisions", "Audio", "Gaming", "Stockage", "Sécurité"],
     vendors: "",
     rating: "",
@@ -137,7 +132,7 @@ const THEME_SEEDS: Omit<CategoryTheme, "thumb">[] = [
     subtitle: "Garantie constructeur 12 mois",
     description:
       "Smartphones Android et iOS, tablettes, montres connectées, coques, chargeurs rapides et écouteurs. Chaque appareil est vendu avec sa garantie officielle et un IMEI vérifiable avant expédition.",
-    image: `https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?${IMG}`,
+    image: VISUELS_THEMES.phone,
     facets: ["Smartphones", "Tablettes", "Montres connectées", "Chargeurs", "Écouteurs", "Coques"],
     vendors: "",
     rating: "",
@@ -155,7 +150,7 @@ const THEME_SEEDS: Omit<CategoryTheme, "thumb">[] = [
     subtitle: "Livraison express",
     description:
       "Karité pur, savon noir artisanal, huile d'argan pressée à froid, sérums, maquillage et parfums. Les cosmétiques naturels sont sourcés auprès de producteurs locaux et les références importées portent leur certification d'origine.",
-    image: `https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?${IMG}`,
+    image: VISUELS_THEMES.beaute,
     facets: ["Soins visage", "Cheveux", "Maquillage", "Parfums", "Savons", "Bio & naturel"],
     vendors: "",
     rating: "",
@@ -173,7 +168,7 @@ const THEME_SEEDS: Omit<CategoryTheme, "thumb">[] = [
     subtitle: "Meubles · Déco · Électroménager",
     description:
       "Mobilier, literie, art de la table, décoration murale et petit électroménager. Les meubles volumineux sont livrés et montés à domicile à Yaoundé et Douala par les équipes logistique BelivaY.",
-    image: `https://images.unsplash.com/photo-1616046229478-9901c5536a45?${IMG}`,
+    image: VISUELS_THEMES.maison,
     facets: ["Meubles", "Literie", "Cuisine", "Décoration", "Luminaires", "Électroménager"],
     vendors: "",
     rating: "",
@@ -191,7 +186,7 @@ const THEME_SEEDS: Omit<CategoryTheme, "thumb">[] = [
     subtitle: "Producteurs camerounais",
     description:
       "Épicerie sèche, huiles, épices, céréales, boissons et produits d'entretien. Une large part du rayon vient directement de coopératives et PME camerounaises, avec des dates de péremption contrôlées avant chaque expédition.",
-    image: `https://images.unsplash.com/photo-1542838132-92c53300491e?${IMG}`,
+    image: VISUELS_THEMES.super,
     facets: ["Épicerie", "Épices", "Boissons", "Céréales", "Entretien", "Made in Cameroon"],
     vendors: "",
     rating: "",
@@ -209,7 +204,7 @@ const THEME_SEEDS: Omit<CategoryTheme, "thumb">[] = [
     subtitle: "Toutes pointures disponibles",
     description:
       "Sneakers, mocassins, escarpins, sandales et chaussures de sécurité, du 36 au 47. Chaque fiche indique le guide des pointures du vendeur, et l'échange de taille est gratuit sous 7 jours.",
-    image: `https://images.unsplash.com/photo-1549298916-b41d501d3772?${IMG}`,
+    image: VISUELS_THEMES.shoes,
     facets: ["Sneakers", "Escarpins", "Sandales", "Mocassins", "Sport", "Sécurité"],
     vendors: "",
     rating: "",
@@ -227,7 +222,7 @@ const THEME_SEEDS: Omit<CategoryTheme, "thumb">[] = [
     subtitle: "Fitness · Football · Plein air",
     description:
       "Matériel de fitness, tenues techniques, ballons, vélos et équipement de plein air. Les articles encombrants sont expédiés depuis les entrepôts partenaires de Douala avec suivi temps réel.",
-    image: `https://images.unsplash.com/photo-1517836357463-d25dfeac3438?${IMG}`,
+    image: VISUELS_THEMES.sport,
     facets: ["Fitness", "Football", "Vélos", "Tenues", "Plein air", "Accessoires"],
     vendors: "",
     rating: "",
@@ -245,7 +240,7 @@ const THEME_SEEDS: Omit<CategoryTheme, "thumb">[] = [
     subtitle: "Puériculture & vêtements enfant",
     description:
       "Poussettes, lits, sièges auto, vêtements, jouets d'éveil et soins bébé. Les articles de puériculture référencés répondent aux normes de sécurité européennes, contrôlées à l'entrée du catalogue.",
-    image: `https://images.unsplash.com/photo-1522771930-78848d9293e8?${IMG}`,
+    image: VISUELS_THEMES.bebe,
     facets: ["Puériculture", "Vêtements", "Jouets", "Soins bébé", "Repas", "Sécurité"],
     vendors: "",
     rating: "",
@@ -253,10 +248,10 @@ const THEME_SEEDS: Omit<CategoryTheme, "thumb">[] = [
   },
 ];
 
-/* La pastille dérive du hero : une seule photo à maintenir par thème. */
+/* La pastille reprend le visuel du thème : une seule image à maintenir par thème (C03, config/visuels.ts). */
 export const CATEGORY_THEMES: CategoryTheme[] = THEME_SEEDS.map((seed) => ({
   ...seed,
-  thumb: seed.image.replace(IMG, THUMB),
+  thumb: seed.image,
 }));
 
 /**

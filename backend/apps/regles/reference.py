@@ -33,6 +33,17 @@ REGLAGES_FEUILLE_DE_ROUTE = {
     "r_apple_nonce_s",          # revue 29/10 (C3) : durée de vie du nonce Apple
     "r_apple_ticket_s",         # revue 29/10 (C3) : durée de vie du ticket Apple Android
     "r_acces_provisoire_h",     # DEV-SRV-01 (T07-5) : validité du mot de passe provisoire remis par l'agent
+    # DEV-SRV-01 v1.8, C04 : paiement des vendeurs (migration regles 0009)
+    "r_versement_vendeur_j",    # versement 1 jour après la confirmation du client, quel que soit le palier
+    "r_nouveau_ventes",         # nouveau compte : nombre de premières ventes
+    "r_nouveau_gel_article",    # nouveau compte : article au-delà duquel la somme reste gelée plus longtemps
+    "r_nouveau_gel_j",          # nouveau compte : durée de ce gel
+    "r_fraude_delai_j",         # fraude confirmée : délai de versement
+    "r_fraude_periode_j",       # fraude confirmée : durée sans incident avant le retour au délai normal
+    "r_fraude_recidive_x",      # deuxième fraude confirmée : multiplicateur de la période
+    "r_montant_inhabituel_x",   # montant inhabituel : multiple de la moyenne des versements sur 30 jours
+    "r_baisse_trust_points",    # forte baisse du Trust Score depuis le dernier versement
+    "r_blocage_numero_j",       # changement de numéro : versements bloqués
 }
 
 

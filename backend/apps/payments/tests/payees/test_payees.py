@@ -212,9 +212,12 @@ class TestMomoChange:
         assert any("refroidissement" in m.lower() for m in payout_blockers(vendeur))
 
     def test_versement_possible_apres_le_delai(self, vendeur, admin_user):
+        # DEV-SRV-01 v1.8, C04 : « changement de numéro (blocage de 7 jours maintenu) » — r_blocage_numero_j l'emporte
+        # sur les 72 h de la politique.
         change_momo_number(vendeur, msisdn=AUTRE_NUMERO,
                            operator=MomoOperator.ORANGE, changed_by=admin_user)
-        plus_tard = timezone.now() + timedelta(hours=73)
+        assert payout_blockers(vendeur, now=timezone.now() + timedelta(hours=73))  # encore bloqué à 73 h
+        plus_tard = timezone.now() + timedelta(days=7, hours=1)
         assert payout_blockers(vendeur, now=plus_tard) == []
 
     def test_changement_journalise(self, vendeur, admin_user):

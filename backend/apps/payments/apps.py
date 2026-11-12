@@ -14,6 +14,7 @@ class PaymentsConfig(AppConfig):
         from apps.payments.escrow import admin as escrow_admin  # noqa: F401
         from apps.payments.settlements import admin as settlements_admin  # noqa: F401
         from apps.payments.tasks import admin as tasks_admin  # noqa: F401
+        from apps.payments.bridge import admin as bridge_admin  # noqa: F401  C04 : fraudes confirmées
         from apps.payments import tasks as _tasks  # noqa: F401  enregistre les tâches
         from apps.payments.reconciliation import admin as rec_admin  # noqa: F401
         from apps.payments.risk import admin as risk_admin  # noqa: F401

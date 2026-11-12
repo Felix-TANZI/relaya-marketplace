@@ -193,32 +193,33 @@ def _signaler_livraison(expedition) -> None:
 
 def ouvrir_le_droit_de_retour(order_id: int, vendeur_id, retire_le) -> None:
     """
-    Spec v2.1, R23 (feuille de route D17) : la marchandise d'une boutique se
-    libère à la fermeture du droit de retour — retrait + r_retour_j, ou plus
-    tôt sur confirmation du client — puis + r_lib_j_standard (Bronze, Argent)
-    ou + r_lib_j_rapide (Or, Platine). Fixé ici, au retrait réel, sur les
-    séquestres GOODS de cette boutique : l'auto-confirmation devient la
-    fermeture du droit de retour, et le délai de libération celui du palier.
+    La marchandise d'une boutique se libère à la confirmation du client, ou à la
+    fermeture du droit de retour (retrait + r_retour_j) s'il ne confirme jamais.
+
+    DEV-SRV-01 v1.8, C04 : le délai qui suit ne dépend plus du palier
+    (r_lib_j_standard / r_lib_j_rapide) : r_versement_vendeur_j pour tous,
+    r_nouveau_gel_j pour l'article au-delà du seuil d'un nouveau compte,
+    r_fraude_delai_j après une fraude confirmée (bridge.versement_vendeur).
+    Fixé ici, au retrait réel, sur les séquestres GOODS de cette boutique.
     """
     try:
-        from apps.orders.commission import palier_vendeur
         from apps.payments.escrow.models import EscrowHold
         from apps.regles import services as regles
 
         from .models import PayeeLink
+        from .versement_vendeur import delai_liberation
 
-        lien = PayeeLink.objects.filter(vendor__user_id=vendeur_id).select_related("vendor__user").first()
+        lien = PayeeLink.objects.filter(vendor__user_id=vendeur_id).select_related("vendor__user", "payee_account").first()
         if lien is None:
             return
-        palier = palier_vendeur(lien.vendor.user)
-        jours = regles.reglage("r_lib_j_rapide" if palier in ("Or", "Platine") else "r_lib_j_standard")
+        jours, raison = delai_liberation(lien.vendor.user, lien.payee_account, order_id)
         fermeture = retire_le + timedelta(days=regles.reglage("r_retour_j"))
         for hold in EscrowHold.objects.filter(order_id=order_id, payee_id=lien.payee_account_id,
                                               component=EscrowHold.Component.GOODS,
                                               status=EscrowHold.Status.HELD):
             snapshot = dict(hold.policy_snapshot or {})
             snapshot["release_delay_hours"] = 24 * jours
-            snapshot["regle"] = f"spec v2.1 R23.2, palier {palier}"
+            snapshot["regle"] = raison
             EscrowHold.objects.filter(pk=hold.pk).update(auto_confirm_at=fermeture, policy_snapshot=snapshot)
     except Exception:
         logger.exception("Droit de retour non ouvert pour la commande #%s.", order_id)

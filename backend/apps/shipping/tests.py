@@ -263,11 +263,14 @@ class ShipmentTrackingTests(APITestCase):
         self.assertEqual(self.order.fulfillment_status, Order.FulfillmentStatus.DELIVERED)
         self.assertIsNone(self.shipment.buyer_confirmed_at)
 
-    def test_accepted_inspection_at_the_counter_confirms_receipt_for_the_buyer(self):
+    def test_accepted_inspection_at_the_counter_is_recorded_but_only_the_buyer_confirms(self):
         """
-        Le client a ouvert son colis devant le gerant et l'accepte : sa fenetre
-        de retour se ferme et l'escrow passe en attente de liberation, sans
-        qu'il ait a confirmer une seconde fois depuis son telephone.
+        DEV-SRV-01 v1.8, C04 : le client ouvre son colis devant le gerant. Le
+        comptoir enregistre ce constat, mais ne confirme JAMAIS a la place du
+        client : la reception reste a confirmer, et l'argent du vendeur n'est
+        pas libere. Le client confirme ensuite lui-meme depuis son application,
+        sans code (un colis retire au relais n'a pas de livreur pour lui en
+        donner un).
         """
         RelayParcel.objects.create(
             shipment=self.shipment,
@@ -287,14 +290,19 @@ class ShipmentTrackingTests(APITestCase):
 
         self.order.refresh_from_db()
         self.shipment.refresh_from_db()
-        self.assertEqual(self.order.fulfillment_status, Order.FulfillmentStatus.BUYER_CONFIRMED)
-        self.assertEqual(self.order.escrow_status, Order.EscrowStatus.RELEASE_PENDING)
-        self.assertIsNotNone(self.shipment.buyer_confirmed_at)
+        self.assertEqual(self.order.fulfillment_status, Order.FulfillmentStatus.DELIVERED)  # pas confirmee
+        self.assertNotEqual(self.order.escrow_status, Order.EscrowStatus.RELEASE_PENDING)    # rien de libere
+        self.assertIsNone(self.shipment.buyer_confirmed_at)
+        self.assertTrue(self.shipment.events.filter(message__icontains="devant le gerant").exists())  # constat
 
-        # Tracabilite : un litige ulterieur doit pouvoir dire qui a valide.
-        trace = self.order.history.filter(action__icontains="comptoir").first()
-        self.assertIsNotNone(trace)
-        self.assertEqual(trace.user, self.relay_user)
+        # Le client confirme lui-meme, depuis son application, sans code de livreur.
+        self.client.force_authenticate(self.order.user)
+        reponse = self.client.post(f"/api/orders/{self.order.id}/confirm-receipt/", {}, format="json")
+        self.assertEqual(reponse.status_code, 200, reponse.content)
+        self.order.refresh_from_db()
+        self.shipment.refresh_from_db()
+        self.assertEqual(self.order.fulfillment_status, Order.FulfillmentStatus.BUYER_CONFIRMED)
+        self.assertIsNotNone(self.shipment.buyer_confirmed_at)
 
     def test_counter_acceptance_does_not_release_a_multi_parcel_order_too_early(self):
         """

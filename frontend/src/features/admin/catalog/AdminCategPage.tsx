@@ -378,7 +378,7 @@ export default function AdminCategoriesPage() {
             {stats.withoutImage > 0 && ` · ${stats.withoutImage} sans image`}
             {stats.deprecated > 0 && ` · ${stats.deprecated} deprecated`}
             {stats.inactive > 0 && ` · ${stats.inactive} inactive${stats.inactive > 1 ? "s" : ""}`}
-            {stats.requiresApproval > 0 && ` · ${stats.requiresApproval} en modération renforcée`}
+            {stats.requiresApproval > 0 && i18n.t("c06.admin.moderation_renforcee", { n: stats.requiresApproval })}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -1420,13 +1420,13 @@ function CategoryFormModal({ category, initialParentId, initialKind, tree, onClo
     try {
       if (isEdit) {
         await adminApi.updateCategory(category.id, payload);
-        showToast(`« ${form.name?.trim()} » mise à jour`, "success");
+        showToast(i18n.t("c06.admin.categorie_mise_a_jour", { nom: form.name?.trim() }), "success");
       } else {
         await adminApi.createCategory(payload);
         showToast(
           kind === "root"
-            ? `Catégorie « ${form.name?.trim()} » créée — visible par les acheteurs et les vendeurs`
-            : `Sous-catégorie « ${form.name?.trim()} » créée dans « ${parentName} »`,
+            ? i18n.t("c06.admin.categorie_creee", { nom: form.name?.trim() })
+            : i18n.t("c06.admin.sous_categorie_creee", { nom: form.name?.trim(), parent: parentName }),
           "success",
         );
       }
@@ -1511,7 +1511,7 @@ function CategoryFormModal({ category, initialParentId, initialKind, tree, onClo
               )}
 
               <FormField label="Description" T={T}
-                hint={`${(form.description ?? "").length} / 280 caractères — s'affiche sous le titre côté acheteur`}>
+                hint={i18n.t("c06.admin.description_compteur", { n: (form.description ?? "").length })}>
                 <textarea value={form.description ?? ""}
                   onChange={(e) => {
                     if (e.target.value.length <= 280) {
@@ -1809,7 +1809,7 @@ function ClientPreview({ T, kind, name, description, image, parentName }: {
       <div style={{ fontSize: 10.5, color: T.muted, lineHeight: 1.45 }}>
         {kind === "root"
           ? i18n.t("ad9.grande_banniere_de_la_page_categorie_et_fr")
-          : `Pastille ronde dans la page « ${parentName ?? i18n.t("ad9.categorie_parente_2")} ».`}
+          : i18n.t("c06.admin.pastille_ronde", { parent: parentName ?? i18n.t("ad9.categorie_parente_2") })}
         {" "}Le vendeur retrouve la même image dans son sélecteur.
       </div>
     </div>

@@ -84,7 +84,7 @@ export default function RelayReceptionDone({
               <span className="mt-1 block text-[13px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">
                 {buyers} client{buyers > 1 ? "s" : ""} : avis d'arrivée puis code, en deux messages
                 {waiting > 0
-                  ? ` · ${waiting} client${waiting > 1 ? "s attendent" : " attend"} encore un colis : simple notification`
+                  ? i18n.t("c06.relais.clients_attendent", { count: waiting })
                   : ""}
               </span>
             </span>
@@ -100,7 +100,7 @@ export default function RelayReceptionDone({
               </span>
               <span className="mt-1 block text-[13px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">
                 {placesUsed} / {capacityMax} places
-                {outbound > 0 ? ` · ${apres} après la collecte` : ""}
+                {outbound > 0 ? i18n.t("c06.relais.apres_collecte", { n: apres }) : ""}
                 {pct >= 90 ? i18n.t("rl3.au_dessus_de_90_belivay_suspend_les_nouvea") : ""}
               </span>
             </span>
@@ -124,7 +124,7 @@ export default function RelayReceptionDone({
                 </span>
                 <span className="mt-1 block text-[13px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">
                   {outbound > 0
-                    ? `${outbound} colis sortant${outbound > 1 ? "s" : ""} avant qu'il reparte`
+                    ? i18n.t("c06.relais.sortants_avant_depart", { count: outbound })
                     : i18n.t("rl3.rien_a_faire_partir_avec_ce_livreur")}
                 </span>
               </span>

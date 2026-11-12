@@ -122,7 +122,7 @@ export default function RelayActivation({ relay, documents, payoutVerified }: Re
     {
       titre: "Formation suivie",
       detail: training
-        ? `Les ${training.core_total} modules obligatoires`
+        ? i18n.t("c06.relais.modules_obligatoires", { n: training.core_total })
         : i18n.t("rl3.les_modules_obligatoires"),
       fait: formationFaite,
     },
@@ -162,7 +162,7 @@ export default function RelayActivation({ relay, documents, payoutVerified }: Re
         <p className="mt-2 text-center text-[13.5px] font-medium leading-snug text-slate-500 dark:text-slate-400">
           Point relais partenaire indépendant
           {ouverture && !Number.isNaN(ouverture.getTime())
-            ? ` · ouvert le ${JOUR_LONG.format(ouverture)}`
+            ? i18n.t("c06.relais.ouvert_le", { date: JOUR_LONG.format(ouverture) })
             : ""}
         </p>
 
@@ -258,7 +258,7 @@ export default function RelayActivation({ relay, documents, payoutVerified }: Re
               {/* La date vient de la piece elle-meme. Sans piece, on ne
                   pretend pas qu'elle est signee. */}
               {convention?.updated_at
-                ? `Signée le ${JOUR_LONG.format(new Date(convention.updated_at))}`
+                ? i18n.t("c06.relais.signee_le", { date: JOUR_LONG.format(new Date(convention.updated_at)) })
                 : i18n.t("rl3.pas_encore_au_dossier")}
             </p>
           </div>

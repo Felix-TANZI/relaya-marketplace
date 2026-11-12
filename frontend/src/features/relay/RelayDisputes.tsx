@@ -480,8 +480,8 @@ export default function RelayDisputes({
               >
                 {delai
                   ? delai.ouverte
-                    ? `Remis il y a ${delai.jours} jour${delai.jours > 1 ? "s" : ""} · dans la fenêtre de ${FENETRE_JOURS} jours.`
-                    : `Remis il y a ${delai.jours} jours · la fenêtre de ${FENETRE_JOURS} jours est dépassée, le constat part quand même au support.`
+                    ? i18n.t("c06.relais.remis_dans_fenetre", { count: delai.jours, fenetre: FENETRE_JOURS })
+                    : i18n.t("c06.relais.remis_hors_fenetre", { n: delai.jours, fenetre: FENETRE_JOURS })
                   : `${matched.sizeLabel} · encore en stock, casier ${matched.slot || "à définir"}.`}
               </p>
             ) : query.trim().length >= 3 ? (
@@ -872,7 +872,7 @@ export default function RelayDisputes({
                       <span>
                         {demande.instructions}
                         {file.vendorReplyDeadline
-                          ? ` Le vendeur a jusqu'au ${formatJour(file.vendorReplyDeadline, true)} pour répondre.`
+                          ? i18n.t("c06.relais.vendeur_repond_avant", { date: formatJour(file.vendorReplyDeadline, true) })
                           : ""}
                       </span>
                     </p>
@@ -900,7 +900,7 @@ export default function RelayDisputes({
                       </span>
                       <span className="mt-1 block text-[13px] font-medium leading-snug text-slate-500 dark:text-slate-400">
                         {file.reason}
-                        {file.resolution ? ` · ${file.resolution.toLowerCase()} accepté` : ""}, vous n'êtes
+                        {file.resolution ? i18n.t("c06.relais.resolution_acceptee", { resolution: file.resolution.toLowerCase() }) : ""}, vous n'êtes
                         pas mis en cause
                       </span>
                     </span>

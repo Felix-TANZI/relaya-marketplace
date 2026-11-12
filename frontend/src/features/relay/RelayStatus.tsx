@@ -154,7 +154,7 @@ export default function RelayStatus({
       titre: i18n.t("rl3.visite_de_belivay"),
       detail:
         visite?.status === "APPROVED" && visite.updated_at
-          ? `Faite le ${JOUR_MOIS.format(new Date(visite.updated_at))}`
+          ? i18n.t("c06.relais.faite_le", { date: JOUR_MOIS.format(new Date(visite.updated_at)) })
           : i18n.t("rl3.a_planifier"),
       fait: visite?.status === "APPROVED",
       cible: "inscription",
@@ -187,7 +187,7 @@ export default function RelayStatus({
       titre:
         restantes === 0
           ? i18n.t("rl3.tout_est_pret_pour_ouvrir")
-          : `Encore ${restantes} étape${restantes > 1 ? "s" : ""} avant d'ouvrir`,
+          : i18n.t("c06.relais.etapes_avant_ouverture", { count: restantes }),
       corps:
         i18n.t("rl3.tant_que_le_relais_n_est_pas_ouvert_aucun"),
     },
@@ -369,7 +369,7 @@ export default function RelayStatus({
                 "Trust Score",
                 // Le plafond vient de `VETO_SCORE_CAP`, pas d'un nombre
                 // recopie : c'est lui qui bride reellement le score.
-                `gelé sous ${Math.round((trust?.veto_score_cap ?? 39) + 1)} pendant la suspension`,
+                i18n.t("c06.relais.gele_sous", { plafond: Math.round((trust?.veto_score_cap ?? 39) + 1) }),
                 true,
               ],
               ["Au retour", i18n.t("rl3.periode_probatoire"), false],

@@ -84,7 +84,7 @@ export default function WalletAdminPage() {
                     <td>{g.client}{g.commande ? ` · #${g.commande}` : ''}</td>
                     <td><Money value={g.montant_xaf} /></td>
                     <td>{g.motif}</td>
-                    <td>{g.statut} · demandé par {g.demande_par}{g.decide_par ? ` · décidé par ${g.decide_par}` : ''}</td>
+                    <td>{g.statut} · demandé par {g.demande_par}{g.decide_par ? i18n.t("c06.admin.decide_par", { qui: g.decide_par }) : ''}</td>
                     <td>
                       {g.statut === 'EN_ATTENTE' && (
                         <>

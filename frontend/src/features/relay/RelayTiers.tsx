@@ -134,17 +134,17 @@ export default function RelayTiers() {
   const phrase = (() => {
     if (!trust) return "";
     const score = `${nf(Math.round(trust.score))} aujourd'hui`;
-    if (!regleSuivante) return `${score} · vous êtes au palier le plus haut.`;
+    if (!regleSuivante) return i18n.t("c06.relais.palier_max", { score });
     const manques: string[] = [];
     if (pointsManquants > 0) manques.push(`${nf(Math.ceil(pointsManquants))} points`);
     if (colisManquants > 0) manques.push(`${nf(colisManquants)} colis`);
     if (manques.length > 0) {
-      return `${score} · il manque ${manques.join(" et ")} pour passer ${regleSuivante.tier_display}.`;
+      return i18n.t("c06.relais.il_manque", { score, manques: manques.join(i18n.t("c06.relais.et")), palier: regleSuivante.tier_display });
     }
     // Les deux conditions sont tenues : il ne reste que la duree.
     const restants = Math.max(0, trust.hysteresis_days - (joursTenus ?? 0));
     return restants > 0
-      ? `${score} · encore ${restants} jour${restants > 1 ? "s" : ""} au-dessus de ${nf(regleSuivante.min_score)} pour passer ${regleSuivante.tier_display}.`
+      ? i18n.t("c06.relais.jours_au_dessus", { score, count: restants, seuil: nf(regleSuivante.min_score), palier: regleSuivante.tier_display })
       : `${score} · conditions tenues, ${regleSuivante.tier_display} en cours de validation.`;
   })();
 

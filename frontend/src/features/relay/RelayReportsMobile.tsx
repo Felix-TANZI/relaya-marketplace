@@ -102,7 +102,7 @@ function debutDe(periode: PeriodKey, maintenant: Date): Date | null {
 
 /** Le titre de la carte sombre suit la fenêtre, pas l'inverse. */
 function titreDe(periode: PeriodKey, maintenant: Date) {
-  if (periode === "mois") return `Gagné en ${MOIS.format(maintenant)}`;
+  if (periode === "mois") return i18n.t("c06.relais.gagne_en", { mois: MOIS.format(maintenant) });
   if (periode === "trimestre") return i18n.t("rl3.gagne_ce_trimestre");
   return i18n.t("rl3.gagne_depuis_l_ouverture");
 }
@@ -412,7 +412,7 @@ arrêtés par BelivaY.</p>
 
         {barres.length === 0 ? (
           <p className="mt-5 text-[13.5px] font-medium text-white/60">
-            {loading ? i18n.t("rl3.lecture_de_vos_reglements") : `Aucun règlement arrêté sur ${periodeLabel}.`}
+            {loading ? i18n.t("rl3.lecture_de_vos_reglements") : i18n.t("c06.relais.aucun_reglement", { periode: periodeLabel })}
           </p>
         ) : (
           <>
@@ -474,13 +474,13 @@ arrêtés par BelivaY.</p>
           /* Sans colis sorti, le pourcentage n'existe pas. « 0 % » se lirait
              comme un echec, alors qu'il n'y a simplement rien a mesurer. */
           valeur={volumes.aTempsPct === null ? "—" : `${volumes.aTempsPct} %`}
-          detail={`retirés en ${GARDE_JOURS} jours`}
+          detail={i18n.t("c06.relais.retires_en", { jours: GARDE_JOURS })}
           ton="text-[#1F7A4D] dark:text-emerald-400"
         />
         <Carte
           titre="Renvoyés"
           valeur={volumes.renvoyesPct === null ? "—" : `${volumes.renvoyesPct} %`}
-          detail={`non retirés en ${GARDE_JOURS} jours`}
+          detail={i18n.t("c06.relais.non_retires_en", { jours: GARDE_JOURS })}
           ton="text-[#B42318] dark:text-red-400"
         />
       </div>

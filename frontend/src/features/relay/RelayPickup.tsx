@@ -275,7 +275,7 @@ function HandOverSheet({
 
       <div className="rounded-[14px] border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800">
         <div className="text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-          {parcels.length > 1 ? `${parcels.length} colis remis` : "Colis remis"}
+          {i18n.t("c06.relais.colis_remis", { count: parcels.length })}
         </div>
         <div className="mt-1 text-sm font-bold text-slate-950 dark:text-white">
           {parcels.map((parcel) => `${parcel.ref} · ${parcel.slot}`).join(" — ")}

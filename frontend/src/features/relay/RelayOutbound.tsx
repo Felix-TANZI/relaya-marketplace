@@ -221,7 +221,7 @@ export default function RelayOutbound({
       titre: i18n.t("rl3.au_prochain_passage"),
       // `courierRef` ne vaut que pour un livreur deja en route vers le relais :
       // c'est lui qui repartira avec les sorties, il n'y a pas deux passages.
-      detail: courierRef ? `${courierRef} en route · ${colis}` : `${colis} · aucun livreur annoncé`,
+      detail: courierRef ? i18n.t("c06.relais.livreur_en_route", { livreur: courierRef, colis }) : i18n.t("c06.relais.aucun_livreur", { colis }),
     };
   }, [courierRef, pending.length]);
 

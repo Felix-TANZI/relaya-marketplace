@@ -385,7 +385,7 @@ export default function RelayHistory() {
       */}
       <p className="px-1 pb-1 text-center text-[12.5px] font-medium leading-[1.55] text-slate-400 dark:text-slate-500">
         {retention
-          ? `Chaque opération garde ses preuves (heure, photo, emplacement, personne du guichet) pendant ${retention.evidence_days} jours, et ${retention.dispute_days} jours lorsqu'un dossier est ouvert. Vous pouvez les consulter et les exporter ; elles ne se modifient jamais.`
+          ? i18n.t("c06.relais.retention_preuves", { jours: retention.evidence_days, jours_dossier: retention.dispute_days })
           : i18n.t("rl3.chaque_operation_garde_ses_preuves_heure_p")}
       </p>
     </div>

@@ -96,8 +96,6 @@ import misc1En from "./domains/misc1.en";
 
 import hm1Fr from "./domains/hm1.fr";
 import hm1En from "./domains/hm1.en";
-import hm2Fr from "./domains/hm2.fr";
-import hm2En from "./domains/hm2.en";
 
 const savedLang =
   typeof window !== "undefined"
@@ -120,7 +118,6 @@ const mergedFr = {
   ...pm1Fr, ...pm2Fr,
   ...misc1Fr,
   ...hm1Fr,
-  ...hm2Fr,
   ...mdpFr,
   ...t03Fr,
   ...rl3Fr,
@@ -137,7 +134,6 @@ const mergedEn = {
   ...pm1En, ...pm2En,
   ...misc1En,
   ...hm1En,
-  ...hm2En,
   ...mdpEn,
   ...t03En,
   ...rl3En,

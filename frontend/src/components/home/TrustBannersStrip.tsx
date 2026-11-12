@@ -9,7 +9,7 @@ import {
   ShieldCheck,
   Truck,
 } from "lucide-react";
-import { TRUST_BANNERS } from "@/data/v29Products";
+import { VISUELS_CONFIANCE } from "@/config/visuels";
 
 const TRUST_BANNER_ICONS = [
   ShieldCheck,
@@ -27,12 +27,12 @@ interface TrustBannerText {
 export default function TrustBannersStrip() {
   const { t } = useTranslation();
   const [current, setCurrent] = useState(0);
-  /* Le texte vient d'i18next (traduit) ; `TRUST_BANNERS` ne fournit plus que la photo. */
+  /* Le texte vient d'i18next (traduit) ; `VISUELS_CONFIANCE` ne fournit que l'image (C03 : visuels BelivaY, plus d'Unsplash). */
   const bannerText = t("home.trust_banners.banner", { returnObjects: true }) as TrustBannerText[];
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      setCurrent((value) => (value + 1) % TRUST_BANNERS.length);
+      setCurrent((value) => (value + 1) % VISUELS_CONFIANCE.length);
     }, 4200);
     return () => window.clearInterval(timer);
   }, []);
@@ -57,7 +57,7 @@ export default function TrustBannersStrip() {
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={() => setCurrent((value) => (value - 1 + TRUST_BANNERS.length) % TRUST_BANNERS.length)}
+            onClick={() => setCurrent((value) => (value - 1 + VISUELS_CONFIANCE.length) % VISUELS_CONFIANCE.length)}
             className="flex h-8 w-8 items-center justify-center rounded-full border border-[#f0d8c5] bg-white text-[#b86428] transition hover:border-primary hover:text-primary sm:h-10 sm:w-10 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
             aria-label={t("home.trust_banners.prev_aria")}
           >
@@ -65,7 +65,7 @@ export default function TrustBannersStrip() {
           </button>
           <button
             type="button"
-            onClick={() => setCurrent((value) => (value + 1) % TRUST_BANNERS.length)}
+            onClick={() => setCurrent((value) => (value + 1) % VISUELS_CONFIANCE.length)}
             className="flex h-8 w-8 items-center justify-center rounded-full border border-[#f0d8c5] bg-white text-[#b86428] transition hover:border-primary hover:text-primary sm:h-10 sm:w-10 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
             aria-label={t("home.trust_banners.next_aria")}
           >
@@ -79,7 +79,7 @@ export default function TrustBannersStrip() {
           className="flex transition-transform duration-500 ease-out"
           style={{ transform: `translateX(-${current * 100}%)` }}
         >
-          {TRUST_BANNERS.map((banner, index) => {
+          {VISUELS_CONFIANCE.map((visuel, index) => {
             const BannerIcon = TRUST_BANNER_ICONS[index] ?? ShieldCheck;
             const text = bannerText[index] ?? { title: "", subtitle: "" };
 
@@ -88,7 +88,7 @@ export default function TrustBannersStrip() {
                 <div className="grid min-h-[132px] md:min-h-[220px] md:grid-cols-[1.15fr_0.85fr]">
                   <div className="relative min-h-[132px] md:min-h-[220px]">
                     <img
-                      src={banner.img}
+                      src={visuel}
                       alt={text.title}
                       loading="lazy"
                       className="h-full w-full object-cover"
@@ -150,7 +150,7 @@ export default function TrustBannersStrip() {
       </div>
 
       <div className="mt-3 flex justify-center gap-2 sm:mt-4">
-        {TRUST_BANNERS.map((_, index) => (
+        {VISUELS_CONFIANCE.map((_, index) => (
           <button
             key={index}
             type="button"

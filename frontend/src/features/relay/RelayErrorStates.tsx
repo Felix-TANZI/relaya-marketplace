@@ -73,10 +73,7 @@ const CAS: Cas[] = [
     titre: "Code incorrect",
     code: "482951",
     corps: (
-      <>
-        Ce code ne correspond à aucun colis de votre relais. <strong>Encore 2 essais</strong> pour ce
-        colis, puis il sera bloqué 24 h.
-      </>
+      <>{i18n.t("t06.ce_code_ne_correspond_a_aucun_colis_de_vot")}<strong>Encore 2 essais</strong>{i18n.t("t06.pour_ce_colis_puis_il_sera_bloque_24_h")}</>
     ),
     actions: [{ label: i18n.t("rl3.ressaisir_le_code"), style: "bleu", cible: "retrait" }],
   },
@@ -101,9 +98,7 @@ const CAS: Cas[] = [
     icon: CreditCard,
     titre: "Paiement non abouti",
     corps: (
-      <>
-        La demande de 400 F n'a pas été validée par le client (délai de 3 minutes dépassé ou solde
-        insuffisant). <strong>{i18n.t("rl3.rien_n_a_ete_debite")}</strong>
+      <>{i18n.t("t06.la_demande_de_400_f_n_a_pas_ete_validee_pa")}<strong>{i18n.t("rl3.rien_n_a_ete_debite")}</strong>
       </>
     ),
     actions: [
@@ -118,10 +113,7 @@ const CAS: Cas[] = [
     icon: QrCode,
     titre: i18n.t("rl3.ce_colis_n_est_pas_pour_votre_relais"),
     corps: (
-      <>
-        L'étiquette scannée (BV-40412, lot M-4133) est destinée au relais Mvog-Mbi. Ne prenez pas ce
-        colis : le livreur doit l'y déposer.
-      </>
+      <>{i18n.t("t06.l_etiquette_scannee_bv_40412_lot_m_4133_es")}</>
     ),
     actions: [{ label: i18n.t("rl3.signaler_au_support"), style: "blanc", cible: "messagerie" }],
   },
@@ -132,9 +124,7 @@ const CAS: Cas[] = [
     icon: Wifi,
     titre: i18n.t("rl3.reseau_necessaire_pour_le_paiement"),
     corps: (
-      <>
-        Ce colis a 400 F de garde à régler. Le paiement Mobile Money a besoin du réseau : attendez le
-        retour de la connexion ou proposez au client de repasser.{" "}
+      <>{i18n.t("t06.ce_colis_a_400_f_de_garde_a_regler_le_paie")}{" "}
         <strong>{i18n.t("rl3.meme_en_mode_papier_un_colis_avec_un_monta")}</strong>
       </>
     ),
@@ -147,10 +137,7 @@ const CAS: Cas[] = [
     icon: TriangleAlert,
     titre: i18n.t("rl3.ce_colis_ne_peut_pas_etre_remis"),
     corps: (
-      <>
-        BV-40077 est <strong>en constat</strong> (dossier LIT-00912) : il reste au relais, sans
-        frais, jusqu'à la décision. Même chose pour un colis en groupage ou à renvoyer.
-      </>
+      <>{i18n.t("t06.bv_40077_est")}<strong>en constat</strong>{i18n.t("t06.dossier_lit_00912_il_reste_au_relais_sans")}</>
     ),
     actions: [{ label: i18n.t("rl3.voir_le_dossier"), style: "blanc", cible: "litiges" }],
     // « Sans frais pendant le dossier » est une regle affichee, pas appliquee :
@@ -167,12 +154,8 @@ export default function RelayErrorStates({ onNavigate }: { onNavigate: (tab: Rel
   return (
     <div className="space-y-4">
       <header className="pt-0.5">
-        <h2 className="text-[27px] font-black leading-[1.15] tracking-[-0.015em] text-slate-900 dark:text-white">
-          États d'erreur au comptoir
-        </h2>
-        <p className="mt-1.5 text-[14.5px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">
-          Ce que voit le gérant quand quelque chose bloque. Choisissez un cas.
-        </p>
+        <h2 className="text-[27px] font-black leading-[1.15] tracking-[-0.015em] text-slate-900 dark:text-white">{i18n.t("t06.etats_d_erreur_au_comptoir")}</h2>
+        <p className="mt-1.5 text-[14.5px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">{i18n.t("t06.ce_que_voit_le_gerant_quand_quelque_chose")}</p>
       </header>
 
       <div className="flex flex-wrap gap-2">
@@ -256,10 +239,7 @@ export default function RelayErrorStates({ onNavigate }: { onNavigate: (tab: Rel
       </section>
 
       <p className="flex items-start gap-2.5 rounded-[14px] bg-[#EAF0FF] px-4 py-3.5 text-[13px] font-medium leading-[1.55] text-[#1E4BC4] dark:bg-blue-950/40 dark:text-blue-200">
-        <HelpCircle size={18} strokeWidth={2.2} className="mt-[2px] flex-shrink-0" />
-        Règle commune : un message d'erreur dit ce qui s'est passé, ce que le gérant peut faire, et ne
-        montre jamais de code technique.
-      </p>
+        <HelpCircle size={18} strokeWidth={2.2} className="mt-[2px] flex-shrink-0" />{i18n.t("t06.regle_commune_un_message_d_erreur_dit_ce_q")}</p>
     </div>
   );
 }

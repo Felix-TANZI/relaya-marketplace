@@ -305,12 +305,10 @@ export function CategoryTreePicker({
       {/* Rappel : là où l'acheteur trouvera le produit */}
       {selectedMatch && !open && (
         <p className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400">
-          <Store size={11} className="text-primary" />
-          Visible chez les acheteurs dans : <span className="font-semibold text-gray-700 dark:text-gray-200">{selectedPath}</span>
+          <Store size={11} className="text-primary" />{i18n.t("t06.visible_chez_les_acheteurs_dans")}<span className="font-semibold text-gray-700 dark:text-gray-200">{selectedPath}</span>
           {selectedIsSensitive && (
             <span className="flex items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-medium text-orange-700 dark:bg-orange-900/20 dark:text-orange-300">
-              <ShieldAlert size={10} /> Validation renforcée
-            </span>
+              <ShieldAlert size={10} />{i18n.t("t06.validation_renforcee")}</span>
           )}
         </p>
       )}
@@ -355,19 +353,16 @@ export function CategoryTreePicker({
                     type="button"
                     onClick={goBack}
                     className="flex items-center gap-0.5 font-semibold text-gray-600 hover:text-primary dark:text-gray-300"
-                    aria-label="Remonter d'un niveau"
+                    aria-label={i18n.t("t06.remonter_d_un_niveau")}
                   >
                     <ChevronLeft size={14} />
                     Retour
                   </button>
-                  <span className="truncate text-gray-500 dark:text-gray-400">
-                    Sous-catégories de <span className="font-semibold text-gray-800 dark:text-gray-100">« {parent.name} »</span>
+                  <span className="truncate text-gray-500 dark:text-gray-400">{i18n.t("t06.sous_categories_de")}<span className="font-semibold text-gray-800 dark:text-gray-100">« {parent.name} »</span>
                   </span>
                 </>
               ) : (
-                <span className="font-semibold uppercase tracking-wider text-gray-400">
-                  Catégories BelivaY
-                </span>
+                <span className="font-semibold uppercase tracking-wider text-gray-400">{i18n.t("t06.categories_belivay")}</span>
               )}
             </div>
           )}

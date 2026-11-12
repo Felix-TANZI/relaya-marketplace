@@ -114,9 +114,7 @@ export default function RelayStockList({
 
       <section className="rounded-[14px] border border-slate-200 bg-white px-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
         {visibles.length === 0 ? (
-          <p className="py-6 text-center text-[13.5px] font-medium text-slate-400 dark:text-slate-500">
-            Aucun colis dans cette catégorie.
-          </p>
+          <p className="py-6 text-center text-[13.5px] font-medium text-slate-400 dark:text-slate-500">{i18n.t("t06.aucun_colis_dans_cette_categorie")}</p>
         ) : (
           <ul className="divide-y divide-slate-100 dark:divide-slate-800">
             {visibles.map((parcel) => {

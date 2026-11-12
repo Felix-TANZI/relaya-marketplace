@@ -37,6 +37,7 @@
  * en un endroit.
  */
 import { useMemo, useState } from "react";
+import i18n from "@/i18n";
 import { X } from "lucide-react";
 import {
   CELL_STYLE,
@@ -131,9 +132,7 @@ export default function RelayShelfPlan({
   return (
     <section className="rounded-[14px] border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
       <div className="flex items-baseline justify-between gap-3">
-        <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
-          Plan des étagères
-        </h3>
+        <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">{i18n.t("t06.plan_des_etageres")}</h3>
         <span className={`text-[22px] font-black leading-none ${pctTone}`}>{pct} %</span>
       </div>
 
@@ -143,9 +142,7 @@ export default function RelayShelfPlan({
             {zone.label} ({zone.places} place{zone.places > 1 ? "s" : ""})
           </p>
           {plan.counts[zone.key] === 0 ? (
-            <p className="mt-2 text-[13px] font-medium text-slate-400 dark:text-slate-500">
-              Aucune place déclarée pour cette zone.
-            </p>
+            <p className="mt-2 text-[13px] font-medium text-slate-400 dark:text-slate-500">{i18n.t("t06.aucune_place_declaree_pour_cette_zone")}</p>
           ) : (
             <div className={`mt-2.5 grid gap-2 ${zone.cols}`}>
               {plan.grilles[zone.key].map((parcel, index) => {
@@ -180,9 +177,7 @@ export default function RelayShelfPlan({
         ))}
       </div>
 
-      <p className="mt-4 text-[13px] font-medium leading-[1.5] text-slate-500 dark:text-slate-400">
-        Touchez une case pour ouvrir le colis. À 90 %, BelivaY cesse d'envoyer de nouveaux colis ici.
-      </p>
+      <p className="mt-4 text-[13px] font-medium leading-[1.5] text-slate-500 dark:text-slate-400">{i18n.t("t06.touchez_une_case_pour_ouvrir_le_colis_a_90")}</p>
 
       {/* Fiche d'une case. Volontairement pauvre : le gerant n'a pas besoin de
           savoir QUI attend son colis, seulement ou il est et jusqu'a quand. */}
@@ -242,9 +237,7 @@ export default function RelayShelfPlan({
                   onOpenParcel(parcel);
                 }}
                 className="pr-btn mt-5 w-full rounded-[12px] px-4 py-3.5 text-[16px] font-black text-white transition active:scale-[.97]"
-              >
-                Remettre ce colis
-              </button>
+              >{i18n.t("t06.remettre_ce_colis")}</button>
             ) : null}
           </div>
         </div>

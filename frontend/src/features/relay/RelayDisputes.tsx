@@ -237,9 +237,7 @@ function ScanSheet({ onCancel, onDecoded }: { onCancel: () => void; onDecoded: (
         type="button"
         onClick={onCancel}
         className="mt-5 w-full rounded-[14px] border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-      >
-        Saisir la référence à la main
-      </button>
+      >{i18n.t("t06.saisir_la_reference_a_la_main")}</button>
     </RelaySheet>
   );
 }
@@ -408,12 +406,8 @@ export default function RelayDisputes({
   return (
     <div className="space-y-4">
       <header className="pt-0.5">
-        <h2 className="text-[27px] font-black leading-[1.15] tracking-[-0.015em] text-slate-900 dark:text-white">
-          Constats et retours
-        </h2>
-        <p className="mt-1.5 text-[14.5px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">
-          Le litige se règle au comptoir, colis en main, vous comme témoin.
-        </p>
+        <h2 className="text-[27px] font-black leading-[1.15] tracking-[-0.015em] text-slate-900 dark:text-white">{i18n.t("t06.constats_et_retours")}</h2>
+        <p className="mt-1.5 text-[14.5px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">{i18n.t("t06.le_litige_se_regle_au_comptoir_colis_en_ma")}</p>
       </header>
 
       {/* Un seul bandeau gris : la gouttiere entre les trois est ce qui dit
@@ -449,9 +443,7 @@ export default function RelayDisputes({
       {active === "constat" ? (
         <>
           <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-5 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
-            <h3 className="text-[12px] font-black uppercase leading-none tracking-[0.1em] text-slate-500 dark:text-slate-400">
-              1 · Scannez le colis
-            </h3>
+            <h3 className="text-[12px] font-black uppercase leading-none tracking-[0.1em] text-slate-500 dark:text-slate-400">{i18n.t("t06.1_scannez_le_colis")}</h3>
             <div className="mt-3 flex items-stretch gap-2.5">
               <input
                 value={query}
@@ -485,13 +477,9 @@ export default function RelayDisputes({
                   : `${matched.sizeLabel} · encore en stock, casier ${matched.slot || "à définir"}.`}
               </p>
             ) : query.trim().length >= 3 ? (
-              <p className="mt-3 text-[13px] font-semibold text-red-600 dark:text-red-400">
-                Aucun colis de votre relais ne porte cette référence.
-              </p>
+              <p className="mt-3 text-[13px] font-semibold text-red-600 dark:text-red-400">{i18n.t("t06.aucun_colis_de_votre_relais_ne_porte_cette")}</p>
             ) : (
-              <p className="mt-3 text-[13px] font-medium text-slate-500 dark:text-slate-400">
-                La référence BelivaY du colis, son numéro de commande, ou le code de retrait du client.
-              </p>
+              <p className="mt-3 text-[13px] font-medium text-slate-500 dark:text-slate-400">{i18n.t("t06.la_reference_belivay_du_colis_son_numero_d")}</p>
             )}
           </section>
 
@@ -576,8 +564,7 @@ export default function RelayDisputes({
 
           <div className="flex items-start gap-3 rounded-[14px] bg-[#EAF0FF] px-4 py-3.5 dark:bg-blue-950/40">
             <ShieldCheck size={19} strokeWidth={2.2} className="mt-0.5 flex-shrink-0 text-[#8FB0FF] dark:text-blue-300" />
-            <p className="text-[13.5px] font-medium leading-[1.55] text-[#9FAACB] dark:text-blue-100/80">
-              Le colis reste chez vous <strong className="font-black">{i18n.t("rl3.sans_frais_de_garde")}</strong> jusqu'à la
+            <p className="text-[13.5px] font-medium leading-[1.55] text-[#9FAACB] dark:text-blue-100/80">{i18n.t("t06.le_colis_reste_chez_vous")}<strong className="font-black">{i18n.t("rl3.sans_frais_de_garde")}</strong> jusqu'à la
               décision. Vous constatez ; le vendeur répond sous 48 h, puis la médiation BelivaY tranche
               sur les photos.
             </p>
@@ -609,13 +596,8 @@ export default function RelayDisputes({
                 + " linear-gradient(140deg, #0A1230 0%, #101E48 48%, #17296B 100%)",
             }}
           >
-            <p className="text-[12.5px] font-black uppercase leading-none tracking-[0.09em] text-[#E8A10E]">
-              Dépôt d'un retour validé
-            </p>
-            <p className="mt-2 text-[14px] font-medium leading-[1.5] text-white/85">
-              Seul un retour déjà accepté par BelivaY se dépose. Scannez l'étiquette que le client a
-              reçue : si le motif n'est pas validé, le dépôt est refusé.
-            </p>
+            <p className="text-[12.5px] font-black uppercase leading-none tracking-[0.09em] text-[#E8A10E]">{i18n.t("t06.depot_d_un_retour_valide")}</p>
+            <p className="mt-2 text-[14px] font-medium leading-[1.5] text-white/85">{i18n.t("t06.seul_un_retour_deja_accepte_par_belivay_se")}</p>
 
             <div className="mt-3.5 flex items-stretch gap-2.5">
               <input
@@ -680,8 +662,7 @@ export default function RelayDisputes({
                     {/* « Hors capacite » est exact : un retour depose ne cree
                         aucun RelayParcel, il n'occupe donc aucune des places
                         comptees par `storage_capacity`. */}
-                    {lookup.parcel_size_label} · hors capacité
-                  </dd>
+                    {lookup.parcel_size_label}{i18n.t("t06.hors_capacite")}</dd>
                 </div>
                 <div className="flex items-start justify-between gap-4 py-3">
                   <dt className="text-[14px] font-medium text-slate-500 dark:text-slate-400">Ranger en</dt>
@@ -692,9 +673,7 @@ export default function RelayDisputes({
                     gerant ranger le colis a une place que personne ne pourra
                     retrouver — pire qu'une absence de consigne.
                   */}
-                  <dd className="text-right text-[14px] font-black text-[#2456D6] dark:text-blue-400">
-                    À part des colis clients
-                  </dd>
+                  <dd className="text-right text-[14px] font-black text-[#2456D6] dark:text-blue-400">{i18n.t("t06.a_part_des_colis_clients")}</dd>
                 </div>
                 {lookup.item_name ? (
                   <div className="flex items-start justify-between gap-4 py-3">
@@ -709,10 +688,7 @@ export default function RelayDisputes({
               {/* Le retour attendu ailleurs : le gerant renvoie le client au bon
                   comptoir au lieu d'encaisser un colis qu'on n'attend pas ici. */}
               {lookup.assigned_elsewhere ? (
-                <p className="mt-3 rounded-[12px] border border-[#F0DA9C] bg-[#FFF4D6] px-3.5 py-3 text-[13px] font-semibold leading-snug text-[#8A5A00]">
-                  Ce retour est attendu au {lookup.assigned_elsewhere}. Vous pouvez le prendre, mais
-                  prévenez le client du changement.
-                </p>
+                <p className="mt-3 rounded-[12px] border border-[#F0DA9C] bg-[#FFF4D6] px-3.5 py-3 text-[13px] font-semibold leading-snug text-[#8A5A00]">{i18n.t("t06.ce_retour_est_attendu_au")}{lookup.assigned_elsewhere}{i18n.t("t06.vous_pouvez_le_prendre_mais_prevenez_le_cl")}</p>
               ) : null}
 
               {lookup.depositable ? (
@@ -777,9 +753,7 @@ export default function RelayDisputes({
                 </>
               ) : (
                 <p className="mt-3.5 rounded-[12px] border border-[#F4C3BE] bg-[#FDECEA] px-3.5 py-3 text-[13px] font-semibold leading-snug text-[#B42318]">
-                  {lookup.status_label} — ce retour ne se dépose pas. Le client garde son colis et
-                  contacte BelivaY depuis sa commande.
-                </p>
+                  {lookup.status_label}{i18n.t("t06.ce_retour_ne_se_depose_pas_le_client_garde")}</p>
               )}
 
               {/*
@@ -802,9 +776,7 @@ export default function RelayDisputes({
           {/* ── En cours ─────────────────────────────────────────────────── */}
           {dossiersOuverts.length === 0 ? (
             <section className="rounded-[14px] border border-slate-200 bg-white px-4 py-6 text-center shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
-              <p className="text-[13.5px] font-medium text-slate-400 dark:text-slate-500">
-                Aucun dossier en cours sur vos colis.
-              </p>
+              <p className="text-[13.5px] font-medium text-slate-400 dark:text-slate-500">{i18n.t("t06.aucun_dossier_en_cours_sur_vos_colis")}</p>
             </section>
           ) : (
             dossiersOuverts.map((file) => {
@@ -885,9 +857,7 @@ export default function RelayDisputes({
           {/* ── Clos ce mois ─────────────────────────────────────────────── */}
           {dossiersClos.length > 0 ? (
             <section className="rounded-[14px] border border-slate-200 bg-white px-4 pb-2 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
-              <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
-                Clos ce mois
-              </h3>
+              <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">{i18n.t("t06.clos_ce_mois")}</h3>
               <ul className="mt-2 divide-y divide-slate-100 dark:divide-slate-800">
                 {dossiersClos.map((file) => (
                   <li key={file.ref} className="flex items-start gap-3 py-3.5">
@@ -915,9 +885,7 @@ export default function RelayDisputes({
 
           {/* ── Les règles ───────────────────────────────────────────────── */}
           <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-4 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
-            <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
-              Les règles
-            </h3>
+            <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">{i18n.t("t06.les_regles")}</h3>
             <dl className="mt-3 divide-y divide-slate-100 dark:divide-slate-800">
               {REGLES.map(([regle, valeur]) => (
                 <div key={regle} className="flex items-start justify-between gap-4 py-3">

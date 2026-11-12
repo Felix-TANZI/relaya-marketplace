@@ -35,9 +35,7 @@ export default function RelayGardeGrid() {
           + " linear-gradient(140deg, #0A1230 0%, #101E48 48%, #17296010 100%), linear-gradient(0deg, #101C43, #101C43)",
       }}
     >
-      <p className="text-[12.5px] font-black uppercase leading-none tracking-[0.09em] text-[#E8A10E]">
-        La grille de garde · garde par colis
-      </p>
+      <p className="text-[12.5px] font-black uppercase leading-none tracking-[0.09em] text-[#E8A10E]">{i18n.t("t06.la_grille_de_garde_garde_par_colis")}</p>
 
       <div className="mt-3 grid gap-1 rounded-[12px] bg-white/[.07] p-3" style={{ gridTemplateColumns: `repeat(${Math.max(dernier, 1)}, minmax(0, 1fr))` }}>
         {jours.map(({ jour, montant }) => (

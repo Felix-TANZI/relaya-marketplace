@@ -200,9 +200,7 @@ export default function RelayInvitation({
           >
             <ChevronLeft size={24} strokeWidth={2.4} />
           </button>
-          <h1 className="pr-h2 min-w-0 flex-1 truncate text-slate-900 dark:text-white">
-            Rejoindre un relais
-          </h1>
+          <h1 className="pr-h2 min-w-0 flex-1 truncate text-slate-900 dark:text-white">{i18n.t("t06.rejoindre_un_relais")}</h1>
           <ShoppingCart
             size={26}
             strokeWidth={2.2}
@@ -224,10 +222,7 @@ export default function RelayInvitation({
               <h2 className="pr-h1 mt-2 text-white">
                 {inviteur} vous invite au relais {relais}
               </h2>
-              <p className="mt-2.5 text-[14px] font-medium leading-[1.5] text-white/90">
-                Vous pourrez recevoir les colis des livreurs et les remettre aux clients. L'argent
-                et les réglages restent au gérant.
-              </p>
+              <p className="mt-2.5 text-[14px] font-medium leading-[1.5] text-white/90">{i18n.t("t06.vous_pourrez_recevoir_les_colis_des_livreu")}</p>
             </section>
 
             <section className="pr-card mt-3 px-4 pb-1 pt-4">
@@ -269,12 +264,8 @@ export default function RelayInvitation({
         {/* ── Le code PIN ──────────────────────────────────────────────── */}
         {etape === "pin" ? (
           <>
-            <h2 className="pr-h1 text-center text-slate-900 dark:text-white">
-              Créez votre code PIN
-            </h2>
-            <p className="mt-1 text-center text-[13.5px] font-medium text-slate-500 dark:text-slate-400">
-              4 chiffres, à ne donner à personne. Il signe vos remises.
-            </p>
+            <h2 className="pr-h1 text-center text-slate-900 dark:text-white">{i18n.t("t06.creez_votre_code_pin")}</h2>
+            <p className="mt-1 text-center text-[13.5px] font-medium text-slate-500 dark:text-slate-400">{i18n.t("t06.4_chiffres_a_ne_donner_a_personne_il_signe")}</p>
 
             <RelayPinPad
               value={pin}
@@ -299,9 +290,7 @@ export default function RelayInvitation({
               type="button"
               onClick={confirmerPin}
               className="pr-btn mt-3 w-full rounded-[12px] px-4 py-3.5 text-[15px] font-black transition active:scale-[.97]"
-            >
-              Confirmer le PIN
-            </button>
+            >{i18n.t("t06.confirmer_le_pin")}</button>
           </>
         ) : null}
 
@@ -316,10 +305,7 @@ export default function RelayInvitation({
                 {faits} / {MODULES.length}
               </span>
             </div>
-            <p className="pr-sub mt-2">
-              Avant votre première remise, suivez les {MODULES.length} modules (≈ {TOTAL_MINUTES} min
-              au total, sur ce téléphone).
-            </p>
+            <p className="pr-sub mt-2">{i18n.t("t06.avant_votre_premiere_remise_suivez_les")}{MODULES.length} modules (≈ {TOTAL_MINUTES}{i18n.t("t06.min_au_total_sur_ce_telephone")}</p>
 
             <ul className="mt-1.5 divide-y divide-slate-100 dark:divide-slate-800">
               {MODULES.map(({ titre, minutes }, index) => {
@@ -382,9 +368,7 @@ export default function RelayInvitation({
                 setEtape("pret");
               }}
               className="mt-2.5 w-full rounded-[12px] border border-slate-200 bg-white px-4 py-3.5 text-[15px] font-bold text-slate-700 transition active:scale-[.97] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-            >
-              Voir l'écran final
-            </button>
+            >{i18n.t("t06.voir_l_ecran_final")}</button>
           </section>
         ) : null}
 
@@ -398,17 +382,12 @@ export default function RelayInvitation({
               <Check size={32} strokeWidth={3} />
             </span>
             <h2 className="pr-h1 mt-4 text-slate-900 dark:text-white">{i18n.t("rl3.vous_etes_prete")}</h2>
-            <p className="pr-sub mt-2">
-              Formation terminée. Vous pouvez recevoir et remettre des colis au relais {relais}.
-              Chaque opération est signée avec votre PIN.
-            </p>
+            <p className="pr-sub mt-2">{i18n.t("t06.formation_terminee_vous_pouvez_recevoir_et")}{relais}{i18n.t("t06.chaque_operation_est_signee_avec_votre_pin")}</p>
             <button
               type="button"
               onClick={onDone}
               className="pr-btn mt-5 w-full rounded-[12px] px-4 py-3.5 text-[15px] font-black transition active:scale-[.97]"
-            >
-              Aller au guichet
-            </button>
+            >{i18n.t("t06.aller_au_guichet")}</button>
           </section>
         ) : null}
       </div>

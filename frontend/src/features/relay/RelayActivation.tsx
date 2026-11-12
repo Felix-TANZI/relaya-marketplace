@@ -159,9 +159,7 @@ export default function RelayActivation({ relay, documents, payoutVerified }: Re
           {relay.name}
           {lieu ? ` · ${lieu}` : ""}
         </h2>
-        <p className="mt-2 text-center text-[13.5px] font-medium leading-snug text-slate-500 dark:text-slate-400">
-          Point relais partenaire indépendant
-          {ouverture && !Number.isNaN(ouverture.getTime())
+        <p className="mt-2 text-center text-[13.5px] font-medium leading-snug text-slate-500 dark:text-slate-400">{i18n.t("t06.point_relais_partenaire_independant")}{ouverture && !Number.isNaN(ouverture.getTime())
             ? i18n.t("c06.relais.ouvert_le", { date: JOUR_LONG.format(ouverture) })
             : ""}
         </p>
@@ -190,9 +188,7 @@ export default function RelayActivation({ relay, documents, payoutVerified }: Re
       {/* ── Les six étapes ────────────────────────────────────────────── */}
       <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-4 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
         <div className="flex items-center justify-between gap-3">
-          <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
-            Les 6 étapes d'activation
-          </h3>
+          <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">{i18n.t("t06.les_6_etapes_d_activation")}</h3>
           <span
             className={`flex-shrink-0 rounded-full border px-3 py-[5px] text-[12.5px] font-bold tabular-nums ${
               faites === ETAPES.length
@@ -251,9 +247,7 @@ export default function RelayActivation({ relay, documents, payoutVerified }: Re
             <FileText size={19} strokeWidth={2.2} />
           </span>
           <div className="min-w-0 flex-1">
-            <div className="text-[15px] font-black leading-tight text-slate-900 dark:text-white">
-              Convention de partenariat
-            </div>
+            <div className="text-[15px] font-black leading-tight text-slate-900 dark:text-white">{i18n.t("t06.convention_de_partenariat")}</div>
             <p className="mt-1 text-[13px] font-medium leading-snug text-slate-500 dark:text-slate-400">
               {/* La date vient de la piece elle-meme. Sans piece, on ne
                   pretend pas qu'elle est signee. */}
@@ -273,9 +267,7 @@ export default function RelayActivation({ relay, documents, payoutVerified }: Re
               <Download size={20} strokeWidth={2.4} />
             </a>
           ) : (
-            <span className="flex-shrink-0 rounded-full border border-slate-200 bg-slate-50 px-3 py-[5px] text-[12.5px] font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
-              À venir
-            </span>
+            <span className="flex-shrink-0 rounded-full border border-slate-200 bg-slate-50 px-3 py-[5px] text-[12.5px] font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">{i18n.t("t06.a_venir")}</span>
           )}
         </div>
       </section>

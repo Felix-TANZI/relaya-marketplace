@@ -5,6 +5,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import i18n from "@/i18n";
 import { productsApi, type Product } from '@/services/api/products';
 import ProductCard from '@/components/product/ProductCard';
 import { ChevronLeft, ChevronRight, Zap } from 'lucide-react';
@@ -97,12 +98,8 @@ export default function CartRecommendationsSection({
             <Zap size={20} className="text-amber-600" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-              Produits recommandés
-            </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Complétez vos achats, livraison optimisée
-            </p>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">{i18n.t("t06.produits_recommandes")}</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{i18n.t("t06.completez_vos_achats_livraison_optimisee")}</p>
           </div>
         </div>
         <div className="flex gap-2">

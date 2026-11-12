@@ -145,15 +145,12 @@ export default function RelayTrust({
               On ne fabrique pas de « +2 cette semaine » : l'historique du
               score n'est pas conservé. */}
           {trust?.candidate_tier && trust.candidate_tier !== trust.tier ? (
-            <span className="rounded-full bg-[#E6F4EC] px-3.5 py-[6px] text-[13px] font-bold text-[#1F7A4D] dark:bg-emerald-950 dark:text-emerald-300">
-              En passe de devenir {trust.candidate_tier}
+            <span className="rounded-full bg-[#E6F4EC] px-3.5 py-[6px] text-[13px] font-bold text-[#1F7A4D] dark:bg-emerald-950 dark:text-emerald-300">{i18n.t("t06.en_passe_de_devenir")}{trust.candidate_tier}
             </span>
           ) : null}
         </div>
 
-        <p className="mt-3 text-[13.5px] font-medium leading-[1.55] text-slate-500 dark:text-slate-400">
-          Visible par les clients quand ils choisissent leur relais.
-          {trust?.calculated_at ? (
+        <p className="mt-3 text-[13.5px] font-medium leading-[1.55] text-slate-500 dark:text-slate-400">{i18n.t("t06.visible_par_les_clients_quand_ils_choisiss")}{trust?.calculated_at ? (
             <>
               {" "}Calculé <strong className="font-black text-slate-700 dark:text-slate-200">
                 {JOUR.format(new Date(trust.calculated_at))}
@@ -168,9 +165,7 @@ export default function RelayTrust({
 
       {/* ── Le détail ────────────────────────────────────────────────────── */}
       <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-5 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
-        <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
-          Les 5 critères
-        </h3>
+        <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">{i18n.t("t06.les_5_criteres")}</h3>
 
         <ul className="mt-3 space-y-3.5">
           {CRITERIA.map(([cle, label]) => {
@@ -203,15 +198,8 @@ export default function RelayTrust({
           })}
         </ul>
 
-        <p className="mt-4 text-[13px] font-medium leading-[1.55] text-slate-400 dark:text-slate-500">
-          Ponctualité : colis reçus à l'heure et remis sans attente. Sécurité : scellés contrôlés,
-          photos de remise, aucun colis perdu. Ancienneté : monte avec le temps sans incident.
-        </p>
-        <p className="mt-3 text-[13px] font-medium leading-[1.55] text-slate-400 dark:text-slate-500">
-          Recalcul chaque nuit, baisse de 8 points au plus par recalcul, score gelé après 30 jours
-          sans activité. Un dossier en cours ne vous pénalise jamais. Chaque calcul et chaque
-          décision restent dans un journal consultable.
-        </p>
+        <p className="mt-4 text-[13px] font-medium leading-[1.55] text-slate-400 dark:text-slate-500">{i18n.t("t06.ponctualite_colis_recus_a_l_heure_et_remis")}</p>
+        <p className="mt-3 text-[13px] font-medium leading-[1.55] text-slate-400 dark:text-slate-500">{i18n.t("t06.recalcul_chaque_nuit_baisse_de_8_points_au")}</p>
       </section>
 
       {/* ── Les trois leviers ────────────────────────────────────────────── */}
@@ -235,7 +223,7 @@ export default function RelayTrust({
         <p className="text-[13.5px] font-medium leading-[1.55] text-[#8E1B12] dark:text-red-100/85">
           {trust?.veto_active && trust.veto_reason
             ? trust.veto_reason
-            : "Un colis perdu ou ouvert au relais ouvre une enquête. Une sanction n'est jamais automatique : proposée par le système, elle est validée par une personne, avec un motif écrit, et vous pouvez la contester une fois."}
+            : i18n.t("t06.un_colis_perdu_ou_ouvert_au_relais_ouvre_u")}
         </p>
       </div>
 
@@ -263,7 +251,7 @@ export default function RelayTrust({
         <p className="text-[13.5px] font-medium leading-[1.55] text-[#9FAACB] dark:text-blue-100/80">
           {trust?.parcel_value_cap_xaf
             ? i18n.t("c06.relais.plafond_valeur", { plafond: trust.parcel_value_cap_xaf.toLocaleString("fr-FR") })
-            : "Chaque palier plafonne la valeur d'un colis ; le vôtre s'affiche ici dès qu'il est connu. Au-delà, le colis est orienté vers un relais d'un palier supérieur."}
+            : i18n.t("t06.chaque_palier_plafonne_la_valeur_d_un_coli")}
         </p>
       </div>
     </div>

@@ -210,10 +210,7 @@ export default function RelayTrainingMobile({
           {MODULES.filter((module) => noyau.length === 0 || noyau.includes(module.key)).reduce(
             (somme, module) => somme + module.minutes,
             0,
-          )}{" "}
-          min) + une séance pratique d'1 h au comptoir lors de la visite BelivaY. Un module compte
-          comme fait seulement s'il est suivi jusqu'au bout, quiz compris.
-        </p>
+          )}{" "}{i18n.t("t06.min_une_seance_pratique_d_1_h_au_comptoir")}</p>
       </section>
     </div>
   );

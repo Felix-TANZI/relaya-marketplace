@@ -368,14 +368,10 @@ export default function AdminCategoriesPage() {
             fontFamily: "'Syne', sans-serif", fontSize: 24, fontWeight: 800,
             color: T.text, marginBottom: 4,
           }}>{i18n.t("ad9.gestion_des_categories")}</h1>
-          <p style={{ fontSize: 13, color: T.muted, maxWidth: 640 }}>
-            Les catégories et sous-catégories créées ici, avec leur nom et leur image, sont
-            celles que voient les acheteurs et que les vendeurs choisissent pour publier.
-          </p>
+          <p style={{ fontSize: 13, color: T.muted, maxWidth: 640 }}>{i18n.t("t06.les_categories_et_sous_categories_creees_i")}</p>
           <p style={{ fontSize: 12, color: T.mutedL, marginTop: 6 }}>
             {stats.roots} catégorie{stats.roots > 1 ? "s" : ""} principale{stats.roots > 1 ? "s" : ""}
-            {" · "}{stats.total} au total
-            {stats.withoutImage > 0 && ` · ${stats.withoutImage} sans image`}
+            {" · "}{stats.total}{i18n.t("t06.au_total")}{stats.withoutImage > 0 && ` · ${stats.withoutImage} sans image`}
             {stats.deprecated > 0 && ` · ${stats.deprecated} deprecated`}
             {stats.inactive > 0 && ` · ${stats.inactive} inactive${stats.inactive > 1 ? "s" : ""}`}
             {stats.requiresApproval > 0 && i18n.t("c06.admin.moderation_renforcee", { n: stats.requiresApproval })}
@@ -386,11 +382,9 @@ export default function AdminCategoriesPage() {
             <RefreshCw size={12} className={loading ? "animate-spin" : ""} /> {t("ad3_categories.button_refresh")}
           </button>
           <button onClick={() => openCreateChild(null, "sub")} style={btnGhost(T)}>
-            <Layers size={12} /> Nouvelle sous-catégorie
-          </button>
+            <Layers size={12} />{i18n.t("t06.nouvelle_sous_categorie")}</button>
           <button onClick={() => openCreateChild(null, "root")} style={btnPrimary(T)}>
-            <Plus size={12} /> Nouvelle catégorie
-          </button>
+            <Plus size={12} />{i18n.t("t06.nouvelle_categorie")}</button>
         </div>
       </div>
 
@@ -1721,9 +1715,7 @@ function CategoryImageInput({ T, kind, preview, onPick, onRemove, onError }: {
         ) : (
           <div style={{ textAlign: "center", color: T.muted, padding: 12 }}>
             <Upload size={22} style={{ margin: "0 auto 8px" }} />
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: T.text }}>
-              Glisser une image ou cliquer
-            </div>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: T.text }}>{i18n.t("t06.glisser_une_image_ou_cliquer")}</div>
             <div style={{ fontSize: 10.5, marginTop: 4 }}>
               {kind === "root" ? "Format paysage conseillé (≈ 1600 × 600 px)" : "Format carré conseillé (≈ 600 × 600 px)"}
             </div>
@@ -1738,9 +1730,7 @@ function CategoryImageInput({ T, kind, preview, onPick, onRemove, onError }: {
         onChange={(e) => { accept(e.target.files?.[0]); e.target.value = ""; }}
       />
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6, gap: 8 }}>
-        <span style={{ fontSize: 10.5, color: T.mutedL }}>
-          JPG, PNG ou WEBP · 5 Mo max · converti en WebP
-        </span>
+        <span style={{ fontSize: 10.5, color: T.mutedL }}>{i18n.t("t06.jpg_png_ou_webp_5_mo_max_converti_en_webp")}</span>
         {preview && (
           <button type="button" onClick={onRemove} style={{
             display: "flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700,
@@ -1810,8 +1800,7 @@ function ClientPreview({ T, kind, name, description, image, parentName }: {
         {kind === "root"
           ? i18n.t("ad9.grande_banniere_de_la_page_categorie_et_fr")
           : i18n.t("c06.admin.pastille_ronde", { parent: parentName ?? i18n.t("ad9.categorie_parente_2") })}
-        {" "}Le vendeur retrouve la même image dans son sélecteur.
-      </div>
+        {" "}{i18n.t("t06.le_vendeur_retrouve_la_meme_image_dans_son")}</div>
     </div>
   );
 }

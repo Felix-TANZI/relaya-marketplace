@@ -63,11 +63,11 @@ const QUESTIONS: Question[] = [
         .map((ligne) => `${nf(ligne.amount_xaf)} F ${TAILLES[ligne.parcel_size]}`)
         .join(", ");
       return (
-        "Chaque vendredi, sans frais et sans minimum, sur votre numéro de versement vérifié"
+        i18n.t("t06.chaque_vendredi_sans_frais_et_sans_minimum")
         + (lignes ? ` : ${lignes}` : "")
-        + ". La garde est facturée au client selon la grille de garde de BelivaY, et vous touchez votre part "
-        + "pour chaque jour et chaque colis gardé. C'est BelivaY qui vous paie, même quand la "
-        + "livraison est offerte au client."
+        + i18n.t("t06.la_garde_est_facturee_au_client_selon_la_g")
+        + i18n.t("t06.pour_chaque_jour_et_chaque_colis_garde_c_e")
+        + i18n.t("t06.livraison_est_offerte_au_client")
       );
     },
   },
@@ -80,8 +80,8 @@ const QUESTIONS: Question[] = [
   {
     q: i18n.t("rl3.un_avis_me_semble_injuste"),
     r:
-      "Signalez-le depuis la Messagerie : un avis n'est retiré que pour une insulte, une donnée "
-      + "personnelle ou un hors-sujet, avec un motif tracé. Vous pouvez aussi répondre en privé au "
+      i18n.t("t06.signalez_le_depuis_la_messagerie_un_avis_n")
+      + i18n.t("t06.personnelle_ou_un_hors_sujet_avec_un_motif")
       + "client.",
   },
   {
@@ -196,9 +196,7 @@ export default function RelayHelp({
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-[16px] font-black leading-tight">{i18n.t("rl3.parler_a_quelqu_un")}</span>
-          <span className="mt-0.5 block text-[13px] font-medium text-white/85">
-            Messagerie ou rappel · 8 h – 20 h, 7 j / 7
-          </span>
+          <span className="mt-0.5 block text-[13px] font-medium text-white/85">{i18n.t("t06.messagerie_ou_rappel_8_h_20_h_7_j_7")}</span>
         </span>
         <span className="flex-shrink-0 text-[20px] font-black text-white/70" aria-hidden>
           ›
@@ -206,14 +204,10 @@ export default function RelayHelp({
       </button>
 
       <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-2 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
-        <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
-          Questions fréquentes
-        </h3>
+        <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">{i18n.t("t06.questions_frequentes")}</h3>
 
         {visibles.length === 0 ? (
-          <p className="py-6 text-center text-[13.5px] font-medium text-slate-400 dark:text-slate-500">
-            Aucune réponse ne correspond. Écrivez-nous, quelqu'un vous répondra.
-          </p>
+          <p className="py-6 text-center text-[13.5px] font-medium text-slate-400 dark:text-slate-500">{i18n.t("t06.aucune_reponse_ne_correspond_ecrivez_nous")}</p>
         ) : (
           <dl className="mt-1 divide-y divide-slate-100 dark:divide-slate-800">
             {visibles.map((item) => {
@@ -250,9 +244,7 @@ export default function RelayHelp({
 
       {/* ── Écrire au support ──────────────────────────────────────────── */}
       <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-5 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
-        <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
-          Écrire au support
-        </h3>
+        <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">{i18n.t("t06.ecrire_au_support")}</h3>
 
         <div className="mt-3 flex flex-wrap gap-2">
           {SUJETS.map((item) => {
@@ -275,9 +267,7 @@ export default function RelayHelp({
           })}
         </div>
 
-        <label className="mt-4 block text-[11.5px] font-black uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
-          Référence du colis (si concerné)
-        </label>
+        <label className="mt-4 block text-[11.5px] font-black uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">{i18n.t("t06.reference_du_colis_si_concerne")}</label>
         <input
           value={reference}
           onChange={(event) => setReference(event.target.value.toUpperCase())}
@@ -325,16 +315,11 @@ export default function RelayHelp({
           joigne la preuve d'un colis abime en croyant l'avoir envoyee.
         */}
         {photo ? (
-          <p className="mt-2.5 text-[12.5px] font-medium leading-snug text-[#8A5A00] dark:text-amber-400">
-            La photo ne part pas encore avec ce formulaire : le support vous la redemandera depuis la
-            Messagerie.
-          </p>
+          <p className="mt-2.5 text-[12.5px] font-medium leading-snug text-[#8A5A00] dark:text-amber-400">{i18n.t("t06.la_photo_ne_part_pas_encore_avec_ce_formul")}</p>
         ) : null}
 
         {envoye ? (
-          <p className="mt-2.5 text-[13px] font-semibold text-[#1F7A4D] dark:text-emerald-400">
-            Demande transmise. Le support répond depuis la Messagerie.
-          </p>
+          <p className="mt-2.5 text-[13px] font-semibold text-[#1F7A4D] dark:text-emerald-400">{i18n.t("t06.demande_transmise_le_support_repond_depuis")}</p>
         ) : null}
       </section>
     </div>

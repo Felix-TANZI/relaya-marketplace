@@ -855,9 +855,7 @@ export default function ProfilePage() {
             </button>
             {/* Feuille de route D9 : le client modifie ses univers choisis à la première ouverture. */}
             <button type="button" className="pf-quick-tile" onClick={() => navigate("/interets")}>
-              <span className="pf-quick-ic p"><Sparkles size={18} /></span>
-              Mes centres d'intérêt
-            </button>
+              <span className="pf-quick-ic p"><Sparkles size={18} /></span>{i18n.t("t06.mes_centres_d_interet")}</button>
             <button type="button" className="pf-quick-tile" onClick={() => openPanel("parrain")}>
               <span className="pf-quick-ic p"><Gift size={18} /></span>
               {t("cl3_profile_dashboard.shortcut_referral")}

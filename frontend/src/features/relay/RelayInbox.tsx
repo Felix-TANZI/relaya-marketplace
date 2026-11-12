@@ -290,8 +290,7 @@ export default function RelayInbox({ onError, relay, onNavigate, outbound = 0, a
                 <div key={message.id} className="flex justify-end">
                   <div className="pr-sunrise max-w-[82%] rounded-[16px] rounded-br-[4px] px-4 py-3 text-white">
                     <p className="text-[14.5px] font-medium leading-[1.45]">{message.body}</p>
-                    <p className="mt-1.5 text-[11.5px] font-medium text-white/80">
-                      Vous · {heure(message.at)}
+                    <p className="mt-1.5 text-[11.5px] font-medium text-white/80">{i18n.t("t06.vous")}{heure(message.at)}
                     </p>
                   </div>
                 </div>
@@ -382,10 +381,7 @@ export default function RelayInbox({ onError, relay, onNavigate, outbound = 0, a
       {/* ── Le rappel qui compte ───────────────────────────────────────── */}
       <div className="flex items-start gap-3 rounded-[14px] bg-[#EAF0FF] px-4 py-3.5 dark:bg-blue-950/40">
         <Lock size={18} strokeWidth={2.2} className="mt-0.5 flex-shrink-0 text-[#8FB0FF] dark:text-blue-300" />
-        <p className="text-[13.5px] font-medium leading-[1.55] text-[#9FAACB] dark:text-blue-100/80">
-          Vous échangez uniquement avec BelivaY, jamais directement avec un client, un vendeur ou un
-          livreur. Les messages servent de preuve.
-        </p>
+        <p className="text-[13.5px] font-medium leading-[1.55] text-[#9FAACB] dark:text-blue-100/80">{i18n.t("t06.vous_echangez_uniquement_avec_belivay_jama")}</p>
       </div>
     </div>
   );

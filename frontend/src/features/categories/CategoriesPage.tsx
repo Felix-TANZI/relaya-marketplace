@@ -1,4 +1,5 @@
 import { useState, type CSSProperties } from "react";
+import i18n from "@/i18n";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ChevronRight, ArrowRight, PackageSearch } from "lucide-react";
@@ -214,9 +215,7 @@ export default function CategoriesPage() {
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: "28px 0", textAlign: "center" }}>
                     <PackageSearch size={30} style={{ color: "var(--pf-muted)" }} />
                     <p style={{ fontSize: 13, fontWeight: 700, color: "var(--pf-text)" }}>{t("categories.main_category")}</p>
-                    <p style={{ fontSize: 12, color: "var(--pf-muted)", maxWidth: 360 }}>
-                      Cet univers n'a pas de sous-catégories — explorez directement tous ses produits.
-                    </p>
+                    <p style={{ fontSize: 12, color: "var(--pf-muted)", maxWidth: 360 }}>{i18n.t("t06.cet_univers_n_a_pas_de_sous_categories_exp")}</p>
                     <Link to={`/categorie/${selected.slug}`} className="pf-btn-accent" style={{ textDecoration: "none", marginTop: 6 }}>
                       {t("categories.explore")} <ArrowRight size={15} />
                     </Link>

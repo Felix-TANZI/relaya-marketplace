@@ -31,13 +31,8 @@ export default function RelayCourseRetour({ onError }: { onError: (error: unknow
 
   return (
     <details className="mt-4 rounded-[14px] border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-      <summary className="cursor-pointer text-[14px] font-black text-slate-800 dark:text-white">
-        Encaisser une course de retour (Mobile Money)
-      </summary>
-      <p className="mt-2 text-[13px] text-slate-500">
-        Un client dont le retour n'a pas été validé doit la course de retour avant sa prochaine commande. Jamais en
-        espèces : la demande de paiement part sur son téléphone.
-      </p>
+      <summary className="cursor-pointer text-[14px] font-black text-slate-800 dark:text-white">{i18n.t("t06.encaisser_une_course_de_retour_mobile_mone")}</summary>
+      <p className="mt-2 text-[13px] text-slate-500">{i18n.t("t06.un_client_dont_le_retour_n_a_pas_ete_valid")}</p>
       <div className="mt-3 flex flex-wrap gap-2">
         <input className="rounded-lg border px-3 py-2" inputMode="tel" placeholder={i18n.t("rl3.numero_du_client")} value={numero}
           onChange={(e) => setNumero(e.target.value)} />

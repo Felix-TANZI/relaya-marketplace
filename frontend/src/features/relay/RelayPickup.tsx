@@ -139,12 +139,12 @@ const COUNTER_SITUATIONS: Array<{
     id: "payable",
     icon: CreditCard,
     tone: "bg-[#FFF1E2] text-[#EF6A00] dark:bg-orange-950 dark:text-orange-300",
-    title: "Commande payable au retrait",
+    title: i18n.t("t06.commande_payable_au_retrait"),
     body:
-      "Pas encore de code : retrouvez le colis par sa référence ou le numéro du client. Le ticket affiche "
-      + "le montant à encaisser (articles + garde ; la livraison est toujours payée d'avance). "
-      + "Le client paie en MoMo sur son téléphone : ce paiement débloque le code. Jamais d'espèces. "
-      + "Les conditions sont vérifiées à la commande, pas par vous.",
+      i18n.t("t06.pas_encore_de_code_retrouvez_le_colis_par")
+      + i18n.t("t06.le_montant_a_encaisser_articles_garde_la_l")
+      + i18n.t("t06.le_client_paie_en_momo_sur_son_telephone_c")
+      + i18n.t("t06.les_conditions_sont_verifiees_a_la_command"),
   },
   {
     id: "refuse",
@@ -284,12 +284,9 @@ function HandOverSheet({
 
       {needsId ? (
         <div className="mt-4 rounded-[14px] border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/40">
-          <p className="text-xs font-black uppercase tracking-[0.12em] text-amber-700 dark:text-amber-300">
-            Retrait par un tiers — {authorized?.authorizedName}
+          <p className="text-xs font-black uppercase tracking-[0.12em] text-amber-700 dark:text-amber-300">{i18n.t("t06.retrait_par_un_tiers")}{authorized?.authorizedName}
           </p>
-          <p className="mt-1 text-xs font-semibold text-amber-900/75 dark:text-amber-100/75">
-            Le client a autorisé cette personne
-            {authorized?.authorizedPhone ? ` (${authorized.authorizedPhone})` : ""} à retirer à sa place.
+          <p className="mt-1 text-xs font-semibold text-amber-900/75 dark:text-amber-100/75">{i18n.t("t06.le_client_a_autorise_cette_personne")}{authorized?.authorizedPhone ? ` (${authorized.authorizedPhone})` : ""} à retirer à sa place.
             Contrôlez sa pièce avant de valider.
           </p>
           <input
@@ -401,9 +398,7 @@ function IssueSheet({
       />
 
       {parcels.length > 1 ? (
-        <label className="block text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-          Colis concerné
-          <select
+        <label className="block text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">{i18n.t("t06.colis_concerne")}<select
             value={parcelId}
             onChange={(event) => setParcelId(Number(event.target.value))}
             className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-950 outline-none transition focus:border-orange-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
@@ -417,9 +412,7 @@ function IssueSheet({
         </label>
       ) : null}
 
-      <label className="mt-4 block text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-        Ce que vous constatez
-        <textarea
+      <label className="mt-4 block text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">{i18n.t("t06.ce_que_vous_constatez")}<textarea
           value={description}
           onChange={(event) => setDescription(event.target.value)}
           rows={3}
@@ -535,9 +528,7 @@ function PickupScanSheet({
         type="button"
         onClick={onCancel}
         className="mt-5 w-full rounded-[14px] border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-      >
-        Saisir le code à la main
-      </button>
+      >{i18n.t("t06.saisir_le_code_a_la_main_2")}</button>
     </RelaySheet>
   );
 }
@@ -687,9 +678,7 @@ export default function RelayPickup({
         <h2 className="text-[27px] font-black leading-[1.15] tracking-[-0.015em] text-slate-900 dark:text-white">
           Retrait client
         </h2>
-        <p className="mt-1.5 text-[14.5px] font-medium text-slate-500 dark:text-slate-400">
-          Code ou QR, montant calculé, photo. Moins d'une minute.
-        </p>
+        <p className="mt-1.5 text-[14.5px] font-medium text-slate-500 dark:text-slate-400">{i18n.t("t06.code_ou_qr_montant_calcule_photo_moins_d_u")}</p>
       </header>
 
       {/* ── Saisie du code ─────────────────────────────────────────────────
@@ -725,25 +714,20 @@ export default function RelayPickup({
               type="button"
               onClick={() => changeCode("")}
               className="mt-3 w-full text-center text-xs font-bold text-slate-400 transition active:scale-95 dark:text-slate-500"
-            >
-              Saisir un autre code
-            </button>
+            >{i18n.t("t06.saisir_un_autre_code")}</button>
           </div>
         </section>
       ) : null}
 
       {!colis ? (
         <section className="rounded-[14px] border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
-          <label className="block text-[11px] font-black uppercase leading-none tracking-[0.1em] text-slate-500 dark:text-slate-400">
-            1. Le colis du client
-          </label>
+          <label className="block text-[11px] font-black uppercase leading-none tracking-[0.1em] text-slate-500 dark:text-slate-400">{i18n.t("t06.1_le_colis_du_client")}</label>
           <button
             type="button"
             onClick={() => setScanColisOpen(true)}
             className="mt-3 flex w-full items-center justify-center gap-2.5 rounded-[12px] bg-[#2456D6] px-4 py-3.5 text-[15px] font-black text-white transition active:scale-[.97]"
           >
-            <QrCode size={18} strokeWidth={2.2} /> Scanner le QR du colis
-          </button>
+            <QrCode size={18} strokeWidth={2.2} />{i18n.t("t06.scanner_le_qr_du_colis")}</button>
           <div className="mt-3 flex gap-2">
             <input
               value={reference}
@@ -761,9 +745,7 @@ export default function RelayPickup({
               OK
             </button>
           </div>
-          <p className="mt-3 text-[13.5px] font-medium leading-[1.5] text-slate-500 dark:text-slate-400">
-            Sortez le colis du casier et scannez son QR : le code du client se vérifie ensuite sur ce colis précis.
-          </p>
+          <p className="mt-3 text-[13.5px] font-medium leading-[1.5] text-slate-500 dark:text-slate-400">{i18n.t("t06.sortez_le_colis_du_casier_et_scannez_son_q")}</p>
         </section>
       ) : null}
 
@@ -771,13 +753,9 @@ export default function RelayPickup({
         <section className="rounded-[14px] border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
           <div className="mb-3 flex items-center justify-between gap-2 text-[13px] font-semibold text-slate-500 dark:text-slate-400">
             <span>{i18n.t("rl3.colis_scanne")}</span>
-            <button type="button" className="font-black text-[#2456D6]" onClick={() => { changeCode(""); setColis(""); }}>
-              Changer de colis
-            </button>
+            <button type="button" className="font-black text-[#2456D6]" onClick={() => { changeCode(""); setColis(""); }}>{i18n.t("t06.changer_de_colis")}</button>
           </div>
-          <label className="block text-[11px] font-black uppercase leading-none tracking-[0.1em] text-slate-500 dark:text-slate-400">
-            2. Code de retrait du client
-          </label>
+          <label className="block text-[11px] font-black uppercase leading-none tracking-[0.1em] text-slate-500 dark:text-slate-400">{i18n.t("t06.2_code_de_retrait_du_client")}</label>
           <input
             value={code}
             onChange={(event) => changeCode(event.target.value.replace(/[^a-z0-9]/gi, "").toUpperCase().slice(0, 6))}
@@ -796,8 +774,7 @@ export default function RelayPickup({
             onClick={() => setScanOpen(true)}
             className="mt-3 flex w-full items-center justify-center gap-2.5 rounded-[12px] border border-slate-200 bg-white px-4 py-3 text-[15px] font-black text-slate-700 transition active:scale-[.97] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
           >
-            <QrCode size={18} strokeWidth={2.2} /> Scanner le QR du client
-          </button>
+            <QrCode size={18} strokeWidth={2.2} />{i18n.t("t06.scanner_le_qr_du_client")}</button>
 
           {checking ? (
             <p className="mt-3 text-[13.5px] font-medium text-slate-500 dark:text-slate-400">
@@ -816,10 +793,7 @@ export default function RelayPickup({
                 : i18n.t("rl3.aucun_colis_en_stock_ne_porte_ce_code_veri")}
             </p>
           ) : (
-            <p className="mt-3 text-[13.5px] font-medium leading-[1.5] text-slate-500 dark:text-slate-400">
-              Le client le reçoit par SMS à l'arrivée de son colis, et le retrouve en QR dans sa commande.
-              Sans code, pas de remise — c'est ce qui vous protège si quelqu'un réclame le colis d'un autre.
-            </p>
+            <p className="mt-3 text-[13.5px] font-medium leading-[1.5] text-slate-500 dark:text-slate-400">{i18n.t("t06.le_client_le_recoit_par_sms_a_l_arrivee_de")}</p>
           )}
         </section>
       ) : null}
@@ -842,10 +816,7 @@ export default function RelayPickup({
             </span>
           </div>
 
-          <p className="mt-2.5 text-[14px] font-medium leading-[1.55] text-slate-500 dark:text-slate-400">
-            Avant de valider la remise, invitez le client à ouvrir son colis ici, devant vous.
-            « Tout est en ordre » ferme la fenêtre de retour et libère l'argent du vendeur.
-          </p>
+          <p className="mt-2.5 text-[14px] font-medium leading-[1.55] text-slate-500 dark:text-slate-400">{i18n.t("t06.avant_de_valider_la_remise_invitez_le_clie")}</p>
 
           <div className="mt-4 space-y-3">
             <SummaryRow label={i18n.t("rl3.colis_annonces")} value={String(matched.length)} />
@@ -910,48 +881,35 @@ export default function RelayPickup({
             onClick={() => setSheet("ACCEPTED")}
             className="pr-btn mt-4 flex w-full items-center justify-center gap-2.5 rounded-[12px] px-4 py-4 text-[17px] font-black text-white transition active:scale-[.97] disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none dark:disabled:from-slate-700 dark:disabled:to-slate-700"
           >
-            <Check size={19} strokeWidth={3} /> Tout est en ordre
-          </button>
+            <Check size={19} strokeWidth={3} />{i18n.t("t06.tout_est_en_ordre")}</button>
 
           <button
             type="button"
             disabled={busy}
             onClick={() => setSheet("ISSUE")}
             className="mt-2.5 flex w-full items-center justify-center rounded-[12px] border border-slate-200 bg-white px-4 py-3.5 text-[16px] font-bold text-slate-700 transition active:scale-[.97] disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-          >
-            Un problème
-          </button>
+          >{i18n.t("t06.un_probleme")}</button>
 
           <button
             type="button"
             disabled={!allOnCounter || busy}
             onClick={() => setSheet("SKIPPED")}
             className="mt-4 w-full text-center text-[14px] font-black text-[#2456D6] transition active:scale-95 disabled:opacity-40 dark:text-blue-300"
-          >
-            Le client préfère ne pas ouvrir · continuer
-          </button>
+          >{i18n.t("t06.le_client_prefere_ne_pas_ouvrir_continuer")}</button>
 
-          <p className="mt-4 text-[13px] font-medium leading-[1.55] text-slate-400 dark:text-slate-500">
-            « Un problème » ouvre un constat au comptoir, photos tout de suite : le colis reste chez vous et
-            la garde s'arrête jusqu'à la décision. Si le client préfère ne pas ouvrir, continuez : sa fenêtre
-            de retour reste ouverte 7 jours. S'il manque un colis annoncé, la validation est refusée.
-          </p>
+          <p className="mt-4 text-[13px] font-medium leading-[1.55] text-slate-400 dark:text-slate-500">{i18n.t("t06.un_probleme_ouvre_un_constat_au_comptoir_p")}</p>
 
           <button
             type="button"
             onClick={() => changeCode("")}
             className="mt-3 w-full text-center text-xs font-bold text-slate-400 transition active:scale-95 dark:text-slate-500"
-          >
-            Saisir un autre code
-          </button>
+          >{i18n.t("t06.saisir_un_autre_code")}</button>
         </section>
       ) : null}
 
       {/* ── Consignes de comptoir ──────────────────────────────────────────── */}
       <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
-        <h3 className="px-5 pb-1 pt-5 text-[18px] font-black tracking-[-0.015em] text-slate-900 dark:text-white">
-          Autres situations au comptoir
-        </h3>
+        <h3 className="px-5 pb-1 pt-5 text-[18px] font-black tracking-[-0.015em] text-slate-900 dark:text-white">{i18n.t("t06.autres_situations_au_comptoir")}</h3>
         <ul className="divide-y divide-slate-100 dark:divide-slate-800">
           {COUNTER_SITUATIONS.map(({ id, icon: Icon, tone, title, body }) => {
             const open = openSituations.includes(id);
@@ -1006,8 +964,7 @@ export default function RelayPickup({
           onClick={onOpenErrorStates}
           className="flex items-center justify-center gap-2 rounded-[12px] border border-slate-200 bg-white px-3 py-3.5 text-[14px] font-bold text-slate-700 transition active:scale-[.97] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
         >
-          <AlertTriangle size={17} strokeWidth={2.2} /> États d'erreur
-        </button>
+          <AlertTriangle size={17} strokeWidth={2.2} />{i18n.t("t06.etats_d_erreur")}</button>
       </div>
 
       {/* ── Depot d'un retour ────────────────────────────────────
@@ -1025,12 +982,8 @@ export default function RelayPickup({
       >
         <RotateCcw size={19} className="flex-shrink-0 text-emerald-700 dark:text-emerald-300" strokeWidth={2.4} />
         <span className="min-w-0 flex-1">
-          <span className="block text-[15px] font-black text-emerald-900 dark:text-emerald-100">
-            Un client depose un retour valide
-          </span>
-          <span className="mt-0.5 block text-[13px] font-semibold text-emerald-900/70 dark:text-emerald-100/65">
-            Scannez l'etiquette et photographiez le scelle
-          </span>
+          <span className="block text-[15px] font-black text-emerald-900 dark:text-emerald-100">{i18n.t("t06.un_client_depose_un_retour_valide")}</span>
+          <span className="mt-0.5 block text-[13px] font-semibold text-emerald-900/70 dark:text-emerald-100/65">{i18n.t("t06.scannez_l_etiquette_et_photographiez_le_sc")}</span>
         </span>
         <ChevronRight size={18} className="flex-shrink-0 text-emerald-600 dark:text-emerald-400" strokeWidth={2.4} />
       </button>
@@ -1043,17 +996,8 @@ export default function RelayPickup({
             subtitle={i18n.t("rl3.ce_qui_vaut_preuve_de_remise_et_ce_qui_n_e")}
             onClose={() => setSignatureHelp(false)}
           />
-          <p className="text-[13.5px] font-medium leading-[1.55] text-slate-500 dark:text-slate-400">
-            Le client signe au doigt, sur votre écran, au moment de la remise. Cette signature part
-            en preuve avec la photo : c'est elle qui vous dégage si quelqu'un conteste avoir reçu
-            son colis.
-          </p>
-          <p className="mt-3 text-[13.5px] font-medium leading-[1.55] text-slate-500 dark:text-slate-400">
-            La signature par code PIN n'est pas disponible : BelivaY ne conserve aucun code secret
-            côté client, et le code de retrait ne peut pas en tenir lieu — il a déjà servi à ouvrir
-            la remise. Si un client ne peut pas signer, notez-le dans « Un problème » plutôt que de
-            valider sans preuve.
-          </p>
+          <p className="text-[13.5px] font-medium leading-[1.55] text-slate-500 dark:text-slate-400">{i18n.t("t06.le_client_signe_au_doigt_sur_votre_ecran_a")}</p>
+          <p className="mt-3 text-[13.5px] font-medium leading-[1.55] text-slate-500 dark:text-slate-400">{i18n.t("t06.la_signature_par_code_pin_n_est_pas_dispon")}</p>
           <button
             type="button"
             onClick={() => setSignatureHelp(false)}

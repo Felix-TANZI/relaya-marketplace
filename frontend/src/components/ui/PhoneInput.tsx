@@ -1,5 +1,6 @@
 // frontend/src/components/ui/PhoneInput.tsx
 import { InputHTMLAttributes, forwardRef, useEffect } from "react";
+import i18n from "@/i18n";
 import {
   DEFAULT_COUNTRY,
   detectOperator,
@@ -108,9 +109,7 @@ const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
         </div>
         {error && <p className="mt-1.5 text-xs text-red-500">{error}</p>}
         {!error && showRangeError && (
-          <p className="mt-1.5 text-xs text-red-500">
-            Numéro invalide — vérifiez l'opérateur et les 9 chiffres.
-          </p>
+          <p className="mt-1.5 text-xs text-red-500">{i18n.t("t06.numero_invalide_verifiez_l_operateur_et_le")}</p>
         )}
         {helperText && !invalid && (
           <p className="mt-1.5 text-xs text-gray-400 dark:text-gray-500">{helperText}</p>

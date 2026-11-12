@@ -108,7 +108,7 @@ function NativeGoogleButton({ onCredential, disabled, label, onError }: {
         // typiquement un client OAuth mal configure (Android : package name /
         // empreinte SHA-1 non enregistres ; iOS : client iOS ou URL scheme).
         console.error('SocialLogin.login(google) a reussi mais sans idToken', result);
-        onError?.('Connexion Google impossible (configuration invalide). Reessayez ou utilisez un autre mode de connexion.');
+        onError?.(i18n.t("t06.connexion_google_impossible_configuration"));
       }
     } catch (error) {
       // Annulation utilisateur : ne pas afficher d'erreur, cas normal.

@@ -369,21 +369,15 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
           <span className="mx-auto flex h-[64px] w-[64px] items-center justify-center rounded-full bg-[#E6F4EC] text-[#1F7A4D] dark:bg-emerald-950/50 dark:text-emerald-300">
             <Check size={30} strokeWidth={3} />
           </span>
-          <h3 className="mt-4 text-[23px] font-black tracking-[-0.03em] text-slate-900 dark:text-white">
-            Demande envoyée
-          </h3>
-          <p className="mt-2 text-[13.5px] font-medium leading-[1.55] text-slate-500 dark:text-slate-400">
-            Un agent BelivaY vous appelle sous 48 h pour fixer la visite. Pendant ce temps,
-            commencez la formation : des modules courts, sur votre téléphone.
-          </p>
+          <h3 className="mt-4 text-[23px] font-black tracking-[-0.03em] text-slate-900 dark:text-white">{i18n.t("t06.demande_envoyee")}</h3>
+          <p className="mt-2 text-[13.5px] font-medium leading-[1.55] text-slate-500 dark:text-slate-400">{i18n.t("t06.un_agent_belivay_vous_appelle_sous_48_h_po")}</p>
 
           <button
             type="button"
             onClick={onOpenTraining}
             className="pr-btn mt-4 flex w-full items-center justify-center gap-2.5 rounded-[12px] px-4 py-3.5 text-[16px] font-black text-white transition active:scale-[.97]"
           >
-            <GraduationCap size={19} strokeWidth={2.2} /> Commencer la formation
-          </button>
+            <GraduationCap size={19} strokeWidth={2.2} />{i18n.t("t06.commencer_la_formation")}</button>
           <button
             type="button"
             onClick={() => {
@@ -412,9 +406,7 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
       {etape === 0 ? (
         <>
 
-        <label className="mt-4 block text-[11.5px] font-black uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
-          Nom du commerce
-        </label>
+        <label className="mt-4 block text-[11.5px] font-black uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">{i18n.t("t06.nom_du_commerce")}</label>
         <input
           value={brouillon.enseigne}
           onChange={(event) => modifier("enseigne", event.target.value)}
@@ -488,9 +480,7 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
               : i18n.t("rl3.placer_mon_commerce_sur_la_carte")}
         </button>
         {position === "erreur" ? (
-          <p className="mt-2 text-[12.5px] font-medium text-[#8A5A00] dark:text-amber-400">
-            Localisation refusée. Le repère ci-dessus suffira à l'agent qui vous appellera.
-          </p>
+          <p className="mt-2 text-[12.5px] font-medium text-[#8A5A00] dark:text-amber-400">{i18n.t("t06.localisation_refusee_le_repere_ci_dessus_s")}</p>
         ) : null}
 
         </>
@@ -527,7 +517,7 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
             onChange={(event) => modifier("email", event.target.value.trim())}
             type="email"
             inputMode="email"
-            placeholder="Pour recevoir la réponse par e-mail"
+            placeholder={i18n.t("t06.pour_recevoir_la_reponse_par_e_mail")}
             aria-label="E-mail (facultatif)"
             className={champ}
           />
@@ -569,10 +559,7 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
             dans ce projet : c'est un agent qui regarde, et l'etape « Appel
             sous 48 h » ci-dessous le dit deja.
           */}
-          <p className="mt-3 text-[13px] font-medium leading-[1.5] text-slate-400 dark:text-slate-500">
-            Un agent vérifie votre pièce lors de l'appel. Elle n'est jamais montrée : les clients
-            voient votre prénom et votre portrait, pour vous reconnaître au comptoir.
-          </p>
+          <p className="mt-3 text-[13px] font-medium leading-[1.5] text-slate-400 dark:text-slate-500">{i18n.t("t06.un_agent_verifie_votre_piece_lors_de_l_app")}</p>
         </>
       ) : null}
 
@@ -629,10 +616,7 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
             className={champ}
           />
 
-          <p className="mt-3 text-[13px] font-medium leading-[1.5] text-slate-400 dark:text-slate-500">
-            Il faut un coin sec, à l'abri des regards, et un comptoir où remettre. La photo de la
-            façade aide les clients à trouver le relais. BelivaY vérifie lors de la visite.
-          </p>
+          <p className="mt-3 text-[13px] font-medium leading-[1.5] text-slate-400 dark:text-slate-500">{i18n.t("t06.il_faut_un_coin_sec_a_l_abri_des_regards_e")}</p>
         </>
       ) : null}
 
@@ -677,9 +661,7 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
               decouverte au premier versement coute une semaine. */}
           {brouillon.momo.length >= 3
             && !OPERATEURS.find((op) => op.cle === brouillon.operateur)?.test(brouillon.momo) ? (
-            <p className="mt-2 text-[12.5px] font-semibold text-[#B42318]">
-              Ce numéro ne correspond pas à l'opérateur choisi.
-            </p>
+            <p className="mt-2 text-[12.5px] font-semibold text-[#B42318]">{i18n.t("t06.ce_numero_ne_correspond_pas_a_l_operateur")}</p>
           ) : null}
 
           <button
@@ -687,8 +669,7 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
             className="mt-3.5 flex w-full items-center justify-center gap-2.5 rounded-[12px] bg-[#2456D6] px-4 py-3.5 text-[16px] font-black text-white shadow-[0_4px_14px_rgba(36,86,214,.35)] transition active:scale-[.97] disabled:cursor-not-allowed disabled:bg-slate-300 dark:disabled:bg-slate-700"
             disabled={brouillon.momo.length !== 9}
           >
-            <Smartphone size={18} strokeWidth={2.2} /> Recevoir le code
-          </button>
+            <Smartphone size={18} strokeWidth={2.2} />{i18n.t("t06.recevoir_le_code")}</button>
 
           <label className={etiquette}>{i18n.t("rl3.code_recu")}</label>
           <input
@@ -700,10 +681,7 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
             className="mt-2 w-full rounded-[12px] border border-slate-200 bg-white px-4 py-3 text-center text-[20px] font-black tracking-[0.3em] text-slate-900 outline-none transition focus:border-[#EF6A00] placeholder:text-slate-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
           />
 
-          <p className="mt-3 text-[13px] font-medium leading-[1.5] text-slate-400 dark:text-slate-500">
-            Le numéro doit être au nom du gérant. Préfixe vérifié : MTN 67X, 68X, 650 à 654 · Orange
-            69X, 655 à 659. Un seul numéro actif à la fois.
-          </p>
+          <p className="mt-3 text-[13px] font-medium leading-[1.5] text-slate-400 dark:text-slate-500">{i18n.t("t06.le_numero_doit_etre_au_nom_du_gerant_prefi")}</p>
         </>
       ) : null}
 
@@ -715,7 +693,7 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
               ["Caution", "aucune", true],
               ["Frais d'entrée", "aucun", true],
               ["Rémunération", remuneration, false],
-              ["Garde", "une part par jour et par colis gardé", false],
+              ["Garde", i18n.t("t06.une_part_par_jour_et_par_colis_garde"), false],
               ["Versement", "chaque vendredi", false],
               ["Exclusivité (50 premiers)", "300 m · 6 mois", false],
             ].map(([terme, valeur, vert]) => (
@@ -750,9 +728,7 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
                 }`}
               />
             </span>
-            <span className="text-[14.5px] font-semibold text-slate-700 dark:text-slate-200">
-              J'ai lu la convention et je l'accepte
-            </span>
+            <span className="text-[14.5px] font-semibold text-slate-700 dark:text-slate-200">{i18n.t("t06.j_ai_lu_la_convention_et_je_l_accepte")}</span>
           </button>
 
           <div className="mt-3.5 overflow-hidden rounded-[12px] border-2 border-dashed border-[#C9D7FB] dark:border-blue-900">
@@ -793,10 +769,7 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
             prises aux etapes precedentes NE PARTENT PAS — le dire evite que
             quelqu'un croie son dossier complet.
           */}
-          <p className="mt-3 text-[13px] font-medium leading-[1.5] text-slate-400 dark:text-slate-500">
-            Votre demande part au support avec vos réponses. Les photos vous seront redemandées lors
-            de l'appel.
-          </p>
+          <p className="mt-3 text-[13px] font-medium leading-[1.5] text-slate-400 dark:text-slate-500">{i18n.t("t06.votre_demande_part_au_support_avec_vos_rep")}</p>
 
         </>
       ) : null}
@@ -836,9 +809,7 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
 
       {/* ── Après votre demande ────────────────────────────────────────── */}
       <section className="rounded-[14px] border border-slate-200 bg-white px-4 pb-2 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
-        <h3 className="px-1 text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
-          Après votre demande
-        </h3>
+        <h3 className="px-1 text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">{i18n.t("t06.apres_votre_demande")}</h3>
         <ul className="mt-2 divide-y divide-slate-100 dark:divide-slate-800">
           {SUITE.map((ligne) => (
             <li key={ligne.titre} className="flex items-start gap-3 px-1 py-3.5">

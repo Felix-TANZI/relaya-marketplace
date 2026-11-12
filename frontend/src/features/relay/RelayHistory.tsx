@@ -372,8 +372,7 @@ export default function RelayHistory() {
         disabled={entries.length === 0}
         className="flex w-full items-center justify-center gap-2.5 rounded-[14px] border border-slate-200 bg-white px-4 py-4 text-[15px] font-black text-slate-700 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] transition active:scale-[.98] disabled:cursor-not-allowed disabled:text-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:disabled:text-slate-600"
       >
-        <Download size={18} strokeWidth={2.4} /> Exporter la période
-      </button>
+        <Download size={18} strokeWidth={2.4} />{i18n.t("t06.exporter_la_periode")}</button>
 
       {/*
         Ce que le portail PROMET au gerant.

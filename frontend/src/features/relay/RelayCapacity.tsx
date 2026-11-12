@@ -127,19 +127,13 @@ export default function RelayCapacity({
   return (
     <div className="space-y-4">
       <header className="pt-0.5">
-        <h2 className="text-[27px] font-black leading-[1.15] tracking-[-0.015em] text-slate-900 dark:text-white">
-          Capacité et horaires
-        </h2>
-        <p className="mt-1.5 text-[14.5px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">
-          Ce que vous déclarez ici décide des colis qu'on vous envoie.
-        </p>
+        <h2 className="text-[27px] font-black leading-[1.15] tracking-[-0.015em] text-slate-900 dark:text-white">{i18n.t("t06.capacite_et_horaires")}</h2>
+        <p className="mt-1.5 text-[14.5px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">{i18n.t("t06.ce_que_vous_declarez_ici_decide_des_colis")}</p>
       </header>
 
       {/* ── Places de stockage ───────────────────────────────────────────── */}
       <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-5 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
-        <h3 className="text-[12px] font-black uppercase leading-none tracking-[0.1em] text-slate-500 dark:text-slate-400">
-          Places de stockage
-        </h3>
+        <h3 className="text-[12px] font-black uppercase leading-none tracking-[0.1em] text-slate-500 dark:text-slate-400">{i18n.t("t06.places_de_stockage")}</h3>
 
         <div className="mt-4 flex items-center justify-between gap-3">
           <button
@@ -169,8 +163,7 @@ export default function RelayCapacity({
           </button>
         </div>
 
-        <p className="mt-2 text-center text-[13px] font-medium text-slate-500 dark:text-slate-400">
-          places déclarées · {used} occupées
+        <p className="mt-2 text-center text-[13px] font-medium text-slate-500 dark:text-slate-400">{i18n.t("t06.places_declarees")}{used} occupées
         </p>
 
         <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
@@ -212,11 +205,7 @@ export default function RelayCapacity({
           </div>
         </div>
 
-        <p className="mt-4 text-[13px] font-medium leading-[1.55] text-slate-400 dark:text-slate-500">
-          Au-delà de {SEUIL_SATURATION} %, les nouveaux clients sont orientés vers un autre relais. Les
-          retours déposés ne comptent pas dans vos places. Toute hausse de places est vérifiée lors
-          d'une visite.
-        </p>
+        <p className="mt-4 text-[13px] font-medium leading-[1.55] text-slate-400 dark:text-slate-500">{i18n.t("t06.au_dela_de")}{SEUIL_SATURATION}{i18n.t("t06.les_nouveaux_clients_sont_orientes_vers_un")}</p>
 
         {/* ── Encombrants ────────────────────────────────────────────────── */}
         <div className="mt-5 flex items-start gap-3 border-t border-slate-100 pt-4 dark:border-slate-800">
@@ -224,9 +213,7 @@ export default function RelayCapacity({
             <Box size={19} strokeWidth={2.2} />
           </span>
           <div className="min-w-0 flex-1">
-            <div className="text-[15px] font-black leading-tight text-slate-900 dark:text-white">
-              Accepter les encombrants
-            </div>
+            <div className="text-[15px] font-black leading-tight text-slate-900 dark:text-white">{i18n.t("t06.accepter_les_encombrants")}</div>
             <p className="mt-1 text-[12.5px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">
               {bulky
                 ? i18n.t("rl3.un_encombrant_occupe_cinq_places_si_votre")
@@ -375,10 +362,7 @@ export default function RelayCapacity({
           })}
         </ul>
 
-        <p className="mt-4 text-[13px] font-medium leading-[1.55] text-slate-400 dark:text-slate-500">
-          Ces horaires s'affichent quand les clients choisissent leur relais, et les livreurs
-          planifient dessus. Un écart constaté fait baisser la Ponctualité.
-        </p>
+        <p className="mt-4 text-[13px] font-medium leading-[1.55] text-slate-400 dark:text-slate-500">{i18n.t("t06.ces_horaires_s_affichent_quand_les_clients")}</p>
 
       </section>
       {/* ── Pause déjeuner ───────────────────────────────────────────────
@@ -386,9 +370,7 @@ export default function RelayCapacity({
           trouve porte close, et c'est la Ponctualité du relais qui en paie
           le prix. Déclarée, la pause sort le créneau des tournées. */}
       <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-5 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
-        <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
-          Pause déjeuner
-        </h3>
+        <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">{i18n.t("t06.pause_dejeuner")}</h3>
 
         <div className="mt-3 flex items-start gap-3">
           <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[10px] bg-[#FFF1E2] text-[#EF6A00] dark:bg-orange-950 dark:text-orange-300">

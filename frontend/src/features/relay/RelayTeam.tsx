@@ -135,20 +135,14 @@ export default function RelayTeam({
   return (
     <div className="space-y-4">
       <header className="pt-0.5">
-        <h2 className="text-[27px] font-black leading-[1.15] tracking-[-0.015em] text-slate-900 dark:text-white">
-          Mon équipe
-        </h2>
-        <p className="mt-1.5 text-[14.5px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">
-          Qui tient le guichet, et à quoi chacun a droit. {maximum} personnes au plus.
-        </p>
+        <h2 className="text-[27px] font-black leading-[1.15] tracking-[-0.015em] text-slate-900 dark:text-white">{i18n.t("t06.mon_equipe")}</h2>
+        <p className="mt-1.5 text-[14.5px] font-medium leading-[1.45] text-slate-500 dark:text-slate-400">{i18n.t("t06.qui_tient_le_guichet_et_a_quoi_chacun_a_dr")}{maximum}{i18n.t("t06.personnes_au_plus")}</p>
       </header>
 
       {/* ── Les membres ────────────────────────────────────────────────── */}
       {membres.length === 0 ? (
         <section className="rounded-[14px] border border-slate-200 bg-white px-4 py-6 text-center shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
-          <p className="text-[13.5px] font-medium text-slate-400 dark:text-slate-500">
-            Vous tenez le comptoir seul. Ajoutez une personne si quelqu'un vous remplace.
-          </p>
+          <p className="text-[13.5px] font-medium text-slate-400 dark:text-slate-500">{i18n.t("t06.vous_tenez_le_comptoir_seul_ajoutez_une_pe")}</p>
         </section>
       ) : (
         membres.map((membre) => {
@@ -261,10 +255,7 @@ export default function RelayTeam({
             aria-label={i18n.t("rl3.nom_de_la_personne")}
             className="mt-3 w-full rounded-[12px] border border-slate-200 bg-white px-4 py-3 text-[15px] font-semibold outline-none transition focus:border-[#2456D6] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
           />
-          <p className="mt-2 text-[13px] font-medium leading-snug text-slate-500 dark:text-slate-400">
-            Elle pourra recevoir et remettre. L'argent et les réglages restent fermés — vous les
-            ouvrirez si besoin.
-          </p>
+          <p className="mt-2 text-[13px] font-medium leading-snug text-slate-500 dark:text-slate-400">{i18n.t("t06.elle_pourra_recevoir_et_remettre_l_argent")}</p>
           <button
             type="button"
             onClick={() => void ajouter()}
@@ -288,10 +279,7 @@ export default function RelayTeam({
       {/* ── Votre responsabilité ───────────────────────────────────────── */}
       <section className="flex items-start gap-2.5 rounded-[14px] border border-[#F0DA9C] bg-[#FFF4D6] px-4 py-3.5 dark:border-amber-800 dark:bg-amber-950/30">
         <ShieldCheck size={18} strokeWidth={2.2} className="mt-[2px] flex-shrink-0 text-[#8A5A00] dark:text-amber-400" />
-        <p className="text-[13px] font-medium leading-[1.55] text-[#8A5A00] dark:text-amber-200">
-          Vous restez responsable du relais : les colis perdus ou mal remis par un employé comptent
-          dans votre Trust Score. Retirez un accès dès qu'une personne part.
-        </p>
+        <p className="text-[13px] font-medium leading-[1.55] text-[#8A5A00] dark:text-amber-200">{i18n.t("t06.vous_restez_responsable_du_relais_les_coli")}</p>
       </section>
 
       {/*
@@ -302,11 +290,7 @@ export default function RelayTeam({
         ferait partager l'identifiant du relais a la legere.
       */}
       {payload && !payload.enforced ? (
-        <p className="px-1 text-[12.5px] font-medium leading-[1.55] text-slate-400 dark:text-slate-500">
-          Ces accès sont pour l'instant un registre : chacun se connecte encore avec l'identifiant du
-          relais. Gardez-le pour vous — il ouvre aussi le numéro de versement. La connexion par
-          personne arrive, et ces réglages s'appliqueront alors d'eux-mêmes.
-        </p>
+        <p className="px-1 text-[12.5px] font-medium leading-[1.55] text-slate-400 dark:text-slate-500">{i18n.t("t06.ces_acces_sont_pour_l_instant_un_registre")}</p>
       ) : null}
 
       {/* ── Qui a fait quoi ────────────────────────────────────────────── */}
@@ -321,11 +305,7 @@ export default function RelayTeam({
           Un tableau par employe serait invente — et c'est justement celui
           qu'on consulte apres un colis perdu.
         */}
-        <p className="mt-2 text-[13px] font-medium leading-[1.5] text-slate-500 dark:text-slate-400">
-          Les opérations ne portent pas encore le nom de la personne qui les a faites : elles sont
-          toutes enregistrées au compte du relais. L'historique montre l'heure, le colis et la preuve
-          de chaque geste.
-        </p>
+        <p className="mt-2 text-[13px] font-medium leading-[1.5] text-slate-500 dark:text-slate-400">{i18n.t("t06.les_operations_ne_portent_pas_encore_le_no")}</p>
         <button
           type="button"
           onClick={onOpenHistory}

@@ -129,9 +129,7 @@ export default function RelayInstall() {
         <h2 className="mt-4 text-center text-[23px] font-black leading-[1.14] tracking-[-0.03em] text-slate-900 dark:text-white">
           Installer BelivaY Relais
         </h2>
-        <p className="mt-1.5 text-center text-[14px] font-medium leading-snug text-slate-500 dark:text-slate-400">
-          Une icône sur l'écran d'accueil, sans passer par un store
-        </p>
+        <p className="mt-1.5 text-center text-[14px] font-medium leading-snug text-slate-500 dark:text-slate-400">{i18n.t("t06.une_icone_sur_l_ecran_d_accueil_sans_passe")}</p>
       </div>
 
       <div
@@ -193,10 +191,7 @@ export default function RelayInstall() {
             {/* Sans invite captee, le bouton ne peut rien faire : on dit ou
                 aller plutot que de laisser appuyer dans le vide. */}
             {!invite && !installe ? (
-              <p className="mt-2 text-center text-[12.5px] font-medium leading-snug text-slate-400 dark:text-slate-500">
-                Votre navigateur ne propose pas l'installation directe. Passez par le menu ⋮ de
-                Chrome → « Installer l'application ».
-              </p>
+              <p className="mt-2 text-center text-[12.5px] font-medium leading-snug text-slate-400 dark:text-slate-500">{i18n.t("t06.votre_navigateur_ne_propose_pas_l_installa")}</p>
             ) : null}
           </div>
         ) : null}
@@ -234,10 +229,7 @@ export default function RelayInstall() {
         pendant une coupure qu'il s'en apercevrait.
       */}
       <p className="flex items-start gap-2.5 rounded-[14px] bg-[#FFF4D6] px-4 py-3.5 text-[13px] font-medium leading-[1.55] text-[#8A5A00] dark:bg-amber-950/30 dark:text-amber-200">
-        <WifiOff size={18} strokeWidth={2.2} className="mt-[2px] flex-shrink-0" />
-        L'installation ne rend pas encore l'application utilisable sans réseau, et n'active pas les
-        notifications : les deux arrivent. Gardez un registre papier pour les coupures.
-      </p>
+        <WifiOff size={18} strokeWidth={2.2} className="mt-[2px] flex-shrink-0" />{i18n.t("t06.l_installation_ne_rend_pas_encore_l_applic")}</p>
     </div>
   );
 }

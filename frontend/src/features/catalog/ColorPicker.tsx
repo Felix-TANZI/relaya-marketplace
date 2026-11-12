@@ -124,9 +124,7 @@ export function ColorPicker({
 
       {isLoading && (
         <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-800">
-          <Loader2 size={14} className="animate-spin" />
-          Chargement des couleurs…
-        </div>
+          <Loader2 size={14} className="animate-spin" />{i18n.t("t06.chargement_des_couleurs")}</div>
       )}
 
       {fetchError && (
@@ -134,9 +132,7 @@ export function ColorPicker({
       )}
 
       {!isLoading && !fetchError && entries.length === 0 && (
-        <p className="text-xs text-gray-500 dark:text-gray-400">
-          Aucune couleur disponible.
-        </p>
+        <p className="text-xs text-gray-500 dark:text-gray-400">{i18n.t("t06.aucune_couleur_disponible")}</p>
       )}
 
       {!isLoading && !fetchError && entries.length > 0 && (

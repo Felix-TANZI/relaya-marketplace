@@ -1,6 +1,6 @@
 #!/bin/bash
 # Maintenance du site réel — DEV-SRV-01, T18-1 : « 22 h — le site réel passe en maintenance : plus aucune écriture
-# possible. » Tant que le fichier témoin existe, nginx (nginx/reel.conf) répond 503 et la page de maintenance sur
+# possible. » Tant que le fichier témoin existe, nginx (nginx/reel.conf.template) répond 503 et la page de maintenance sur
 # l'API et les six portails ; rien à redémarrer.
 #
 #   ops/transfert/maintenance.sh on      # ferme le site

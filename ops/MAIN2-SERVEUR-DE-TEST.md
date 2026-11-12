@@ -48,12 +48,28 @@ Un serveur de test qui garderait la copie de la base réelle **enverrait de vrai
 
    Mettre un **réviseur obligatoire** sur « Belivay Prod » seulement. Sur « Belivay Test », le déploiement part sans attendre.
 
-3. **Adresses du serveur de test.** `nginx/reel.conf` répond aux noms du site réel (`api.belivay.com`, `seller.belivay.com`…), et le DNS de ces noms vise MAIN 1. Pour tester MAIN 2 :
-   - **contrôles en ligne de commande** (T21-3, T22) : `curl --resolve api.belivay.com:443:<IP de MAIN 2> https://api.belivay.com/api/auth/health/` ;
-   - **essais dans le navigateur** : sur l'ordinateur ou le téléphone du testeur, faire pointer ces noms vers l'IP de MAIN 2 (fichier `hosts`), le temps de l'essai ;
-   - **certificat** : comme le DNS vise MAIN 1, il s'obtient par le défi DNS de Cloudflare (`certbot --dns-cloudflare`), pas par le défi HTTP.
+3. **Adresses du serveur de test (C02 de la v1.8).** MAIN 2 répond sous ses propres adresses ; plus aucun test sous les adresses du site réel. Les noms de nginx viennent du réglage `BELIVAY_DOMAINE` (modèle `nginx/reel.conf.template`).
 
-   *Si l'équipe préfère des adresses de test propres* (`api.test.belivay.com`…), il faudra rendre les noms de `nginx/reel.conf` réglables : c'est une évolution à demander.
+   | Adresse de test | Pour |
+   |---|---|
+   | `api.test.belivay.com` | le back-end |
+   | `shop.test.belivay.com` | l'espace client |
+   | `seller.test.belivay.com` | l'espace vendeur |
+   | `admin.test.belivay.com` | l'administration |
+   | `relay.test.belivay.com` | le point relais |
+   | `driver.test.belivay.com` | le livreur |
+   | `delivery.test.belivay.com` | l'entreprise de livraison |
+
+   - **Cloudflare** (OWEN) : ces sept noms en enregistrements A vers l'IP de MAIN 2 (nuage gris le temps du certificat). Pour tester la bascule de belivay.com et les redirections (T21, T22) : ajouter `test.belivay.com`, `www.test.belivay.com`, et `boutique.`, `vendeur.`, `relais.`, `livreur.`, `livraison.`, `api-demo.test.belivay.com`.
+   - **Certificat**, sur MAIN 2, nommé comme le domaine :
+
+     ```sh
+     docker run --rm -p 80:80 -v "$PWD/certbot/conf:/etc/letsencrypt" certbot/certbot certonly --standalone        --cert-name test.belivay.com -d api.test.belivay.com -d shop.test.belivay.com -d seller.test.belivay.com        -d admin.test.belivay.com -d relay.test.belivay.com -d driver.test.belivay.com -d delivery.test.belivay.com
+     ```
+
+   - **Variables de « Belivay Test »** : `BELIVAY_DOMAINE` = `test.belivay.com` ; `ALLOWED_HOSTS` = `api.test.belivay.com` ; `CORS_ALLOWED_ORIGINS` et `CSRF_TRUSTED_ORIGINS` = les six portails en `https://….test.belivay.com` ; `VITE_API_URL` = `https://api.test.belivay.com` ; `VITE_SITE_URL` et `FRONTEND_URL` = `https://shop.test.belivay.com`.
+   - **Rien à changer pour la production** : sans `BELIVAY_DOMAINE` (ou avec `belivay.com`), nginx produit exactement la configuration d'avant (vérifié : identique à l'ancienne `nginx/reel.conf.template`, hors commentaires).
+   - `ops/lancement/activer.sh` prend lui aussi le domaine du serveur : sur MAIN 2, `activer.sh belivay-com` sert `test.belivay.com` avec le certificat `test.belivay.com`.
 
 4. **Activer la chaîne** : variable de dépôt `MAIN2_ACTIF` = `1` (Settings > Secrets and variables > Actions > **Variables**, onglet *Repository*).
 

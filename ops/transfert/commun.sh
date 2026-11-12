@@ -9,6 +9,9 @@ valeur() { grep -m1 "^$1=" "$PROJECT_DIR/.env.prod" 2>/dev/null | cut -d'=' -f2-
 
 FICHIER_COMPOSE="$(valeur BELIVAY_COMPOSE)"
 FICHIER_COMPOSE="${FICHIER_COMPOSE:-docker-compose.prod.yml}"
+# DEV-SRV-01 v1.8, C02 : domaine servi par ce serveur (belivay.com ; test.belivay.com sur le serveur de test).
+DOMAINE="$(valeur BELIVAY_DOMAINE)"
+DOMAINE="${DOMAINE:-belivay.com}"
 # COMPOSE peut être imposé (essai sur un poste de développement) ; sinon, celui du serveur.
 COMPOSE="${COMPOSE:-docker compose -f $PROJECT_DIR/$FICHIER_COMPOSE --env-file $PROJECT_DIR/.env.prod}"
 POSTGRES_USER="${POSTGRES_USER:-$(valeur POSTGRES_USER)}"

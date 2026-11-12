@@ -7,11 +7,11 @@
 
 | Adresses | Servi par | Règles |
 |---|---|---|
-| `api.`, `shop.`, `seller.`, `driver.`, `relay.`, `delivery.`, `admin.belivay.com` | le site réel (`docker-compose.reel.yml`, `nginx/reel.conf`) | données réelles |
+| `api.`, `shop.`, `seller.`, `driver.`, `relay.`, `delivery.`, `admin.belivay.com` | le site réel (`docker-compose.reel.yml`, `nginx/reel.conf.template`) | données réelles |
 | `belivay.com`, `www.`, `boutique.belivay.com` | la vitrine : espace client de démonstration | `/api/` répond 410, fermée aux moteurs |
 | `vendeur.`, `relais.`, `livreur.`, `livraison.belivay.com` | la vitrine : espaces vendeur, point relais, livreur, entreprise | `/api/` répond 410, fermée aux moteurs |
 
-- **Un seul nginx** : `nginx/reel.conf` pour le site réel, plus `nginx/lancement-pret/vitrine.conf`, activé par `ops/lancement/activer.sh vitrine`.
+- **Un seul nginx** : `nginx/reel.conf.template` pour le site réel, plus `nginx/lancement-pret/vitrine.conf`, activé par `ops/lancement/activer.sh vitrine`.
 - **La vitrine est son propre service** (`vitrine`, profil `vitrine` de `docker-compose.reel.yml`). Elle n'est construite et démarrée que si `.env.prod` contient `VITRINE_SUR_REEL=1`.
 - **Elle est construite en démonstration complète** (`VITE_SOURCE=demo`) : comptes, SMS, identité et paiement sont simulés dans le navigateur, et elle n'appelle aucun serveur. Elle n'a donc ni back-end `api-demo` ni base à elle. R1, R2 et R3 sont tenues par construction, et nginx les tient une seconde fois : 410 sur `/api/`.
 

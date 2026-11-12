@@ -41,10 +41,13 @@ IMG_PREFIX="$(basename "$PWD" | tr '[:upper:]' '[:lower:]')"
 # test local.
 HEALTH_URL="https://belivay.com/api/auth/health/"
 HEALTH_HOTE="belivay.com"
-# Site réel : le back-end ne répond que sur api.belivay.com (nginx/reel.conf).
+# DEV-SRV-01 v1.8, C02 : domaine du site réel servi ici (belivay.com ; test.belivay.com sur le serveur de test).
+DOMAINE="$(grep -m1 '^BELIVAY_DOMAINE=' .env.prod 2>/dev/null | cut -d'=' -f2-)"
+DOMAINE="${DOMAINE:-belivay.com}"
+# Site réel : le back-end ne répond que sur api.<domaine> (nginx/reel.conf.template).
 if [ "$SITE_REEL" -eq 1 ]; then
-  HEALTH_URL="https://api.belivay.com/api/auth/health/"
-  HEALTH_HOTE="api.belivay.com"
+  HEALTH_URL="https://api.$DOMAINE/api/auth/health/"
+  HEALTH_HOTE="api.$DOMAINE"
 fi
 
 # Vitrine : la page d'un espace (ses fichiers sous /vendeur/assets/). Plus de service de comptes à tester : la vitrine
@@ -176,7 +179,7 @@ if basculer; then
   # le cache de build. Les images « previous » sont conservées.
   docker system prune -f
   $COMPOSE ps
-  if [ "$SITE_REEL" -eq 1 ]; then echo "🌐 Site réel : https://api.belivay.com (et ses portails)"; else echo "🌐 Site accessible sur https://belivay.com"; fi
+  if [ "$SITE_REEL" -eq 1 ]; then echo "🌐 Site réel : https://api.$DOMAINE (et ses portails)"; else echo "🌐 Site accessible sur https://belivay.com"; fi
 else
   echo "⚠️  La nouvelle version ne répond pas correctement."
   if revenir_en_arriere; then

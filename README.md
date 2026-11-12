@@ -251,7 +251,7 @@ relaya-marketplace/
 ├── vitrine/                   # Vitrine de démonstration (six espaces, PR-VITRINE.md)
 ├── config/                    # Modèles de réglages : vitrine.env.example, reel.env.example
 ├── ops/                       # Guides et scripts d'exploitation (sauvegardes, transfert, applis…)
-├── nginx/                     # nginx.conf (vitrine), reel.conf (site réel), maintenance/
+├── nginx/                     # nginx.conf (vitrine), reel.conf.template (site réel), maintenance/
 ├── certbot/                   # Certificats SSL
 ├── docker-compose.yml         # Dev environment
 ├── docker-compose.prod.yml    # Production : vitrine
@@ -298,7 +298,7 @@ Un seul dépôt déploie deux versions qui ne se mélangent jamais (ordre de mis
 | | Vitrine (démonstration) | Site réel |
 |---|---|---|
 | Docker | `docker-compose.prod.yml` | `docker-compose.reel.yml` |
-| nginx | `nginx/nginx.conf` | `nginx/reel.conf` |
+| nginx | `nginx/nginx.conf` | `nginx/reel.conf.template` |
 | Écrans | `vitrine/` (six espaces de démonstration) | `frontend/` (six portails, un par `VITE_PORTAL_ROLE`) |
 | API | `belivay.com/api`, puis `api-demo.belivay.com` | `api.belivay.com` |
 | Données | jeux de démonstration (`charger_demonstration`) | réelles, référence seule à la création (`charger_reference`) |

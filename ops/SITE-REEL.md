@@ -5,7 +5,7 @@ Le même dépôt déploie deux choses différentes. Seule la configuration chang
 | | Vitrine (démonstration) | Site réel |
 |---|---|---|
 | Fichier Docker | `docker-compose.prod.yml` (par défaut) | `docker-compose.reel.yml` |
-| nginx | `nginx/nginx.conf` | `nginx/reel.conf` |
+| nginx | `nginx/nginx.conf` | `nginx/reel.conf.template` |
 | Réglage dans `.env.prod` | `BELIVAY_COMPOSE` vide | `BELIVAY_COMPOSE=docker-compose.reel.yml` |
 | Contenu | vitrine + comptes Neon + ancien site | API + 6 portails, **sans vitrine** (règles R1, R2) |
 
@@ -42,7 +42,7 @@ Avec Cloudflare, laisser le nuage **gris** (« DNS only ») le temps d'obtenir l
 
 ### 2. Certificat HTTPS (une seule fois sur le serveur)
 
-Un seul certificat, nommé `belivay.com`, doit couvrir toutes les adresses servies. C'est celui que lit `nginx/reel.conf`. Sur le serveur, avant le premier démarrage de nginx :
+Un seul certificat, nommé `belivay.com`, doit couvrir toutes les adresses servies. C'est celui que lit `nginx/reel.conf.template`. (Le certificat porte le nom du domaine `BELIVAY_DOMAINE` : `belivay.com` ici ; `test.belivay.com` sur le serveur de test, voir `ops/MAIN2-SERVEUR-DE-TEST.md`.) Sur le serveur, avant le premier démarrage de nginx :
 
 ```sh
 docker run --rm -p 80:80 -v "$PWD/certbot/conf:/etc/letsencrypt" certbot/certbot certonly --standalone \

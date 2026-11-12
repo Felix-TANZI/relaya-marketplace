@@ -8,7 +8,7 @@
 #   ops/lancement/activer.sh <nom> --retirer         # retour arrière
 #   ops/lancement/activer.sh --etat                  # ce qui est activé
 #
-# Copie nginx/lancement-pret/<nom>.conf dans nginx/lancement/ (inclus par nginx/reel.conf), fait vérifier la
+# Copie nginx/lancement-pret/<nom>.conf dans nginx/lancement/ (inclus par nginx/reel.conf.template), fait vérifier la
 # configuration par nginx (nginx -t) et ne recharge qu'alors ; si nginx la refuse, le fichier est retiré aussitôt et
 # le site continue avec la configuration d'avant.
 set -euo pipefail
@@ -52,7 +52,13 @@ for rivale in $RIVALES; do
   fi
 done
 
-cp "$PRETS/$NOM.conf" "$ACTIFS/$NOM.conf"
+# DEV-SRV-01 v1.8, C02 : les configurations préparées sont écrites pour belivay.com ; sur le serveur de test
+# (BELIVAY_DOMAINE=test.belivay.com), la copie active prend ses noms et son certificat (vendeur.test.belivay.com…).
+if [ "$DOMAINE" = "belivay.com" ]; then
+  cp "$PRETS/$NOM.conf" "$ACTIFS/$NOM.conf"
+else
+  sed "s/belivay\.com/$DOMAINE/g" "$PRETS/$NOM.conf" > "$ACTIFS/$NOM.conf"
+fi
 if recharger; then
   echo "« $NOM » activé : nginx a validé et rechargé la configuration."
 else

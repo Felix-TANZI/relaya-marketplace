@@ -107,6 +107,8 @@ jobs:
           # ── Vitrine ou site réel (DEV-SRV-01, T04/T05 ; ops/SITE-REEL.md) ──
           # Vide = vitrine (docker-compose.prod.yml). Site réel : docker-compose.reel.yml.
           BELIVAY_COMPOSE=${{ vars.BELIVAY_COMPOSE }}
+          # Domaine servi (DEV-SRV-01 v1.8, C02) : vide = belivay.com ; « test.belivay.com » dans « Belivay Test ».
+          BELIVAY_DOMAINE=${{ vars.BELIVAY_DOMAINE }}
           # 1 = la vitrine tourne aussi sur ce serveur (MAIN 1, du 18/11 au 14/12) : ops/MAIN1-REEL-ET-VITRINE.md.
           VITRINE_SUR_REEL=${{ vars.VITRINE_SUR_REEL }}
           VITE_API_URL=${{ vars.VITE_API_URL }}

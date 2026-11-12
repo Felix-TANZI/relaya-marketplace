@@ -266,9 +266,14 @@ def build_batches_for_cycle(cycle_key: str = "", *, now=None,
 
 @db_transaction.atomic
 def request_payout(batch: SettlementBatch, *, requested_by,
-                   justification: str = "", liste: str = "") -> PayoutRequest:
+                   justification: str = "", liste: str = "",
+                   automatique: bool = False, signalements: list | None = None) -> PayoutRequest:
     """
     Cree une demande de versement pour un lot confirme.
+
+    DEV-SRV-01 v1.8, C04 : `automatique` (versement vendeur du jour, bridge.versement_vendeur). Sans `signalements`,
+    le systeme l'approuve et il part tout seul ; avec, il attend la validation d'UN operateur (Finance ou Direction).
+    La double validation DP-42 reste celle du vendredi (points relais, entreprises de livraison).
 
     Verifie AVANT creation toutes les conditions d'eligibilite du
     beneficiaire — KYC, gel, numero, periode de refroidissement.
@@ -325,7 +330,10 @@ def request_payout(batch: SettlementBatch, *, requested_by,
         seuil = int(_politique_valeur(politique, "dual_approval_threshold_xaf", 0))
         if seuil and montant >= seuil:
             requises = max(requises, 2)
-    requises = max(requises, 2)  # DP-42 : deux validations pour TOUS les versements (comptable puis porteur)
+    if automatique:
+        requises = 1 if signalements else 0  # C04 : validation humaine seulement sur les cas signales
+    else:
+        requises = max(requises, 2)  # DP-42 : deux validations pour TOUS les versements du vendredi
 
     demande = PayoutRequest(
         batch=batch, payee=batch.payee, amount_xaf=montant, psp_fee_xaf=frais_versement,
@@ -344,6 +352,10 @@ def request_payout(batch: SettlementBatch, *, requested_by,
     batch.transition_to(SettlementBatch.Status.PENDING_APPROVAL)
     if montant_eleve:
         _alerter_montant_eleve(demande, maximum)
+    if automatique and requises == 0:
+        # C04 : aucun cas signale, le systeme approuve ; l'execution part au prochain passage (execute_payouts).
+        demande.transition_to(PayoutRequest.Status.APPROVED)
+        batch.transition_to(SettlementBatch.Status.APPROVED)
     return demande
 
 
@@ -480,12 +492,23 @@ def approve_payout(payout: PayoutRequest, *, approved_by,
             f"{approved_by} a deja approuve ce versement. "
             "Une seule approbation par personne."
         )
-    try:
-        titre = dp42.controler(payout, approved_by)
-    except dp42.Dp42Error as exc:
-        raise SettlementError(str(exc)) from exc
-    if payout.required_approvals < 2:  # demande creee avant DP-42
-        PayoutRequest.objects.filter(pk=payout.pk).update(required_approvals=2)
+    from apps.payments.bridge.versement_vendeur import est_versement_vendeur
+
+    if est_versement_vendeur(payout.liste):
+        # C04 : un versement vendeur signale se valide par UN operateur (Finance ou Direction), pas par DP-42.
+        roles = dp42.roles_de(approved_by)
+        if not roles:
+            raise SettlementError("C04 : un versement vendeur signale se valide par la Finance ou la Direction.")
+        role = dp42.COMPTABLE if dp42.COMPTABLE in roles else dp42.DIRECTION
+        groupe = approved_by.groups.filter(name=dp42.GROUPES[role]).exists()
+        titre = {"role": role, "secours": None if groupe else dp42.secours_actif(approved_by, role)}
+    else:
+        try:
+            titre = dp42.controler(payout, approved_by)
+        except dp42.Dp42Error as exc:
+            raise SettlementError(str(exc)) from exc
+        if payout.required_approvals < 2:  # demande creee avant DP-42
+            PayoutRequest.objects.filter(pk=payout.pk).update(required_approvals=2)
 
     PayoutApproval.objects.create(
         payout=payout, approved_by=approved_by, comment=comment,
@@ -1746,7 +1769,9 @@ def versements_du_vendredi(now=None, refus=None) -> dict:
     systeme = _systeme()
     liste = dp42.cle_du_vendredi(local)  # DP-42 : une liste, validée en bloc par le comptable puis le porteur
     lots, demandes, erreurs = 0, 0, []
-    for payee in PayeeAccount.objects.filter(is_active=True).exclude(payee_type__in=["PLATFORM", "BUYER"]):
+    # DEV-SRV-01 v1.8, C04 : les vendeurs sont verses chaque jour (bridge.versement_vendeur) ; le vendredi reste
+    # celui des points relais et des entreprises de livraison.
+    for payee in PayeeAccount.objects.filter(is_active=True).exclude(payee_type__in=["PLATFORM", "BUYER", "VENDOR"]):
         motif = refus(payee) if refus else None  # règle métier lue par le pont (ex. D19 : pièces du vendeur)
         if motif:
             erreurs.append(f"{payee.payee_code} : {motif}")

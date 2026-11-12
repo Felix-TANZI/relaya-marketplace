@@ -389,6 +389,12 @@ class CancelOrderView(APIView):
             )
 
 
+def _retire_au_relais(shipment) -> bool:
+    """Le colis a ete remis au client au comptoir d'un point relais (C04 : il se confirme sans code de livreur)."""
+    parcel = getattr(shipment, "relay_parcel", None)
+    return bool(parcel and parcel.status == parcel.Status.PICKED_UP)
+
+
 @extend_schema(tags=["Orders"], summary="Confirmer la reception d'une commande")
 class ConfirmReceiptView(APIView):
     permission_classes = [IsAuthenticated]
@@ -411,6 +417,7 @@ class ConfirmReceiptView(APIView):
         if not shipments:
             shipments = [Shipment.objects.create(order=order)]
 
+        tout_confirme = True
         if order.fulfillment_status == Order.FulfillmentStatus.DELIVERED:
             submitted_code = str(request.data.get("code", "")).strip()
             # Un colis par vendeur : le code soumis doit correspondre a l'UN
@@ -419,7 +426,13 @@ class ConfirmReceiptView(APIView):
                 (s for s in shipments if submitted_code and submitted_code == s.ensure_receipt_confirmation_code()),
                 None,
             )
-            if not shipment:
+            # DEV-SRV-01 v1.8, C04 : « le client confirme lui-meme la reception, dans son application ou avec son
+            # code ». Un colis RETIRE au point relais n'a pas de livreur pour lui donner un code : le client, connecte
+            # a son propre compte, le confirme depuis l'application (le gerant ne confirme jamais a sa place).
+            a_confirmer = [shipment] if shipment else []
+            if not a_confirmer and not submitted_code:
+                a_confirmer = [s for s in shipments if s.buyer_confirmed_at is None and _retire_au_relais(s)]
+            if not a_confirmer:
                 return Response(
                     {
                         "detail": "Code de confirmation invalide. Demandez le code au livreur.",
@@ -427,25 +440,25 @@ class ConfirmReceiptView(APIView):
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            shipment.status = Shipment.Status.DELIVERED
-            shipment.buyer_confirmed_at = timezone.now()
-            shipment.save(update_fields=['status', 'buyer_confirmed_at', 'updated_at'])
-            ShipmentEvent.record(
-                shipment=shipment,
-                status=Shipment.Status.DELIVERED,
-                message="Reception confirmee par le client",
-                location=order.city,
-                actor=request.user,
-                actor_role="CLIENT",
-            )
+            maintenant = timezone.now()
+            for shipment in a_confirmer:
+                shipment.status = Shipment.Status.DELIVERED
+                shipment.buyer_confirmed_at = maintenant
+                shipment.save(update_fields=['status', 'buyer_confirmed_at', 'updated_at'])
+                ShipmentEvent.record(
+                    shipment=shipment,
+                    status=Shipment.Status.DELIVERED,
+                    message="Reception confirmee par le client",
+                    location=order.city,
+                    actor=request.user,
+                    actor_role="CLIENT",
+                )
             # La liberation de l'escrow (evenement plus bas) reste au niveau
             # commande — elle n'intervient qu'une fois TOUS les colis
             # confirmes, jamais sur la confirmation d'un seul (multi-vendeur).
-            all_confirmed = all(
-                s.id == shipment.id or s.buyer_confirmed_at is not None
-                for s in shipments
-            )
-            if all_confirmed:
+            confirmes = {s.id for s in a_confirmer}
+            tout_confirme = all(s.id in confirmes or s.buyer_confirmed_at is not None for s in shipments)
+            if tout_confirme:
                 order.buyer_confirm()
         else:
             for shipment in shipments:
@@ -481,6 +494,10 @@ class ConfirmReceiptView(APIView):
         # PRINCIPE P9 : le financier ne juge pas les faits métier. Il
         # consomme cet événement APRÈS les contrôles effectués ci-dessus.
         # `event_id` garantit l'idempotence : rejouer n'a aucun effet.
+        # DEV-SRV-01 v1.8, C04 : seulement quand TOUS les colis sont confirmés (sinon, commande multi-vendeur, la
+        # confirmation d'un seul colis libérait la marchandise de tous les vendeurs).
+        if not tout_confirme:
+            return Response(OrderDetailSerializer(order).data)
         try:
             from apps.payments.bridge import events_in
             events_in.buyer_confirmed_receipt(

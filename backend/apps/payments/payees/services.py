@@ -28,6 +28,19 @@ DEFAULT_COOLING_HOURS = 72
 
 
 def _cooling_hours_for(payee: PayeeAccount) -> int:
+    """DEV-SRV-01 v1.8, C04 : « changement de numéro (blocage de 7 jours maintenu) » — la plus longue des deux durées,
+    celle de la politique et r_blocage_numero_j."""
+    heures = _cooling_hours_politique(payee)
+    try:
+        from apps.regles import services as regles
+
+        heures = max(heures, 24 * int(regles.reglage("r_blocage_numero_j")))
+    except Exception:
+        pass
+    return heures
+
+
+def _cooling_hours_politique(payee: PayeeAccount) -> int:
     """
     Duree de refroidissement issue de la configuration.
 

@@ -93,6 +93,19 @@ def escrow_release(limit: int = 200) -> dict:
 # ─────────────────────────────────────────────────────────────────────────────
 
 @payments_task(
+    "versements_vendeurs", lock_timeout=900, critical=True,
+    description=(
+        "DEV-SRV-01 v1.8, C04 : verse chaque vendeur une fois par jour (ce qui est libere et pas encore verse) ; "
+        "approuve par le systeme, sauf cas signales valides par un operateur."
+    ),
+)
+def versements_vendeurs() -> dict:
+    from apps.payments.bridge.versement_vendeur import versements_vendeurs_du_jour
+
+    return versements_vendeurs_du_jour()
+
+
+@payments_task(
     "rappels_valideurs", lock_timeout=300,
     description="DP-42 : rappelle au comptable puis au porteur de valider la liste du vendredi avant midi.",
 )
@@ -116,7 +129,8 @@ def build_settlements(cycle_key: str = "", confirm: bool = True) -> dict:
 
     if not cycle_key:
         # Spec v2.1, R22.2 et R43.1 (feuille de route D11, D13, D20) : un seul versement par semaine, le vendredi
-        # avant r_versement_heure, pour les vendeurs, les relais (R40.4) et les entreprises de livraison.
+        # avant r_versement_heure, pour les relais (R40.4) et les entreprises de livraison. Les vendeurs : chaque
+        # jour (DEV-SRV-01 v1.8, C04, tache versements_vendeurs).
         from apps.payments.bridge import vendredi
 
         return vendredi.executer()
@@ -423,6 +437,8 @@ SCHEDULE = [
     {"task": "build_settlements", "every_minutes": 1440, "group": "settlement"},
     # DP-42, R22.2 : rappels aux valideurs de la liste du vendredi (ne fait rien hors du vendredi matin).
     {"task": "rappels_valideurs", "every_minutes": 30, "group": "settlement"},
+    # DEV-SRV-01 v1.8, C04 : versement des vendeurs, un par jour et par vendeur (chaque heure, sans doublon).
+    {"task": "versements_vendeurs", "every_minutes": 60, "group": "vendeurs"},
     {"task": "execute_payouts", "every_minutes": 10, "group": "payout"},
     {"task": "execute_refunds", "every_minutes": 10, "group": "payout"},
 ]
@@ -433,5 +449,6 @@ GROUPS = {
     "hourly": "Horaire — solvabilite et coherence",
     "daily": "Quotidien — integrite et maintenance",
     "settlement": "Quotidien — construction des lots",
+    "vendeurs": "Horaire — versement des vendeurs, un par jour et par vendeur (C04)",
     "payout": "Sorties d'argent — UN SEUL processus",
 }

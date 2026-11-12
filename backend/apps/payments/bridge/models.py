@@ -149,3 +149,48 @@ class PayeeLink(models.Model):
             "Un rattachement beneficiaire ne se supprime pas : "
             "il fait le lien avec des ecritures comptables."
         )
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DEV-SRV-01 v1.8, C04 : paiement des vendeurs
+# ─────────────────────────────────────────────────────────────────────────────
+
+class FraudeConfirmee(models.Model):
+    """Une fraude CONFIRMÉE par un opérateur (C04) — jamais créée sur un simple signalement.
+
+    Pendant r_fraude_periode_j jours (multipliés par r_fraude_recidive_x à la deuxième), le vendeur est versé à
+    r_fraude_delai_j jours et chaque versement attend la validation d'un opérateur. Ne se supprime pas."""
+
+    vendeur = models.ForeignKey(User, on_delete=models.PROTECT, related_name="fraudes_confirmees")
+    motif = models.TextField()
+    commande_id = models.PositiveIntegerField(null=True, blank=True)
+    confirmee_par = models.ForeignKey(User, on_delete=models.PROTECT, related_name="fraudes_confirmees_par_moi")
+    confirmee_le = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        app_label = "payments"
+        ordering = ["-confirmee_le"]
+        verbose_name = "Fraude confirmée (vendeur)"
+        verbose_name_plural = "Fraudes confirmées (vendeurs)"
+        constraints = [
+            models.CheckConstraint(condition=~Q(confirmee_par=models.F("vendeur")), name="fraude_pas_par_le_vendeur"),
+        ]
+
+    def __str__(self):
+        return f"Fraude confirmée · vendeur #{self.vendeur_id} · {self.confirmee_le:%Y-%m-%d}"
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Une fraude confirmée ne se supprime pas : elle reste au dossier du vendeur.")
+
+
+class RepereVersementVendeur(models.Model):
+    """Le Trust Score du vendeur au moment de son dernier versement (C04) : une baisse d'au moins
+    r_baisse_trust_points depuis ce repère fait valider le versement suivant par un opérateur."""
+
+    vendeur = models.OneToOneField(User, on_delete=models.CASCADE, related_name="repere_versement")
+    score = models.DecimalField(max_digits=5, decimal_places=2)
+    le = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        app_label = "payments"
+        verbose_name = "Repère de versement (vendeur)"
+        verbose_name_plural = "Repères de versement (vendeurs)"

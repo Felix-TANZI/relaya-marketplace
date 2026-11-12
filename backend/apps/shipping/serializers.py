@@ -6,7 +6,7 @@ from rest_framework.exceptions import PermissionDenied
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.http import Http404
-from apps.orders.models import Dispute, Order, OrderHistory
+from apps.orders.models import Dispute, Order
 from apps.accounts.models import CourierProfile, UserNotification
 from apps.common.translation import request_language, translate_text
 from .models import (
@@ -751,9 +751,9 @@ class RelayParcelPickupSerializer(serializers.Serializer):
     buyer_inspection = serializers.ChoiceField(
         choices=[ACCEPTED, SKIPPED], required=False, default=SKIPPED,
         help_text=(
-            "ACCEPTED : l'acheteur a ouvert le colis au comptoir et l'accepte "
-            "— sa fenetre de retour se ferme. SKIPPED : remise simple, la "
-            "fenetre reste ouverte."
+            "ACCEPTED : l'acheteur a ouvert le colis au comptoir, devant le "
+            "gerant (constat enregistre). Il confirme lui-meme la reception "
+            "depuis son application (C04). SKIPPED : remise simple."
         ),
     )
 
@@ -853,69 +853,27 @@ class RelayParcelPickupSerializer(serializers.Serializer):
 
     def _confirm_at_counter(self, order, parcels, relay_point, now):
         """
-        L'acheteur a ouvert son colis au comptoir et l'accepte.
+        L'acheteur a ouvert son colis au comptoir, devant le gerant.
 
-        C'est la meme confirmation que celle qu'il aurait faite depuis son
-        application (ConfirmReceiptView) : on reproduit ses effets a
-        l'identique, sans quoi la commande resterait indefiniment en attente
-        d'un geste que l'acheteur pense deja avoir fait.
-
-        Le gerant agit ici POUR l'acheteur, pas a sa place : l'historique de
-        commande porte donc le compte du relais, afin qu'un litige ulterieur
-        puisse dire qui a valide, ou et quand.
+        DEV-SRV-01 v1.8, C04 : « le client confirme lui-meme la reception, dans son application ou avec son code,
+        apres avoir ouvert le colis devant le gerant ou le livreur. Le gerant ou le livreur ne peut jamais confirmer
+        a sa place. » Le comptoir enregistre donc le CONSTAT de l'ouverture (photo et signature deja exigees), sans
+        confirmer la reception ni liberer l'argent du vendeur : la confirmation vient du client, depuis son
+        application (ConfirmReceiptView). S'il ne confirme jamais, le droit de retour se ferme r_retour_j jours apres
+        le retrait (auto-confirmation), puis le delai normal s'applique.
         """
         user = self.context.get("user")
         for parcel in parcels:
-            shipment = parcel.shipment
-            if shipment.buyer_confirmed_at is None:
-                shipment.buyer_confirmed_at = now
-                shipment.save(update_fields=["buyer_confirmed_at", "updated_at"])
             ShipmentEvent.record(
-                shipment=shipment,
-                status=shipment.status,
+                shipment=parcel.shipment,
+                status=parcel.shipment.status,
                 message=(
-                    "Colis ouvert et accepte par l'acheteur au comptoir "
-                    f"{relay_point.name}"
+                    "Colis ouvert par l'acheteur devant le gerant du point relais "
+                    f"{relay_point.name} ; la reception reste a confirmer par l'acheteur"
                 ),
                 location=relay_point.name,
                 actor=user,
                 actor_role="RELAY_POINT",
-            )
-
-        # Commande multi-vendeur : chaque vendeur a son colis, et un relais ne
-        # voit que ceux qui transitent chez lui. Liberer l'escrow sur la seule
-        # acceptation des siens paierait des vendeurs dont le colis n'est pas
-        # encore arrive.
-        if order.shipments.filter(buyer_confirmed_at__isnull=True).exists():
-            return
-
-        old_status = order.fulfillment_status
-        order.buyer_confirm()
-        OrderHistory.objects.create(
-            order=order,
-            user=user,
-            action="Reception confirmee au comptoir du point relais",
-            field_name="fulfillment_status",
-            old_value=old_status,
-            new_value=Order.FulfillmentStatus.BUYER_CONFIRMED,
-        )
-
-        # PRINCIPE P9 : le financier ne juge pas les faits metier, il consomme
-        # l'evenement une fois les controles faits. `event_id` est le meme que
-        # celui de la confirmation depuis l'app acheteur : si le client
-        # confirme aussi de son cote, l'evenement est ignore, pas rejoue.
-        try:
-            from apps.payments.bridge import events_in
-            events_in.buyer_confirmed_receipt(
-                order_id=order.id,
-                event_id=f"receipt-{order.id}",
-                emitter="apps.shipping.RelayParcelPickupSerializer",
-            )
-        except Exception:
-            import logging
-            logging.getLogger("apps.shipping").exception(
-                "Evenement financier de confirmation non emis pour la commande #%s.",
-                order.id,
             )
 
 

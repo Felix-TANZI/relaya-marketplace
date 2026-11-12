@@ -11,7 +11,7 @@ export default {
       title: 'The Full BelivaY Catalog',
       subtitle: 'Every product from BelivaY shops',
       description:
-        'The entire BelivaY offering across every category: fashion, electronics, beauty, home, groceries and more. Secure escrow-protected Mobile Money payments, verified vendors, and delivery across Cameroon and Central Africa.',
+        'The entire BelivaY offering across every category: fashion, electronics, beauty, home, groceries and more. Secure escrow-protected Mobile Money payments, verified vendors, and delivery in Yaoundé.',
       facets: ['New Arrivals', 'Deals', 'Made in Cameroon', '24h Delivery', "Editor's Picks"],
     },
     femme: {

@@ -26,7 +26,7 @@ const PAGES: Record<string, Meta> = {
   "/": {
     title: "Marketplace camerounaise : le vendeur est payé quand vous êtes livré",
     description:
-      "Marketplace multi-vendeurs à Yaoundé : le vendeur n'est réglé qu'une fois votre colis livré et la réception confirmée. Paiement MTN Mobile Money et Orange Money, livraison en 24-72 h à domicile ou en point relais, retour gratuit sous 7 jours.",
+      "Marketplace multi-vendeurs à Yaoundé : le vendeur n'est réglé qu'une fois votre colis livré et la réception confirmée. Paiement MTN Mobile Money et Orange Money, livraison en 24-72 h à domicile ou en point relais, retour sous 7 jours sur motif.",
   },
   "/catalog": {
     title: "Catalogue : tous les produits",

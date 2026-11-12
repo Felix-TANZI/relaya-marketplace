@@ -52,6 +52,7 @@ import { getUnreadSupportCount, SUPPORT_UPDATED_EVENT } from "@/lib/supportInbox
 // Feuille de route D16 et DP-17 : le vrai Wallet, montré seulement quand il est ouvert.
 import { useWallet } from "@/features/profile/WalletPanel";
 import { lienSupportWhatsApp } from "@/config/support";
+import { FIDELITE_VISIBLE } from "@/config/lancement";
 
 /** Statuts d'une commande encore en cours de traitement ou d'acheminement. */
 const CLOSED_ORDER_STATUSES = [
@@ -351,7 +352,7 @@ export default function Header() {
     { label: t("header_nav.favorites"), to: "/wishlist", icon: Heart, tone: "text-red-500" },
     { label: t("header_nav.account_short"), to: "/profile", icon: User, tone: "text-gray-600 dark:text-gray-300" },
     { label: t("header_nav.selection"), to: "/selection-premium", icon: Star, tone: "text-amber-500" },
-    { label: t("header_nav.subscriptions"), to: "/premium", icon: Gem, tone: "text-primary" },
+    ...(FIDELITE_VISIBLE ? [{ label: t("header_nav.subscriptions"), to: "/premium", icon: Gem, tone: "text-primary" }] : []),
     { label: t("header_nav.about"), to: "/about", icon: Info, tone: "text-blue-500" },
   ];
 
@@ -413,12 +414,12 @@ export default function Header() {
           icon: Bell,
           badge: notifCount > 0 ? String(notifCount) : undefined,
         },
-        {
+        ...(FIDELITE_VISIBLE ? [{
           label: t("header_nav.loyalty"),
           to: "/profile?panel=fidelite",
           icon: Award,
           note: t("header.points_suffix", { points: (user?.loyalty_points ?? 0).toLocaleString(i18n.language === "fr" ? "fr-FR" : "en-US") }),
-        },
+        }] : []),
         { label: t("header_nav.referral"), to: "/profile?panel=parrain", icon: Gift },
         { label: t("header_nav.flash_sales"), to: "/flash-deals", icon: Tag },
       ],
@@ -435,7 +436,7 @@ export default function Header() {
     {
       title: t("header_nav.more"),
       items: [
-        { label: t("header_nav.belivay_plus"), to: "/premium", icon: Gem, tone: "accent" },
+        ...(FIDELITE_VISIBLE ? [{ label: t("header_nav.belivay_plus"), to: "/premium", icon: Gem, tone: "accent" as const }] : []),
         {
           label: user?.is_vendor ? t("header_nav.seller_space") : t("header_nav.become_vendor"),
           to: user?.is_vendor ? "/seller/dashboard" : "/profile?panel=vendeur",
@@ -1038,7 +1039,7 @@ export default function Header() {
         extraLinks={[
           { label: t("header_nav.promotions"), to: "/promotions" },
           { label: t("header_nav.selection_premium"), to: "/selection-premium" },
-          { label: t("header_nav.belivay_subscriptions"), to: "/premium" },
+          ...(FIDELITE_VISIBLE ? [{ label: t("header_nav.belivay_subscriptions"), to: "/premium" }] : []),
           { label: t("header_nav.my_orders"), to: "/orders" },
           { label: t("header_nav.become_seller"), to: "/vendeur/ouvrir-boutique" },
           { label: t("header_nav.about"), to: "/about" },

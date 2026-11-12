@@ -1742,7 +1742,7 @@ def vendor_product_pdf(request, product_id):
   </div>
   {f'<div style="margin-top:20px;"><h3 style="font-size:14px;font-weight:700;margin-bottom:8px;">Description</h3><p style="font-size:13px;line-height:1.7;color:#1A1209;">{product.description}</p></div>' if product.description else ''}
   <div class="footer">
-    BelivaY &copy; {__import__("datetime").date.today().year} — Marketplace de confiance pour l'Afrique Centrale<br>
+    BelivaY &copy; {__import__("datetime").date.today().year} — Marketplace de confiance à Yaoundé<br>
     Fiche générée le {__import__("datetime").date.today().strftime("%d/%m/%Y")}<br>
     Ce document est à usage interne vendeur — non destiné à la revente.
   </div>

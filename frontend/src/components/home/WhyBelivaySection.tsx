@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { chiffre, useChiffresPublics } from "@/hooks/useChiffresPublics";
+import { FIDELITE_VISIBLE } from "@/config/lancement";
 
 interface Pillar {
   icon: LucideIcon;
@@ -60,7 +61,7 @@ const MARKETPLACE_LINKS: { icon: LucideIcon; labelKey: string; to: string }[] = 
   { icon: Info, labelKey: "why_belivay.link_about", to: "/about" },
   { icon: ShoppingCart, labelKey: "why_belivay.link_explore", to: "/categorie/all" },
   { icon: LifeBuoy, labelKey: "why_belivay.link_help", to: "/help" },
-  { icon: Gem, labelKey: "why_belivay.link_premium", to: "/premium" },
+  ...(FIDELITE_VISIBLE ? [{ icon: Gem, labelKey: "why_belivay.link_premium", to: "/premium" }] : []),
 ];
 
 export default function WhyBelivaySection() {
@@ -114,7 +115,7 @@ export default function WhyBelivaySection() {
         })}
       </div>
 
-      {/* ═══════════════ Bandeau BelivaY · Marketplace CEMAC ═══════════════ */}
+      {/* ═══════════════ Bandeau BelivaY · zone servie (C01 : Yaoundé) ═══════════════ */}
       <div className="relative mt-5 overflow-hidden rounded-[18px] border border-[#f7e2c9] p-3.5 sm:mt-6 sm:rounded-[22px] sm:p-4 bg-[linear-gradient(118deg,#FFF3E4,#FFE7CE,#FFF7EC)] dark:border-gray-800 dark:bg-[linear-gradient(118deg,#111827,#0f172a)]">
         <span
           aria-hidden

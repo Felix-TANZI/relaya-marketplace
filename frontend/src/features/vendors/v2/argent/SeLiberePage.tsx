@@ -11,17 +11,9 @@
 // C'est une approximation assumée, pas une donnée inventée : le champ existe
 // réellement, on choisit juste quel timestamp il représente le mieux.
 //
-// Règle produit confirmée par le propriétaire (hors mockup) : le versement se
-// fait À LA DEMANDE du vendeur, jamais par un virement automatique du
-// vendredi. Le mockup SeLibere.html (fig. 3) affiche « Versé vendredi 25
-// sept. » et l'étape 5 « Versement : le vendredi qui suit » — cette page NE
-// REPREND PAS cette formulation : elle est remplacée par un texte « retrait à
-// la demande », qui est la décision produit réellement en vigueur.
-//
-// Délai de libération par palier : TIER_RELEASE_DAYS (compte/shared/format.ts,
-// VD-09 §LIB-01 / VD-10 §PAL-02) — Bronze/Argent 3 j, Or/Platine 1 j.
-// Auto-confirmation : 4 jours (Addendum Décisions v1.0 §11, PAS 48 h comme
-// l'ancienne constante AUTO_CONFIRM_H de SellerPendingFundsPage.tsx).
+// DEV-SRV-01 v1.8, C04 : versement automatique chaque jour, un jour après la confirmation du client, QUEL QUE SOIT
+// le palier (TIER_RELEASE_DAYS vaut 1 pour tous). Si le client ne confirme jamais, le droit de retour se ferme
+// 7 jours après le retrait (r_retour_j), puis le délai normal s'applique.
 
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -35,7 +27,7 @@ import ScreenHeader from '../compte/shared/ScreenHeader';
 import Collapsible from '../compte/shared/Collapsible';
 import { mapLegacyTier, TIER_RELEASE_DAYS, formatXAF } from '../compte/shared/format';
 
-const AUTO_CONFIRM_H = 96; // 4 jours — Addendum Décisions v1.0 §11.
+const AUTO_CONFIRM_H = 7 * 24; // r_retour_j : le droit de retour se ferme 7 jours après le retrait (C04).
 
 function orderRef(id: number): string {
   return `BLV-${String(id).padStart(5, '0')}`;

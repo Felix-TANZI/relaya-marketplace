@@ -279,6 +279,8 @@ urlpatterns = [
 
     #  ESPACE VENDEUR V2 (Lot 2/3 — additif, lecture seule, voir views_money_v2.py)
     path('v2/money-summary/', views_money_v2.vendor_money_summary_v2, name='vendor-v2-money-summary'),
+    # DEV-SRV-01 v1.8, C04 : les versements réels du vendeur (un par jour au plus).
+    path('v2/payouts/', views_money_v2.vendor_payouts_v2, name='vendor-v2-payouts'),
 
     #  ESPACE VENDEUR AUTONOME (espace-client-belivay/espace-vendeur) — vague d'intégration du
     #  12 oct., domaine boutique/messages/notifications/aide/événements. PAS de slash final : ce

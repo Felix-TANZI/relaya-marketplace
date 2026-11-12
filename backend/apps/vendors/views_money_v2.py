@@ -3,59 +3,9 @@
 # Lot 2 / socle Lot 3 — espace vendeur v2 "Mon argent".
 # Endpoint ADDITIF, lecture seule : GET /api/vendors/v2/money-summary/
 #
-# But : donner une approximation, à partir des données EXISTANTES (Order /
-# escrow_status), des 5 états VD-09 (à verser, se libère, en cours, gelé,
-# versé) et du délai de libération t_libération, sans migration ni nouveau
-# champ. Source de la règle métier : espace_vendeur_synthese_detail/
-# batch6_VD09-10.md ("VD-09 — Argent et versements").
-#
-# ─────────────────────────────────────────────────────────────────────────
-# LIMITES CONNUES (documentées ici plutôt que résolues par une migration,
-# conformément à la consigne de la mission) :
-#
-# 1. "À verser" vs "Versé" : le modèle Order n'a qu'un état escrow RELEASED
-#    unique — il ne distingue pas "libéré mais pas encore transféré au
-#    vendeur (à verser)" de "déjà transféré (versé)" (VD-D10.A16/A17 décrivent
-#    une tâche planifiée de versement hebdomadaire qui n'existe pas encore
-#    dans ce code). Approximation retenue : on répartit le total "gardé" des
-#    commandes RELEASED entre "à verser" et "versé" en utilisant le seul
-#    signal disponible aujourd'hui côté paiement sortant — les
-#    WithdrawalRequest APPROVED du vendeur (ancien système de retrait à la
-#    demande, pas le nouveau versement hebdomadaire sans frais de VD-09) :
-#      à_verser ≈ max(0, total_released_kept − total_withdrawn_approved)
-#      versé    ≈ total_withdrawn_approved
-#    C'est une approximation raisonnable, pas un calcul fidèle : elle sera
-#    remplacée quand la tâche planifiée de versement du vendredi (VER-01)
-#    sera implémentée avec sa propre table Payout/BLV-VS-nnnn.
-#
-# 2. t_fermeture (VD-09) = min(confirmation client ; retrait + 7 jours).
-#    Order n'a pas de champ confirmed_at dédié ; on utilise updated_at comme
-#    proxy du moment où le statut est passé à BUYER_CONFIRMED/AUTO_CONFIRMED
-#    (c'est la dernière écriture avant le passage en RELEASE_PENDING dans le
-#    code actuel de Order.buyer_confirm()/auto_confirm()). La branche
-#    "retrait + 7 jours" n'est pas calculable du tout (pas de champ de date
-#    de retrait livreur distinct) et est donc ignorée ici.
-#
-# 3. Δ (délai après fermeture) documenté = 3 j (Bronze/Argent), 1 j
-#    (Or/Platine), 14 j (carte bancaire). Le modèle VendorProfile actuel n'a
-#    que 4 paliers BRONZE/SILVER/GOLD/DIAMOND (ancien système à points, DIAMOND
-#    doit être supprimé selon VD-D11.A01) — pas encore le système Bronze/
-#    Argent/Or/Platine du Trust Score V5.5. On mappe donc BRONZE/SILVER → 3 j
-#    et GOLD/DIAMOND → 1 j. Le cas "carte bancaire → 14 j" n'est pas
-#    implémentable : Order n'a aucun champ de moyen de paiement (pas de
-#    distinction carte / Mobile Money) — toujours traité comme non-carte ici.
-#
-# 4. "Gelé" est approximé par : commandes dont au moins un article du vendeur
-#    a un litige (Dispute) ouvert/en cours, OU un retour (Return) non clos,
-#    quel que soit l'escrow_status affiché par ailleurs — cohérent avec la
-#    règle LIB-02 ("un litige ou un retour gèle aussitôt la somme, même
-#    pendant le compte à rebours").
-#
-# Aucune migration, aucun nouveau modèle : uniquement des lectures sur les
-# modèles Order / Dispute / Return / VendorProfile / WithdrawalRequest déjà
-# en base.
-
-from datetime import timedelta
+# DEV-SRV-01 v1.8, C04 : lit les VRAIS séquestres (payments.escrow) et versements (payments.settlements) du vendeur ;
+# l'ancienne approximation par commande (escrow_status, updated_at, WithdrawalRequest) est retirée. Versement chaque
+# jour, r_versement_vendeur_j jour après la confirmation du client (payments.bridge.versement_vendeur).
 
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -64,17 +14,9 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.orders.models import Dispute, Order, Return
+from apps.orders.models import Order
 
-from .models import VendorProfile, WithdrawalRequest
-
-# Δ (jours) après t_fermeture, par palier — voir limite n°3 ci-dessus.
-RELEASE_DELAY_DAYS_BY_TIER = {
-    VendorProfile.CertificationTier.BRONZE: 3,
-    VendorProfile.CertificationTier.SILVER: 3,   # "Argent"
-    VendorProfile.CertificationTier.GOLD: 1,     # "Or"
-    VendorProfile.CertificationTier.DIAMOND: 1,  # palier obsolète (A supprimer, VD-D11.A01) ; traité comme Or/Platine
-}
+from .models import VendorProfile
 
 
 def _vendor_kept_for_order(order: Order, vendor: User) -> int:
@@ -85,52 +27,13 @@ def _vendor_kept_for_order(order: Order, vendor: User) -> int:
     return net_vendeur(order, vendor)
 
 
-def _order_has_active_freeze(order: Order, vendor: User) -> bool:
-    """True si un litige ouvert ou un retour non clos concerne un article du
-    vendeur sur cette commande (règle LIB-02 : gel prioritaire sur tout le
-    reste)."""
-    has_open_dispute = Dispute.objects.filter(
-        order=order, vendor=vendor, status__in=["OPEN", "IN_PROGRESS"],
-    ).exists()
-    if has_open_dispute:
-        return True
-    has_open_return = Return.objects.filter(
-        order=order,
-        vendor=vendor,
-        status__in=[
-            Return.Status.REQUESTED,
-            Return.Status.APPROVED,
-            Return.Status.AWAITING_DROPOFF,
-            Return.Status.RECEIVED,
-        ],
-    ).exists()
-    return has_open_return
-
-
-def _t_liberation(order: Order, tier: str) -> "tuple[object, float]":
-    """Approxime t_libération = t_fermeture + Δ (voir limite n°2 et n°3).
-    Retourne (datetime ou None, jours_restants ou None)."""
-    if order.fulfillment_status not in (
-        Order.FulfillmentStatus.BUYER_CONFIRMED,
-        Order.FulfillmentStatus.AUTO_CONFIRMED,
-    ):
-        return None, None
-    t_fermeture = order.updated_at  # proxy — voir limite n°2
-    delta_days = RELEASE_DELAY_DAYS_BY_TIER.get(tier, 3)
-    t_liberation = t_fermeture + timedelta(days=delta_days)
-    days_left = (t_liberation - timezone.now()).total_seconds() / 86400
-    return t_liberation, days_left
-
-
 @extend_schema(
     tags=["Vendors V2"],
-    summary="Vendor money summary (v2, approximation VD-09)",
+    summary="Vendor money summary (v2, C04 : séquestres et versements réels)",
     description=(
-        "Vue additive lecture seule pour l'espace vendeur v2 (Lot 2/3). "
-        "Approxime les 5 états VD-09 (à verser, se libère, en cours, gelé, "
-        "versé) à partir des données existantes (Order.escrow_status), sans "
-        "aucune migration. Voir les commentaires du module pour les limites "
-        "connues de chaque approximation."
+        "États de l'argent du vendeur lus sur ses séquestres et versements réels (DEV-SRV-01 v1.8, C04) : "
+        "en cours (attend la confirmation du client), se libère (confirmé, date de libération), gelé, "
+        "à verser, versé. Versement chaque jour, r_versement_vendeur_j jour après la confirmation."
     ),
 )
 @api_view(["GET"])
@@ -147,89 +50,122 @@ def vendor_money_summary_v2(request):
             status=403,
         )
 
-    vendor = request.user
-    tier = vendor_profile.certification_tier
+    return Response(resume_argent_vendeur(vendor_profile))
 
-    qs = Order.objects.filter(items__product__vendor=vendor).distinct().prefetch_related(
-        "items__product"
-    )
 
-    en_cours_xaf = 0        # escrow BLOCKED, pas de gel actif
-    se_libere_xaf = 0       # escrow RELEASE_PENDING, pas de gel actif
-    gele_xaf = 0            # litige/retour actif, quel que soit l'escrow_status
-    gele_orders = []
-    released_total_xaf = 0  # escrow RELEASED (voir limite n°1)
+def resume_argent_vendeur(vendor_profile) -> dict:
+    """DEV-SRV-01 v1.8, C04 : les états de l'argent du vendeur, lus sur les VRAIS séquestres et versements
+    (payments), plus sur une approximation par commande. Même forme de réponse qu'avant, pour les écrans.
 
-    soonest_release_at = None
-    soonest_release_days_left = None
+      in_progress : séquestres qui attendent la confirmation du client (HELD) ;
+      releasing   : le client a confirmé — le montant s'affiche tout de suite, avec sa date de libération
+                    (RELEASE_SCHEDULED, r_versement_vendeur_j jour après la confirmation) ;
+      frozen      : litige ou retour ouvert, gelé jusqu'à la décision (FROZEN) ;
+      to_pay      : libéré, pas encore versé (dû + versements en préparation ou en attente de validation) ;
+      paid_out    : versements payés sur le numéro Mobile Money vérifié (1 % de frais à la charge du vendeur).
+    """
+    from django.db.models import Min, Sum
 
-    for order in qs:
-        kept = _vendor_kept_for_order(order, vendor)
-        if not kept:
-            continue
+    from apps.payments.bridge.actors import payee_for_vendor
+    from apps.payments.escrow.models import EscrowHold
+    from apps.payments.settlements.models import PayoutRequest
+    from apps.payments.settlements.services import amount_due
+    from apps.regles import services as regles
 
-        if _order_has_active_freeze(order, vendor):
-            gele_xaf += kept
-            gele_orders.append({
-                "order_id": order.id,
-                "amount_xaf": kept,
-                "reason": "dispute_or_return",
-            })
-            continue
-
-        if order.escrow_status == Order.EscrowStatus.BLOCKED:
-            en_cours_xaf += kept
-        elif order.escrow_status == Order.EscrowStatus.RELEASE_PENDING:
-            se_libere_xaf += kept
-            t_lib, days_left = _t_liberation(order, tier)
-            if t_lib is not None and (
-                soonest_release_at is None or t_lib < soonest_release_at
-            ):
-                soonest_release_at = t_lib
-                soonest_release_days_left = days_left
-        elif order.escrow_status == Order.EscrowStatus.RELEASED:
-            released_total_xaf += kept
-        # PENDING / REFUNDED / PARTIAL_REFUNDED : pas d'argent dû au vendeur, ignoré ici.
-
-    # Voir limite n°1 : approximation "à verser" / "versé" via WithdrawalRequest.
-    total_withdrawn_xaf = sum(
-        w.net_amount_xaf for w in WithdrawalRequest.objects.filter(
-            vendor=vendor_profile, status=WithdrawalRequest.WithdrawalStatus.APPROVED,
-        )
-    )
-    a_verser_xaf = max(0, released_total_xaf - total_withdrawn_xaf)
-    verse_xaf = total_withdrawn_xaf
-
-    en_circulation_xaf = a_verser_xaf + se_libere_xaf + en_cours_xaf + gele_xaf
-
-    data = {
-        "to_pay": {
-            "amount_xaf": a_verser_xaf,
-            "note": "Approximation (voir limite n°1 du module) — pas encore la tâche de versement hebdomadaire VER-01.",
-        },
-        "releasing": {
-            "amount_xaf": se_libere_xaf,
-            "next_release_at": soonest_release_at.isoformat() if soonest_release_at else None,
-            "days_left": round(soonest_release_days_left, 2) if soonest_release_days_left is not None else None,
-        },
-        "in_progress": {
-            "amount_xaf": en_cours_xaf,
-        },
-        "frozen": {
-            "amount_xaf": gele_xaf,
-            "orders": gele_orders,
-        },
-        "paid_out": {
-            "amount_xaf": verse_xaf,
-            "note": "Approximation via WithdrawalRequest APPROVED — pas un vrai historique de versement hebdomadaire (voir limite n°1).",
-        },
-        "in_circulation_xaf": en_circulation_xaf,
-        "tier": tier,
-        "release_delay_days": RELEASE_DELAY_DAYS_BY_TIER.get(tier, 3),
-        "limitations": [
-            "à_verser/versé approximés via WithdrawalRequest (pas de table Payout dédiée).",
-            "t_fermeture approximé via updated_at (pas de champ confirmed_at dédié).",
-            "Δ=14j carte bancaire non implémenté (Order n'a pas de champ moyen de paiement).",
-        ],
+    delai = regles.reglage("r_versement_vendeur_j")
+    vide = {
+        "to_pay": {"amount_xaf": 0}, "releasing": {"amount_xaf": 0, "next_release_at": None, "days_left": None},
+        "in_progress": {"amount_xaf": 0}, "frozen": {"amount_xaf": 0, "orders": []}, "paid_out": {"amount_xaf": 0},
+        "in_circulation_xaf": 0, "tier": vendor_profile.certification_tier, "release_delay_days": delai,
+        "payout_rhythm": "daily", "awaiting_validation_xaf": 0, "limitations": [],
     }
-    return Response(data)
+    payee = payee_for_vendor(vendor_profile)
+    if payee is None:
+        return vide
+
+    marchandise = EscrowHold.objects.filter(payee=payee, component=EscrowHold.Component.GOODS)
+
+    def somme(statut):
+        return marchandise.filter(status=statut).aggregate(t=Sum("net_amount_xaf"))["t"] or 0
+
+    en_cours = somme(EscrowHold.Status.HELD)
+    programme = marchandise.filter(status=EscrowHold.Status.RELEASE_SCHEDULED)
+    se_libere = programme.aggregate(t=Sum("net_amount_xaf"))["t"] or 0
+    prochaine = programme.aggregate(m=Min("release_at"))["m"]
+    geles = list(marchandise.filter(status=EscrowHold.Status.FROZEN).values("order_id", "net_amount_xaf"))
+    du = amount_due(payee)
+    a_verser = du["due_xaf"] + du["in_settlement_xaf"]
+    verse = (PayoutRequest.objects.filter(payee=payee, status=PayoutRequest.Status.PAID)
+             .aggregate(t=Sum("amount_xaf"))["t"] or 0)
+    a_valider = (PayoutRequest.objects.filter(payee=payee, status=PayoutRequest.Status.PENDING_APPROVAL)
+                 .aggregate(t=Sum("amount_xaf"))["t"] or 0)
+    gele = sum(g["net_amount_xaf"] for g in geles)
+    jours_restants = (prochaine - timezone.now()).total_seconds() / 86400 if prochaine else None
+    return {
+        **vide,
+        "to_pay": {"amount_xaf": a_verser},
+        "releasing": {"amount_xaf": se_libere, "next_release_at": prochaine.isoformat() if prochaine else None,
+                      "days_left": round(max(jours_restants, 0), 2) if jours_restants is not None else None},
+        "in_progress": {"amount_xaf": en_cours},
+        "frozen": {"amount_xaf": gele, "orders": [{"order_id": g["order_id"], "amount_xaf": g["net_amount_xaf"],
+                                                   "reason": "dispute_or_return"} for g in geles]},
+        "paid_out": {"amount_xaf": verse},
+        "in_circulation_xaf": a_verser + se_libere + en_cours + gele,
+        "awaiting_validation_xaf": a_valider,
+    }
+
+
+# Statuts d'un versement réel (payments.PayoutRequest) ramenés aux quatre états que l'écran Versements sait afficher.
+_STATUT_ECRAN = {
+    "PAID": ("APPROVED", "Versé"),
+    "DRAFT": ("PENDING", "En préparation"),
+    "PENDING_APPROVAL": ("PENDING", "En attente de validation"),
+    "APPROVED": ("PENDING", "Envoi en cours"),
+    "PROCESSING": ("PENDING", "Envoi en cours"),
+    "UNKNOWN": ("PENDING", "Vérification en cours"),
+    "FAILED": ("REJECTED", "Refusé par l'opérateur"),
+    "REJECTED": ("REJECTED", "Refusé"),
+    "CANCELLED": ("CANCELLED", "Annulé"),
+}
+_OPERATEUR_ECRAN = {"MTN": "MTN_MOMO", "ORANGE": "ORANGE_MONEY"}
+
+
+@extend_schema(
+    tags=["Vendors V2"],
+    summary="Vendor payouts (v2, C04 : versements réels)",
+    description=(
+        "Les versements réels du vendeur (un par jour au plus, DEV-SRV-01 v1.8, C04), sous la forme de l'historique "
+        "de l'écran Versements, et le versement en cours s'il y en a un."
+    ),
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def vendor_payouts_v2(request):
+    from apps.payments.bridge.actors import payee_for_vendor
+    from apps.payments.settlements.models import PayoutRequest
+
+    vendor_profile = VendorProfile.objects.filter(user=request.user).first()
+    if vendor_profile is None:
+        return Response({"detail": "Profil vendeur introuvable."}, status=404)
+    payee = payee_for_vendor(vendor_profile)
+    if payee is None:
+        return Response({"payouts": [], "pending": None})
+    lignes, en_cours = [], None
+    for v in PayoutRequest.objects.filter(payee=payee).order_by("-requested_at")[:200]:
+        statut, libelle = _STATUT_ECRAN.get(v.status, ("PENDING", v.status))
+        operateur = _OPERATEUR_ECRAN.get(v.payee_operator, "MTN_MOMO")
+        brut = v.amount_xaf + v.psp_fee_xaf
+        lignes.append({
+            "id": v.pk, "reference": v.reference, "amount_xaf": brut, "fee_percent_snapshot": "",
+            "fee_amount_xaf": v.psp_fee_xaf, "net_amount_xaf": v.amount_xaf, "operator": operateur,
+            "operator_display": operateur.replace("_", " ").title(), "phone_number": v.payee_msisdn_masked,
+            "status": statut, "status_display": libelle, "admin_note": v.error_message or "",
+            "processed_at": v.executed_at.isoformat() if v.executed_at else None,
+            "created_at": v.requested_at.isoformat(), "updated_at": v.requested_at.isoformat(),
+        })
+        if en_cours is None and statut == "PENDING":
+            en_cours = {"id": v.pk, "reference": v.reference, "amount_xaf": brut, "fee_xaf": v.psp_fee_xaf,
+                        "net_xaf": v.amount_xaf,
+                        "operator": operateur, "phone": v.payee_msisdn_masked,
+                        "created_at": v.requested_at.isoformat(), "status": statut}
+    return Response({"payouts": lignes, "pending": en_cours})

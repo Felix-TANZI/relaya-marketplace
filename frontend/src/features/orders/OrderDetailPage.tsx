@@ -407,10 +407,14 @@ export default function OrderDetailPage() {
         { time: "ETA", label: order.fulfillment_status === "DELIVERED" ? t('order.detail.timeline.delivered') : t('order.detail.timeline.eta'), completed: fulfillment.step >= 3 },
       ];
 
-  const submitReceiptCode = async (code: string) => {
+  // DEV-SRV-01 v1.8, C04 : un colis RETIRÉ au point relais se confirme par le client lui-même, depuis son
+  // application, sans code de livreur (le gérant ne confirme jamais à sa place).
+  const retireAuRelais = tracking?.relay_parcel?.status === "PICKED_UP";
+
+  const submitReceiptCode = async (code: string, sansCode = false) => {
     if (!order) return;
     const trimmed = code.trim();
-    if (trimmed.length !== 6) {
+    if (!sansCode && trimmed.length !== 6) {
       setReceiptError(t("cl2_order_detail.receipt_code_length_error"));
       return;
     }
@@ -954,8 +958,20 @@ export default function OrderDetailPage() {
                 <div className="mt-4 rounded-2xl border border-green-200 bg-green-50/60 p-4 dark:border-green-900/40 dark:bg-green-900/10">
                   <p className="text-sm font-bold text-gray-900 dark:text-white">{t("cl2_order_detail.confirm_receipt_title")}</p>
                   <p className="mt-1 text-xs leading-5 text-gray-600 dark:text-gray-300">
-                    {t("cl2_order_detail.confirm_receipt_instructions")}
+                    {retireAuRelais
+                      ? t("cl2_order_detail.confirm_receipt_relay_instructions")
+                      : t("cl2_order_detail.confirm_receipt_instructions")}
                   </p>
+                  {retireAuRelais ? (
+                    <button
+                      type="button"
+                      disabled={receiptSubmitting}
+                      onClick={() => void submitReceiptCode("", true)}
+                      className="mt-3 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {receiptSubmitting ? t("cl2_order_detail.submitting_ellipsis") : t("cl2_order_detail.confirm_receipt_relay_cta")}
+                    </button>
+                  ) : (
                   <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                     <button
                       type="button"
@@ -984,6 +1000,7 @@ export default function OrderDetailPage() {
                       {receiptSubmitting ? t("cl2_order_detail.submitting_ellipsis") : t("cl2_order_detail.validate")}
                     </button>
                   </div>
+                  )}
                   {receiptError && <p className="mt-2 text-xs font-semibold text-red-600">{receiptError}</p>}
                 </div>
               )}

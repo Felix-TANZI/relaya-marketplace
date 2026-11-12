@@ -1662,7 +1662,7 @@ export default function ProfilePage() {
     { key: "historique-paiements", label: t("cl3_profile_nav.payment_history"), icon: Wallet, panel: "historique-paiements" },
     { key: "parrain", label: t("cl3_profile_nav.referral"), icon: Gift, panel: "parrain" },
     { key: "securite", label: t("cl3_profile_nav.security"), icon: Shield, panel: "securite" },
-    ...(walletOuvert ? [{ key: "compte-belivay", label: "Mon Wallet", icon: Wallet, panel: "compte-belivay" as PanelId }] : []),
+    ...(walletOuvert ? [{ key: "compte-belivay", label: t("c06.wallet.titre"), icon: Wallet, panel: "compte-belivay" as PanelId }] : []),
     { key: "reglages", label: t("cl3_profile_nav.settings"), icon: Settings, panel: "reglages" },
   ];
 
@@ -1685,7 +1685,7 @@ export default function ProfilePage() {
     { key: "parrain", label: t("cl3_profile_nav.referral"), icon: Gift, panel: "parrain" },
     { key: "messages", label: t("cl3_profile_nav.messages"), icon: MessageSquare, panel: "messages", badge: unreadMessages || undefined },
     { key: "securite", label: t("cl3_profile_nav.security"), icon: Shield, panel: "securite" },
-    ...(walletOuvert ? [{ key: "compte-belivay", label: "Mon Wallet", icon: Wallet, panel: "compte-belivay" as PanelId }] : []),
+    ...(walletOuvert ? [{ key: "compte-belivay", label: t("c06.wallet.titre"), icon: Wallet, panel: "compte-belivay" as PanelId }] : []),
     { key: "reglages", label: t("cl3_profile_nav.settings"), icon: Settings, panel: "reglages" },
   ];
 
@@ -1724,7 +1724,7 @@ export default function ProfilePage() {
     },
     ...(walletOuvert ? [{
       key: "wallet",
-      label: "Mon Wallet",
+      label: t("c06.wallet.titre"),
       icon: Wallet,
       active: activePanel === "compte-belivay",
       onSelect: () => openPanel("compte-belivay"),

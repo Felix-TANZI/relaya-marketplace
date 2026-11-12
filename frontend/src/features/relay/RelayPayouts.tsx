@@ -193,7 +193,7 @@ export default function RelayPayouts({
   const quand = blocage
     ? humaniserBlocage(blocage, t)
     : due?.next_settlement_at
-      ? `Prévu · ${formatLong(due.next_settlement_at)}`
+      ? i18n.t("c06.relais.prevu_le", { date: formatLong(due.next_settlement_at) })
       : due?.next_settlement_cycle || "Prochain versement";
 
   /**
@@ -492,7 +492,7 @@ export default function RelayPayouts({
                 ? [
                     `${OPERATEUR_COURT[compte.operator] || compte.operator} ${compte.masked_phone}`,
                     compte.status === "VERIFIED" && compte.verified_at
-                      ? `vérifié par code le ${JOUR_MOIS.format(new Date(compte.verified_at))}`
+                      ? i18n.t("c06.relais.verifie_par_code", { date: JOUR_MOIS.format(new Date(compte.verified_at)) })
                       : compte.status === "PENDING_VERIFICATION"
                         ? i18n.t("rl3.code_de_verification_en_attente")
                         : i18n.t("rl3.compte_desactive"),

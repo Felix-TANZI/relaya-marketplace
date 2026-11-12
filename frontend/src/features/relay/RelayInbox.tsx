@@ -134,9 +134,9 @@ export default function RelayInbox({ onError, relay, onNavigate, outbound = 0, a
         subtitle: i18n.t("rl3.canal_descendant_belivay_vous_informe"),
         preview:
           outbound > 0
-            ? `${outbound} colis à remettre au prochain passage.`
+            ? i18n.t("c06.relais.a_remettre_prochain_passage", { count: outbound })
             : arrivals > 0
-              ? `${arrivals} colis annoncés à réceptionner.`
+              ? i18n.t("c06.relais.annonces_a_receptionner", { count: arrivals })
               : i18n.t("rl3.aucun_mouvement_prevu_pour_l_instant"),
         badge: 0,
         time: "",

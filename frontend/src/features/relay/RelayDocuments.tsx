@@ -182,13 +182,13 @@ export default function RelayDocuments({
           >
             {complet ? (
               <>
-                {dateVerif ? `Vérifié le ${JOUR_LONG.format(dateVerif)} · ` : ""}
+                {dateVerif ? i18n.t("c06.relais.verifie_le", { date: JOUR_LONG.format(dateVerif) }) : ""}
                 vous pouvez recevoir et être payé
               </>
             ) : (
               <>
                 {manquantes > 0
-                  ? `Il manque ${manquantes} pièce${manquantes > 1 ? "s" : ""} · `
+                  ? i18n.t("c06.relais.pieces_manquantes", { count: manquantes })
                   : i18n.t("rl3.verification_en_cours")}
                 les colis et les versements restent suspendus
               </>

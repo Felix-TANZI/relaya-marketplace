@@ -196,7 +196,7 @@ export default function ListeVendrediPage() {
               <span>
                 <b>{s.user}</b> remplace {ROLES[s.role] ?? s.role} jusqu'au {date(s.fin)} · accordé par {s.accorde_par}
                 {' '}— {s.motif}
-                {s.revoque_le ? ` · retiré le ${date(s.revoque_le)} par ${s.revoque_par}` : ''}
+                {s.revoque_le ? i18n.t("c06.admin.retire_le", { date: date(s.revoque_le), qui: s.revoque_par }) : ''}
               </span>
               {s.actif && (
                 <button type="button" className="text-red-600 font-bold" disabled={occupe}

@@ -311,7 +311,7 @@ export default function RelayCapacity({
                     type="button"
                     onClick={() => jour.open && setOpenDay(openDay === index ? null : index)}
                     disabled={!jour.open}
-                    aria-label={`Horaires du ${DAY_LABELS[index]}`}
+                    aria-label={i18n.t("c06.relais.horaires_du", { jour: DAY_LABELS[index] })}
                     className="relative h-[34px] w-full overflow-hidden rounded-full border border-slate-200 bg-white transition enabled:active:scale-[.98] dark:border-slate-700 dark:bg-slate-950"
                   >
                     {jour.open ? (
@@ -334,7 +334,7 @@ export default function RelayCapacity({
                     type="button"
                     role="switch"
                     aria-checked={jour.open}
-                    aria-label={`Ouvrir le ${DAY_LABELS[index]}`}
+                    aria-label={i18n.t("c06.relais.ouvrir_le", { jour: DAY_LABELS[index] })}
                     onClick={() => setDay(index, { open: !jour.open })}
                     className={`ml-auto flex h-[30px] w-[52px] flex-shrink-0 items-center rounded-full px-[3px] transition ${
                       jour.open ? "bg-[#2456D6]" : "bg-slate-300 dark:bg-slate-700"

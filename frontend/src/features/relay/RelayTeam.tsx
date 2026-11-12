@@ -192,7 +192,7 @@ export default function RelayTeam({
                     type="button"
                     role="switch"
                     aria-checked={membre.is_active}
-                    aria-label={`Accès de ${membre.display_name}`}
+                    aria-label={i18n.t("c06.relais.acces_de", { nom: membre.display_name })}
                     disabled={busy}
                     onClick={() => void modifier({ id: membre.id, is_active: !membre.is_active })}
                     className={`relative h-[31px] w-[52px] flex-shrink-0 rounded-full transition disabled:opacity-50 ${

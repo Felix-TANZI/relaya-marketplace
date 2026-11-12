@@ -250,10 +250,9 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
    */
   const promesse = useMemo(() => {
     const petit = grille.find((ligne) => ligne.parcel_size === "SMALL");
-    const remise = petit ? `${nf(petit.amount_xaf)} F par petit colis remis` : i18n.t("rl3.une_somme_par_colis_remis");
+    const remise = petit ? i18n.t("c06.relais.par_petit_colis", { montant: nf(petit.amount_xaf) }) : i18n.t("rl3.une_somme_par_colis_remis");
     return (
-      `Un revenu en plus dans votre commerce, sans rien avancer : ${remise}, `
-      + `une part de garde par jour et par colis gardé, payés par BelivaY chaque vendredi.`
+      i18n.t("c06.relais.promesse_revenu", { remise })
     );
   }, [grille]);
 
@@ -263,7 +262,7 @@ export default function RelayApply({ onOpenTraining }: { onOpenTraining: () => v
     const montants = ordre
       .map((taille) => grille.find((ligne) => ligne.parcel_size === taille)?.amount_xaf)
       .filter((montant): montant is number => typeof montant === "number");
-    return montants.length > 0 ? `${montants.map(nf).join(" / ")} F par colis` : i18n.t("rl3.selon_la_taille_du_colis");
+    return montants.length > 0 ? i18n.t("c06.relais.par_colis", { montants: montants.map(nf).join(" / ") }) : i18n.t("rl3.selon_la_taille_du_colis");
   }, [grille]);
 
   /** La géolocalisation du navigateur : pas une carte, mais un point vrai. */

@@ -248,7 +248,7 @@ function RefusalDialog({
 
   return (
     <RelaySheet label={i18n.t("rl3.refuser_le_colis")} onClose={onCancel} size="sm">
-      <RelaySheetHeader icon={ShieldAlert} title={i18n.t("rl3.refuser_ce_colis")} subtitle={`Mission ${missionId} — le colis ne sera pas mis en stock.`} onClose={onCancel} />
+      <RelaySheetHeader icon={ShieldAlert} title={i18n.t("rl3.refuser_ce_colis")} subtitle={i18n.t("c06.relais.refus_mission", { mission: missionId })} onClose={onCancel} />
 
       <label className="mt-1 block text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
         {t("rl1_reception.refuse_reason_label")}
@@ -620,7 +620,7 @@ function CodeDialog({
       ) : (
         <p className="mt-3 text-sm font-medium leading-relaxed text-slate-500 dark:text-slate-400">
           {arrivals.length > 0
-            ? `${arrivals.length} arrivée${arrivals.length > 1 ? "s" : ""} annoncée${arrivals.length > 1 ? "s" : ""} chez vous en ce moment.`
+            ? i18n.t("c06.relais.arrivees_annoncees", { count: arrivals.length })
             : i18n.t("rl3.aucune_arrivee_n_est_annoncee_chez_vous_po")}
         </p>
       )}

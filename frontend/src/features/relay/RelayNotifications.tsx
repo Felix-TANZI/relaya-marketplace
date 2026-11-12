@@ -406,7 +406,7 @@ export default function RelayNotifications({
             <LigneReglage
               icon="horloge"
               titre={i18n.t("rl3.heure_du_resume")}
-              detail={`Réglable, jamais avant ${settings.digest_earliest_hour} h`}
+              detail={i18n.t("c06.relais.jamais_avant", { heure: settings.digest_earliest_hour })}
               dernier={false}
             >
               <select

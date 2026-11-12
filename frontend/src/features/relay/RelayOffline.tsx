@@ -188,7 +188,7 @@ export default function RelayOffline() {
             </div>
             <p className="mt-1 text-[13.5px] font-medium leading-snug text-[#1F7A4D] dark:text-emerald-300/85">
               {file.length > 0
-                ? `${file.length} opération${file.length > 1 ? "s" : ""} attend${file.length > 1 ? "ent" : ""} encore de partir.`
+                ? i18n.t("c06.relais.operations_en_attente", { count: file.length })
                 : i18n.t("rl3.tout_est_a_jour")}
             </p>
           </div>
@@ -275,7 +275,7 @@ export default function RelayOffline() {
                     </span>
                     <span className="mt-1 block text-[13px] font-medium leading-snug text-slate-500 dark:text-slate-400">
                       {perimee
-                        ? `Expirée après ${EXPIRATION_HEURES} h — à refaire`
+                        ? i18n.t("c06.relais.expiree_apres", { heures: EXPIRATION_HEURES })
                         : `photo ${poids(entry.blob.size)}`}
                       {entry.attempts > 0 ? ` · ${entry.attempts} tentative${entry.attempts > 1 ? "s" : ""}` : ""}
                     </span>

@@ -583,7 +583,7 @@ export default function RelayClosureMobile({ onError, relay }: RelayClosureMobil
               {/* Le nombre de colis vient du stock reel, pas d'un exemple :
                   c'est lui qui dit au gerant l'ampleur du transfert. */}
               {tranche.key === "moyen"
-                ? tranche.corps.replace(i18n.t("rl3.vos_colis_partent"), `Vos ${stock} colis partent`)
+                ? tranche.corps.replace(i18n.t("rl3.vos_colis_partent"), i18n.t("c06.relais.vos_n_colis_partent", { n: stock }))
                 : tranche.corps}
             </span>
           </p>

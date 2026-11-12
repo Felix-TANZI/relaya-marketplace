@@ -108,7 +108,7 @@ export default function RemboursementsAutoPage() {
               entetes={['Client', 'Motif', i18n.t("ad9.propose_par"), 'Validation']}
               lignes={data.retraits.map((r) => [
                 r.client, r.motif, r.propose_par,
-                r.valide_le ? `Validé par ${r.valide_par} le ${dateCourte(r.valide_le)}` : (
+                r.valide_le ? i18n.t("c06.admin.valide_par", { qui: r.valide_par, date: dateCourte(r.valide_le) }) : (
                   <button key={r.id} type="button" className="rounded-lg border px-3 py-1 font-semibold"
                     onClick={() => void agir(`${BASE}retraits/${r.id}/valider/`)}>
                     Valider (autre personne)

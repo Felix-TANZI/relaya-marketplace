@@ -165,7 +165,7 @@ export default function RelayReceptionControl({
               {missionRef} · {lot.length} colis · {places} places
             </div>
             <p className="mt-1 truncate text-[13px] font-medium text-white/70">
-              {[courier || "Livreur à assigner", outbound > 0 ? `repart avec ${outbound} colis` : null]
+              {[courier || "Livreur à assigner", outbound > 0 ? i18n.t("c06.relais.repart_avec", { count: outbound }) : null]
                 .filter(Boolean)
                 .join(" · ")}
             </p>

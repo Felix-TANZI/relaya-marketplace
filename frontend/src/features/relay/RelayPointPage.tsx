@@ -729,7 +729,7 @@ export default function RelayPointPage() {
           : `Préparer la collecte livreur`,
         detail: locale === "en"
           ? `${todayCounters.outbound} parcel(s) to hand back: return, send-back, transfer.`
-          : `${todayCounters.outbound} colis à remettre au livreur : renvoi, retour, transfert.`,
+          : i18n.t("c06.relais.a_remettre_au_livreur", { count: todayCounters.outbound }),
         onClick: () => setTab("sortie"),
       });
     }
@@ -741,7 +741,7 @@ export default function RelayPointPage() {
         tone: "amber",
         title: locale === "en"
           ? `${todayCounters.lastDay} buyer(s) on the last day`
-          : `${todayCounters.lastDay} client(s) au dernier jour`,
+          : i18n.t("c06.relais.clients_dernier_jour", { count: todayCounters.lastDay }),
         detail: locale === "en"
           ? "Storage ends today — chase the buyer, or start the return to the seller."
           : i18n.t("rl3.la_garde_se_termine_relancez_l_acheteur_ou"),
@@ -796,11 +796,11 @@ export default function RelayPointPage() {
         tone: "slate",
         title: locale === "en"
           ? `${todayCounters.freeGarde} parcel(s) under free storage`
-          : `${todayCounters.freeGarde} colis en garde gratuite`,
+          : i18n.t("c06.relais.garde_sans_frais", { count: todayCounters.freeGarde }),
         detail: todayCounters.nextFreeEnd
           ? (locale === "en"
               ? `No fee until ${formatCourt(todayCounters.nextFreeEnd)}, then charged according to the storage grid.`
-              : `Sans frais jusqu'au ${formatCourt(todayCounters.nextFreeEnd)}, puis facturé selon la grille de garde.`)
+              : i18n.t("c06.relais.sans_frais_jusqu_au", { date: formatCourt(todayCounters.nextFreeEnd) }))
           : (locale === "en" ? "No storage fee yet." : i18n.t("rl3.aucun_frais_de_garde_pour_l_instant")),
         onClick: () => setTab("stock"),
       });
@@ -1065,7 +1065,7 @@ export default function RelayPointPage() {
       await http("/api/shipping/relay-point/returns/receive/", { method: "POST", body: form });
       setOperationMessage({
         tone: "success",
-        text: `Retour RT-${returnId} enregistré — il part à l'inspection avec la prochaine collecte.`,
+        text: i18n.t("c06.relais.retour_enregistre", { id: returnId }),
       });
       await refreshRelayData();
       return true;
@@ -1387,7 +1387,7 @@ export default function RelayPointPage() {
 
     const decrire = (parcel: RelayParcel, reason: OutboundReason) => {
       if (reason === "refus") return i18n.t("rl3.refuse_au_controle_vendeur");
-      if (reason === "renvoi") return `non retiré (J${jourDeGarde(parcel)}) → vendeur`;
+      if (reason === "renvoi") return i18n.t("c06.relais.non_retire_vendeur", { jour: jourDeGarde(parcel) });
       return i18n.t("rl3.retour_valide_vendeur");
     };
 
@@ -1450,10 +1450,10 @@ export default function RelayPointPage() {
       const partis = ids.length - echecs.length;
       setOperationMessage(
         echecs.length === 0
-          ? { tone: "success", text: `${partis} colis remis au livreur — la garde ne vous incombe plus.` }
+          ? { tone: "success", text: i18n.t("c06.relais.remis_au_livreur", { count: partis }) }
           : {
               tone: "error",
-              text: `${partis} colis sortis, ${echecs.length} refusés par le serveur. Les colis refusés restent chez vous.`,
+              text: i18n.t("c06.relais.sortis_et_refuses", { partis, refuses: echecs.length }),
             },
       );
       await refreshRelayData();
@@ -1551,7 +1551,7 @@ export default function RelayPointPage() {
       );
       setOperationMessage({
         tone: "success",
-        text: `Demande de ${data.montant_xaf.toLocaleString("fr-FR")} F envoyée au téléphone du client. Il valide, puis présente son code de retrait.`,
+        text: i18n.t("c06.relais.demande_envoyee", { montant: data.montant_xaf.toLocaleString("fr-FR") }),
       });
       await refreshRelayData();
       return true;
@@ -1794,7 +1794,7 @@ export default function RelayPointPage() {
         id: "arrivee",
         tone: "orange",
         icon: "truck",
-        title: arrivals.length > 1 ? `${arrivals.length} colis en route` : i18n.t("rl3.un_colis_en_route"),
+        title: arrivals.length > 1 ? i18n.t("c06.relais.colis_en_route", { n: arrivals.length }) : i18n.t("rl3.un_colis_en_route"),
         detail: [arrivalMission, `${arrivals.length} colis`, `${places} place${places > 1 ? "s" : ""} a prevoir`]
           .filter(Boolean)
           .join(" · "),
@@ -1811,7 +1811,7 @@ export default function RelayPointPage() {
         icon: "retour",
         title:
           outboundParcels.pending.length > 1
-            ? `${outboundParcels.pending.length} colis a faire partir`
+            ? i18n.t("c06.relais.a_faire_partir", { count: outboundParcels.pending.length })
             : i18n.t("rl3.un_colis_a_renvoyer"),
         detail: `${aRenvoyer.ref} · ${aRenvoyer.detail}`,
         at: "",

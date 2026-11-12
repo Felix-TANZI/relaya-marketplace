@@ -262,7 +262,7 @@ export default function RelayTrust({
         <ShieldCheck size={19} strokeWidth={2.2} className="mt-0.5 flex-shrink-0 text-[#8FB0FF] dark:text-blue-300" />
         <p className="text-[13.5px] font-medium leading-[1.55] text-[#9FAACB] dark:text-blue-100/80">
           {trust?.parcel_value_cap_xaf
-            ? `Votre palier plafonne la valeur d'un colis à ${trust.parcel_value_cap_xaf.toLocaleString("fr-FR")} F. Au-delà, le colis est orienté vers un relais d'un palier supérieur.`
+            ? i18n.t("c06.relais.plafond_valeur", { plafond: trust.parcel_value_cap_xaf.toLocaleString("fr-FR") })
             : "Chaque palier plafonne la valeur d'un colis ; le vôtre s'affiche ici dès qu'il est connu. Au-delà, le colis est orienté vers un relais d'un palier supérieur."}
         </p>
       </div>

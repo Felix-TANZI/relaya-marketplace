@@ -14,12 +14,10 @@
  * — au lieu de mentir jusqu'à ce que quelqu'un s'en aperçoive.
  */
 import { useEffect, useMemo, useState } from "react";
+import i18n from "@/i18n";
 import { Camera, MessageCircle, Minus, Plus, Search, Send } from "lucide-react";
 import { getRelayTariff, type RelayTariffLine } from "@/services/api/relaySettlements";
 
-/** Garde gratuite puis facturée — `RelayParcel.GARDE_*` côté serveur. */
-const GARDE_GRATUITE_JOURS = 3;
-const GARDE_TARIF_JOUR = 200;
 
 const TAILLES: Record<string, string> = {
   SMALL: "petit",
@@ -38,25 +36,25 @@ interface Question {
 
 const QUESTIONS: Question[] = [
   {
-    q: "Le livreur n'a pas de code de dépôt",
+    q: i18n.t("rl3.le_livreur_n_a_pas_de_code_de_depot"),
     r:
-      "Ne prenez pas le lot. Écrivez au support ou demandez un rappel depuis l'app : BelivaY vérifie "
-      + "la mission et vous donne le feu vert, ou fait repartir le livreur.",
+      i18n.t("rl3.ne_prenez_pas_le_lot_ecrivez_au_support_ou")
+      + i18n.t("rl3.la_mission_et_vous_donne_le_feu_vert_ou_fa"),
   },
   {
-    q: "Le client a perdu son code",
+    q: i18n.t("rl3.le_client_a_perdu_son_code"),
     r:
-      "Il le réaffiche dans son app (QR ou 6 chiffres). Sans app, il demande un renvoi par SMS. "
-      + "Jamais de remise sans code : vous ne voyez jamais le code, le client vous le donne.",
+      i18n.t("rl3.il_le_reaffiche_dans_son_app_qr_ou_6_chiff")
+      + i18n.t("rl3.jamais_de_remise_sans_code_vous_ne_voyez_j"),
   },
   {
-    q: "Mon relais est presque plein",
+    q: i18n.t("rl3.mon_relais_est_presque_plein"),
     r:
-      "Préparez les départs en attente et demandez plus de places dans Capacité si votre local le "
-      + "permet. Les retours déposés ne comptent pas dans vos places.",
+      i18n.t("rl3.preparez_les_departs_en_attente_et_demande")
+      + i18n.t("rl3.permet_les_retours_deposes_ne_comptent_pas"),
   },
   {
-    q: "Quand et comment suis-je payé ?",
+    q: i18n.t("rl3.quand_et_comment_suis_je_paye"),
     // La seule reponse qui parle d'argent : elle se compose a partir de la
     // grille servie par le serveur, jamais d'un montant recopie.
     r: (grille) => {
@@ -67,32 +65,32 @@ const QUESTIONS: Question[] = [
       return (
         "Chaque vendredi, sans frais et sans minimum, sur votre numéro de versement vérifié"
         + (lignes ? ` : ${lignes}` : "")
-        + `. La garde est offerte jusqu'au ${GARDE_GRATUITE_JOURS}e jour, puis facturée `
-        + `${nf(GARDE_TARIF_JOUR)} F par jour au client. C'est BelivaY qui vous paie, même quand la `
+        + ". La garde est facturée au client selon la grille de garde de BelivaY, et vous touchez votre part "
+        + "pour chaque jour et chaque colis gardé. C'est BelivaY qui vous paie, même quand la "
         + "livraison est offerte au client."
       );
     },
   },
   {
-    q: "Un colis est abîmé à l'arrivée",
+    q: i18n.t("rl3.un_colis_est_abime_a_l_arrivee"),
     r:
-      "Réserve avec photo si c'est léger, refus avec deux photos si le scellé du livreur (ou le film "
-      + "d'un encombrant) est cassé : il repart avec le livreur et vous n'en êtes pas responsable.",
+      i18n.t("rl3.reserve_avec_photo_si_c_est_leger_refus_av")
+      + i18n.t("rl3.d_un_encombrant_est_casse_il_repart_avec_l"),
   },
   {
-    q: "Un avis me semble injuste",
+    q: i18n.t("rl3.un_avis_me_semble_injuste"),
     r:
       "Signalez-le depuis la Messagerie : un avis n'est retiré que pour une insulte, une donnée "
       + "personnelle ou un hors-sujet, avec un motif tracé. Vous pouvez aussi répondre en privé au "
       + "client.",
   },
   {
-    q: "Panne générale : le mode papier",
+    q: i18n.t("rl3.panne_generale_le_mode_papier"),
     r:
-      "BelivaY vous prévient par un SMS ou un WhatsApp de diffusion : c'est le seul usage de WhatsApp "
-      + "côté relais. Notez sur le registre papier la référence, le code donné par le client, sa "
-      + "pièce d'identité, sa signature et l'heure. Seuls les colis sans montant à payer se "
-      + "remettent. Saisissez tout dans l'app dès le retour du réseau, dans les 72 h.",
+      i18n.t("rl3.belivay_vous_previent_par_un_sms_ou_un_wha")
+      + i18n.t("rl3.cote_relais_notez_sur_le_registre_papier_l")
+      + i18n.t("rl3.piece_d_identite_sa_signature_et_l_heure_s")
+      + i18n.t("rl3.remettent_saisissez_tout_dans_l_app_des_le"),
   },
 ];
 
@@ -179,7 +177,7 @@ export default function RelayHelp({
           value={recherche}
           onChange={(event) => setRecherche(event.target.value)}
           placeholder="Code perdu, relais plein, versement…"
-          aria-label="Rechercher dans l'aide"
+          aria-label={i18n.t("rl3.rechercher_dans_l_aide")}
           className="w-full rounded-[14px] border-2 border-[#F6CFA8] bg-white py-3.5 pl-12 pr-4 text-[14.5px] font-semibold text-slate-900 outline-none transition placeholder:font-medium placeholder:text-slate-400 focus:border-[#EF6A00] dark:border-orange-800 dark:bg-slate-900 dark:text-white"
         />
       </div>
@@ -197,7 +195,7 @@ export default function RelayHelp({
           <MessageCircle size={21} strokeWidth={2.4} />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-[16px] font-black leading-tight">Parler à quelqu'un</span>
+          <span className="block text-[16px] font-black leading-tight">{i18n.t("rl3.parler_a_quelqu_un")}</span>
           <span className="mt-0.5 block text-[13px] font-medium text-white/85">
             Messagerie ou rappel · 8 h – 20 h, 7 j / 7
           </span>
@@ -284,7 +282,7 @@ export default function RelayHelp({
           value={reference}
           onChange={(event) => setReference(event.target.value.toUpperCase())}
           placeholder="BV-00000"
-          aria-label="Référence du colis"
+          aria-label={i18n.t("rl3.reference_du_colis")}
           className="mt-2 w-full rounded-[12px] border border-slate-200 bg-white px-4 py-3 text-[15px] font-bold tabular-nums text-slate-900 outline-none transition focus:border-[#EF6A00] placeholder:font-medium placeholder:text-slate-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
         />
 
@@ -295,7 +293,7 @@ export default function RelayHelp({
           value={message}
           onChange={(event) => setMessage(event.target.value)}
           rows={4}
-          placeholder="Décrivez ce qui se passe"
+          placeholder={i18n.t("rl3.decrivez_ce_qui_se_passe")}
           aria-label="Message"
           className="mt-2 w-full resize-none rounded-[12px] border border-slate-200 bg-white px-4 py-3 text-[15px] font-medium leading-snug text-slate-900 outline-none transition focus:border-[#EF6A00] placeholder:text-slate-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
         />

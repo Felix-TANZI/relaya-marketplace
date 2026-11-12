@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import * as QRCode from 'qrcode';
 import { http } from '@/services/api/http';
+import { SITE_URL } from '@/config/site';
 
 /** Evenement Chromium d'installation PWA, absent des types DOM standards. */
 interface BeforeInstallPromptEvent extends Event {
@@ -146,7 +147,7 @@ export default function SellerProfileSheet({
       return;
     }
     let cancelled = false;
-    QRCode.toDataURL(`https://belivay.com/boutique/${encodeURIComponent(shop.slug)}`, {
+    QRCode.toDataURL(`${SITE_URL}/boutique/${encodeURIComponent(shop.slug)}`, {
       width: 320,
       margin: 1,
       color: { dark: '#7C2D12', light: '#FFFFFF' },

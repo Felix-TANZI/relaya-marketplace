@@ -22,6 +22,7 @@
  * temps au retrait.
  */
 import { useState } from "react";
+import i18n from "@/i18n";
 import { Camera, Check, Lock, TriangleAlert, Truck, X } from "lucide-react";
 import { ensureImageUnderLimit } from "@/lib/imageCompression";
 import { RelaySheet, RelaySheetHeader } from "./RelayUi";
@@ -41,22 +42,22 @@ const ANOMALIES: Array<{ id: "reserve" | "refus" | "ecart"; icon: typeof Camera;
     id: "reserve",
     icon: Camera,
     tone: "bg-[#FFF4D6] text-[#E8A10E] dark:bg-amber-950 dark:text-amber-300",
-    title: "Réserve avec photo",
-    body: "Angle enfoncé, étiquette abîmée : vous acceptez en le signalant",
+    title: i18n.t("rl3.reserve_avec_photo"),
+    body: i18n.t("rl3.angle_enfonce_etiquette_abimee_vous_accept"),
   },
   {
     id: "refus",
     icon: X,
     tone: "bg-[#FDECEA] text-[#B42318] dark:bg-red-950 dark:text-red-300",
-    title: "Refuser un colis",
-    body: "Scellé cassé, mouillé, ouvert : 2 photos, il repart avec le livreur",
+    title: i18n.t("rl3.refuser_un_colis"),
+    body: i18n.t("rl3.scelle_casse_mouille_ouvert_2_photos_il_re"),
   },
   {
     id: "ecart",
     icon: TriangleAlert,
     tone: "bg-[#F1ECE6] text-[#9FAACB] dark:bg-slate-800 dark:text-slate-300",
-    title: "Colis annoncé absent · colis en trop",
-    body: "Signalez l'écart : le livreur en répond, pas vous",
+    title: i18n.t("rl3.colis_annonce_absent_colis_en_trop"),
+    body: i18n.t("rl3.signalez_l_ecart_le_livreur_en_repond_pas"),
   },
 ];
 
@@ -185,7 +186,7 @@ export default function RelayReceptionControl({
       {/* ── Le lot ───────────────────────────────────────────────────────── */}
       <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-5 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
         <div className="flex items-baseline justify-between gap-3">
-          <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">Le lot</h3>
+          <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">{i18n.t("rl3.le_lot")}</h3>
           <span className="text-[14.5px] font-black text-[#2456D6] dark:text-blue-400">
             {checked.length} / {lot.length} contrôlés
           </span>
@@ -224,7 +225,7 @@ export default function RelayReceptionControl({
                       {arrival.internalRef}
                     </span>
                     <span className="mt-1 block truncate text-[13px] font-medium text-slate-500 dark:text-slate-400">
-                      {[ZONE_SHORT[zoneOf(arrival.sizeLabel)], on ? "scellé intact" : "scellé à vérifier"]
+                      {[ZONE_SHORT[zoneOf(arrival.sizeLabel)], on ? i18n.t("rl3.scelle_intact") : i18n.t("rl3.scelle_a_verifier")]
                         .filter(Boolean)
                         .join(" · ")}
                     </span>
@@ -357,12 +358,12 @@ function ReserveSheet({
   };
 
   return (
-    <RelaySheet label="Réserve avec photo" onClose={onCancel} size="sm">
+    <RelaySheet label={i18n.t("rl3.reserve_avec_photo")} onClose={onCancel} size="sm">
       <RelaySheetHeader
         icon={Camera}
         tone="bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-300"
-        title="Réserve avec photo"
-        subtitle="Le colis entre en stock, mais l'état constaté est daté et attaché à l'expédition."
+        title={i18n.t("rl3.reserve_avec_photo")}
+        subtitle={i18n.t("rl3.le_colis_entre_en_stock_mais_l_etat_consta")}
         onClose={onCancel}
       />
 
@@ -389,13 +390,13 @@ function ReserveSheet({
           value={note}
           onChange={(event) => setNote(event.target.value)}
           rows={3}
-          placeholder="Ex : angle enfoncé, carton intact par ailleurs."
+          placeholder={i18n.t("rl3.ex_angle_enfonce_carton_intact_par_ailleur")}
           className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-950 outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-white"
         />
       </label>
 
       <label className="mt-4 flex cursor-pointer items-center justify-center gap-2 rounded-[14px] border border-dashed border-slate-300 bg-white px-4 py-3.5 text-sm font-black text-slate-600 transition active:scale-[.98] dark:border-slate-600 dark:bg-slate-950 dark:text-slate-200">
-        <Camera size={17} /> {photo ? "Photo prête — reprendre" : "Photo de la réserve (obligatoire)"}
+        <Camera size={17} /> {photo ? i18n.t("rl3.photo_prete_reprendre") : i18n.t("rl3.photo_de_la_reserve_obligatoire")}
         <input
           type="file"
           accept="image/*"
@@ -423,7 +424,7 @@ function ReserveSheet({
           }
           className="pr-btn rounded-2xl px-5 py-2.5 text-sm font-black text-white transition disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300"
         >
-          {busy ? "Envoi..." : "Enregistrer la réserve"}
+          {busy ? "Envoi..." : i18n.t("rl3.enregistrer_la_reserve")}
         </button>
       </div>
     </RelaySheet>
@@ -443,12 +444,12 @@ function GapSheet({
   const [note, setNote] = useState("");
 
   return (
-    <RelaySheet label="Écart de comptage" onClose={onCancel} size="sm">
+    <RelaySheet label={i18n.t("rl3.ecart_de_comptage")} onClose={onCancel} size="sm">
       <RelaySheetHeader
         icon={TriangleAlert}
         tone="bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300"
-        title="Colis annoncé absent · colis en trop"
-        subtitle="Signalez l'écart maintenant, livreur présent. C'est lui qui en répond."
+        title={i18n.t("rl3.colis_annonce_absent_colis_en_trop")}
+        subtitle={i18n.t("rl3.signalez_l_ecart_maintenant_livreur_presen")}
         onClose={onCancel}
       />
 
@@ -458,7 +459,7 @@ function GapSheet({
           value={note}
           onChange={(event) => setNote(event.target.value)}
           rows={3}
-          placeholder="Ex : 6 colis annoncés, 5 posés sur le comptoir. BV-40305 manquant."
+          placeholder={i18n.t("rl3.ex_6_colis_annonces_5_poses_sur_le_comptoi")}
           className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-950 outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-white"
         />
       </label>
@@ -483,7 +484,7 @@ function GapSheet({
           onClick={() => void onConfirm(note.trim()).then((ok) => ok && onCancel())}
           className="rounded-2xl bg-[#2456D6] px-5 py-2.5 text-sm font-black text-white transition disabled:cursor-not-allowed disabled:bg-slate-300"
         >
-          {busy ? "Envoi..." : "Signaler l'écart"}
+          {busy ? "Envoi..." : i18n.t("rl3.signaler_l_ecart")}
         </button>
       </div>
     </RelaySheet>

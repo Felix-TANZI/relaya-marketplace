@@ -23,6 +23,7 @@
  * passé, ce que le gérant peut faire, et ne montre jamais de code technique.
  */
 import { useState } from "react";
+import i18n from "@/i18n";
 import {
   CreditCard, HelpCircle, Lock, QrCode, TriangleAlert, Wifi, X,
 } from "lucide-react";
@@ -77,21 +78,21 @@ const CAS: Cas[] = [
         colis, puis il sera bloqué 24 h.
       </>
     ),
-    actions: [{ label: "Ressaisir le code", style: "bleu", cible: "retrait" }],
+    actions: [{ label: i18n.t("rl3.ressaisir_le_code"), style: "bleu", cible: "retrait" }],
   },
   {
     key: "colis-bloque",
-    chip: "Colis bloqué",
+    chip: i18n.t("rl3.colis_bloque"),
     ton: "rouge",
     icon: Lock,
-    titre: "Colis bloqué 24 h",
+    titre: i18n.t("rl3.colis_bloque_24_h"),
     corps: (
       <>
         3 codes faux de suite pour BV-40231. Le colis est bloqué jusqu'à demain 10:14 et BelivaY est
         prévenu. Le client doit passer par le support ; vous ne pouvez pas débloquer vous-même.
       </>
     ),
-    actions: [{ label: "Écrire au support", style: "blanc", cible: "messagerie" }],
+    actions: [{ label: i18n.t("rl3.ecrire_au_support"), style: "blanc", cible: "messagerie" }],
   },
   {
     key: "paiement",
@@ -102,12 +103,12 @@ const CAS: Cas[] = [
     corps: (
       <>
         La demande de 400 F n'a pas été validée par le client (délai de 3 minutes dépassé ou solde
-        insuffisant). <strong>Rien n'a été débité.</strong>
+        insuffisant). <strong>{i18n.t("rl3.rien_n_a_ete_debite")}</strong>
       </>
     ),
     actions: [
       { label: "Annuler", style: "blanc" },
-      { label: "Renvoyer la demande", style: "orange" },
+      { label: i18n.t("rl3.renvoyer_la_demande"), style: "orange" },
     ],
   },
   {
@@ -115,26 +116,26 @@ const CAS: Cas[] = [
     chip: "Mauvais QR",
     ton: "rouge",
     icon: QrCode,
-    titre: "Ce colis n'est pas pour votre relais",
+    titre: i18n.t("rl3.ce_colis_n_est_pas_pour_votre_relais"),
     corps: (
       <>
         L'étiquette scannée (BV-40412, lot M-4133) est destinée au relais Mvog-Mbi. Ne prenez pas ce
         colis : le livreur doit l'y déposer.
       </>
     ),
-    actions: [{ label: "Signaler au support", style: "blanc", cible: "messagerie" }],
+    actions: [{ label: i18n.t("rl3.signaler_au_support"), style: "blanc", cible: "messagerie" }],
   },
   {
     key: "reseau",
-    chip: "Sans réseau",
+    chip: i18n.t("rl3.sans_reseau"),
     ton: "ambre",
     icon: Wifi,
-    titre: "Réseau nécessaire pour le paiement",
+    titre: i18n.t("rl3.reseau_necessaire_pour_le_paiement"),
     corps: (
       <>
         Ce colis a 400 F de garde à régler. Le paiement Mobile Money a besoin du réseau : attendez le
         retour de la connexion ou proposez au client de repasser.{" "}
-        <strong>Même en mode papier, un colis avec un montant ne se remet pas.</strong>
+        <strong>{i18n.t("rl3.meme_en_mode_papier_un_colis_avec_un_monta")}</strong>
       </>
     ),
     actions: [{ label: "Réessayer", style: "blanc" }],
@@ -144,14 +145,14 @@ const CAS: Cas[] = [
     chip: "Non remettable",
     ton: "ambre",
     icon: TriangleAlert,
-    titre: "Ce colis ne peut pas être remis",
+    titre: i18n.t("rl3.ce_colis_ne_peut_pas_etre_remis"),
     corps: (
       <>
         BV-40077 est <strong>en constat</strong> (dossier LIT-00912) : il reste au relais, sans
         frais, jusqu'à la décision. Même chose pour un colis en groupage ou à renvoyer.
       </>
     ),
-    actions: [{ label: "Voir le dossier", style: "blanc", cible: "litiges" }],
+    actions: [{ label: i18n.t("rl3.voir_le_dossier"), style: "blanc", cible: "litiges" }],
     // « Sans frais pendant le dossier » est une regle affichee, pas appliquee :
     // rien ne suspend `garde_fee_due()` quand un constat est ouvert.
     aVenir: true,
@@ -234,8 +235,8 @@ export default function RelayErrorStates({ onNavigate }: { onNavigate: (tab: Rel
           {cas.aVenir ? (
             <p className="mt-3 rounded-[10px] bg-slate-100 px-3 py-2 text-[12.5px] font-semibold leading-snug text-slate-500 dark:bg-slate-800 dark:text-slate-400">
               {cas.key === "non-remettable"
-                ? "Message prévu : la garde continue de courir pendant un constat, elle n'est pas encore suspendue."
-                : "Message prévu : le comptage des essais et le blocage 24 h ne sont pas encore appliqués."}
+                ? i18n.t("rl3.message_prevu_la_garde_continue_de_courir")
+                : i18n.t("rl3.message_prevu_le_comptage_des_essais_et_le")}
             </p>
           ) : null}
 

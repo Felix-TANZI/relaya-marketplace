@@ -8,6 +8,7 @@
  */
 
 import { useEffect, useState } from "react";
+import i18n from "@/i18n";
 
 import { http } from "@/services/api/http";
 
@@ -50,12 +51,12 @@ export default function RelayGardeGrid() {
       {dernier > 0 && (
         <div className="mt-2 rounded-[12px] bg-white/[.07] px-3 py-3 text-center">
           <div className="text-[11.5px] font-semibold leading-none text-white/55">J{dernier + 1}</div>
-          <div className="mt-2 text-[15px] font-black leading-none text-[#E8A10E]">le colis repart au vendeur</div>
+          <div className="mt-2 text-[15px] font-black leading-none text-[#E8A10E]">{i18n.t("rl3.le_colis_repart_au_vendeur")}</div>
         </div>
       )}
 
       <p className="mt-4 text-[13px] font-medium leading-[1.55] text-white/80">
-        {total > 0 && <>Sur {dernier} jours : <strong className="font-black text-white">{total} F</strong> par colis au plus, jamais plus que la valeur du colis. </>}
+        {total > 0 && <>Sur {dernier} jours : <strong className="font-black text-white">{total} F</strong> {i18n.t("rl3.par_colis_au_plus_jamais_plus_que_la_valeu")} </>}
         La garde se paie en espèces, en une fois, au retrait : confirmez l&apos;encaissement avant de remettre le colis.
         Rappels envoyés au client aux jours 3 et 5.
       </p>

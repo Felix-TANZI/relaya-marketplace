@@ -18,6 +18,7 @@
  * un écran sans que l'autre bouge.
  */
 import { useEffect, useState } from "react";
+import i18n from "@/i18n";
 import { AlertTriangle, CalendarX2, Check, ChevronRight, Clock3, GraduationCap, Store } from "lucide-react";
 import { http } from "@/services/api/http";
 import type { RelayTab } from "./relayNav";
@@ -132,29 +133,29 @@ export default function RelayStatus({
 
   const ETAPES: Array<{ titre: string; detail: string; fait: boolean; cible: RelayTab }> = [
     {
-      titre: "Dossier du gérant",
-      detail: validee("MANAGER_ID") ? "Vérifié" : "À envoyer",
+      titre: i18n.t("rl3.dossier_du_gerant"),
+      detail: validee("MANAGER_ID") ? "Vérifié" : i18n.t("rl3.a_envoyer"),
       fait: validee("MANAGER_ID") && validee("PREMISES_PHOTOS"),
       cible: "kyc",
     },
     {
-      titre: "Numéro de versement",
-      detail: payoutVerified ? "Vérifié" : "À confirmer par code",
+      titre: i18n.t("rl3.numero_de_versement"),
+      detail: payoutVerified ? "Vérifié" : i18n.t("rl3.a_confirmer_par_code"),
       fait: payoutVerified,
       cible: "finances",
     },
     {
       titre: "Convention",
-      detail: validee("PARTNERSHIP_AGREEMENT") ? "Signée" : "À signer",
+      detail: validee("PARTNERSHIP_AGREEMENT") ? "Signée" : i18n.t("rl3.a_signer"),
       fait: validee("PARTNERSHIP_AGREEMENT"),
       cible: "inscription",
     },
     {
-      titre: "Visite de BelivaY",
+      titre: i18n.t("rl3.visite_de_belivay"),
       detail:
         visite?.status === "APPROVED" && visite.updated_at
           ? `Faite le ${JOUR_MOIS.format(new Date(visite.updated_at))}`
-          : "À planifier",
+          : i18n.t("rl3.a_planifier"),
       fait: visite?.status === "APPROVED",
       cible: "inscription",
     },
@@ -162,13 +163,13 @@ export default function RelayStatus({
       titre: "Formation",
       detail: training
         ? `${training.core_completed} module${training.core_completed > 1 ? "s" : ""} sur ${training.core_total}`
-        : "À suivre",
+        : i18n.t("rl3.a_suivre"),
       fait: formationFaite,
       cible: "formation",
     },
     {
-      titre: "Capacité et horaires",
-      detail: capacity > 0 && hours.trim() ? "Déclarés" : "À déclarer",
+      titre: i18n.t("rl3.capacite_et_horaires"),
+      detail: capacity > 0 && hours.trim() ? "Déclarés" : i18n.t("rl3.a_declarer"),
       fait: capacity > 0 && hours.trim().length > 0,
       cible: "capacite",
     },
@@ -185,22 +186,22 @@ export default function RelayStatus({
       kicker: `En configuration · ${faites} / ${ETAPES.length}`,
       titre:
         restantes === 0
-          ? "Tout est prêt pour ouvrir"
+          ? i18n.t("rl3.tout_est_pret_pour_ouvrir")
           : `Encore ${restantes} étape${restantes > 1 ? "s" : ""} avant d'ouvrir`,
       corps:
-        "Tant que le relais n'est pas ouvert, aucun colis ne vous est envoyé et les clients ne vous voient pas.",
+        i18n.t("rl3.tant_que_le_relais_n_est_pas_ouvert_aucun"),
     },
     suspendu: {
       kicker: "Suspendu par BelivaY",
-      titre: "Votre relais ne reçoit plus",
+      titre: i18n.t("rl3.votre_relais_ne_recoit_plus"),
       corps:
-        "Une suspension se lève par BelivaY, pas depuis le portail. Écrivez au support depuis la messagerie : vos colis en stock restent à remettre.",
+        i18n.t("rl3.une_suspension_se_leve_par_belivay_pas_dep"),
     },
     ferme: {
-      kicker: "Fermeture déclarée",
-      titre: "Vous avez fermé vous-même",
+      kicker: i18n.t("rl3.fermeture_declaree"),
+      titre: i18n.t("rl3.vous_avez_ferme_vous_meme"),
       corps:
-        "Les clients voient votre date de réouverture. Selon la durée, vos colis restent en garde ou partent au relais le plus proche.",
+        i18n.t("rl3.les_clients_voient_votre_date_de_reouvertu"),
     },
   }[onglet];
 
@@ -329,12 +330,12 @@ export default function RelayStatus({
                   {/* Une decision humaine et une sanction automatique ne se
                       contestent pas de la meme facon : on le dit. */}
                   {sanction.issued_by_human
-                    ? ", validé par une personne de BelivaY"
-                    : ", appliqué automatiquement"}
+                    ? i18n.t("rl3.valide_par_une_personne_de_belivay")
+                    : i18n.t("rl3.applique_automatiquement")}
                   . Motif écrit : {sanction.reason}
                 </>
               ) : (
-                <>Aucune suspension n'est active sur votre relais aujourd'hui.</>
+                <>{i18n.t("rl3.aucune_suspension_n_est_active_sur_votre_r")}</>
               )}{" "}
               Aucun nouveau colis ne vous est envoyé. Les colis déjà en stock partent vers le relais
               le plus proche ; les remises en cours restent possibles.
@@ -362,8 +363,8 @@ export default function RelayStatus({
         <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-4 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
           <dl className="divide-y divide-slate-100 dark:divide-slate-800">
             {[
-              ["Contestation", "une fois, réponse sous 72 h ouvrées", false],
-              ["Versements", "maintenus pour les opérations faites", false],
+              ["Contestation", i18n.t("rl3.une_fois_reponse_sous_72_h_ouvrees"), false],
+              ["Versements", i18n.t("rl3.maintenus_pour_les_operations_faites"), false],
               [
                 "Trust Score",
                 // Le plafond vient de `VETO_SCORE_CAP`, pas d'un nombre
@@ -371,7 +372,7 @@ export default function RelayStatus({
                 `gelé sous ${Math.round((trust?.veto_score_cap ?? 39) + 1)} pendant la suspension`,
                 true,
               ],
-              ["Au retour", "période probatoire", false],
+              ["Au retour", i18n.t("rl3.periode_probatoire"), false],
             ].map(([terme, valeur, alerte]) => (
               <div key={String(terme)} className="flex items-start justify-between gap-4 py-3">
                 <dt className="text-[14px] font-medium text-slate-500 dark:text-slate-400">{terme}</dt>
@@ -415,8 +416,8 @@ export default function RelayStatus({
                       les colis partent, et en inventer un enverrait le gerant
                       repondre une adresse fausse a ses clients. */}
                   {fermeture.jours > 1
-                    ? "Vos colis partent au relais partenaire le plus proche ; les clients sont prévenus et reçoivent un nouveau code."
-                    : "Vos colis restent en garde chez vous ; les clients voient votre date de réouverture."}
+                    ? i18n.t("rl3.vos_colis_partent_au_relais_partenaire_le")
+                    : i18n.t("rl3.vos_colis_restent_en_garde_chez_vous_les_c")}
                 </>
               ) : (
                 <>
@@ -431,7 +432,7 @@ export default function RelayStatus({
               onClick={() => onNavigate("fermeture")}
               className="mt-4 w-full rounded-[12px] border border-slate-200 bg-white px-4 py-3.5 text-[16px] font-bold text-slate-700 transition active:scale-[.97] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
             >
-              {fermeture ? "Modifier ou rouvrir plus tôt" : "Déclarer une fermeture"}
+              {fermeture ? i18n.t("rl3.modifier_ou_rouvrir_plus_tot") : i18n.t("rl3.declarer_une_fermeture")}
             </button>
           </div>
         </section>

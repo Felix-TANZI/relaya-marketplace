@@ -21,6 +21,7 @@
  * est un texte libre côté serveur, c'est donc au portail de rester constant.
  */
 import { useRef } from "react";
+import i18n from "@/i18n";
 import { Camera, FileText, IdCard, MapPin, ShieldCheck, Smartphone, Store } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -50,8 +51,8 @@ const PIECES: Piece[] = [
   {
     type: "MANAGER_ID",
     icon: IdCard,
-    titre: "Pièce d'identité",
-    detail: "CNI ou passeport du gérant",
+    titre: i18n.t("rl3.piece_d_identite"),
+    detail: i18n.t("rl3.cni_ou_passeport_du_gerant"),
     actionRemplie: "Voir",
     actionVide: "Envoyer",
     accord: "e",
@@ -60,8 +61,8 @@ const PIECES: Piece[] = [
   {
     type: "ACTIVITY_RECORD",
     icon: Store,
-    titre: "Preuve d'activité",
-    detail: "Attestation de commerce",
+    titre: i18n.t("rl3.preuve_d_activite"),
+    detail: i18n.t("rl3.attestation_de_commerce"),
     actionRemplie: "Voir",
     actionVide: "Envoyer",
     accord: "e",
@@ -70,8 +71,8 @@ const PIECES: Piece[] = [
   {
     type: "PAYOUT_ACCOUNT",
     icon: Smartphone,
-    titre: "Numéro de versement",
-    detail: "Compte Mobile Money, confirmé par code",
+    titre: i18n.t("rl3.numero_de_versement"),
+    detail: i18n.t("rl3.compte_mobile_money_confirme_par_code"),
     actionRemplie: "Changer",
     actionVide: "Configurer",
     accord: "",
@@ -80,9 +81,9 @@ const PIECES: Piece[] = [
   {
     type: "PREMISES_PHOTOS",
     icon: Camera,
-    titre: "Photos du relais",
-    detail: "Votre portrait et la façade (vus par les clients), rangement",
-    actionRemplie: "Mettre à jour",
+    titre: i18n.t("rl3.photos_du_relais"),
+    detail: i18n.t("rl3.votre_portrait_et_la_facade_vus_par_les_cl"),
+    actionRemplie: i18n.t("rl3.mettre_a_jour"),
     actionVide: "Envoyer",
     accord: "es",
     obligatoire: true,
@@ -91,7 +92,7 @@ const PIECES: Piece[] = [
     type: "FIELD_VALIDATION",
     icon: MapPin,
     titre: "Visite BelivaY",
-    detail: "Contrôle sur place avant ouverture",
+    detail: i18n.t("rl3.controle_sur_place_avant_ouverture"),
     actionRemplie: "Voir",
     actionVide: "Planifier",
     accord: "e",
@@ -101,7 +102,7 @@ const PIECES: Piece[] = [
     type: "TAX_ID",
     icon: FileText,
     titre: "NIU / patente",
-    detail: "À ajouter si vous en avez un",
+    detail: i18n.t("rl3.a_ajouter_si_vous_en_avez_un"),
     actionRemplie: "Voir",
     actionVide: "Ajouter",
     accord: "",
@@ -172,7 +173,7 @@ export default function RelayDocuments({
               complet ? "text-[#155C39] dark:text-emerald-200" : "text-[#8A5A00] dark:text-amber-200"
             }`}
           >
-            {complet ? "Dossier complet" : "Dossier à compléter"}
+            {complet ? "Dossier complet" : i18n.t("rl3.dossier_a_completer")}
           </div>
           <p
             className={`mt-1 text-[13.5px] font-medium leading-snug ${
@@ -188,7 +189,7 @@ export default function RelayDocuments({
               <>
                 {manquantes > 0
                   ? `Il manque ${manquantes} pièce${manquantes > 1 ? "s" : ""} · `
-                  : "Vérification en cours · "}
+                  : i18n.t("rl3.verification_en_cours")}
                 les colis et les versements restent suspendus
               </>
             )}
@@ -210,13 +211,13 @@ export default function RelayDocuments({
           const estVersement = piece.type === "PAYOUT_ACCOUNT";
 
           const pastille = refuse
-            ? { texte: "À refaire", classe: "border-[#F4C3BE] bg-[#FDECEA] text-[#B42318]" }
+            ? { texte: i18n.t("rl3.a_refaire"), classe: "border-[#F4C3BE] bg-[#FDECEA] text-[#B42318]" }
             : valide
               ? { texte: `Vérifié${piece.accord}`, classe: "border-[#BFE3CF] bg-[#E6F4EC] text-[#1F7A4D]" }
               : document
                 ? { texte: "En revue", classe: "border-[#F0DA9C] bg-[#FFF4D6] text-[#8A5A00]" }
                 : piece.obligatoire
-                  ? { texte: "À envoyer", classe: "border-slate-200 bg-slate-50 text-slate-500" }
+                  ? { texte: i18n.t("rl3.a_envoyer"), classe: "border-slate-200 bg-slate-50 text-slate-500" }
                   : { texte: "Facultatif", classe: "border-slate-200 bg-white text-slate-500" };
 
           return (
@@ -239,7 +240,7 @@ export default function RelayDocuments({
                 {piece.titre}
               </h3>
               <p className="mt-1.5 flex-1 text-[13px] font-medium leading-snug text-slate-500 dark:text-slate-400">
-                {refuse && document?.file_url ? "Refusée — renvoyez une photo lisible" : piece.detail}
+                {refuse && document?.file_url ? i18n.t("rl3.refusee_renvoyez_une_photo_lisible") : piece.detail}
               </p>
 
               {estVersement ? null : (

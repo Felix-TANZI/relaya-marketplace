@@ -4,6 +4,7 @@
 // on vérifie que le « state » est celui de notre demande, puis on échange le ticket contre la session BelivaY.
 
 import { useEffect, useRef, useState } from 'react';
+import i18n from "@/i18n";
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { APPLE_STATE_KEY } from '@/components/auth/AppleAuthButton';
 import { useAuth } from '@/context/AuthContext';
@@ -25,10 +26,10 @@ export default function AppleRetourPage() {
     const ticket = params.get('ticket');
     const connexion = () => {
       if (params.get('erreur') || !ticket) {
-        return Promise.reject(new Error('La connexion Apple a été annulée ou a échoué.'));
+        return Promise.reject(new Error(i18n.t("t03.apple_annulee")));
       }
       if (!attendu || attendu !== params.get('state')) {
-        return Promise.reject(new Error('Cette réponse Apple ne correspond pas à votre demande. Recommencez.'));
+        return Promise.reject(new Error(i18n.t("t03.apple_mauvaise_reponse")));
       }
       return appleTicketLogin(ticket);
     };
@@ -61,15 +62,15 @@ export default function AppleRetourPage() {
         </>
       ) : deuxFacteurs ? (
         <>
-          <p className="font-semibold">Saisissez le code de vérification reçu.</p>
+          <p className="font-semibold">{i18n.t("t03.apple_code")}</p>
           <input className="mt-4 w-full rounded-lg border px-3 py-2 text-center tracking-widest" inputMode="numeric"
             value={code} onChange={(e) => setCode(e.target.value)} />
           <button type="button" className="mt-4 rounded-full bg-black px-6 py-2 font-bold text-white" onClick={() => void valider()}>
-            Valider
+            {i18n.t("t03.valider")}
           </button>
         </>
       ) : (
-        <p className="font-semibold">Connexion avec Apple…</p>
+        <p className="font-semibold">{i18n.t("t03.apple_connexion")}</p>
       )}
     </div>
   );

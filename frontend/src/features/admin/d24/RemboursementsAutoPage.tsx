@@ -4,6 +4,7 @@
 // dans les réglages ; le retrait du droit d'un client est proposé par une personne et validé par une autre.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import i18n from "@/i18n";
 import { Undo2 } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
 import { http } from '@/services/api/http';
@@ -38,7 +39,7 @@ export default function RemboursementsAutoPage() {
     try {
       setData(await http<Suivi>(BASE));
     } catch {
-      toast.current('Suivi des remboursements automatiques indisponible.', 'error');
+      toast.current(i18n.t("ad9.suivi_des_remboursements_automatiques_indi"), 'error');
     } finally {
       setChargement(false);
     }
@@ -50,7 +51,7 @@ export default function RemboursementsAutoPage() {
       await http(url, { method: 'POST', body: body ? JSON.stringify(body) : undefined });
       await charger();
     } catch (e) {
-      toast.current(e instanceof Error ? e.message : 'Action refusée.', 'error');
+      toast.current(e instanceof Error ? e.message : i18n.t("ad9.action_refusee"), 'error');
     }
   };
 
@@ -59,41 +60,41 @@ export default function RemboursementsAutoPage() {
       <EnTete
         icon={Undo2}
         titre="Remboursements automatiques"
-        sousTitre="Sans retour du colis, payés par BelivaY (R71) — chaque demande examinée est journalisée"
+        sousTitre={i18n.t("ad9.sans_retour_du_colis_payes_par_belivay_r71")}
         onRefresh={() => void charger()}
         chargement={chargement}
       />
       {data && (
         <>
           <Tuiles>
-            <Tuile libelle="Plafond du mois (F, 0 = fermé)" valeur={data.plafond_mois_xaf} alerte={data.plafond_mois_xaf === 0} />
-            <Tuile libelle="Remboursé ce mois (F)" valeur={data.rembourse_ce_mois_xaf}
+            <Tuile libelle={i18n.t("ad9.plafond_du_mois_f_0_ferme")} valeur={data.plafond_mois_xaf} alerte={data.plafond_mois_xaf === 0} />
+            <Tuile libelle={i18n.t("ad9.rembourse_ce_mois_f")} valeur={data.rembourse_ce_mois_xaf}
               alerte={data.plafond_mois_xaf > 0 && data.rembourse_ce_mois_xaf >= data.plafond_mois_xaf} />
-            <Tuile libelle="Remboursements ce mois" valeur={data.nombre_ce_mois} />
+            <Tuile libelle={i18n.t("ad9.remboursements_ce_mois")} valeur={data.nombre_ce_mois} />
           </Tuiles>
 
-          <Section titre="Vendeurs dont les articles cumulent ces remboursements (30 jours)">
+          <Section titre={i18n.t("ad9.vendeurs_dont_les_articles_cumulent_ces_re")}>
             <Tableau
               entetes={['Vendeur', 'Remboursements', 'Montant']}
               lignes={data.vendeurs_30j.map((v) => [v.vendor__username ?? '—', v.nombre, F(v.montant)])}
-              vide="Aucun remboursement automatique sur 30 jours."
+              vide={i18n.t("ad9.aucun_remboursement_automatique_sur_30_jou")}
             />
           </Section>
 
-          <Section titre="Demandes examinées">
+          <Section titre={i18n.t("ad9.demandes_examinees")}>
             <Tableau
               entetes={['Date', 'Commande', 'Client', 'Vendeur', 'Article', 'Décision', 'Montant']}
               lignes={data.cas.map((c) => [
                 dateCourte(c.le), `#${c.commande}`, c.client, c.vendeur ?? '—', c.article,
                 c.statut === 'REFUSE' ? `Traitement normal : ${c.raison}` : c.statut, F(c.total_xaf),
               ])}
-              vide="Aucune demande examinée."
+              vide={i18n.t("ad9.aucune_demande_examinee")}
             />
           </Section>
 
-          <Section titre="Retirer le droit à un client pris en abus (il garde le retour normal)">
+          <Section titre={i18n.t("ad9.retirer_le_droit_a_un_client_pris_en_abus")}>
             <div className="mb-3 flex flex-wrap gap-2">
-              <input className="rounded-lg border px-3 py-2" placeholder="Identifiant du client" value={client}
+              <input className="rounded-lg border px-3 py-2" placeholder={i18n.t("ad9.identifiant_du_client")} value={client}
                 onChange={(e) => setClient(e.target.value)} />
               <input className="min-w-0 flex-1 rounded-lg border px-3 py-2" placeholder="Motif" value={motif}
                 onChange={(e) => setMotif(e.target.value)} />
@@ -104,7 +105,7 @@ export default function RemboursementsAutoPage() {
               </button>
             </div>
             <Tableau
-              entetes={['Client', 'Motif', 'Proposé par', 'Validation']}
+              entetes={['Client', 'Motif', i18n.t("ad9.propose_par"), 'Validation']}
               lignes={data.retraits.map((r) => [
                 r.client, r.motif, r.propose_par,
                 r.valide_le ? `Validé par ${r.valide_par} le ${dateCourte(r.valide_le)}` : (
@@ -114,7 +115,7 @@ export default function RemboursementsAutoPage() {
                   </button>
                 ),
               ])}
-              vide="Aucun droit retiré."
+              vide={i18n.t("ad9.aucun_droit_retire")}
             />
           </Section>
         </>

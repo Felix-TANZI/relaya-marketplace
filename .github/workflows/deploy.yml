@@ -5,38 +5,64 @@ name: CD - Déploiement Production
 # sont passés. workflow_dispatch permet en plus de relancer un déploiement
 # à la main depuis l'onglet "Actions" de GitHub, sans repasser par un
 # terminal ni toucher au serveur directement.
+#
+# DEV-SRV-01, T20 : « MAIN 2 reçoit en premier chaque nouveau déploiement ». Ce workflow sait aussi être APPELÉ
+# (workflow_call) pour un environnement GitHub donné : deploy-chaine.yml l'appelle pour « Belivay Test » (MAIN 2), puis
+# pour « Belivay Prod » (MAIN 1) si le premier a réussi. Tant que la variable de dépôt MAIN2_ACTIF n'est pas « 1 »,
+# rien ne change : ce workflow déploie seul la production, comme avant.
 on:
   workflow_run:
     workflows: ["CI"]
     branches: [main]
     types: [completed]
   workflow_dispatch:
+    inputs:
+      environnement:
+        description: "Environnement GitHub à déployer"
+        type: choice
+        options: ["Belivay Prod", "Belivay Test"]
+        default: "Belivay Prod"
+  workflow_call:
+    inputs:
+      environnement:
+        description: "Environnement GitHub (« Belivay Test » pour MAIN 2, « Belivay Prod » pour MAIN 1)"
+        type: string
+        required: true
+      sha:
+        description: "Commit à déployer (celui qui a passé le CI)"
+        type: string
+        required: true
 
-# Empêche deux déploiements de se marcher dessus si deux push arrivent
-# coup sur coup.
+# Empêche deux déploiements d'un même serveur de se marcher dessus si deux push arrivent coup sur coup. Un groupe par
+# environnement : MAIN 2 et MAIN 1 ont chacun le leur.
 concurrency:
-  group: production-deploy
+  group: deploy-${{ inputs.environnement || 'Belivay Prod' }}
   cancel-in-progress: false
 
 jobs:
   deploy:
-    name: Déployer sur le serveur
+    name: Déployer sur le serveur (${{ inputs.environnement || 'Belivay Prod' }})
     runs-on: ubuntu-latest
+    # Appelé par deploy-chaine.yml, ou lancé à la main : toujours. Déclenché seul par le CI : seulement tant que la
+    # chaîne MAIN 2 → MAIN 1 n'est pas active (sinon la production serait déployée deux fois, et sans passer par MAIN 2).
     if: >
       github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'success'
+      inputs.sha != '' ||
+      (github.event.workflow_run.conclusion == 'success' && vars.MAIN2_ACTIF != '1')
 
     # Charge les secrets/variables définis dans Settings > Environments >
-    # "Belivay Prod", et applique la règle "Required reviewers" que tu as
-    # configurée : ce job restera en attente d'approbation manuelle
-    # (onglet Actions) avant de contacter le serveur.
-    environment: "Belivay Prod"
+    # "Belivay Prod" (ou "Belivay Test" pour MAIN 2), et applique la règle
+    # "Required reviewers" que tu as configurée : ce job restera en attente
+    # d'approbation manuelle (onglet Actions) avant de contacter le serveur.
+    environment: ${{ inputs.environnement || 'Belivay Prod' }}
 
     steps:
       - name: Déterminer le commit à déployer
         id: sha
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          if [ -n "${{ inputs.sha }}" ]; then
+            echo "sha=${{ inputs.sha }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "sha=${{ github.sha }}" >> "$GITHUB_OUTPUT"
           else
             echo "sha=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
@@ -76,6 +102,21 @@ jobs:
           # ── Réseau / sécurité ────────────────────────────────────────
           ALLOWED_HOSTS=${{ vars.ALLOWED_HOSTS }}
           CORS_ALLOWED_ORIGINS=${{ vars.CORS_ALLOWED_ORIGINS }}
+          CSRF_TRUSTED_ORIGINS=${{ vars.CSRF_TRUSTED_ORIGINS }}
+
+          # ── Vitrine ou site réel (DEV-SRV-01, T04/T05 ; ops/SITE-REEL.md) ──
+          # Vide = vitrine (docker-compose.prod.yml). Site réel : docker-compose.reel.yml.
+          BELIVAY_COMPOSE=${{ vars.BELIVAY_COMPOSE }}
+          # 1 = la vitrine tourne aussi sur ce serveur (MAIN 1, du 18/11 au 14/12) : ops/MAIN1-REEL-ET-VITRINE.md.
+          VITRINE_SUR_REEL=${{ vars.VITRINE_SUR_REEL }}
+          VITE_API_URL=${{ vars.VITE_API_URL }}
+          VITE_SITE_URL=${{ vars.VITE_SITE_URL }}
+          # Données et comptes de démonstration : vides = fermés (site réel, règle R4) ;
+          # « 1 » seulement sur la vitrine (config/vitrine.env.example).
+          DONNEES_DEMO_AUTORISEES=${{ vars.DONNEES_DEMO_AUTORISEES }}
+          COMPTES_DEMO_AUTORISES=${{ vars.COMPTES_DEMO_AUTORISES }}
+          # R5 : numéro WhatsApp du support (2376XXXXXXXX) ; vide = celui de docker-compose.*.yml.
+          VITE_SUPPORT_WHATSAPP=${{ vars.VITE_SUPPORT_WHATSAPP }}
           WEB_CONCURRENCY=${{ vars.WEB_CONCURRENCY }}
 
           # ── Stockage (Cloudflare R2) ─────────────────────────────────
@@ -87,6 +128,17 @@ jobs:
           AWS_S3_REGION_NAME=${{ vars.AWS_S3_REGION_NAME }}
           AWS_S3_ADDRESSING_STYLE=${{ vars.AWS_S3_ADDRESSING_STYLE }}
           AWS_QUERYSTRING_EXPIRE=${{ vars.AWS_QUERYSTRING_EXPIRE }}
+
+          # ── Sauvegardes hors du serveur (DEV-SRV-01, T06-2) ──────────
+          # Bucket R2 DÉDIÉ, avec ses propres accès (pas ceux des photos
+          # ci-dessus). Seule la clé PUBLIQUE age vient ici : la clé privée
+          # reste hors du serveur (ops/sauvegarde/LISEZMOI.md).
+          BACKUP_R2_BUCKET=${{ vars.BACKUP_R2_BUCKET }}
+          BACKUP_R2_ENDPOINT=${{ vars.BACKUP_R2_ENDPOINT }}
+          BACKUP_R2_ACCESS_KEY_ID=${{ secrets.BACKUP_R2_ACCESS_KEY_ID }}
+          BACKUP_R2_SECRET_ACCESS_KEY=${{ secrets.BACKUP_R2_SECRET_ACCESS_KEY }}
+          BACKUP_R2_RETENTION_JOURS=${{ vars.BACKUP_R2_RETENTION_JOURS }}
+          BACKUP_AGE_RECIPIENT=${{ vars.BACKUP_AGE_RECIPIENT }}
 
           # ── Paiements (CamPay / MoMo) ────────────────────────────────
           CAMPAY_TOKEN=${{ secrets.CAMPAY_TOKEN }}
@@ -191,7 +243,7 @@ jobs:
             cd "${{ vars.TARGET_PATH }}"
             git fetch origin main
             git reset --hard "${{ steps.sha.outputs.sha }}"
-            chmod +x deploy.sh backup.sh
+            chmod +x deploy.sh backup.sh ops/sauvegarde/*.sh
             ./deploy.sh
 
       - name: Résumé

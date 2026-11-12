@@ -197,6 +197,14 @@ CELERY_TASK_DEFAULT_QUEUE = "belivay"
 CELERY_TIMEZONE = "Africa/Douala"
 
 LANGUAGE_CODE = "fr"
+# Règle de mot de passe de toute la plateforme (décision du porteur, 2026-11-11) : MDP-LONG du registre des paramètres
+# (« 8 caractères au moins, dont un chiffre »), mots de passe trop courants refusés, trop proches de l'identifiant aussi.
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "apps.accounts.validateurs.RegleMotDePasse"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+]
+
 TIME_ZONE = "Africa/Douala"
 USE_I18N = True
 USE_TZ = True
@@ -252,6 +260,11 @@ PUBLIC_SITE_URL = os.getenv(
     os.getenv("FRONTEND_URL") or "https://belivay.com",
 ).rstrip("/")
 
+def _origines(nom: str) -> list[str]:
+    """Liste d'origines séparées par des virgules dans la variable `nom` (vide = aucune)."""
+    return [o.strip().rstrip("/") for o in os.getenv(nom, "").split(",") if o.strip()]
+
+
 # CORS
 frontend_url = os.getenv("FRONTEND_URL")
 CORS_ALLOWED_ORIGINS = [
@@ -283,9 +296,11 @@ CORS_ALLOWED_ORIGINS = [
 ]
 # Origines supplémentaires pour le site espace-client-belivay (déployé à part,
 # voir espace-client-belivay/site/README.md) une fois son domaine connu.
-CORS_ALLOWED_ORIGINS += [
-    origin for origin in os.getenv("CORS_EXTRA_ORIGINS", "").split(",") if origin
-]
+CORS_ALLOWED_ORIGINS += _origines("CORS_EXTRA_ORIGINS")
+# DEV-SRV-01, T05/T11 : les portails du site réel (seller., admin., relay., driver., delivery., shop.belivay.com)
+# appellent api.belivay.com ; leurs origines viennent de la configuration. deploy.yml transmettait déjà
+# CORS_ALLOWED_ORIGINS, mais rien ne la lisait.
+CORS_ALLOWED_ORIGINS += _origines("CORS_ALLOWED_ORIGINS")
 CORS_ALLOW_CREDENTIALS = True
 
 from corsheaders.defaults import default_headers as _cors_default_headers
@@ -353,7 +368,8 @@ SPECTACULAR_SETTINGS = {
 # pour valider le socle en local.
 BELIVAY_PARAMETRES_JSON = BASE_DIR / "apps" / "client_core" / "donnees" / "parametres-en-vigueur.json"
 BELIVAY_INTERRUPTEURS_JSON = BASE_DIR / "apps" / "client_core" / "donnees" / "interrupteurs.json"
-BELIVAY_SITE_URL = os.getenv("BELIVAY_SITE_URL", "https://belivay.com")
+# DEV-SRV-01, R5 : une seule adresse du site par defaut, PUBLIC_SITE_URL (jusqu'au 14/12, belivay.com est la vitrine).
+BELIVAY_SITE_URL = (os.getenv("BELIVAY_SITE_URL") or PUBLIC_SITE_URL).rstrip("/")
 # Feuille de route D7 : aiguillage SMS / WhatsApp, prestataire SMS reel a brancher a la signature du contrat (R78.2).
 BELIVAY_SMS = os.getenv("BELIVAY_SMS", "apps.otp.prestataires.Aiguillage")
 BELIVAY_SMS_FOURNISSEUR = os.getenv("BELIVAY_SMS_FOURNISSEUR", "apps.otp.prestataires.SmsConsole")
@@ -580,7 +596,9 @@ CATALOGUE_OFFRES_MINIMUM_PAR_CATEGORIE = int(
 # ========================================
 
 # CSRF Configuration pour HTTPS
-CSRF_TRUSTED_ORIGINS = [
+# DEV-SRV-01, R5 : par la configuration (CSRF_TRUSTED_ORIGINS). Les deux adresses ci-dessous ne servent que si elle est
+# vide, pour que le serveur actuel garde son comportement ; le site réel les donne toutes (config/reel.env.example).
+CSRF_TRUSTED_ORIGINS = _origines("CSRF_TRUSTED_ORIGINS") or [
     'https://belivay.com',
     'https://www.belivay.com',
 ]

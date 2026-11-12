@@ -37,6 +37,14 @@ import sl7En from "./domains/sl7.en";
 import sl8Fr from "./domains/sl8.fr";
 import sl8En from "./domains/sl8.en";
 import sl9Fr from "./domains/sl9.fr";
+import mdpFr from "./domains/mdp.fr";
+import mdpEn from "./domains/mdp.en";
+import t03Fr from "./domains/t03.fr";
+import rl3Fr from "./domains/rl3.fr";
+import ad9Fr from "./domains/ad9.fr";
+import ad9En from "./domains/ad9.en";
+import rl3En from "./domains/rl3.en";
+import t03En from "./domains/t03.en";
 import sl9En from "./domains/sl9.en";
 import sl10Fr from "./domains/sl10.fr";
 import sl10En from "./domains/sl10.en";
@@ -75,6 +83,8 @@ import ad6Fr from "./domains/ad6.fr";
 import ad6En from "./domains/ad6.en";
 import ad7Fr from "./domains/ad7.fr";
 import ad7En from "./domains/ad7.en";
+import ad8Fr from "./domains/ad8.fr";
+import ad8En from "./domains/ad8.en";
 
 import pm1Fr from "./domains/pm1.fr";
 import pm1En from "./domains/pm1.en";
@@ -106,11 +116,15 @@ const mergedFr = {
   ...sl1Fr, ...sl2Fr, ...sl3Fr, ...sl4Fr, ...sl5Fr, ...sl6Fr, ...sl7Fr, ...sl8Fr, ...sl9Fr, ...sl10Fr, ...sl11Fr, ...sl12Fr, ...sl13Fr, ...sl14Fr,
   ...cr1Fr, ...do1Fr,
   ...rl1Fr, ...rl2Fr,
-  ...ad1Fr, ...ad2Fr, ...ad3Fr, ...ad4Fr, ...ad5aFr, ...ad5bFr, ...ad6Fr, ...ad7Fr,
+  ...ad1Fr, ...ad2Fr, ...ad3Fr, ...ad4Fr, ...ad5aFr, ...ad5bFr, ...ad6Fr, ...ad7Fr, ...ad8Fr,
   ...pm1Fr, ...pm2Fr,
   ...misc1Fr,
   ...hm1Fr,
   ...hm2Fr,
+  ...mdpFr,
+  ...t03Fr,
+  ...rl3Fr,
+  ...ad9Fr,
 };
 
 const mergedEn = {
@@ -119,11 +133,15 @@ const mergedEn = {
   ...sl1En, ...sl2En, ...sl3En, ...sl4En, ...sl5En, ...sl6En, ...sl7En, ...sl8En, ...sl9En, ...sl10En, ...sl11En, ...sl12En, ...sl13En, ...sl14En,
   ...cr1En, ...do1En,
   ...rl1En, ...rl2En,
-  ...ad1En, ...ad2En, ...ad3En, ...ad4En, ...ad5aEn, ...ad5bEn, ...ad6En, ...ad7En,
+  ...ad1En, ...ad2En, ...ad3En, ...ad4En, ...ad5aEn, ...ad5bEn, ...ad6En, ...ad7En, ...ad8En,
   ...pm1En, ...pm2En,
   ...misc1En,
   ...hm1En,
   ...hm2En,
+  ...mdpEn,
+  ...t03En,
+  ...rl3En,
+  ...ad9En,
 };
 
 i18n.use(initReactI18next).init({
@@ -133,7 +151,12 @@ i18n.use(initReactI18next).init({
   },
   lng: savedLang || "fr",
   fallbackLng: "en",
-  interpolation: { escapeValue: false },
+  interpolation: {
+    escapeValue: false,
+    // DEV-SRV-01 T05 : montants des règles disponibles dans tous les textes ({{seuil_relais}}…), remplis depuis le
+    // serveur par i18n/variablesReglages.ts ; « … » le temps qu'ils arrivent, jamais un montant écrit ici.
+    defaultVariables: { seuil_relais: '…', relais_offert: '…' },
+  },
 });
 
 export default i18n;

@@ -4,6 +4,7 @@
 // retrait lui parvient dès le paiement confirmé.
 
 import { useState } from "react";
+import i18n from "@/i18n";
 import { http } from "@/services/api/http";
 import type { Order } from "@/types/order";
 
@@ -20,9 +21,9 @@ export default function FraisAbsenceBlock({ order }: { order: Order }) {
         method: "POST",
         body: JSON.stringify({ payer_msisdn: order.customer_phone }),
       });
-      setMessage(r.message || "Validez le paiement sur votre téléphone.");
+      setMessage(r.message || i18n.t("t03.paiement_valider_tel"));
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Paiement impossible pour le moment.");
+      setMessage(e instanceof Error ? e.message : i18n.t("t03.paiement_impossible"));
     } finally {
       setEnCours(false);
     }
@@ -30,7 +31,7 @@ export default function FraisAbsenceBlock({ order }: { order: Order }) {
 
   return (
     <section className="pf-card pf-anim" style={{ borderColor: "#f59e0b" }}>
-      <h2 className="text-lg font-bold text-gray-900 dark:text-white">Frais d'absence à payer avant le retrait</h2>
+      <h2 className="text-lg font-bold text-gray-900 dark:text-white">{i18n.t("t03.frais_absence_titre")}</h2>
       <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
         Vous étiez absent à la livraison : votre colis vous attend au relais {order.relay_point_name || ""}. Frais
         d'absence : {order.frais_absence_xaf.toLocaleString("fr-FR")} F (+ {(order.frais_momo_absence_xaf || 0).toLocaleString("fr-FR")} F de

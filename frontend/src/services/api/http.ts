@@ -6,7 +6,13 @@ import i18n from "@/i18n";
 
 // En production, on utilise une URL relative (chaîne vide) car tout passe par le même nginx
 // En développement, on utilise l'URL complète du backend
-const API_BASE_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '');
+// DEV-SRV-01, T05/T11 : « /api » sur un même domaine, ou https://api.belivay.com pour le site réel ; exportée pour
+// les rares appels qui n'utilisent pas http() (téléchargements de fichiers, envois multipart).
+// Seule définition de l'adresse de l'API (règle R5) : le repli sur le back-end local ne vaut qu'en développement ; une
+// version construite sans VITE_API_URL appelle son propre domaine, jamais le poste du visiteur.
+export const API_BASE_URL = (import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? 'http://localhost:8000' : ''))
+  .replace(/\/api\/?$/, '')
+  .replace(/\/$/, '');
 
 interface RequestConfig extends RequestInit {
   headers?: Record<string, string>;

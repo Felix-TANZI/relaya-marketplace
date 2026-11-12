@@ -22,6 +22,7 @@
  * cet écran ne fait que grouper par jour et peindre.
  */
 import { useEffect, useMemo, useState } from "react";
+import i18n from "@/i18n";
 import { Download, Search } from "lucide-react";
 import { http } from "@/services/api/http";
 
@@ -226,8 +227,8 @@ export default function RelayHistory() {
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="N° de commande, de colis ou de retour"
-          aria-label="Rechercher une opération"
+          placeholder={i18n.t("rl3.n_de_commande_de_colis_ou_de_retour")}
+          aria-label={i18n.t("rl3.rechercher_une_operation")}
           className="w-full rounded-[14px] border border-slate-200 bg-white py-3.5 pl-12 pr-4 text-[14.5px] font-semibold text-slate-900 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] outline-none transition placeholder:font-medium placeholder:text-slate-400 focus:border-[#2456D6] dark:border-slate-800 dark:bg-slate-900 dark:text-white"
         />
       </div>
@@ -302,14 +303,14 @@ export default function RelayHistory() {
       {/* ── La ligne de temps ──────────────────────────────────────────── */}
       {loading && !payload ? (
         <section className="rounded-[14px] border border-slate-200 bg-white px-4 py-8 text-center shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
-          <p className="text-[13.5px] font-medium text-slate-400 dark:text-slate-500">Lecture de l'historique…</p>
+          <p className="text-[13.5px] font-medium text-slate-400 dark:text-slate-500">{i18n.t("rl3.lecture_de_l_historique")}</p>
         </section>
       ) : journees.length === 0 ? (
         <section className="rounded-[14px] border border-slate-200 bg-white px-4 py-8 text-center shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
           <p className="text-[13.5px] font-medium text-slate-400 dark:text-slate-500">
             {query.trim()
-              ? "Aucune opération ne porte cette référence sur la période."
-              : "Aucune opération enregistrée sur la période."}
+              ? i18n.t("rl3.aucune_operation_ne_porte_cette_reference")
+              : i18n.t("rl3.aucune_operation_enregistree_sur_la_period")}
           </p>
         </section>
       ) : (
@@ -385,7 +386,7 @@ export default function RelayHistory() {
       <p className="px-1 pb-1 text-center text-[12.5px] font-medium leading-[1.55] text-slate-400 dark:text-slate-500">
         {retention
           ? `Chaque opération garde ses preuves (heure, photo, emplacement, personne du guichet) pendant ${retention.evidence_days} jours, et ${retention.dispute_days} jours lorsqu'un dossier est ouvert. Vous pouvez les consulter et les exporter ; elles ne se modifient jamais.`
-          : "Chaque opération garde ses preuves : heure, photo, emplacement, personne du guichet. Vous pouvez les consulter et les exporter ; elles ne se modifient jamais."}
+          : i18n.t("rl3.chaque_operation_garde_ses_preuves_heure_p")}
       </p>
     </div>
   );

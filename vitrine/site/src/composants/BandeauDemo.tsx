@@ -45,7 +45,10 @@ export function BandeauDemo() {
     <div ref={boite} role="status" className="note amber bandeau-demo" style={{ position: 'fixed', left: '8px', right: '8px', bottom: 'calc(84px + env(safe-area-inset-bottom))', zIndex: 9999, margin: '0 auto', maxWidth: '420px', boxShadow: '0 6px 24px rgba(0,0,0,.18)' }}>
       <div className="grow">
         <b>{t('Version de démonstration')}</b>
-        <div>{t('Les produits, les commandes et les paiements sont des exemples : rien n’est vendu ni débité. Les comptes, eux, sont réels. N’entre pas tes vraies informations bancaires : utilise la carte de test 4242 4242 4242 4242.')}</div>
+        {/* DEV-SRV-01, R2 : en démonstration complète (VITE_SOURCE=demo), les comptes aussi sont des exemples. */}
+        <div>{t(import.meta.env.VITE_SOURCE === 'hybride'
+          ? 'Les produits, les commandes et les paiements sont des exemples : rien n’est vendu ni débité. Les comptes, eux, sont réels. N’entre pas tes vraies informations bancaires : utilise la carte de test 4242 4242 4242 4242.'
+          : 'Les produits, les commandes, les paiements et les comptes sont des exemples gardés dans ce navigateur : rien n’est vendu, débité ni enregistré. Pour vendre pour de vrai, un agent BelivaY ouvre ton compte sur le site réel.')}</div>
       </div>
       <button type="button" className="btn sm" onClick={fermer}>
         {t('Compris')}

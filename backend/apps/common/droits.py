@@ -21,6 +21,8 @@ PARTIES = {
     "commandes": "gestion-commandes",      # suivi et correction des commandes
     "finance": "finance",                  # le groupe financier existant (payments) : retraits, statistiques
     "pilotage": "gestion-pilotage",        # tableau de bord, analyses, journaux, réglages, services externes
+    # DEV-SRV-01, T07-4 : agents de terrain — inscrire un vendeur, photographier sa pièce, saisir son catalogue.
+    "terrain": "agents-terrain",
 }
 
 

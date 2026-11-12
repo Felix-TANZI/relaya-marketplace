@@ -142,6 +142,8 @@ services:
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
         VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
         VITE_MAP_PROVIDER: ${VITE_MAP_PROVIDER:-openstreetmap}
+        VITE_SITE_URL: ${VITE_SITE_URL:-https://belivay.com}
+        VITE_SUPPORT_WHATSAPP: ${VITE_SUPPORT_WHATSAPP:-237689002812}
     restart: unless-stopped
     networks:
       - relaya-network
@@ -162,29 +164,6 @@ services:
     networks:
       - relaya-network
 
-  # Comptes réels de la vitrine (vitrine/site/serveur/) : la même base Neon
-  # que le site Vercel, pour que les comptes soient les mêmes des deux côtés.
-  # Seul ce service reçoit ses secrets (pas d'env_file : rien du back-end).
-  # Variables vides = comptes réels fermés, la démonstration continue.
-  # nginx ne lui envoie que /api/auth/* et /api/admin/comptes* portant
-  # ?espace=<un des six espaces> ; tout le reste de /api/ va au back-end.
-  vitrine-comptes:
-    build:
-      context: ./vitrine
-      target: comptes
-    environment:
-      - DATABASE_URL=${COMPTES_DATABASE_URL:-}
-      - TOTP_CLE=${COMPTES_TOTP_CLE:-}
-      - SECRET_COMPTES=${COMPTES_SECRET:-}
-      - ADMIN_BOOTSTRAP_EMAIL=${COMPTES_ADMIN_BOOTSTRAP_EMAIL:-}
-      - ADMIN_BOOTSTRAP_CODE=${COMPTES_ADMIN_BOOTSTRAP_CODE:-}
-      - RESEND_API_KEY=${COMPTES_RESEND_API_KEY:-}
-      - EMAIL_EXPEDITEUR=${COMPTES_EMAIL_EXPEDITEUR:-}
-    read_only: true
-    restart: unless-stopped
-    networks:
-      - relaya-network
-
   frontend-seller:
     build:
       context: ./frontend
@@ -195,6 +174,8 @@ services:
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
         VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
         VITE_MAP_PROVIDER: ${VITE_MAP_PROVIDER:-openstreetmap}
+        VITE_SITE_URL: ${VITE_SITE_URL:-https://belivay.com}
+        VITE_SUPPORT_WHATSAPP: ${VITE_SUPPORT_WHATSAPP:-237689002812}
     restart: unless-stopped
     networks:
       - relaya-network
@@ -209,6 +190,8 @@ services:
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
         VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
         VITE_MAP_PROVIDER: ${VITE_MAP_PROVIDER:-openstreetmap}
+        VITE_SITE_URL: ${VITE_SITE_URL:-https://belivay.com}
+        VITE_SUPPORT_WHATSAPP: ${VITE_SUPPORT_WHATSAPP:-237689002812}
     restart: unless-stopped
     networks:
       - relaya-network
@@ -223,6 +206,8 @@ services:
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
         VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
         VITE_MAP_PROVIDER: ${VITE_MAP_PROVIDER:-openstreetmap}
+        VITE_SITE_URL: ${VITE_SITE_URL:-https://belivay.com}
+        VITE_SUPPORT_WHATSAPP: ${VITE_SUPPORT_WHATSAPP:-237689002812}
     restart: unless-stopped
     networks:
       - relaya-network
@@ -237,6 +222,8 @@ services:
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
         VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
         VITE_MAP_PROVIDER: ${VITE_MAP_PROVIDER:-openstreetmap}
+        VITE_SITE_URL: ${VITE_SITE_URL:-https://belivay.com}
+        VITE_SUPPORT_WHATSAPP: ${VITE_SUPPORT_WHATSAPP:-237689002812}
     restart: unless-stopped
     networks:
       - relaya-network
@@ -251,6 +238,8 @@ services:
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
         VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
         VITE_MAP_PROVIDER: ${VITE_MAP_PROVIDER:-openstreetmap}
+        VITE_SITE_URL: ${VITE_SITE_URL:-https://belivay.com}
+        VITE_SUPPORT_WHATSAPP: ${VITE_SUPPORT_WHATSAPP:-237689002812}
     restart: unless-stopped
     networks:
       - relaya-network
@@ -269,7 +258,6 @@ services:
     depends_on:
       - backend
       - vitrine
-      - vitrine-comptes
       - frontend-seller
       - frontend-courier
       - frontend-admin

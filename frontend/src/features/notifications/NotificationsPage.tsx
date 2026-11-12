@@ -6,12 +6,9 @@ import {
   ChevronRight,
   CheckCircle2,
   Clock3,
-  Gift,
   Info,
   type LucideIcon,
-  MessageCircleMore,
   Package,
-  ShieldCheck,
   Trash2,
   X,
 } from "lucide-react";
@@ -28,53 +25,6 @@ export default function NotificationsPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
-  const fallbackNotifications = [
-    {
-      id: 0,
-      title: t('notifications_extra.welcome_title'),
-      description: t('notifications_extra.welcome_desc'),
-      time: t('notifications_extra.now'),
-      icon: Gift,
-      tone: "bg-primary/10 text-primary",
-      unread: true,
-    },
-    {
-      id: 1,
-      title: t('notifications.fallback.order_shipped_title'),
-      description: t('notifications.fallback.order_shipped_desc'),
-      time: t('notifications.fallback.time_10min'),
-      icon: Package,
-      tone: "bg-orange-50 text-primary",
-      unread: true,
-    },
-    {
-      id: 2,
-      title: t('notifications.fallback.flash_promo_title'),
-      description: t('notifications.fallback.flash_promo_desc'),
-      time: t('notifications.fallback.time_1h'),
-      icon: Gift,
-      tone: "bg-pink-50 text-pink-600",
-      unread: true,
-    },
-    {
-      id: 3,
-      title: t('notifications.fallback.secure_payment_title'),
-      description: t('notifications.fallback.secure_payment_desc'),
-      time: t('notifications.fallback.time_4h'),
-      icon: ShieldCheck,
-      tone: "bg-green-50 text-green-600",
-      unread: false,
-    },
-    {
-      id: 4,
-      title: t('notifications.fallback.support_message_title'),
-      description: t('notifications.fallback.support_message_desc'),
-      time: t('notifications.fallback.time_yesterday'),
-      icon: MessageCircleMore,
-      tone: "bg-blue-50 text-blue-600",
-      unread: false,
-    },
-  ];
 
   const [notifications, setNotifications] = useState<NotificationCard[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,17 +37,8 @@ export default function NotificationsPage() {
           const data = await customerApi.getNotifications(i18n.language);
           setNotifications(data);
         } else {
-          setNotifications(
-            fallbackNotifications.map((notification) => ({
-              ...notification,
-              is_read: !notification.unread,
-              notification_type: 'SYSTEM',
-              action_url: '',
-              updated_at: '',
-              created_at: notification.time,
-              message: notification.description,
-            })),
-          );
+          // DEV-SRV-01, T09 : un visiteur non connecté n'a pas de notifications (plus de fausses).
+          setNotifications([]);
         }
       } finally {
         setLoading(false);

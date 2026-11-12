@@ -18,6 +18,7 @@
 //   - BrandLight (id ou objet complet, à décider) pour BRAND
 
 import { cn } from "@/lib/cn";
+import i18n from "@/i18n";
 import type {
   ProductAttributeEnriched,
   AttributeValueType,
@@ -167,7 +168,7 @@ function SelectInput({ attribute, value, onChange, error, disabled, label }: Ren
           disabled && "opacity-50 cursor-not-allowed",
         )}
       >
-        <option value="">Sélectionner…</option>
+        <option value="">{i18n.t("t03.selectionner")}</option>
         {values.map((v) => (
           <option key={String(v)} value={String(v)}>
             {v}
@@ -298,7 +299,7 @@ function BrandInput({ value, onChange, error, disabled, label }: RenderProps) {
       <BrandAutocomplete
         value={brandValue}
         onChange={(brand: BrandLight | null) => onChange(brand)}
-        placeholder={`Rechercher une marque…`}
+        placeholder={i18n.t("t03.chercher_marque")}
         error={error}
         disabled={disabled}
       />

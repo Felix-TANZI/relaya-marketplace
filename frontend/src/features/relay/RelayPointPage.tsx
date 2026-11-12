@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import i18n from "@/i18n";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Capacitor } from "@capacitor/core";
@@ -222,30 +223,30 @@ const relayCopy = {
       compte: "Compte",
     } satisfies Record<RelayNavGroup, string>,
     tabs: {
-      dashboard: "Tableau de bord",
-      reception: "Réception colis",
+      dashboard: i18n.t("rl3.tableau_de_bord"),
+      reception: i18n.t("rl3.reception_colis"),
       stock: "Colis en stock",
       retrait: "Retrait acheteur",
       historique: "Historique 30 j",
       notifications: "Notifications",
       trust: "Trust Score",
-      avis: "Avis des clients",
+      avis: i18n.t("rl3.avis_des_clients"),
       niveaux: "Niveaux PR",
       formation: "Formation",
       finances: "Versements",
       rapports: "Rapports & export",
-      capacite: "Capacité & horaires",
-      reseau: "Mon équipe",
+      capacite: i18n.t("rl3.capacite_horaires"),
+      reseau: i18n.t("rl3.mon_equipe"),
       fermeture: "Fermeture exceptionnelle",
       litiges: "Litiges",
       kyc: "Documents KYC",
-      inscription: "Activation et partenariat",
+      inscription: i18n.t("rl3.activation_et_partenariat"),
       messagerie: "Messagerie",
       aide: "Aide & support",
       parametres: "Paramètres",
       tokens: "Relais Tokens",
-      etats: "Écrans d'état et d'accès",
-      sortie: "À faire partir",
+      etats: i18n.t("rl3.ecrans_d_etat_et_d_acces"),
+      sortie: i18n.t("rl3.a_faire_partir"),
     } satisfies Record<RelayTab, string>,
     /**
      * Libelles courts de la barre du bas. « Retrait acheteur » s'y tronquait en
@@ -259,19 +260,19 @@ const relayCopy = {
       retrait: "Retrait",
       stock: "Stock",
     },
-    space: "Espace gérant point relais",
+    space: i18n.t("rl3.espace_gerant_point_relais"),
     brand: "Point relais",
     brandKicker: "Point relais · Partenaire",
     footer: [
       "BelivaY Point Relais v1.0 — Juillet 2026",
-      "Partenaire Indépendant · ANTIC · OHADA",
+      i18n.t("rl3.partenaire_independant_antic_ohada"),
       "Anonymat V5 ch.1",
     ],
     profile: "Profil",
-    openProfile: "Ouvrir le profil",
-    logout: "Se déconnecter",
+    openProfile: i18n.t("rl3.ouvrir_le_profil"),
+    logout: i18n.t("rl3.se_deconnecter"),
     close: "Fermer",
-    emptyStock: "Aucun colis en stock connecté pour le moment.",
+    emptyStock: i18n.t("rl3.aucun_colis_en_stock_connecte_pour_le_mome"),
   },
   en: {
     groups: {
@@ -743,7 +744,7 @@ export default function RelayPointPage() {
           : `${todayCounters.lastDay} client(s) au dernier jour`,
         detail: locale === "en"
           ? "Storage ends today — chase the buyer, or start the return to the seller."
-          : "La garde se termine — relancez l'acheteur, ou lancez le retour vendeur.",
+          : i18n.t("rl3.la_garde_se_termine_relancez_l_acheteur_ou"),
         onClick: () => setTab("stock"),
       });
     }
@@ -767,10 +768,10 @@ export default function RelayPointPage() {
         id: "kyc",
         icon: IdCard,
         tone: "red",
-        title: locale === "en" ? "KYC file to complete" : "Dossier KYC à compléter",
+        title: locale === "en" ? "KYC file to complete" : i18n.t("rl3.dossier_kyc_a_completer"),
         detail: locale === "en"
           ? "BelivaY cannot pay you out until your documents are verified."
-          : "BelivaY ne peut pas vous verser vos gains tant que vos pièces ne sont pas vérifiées.",
+          : i18n.t("rl3.belivay_ne_peut_pas_vous_verser_vos_gains"),
         onClick: () => setTab("kyc"),
       });
     }
@@ -780,10 +781,10 @@ export default function RelayPointPage() {
         id: "setup",
         icon: Warehouse,
         tone: "red",
-        title: locale === "en" ? "Finish your setup" : "Terminer votre configuration",
+        title: locale === "en" ? "Finish your setup" : i18n.t("rl3.terminer_votre_configuration"),
         detail: !hasCapacity
-          ? (locale === "en" ? "Declare how many slots your relay has." : "Déclarez le nombre de places de votre relais.")
-          : (locale === "en" ? "Set your opening days and hours." : "Renseignez vos jours et horaires d'ouverture."),
+          ? (locale === "en" ? "Declare how many slots your relay has." : i18n.t("rl3.declarez_le_nombre_de_places_de_votre_rela"))
+          : (locale === "en" ? "Set your opening days and hours." : i18n.t("rl3.renseignez_vos_jours_et_horaires_d_ouvertu")),
         onClick: () => setTab("capacite"),
       });
     }
@@ -798,9 +799,9 @@ export default function RelayPointPage() {
           : `${todayCounters.freeGarde} colis en garde gratuite`,
         detail: todayCounters.nextFreeEnd
           ? (locale === "en"
-              ? `No fee until ${formatCourt(todayCounters.nextFreeEnd)}, then 200 F per day.`
-              : `Sans frais jusqu'au ${formatCourt(todayCounters.nextFreeEnd)}, puis 200 F par jour.`)
-          : (locale === "en" ? "No storage fee yet." : "Aucun frais de garde pour l'instant."),
+              ? `No fee until ${formatCourt(todayCounters.nextFreeEnd)}, then charged according to the storage grid.`
+              : `Sans frais jusqu'au ${formatCourt(todayCounters.nextFreeEnd)}, puis facturé selon la grille de garde.`)
+          : (locale === "en" ? "No storage fee yet." : i18n.t("rl3.aucun_frais_de_garde_pour_l_instant")),
         onClick: () => setTab("stock"),
       });
     }
@@ -893,7 +894,7 @@ export default function RelayPointPage() {
         const form = new FormData();
         form.append("shipment_id", String(shipmentId));
         form.append("stage", "RELAY_RECEIVED");
-        form.append("description", index === 0 ? "Signature du gérant" : "Signature du livreur");
+        form.append("description", index === 0 ? i18n.t("rl3.signature_du_gerant") : i18n.t("rl3.signature_du_livreur"));
         form.append("file", dataUrlToBlob(signature), `signature-${index + 1}.png`);
         await http("/api/shipping/relay-point/evidence/", { method: "POST", body: form });
       }
@@ -1031,7 +1032,7 @@ export default function RelayPointPage() {
 
       setOperationMessage({
         tone: "success",
-        text: "Constat transmis à BelivaY. Le colis reste en stock chez vous jusqu'à la décision.",
+        text: i18n.t("rl3.constat_transmis_a_belivay_le_colis_reste"),
       });
       await refreshRelayData();
       return true;
@@ -1127,7 +1128,7 @@ export default function RelayPointPage() {
         method: "PATCH",
         body: JSON.stringify(payload),
       });
-      setOperationMessage({ tone: "success", text: "Vos informations sont enregistrées." });
+      setOperationMessage({ tone: "success", text: i18n.t("rl3.vos_informations_sont_enregistrees") });
       // Le profil du relais vient de la session : on la relit plutôt que de
       // recopier les valeurs à la main dans dix endroits de l'écran.
       window.setTimeout(() => window.location.reload(), 500);
@@ -1260,7 +1261,7 @@ export default function RelayPointPage() {
       form.append("file", input.photo, input.photo.name || "reserve.jpg");
       form.append("description", `Réserve au contrôle — ${input.note}`);
       await http("/api/shipping/relay-point/evidence/", { method: "POST", body: form });
-      setOperationMessage({ tone: "success", text: "Réserve enregistrée. Le colis peut entrer en stock." });
+      setOperationMessage({ tone: "success", text: i18n.t("rl3.reserve_enregistree_le_colis_peut_entrer_e") });
       return true;
     } catch (error) {
       showOperationError(error);
@@ -1291,7 +1292,7 @@ export default function RelayPointPage() {
           message: note,
         }),
       });
-      setOperationMessage({ tone: "success", text: "Écart signalé à BelivaY. Le livreur en répond." });
+      setOperationMessage({ tone: "success", text: i18n.t("rl3.ecart_signale_a_belivay_le_livreur_en_repo") });
       return true;
     } catch (error) {
       showOperationError(error);
@@ -1385,9 +1386,9 @@ export default function RelayPointPage() {
     };
 
     const decrire = (parcel: RelayParcel, reason: OutboundReason) => {
-      if (reason === "refus") return "refusé au contrôle → vendeur";
+      if (reason === "refus") return i18n.t("rl3.refuse_au_controle_vendeur");
       if (reason === "renvoi") return `non retiré (J${jourDeGarde(parcel)}) → vendeur`;
-      return "retour validé → vendeur";
+      return i18n.t("rl3.retour_valide_vendeur");
     };
 
     const vers = (parcel: RelayParcel, reason: OutboundReason): OutboundParcel => ({
@@ -1571,7 +1572,7 @@ export default function RelayPointPage() {
         method: "POST",
         body: JSON.stringify({ parcel_id: parcelId }),
       });
-      setOperationMessage({ tone: "success", text: "Refus enregistré. Le colis repart au vendeur." });
+      setOperationMessage({ tone: "success", text: i18n.t("rl3.refus_enregistre_le_colis_repart_au_vendeu") });
       await refreshRelayData();
       return true;
     } catch (error) {
@@ -1793,7 +1794,7 @@ export default function RelayPointPage() {
         id: "arrivee",
         tone: "orange",
         icon: "truck",
-        title: arrivals.length > 1 ? `${arrivals.length} colis en route` : "Un colis en route",
+        title: arrivals.length > 1 ? `${arrivals.length} colis en route` : i18n.t("rl3.un_colis_en_route"),
         detail: [arrivalMission, `${arrivals.length} colis`, `${places} place${places > 1 ? "s" : ""} a prevoir`]
           .filter(Boolean)
           .join(" · "),
@@ -1811,7 +1812,7 @@ export default function RelayPointPage() {
         title:
           outboundParcels.pending.length > 1
             ? `${outboundParcels.pending.length} colis a faire partir`
-            : "Un colis a renvoyer",
+            : i18n.t("rl3.un_colis_a_renvoyer"),
         detail: `${aRenvoyer.ref} · ${aRenvoyer.detail}`,
         at: "",
         onOpen: () => setTab("sortie"),

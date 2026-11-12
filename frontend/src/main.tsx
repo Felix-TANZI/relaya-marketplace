@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
 import './index.css';
 import './i18n/index';
+import { brancherReglagesDansLesTextes } from './i18n/variablesReglages';
 import { router } from './app/routes/router';
 import { CartProvider }    from './context/CartContext';
 import { ThemeProvider }   from './context/ThemeContext';
@@ -14,6 +15,7 @@ import { Capacitor } from '@capacitor/core';
 import { portalRole } from './config/portals';
 
 requestGeolocation();
+brancherReglagesDansLesTextes();
 
 // `viewport-fit=cover` etend la page sous l'encoche et la barre gestuelle, ce
 // qui est indispensable pour que les env(safe-area-inset-*) du portail point

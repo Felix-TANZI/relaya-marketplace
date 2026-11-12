@@ -16,6 +16,7 @@
  * support peut lire ce qu'il voit au lieu de le décrire.
  */
 import { useEffect, useState } from "react";
+import i18n from "@/i18n";
 import {
   AlertTriangle,
   Check,
@@ -48,11 +49,11 @@ const ECRANS_ENTIERS = ["connexion", "invitation", "neuf"];
 
 const STATE_ENTRIES: Array<{ id: string; icon: LucideIcon; label: string }> = [
   { id: "connexion", icon: User, label: "Connexion" },
-  { id: "invitation", icon: UserPlus, label: "Invitation d'un employé" },
-  { id: "neuf", icon: LayoutGrid, label: "Relais neuf (écrans vides)" },
-  { id: "statut", icon: Store, label: "Statut du relais" },
+  { id: "invitation", icon: UserPlus, label: i18n.t("rl3.invitation_d_un_employe") },
+  { id: "neuf", icon: LayoutGrid, label: i18n.t("rl3.relais_neuf_ecrans_vides") },
+  { id: "statut", icon: Store, label: i18n.t("rl3.statut_du_relais") },
   { id: "offline", icon: Wifi, label: "Hors connexion" },
-  { id: "erreur", icon: AlertTriangle, label: "États d'erreur" },
+  { id: "erreur", icon: AlertTriangle, label: i18n.t("rl3.etats_d_erreur") },
   { id: "camera", icon: ScanLine, label: "Caméra" },
   { id: "install", icon: Download, label: "Installer l'application" },
 ];
@@ -119,7 +120,7 @@ function CameraTest() {
         onClick={() => setOn((current) => !current)}
         className="mt-3 w-full rounded-[12px] border border-slate-200 bg-white px-4 py-3 text-[15px] font-black text-slate-700 transition active:scale-[.97] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
       >
-        {on ? "Arrêter le test" : "Tester la caméra"}
+        {on ? i18n.t("rl3.arreter_le_test") : i18n.t("rl3.tester_la_camera")}
       </button>
     </div>
   );
@@ -181,7 +182,7 @@ export default function RelayStates({
           <>
             <div className="divide-y divide-slate-100 dark:divide-slate-800">
               <Fact
-                label="État actuel"
+                label={i18n.t("rl3.etat_actuel")}
                 value={status}
                 tone={
                   status === "Ouvert"
@@ -194,8 +195,8 @@ export default function RelayStates({
             </div>
             <p className="mt-3 text-[13px] font-medium leading-[1.55] text-slate-500 dark:text-slate-400">
               {pending.length === 0
-                ? "Les trois conditions d'ouverture sont remplies : BelivaY peut vous envoyer des colis."
-                : `Il manque ${pending.length === 1 ? "une condition" : `${pending.length} conditions`} : ${pending
+                ? i18n.t("rl3.les_trois_conditions_d_ouverture_sont_remp")
+                : `Il manque ${pending.length === 1 ? i18n.t("rl3.une_condition") : `${pending.length} conditions`} : ${pending
                     .map(([label]) => label.toLowerCase())
                     .join(", ")}. Tant qu'elles ne sont pas remplies, aucune tournée ne vise votre relais.`}
             </p>
@@ -220,9 +221,9 @@ export default function RelayStates({
                 value={online ? "connecté" : "coupé"}
                 tone={online ? "text-emerald-600 dark:text-emerald-400" : "text-orange-600 dark:text-orange-400"}
               />
-              <Fact label="Écrans gardés en mémoire" value={String(cache.entries)} />
+              <Fact label={i18n.t("rl3.ecrans_gardes_en_memoire")} value={String(cache.entries)} />
               <Fact
-                label="Donnée la plus ancienne"
+                label={i18n.t("rl3.donnee_la_plus_ancienne")}
                 value={cache.oldest ? DATE_LONGUE.format(cache.oldest) : "aucune"}
               />
             </div>
@@ -269,7 +270,7 @@ export default function RelayStates({
         return release ? (
           <>
             <div className="divide-y divide-slate-100 dark:divide-slate-800">
-              <Fact label="Version publiée" value={`v${release.version}`} />
+              <Fact label={i18n.t("rl3.version_publiee")} value={`v${release.version}`} />
             </div>
             <p className="mt-3 text-[13px] font-medium leading-[1.55] text-slate-500 dark:text-slate-400">
               L'application installée garde la caméra et les preuves même quand le navigateur est

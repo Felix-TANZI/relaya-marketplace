@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import i18n from "@/i18n";
 import { vendorsApi } from "@/services/api/vendors";
 import { authApi } from "@/services/api/auth";
 import RoleAccessDenied from "@/components/auth/RoleAccessDenied";
@@ -150,8 +151,8 @@ export default function RoleRoute({ role, children }: RoleRouteProps) {
     // Le garde-fou evite un second passage : `logout` change d'identite a
     // chaque rendu d'AuthProvider, donc l'effet peut etre rejoue.
     sessionFermee.current = true;
-    showToast("Cet espace est réservé aux comptes " + LIBELLE_ESPACE[role] + ".", {
-      description: "Connectez-vous avec un compte autorisé pour y accéder.",
+    showToast(i18n.t("t03.espace_reserve", { espace: LIBELLE_ESPACE[role] }), {
+      description: i18n.t("t03.espace_reserve_aide"),
       type: "error",
       duration: 8000,
     });

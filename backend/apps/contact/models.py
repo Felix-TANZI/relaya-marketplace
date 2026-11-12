@@ -20,7 +20,9 @@ class ContactMessage(models.Model):
     
     # Informations expéditeur
     name = models.CharField(max_length=255, verbose_name="Nom complet")
-    email = models.EmailField(validators=[EmailValidator()], verbose_name="Email")
+    # DEV-SRV-01, T09 : facultatif quand un téléphone est donné — un gérant de point relais n'a pas toujours
+    # d'e-mail, et l'écran de candidature envoyait faute de mieux une adresse inventée, enregistrée en base.
+    email = models.EmailField(validators=[EmailValidator()], blank=True, verbose_name="Email")
     phone = models.CharField(max_length=20, blank=True, null=True, verbose_name="Téléphone")
     
     # Message

@@ -25,6 +25,7 @@
  * colis perdu. L'écran renvoie vers l'historique, qui lui est vrai.
  */
 import { useCallback, useEffect, useState } from "react";
+import i18n from "@/i18n";
 import { History, Plus, ShieldCheck, X } from "lucide-react";
 import { http } from "@/services/api/http";
 
@@ -177,8 +178,8 @@ export default function RelayTeam({
                     {membre.last_seen_at
                       ? ` · vu ${JOUR_COURT.format(new Date(membre.last_seen_at))}`
                       : membre.is_active
-                        ? " · accès ouvert"
-                        : " · accès retiré"}
+                        ? i18n.t("rl3.acces_ouvert")
+                        : i18n.t("rl3.acces_retire")}
                   </p>
                 </div>
 
@@ -256,8 +257,8 @@ export default function RelayTeam({
             onKeyDown={(event) => {
               if (event.key === "Enter") void ajouter();
             }}
-            placeholder="Prénom et initiale (ex : Aïcha N.)"
-            aria-label="Nom de la personne"
+            placeholder={i18n.t("rl3.prenom_et_initiale_ex_aicha_n")}
+            aria-label={i18n.t("rl3.nom_de_la_personne")}
             className="mt-3 w-full rounded-[12px] border border-slate-200 bg-white px-4 py-3 text-[15px] font-semibold outline-none transition focus:border-[#2456D6] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
           />
           <p className="mt-2 text-[13px] font-medium leading-snug text-slate-500 dark:text-slate-400">

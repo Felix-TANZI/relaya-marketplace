@@ -5,6 +5,7 @@
 // l'ont activée, selon leurs préférences. La partie « boost » reste pour la priorité 5.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import i18n from "@/i18n";
 import { Zap } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
 import { adminApi, type AdminPromotionCampaign } from '@/services/api/admin';
@@ -13,8 +14,8 @@ import { EnTete, Section, Tableau, Tuile, Tuiles, dateCourte } from './ui';
 type Statut = AdminPromotionCampaign['status'];
 const F = (n: number) => `${n.toLocaleString('fr-FR')} F`;
 const STATUTS: Record<Statut, string> = {
-  DRAFT: 'Brouillon', PENDING: 'À valider', APPROVED: 'Approuvée', REJECTED: 'Rejetée',
-  SUSPENDED: 'Arrêtée', EXPIRED: 'Expirée',
+  DRAFT: i18n.t("ad9.statut_brouillon"), PENDING: i18n.t("ad9.a_valider"), APPROVED: i18n.t("ad9.statut_approuvee"),
+  REJECTED: i18n.t("ad9.statut_rejetee"), SUSPENDED: i18n.t("ad9.statut_arretee"), EXPIRED: i18n.t("ad9.statut_expiree"),
 };
 const VIDE = { produit: '', type: 'FLASH' as 'FLASH' | 'REGULAR', titre: '', debut: '', fin: '', reference: '', promo: '', stock: '' };
 
@@ -46,7 +47,7 @@ export default function CampagnesPage() {
       toast.current(ok, 'success');
       await charger();
     } catch (e) {
-      toast.current(e instanceof Error ? e.message : 'Action refusée.', 'error');
+      toast.current(e instanceof Error ? e.message : i18n.t("ad9.action_refusee"), 'error');
     }
   };
 
@@ -58,13 +59,13 @@ export default function CampagnesPage() {
       ...(f.type === 'FLASH' ? { stock_reserved: Number(f.stock) } : {}),
     });
     setF(VIDE);
-  }, 'Campagne créée : elle attend la validation.');
+  }, i18n.t("ad9.campagne_creee_elle_attend_la_validation"));
 
   const decider = (c: AdminPromotionCampaign, status: 'APPROVED' | 'REJECTED' | 'SUSPENDED') => agir(
     () => adminApi.decidePromotionCampaign(c.id, {
-      status, ...(status === 'REJECTED' ? { rejection_reason: window.prompt('Motif du rejet') || '' } : {}),
+      status, ...(status === 'REJECTED' ? { rejection_reason: window.prompt(i18n.t("ad9.motif_du_rejet")) || '' } : {}),
     }),
-    status === 'APPROVED' ? 'Campagne validée.' : status === 'SUSPENDED' ? 'Campagne arrêtée.' : 'Campagne rejetée.',
+    status === 'APPROVED' ? i18n.t("ad9.campagne_validee") : status === 'SUSPENDED' ? i18n.t("ad9.campagne_arretee") : i18n.t("ad9.campagne_rejetee"),
   );
 
   const champ = (cle: keyof typeof VIDE, libelle: string, type = 'text') => (
@@ -78,16 +79,16 @@ export default function CampagnesPage() {
   const actives = lignes.filter((c) => c.status === 'APPROVED').length;
   return (
     <div className="p-4 sm:p-6">
-      <EnTete icon={Zap} titre="Boost & Campagnes" sousTitre="Promotions et Flash Deals : créer, valider, arrêter"
+      <EnTete icon={Zap} titre="Boost & Campagnes" sousTitre={i18n.t("ad9.promotions_et_flash_deals_creer_valider_ar")}
         onRefresh={() => void charger()} chargement={chargement} />
       <Tuiles>
-        <Tuile libelle="Dans cette liste" valeur={lignes.length} />
+        <Tuile libelle={i18n.t("ad9.dans_cette_liste")} valeur={lignes.length} />
         <Tuile libelle="Approuvées" valeur={actives} />
       </Tuiles>
 
       <Section titre="Nouvelle campagne">
         <div className="grid gap-3 sm:grid-cols-4">
-          {champ('produit', 'Identifiant du produit')}
+          {champ('produit', i18n.t("ad9.identifiant_du_produit"))}
           <label className="flex flex-col text-xs font-semibold">
             Type
             <select className="mt-1 rounded-lg border px-3 py-2 text-sm font-normal" value={f.type}
@@ -99,9 +100,9 @@ export default function CampagnesPage() {
           {champ('titre', 'Titre')}
           {champ('debut', 'Début', 'datetime-local')}
           {champ('fin', 'Fin', 'datetime-local')}
-          {champ('reference', 'Prix de référence (F)', 'number')}
+          {champ('reference', i18n.t("ad9.prix_de_reference_f"), 'number')}
           {champ('promo', 'Prix promo (F)', 'number')}
-          {f.type === 'FLASH' && champ('stock', 'Stock réservé', 'number')}
+          {f.type === 'FLASH' && champ('stock', i18n.t("ad9.stock_reserve"), 'number')}
         </div>
         <button type="button" className="mt-3 rounded-lg bg-orange-600 px-4 py-2 font-semibold text-white disabled:opacity-50"
           disabled={!f.produit || !f.titre.trim() || !f.debut || !f.fin || !f.reference || !f.promo || (f.type === 'FLASH' && !f.stock)}
@@ -140,7 +141,7 @@ export default function CampagnesPage() {
               )}
             </span>,
           ])}
-          vide="Aucune campagne."
+          vide={i18n.t("ad9.aucune_campagne")}
         />
       </Section>
     </div>

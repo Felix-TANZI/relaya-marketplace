@@ -32,6 +32,7 @@ import {
 import * as QRCode from "qrcode";
 import { http } from "@/services/api/http";
 import type { CourierTab } from "./courierNav";
+import { SITE_URL } from '@/config/site';
 
 /** Evenement Chromium d'installation PWA, absent des types DOM standards. */
 interface BeforeInstallPromptEvent extends Event {
@@ -229,7 +230,7 @@ export function CourierSettingsContent({
       return;
     }
     let cancelled = false;
-    QRCode.toDataURL(`https://belivay.com/livreurs/${encodeURIComponent(courier.courierRef)}`, {
+    QRCode.toDataURL(`${SITE_URL}/livreurs/${encodeURIComponent(courier.courierRef)}`, {
       width: 320,
       margin: 1,
       color: { dark: "#065F46", light: "#FFFFFF" },

@@ -177,7 +177,7 @@ export default {
     returns_status_closed_no_refund: 'Clos sans remboursement',
     returns_how_title: 'Comment ça marche',
     returns_how_body_1: 'Le retour est distinct du litige : ici, un article revient physiquement.',
-    returns_how_body_2: 'Aucun frais de stockage sur un colis en retour ; le trajet retour (500 F) est à la charge de la partie en tort.',
+    returns_how_body_2: 'Aucun frais de stockage sur un colis en retour ; le trajet retour ({{montant}}) est à la charge de la partie en tort.',
     returns_reason_not_as_described: 'Non conforme',
     returns_reason_damaged: 'Abîmé',
     returns_reason_counterfeit: 'Contrefaçon',

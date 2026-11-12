@@ -4,7 +4,7 @@
 // 10 questions fréquentes, alerte anti-fraude Mobile Money (NUM-02/M4).
 //
 // Numéro WhatsApp réel repris de app/layout/Header.tsx / Footer.tsx
-// (https://wa.me/237689002812) — jamais un numéro inventé. Le délai de réponse
+// (config/support.ts, VITE_SUPPORT_WHATSAPP) — jamais un numéro inventé. Le délai de réponse
 // dépend du palier (canonique VD-11 : 24h Bronze, 4h Argent, 2h Or, dédié
 // Platine), lu via vendorsApi.getCertifications().
 

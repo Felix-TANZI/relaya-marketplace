@@ -24,6 +24,7 @@
  * gérant, dont l'argent reste hors de portée.
  */
 import { useState } from "react";
+import i18n from "@/i18n";
 import {
   CalendarX,
   Check,
@@ -58,22 +59,22 @@ const POUVOIRS: Array<{ icon: LucideIcon; titre: string; detail: string; sourd?:
   {
     icon: Package,
     titre: "Recevoir",
-    detail: "Code de dépôt du livreur, scan des colis, contrôle des scellés",
+    detail: i18n.t("rl3.code_de_depot_du_livreur_scan_des_colis_co"),
   },
   {
     icon: KeyRound,
     titre: "Remettre",
-    detail: "Vérifier les codes, prendre la photo de remise",
+    detail: i18n.t("rl3.verifier_les_codes_prendre_la_photo_de_rem"),
   },
   {
     icon: CalendarX,
-    titre: "Fermeture imprévue",
-    detail: "Déclarer une fermeture pour aujourd'hui seulement",
+    titre: i18n.t("rl3.fermeture_imprevue"),
+    detail: i18n.t("rl3.declarer_une_fermeture_pour_aujourd_hui_se"),
   },
   {
     icon: Lock,
-    titre: "Pas d'accès à l'argent",
-    detail: "Versements, rapports et paramètres : gérant uniquement",
+    titre: i18n.t("rl3.pas_d_acces_a_l_argent"),
+    detail: i18n.t("rl3.versements_rapports_et_parametres_gerant_u"),
     sourd: true,
   },
 ];
@@ -86,11 +87,11 @@ const POUVOIRS: Array<{ icon: LucideIcon; titre: string; detail: string; sourd?:
  * tenir le comptoir ; le gérant doit en plus savoir tenir la boutique.
  */
 const MODULES: Array<{ titre: string; minutes: number }> = [
-  { titre: "Réception et scellés", minutes: 12 },
-  { titre: "Retrait, codes et tiers", minutes: 10 },
-  { titre: "Paiement au comptoir", minutes: 8 },
-  { titre: "Constat de litige", minutes: 10 },
-  { titre: "Dépôt des retours", minutes: 6 },
+  { titre: i18n.t("rl3.reception_et_scelles"), minutes: 12 },
+  { titre: i18n.t("rl3.retrait_codes_et_tiers"), minutes: 10 },
+  { titre: i18n.t("rl3.paiement_au_comptoir"), minutes: 8 },
+  { titre: i18n.t("rl3.constat_de_litige"), minutes: 10 },
+  { titre: i18n.t("rl3.depot_des_retours"), minutes: 6 },
 ];
 
 const TOTAL_MINUTES = MODULES.reduce((somme, m) => somme + m.minutes, 0);
@@ -104,9 +105,9 @@ const TOTAL_MINUTES = MODULES.reduce((somme, m) => somme + m.minutes, 0);
  * apprend moins vite qu'un message immédiat.
  */
 function pinRefuse(pin: string) {
-  if (/^(\d)\1{3}$/.test(pin)) return "Quatre fois le même chiffre : trop facile à deviner.";
+  if (/^(\d)\1{3}$/.test(pin)) return i18n.t("rl3.quatre_fois_le_meme_chiffre_trop_facile_a");
   if ("0123456789".includes(pin) || "9876543210".includes(pin)) {
-    return "Une suite de chiffres : trop facile à deviner.";
+    return i18n.t("rl3.une_suite_de_chiffres_trop_facile_a_devine");
   }
   return "";
 }
@@ -172,7 +173,7 @@ export default function RelayInvitation({
 
   const confirmerPin = () => {
     if (pin.length < 4) {
-      setErreur("Il manque des chiffres.");
+      setErreur(i18n.t("rl3.il_manque_des_chiffres"));
       return;
     }
     const refus = pinRefuse(pin);
@@ -230,7 +231,7 @@ export default function RelayInvitation({
             </section>
 
             <section className="pr-card mt-3 px-4 pb-1 pt-4">
-              <h3 className="pr-h2 text-slate-900 dark:text-white">Ce que vous pourrez faire</h3>
+              <h3 className="pr-h2 text-slate-900 dark:text-white">{i18n.t("rl3.ce_que_vous_pourrez_faire")}</h3>
               <ul className="mt-1.5 divide-y divide-slate-100 dark:divide-slate-800">
                 {POUVOIRS.map(({ icon: Icon, titre, detail, sourd }) => (
                   <li key={titre} className="flex items-start gap-3 py-3.5">
@@ -352,7 +353,7 @@ export default function RelayInvitation({
                           : "border-slate-200 bg-white text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
                       }`}
                     >
-                      {fait ? "Fait" : "À faire"}
+                      {fait ? "Fait" : i18n.t("rl3.a_faire")}
                     </span>
                   </li>
                 );
@@ -365,10 +366,10 @@ export default function RelayInvitation({
               className="pr-btn mt-4 w-full rounded-[12px] px-4 py-3.5 text-[15px] font-black transition active:scale-[.97]"
             >
               {faits === 0
-                ? "Commencer la formation"
+                ? i18n.t("rl3.commencer_la_formation")
                 : faits < MODULES.length
                   ? "Module suivant"
-                  : "Formation terminée"}
+                  : i18n.t("rl3.formation_terminee")}
             </button>
 
             {/* La maquette garde ce raccourci : le gérant qui montre le
@@ -396,7 +397,7 @@ export default function RelayInvitation({
             >
               <Check size={32} strokeWidth={3} />
             </span>
-            <h2 className="pr-h1 mt-4 text-slate-900 dark:text-white">Vous êtes prêt·e</h2>
+            <h2 className="pr-h1 mt-4 text-slate-900 dark:text-white">{i18n.t("rl3.vous_etes_prete")}</h2>
             <p className="pr-sub mt-2">
               Formation terminée. Vous pouvez recevoir et remettre des colis au relais {relais}.
               Chaque opération est signée avec votre PIN.

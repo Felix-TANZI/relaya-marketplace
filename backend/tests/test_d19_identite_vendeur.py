@@ -9,6 +9,9 @@
 #     restreint, donner un motif de refus par piece. »
 #   « Repondre en 48 h ouvrees au plus. »
 #   « Exiger les documents complets avant le premier versement. »
+# Et DEV-SRV-01 T07-2 : « piece d'identite et numero Mobile Money au premier
+# produit » — publier exige la CNI (recto, verso) validee et un numero Mobile
+# Money ; le selfie video n'est exige qu'au versement.
 #
 # Le mot important est COTE SERVEUR : masquer le bouton de publication ne
 # protege de rien, un appel direct a l'API publierait quand meme. Les tests
@@ -28,6 +31,7 @@ from apps.vendors.kyc import (
     SELFIE_VIDEO,
     echeance_examen,
     identite_verifiee,
+    peut_publier,
 )
 from apps.vendors.models import VendorProfile
 
@@ -67,6 +71,15 @@ def _toutes_validees(user):
         _deposer(user, piece)
 
 
+def _numero_momo(user, statut="PENDING_VERIFICATION"):
+    from apps.accounts.models import PayoutAccount
+
+    return PayoutAccount.objects.create(
+        user=user, owner_role=PayoutAccount.OwnerRole.VENDOR, phone_e164="+237670000001",
+        national_number="670000001", operator="MTN", status=statut,
+    )
+
+
 # ── « Creer la boutique depuis le compte client, sans piece » ────────────────
 
 def test_une_boutique_se_cree_sans_piece_d_identite(api_client, django_user_model):
@@ -95,6 +108,8 @@ def test_publier_est_refuse_sans_aucune_piece(api_client, vendeur):
     assert reponse.data["raison"] == "identite_non_verifiee"
     # Le vendeur doit savoir quoi fournir, pas seulement qu'on refuse.
     assert len(reponse.data["detail"]["manquantes"]) == 3
+    assert reponse.data["detail"]["pour_publier"]["manquantes"] == [
+        "CNI (recto)", "CNI (verso)", "Numero Mobile Money"]
 
 
 def test_une_piece_en_attente_ne_vaut_pas_accord(api_client, vendeur):
@@ -121,18 +136,50 @@ def test_une_seule_piece_rejetee_bloque_et_dit_laquelle(api_client, vendeur):
     assert reponse.data["detail"]["refusees"] == ["CNI (verso)"]
 
 
-def test_les_trois_pieces_validees_ouvrent_la_publication(api_client, vendeur):
+def test_la_cni_validee_et_le_numero_momo_ouvrent_la_publication(api_client, vendeur):
     """
-    Le verrou passe AVANT la recherche de l'offre : une fois l'identite
-    verifiee, on atteint le 404 de l'offre inexistante. C'est la preuve que
-    le verrou ne bloque plus — et qu'il etait bien en premier.
+    T07-2 : pas besoin du selfie pour publier. Le verrou passe AVANT la
+    recherche de l'offre : une fois la condition remplie, on atteint le 404 de
+    l'offre inexistante. C'est la preuve que le verrou ne bloque plus — et
+    qu'il etait bien en premier.
     """
-    _toutes_validees(vendeur)
+    _deposer(vendeur, CNI_RECTO)
+    _deposer(vendeur, CNI_VERSO)
+    _numero_momo(vendeur)
     api_client.force_authenticate(vendeur)
 
     reponse = api_client.post(_publier(), {}, format="json")
 
     assert reponse.status_code == 404
+
+
+def test_les_trois_pieces_sans_numero_momo_ne_publient_pas(api_client, vendeur):
+    _toutes_validees(vendeur)
+    api_client.force_authenticate(vendeur)
+
+    reponse = api_client.post(_publier(), {}, format="json")
+
+    assert reponse.data["raison"] == "identite_non_verifiee"
+    assert reponse.data["detail"]["pour_publier"]["manquantes"] == ["Numero Mobile Money"]
+
+
+def test_un_numero_momo_desactive_ne_compte_pas(vendeur):
+    _deposer(vendeur, CNI_RECTO)
+    _deposer(vendeur, CNI_VERSO)
+    _numero_momo(vendeur, statut="DISABLED")
+    assert peut_publier(vendeur) is False
+
+
+def test_une_cni_en_attente_ne_publie_pas_meme_avec_le_numero(api_client, vendeur):
+    _deposer(vendeur, CNI_RECTO)
+    _deposer(vendeur, CNI_VERSO, ComplianceDocument.Status.PENDING)
+    _numero_momo(vendeur)
+    api_client.force_authenticate(vendeur)
+
+    reponse = api_client.post(_publier(), {}, format="json")
+
+    assert reponse.data["raison"] == "identite_non_verifiee"
+    assert reponse.data["detail"]["pour_publier"]["en_attente"] == ["CNI (verso)"]
 
 
 def test_l_administrateur_ne_peut_pas_publier_pour_un_vendeur_non_verifie(
@@ -322,6 +369,13 @@ def test_le_versement_est_refuse_tant_que_les_pieces_manquent(vendeur):
 
     compte = payee_for_vendor(vendeur.vendor_profile, create=True)
     assert "D19" in refus_metier(compte)
+    # Pouvoir publier (CNI + numero) ne suffit pas a etre verse : le selfie video reste exige.
+    _deposer(vendeur, CNI_RECTO)
+    _deposer(vendeur, CNI_VERSO)
+    _numero_momo(vendeur)
+    assert peut_publier(vendeur) is True
+    assert "D19" in refus_metier(compte)
+    ComplianceDocument.objects.filter(user=vendeur).delete()
     for piece in (CNI_RECTO, CNI_VERSO, SELFIE_VIDEO):
         _deposer(vendeur, piece)
     assert refus_metier(compte) is None
@@ -336,3 +390,21 @@ def test_la_verification_exige_les_trois_pieces(vendeur):
 
     _deposer(vendeur, SELFIE_VIDEO)
     assert identite_verifiee(vendeur) is True
+
+
+def test_la_conformite_previent_le_vendeur_qu_il_peut_publier(api_client, vendeur, django_user_model):
+    """T07-2 : la CNI validee avec le numero suffit pour publier ; le message le dit, et rappelle le selfie."""
+    from apps.accounts.models import UserNotification
+
+    _deposer(vendeur, CNI_RECTO)
+    verso = _deposer(vendeur, CNI_VERSO, ComplianceDocument.Status.PENDING)
+    _numero_momo(vendeur)
+    admin = django_user_model.objects.create_user(
+        username="conformite_d19", is_staff=True, is_superuser=True)  # force_authenticate : pas de mot de passe
+    api_client.force_authenticate(admin)
+
+    reponse = api_client.post(f"/api/auth/admin/kyc/pieces/{verso.pk}/", {"decision": "APPROVED"}, format="json")
+
+    assert reponse.status_code == 200
+    message = UserNotification.objects.get(user=vendeur, title="Pièce d'identité validée").message
+    assert "Vous pouvez publier" in message and "selfie" in message

@@ -7,6 +7,7 @@
 // Sous-catégorie : apparaît après sélection d'une catégorie parente
 
 import { useEffect, useState, useRef } from "react";
+import i18n from "@/i18n";
 import { http } from "@/services/api/http";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -56,6 +57,7 @@ import {
   type MasterProductAxes,
 } from "@/services/api/attributes";
 import { variantsApi, type AxisValues } from "@/services/api/variants";
+import { prixTropBas, usePrixMinPubliable } from './v2/catalogue/helpers';
 
 const T = {
   orange: "#F47920",
@@ -288,6 +290,7 @@ function defaultCampaignForm(
 
 export default function ProductFormPage() {
   const { t } = useTranslation();
+  const prixMin = usePrixMinPubliable();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -646,7 +649,7 @@ export default function ProductFormPage() {
     }
 
     // Champs OFFRE — dans tous les cas
-    if (!priceXaf || price < 100) e.priceXaf = t("sl3_product_form.err_price_min");
+    if (!priceXaf || prixTropBas(price, prixMin)) e.priceXaf = t("sl3_product_form.err_price_min", { min: prixMin === null ? "—" : fmtXAF(prixMin) });
     if (compare && compare <= price)
       e.compareAt = t("sl3_product_form.err_compare_at");
     const sq = parseInt(stockQty, 10);
@@ -1224,7 +1227,7 @@ export default function ProductFormPage() {
                   label={t("sl3_product_form.label_category")}
                   required
                   error={errors.category}
-                  hint="Choisissez la sous-catégorie la plus précise : c'est là que les acheteurs trouveront votre produit."
+                  hint={i18n.t("t03.sous_categorie_aide")}
                 >
                   <CategoryTreePicker
                     value={selectedCategoryId}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import i18n from "@/i18n";
 import { Panel } from "./RelayUi";
 
 /**
@@ -35,7 +36,7 @@ export default function RelayComptoir({ parcels, busy, onCollect, onRefuse }: Pr
   if (parcels.length === 0) return null;
 
   return (
-    <Panel kicker="Paiement au comptoir" title="Colis à payer avant la remise">
+    <Panel kicker={i18n.t("rl3.paiement_au_comptoir")} title={i18n.t("rl3.colis_a_payer_avant_la_remise")}>
       <ul className="space-y-3">
         {parcels.map((parcel) => {
           const phone = phones[parcel.id] ?? parcel.customerPhone;
@@ -57,7 +58,7 @@ export default function RelayComptoir({ parcels, busy, onCollect, onRefuse }: Pr
                   inputMode="tel"
                   value={phone}
                   onChange={(e) => setPhones({ ...phones, [parcel.id]: e.target.value })}
-                  aria-label="Numéro Mobile Money du client"
+                  aria-label={i18n.t("rl3.numero_mobile_money_du_client")}
                 />
                 <select
                   className="rounded-xl border px-3 py-2"
@@ -86,7 +87,7 @@ export default function RelayComptoir({ parcels, busy, onCollect, onRefuse }: Pr
                   disabled={busy}
                   className="rounded-xl border border-red-300 px-4 py-2 font-semibold text-red-700 disabled:opacity-50"
                   onClick={() => {
-                    if (window.confirm("Le client refuse de payer : le colis repartira au vendeur. Confirmer ?")) {
+                    if (window.confirm(i18n.t("rl3.le_client_refuse_de_payer_le_colis_reparti"))) {
                       void onRefuse(parcel.id);
                     }
                   }}

@@ -106,7 +106,19 @@ class BelivayTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         attrs = attrs.copy()
         attrs["username"] = resolve_login_identifier(attrs.get("username", ""))
-        return super().validate(attrs)
+        data = super().validate(attrs)
+        # DEV-SRV-01, T07-5 : compte ouvert par un agent, mot de passe provisoire remis sur place.
+        from rest_framework.exceptions import AuthenticationFailed
+
+        from .models import AccesProvisoire
+
+        acces = AccesProvisoire.objects.filter(user=self.user).first()
+        if acces is not None:
+            if acces.expire:
+                raise AuthenticationFailed("Mot de passe provisoire expiré : demandez un nouvel accès à l'agent BelivaY.",
+                                           code="acces_provisoire_expire")
+            data["doit_changer_mot_de_passe"] = True
+        return data
 
 
 class CourierProfileSerializer(serializers.ModelSerializer):
@@ -263,29 +275,38 @@ class PayoutAccountCreateSerializer(serializers.Serializer):
         return data
 
     def create(self, validated_data):
-        user = self.context["request"].user
-        normalized = validated_data["normalized_phone"]
-        is_primary = validated_data.get("is_primary", True)
-        if is_primary:
-            PayoutAccount.objects.filter(
-                user=user,
-                owner_role=validated_data["owner_role"],
-                is_primary=True,
-            ).update(is_primary=False)
-
-        account, _ = PayoutAccount.objects.update_or_create(
-            user=user,
-            owner_role=validated_data["owner_role"],
-            phone_e164=normalized["e164"],
-            defaults={
-                "label": validated_data.get("label", ""),
-                "national_number": normalized["national"],
-                "operator": normalized["operator"],
-                "status": PayoutAccount.Status.PENDING_VERIFICATION,
-                "is_primary": is_primary,
-                "verified_at": None,
-            },
+        return enregistrer_numero_versement(
+            self.context["request"].user, validated_data["owner_role"], validated_data["normalized_phone"],
+            label=validated_data.get("label", ""), is_primary=validated_data.get("is_primary", True),
         )
+
+
+def enregistrer_numero_versement(user, owner_role, normalized, *, label="", is_primary=True, envoyer_code=True):
+    """
+    Enregistre un numero Mobile Money de versement, toujours EN ATTENTE de verification.
+
+    Seul un numero verifie par code atteint le module financier (PayoutAccountVerifyView, puis
+    apps.payments.bridge.payout_accounts) : rien n'est donc verse sur un numero simplement enregistre.
+    `envoyer_code=False` sert a l'agent de terrain (DEV-SRV-01 T07-2) : le vendeur demandera son code
+    lui-meme, depuis son espace, avant son premier versement.
+    """
+    if is_primary:
+        PayoutAccount.objects.filter(user=user, owner_role=owner_role, is_primary=True).update(is_primary=False)
+
+    account, _ = PayoutAccount.objects.update_or_create(
+        user=user,
+        owner_role=owner_role,
+        phone_e164=normalized["e164"],
+        defaults={
+            "label": label,
+            "national_number": normalized["national"],
+            "operator": normalized["operator"],
+            "status": PayoutAccount.Status.PENDING_VERIFICATION,
+            "is_primary": is_primary,
+            "verified_at": None,
+        },
+    )
+    if envoyer_code:
         # D6 : le code part vraiment au numero a verifier, par le moteur de codes unique.
         from apps.otp import services as codes
         from apps.otp.models import CodeOtp
@@ -294,7 +315,7 @@ class PayoutAccountCreateSerializer(serializers.Serializer):
                       exiger_utilisateur=True)
         account.last_sent_at = timezone.now()
         account.save(update_fields=["last_sent_at", "updated_at"])
-        return account
+    return account
 
 
 class PayoutAccountVerifySerializer(serializers.Serializer):
@@ -389,6 +410,9 @@ class UserSerializer(serializers.ModelSerializer):
     # Sécurité avant main 2 : les parties de gestion ouvertes à ce compte (apps.common.droits), pour que l'écran
     # d'administration n'affiche que ses entrées. Le serveur reste seul juge à chaque appel.
     parties = serializers.SerializerMethodField()
+    # DEV-SRV-01, T07-5 : compte ouvert par un agent, mot de passe provisoire pas encore changé ; les écrans
+    # renvoient vers « Choisissez votre mot de passe » tant que c'est vrai.
+    doit_changer_mot_de_passe = serializers.SerializerMethodField()
     
     class Meta:
         model = User
@@ -417,8 +441,14 @@ class UserSerializer(serializers.ModelSerializer):
             "loyalty_tier",
             "has_usable_password",
             "parties",
+            "doit_changer_mot_de_passe",
         ]
         read_only_fields = fields
+
+    def get_doit_changer_mot_de_passe(self, obj) -> bool:
+        from .models import AccesProvisoire
+
+        return AccesProvisoire.objects.filter(user=obj).exists()
 
     def get_parties(self, obj):
         from apps.common.droits import PARTIES, a_la_partie

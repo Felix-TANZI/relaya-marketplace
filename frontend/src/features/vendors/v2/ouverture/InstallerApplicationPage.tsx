@@ -95,7 +95,7 @@ export default function InstallerApplicationPage() {
         </div>
         <div className="min-w-0">
           <p className="font-bold truncate" style={{ fontSize: 13.5, color: DARK_HERO_TEXT }}>{t('sl9_ouverture.app_name')}</p>
-          <p style={{ fontSize: 11.5, color: DARK_HERO_TEXT_MUTED }}>seller.belivay.com</p>
+          <p style={{ fontSize: 11.5, color: DARK_HERO_TEXT_MUTED }}>{window.location.host}</p>
         </div>
       </DarkCard>
 

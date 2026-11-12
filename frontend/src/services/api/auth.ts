@@ -1,10 +1,10 @@
 // frontend/src/services/api/auth.ts
 // Service API pour l'authentification et la gestion du profil utilisateur
 
-import { http } from './http';
+import { API_BASE_URL, http } from './http';
 import { getStoredAccessToken } from '@/lib/authTokens';
 
-const AUTH_API_BASE_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '');
+const AUTH_API_BASE_URL = API_BASE_URL;
 
 export interface User {
   id:                     number;
@@ -37,6 +37,8 @@ export interface User {
   has_usable_password?:   boolean;
   /** Sécurité avant main 2 : parties de gestion ouvertes à ce compte (le serveur reste seul juge). */
   parties?:               string[];
+  /** DEV-SRV-01 (T07-5) : compte ouvert par un agent, mot de passe provisoire à changer avant tout. */
+  doit_changer_mot_de_passe?: boolean;
 }
 
 export interface CourierProfile {
@@ -194,7 +196,7 @@ export const authApi = {
    * Fetch direct pour remonter le message d'erreur exact du backend.
    */
   verify2FALogin: async (userId: number, code: string): Promise<TokenResponse> => {
-    const base = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '');
+    const base = API_BASE_URL;
     const res = await fetch(`${base}/api/auth/2fa/verify-login/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

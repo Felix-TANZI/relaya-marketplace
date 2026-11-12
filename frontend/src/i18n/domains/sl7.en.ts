@@ -173,7 +173,7 @@ export default {
       'Your actions are queued and sent with their original time as soon as the network returns.',
     error_value_cap_title: 'Value cap',
     error_value_cap_detail:
-      'This item is over 250,000 F: only an insured Gold delivery company can take it on.',
+      'This item is over the value cap of the New and Confirmed tiers: only an insured Gold delivery company can take it on.',
     error_value_cap_why: 'This cap protects the item’s value during transport.',
 
     // Handed over to the courier (VD-06 §REM-04/06/07/08)

@@ -244,6 +244,7 @@ import {
   Megaphone, TrendingUp,
   Bot,
 } from 'lucide-react';
+import { FIDELITE_VISIBLE } from "@/config/lancement";
 
 // Le portail dedie se decide au chargement du module — `isDedicatedPortal` et
 // `portalHomePath` sont des constantes de `@/config/portals`. L'element est
@@ -280,7 +281,8 @@ export const router = createBrowserRouter([
       { path: 'flash-deals',     element: <FlashDealsPage /> },
       // Feuille de route D9 : univers choisis à la première ouverture, modifiables depuis le profil.
       { path: 'interets',        element: <InteretsPage /> },
-      { path: 'premium',         element: <PremiumPage /> },
+      // C01 (DEV-SRV-01 v1.8) : BelivaY+ fait partie de la fidélité, masquée jusqu'après le lancement.
+      { path: 'premium',         element: FIDELITE_VISIBLE ? <PremiumPage /> : <Navigate to="/" replace /> },
       { path: 'selection-premium', element: <SelectionPremiumPage /> },
       { path: 'contact',         element: <ContactPage /> },
       { path: 'help',            element: <HelpPage /> },

@@ -13,7 +13,7 @@ export default {
       title: 'Tout le catalogue BelivaY',
       subtitle: 'Tous les produits des boutiques BelivaY',
       description:
-        "L'intégralité de l'offre BelivaY, tous thèmes confondus : mode, électronique, beauté, maison, supermarché et bien plus. Paiement Mobile Money sécurisé par escrow, vendeurs vérifiés et livraison partout au Cameroun et en Afrique centrale.",
+        "L'intégralité de l'offre BelivaY, tous thèmes confondus : mode, électronique, beauté, maison, supermarché et bien plus. Paiement Mobile Money sécurisé par escrow, vendeurs vérifiés et livraison à Yaoundé.",
       facets: ['Nouveautés', 'Promotions', 'Made in Cameroon', 'Livraison 24h', 'Coup de cœur'],
     },
     femme: {
@@ -93,7 +93,7 @@ export default {
       title: 'Sneakers · Escarpins · Sandales',
       subtitle: 'Toutes pointures disponibles',
       description:
-        "Sneakers, mocassins, escarpins, sandales et chaussures de sécurité, du 36 au 47. Chaque fiche indique le guide des pointures du vendeur, et l'échange de taille est gratuit sous 7 jours.",
+        "Sneakers, mocassins, escarpins, sandales et chaussures de sécurité, du 36 au 47. Chaque fiche indique le guide des pointures du vendeur, et l'échange de taille se demande sous 7 jours.",
       facets: ['Sneakers', 'Escarpins', 'Sandales', 'Mocassins', 'Sport', 'Sécurité'],
     },
     sport: {

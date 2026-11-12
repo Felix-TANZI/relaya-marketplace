@@ -61,8 +61,6 @@ const AVANTAGES: Record<string, string[]> = {
   ],
   GOLD: [
     i18n.t("rl3.tous_les_avantages_confirme"),
-    i18n.t("rl3.etageres_belivay_offertes_pour_agrandir"),
-    i18n.t("rl3.relais_ambassadeur_prime_pour_chaque_nouve"),
   ],
 };
 

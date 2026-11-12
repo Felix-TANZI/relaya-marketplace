@@ -1,6 +1,6 @@
 export default {
   cl5_about: {
-    hero_tagline: "La marketplace de confiance de l'Afrique Centrale",
+    hero_tagline: "La marketplace de confiance de Yaoundé",
     hero_subtitle: "Achetez et vendez en toute sécurité avec paiement Mobile Money et protection Escrow BelivaY.",
     cta_buy: "Commencer à acheter",
     cta_sell: "Devenir vendeur",
@@ -23,9 +23,9 @@ export default {
     escrow_step2_title: "Fonds bloqués en Escrow",
     escrow_step2_text: "Le vendeur ne reçoit rien tant que vous n'avez pas confirmé la réception.",
     escrow_step3_title: "Livraison suivie",
-    escrow_step3_text: "Suivi en temps réel. 24–72h au Cameroun, 5–7j zone CEMAC.",
+    escrow_step3_text: "Suivi en temps réel. Livraison en 24–72h à Yaoundé.",
     escrow_step4_title: "Confirmez ou réclamez",
-    escrow_step4_text: "Satisfait ? Confirmez. Problème ? 7 jours pour ouvrir un litige. Remboursement garanti.",
+    escrow_step4_text: "Satisfait ? Confirmez. Problème ? 7 jours pour demander un retour sur motif (non conforme, abîmé, contrefaçon), offert s'il est validé.",
     escrow_step5_title: "Vendeur payé",
     escrow_step5_text: "24h après votre confirmation, les fonds sont libérés au vendeur. Tout le monde gagne !",
 
@@ -43,13 +43,14 @@ export default {
     value_social_title: "Impact Social",
     value_social_text: "Priorité aux artisans et PME africaines. Commerce équitable.",
 
-    presence_heading: "Présence CEMAC",
+    presence_heading: "Zone servie",
     country_cameroon: "Cameroun",
     country_gabon: "Gabon",
     country_chad: "Tchad",
     country_congo: "Congo",
     country_car: "RCA",
     country_eq_guinea: "Guinée Éq.",
+    city_yaounde: "Yaoundé · Cameroun",
 
     key_figures_heading: "Chiffres clés",
     key_figures_text_p1: "BelivaY traite plus de",
@@ -88,7 +89,7 @@ export default {
     contact_chat_ai: "Chat IA",
     contact_whatsapp: "WhatsApp",
     contact_email: "Email",
-    contact_address: "Yaoundé, Cameroun · CEMAC",
+    contact_address: "Yaoundé, Cameroun",
   },
 
   cl5_premium: {
@@ -125,7 +126,7 @@ export default {
     feature_alerts: "Alertes baisse de prix instantanées",
     feature_ai: "Recommandations IA personnalisées",
     feature_support: "Support 24h/7j ligne dédiée",
-    feature_shops: "Accès boutiques sélection CEMAC",
+    feature_shops: "Accès aux boutiques sélectionnées",
 
     calculator_title: "Calculez vos économies",
     calculator_orders_label: "Commandes / mois",
@@ -228,7 +229,7 @@ export default {
     faq6_q: "Comment fonctionne le parrainage ?",
     faq6_a: "Partagez votre code unique. Pour chaque ami qui souscrit (mensuel ou annuel), vous recevez 1 mois gratuit ajouté à votre abonnement.",
     faq7_q: "Les avantages sont-ils valables hors Cameroun ?",
-    faq7_a: "Oui, dans toute la zone CEMAC : Cameroun, Gabon, Congo, RCA, Tchad, Guinée Équatoriale.",
+    faq7_a: "Pas encore : BelivaY sert Yaoundé pour le moment.",
 
     month_jan: "Jan",
     month_feb: "Fév",

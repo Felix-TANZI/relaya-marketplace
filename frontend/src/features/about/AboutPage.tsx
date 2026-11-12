@@ -1,6 +1,6 @@
 // frontend/src/features/about/AboutPage.tsx
 // Page « À propos » : hero, mission, fonctionnement de l'Escrow, valeurs,
-// présence CEMAC, chiffres clés, mentions légales et contact.
+// zone servie (Yaoundé), chiffres clés, mentions légales et contact.
 
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -124,13 +124,9 @@ const VALUES: { icon: LucideIcon; titleKey: string; textKey: string; bg: string;
   },
 ];
 
+// C01 (DEV-SRV-01 v1.8) : zone servie, Yaoundé seulement.
 const COUNTRIES = [
-  { code: "CM", nameKey: "cl5_about.country_cameroon" },
-  { code: "GA", nameKey: "cl5_about.country_gabon" },
-  { code: "TD", nameKey: "cl5_about.country_chad" },
-  { code: "CG", nameKey: "cl5_about.country_congo" },
-  { code: "CF", nameKey: "cl5_about.country_car" },
-  { code: "GQ", nameKey: "cl5_about.country_eq_guinea" },
+  { code: "YDE", nameKey: "cl5_about.city_yaounde" },
 ];
 
 const KEY_FIGURES: { icon: LucideIcon; labelKey: string; bg: string; color: string }[] = [
@@ -296,7 +292,7 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* ═══════════════════════ Présence CEMAC ═══════════════════════ */}
+        {/* ═══════════════════════ Zone servie ═══════════════════════ */}
         <section className="pf-card pf-anim">
           <h2 style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 19, fontWeight: 800, color: "var(--pf-text)" }}>
             <Globe size={20} style={{ color: "#2563eb" }} />

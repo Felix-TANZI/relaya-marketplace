@@ -6,8 +6,9 @@
 // À FAIRE RELIRE PAR LE PORTEUR (mise en ligne du 25 oct. 2026) : conditions d'utilisation, confidentialité, cookies
 // et mentions légales réécrits pour le site public, où seuls les comptes sont réels (données gardées : site/COMPTES-REELS.md
 // § 8 de la branche des comptes). Ces quatre textes servent aux six espaces (les inscriptions du vendeur, de l'entreprise,
-// du relais et de la console renvoient vers /cgu et /legal-doc?d=confidentialite). Les champs « [À COMPLÉTER : …] » sont
-// des informations légales inconnues ici : ne rien inventer, les remplir (liste dans MISE-EN-LIGNE.md). « sections » :
+// du relais et de la console renvoient vers /cgu et /legal-doc?d=confidentialite). Les anciens champs « À compléter » ont
+// été remplis le 7 nov. 2026 avec les choix du porteur (tribunaux de Yaoundé, réponse sous 30 jours, pas de suppression
+// automatique des comptes inactifs) ; RCCM, NIU et capital restent à publier quand le porteur les donne. « sections » :
 // le texte complet sous « L'essentiel ». Le serveur (backend-kit/apps/client_accounts/donnees/legal.json) doit reprendre
 // ces textes au passage au réel.
 import type { DocumentLegal } from '../donnees/source'
@@ -32,7 +33,7 @@ export const LEGAL: DocumentLegal[] = [
    ],
    sections: [
     { titre: "1. Objet", points: [
-     "Ces conditions encadrent l’utilisation du site et des applications BelivaY\u00A0: l’espace client, l’espace vendeur, l’espace entreprise de livraison, l’espace livreur, l’espace point relais et la console d’administration. Ils sont édités par BelivaY SARLU (voir les mentions légales).",
+     "Ces conditions encadrent l’utilisation du site et des applications BelivaY\u00A0: l’espace client, l’espace vendeur, l’espace entreprise de livraison, l’espace livreur, l’espace point relais et la console d’administration. Ils sont édités par BelivaY SARL (voir les mentions légales).",
      "Créer un compte, ou utiliser le service, vaut acceptation de ces conditions et de la politique de confidentialité, dans leur version datée du jour."
     ] },
     { titre: "2. Période de démonstration", points: [
@@ -64,7 +65,7 @@ export const LEGAL: DocumentLegal[] = [
      "Chaque version de ces conditions est datée. Un changement important est montré à l’ouverture de l’application et doit être accepté pour continuer."
     ] },
     { titre: "9. Droit applicable et contact", points: [
-     "Ces conditions sont soumises au droit camerounais. Juridiction compétente\u00A0: [À COMPLÉTER\u00A0: tribunal compétent, à faire valider].",
+     "Ces conditions sont soumises au droit camerounais. Juridiction compétente\u00A0: les tribunaux de Yaoundé.",
      "Une question\u00A0: contact@belivay.com, ou la page Aide et contact de l’application."
     ] }
    ]
@@ -84,7 +85,7 @@ export const LEGAL: DocumentLegal[] = [
    ],
    sections: [
     { titre: "1. Purpose", points: [
-     "These terms govern the use of the BelivaY website and apps: the customer space, the seller space, the delivery company space, the courier space, the relay point space and the administration console. They are published by BelivaY SARLU (see the legal notice).",
+     "These terms govern the use of the BelivaY website and apps: the customer space, the seller space, the delivery company space, the courier space, the relay point space and the administration console. They are published by BelivaY SARL (see the legal notice).",
      "Creating an account, or using the service, means accepting these terms and the privacy policy, in their version dated that day."
     ] },
     { titre: "2. Demonstration period", points: [
@@ -116,7 +117,7 @@ export const LEGAL: DocumentLegal[] = [
      "Each version of these terms is dated. A major change is shown when you open the app and must be accepted to continue."
     ] },
     { titre: "9. Governing law and contact", points: [
-     "These terms are governed by Cameroonian law. Competent court: [TO BE COMPLETED: competent court, to be confirmed].",
+     "These terms are governed by Cameroonian law. Competent court: the courts of Yaoundé.",
      "A question: contact@belivay.com, or the Help and contact page of the app."
     ] }
    ]
@@ -149,7 +150,7 @@ export const LEGAL: DocumentLegal[] = [
     "Your money stays on hold until you pick up and the return window ends. The seller is paid after that.",
     "You pick up with a 6-digit code. Storage is free on the day of arrival, then follows the storage policy.",
     "Cancel shop by shop, free of charge, as long as the parcel has not been collected.",
-    "Returns need a reason, within 7 days after pickup. Refunds go to your BelivaY Wallet, or to the card that paid."
+    "Returns need a reason, within 7 days after pickup. Refunds go back to the original payment method."
    ]
   }
  },
@@ -171,7 +172,7 @@ export const LEGAL: DocumentLegal[] = [
    ],
    sections: [
     { titre: "1. Qui est responsable", points: [
-     "BelivaY SARLU, [À COMPLÉTER\u00A0: adresse du siège], Yaoundé, Cameroun. Contact pour les données personnelles\u00A0: contact@belivay.com."
+     "BelivaY SARL, Yaoundé, Cameroun. Contact pour les données personnelles\u00A0: contact@belivay.com."
     ] },
     { titre: "2. Ce que nous gardons pour chaque compte", points: [
      "L’espace du compte (client, vendeur, entreprise de livraison, livreur, point relais ou console), l’adresse e-mail et, s’ils sont donnés, le numéro de téléphone, le prénom, le nom et une photo (150\u00A0Ko au plus).",
@@ -179,7 +180,7 @@ export const LEGAL: DocumentLegal[] = [
      "Le rôle, le statut (actif, en attente, refusé, suspendu), le type de compte (par exemple diaspora) et le pays s’il est indiqué.",
      "Pour une candidature (vendeur, entreprise de livraison, point relais)\u00A0: les informations saisies dans le formulaire.",
      "La version des conditions acceptées et la date d’acceptation.",
-     "Les appareils connectés\u00A0: un résumé comme «\u00A0Chrome · Android\u00A0», la date de connexion et de dernière visite. Jamais ton adresse IP.",
+     "Les appareils connectés\u00A0: un résumé comme «\u00A0Téléphone · navigateur\u00A0», la date de connexion et de dernière visite. Jamais ton adresse IP.",
      "Pour la console\u00A0: le secret du second facteur, chiffré, et l’empreinte des codes de secours."
     ] },
     { titre: "3. Ce que nous ne collectons pas", points: [
@@ -193,16 +194,16 @@ export const LEGAL: DocumentLegal[] = [
     ] },
     { titre: "5. Qui y a accès", points: [
      "Les membres habilités de l’équipe BelivaY, selon leur rôle (chacun ne voit que ce dont il a besoin).",
-     "Nos prestataires techniques d’hébergement, de base de données et, quand il est activé, d’envoi d’e-mails, qui agissent uniquement pour notre compte. [À COMPLÉTER\u00A0: noms des prestataires et pays d’hébergement des données, si la loi applicable impose de les publier].",
+     "Nos prestataires techniques d’hébergement, de base de données et, quand il est activé, d’envoi d’e-mails, qui agissent uniquement pour notre compte. Les données sont hébergées hors du Cameroun (site et services chez Vercel, aux États-Unis), avec des garanties de sécurité et de confidentialité.",
      "Personne d’autre\u00A0: nous ne vendons ni ne louons tes données."
     ] },
     { titre: "6. Combien de temps", points: [
-     "Le compte\u00A0: tant qu’il existe. Quand tu le supprimes, il est réellement effacé de la base, avec ses sessions et ses liens. [À COMPLÉTER\u00A0: durée après laquelle un compte inactif est supprimé, si BelivaY en fixe une].",
+     "Le compte\u00A0: tant qu’il existe. Quand tu le supprimes, il est réellement effacé de la base, avec ses sessions et ses liens. Un compte inactif n’est pas supprimé automatiquement\u00A0: il reste jusqu’à ce que tu le supprimes.",
      "Les sessions\u00A0: 12\u00A0heures, ou 30\u00A0jours avec «\u00A0Se souvenir de moi\u00A0», puis effacées.",
      "Un lien de mot de passe oublié vaut 30\u00A0minutes, une invitation 72\u00A0heures\u00A0; ils sont effacés au plus tard un jour après leur expiration.",
      "Les compteurs contre les abus ne gardent qu’une empreinte de l’adresse IP ou de l’e-mail, effacée à la fin de leur fenêtre (15\u00A0minutes).",
      "Le journal technique des erreurs ne contient aucune donnée personnelle et est effacé après 30\u00A0jours.",
-     "Les sauvegardes de la base gardent une donnée supprimée jusqu’à la fin de leur durée de conservation\u00A0: [À COMPLÉTER\u00A0: durée, selon l’offre d’hébergement]."
+     "Les sauvegardes de la base gardent une donnée supprimée jusqu’à la fin de leur durée de conservation, puis elle disparaît définitivement\u00A0; personne ne s’en sert entre-temps."
     ] },
     { titre: "7. Sécurité", points: [
      "Connexion chiffrée (HTTPS), mots de passe hachés, cookie de session inaccessible aux scripts, blocage temporaire après 5 essais faux, second facteur obligatoire pour la console, base chiffrée au repos."
@@ -211,8 +212,8 @@ export const LEGAL: DocumentLegal[] = [
      "Accès et portabilité\u00A0: tu télécharges toutes les données de ton compte depuis ton compte, dans un fichier lisible.",
      "Rectification\u00A0: tu modifies ton nom, ton numéro, ton e-mail et ta photo depuis ton profil.",
      "Suppression\u00A0: «\u00A0Supprimer mon compte\u00A0» efface réellement ton compte.",
-     "Opposition, limitation et retrait de ton accord\u00A0: écris à contact@belivay.com. Nous répondons sous [À COMPLÉTER\u00A0: délai de réponse].",
-     "Tu peux aussi saisir l’autorité de protection des données personnelles compétente au Cameroun\u00A0: [À COMPLÉTER\u00A0: nom et coordonnées de l’autorité prévue par la loi de 2024]."
+     "Opposition, limitation et retrait de ton accord\u00A0: écris à contact@belivay.com. Nous répondons sous 30\u00A0jours.",
+     "Tu peux aussi saisir l’autorité de protection des données personnelles compétente au Cameroun\u00A0: l’autorité chargée de la protection des données personnelles prévue par la loi n°\u00A02024/017."
     ] },
     { titre: "9. Cookies et stockage", points: [
      "Un seul cookie, strictement nécessaire\u00A0: celui de ta session, posé quand tu te connectes, illisible par les scripts de la page.",
@@ -240,7 +241,7 @@ export const LEGAL: DocumentLegal[] = [
    ],
    sections: [
     { titre: "1. Who is responsible", points: [
-     "BelivaY SARLU, [TO BE COMPLETED: head office address], Yaoundé, Cameroon. Contact for personal data: contact@belivay.com."
+     "BelivaY SARL, Yaoundé, Cameroon. Contact for personal data: contact@belivay.com."
     ] },
     { titre: "2. What we keep for each account", points: [
      "The account space (customer, seller, delivery company, courier, relay point or console), the e-mail address and, if given, the phone number, first name, last name and a photo (150 KB at most).",
@@ -248,7 +249,7 @@ export const LEGAL: DocumentLegal[] = [
      "The role, the status (active, pending, refused, suspended), the account type (for example diaspora) and the country if given.",
      "For an application (seller, delivery company, relay point): the information entered in the form.",
      "The version of the terms accepted and the date of acceptance.",
-     "Connected devices: a summary such as “Chrome · Android”, the date of sign-in and of last visit. Never your IP address.",
+     "Connected devices: a summary such as “Phone · browser”, the date of sign-in and of last visit. Never your IP address.",
      "For the console: the second-factor secret, encrypted, and the fingerprint of the backup codes."
     ] },
     { titre: "3. What we do not collect", points: [
@@ -262,16 +263,16 @@ export const LEGAL: DocumentLegal[] = [
     ] },
     { titre: "5. Who has access", points: [
      "Authorised members of the BelivaY team, according to their role (each one sees only what they need).",
-     "Our technical providers for hosting, database and, when enabled, e-mail sending, acting only on our behalf. [TO BE COMPLETED: provider names and data hosting countries, if the applicable law requires publishing them].",
+     "Our technical providers for hosting, database and, when enabled, e-mail sending, acting only on our behalf. Data is hosted outside Cameroon (website and services by Vercel, in the United States), with security and confidentiality safeguards.",
      "Nobody else: we neither sell nor rent your data."
     ] },
     { titre: "6. For how long", points: [
-     "The account: as long as it exists. When you delete it, it is really erased from the database, with its sessions and links. [TO BE COMPLETED: period after which an inactive account is deleted, if BelivaY sets one].",
+     "The account: as long as it exists. When you delete it, it is really erased from the database, with its sessions and links. An inactive account is not deleted automatically: it stays until you delete it.",
      "Sessions: 12 hours, or 30 days with “Remember me”, then erased.",
      "A forgotten-password link is valid for 30 minutes, an invitation for 72 hours; they are erased at most one day after they expire.",
      "Anti-abuse counters keep only a fingerprint of the IP address or e-mail, erased at the end of their window (15 minutes).",
      "The technical error log contains no personal data and is erased after 30 days.",
-     "Database backups keep deleted data until the end of their retention period: [TO BE COMPLETED: period, depending on the hosting plan]."
+     "Database backups keep deleted data until the end of their retention period, then it is gone for good; nobody uses it in the meantime."
     ] },
     { titre: "7. Security", points: [
      "Encrypted connection (HTTPS), hashed passwords, session cookie out of reach of scripts, temporary lock after 5 wrong attempts, mandatory second factor for the console, database encrypted at rest."
@@ -280,8 +281,8 @@ export const LEGAL: DocumentLegal[] = [
      "Access and portability: you download all your account data from your account, in a readable file.",
      "Correction: you change your name, number, e-mail and photo from your profile.",
      "Erasure: “Delete my account” really erases your account.",
-     "Objection, restriction and withdrawal of consent: write to contact@belivay.com. We answer within [TO BE COMPLETED: response time].",
-     "You can also contact the competent personal data protection authority in Cameroon: [TO BE COMPLETED: name and contact details of the authority set up by the 2024 law]."
+     "Objection, restriction and withdrawal of consent: write to contact@belivay.com. We answer within 30 days.",
+     "You can also contact the competent personal data protection authority in Cameroon: the personal data protection authority set up by Law No. 2024/017."
     ] },
     { titre: "9. Cookies and storage", points: [
      "A single cookie, strictly necessary: your session cookie, set when you sign in, unreadable by the page’s scripts.",
@@ -321,7 +322,7 @@ export const LEGAL: DocumentLegal[] = [
     "A return is possible if the item is not as described, damaged, counterfeit, or has a hidden defect reported within 48 hours after pickup.",
     "Within 7 days after pickup; “All good” closes this window earlier. No return for a change of mind.",
     "You bring the parcel back to your relay point and the courier takes it. Free return if the problem is confirmed.",
-    "Refund once the seller has received and checked the item, within 48 hours, to your BelivaY Wallet, or to the card that paid.",
+    "Refund once the seller has received and checked the item, within 48 hours, to the original payment method.",
     "Dispute: the seller has 48 hours to answer. If they stay silent, a person at BelivaY decides, starting from your side of the story. Any decision against you comes with a written reason.",
     "A hidden defect is covered for 100 days after pickup."
    ]
@@ -410,7 +411,7 @@ export const LEGAL: DocumentLegal[] = [
    grille: null,
    points: [
     "Payer au retrait\u00A0: tu paies la livraison d’avance, puis le reste en Mobile Money sur ton téléphone, au comptoir.",
-    "Plafonds\u00A0: 15\u00A0000\u00A0F pour un nouveau compte, puis 50\u00A0000\u00A0F, et 100\u00A0000\u00A0F après 5 commandes sans incident.",
+    "Plafonds\u00A0: 30\u00A0000\u00A0F pour un nouveau compte, puis 50\u00A0000\u00A0F, et 100\u00A0000\u00A0F après 5 commandes sans incident.",
     "Si tu refuses le colis, la livraison payée d’avance n’est pas remboursée. Après deux refus, le paiement d’avance devient obligatoire.",
     "Pas de paiement au comptoir depuis l’étranger ni pour un gros colis. Le vendeur peut le refuser pour certains produits.",
     "Carte Visa ou Mastercard, pour tous\u00A0: 3-D Secure, frais de service de 2 % affichés avant de payer, 150\u00A0000\u00A0F au plus par paiement. Jamais pour une commande payée au comptoir.",
@@ -423,11 +424,11 @@ export const LEGAL: DocumentLegal[] = [
    grille: null,
    points: [
     "Pay at pickup: you pay the delivery in advance, then the rest by Mobile Money on your phone, at the counter.",
-    "Limits: 15,000 F for a new account, then 50,000 F, and 100,000 F after 5 orders without incident.",
+    "Limits: 30,000 F for a new account, then 50,000 F, and 100,000 F after 5 orders without incident.",
     "If you refuse the parcel, the delivery paid in advance is not refunded. After two refusals, paying in advance becomes mandatory.",
     "No counter payment from abroad or for a bulky parcel. The seller may refuse it for some products.",
     "Visa or Mastercard, for everyone: 3-D Secure, 2% service fee shown before paying, 150,000 F at most per payment. Never for an order paid at the counter.",
-    "A refund goes to your BelivaY Wallet; a card payment is refunded to the same card."
+    "A refund always goes back to the original payment method (Mobile Money, card or Wallet)."
    ]
   }
  },
@@ -545,12 +546,12 @@ export const LEGAL: DocumentLegal[] = [
    sous: "Qui édite BelivaY.",
    grille: null,
    points: [
-    "Éditeur\u00A0: BelivaY SARLU (société à responsabilité limitée unipersonnelle), au capital de [À COMPLÉTER\u00A0: montant] F CFA.",
-    "Siège social\u00A0: [À COMPLÉTER\u00A0: adresse], Yaoundé, Cameroun.",
-    "RCCM\u00A0: [À COMPLÉTER\u00A0: numéro]. NIU\u00A0: [À COMPLÉTER\u00A0: numéro].",
-    "Directeur de la publication\u00A0: [À COMPLÉTER\u00A0: nom et fonction].",
+    "Éditeur\u00A0: BelivaY SARL (société à responsabilité limitée).",
+    "Siège social\u00A0: Yaoundé, Cameroun.",
+    "Immatriculée au Cameroun\u00A0; numéros RCCM et NIU communiqués sur simple demande à contact@belivay.com.",
+    "Directeur de la publication\u00A0: Franck Karel Penga Nkweya, fondateur.",
     "Contact\u00A0: contact@belivay.com, +237\u00A0689\u00A0002\u00A0812 (téléphone et WhatsApp).",
-    "Hébergement du site et des données\u00A0: [À COMPLÉTER\u00A0: nom, adresse et téléphone de l’hébergeur].",
+    "Hébergement du site et des données\u00A0: Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, États-Unis.",
     "Les produits, boutiques, prix et commandes visibles sur le site sont, pour l’instant, des exemples de démonstration.",
     "La marque, le logo, les textes et les visuels de BelivaY sont protégés\u00A0: toute reproduction demande un accord écrit."
    ]
@@ -560,12 +561,12 @@ export const LEGAL: DocumentLegal[] = [
    sous: "Who publishes BelivaY.",
    grille: null,
    points: [
-    "Publisher: BelivaY SARLU (single-member limited liability company), with a share capital of [TO BE COMPLETED: amount] CFA francs.",
-    "Head office: [TO BE COMPLETED: address], Yaoundé, Cameroon.",
-    "Trade register (RCCM): [TO BE COMPLETED: number]. Tax ID (NIU): [TO BE COMPLETED: number].",
-    "Publication director: [TO BE COMPLETED: name and position].",
+    "Publisher: BelivaY SARL (limited liability company).",
+    "Head office: Yaoundé, Cameroon.",
+    "Registered in Cameroon; trade register (RCCM) and tax ID (NIU) numbers available on request at contact@belivay.com.",
+    "Publication director: Franck Karel Penga Nkweya, founder.",
     "Contact: contact@belivay.com, +237 689 002 812 (phone and WhatsApp).",
-    "Hosting of the website and data: [TO BE COMPLETED: name, address and phone number of the host].",
+    "Hosting of the website and data: Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, United States.",
     "The products, shops, prices and orders shown on the website are, for now, demonstration examples.",
     "The BelivaY brand, logo, texts and visuals are protected: any reproduction requires written consent."
    ]

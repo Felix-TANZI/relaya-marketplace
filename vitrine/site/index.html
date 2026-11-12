@@ -30,6 +30,38 @@
     <meta property="og:locale" content="fr_CM" />
     <meta property="og:locale:alternate" content="en_GB" />
     <meta name="twitter:card" content="summary_large_image" />
+    <!-- Fiche d'identité pour les moteurs de recherche (données structurées schema.org). Bloc de données, jamais exécuté :
+         la politique de sécurité des scripts ne le concerne pas. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "__SITE_URL__/#organisation",
+            "name": "BelivaY",
+            "legalName": "BELIVAY SARL",
+            "url": "__SITE_URL__/",
+            "logo": "__SITE_URL__/icone-512.png",
+            "description": "La marketplace de confiance au Cameroun : boutiques de Yaoundé, paiement protégé par Mobile Money, retrait au point relais ou livraison.",
+            "email": "contact@belivay.com",
+            "telephone": "+237689002812",
+            "duns": "369982724",
+            "address": { "@type": "PostalAddress", "addressLocality": "Yaoundé", "addressRegion": "Centre", "addressCountry": "CM" },
+            "areaServed": { "@type": "Country", "name": "Cameroun" },
+            "contactPoint": { "@type": "ContactPoint", "contactType": "customer service", "email": "contact@belivay.com", "telephone": "+237689002812", "availableLanguage": ["fr", "en"] }
+          },
+          {
+            "@type": "WebSite",
+            "@id": "__SITE_URL__/#site",
+            "name": "BelivaY",
+            "url": "__SITE_URL__/",
+            "inLanguage": ["fr", "en"],
+            "publisher": { "@id": "__SITE_URL__/#organisation" }
+          }
+        ]
+      }
+    </script>
     <!-- Thème posé avant le premier rendu (fichier à part : la politique de sécurité refuse les scripts en ligne) et
          fond de la page déjà peint : l'application ouvre directement son premier écran, sans éclair blanc. -->
     <script src="/theme.js"></script>

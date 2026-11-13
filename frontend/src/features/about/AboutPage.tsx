@@ -1,6 +1,6 @@
 // frontend/src/features/about/AboutPage.tsx
 // Page « À propos » : hero, mission, fonctionnement de l'Escrow, valeurs,
-// présence CEMAC, chiffres clés, mentions légales et contact.
+// zone servie (Yaoundé), chiffres clés, mentions légales et contact.
 
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -124,13 +124,9 @@ const VALUES: { icon: LucideIcon; titleKey: string; textKey: string; bg: string;
   },
 ];
 
+// C01 (DEV-SRV-01 v1.8) : zone servie, Yaoundé seulement.
 const COUNTRIES = [
-  { code: "CM", nameKey: "cl5_about.country_cameroon" },
-  { code: "GA", nameKey: "cl5_about.country_gabon" },
-  { code: "TD", nameKey: "cl5_about.country_chad" },
-  { code: "CG", nameKey: "cl5_about.country_congo" },
-  { code: "CF", nameKey: "cl5_about.country_car" },
-  { code: "GQ", nameKey: "cl5_about.country_eq_guinea" },
+  { code: "YDE", nameKey: "cl5_about.city_yaounde" },
 ];
 
 const KEY_FIGURES: { icon: LucideIcon; labelKey: string; bg: string; color: string }[] = [
@@ -296,7 +292,7 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* ═══════════════════════ Présence CEMAC ═══════════════════════ */}
+        {/* ═══════════════════════ Zone servie ═══════════════════════ */}
         <section className="pf-card pf-anim">
           <h2 style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 19, fontWeight: 800, color: "var(--pf-text)" }}>
             <Globe size={20} style={{ color: "#2563eb" }} />
@@ -317,19 +313,15 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* ═══════════════════════════ Chiffres clés ═══════════════════════════ */}
+        {/* ═══════════════════════════ Nos engagements ═══════════════════════════ */}
         <section className="pf-card pf-anim">
           <h2 style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 19, fontWeight: 800, color: "var(--pf-text)" }}>
             <BarChart3 size={20} style={{ color: "var(--pf-accent)" }} />
             {t("cl5_about.key_figures_heading")}
           </h2>
 
-          <p className="mt-3 text-[13.5px] leading-relaxed" style={{ color: "var(--pf-text2)" }}>
-            {t("cl5_about.key_figures_text_p1")} <strong style={{ color: "var(--pf-text)" }}>{t("cl5_about.key_figures_text_strong1")}</strong>{" "}
-            {t("cl5_about.key_figures_text_p2")} <strong style={{ color: "var(--pf-text)" }}>{t("cl5_about.key_figures_text_strong2")}</strong>{t("cl5_about.key_figures_text_p3")}{" "}
-            <strong style={{ color: "var(--pf-text)" }}>{t("cl5_about.key_figures_text_strong3")}</strong> {t("cl5_about.key_figures_text_p4")}
-          </p>
-
+          {/* DEV-SRV-01 (T09, C01) : plus de chiffres sans source (« 100M FCFA de GMV », « 98 % »), seulement des
+              engagements que la plateforme tient. */}
           <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
             {KEY_FIGURES.map((figure) => {
               const Icon = figure.icon;

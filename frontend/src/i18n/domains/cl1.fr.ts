@@ -86,7 +86,7 @@ export default {
     pay_on_pickup: 'Payer au retrait (centre BelivaY)',
     continue_shopping: 'Continuer mes achats',
     escrow_title: 'Escrow BelivaY',
-    escrow_desc: "Paiement protégé jusqu'à la réception. Livraison suivie 24–72h Cameroun & CEMAC.",
+    escrow_desc: "Paiement protégé jusqu'à la réception. Livraison suivie 24–72h à Yaoundé.",
     item_removed: '{{name}} retiré du panier',
     undo: 'Annuler',
   },

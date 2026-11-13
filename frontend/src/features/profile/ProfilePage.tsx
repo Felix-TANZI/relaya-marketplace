@@ -74,6 +74,7 @@ import {
 } from "@/lib/supportInbox";
 // Feuille de route D16 et DP-17 : le vrai Wallet (API), affiché seulement quand il est ouvert.
 import WalletPanel, { useWalletOuvert } from "./WalletPanel";
+import { FIDELITE_VISIBLE } from "@/config/lancement";
 import { SITE_URL } from '@/config/site';
 
 type FontSize = "small" | "normal" | "large";
@@ -91,7 +92,7 @@ type PanelId =
   | "compte-belivay"
   | "reglages";
 
-const PANEL_IDS: PanelId[] = [
+const PANEL_IDS: PanelId[] = ([
   "dashboard",
   "profil",
   "adresses",
@@ -104,7 +105,7 @@ const PANEL_IDS: PanelId[] = [
   "securite",
   "compte-belivay",
   "reglages",
-];
+] as PanelId[]).filter((panel) => FIDELITE_VISIBLE || panel !== "fidelite"); // C01 : fidélité masquée
 type MessageTab = "all" | "support" | "litige";
 
 type AddressItem = {
@@ -698,11 +699,11 @@ export default function ProfilePage() {
           {stat(Package, orderCount, t("cl3_profile_dashboard.stat_orders"), "o")}
           {stat(Truck, activeCount, t("cl3_profile_dashboard.stat_in_progress"), "b")}
           {stat(Heart, favoritesCount, t("cl3_profile_dashboard.stat_favorites"), "p")}
-          {stat(Award, fidelityPoints.toLocaleString("fr-FR"), t("cl3_profile_dashboard.stat_points"), "a")}
+          {FIDELITE_VISIBLE && stat(Award, fidelityPoints.toLocaleString("fr-FR"), t("cl3_profile_dashboard.stat_points"), "a")}
         </div>
 
         <div className="pf-twoup">
-          <div className="pf-card pf-anim">
+          {FIDELITE_VISIBLE && <div className="pf-card pf-anim">
             <div className="pf-row-between pf-mb">
               <span className="pf-card-title">{t("cl3_profile_dashboard.loyalty_program")}</span>
               <span className="pf-muted-sm">
@@ -716,7 +717,7 @@ export default function ProfilePage() {
                 ? t("cl3_profile_dashboard.points_remaining", { points: pointsToNextTier.toLocaleString("fr-FR") })
                 : t("cl3_profile_dashboard.max_level")}
             </div>
-          </div>
+          </div>}
           <button type="button" className="pf-card pf-anim pf-notif" onClick={() => openPanel("messages", "support")}>
             <span className="pf-notif-ic">
               <Bell size={20} />
@@ -914,7 +915,7 @@ export default function ProfilePage() {
           <div className="pf-summary">
             <div className="pf-summary-row"><span className="pf-muted-sm">{t("cl3_profile_account.member_since")}</span><span className="pf-summary-v">{memberSince || "—"}</span></div>
             <div className="pf-summary-row"><span className="pf-muted-sm">{t("cl3_profile_account.account_type")}</span><span className="pf-summary-v">{isVendor ? t("cl3_profile_account.account_type_seller") : t("cl3_profile_account.account_type_client")}</span></div>
-            <div className="pf-summary-row"><span className="pf-muted-sm">{t("cl3_profile_account.loyalty")}</span><span className="pf-summary-v">{fidelityTier} · {fidelityPoints.toLocaleString("fr-FR")} pts</span></div>
+            {FIDELITE_VISIBLE && <div className="pf-summary-row"><span className="pf-muted-sm">{t("cl3_profile_account.loyalty")}</span><span className="pf-summary-v">{fidelityTier} · {fidelityPoints.toLocaleString("fr-FR")} pts</span></div>}
           </div>
         </section>
 
@@ -1648,7 +1649,7 @@ export default function ProfilePage() {
     { key: "orders", label: t("cl3_profile_nav.orders"), icon: Package, to: "/orders" },
     { key: "wishlist", label: t("cl3_profile_nav.favorites"), icon: Heart, to: "/wishlist" },
     { key: "messages", label: t("cl3_profile_nav.messages"), icon: MessageSquare, panel: "messages", badge: unreadMessages || undefined },
-    { key: "fidelite", label: t("cl3_profile_nav.loyalty"), icon: Award, panel: "fidelite" },
+    ...(FIDELITE_VISIBLE ? [{ key: "fidelite", label: t("cl3_profile_nav.loyalty"), icon: Award, panel: "fidelite" as PanelId }] : []),
   ];
   const accountNav: Array<{
     key: string;
@@ -1681,7 +1682,7 @@ export default function ProfilePage() {
     { key: "profil", label: t("cl3_profile_nav.profile"), icon: User, panel: "profil" },
     { key: "adresses", label: t("cl3_profile_nav.addresses"), icon: MapPin, panel: "adresses" },
     { key: "paiements", label: t("cl3_profile_nav.payment"), icon: CreditCard, panel: "paiements" },
-    { key: "fidelite", label: t("cl3_profile_nav.loyalty"), icon: Award, panel: "fidelite" },
+    ...(FIDELITE_VISIBLE ? [{ key: "fidelite", label: t("cl3_profile_nav.loyalty"), icon: Award, panel: "fidelite" as PanelId }] : []),
     { key: "parrain", label: t("cl3_profile_nav.referral"), icon: Gift, panel: "parrain" },
     { key: "messages", label: t("cl3_profile_nav.messages"), icon: MessageSquare, panel: "messages", badge: unreadMessages || undefined },
     { key: "securite", label: t("cl3_profile_nav.security"), icon: Shield, panel: "securite" },
@@ -1756,7 +1757,7 @@ export default function ProfilePage() {
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span className="pf-chip"><Award size={14} style={{ color: "var(--pf-accent)" }} />{fidelityTier} · {fidelityPoints.toLocaleString("fr-FR")} pts</span>
+            {FIDELITE_VISIBLE && <span className="pf-chip"><Award size={14} style={{ color: "var(--pf-accent)" }} />{fidelityTier} · {fidelityPoints.toLocaleString("fr-FR")} pts</span>}
             <button type="button" className="pf-btn-ghost" onClick={() => openPanel("profil")}>
               <Pencil size={13} />{t("cl3_profile_shell.edit")}
             </button>
@@ -1777,13 +1778,15 @@ export default function ProfilePage() {
               <div className="pf-mid-n">{displayName}</div>
               <div className="pf-mid-s">• {defaultCity}</div>
             </div>
-            <span className="pf-mid-tier">
-              <Medal size={14} />
-              {fidelityTier}
-            </span>
+            {FIDELITE_VISIBLE && (
+              <span className="pf-mid-tier">
+                <Medal size={14} />
+                {fidelityTier}
+              </span>
+            )}
           </div>
 
-          <button
+          {FIDELITE_VISIBLE && <button
             type="button"
             className="pf-mprog"
             onClick={() => openPanel("fidelite")}
@@ -1796,7 +1799,7 @@ export default function ProfilePage() {
               <i style={{ width: `${tierProgress}%` }} />
             </span>
             <span className="pf-mprog-v">{fidelityPoints.toLocaleString("fr-FR")} pts</span>
-          </button>
+          </button>}
 
           <div className="pf-mtiles">
             {mobileTiles.map((tile) => {

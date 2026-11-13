@@ -64,7 +64,7 @@ const THEME_SEEDS: Omit<CategoryTheme, "thumb">[] = [
     title: "Tout le catalogue BelivaY",
     subtitle: "Tous les produits des boutiques BelivaY",
     description:
-      "L'intégralité de l'offre BelivaY, tous thèmes confondus : mode, électronique, beauté, maison, supermarché et bien plus. Paiement Mobile Money sécurisé par escrow, vendeurs vérifiés et livraison partout au Cameroun et en Afrique centrale.",
+      "L'intégralité de l'offre BelivaY, tous thèmes confondus : mode, électronique, beauté, maison, supermarché et bien plus. Paiement Mobile Money sécurisé par escrow, vendeurs vérifiés et livraison à Yaoundé.",
     image: `https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?${IMG}`,
     facets: ["Nouveautés", "Promotions", "Made in Cameroon", "Livraison 24h", "Coup de cœur"],
     vendors: "",

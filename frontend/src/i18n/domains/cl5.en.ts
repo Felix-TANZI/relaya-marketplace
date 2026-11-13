@@ -1,6 +1,6 @@
 export default {
   cl5_about: {
-    hero_tagline: "Central Africa's trusted marketplace",
+    hero_tagline: "Yaoundé's trusted marketplace",
     hero_subtitle: "Buy and sell safely with Mobile Money payment and BelivaY Escrow protection.",
     cta_buy: "Start shopping",
     cta_sell: "Become a seller",
@@ -23,9 +23,9 @@ export default {
     escrow_step2_title: "Funds held in Escrow",
     escrow_step2_text: "The seller receives nothing until you confirm receipt.",
     escrow_step3_title: "Tracked delivery",
-    escrow_step3_text: "Real-time tracking. 24–72h in Cameroon, 5–7 days in the CEMAC zone.",
+    escrow_step3_text: "Real-time tracking. Delivery within 24–72h in Yaoundé.",
     escrow_step4_title: "Confirm or dispute",
-    escrow_step4_text: "Happy? Confirm. Problem? 7 days to open a dispute. Refund guaranteed.",
+    escrow_step4_text: "Happy? Confirm. Problem? 7 days to request a return with a reason (not as described, damaged, counterfeit), free if approved.",
     escrow_step5_title: "Seller paid",
     escrow_step5_text: "24h after your confirmation, funds are released to the seller. Everybody wins!",
 
@@ -43,15 +43,16 @@ export default {
     value_social_title: "Social Impact",
     value_social_text: "Priority to African artisans and SMEs. Fair trade.",
 
-    presence_heading: "CEMAC Presence",
+    presence_heading: "Area served",
     country_cameroon: "Cameroon",
     country_gabon: "Gabon",
     country_chad: "Chad",
     country_congo: "Congo",
     country_car: "CAR",
     country_eq_guinea: "Eq. Guinea",
+    city_yaounde: "Yaoundé · Cameroon",
 
-    key_figures_heading: "Key Figures",
+    key_figures_heading: "Our commitments",
     key_figures_text_p1: "BelivaY processes more than",
     key_figures_text_strong1: "100M FCFA in monthly GMV",
     key_figures_text_p2: "with a satisfaction rate of",
@@ -59,10 +60,10 @@ export default {
     key_figures_text_p3: ". Seller commissions range from",
     key_figures_text_strong3: "12% to 23%",
     key_figures_text_p4: "depending on category, with discounts via Premium subscription plans.",
-    key_figure_fraud: "0% fraud",
-    key_figure_delivery: "24h delivery",
+    key_figure_fraud: "Protected payment",
+    key_figure_delivery: "24–72h in Yaoundé",
     key_figure_support: "Support 7 days/week",
-    key_figure_return: "7-day return",
+    key_figure_return: "7-day returns with a reason",
 
     legal_heading: "Legal Notices & Terms",
     legal_last_update: "Last updated: May 17, 2026",
@@ -88,7 +89,7 @@ export default {
     contact_chat_ai: "AI Chat",
     contact_whatsapp: "WhatsApp",
     contact_email: "Email",
-    contact_address: "Yaoundé, Cameroon · CEMAC",
+    contact_address: "Yaoundé, Cameroon",
   },
 
   cl5_premium: {
@@ -125,7 +126,7 @@ export default {
     feature_alerts: "Instant price drop alerts",
     feature_ai: "Personalized AI recommendations",
     feature_support: "24/7 dedicated support line",
-    feature_shops: "Access to CEMAC selected shops",
+    feature_shops: "Access to selected shops",
 
     calculator_title: "Calculate your savings",
     calculator_orders_label: "Orders / month",
@@ -228,7 +229,7 @@ export default {
     faq6_q: "How does the referral program work?",
     faq6_a: "Share your unique code. For each friend who subscribes (monthly or yearly), you receive 1 free month added to your subscription.",
     faq7_q: "Are the benefits valid outside Cameroon?",
-    faq7_a: "Yes, across the entire CEMAC zone: Cameroon, Gabon, Congo, CAR, Chad, Equatorial Guinea.",
+    faq7_a: "Not yet: BelivaY serves Yaoundé for now.",
 
     month_jan: "Jan",
     month_feb: "Feb",

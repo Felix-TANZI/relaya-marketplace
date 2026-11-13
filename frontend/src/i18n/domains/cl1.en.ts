@@ -86,7 +86,7 @@ export default {
     pay_on_pickup: 'Pay at pickup (BelivaY center)',
     continue_shopping: 'Continue shopping',
     escrow_title: 'BelivaY Escrow',
-    escrow_desc: 'Payment protected until receipt. Tracked delivery 24–72h Cameroon & CEMAC.',
+    escrow_desc: 'Payment protected until receipt. Tracked delivery 24–72h in Yaoundé.',
     item_removed: '{{name}} removed from cart',
     undo: 'Undo',
   },

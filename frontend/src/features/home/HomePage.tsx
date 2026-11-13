@@ -24,6 +24,7 @@ import { productInStorefrontCategory } from "@/data/storefrontCategories";
 import useStorefrontCategories from "@/hooks/useStorefrontCategories";
 import useSidebarTrack from "@/hooks/useSidebarTrack";
 import NearbyProductsSection from "@/components/home/NearbyProductsSection";
+import { FIDELITE_VISIBLE } from "@/config/lancement";
 
 type SortKey = "relevance" | "price-asc" | "price-desc" | "rating" | "newest";
 
@@ -487,7 +488,7 @@ export default function HomePage() {
 
             {/* En mobile, le bandeau Premium précède les nouveautés (il vit dans la
                 grille du catalogue sur grand écran, masquée ici). */}
-            <SectionBanner
+            {FIDELITE_VISIBLE && <SectionBanner
               to="/premium"
               className="lg:hidden"
               ariaLabel={t("home.premium_aria")}
@@ -499,8 +500,8 @@ export default function HomePage() {
               iconClassName="text-amber-200 drop-shadow-[0_0_6px_rgba(253,224,71,.7)]"
               gradient="linear-gradient(100deg,#3B0F76 0%,#4C1D95 20%,#5B21B6 44%,#7C3AED 72%,#9F7AEA 100%)"
               shadow="0 14px 36px rgba(76,29,149,.38)"
-              watermark={["PREMIUM", "CASHBACK", "BELIVAY", "VIP", "PRIORITE", "MEMBRE"]}
-            />
+              watermark={["PREMIUM", "BELIVAY", "VIP", "MEMBRE"]}
+            />}
 
             <section className="rounded-[22px] border border-[#d8eadb] bg-[linear-gradient(180deg,#f6fff8,#fff)] p-2.5 shadow-[0_12px_32px_rgba(15,23,42,.05)] sm:rounded-[28px] sm:p-3 dark:border-gray-800 dark:bg-[linear-gradient(180deg,#111827,#0f172a)]">
               <HomeSection
@@ -602,7 +603,7 @@ export default function HomePage() {
                   </div>
                 ) : null}
 
-                <SectionBanner
+                {FIDELITE_VISIBLE && <SectionBanner
                   to="/premium"
                   className="-mx-3 sm:-mx-4"
                   ariaLabel={t("home.premium_aria")}
@@ -614,8 +615,8 @@ export default function HomePage() {
                   iconClassName="text-amber-200 drop-shadow-[0_0_6px_rgba(253,224,71,.7)]"
                   gradient="linear-gradient(100deg,#3B0F76 0%,#4C1D95 20%,#5B21B6 44%,#7C3AED 72%,#9F7AEA 100%)"
                   shadow="0 14px 36px rgba(76,29,149,.38)"
-                  watermark={["PREMIUM", "CASHBACK", "BELIVAY", "VIP", "PRIORITE", "MEMBRE"]}
-                />
+                  watermark={["PREMIUM", "BELIVAY", "VIP", "MEMBRE"]}
+                />}
 
                 {productChunks[1].length > 0 ? (
                   <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 xl:grid-cols-4">

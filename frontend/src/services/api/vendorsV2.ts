@@ -11,6 +11,7 @@
 // l'écran qui les affichera ; ce fichier n'expose que des données typées.
 
 import { http } from "./http";
+import type { PendingWithdrawal, WithdrawalRequest } from "./vendors";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES — GET /api/vendors/v2/money-summary/
@@ -173,7 +174,16 @@ export function previewCommissionClientSide(
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const vendorsV2Api = {
-  /** GET /api/vendors/v2/money-summary/ — approximation des 5 états VD-09. */
+  /** GET /api/vendors/v2/payouts/ — les versements réels du vendeur (DEV-SRV-01 v1.8, C04 : un par jour au plus),
+   *  sous la forme de l'historique de l'écran Versements, et le versement en cours. */
+  getPayouts: async (): Promise<{ payouts: WithdrawalRequest[]; pending: PendingWithdrawal | null }> => {
+    const token = localStorage.getItem("access_token");
+    return http("/api/vendors/v2/payouts/", {
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    });
+  },
+
+  /** GET /api/vendors/v2/money-summary/ — états de l'argent lus sur les séquestres et versements réels (C04). */
   getMoneySummary: async (): Promise<VendorMoneySummary> => {
     const token = localStorage.getItem("access_token");
     return http<VendorMoneySummary>("/api/vendors/v2/money-summary/", {

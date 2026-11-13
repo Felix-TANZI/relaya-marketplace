@@ -2,16 +2,9 @@
 // VD-09 §Argent et versements — écrans "Versements" (fig. 7) et "Versements ·
 // refus de l'opérateur" (fig. 8).
 //
-// ADAPTATION ASSUMÉE : la maquette décrit un versement AUTOMATIQUE
-// hebdomadaire ("Prochain versement : vendredi 25 septembre, avant 12 h,
-// automatique"). Le modèle réel de BelivaY est différent et confirmé par le
-// métier : le vendeur RETIRE quand il le décide (vendorsApi.createWithdrawal /
-// getWithdrawals — même logique que SellerWalletPage.tsx). Cette page est donc
-// réécrite comme un historique de DEMANDES DE RETRAIT et de leur statut
-// (PENDING/APPROVED/REJECTED/CANCELLED), pas comme une liste passive de
-// prochains versements automatiques. Aucune donnée n'est inventée : mêmes
-// endpoints, mêmes champs que vendors.ts (VendorPaymentSummary,
-// WithdrawalRequest, PendingWithdrawal).
+// DEV-SRV-01 v1.8, C04 : les versements sont AUTOMATIQUES, un par jour au plus, un jour après la confirmation du
+// client. Cette page liste les versements réels (GET /api/vendors/v2/payouts/, payments.PayoutRequest) sous la
+// forme de l'historique (PENDING/APPROVED/REJECTED/CANCELLED) ; il n'y a plus de demande de retrait à faire.
 //
 // Fig. 8 (refus opérateur) est repliée ICI comme un ÉTAT plutôt que comme un
 // second fichier/route : dès que la demande la plus récente a le statut
@@ -28,10 +21,12 @@ import {
 import { useTheme } from '@/context/ThemeContext';
 import {
   vendorsApi,
+  type PendingWithdrawal,
   type VendorPaymentSummary,
   type WithdrawalRequest,
   type WithdrawalOperator,
 } from '@/services/api/vendors';
+import { vendorsV2Api } from '@/services/api/vendorsV2';
 import { OperatorLogo } from '@/features/payments/OperatorLogo';
 import { fmtDate } from '@/features/vendors/orderUtils';
 import { palette } from '../theme';
@@ -74,7 +69,8 @@ export default function VersementsPage() {
   const p = palette(theme);
   const navigate = useNavigate();
 
-  const [summary, setSummary] = useState<VendorPaymentSummary | null>(null);
+  const [pendingWd, setPendingWd] = useState<PendingWithdrawal | null>(null);
+  const [summary, setSummary] = useState<VendorPaymentSummary | null>(null); // le numéro de versement enregistré
   const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<Period>('3m');
@@ -82,9 +78,11 @@ export default function VersementsPage() {
   const load = async () => {
     try {
       setLoading(true);
-      const [sum, wds] = await Promise.all([vendorsApi.getPaymentSummary(), vendorsApi.getWithdrawals()]);
+      // DEV-SRV-01 v1.8, C04 : les versements réels (automatiques, un par jour au plus).
+      const [{ payouts, pending }, sum] = await Promise.all([vendorsV2Api.getPayouts(), vendorsApi.getPaymentSummary()]);
       setSummary(sum);
-      setWithdrawals(wds);
+      setPendingWd(pending);
+      setWithdrawals(payouts);
     } catch {
       // Panne réseau : l'écran reste vide plutôt que d'afficher une fausse donnée.
     } finally {
@@ -101,7 +99,6 @@ export default function VersementsPage() {
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   }, [withdrawals, period]);
 
-  const pendingWd = summary?.pending_withdrawal ?? null;
   const latest = withdrawals.slice().sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
   const isRefused = !pendingWd && latest?.status === 'REJECTED';
 
@@ -153,7 +150,7 @@ export default function VersementsPage() {
           <div className="flex gap-2 mt-3 flex-wrap">
             <button
               type="button"
-              onClick={() => navigate('/seller/wallet')}
+              onClick={() => navigate('/seller/v2/argent/numero')}
               className="flex items-center justify-center gap-1.5 rounded-xl font-bold text-white"
               style={{ padding: '10px 15px', fontSize: 12.5, background: p.orange }}
             >
@@ -195,13 +192,7 @@ export default function VersementsPage() {
           <Wallet size={24} color={p.textMuted} className="mx-auto mb-2" />
           <p className="font-bold" style={{ fontSize: 13, color: p.text }}>{t('sl12_argent.versements_no_pending_title')}</p>
           <p className="mt-1" style={{ fontSize: 12, color: p.textMuted }}>{t('sl12_argent.versements_no_pending_sub')}</p>
-          <button
-            type="button" onClick={() => navigate('/seller/wallet')}
-            className="inline-flex items-center gap-1.5 rounded-xl font-bold text-white mt-3"
-            style={{ padding: '10px 16px', fontSize: 12.5, background: p.orange }}
-          >
-            {t('sl12_argent.versements_request_cta')}<ArrowRight size={14} />
-          </button>
+          {/* C04 : pas de demande de retrait — le versement part automatiquement chaque jour. */}
         </div>
       ) : null}
 
@@ -278,7 +269,7 @@ export default function VersementsPage() {
           <ArrowRight size={16} color={p.textMuted} />
         </a>
         <button
-          type="button" onClick={() => navigate('/v2/argent/numero')}
+          type="button" onClick={() => navigate('/seller/v2/argent/numero')}
           className="flex items-center gap-3 w-full text-left"
           style={{ padding: '13px 14px' }}
         >

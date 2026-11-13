@@ -37,10 +37,11 @@ export const TIER_THRESHOLD: Record<SellerTier, number> = {
   PLATINUM: 90,
 };
 
-/** Vitesse de libération par palier — VD-09 §LIB-01, VD-10 §PAL-02. */
+/** Délai de versement après la confirmation du client — DEV-SRV-01 v1.8, C04 : le même pour tous les paliers
+ *  (r_versement_vendeur_j, 1 jour) ; il ne dépend plus du palier (ancienne règle J+3 / J+1). */
 export const TIER_RELEASE_DAYS: Record<SellerTier, number> = {
-  BRONZE: 3,
-  SILVER: 3,
+  BRONZE: 1,
+  SILVER: 1,
   GOLD: 1,
   PLATINUM: 1,
 };

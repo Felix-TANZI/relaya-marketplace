@@ -193,3 +193,52 @@ def test_un_defaut_cache_apres_versement_est_repris_sur_les_versements_suivants(
     assert creance.direction == Adjustment.Direction.CREDIT and creance.remaining_xaf == 4000
     assert creance.status == Adjustment.Status.PENDING_APPROVAL            # validée par une seconde personne
     assert creance.payee == vendeur
+
+
+# ── Espace vendeur (C04-b) : montants et versements réels ────────────────────────────────────────────────────────
+
+def test_l_espace_vendeur_lit_les_vrais_sequestres_et_versements(acheteur, vendeur, vendeur_user):
+    from rest_framework.test import APIClient
+
+    c = APIClient()
+    c.force_authenticate(vendeur_user)
+    liberer(acheteur, vendeur, montant=20000, order_id=51, cle="c04-6")
+    resume = c.get("/api/vendors/v2/money-summary/").json()
+    assert resume["to_pay"]["amount_xaf"] > 0                      # libéré, pas encore versé
+    assert resume["payout_rhythm"] == "daily" and resume["release_delay_days"] == 1
+
+    vv.versements_vendeurs_du_jour()
+    demande = approve_payout(PayoutRequest.objects.get(payee=vendeur), approved_by=_operateur())
+    execute_payout(demande)
+    versements = c.get("/api/vendors/v2/payouts/").json()
+    assert versements["pending"] is None
+    ligne = versements["payouts"][0]
+    assert ligne["status"] == "APPROVED" and ligne["net_amount_xaf"] == demande.amount_xaf
+    assert ligne["fee_amount_xaf"] == demande.psp_fee_xaf > 0
+    assert c.get("/api/vendors/v2/money-summary/").json()["paid_out"]["amount_xaf"] == demande.amount_xaf
+
+
+def test_le_montant_s_affiche_des_la_confirmation_du_client(acheteur, vendeur, vendeur_user):
+    """« À la confirmation, le montant s'affiche tout de suite chez le vendeur. »"""
+    from rest_framework.test import APIClient
+
+    from apps.payments.application.collect import create_payment_intent, initiate_collect, poll_attempt
+    from apps.payments.bridge import events_in
+    from apps.payments.domain.distribution import ComponentInput
+    from apps.payments.domain.enums import EconomicComponent, PayeeType as DomainPayeeType
+    from apps.payments.domain.money import Money
+
+    intent = create_payment_intent(
+        buyer=acheteur, idempotency_key="c04-7",
+        components=[ComponentInput(EconomicComponent.GOODS, Money(20000), order_id=61, commission_rate=Decimal("15"))],
+        payee_codes={DomainPayeeType.VENDOR: vendeur.payee_code},
+        payee_types={vendeur.payee_code: DomainPayeeType.VENDOR}, payer_msisdn=NUMERO, payer_operator="MTN")
+    issue = initiate_collect(intent)
+    poll_attempt(issue.attempt)
+    poll_attempt(issue.attempt)
+    c = APIClient()
+    c.force_authenticate(vendeur_user)
+    assert c.get("/api/vendors/v2/money-summary/").json()["in_progress"]["amount_xaf"] > 0   # attend le client
+    events_in.buyer_confirmed_receipt(order_id=61, event_id="rec-c04-7")
+    resume = c.get("/api/vendors/v2/money-summary/").json()
+    assert resume["releasing"]["amount_xaf"] > 0 and resume["releasing"]["next_release_at"]  # affiché aussitôt

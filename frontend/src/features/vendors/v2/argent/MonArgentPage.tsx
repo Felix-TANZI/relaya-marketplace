@@ -10,17 +10,10 @@
 // réutilisent directement leurs clés i18n, sl12_argent.se_libere_title /
 // gele_title, pour rester synchrones sans dupliquer le texte).
 //
-// DÉCISION PRODUIT APPLIQUÉE ICI (verrouillée pendant ce lot) : le vendeur
-// retire son argent QUAND IL VEUT (retrait à la demande, flux déjà réel —
-// vendorsApi.createWithdrawal()/SellerWalletPage.tsx), il n'y a PAS de
-// versement poussé automatiquement le vendredi. Le mockup source (Argent.html)
-// suppose l'inverse ("À verser vendredi 25 sept.", badge "Automatique ·
-// vérifié · sans frais") : reformulé ci-dessous en "Disponible à retirer" +
-// CTA "Retirer mon argent" qui renvoie vers le vrai formulaire de retrait
-// (/seller/wallet, pas encore reconstruit en v2 dans ce lot). Le taux de
-// frais de retrait est RÉEL (PlatformSettings.withdrawal_fee_percent via
-// vendorsApi.getPaymentSummary()) : on ne répète donc jamais "sans frais"
-// comme le fait le mockup.
+// DEV-SRV-01 v1.8, C04 : plus de retrait à la demande ni de versement du vendredi. Le client confirme lui-même la
+// réception ; le montant s'affiche aussitôt (« Se libère ») et part automatiquement, chaque jour, un jour après la
+// confirmation, vers le numéro Mobile Money vérifié (1 % de frais à la charge du vendeur). Le bouton mène donc à
+// l'historique des versements (ou à l'ajout du numéro), pas à un formulaire de retrait.
 //
 // Pont API : vendorsV2Api.getMoneySummary() (GET /api/vendors/v2/money-summary/,
 // voir backend/apps/vendors/views_money_v2.py) donne directement les 4 états
@@ -282,7 +275,7 @@ export default function MonArgentPage() {
 
         <button
           type="button"
-          onClick={() => navigate('/seller/wallet')}
+          onClick={() => navigate(op && last4 ? '/seller/v2/versements' : '/seller/v2/argent/numero')}
           className="w-full flex items-center justify-center gap-2 rounded-xl font-bold text-white mt-4"
           style={{ padding: 13, background: p.orange, fontSize: 13.5 }}
         >

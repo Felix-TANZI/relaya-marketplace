@@ -27,8 +27,8 @@ export default {
     sanctions_link: 'Sanctions and control',
     palier_cta_orders: 'See my orders to prepare',
     palier_how_1: 'Your tier depends on your Trust Score, held above the threshold for 14 days in a row.',
-    palier_how_2: 'Bronze and Silver: your money is released {{days}} days after the customer confirms.',
-    palier_how_3: 'Gold and Platinum: your money is released {{days}} day after the customer confirms.',
+    palier_how_2: "Whatever your tier, your money is paid {{days}} day after the customer confirms.",
+    palier_how_3: "Your tier changes your benefits and visibility, not the payout delay.",
 
     // ── My score (VD-10 §SCO, Fig.2) ───────────────────────────────────────
     score_title: 'My score',

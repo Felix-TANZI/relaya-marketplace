@@ -28,8 +28,8 @@ export default {
     sanctions_link: 'Sanctions et contrôle',
     palier_cta_orders: 'Voir mes commandes à préparer',
     palier_how_1: 'Le palier dépend de votre Trust Score, tenu 14 jours de suite au-dessus du seuil.',
-    palier_how_2: 'Bronze et Argent : votre argent se libère {{days}} jours après la confirmation du client.',
-    palier_how_3: 'Or et Platine : votre argent se libère {{days}} jour après la confirmation du client.',
+    palier_how_2: "Quel que soit votre palier, votre argent est versé {{days}} jour après la confirmation du client.",
+    palier_how_3: "Votre palier change vos avantages et votre visibilité, pas le délai de versement.",
 
     // ── Mon score (VD-10 §SCO, Fig.2) ─────────────────────────────────────
     score_title: 'Mon score',

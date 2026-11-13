@@ -133,7 +133,7 @@ export default {
     view_dispute: 'Voir le litige',
     confirm_receipt_title: 'Confirmer la réception',
     confirm_receipt_instructions: 'Demande à ton livreur le code affiché sur son téléphone : scanne son QR ou saisis les 6 chiffres.',
-    scan_qr: 'Scanner le QR',
+     scan_qr: 'Scanner le QR',
     receipt_code_placeholder: 'Code à 6 chiffres',
     validate: 'Valider',
     submitting_ellipsis: '...',

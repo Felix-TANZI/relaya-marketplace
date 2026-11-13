@@ -14,7 +14,7 @@ import re
 import subprocess
 import sys
 
-PLAFONDS = {"Warnings": 266, "Errors": 433}  # mesurés le 2026-10-31 (relaya.settings.test), comptes distincts
+PLAFONDS = {"Warnings": 266, "Errors": 432}  # 2026-11-13 : 433 -> 432 (C04, réponses typées) ; mesurés en relaya.settings.test, comptes distincts
 
 
 def main() -> int:

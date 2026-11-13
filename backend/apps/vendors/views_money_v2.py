@@ -9,6 +9,7 @@
 
 from django.contrib.auth.models import User
 from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -35,6 +36,7 @@ def _vendor_kept_for_order(order: Order, vendor: User) -> int:
         "en cours (attend la confirmation du client), se libère (confirmé, date de libération), gelé, "
         "à verser, versé. Versement chaque jour, r_versement_vendeur_j jour après la confirmation."
     ),
+    responses={200: OpenApiTypes.OBJECT},
 )
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -137,6 +139,7 @@ _OPERATEUR_ECRAN = {"MTN": "MTN_MOMO", "ORANGE": "ORANGE_MONEY"}
         "Les versements réels du vendeur (un par jour au plus, DEV-SRV-01 v1.8, C04), sous la forme de l'historique "
         "de l'écran Versements, et le versement en cours s'il y en a un."
     ),
+    responses={200: OpenApiTypes.OBJECT},
 )
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])

@@ -313,19 +313,15 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* ═══════════════════════════ Chiffres clés ═══════════════════════════ */}
+        {/* ═══════════════════════════ Nos engagements ═══════════════════════════ */}
         <section className="pf-card pf-anim">
           <h2 style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 19, fontWeight: 800, color: "var(--pf-text)" }}>
             <BarChart3 size={20} style={{ color: "var(--pf-accent)" }} />
             {t("cl5_about.key_figures_heading")}
           </h2>
 
-          <p className="mt-3 text-[13.5px] leading-relaxed" style={{ color: "var(--pf-text2)" }}>
-            {t("cl5_about.key_figures_text_p1")} <strong style={{ color: "var(--pf-text)" }}>{t("cl5_about.key_figures_text_strong1")}</strong>{" "}
-            {t("cl5_about.key_figures_text_p2")} <strong style={{ color: "var(--pf-text)" }}>{t("cl5_about.key_figures_text_strong2")}</strong>{t("cl5_about.key_figures_text_p3")}{" "}
-            <strong style={{ color: "var(--pf-text)" }}>{t("cl5_about.key_figures_text_strong3")}</strong> {t("cl5_about.key_figures_text_p4")}
-          </p>
-
+          {/* DEV-SRV-01 (T09, C01) : plus de chiffres sans source (« 100M FCFA de GMV », « 98 % »), seulement des
+              engagements que la plateforme tient. */}
           <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
             {KEY_FIGURES.map((figure) => {
               const Icon = figure.icon;

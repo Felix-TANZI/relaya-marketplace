@@ -52,7 +52,7 @@ export default {
     country_eq_guinea: "Guinée Éq.",
     city_yaounde: "Yaoundé · Cameroun",
 
-    key_figures_heading: "Chiffres clés",
+    key_figures_heading: "Nos engagements",
     key_figures_text_p1: "BelivaY traite plus de",
     key_figures_text_strong1: "100M FCFA de GMV mensuel",
     key_figures_text_p2: "avec un taux de satisfaction de",
@@ -60,10 +60,10 @@ export default {
     key_figures_text_p3: ". Les commissions vendeurs varient de",
     key_figures_text_strong3: "12% à 23%",
     key_figures_text_p4: "selon la catégorie, avec des réductions via les plans d'abonnement Premium.",
-    key_figure_fraud: "0% fraude",
-    key_figure_delivery: "24h livraison",
+    key_figure_fraud: "Paiement protégé",
+    key_figure_delivery: "24–72 h à Yaoundé",
     key_figure_support: "Support 7j/7",
-    key_figure_return: "Retour 7j",
+    key_figure_return: "Retour 7 j sur motif",
 
     legal_heading: "Mentions légales & Conditions",
     legal_last_update: "Dernière mise à jour : 17 mai 2026",

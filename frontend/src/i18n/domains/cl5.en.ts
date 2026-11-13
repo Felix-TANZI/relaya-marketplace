@@ -52,7 +52,7 @@ export default {
     country_eq_guinea: "Eq. Guinea",
     city_yaounde: "Yaoundé · Cameroon",
 
-    key_figures_heading: "Key Figures",
+    key_figures_heading: "Our commitments",
     key_figures_text_p1: "BelivaY processes more than",
     key_figures_text_strong1: "100M FCFA in monthly GMV",
     key_figures_text_p2: "with a satisfaction rate of",
@@ -60,10 +60,10 @@ export default {
     key_figures_text_p3: ". Seller commissions range from",
     key_figures_text_strong3: "12% to 23%",
     key_figures_text_p4: "depending on category, with discounts via Premium subscription plans.",
-    key_figure_fraud: "0% fraud",
-    key_figure_delivery: "24h delivery",
+    key_figure_fraud: "Protected payment",
+    key_figure_delivery: "24–72h in Yaoundé",
     key_figure_support: "Support 7 days/week",
-    key_figure_return: "7-day return",
+    key_figure_return: "7-day returns with a reason",
 
     legal_heading: "Legal Notices & Terms",
     legal_last_update: "Last updated: May 17, 2026",

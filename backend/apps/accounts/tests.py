@@ -814,7 +814,7 @@ class BlacklistEnforcementTests(APITestCase):
         self.client.force_authenticate(admin)
 
         response = self.client.post(reverse("auth-admin-create-user"), {
-            "role": "delivery_org", "username": "org_blacklisted", "password": "pass12345",
+            "role": "delivery_org", "username": "org_blacklisted", "password": TEST_PASSWORD,
             "phone": "+237600999999", "company_name": "Org Bloquee", "city": "Douala",
         })
 
@@ -878,7 +878,7 @@ class AccountDeletionTests(APITestCase):
     def setUp(self):
         self.user = User.objects.create_user(
             username="client_delete", email="client.delete@example.com",
-            password="Secret-pass-123", first_name="Awa", last_name="Client",
+            password=TEST_PASSWORD, first_name="Awa", last_name="Client",
         )
         UserProfile.objects.create(user=self.user, phone="+237650000099", bio="bio")
         self.client.force_authenticate(self.user)
@@ -897,7 +897,7 @@ class AccountDeletionTests(APITestCase):
             total_xaf=5000,
         )
 
-        response = self.client.delete(self.endpoint, {"password": "Secret-pass-123"}, format="json")
+        response = self.client.delete(self.endpoint, {"password": TEST_PASSWORD}, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.user.refresh_from_db()
@@ -920,7 +920,7 @@ class AccountDeletionTests(APITestCase):
             fulfillment_status=Order.FulfillmentStatus.OUT_FOR_DELIVERY, total_xaf=5000,
         )
 
-        response = self.client.delete(self.endpoint, {"password": "Secret-pass-123"}, format="json")
+        response = self.client.delete(self.endpoint, {"password": TEST_PASSWORD}, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
         self.user.refresh_from_db()
@@ -948,18 +948,18 @@ class AccountDeletionTests(APITestCase):
             refresh_token_encrypted=apple.encrypt_token("apple-refresh"),
         )
 
-        response = self.client.delete(self.endpoint, {"password": "Secret-pass-123"}, format="json")
+        response = self.client.delete(self.endpoint, {"password": TEST_PASSWORD}, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         revoke.assert_called_once_with("apple-refresh", "com.belivay.client")
         self.assertFalse(AppleIdentity.objects.filter(user=self.user).exists())
 
     def test_deleted_account_can_no_longer_log_in(self):
-        self.client.delete(self.endpoint, {"password": "Secret-pass-123"}, format="json")
+        self.client.delete(self.endpoint, {"password": TEST_PASSWORD}, format="json")
         self.client.force_authenticate(None)
 
         response = self.client.post(
-            "/api/auth/login/", {"username": "client_delete", "password": "Secret-pass-123"}, format="json",
+            "/api/auth/login/", {"username": "client_delete", "password": TEST_PASSWORD}, format="json",
         )
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
@@ -977,7 +977,7 @@ class RelayNotificationPreferencesTests(APITestCase):
 
     def setUp(self):
         self.url = reverse("relay-point-notification-preferences")
-        self.relay_user = User.objects.create_user("prefs_relay", password="Relay2026")
+        self.relay_user = User.objects.create_user("prefs_relay")
         RelayPointProfile.objects.create(
             user=self.relay_user,
             name="Relais Preferences",
@@ -986,7 +986,7 @@ class RelayNotificationPreferencesTests(APITestCase):
             status=RelayPointProfile.Status.APPROVED,
             is_active=True,
         )
-        self.autre = User.objects.create_user("prefs_autre", password="Client2026")
+        self.autre = User.objects.create_user("prefs_autre")
 
     def test_valeurs_par_defaut_a_la_premiere_lecture(self):
         """La premiere ouverture cree les preferences, elle n'echoue pas."""
@@ -1054,7 +1054,7 @@ class RelayNotificationPreferencesTests(APITestCase):
         self.client.force_authenticate(self.relay_user)
         self.client.patch(self.url, {"push_enabled": False}, format="json")
 
-        voisin = User.objects.create_user("prefs_voisin", password="Relay2026")
+        voisin = User.objects.create_user("prefs_voisin")
         RelayPointProfile.objects.create(
             user=voisin,
             name="Relais Voisin",
@@ -1085,7 +1085,7 @@ class RelayTeamTests(APITestCase):
         from .models import RelayEmployee
         self.RelayEmployee = RelayEmployee
         self.url = reverse("relay-point-team")
-        self.relay_user = User.objects.create_user("equipe_relay", password="Relay2026")
+        self.relay_user = User.objects.create_user("equipe_relay")
         self.relay_point = RelayPointProfile.objects.create(
             user=self.relay_user,
             name="Relais Equipe",
@@ -1094,7 +1094,7 @@ class RelayTeamTests(APITestCase):
             status=RelayPointProfile.Status.APPROVED,
             is_active=True,
         )
-        self.autre = User.objects.create_user("equipe_autre", password="Client2026")
+        self.autre = User.objects.create_user("equipe_autre")
 
     def _ajouter(self, nom):
         return self.client.post(self.url, {"display_name": nom}, format="json")
@@ -1187,7 +1187,7 @@ class RelayTeamTests(APITestCase):
         self.assertTrue(response.data["can_money"])
 
     def test_equipe_d_un_autre_relais_inaccessible(self):
-        voisin_user = User.objects.create_user("equipe_voisin", password="Relay2026")
+        voisin_user = User.objects.create_user("equipe_voisin")
         voisin = RelayPointProfile.objects.create(
             user=voisin_user,
             name="Relais Voisin",
@@ -1242,7 +1242,7 @@ class RelayAccessPinTests(APITestCase):
 
         self.phone = "+237691248350"
         self.user = User.objects.create_user(
-            "pin_relay", email="pin.relay@example.com", password="Relay2026",
+            "pin_relay", email="pin.relay@example.com",
             first_name="Franck",
         )
         RelayPointProfile.objects.create(
@@ -1407,7 +1407,7 @@ class RelayAccessPinTests(APITestCase):
 
     def test_compte_sans_relais_refuse(self):
         """Un PIN relais n'ouvre que le portail relais."""
-        autre = User.objects.create_user("pin_client", password="Client2026")
+        autre = User.objects.create_user("pin_client")
         from .models import RelayAccessPin
         acces = RelayAccessPin(user=autre)
         acces.set_pin("1974")
